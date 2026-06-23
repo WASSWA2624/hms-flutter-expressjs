@@ -251,6 +251,11 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.facilityLayoutUpdated,
     ...subscriptions,
     ...integrations,
+    ...patients,
+    ...appointments,
+    ...opdFlow,
+    ...diagnostics,
+    ...billing,
   };
 
   static const Set<String> tenantFacility = <String>{

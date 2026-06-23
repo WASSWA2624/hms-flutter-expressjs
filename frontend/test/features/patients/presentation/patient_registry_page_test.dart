@@ -311,7 +311,8 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Appointment'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Schedule appointment'), findsOneWidget);
 
@@ -321,7 +322,7 @@ void main() {
     );
     final timeField = find.byWidgetPredicate(
       (Widget widget) =>
-          widget is AppTextField && widget.labelText == 'Start time',
+          widget is AppTimeField && widget.labelText == 'Start time',
     );
     final durationField = find.byWidgetPredicate(
       (Widget widget) =>
@@ -335,11 +336,11 @@ void main() {
     final double timeTop = tester.getTopLeft(timeField).dy;
     final double durationTop = tester.getTopLeft(durationField).dy;
 
-    expect(dateSize.width, greaterThan(timeSize.width * 2));
-    expect(timeSize.width, lessThanOrEqualTo(150));
-    expect(durationSize.width, lessThanOrEqualTo(180));
-    expect((dateTop - timeTop).abs(), lessThan(1));
-    expect((dateTop - durationTop).abs(), lessThan(1));
+    expect(dateSize.width, greaterThan(200));
+    expect(timeSize.width, greaterThan(120));
+    expect(durationSize.width, greaterThan(120));
+    expect(dateTop, lessThan(timeTop));
+    expect((timeTop - durationTop).abs(), lessThan(1));
   });
 
   testWidgets('OPD quick action opens the shared encounter dialog', (
@@ -793,6 +794,11 @@ void _stubProviderLookup(_MockOpdRepository opdRepository) {
   when(() => opdRepository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(() => opdRepository.listProviderSchedules()).thenAnswer(
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
   );
 }
 

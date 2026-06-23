@@ -1317,6 +1317,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.copyPatientNumberMessage,
     this.copyPatientNumberSemanticLabel,
     this.showPatientNumberCopyIcon = true,
+    this.showPatientName = true,
     this.semanticLabel,
     super.key,
   });
@@ -1335,6 +1336,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final String? copyPatientNumberMessage;
   final String? copyPatientNumberSemanticLabel;
   final bool showPatientNumberCopyIcon;
+  final bool showPatientName;
   final String? semanticLabel;
 
   @override
@@ -1356,6 +1358,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             final bool compact = constraints.maxWidth < AppBreakpoints.md;
             final Widget identity = _PatientContextIdentity(
               patientName: patientName,
+              showPatientName: showPatientName,
               patientNumber: patientNumber,
               patientNumberLabel: patientNumberLabel,
               demographics: demographics,
@@ -1800,6 +1803,7 @@ class AppWorkspaceActivityList extends StatelessWidget {
 class _PatientContextIdentity extends StatelessWidget {
   const _PatientContextIdentity({
     required this.patientName,
+    required this.showPatientName,
     required this.patientNumber,
     required this.patientNumberLabel,
     required this.demographics,
@@ -1813,6 +1817,7 @@ class _PatientContextIdentity extends StatelessWidget {
   });
 
   final String patientName;
+  final bool showPatientName;
   final String patientNumber;
   final String? patientNumberLabel;
   final String? demographics;
@@ -1851,16 +1856,18 @@ class _PatientContextIdentity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                patientName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
+              if (showPatientName) ...<Widget>[
+                Text(
+                  patientName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              SizedBox(height: theme.spacing.xs),
+                SizedBox(height: theme.spacing.xs),
+              ],
               _PatientContextMetaLine(
                 patientNumber: patientNumber,
                 patientNumberLabel: patientNumberLabel,

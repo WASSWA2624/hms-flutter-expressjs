@@ -1103,6 +1103,18 @@ class _AgeSexText extends StatelessWidget {
   }
 }
 
+Patient? _cachedPatientFromState(PatientRegistryState? state, String patientId) {
+  if (state == null) {
+    return null;
+  }
+  for (final Patient patient in state.page.items) {
+    if (patient.id == patientId) {
+      return patient;
+    }
+  }
+  return null;
+}
+
 String _ageSexLabel(String age, String sex) => '$age / $sex';
 
 class _PatientContactIdentifierCell extends StatelessWidget {
@@ -1426,17 +1438,49 @@ class _PatientDetailDialog extends ConsumerWidget {
     final PatientDetail? detail = selectedDetail?.patient.id == patientId
         ? selectedDetail
         : null;
+    final Patient? cachedPatient = _cachedPatientFromState(state, patientId);
+    final bool isLoadingDetail =
+        (state?.isRefreshingDetail ?? true) && detail == null;
 
-    if ((state?.isRefreshingDetail ?? true) && detail == null) {
+    if (isLoadingDetail) {
+      final String dialogTitle = cachedPatient?.effectiveDisplayName ??
+          l10n.patientsDetailTitle;
       return AppDialog(
-        title: Text(l10n.patientsDetailTitle),
+        title: Text(dialogTitle),
         icon: const Icon(Icons.assignment_ind_outlined),
-        maxWidth: 960,
+        maxWidth: 980,
         scrollable: true,
-        content: AppWorkspaceStatePanel.loading(
-          title: l10n.patientsDetailLoadingTitle,
-          body: l10n.patientsDetailLoadingBody,
-          minHeight: 320,
+        content: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: Column(
+            key: ValueKey<String>('loading-$patientId'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const LinearProgressIndicator(),
+              if (cachedPatient != null) ...<Widget>[
+                SizedBox(height: Theme.of(context).spacing.md),
+                _PatientListPreviewHeader(patient: cachedPatient),
+                const Divider(),
+              ],
+              SizedBox(
+                height: cachedPatient == null ? 320 : null,
+                child: cachedPatient == null
+                    ? AppWorkspaceStatePanel.loading(
+                        title: l10n.patientsDetailLoadingTitle,
+                        body: l10n.patientsDetailLoadingBody,
+                        minHeight: 320,
+                      )
+                    : Padding(
+                        padding: EdgeInsets.only(
+                          top: Theme.of(context).spacing.md,
+                        ),
+                        child: const AppPatientDetailSkeleton(),
+                      ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1487,16 +1531,21 @@ class _PatientDetailDialog extends ConsumerWidget {
           ),
         ),
       ],
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (state?.isRefreshingDetail ?? false)
-            const LinearProgressIndicator(),
-          _PatientContextHeader(detail: detail),
-          const Divider(),
-          _QuickActions(detail: detail),
-          const Divider(),
-          AppExpandableRecordSection<PatientIdentifier>(
+      content: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: Column(
+          key: ValueKey<String>('detail-${patient.id}'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (state?.isRefreshingDetail ?? false)
+              const LinearProgressIndicator(),
+            _PatientContextHeader(detail: detail),
+            const Divider(),
+            _QuickActions(detail: detail),
+            const Divider(),
+            AppExpandableRecordSection<PatientIdentifier>(
             title: l10n.patientsIdentifiersSectionTitle,
             emptyLabel: l10n.patientsNoIdentifiers,
             items: detail.identifiers,
@@ -1632,6 +1681,7 @@ class _PatientDetailDialog extends ConsumerWidget {
           ),
           PatientTimelineList(items: detail.timeline),
         ],
+        ),
       ),
     );
   }
@@ -1793,6 +1843,87 @@ class _PatientContextHeader extends StatelessWidget {
 
     return AppWorkspacePatientContextHeader(
       patientName: patient.effectiveDisplayName,
+      showPatientName: false,
+      patientNumber: patient.effectiveIdentifier ?? '',
+      demographics: demographics,
+      semanticLabel: l10n.patientsDetailTitle,
+      status: AppWorkspaceStatus(
+        label: patient.isActive
+            ? l10n.patientsActiveFilter
+            : l10n.patientsInactiveFilter,
+        tone: patient.isActive
+            ? AppWorkspaceStatusTone.success
+            : AppWorkspaceStatusTone.neutral,
+        icon: patient.isActive
+            ? Icons.check_circle_outline
+            : Icons.block_outlined,
+      ),
+      alerts: <AppWorkspaceStatus>[
+        if (patient.hasAllergyAlert)
+          AppWorkspaceStatus(
+            label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.warning_amber_outlined,
+          ),
+        if (patient.requiresCompletion)
+          AppWorkspaceStatus(
+            label: l10n.patientsRegistrationIncompleteValue,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.error_outline,
+          ),
+      ],
+      fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+      fields: <AppWorkspacePatientContextField>[
+        AppWorkspacePatientContextField(
+          label: l10n.patientsDobLabel,
+          value: _formatOptionalDate(context, patient.dateOfBirth),
+          icon: Icons.cake_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsPhoneLabel,
+          value: patient.primaryPhone ?? '',
+          icon: Icons.phone_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsFacilityLabel,
+          value: patient.facilityLabel ?? '',
+          icon: Icons.business_outlined,
+        ),
+        if (visit != null)
+          AppWorkspacePatientContextField(
+            label: l10n.patientsVisitColumnLabel,
+            value: visit.publicId ?? '',
+            icon: Icons.assignment_turned_in_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            copyable: true,
+            copyTooltip: l10n.copyIdentifierAction,
+            copiedMessage: l10n.identifierCopiedMessage,
+          ),
+      ],
+    );
+  }
+}
+
+class _PatientListPreviewHeader extends StatelessWidget {
+  const _PatientListPreviewHeader({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final String gender = patient.gender == null
+        ? l10n.profileUnknownValue
+        : _genderLabel(l10n, patient.gender!);
+    final String demographics = _joinDisplay(<String?>[
+      _patientAgeLabel(context, patient.dateOfBirth),
+      gender,
+    ]);
+    final PatientVisitContext? visit = patient.currentVisit;
+
+    return AppWorkspacePatientContextHeader(
+      patientName: patient.effectiveDisplayName,
+      showPatientName: false,
       patientNumber: patient.effectiveIdentifier ?? '',
       demographics: demographics,
       semanticLabel: l10n.patientsDetailTitle,
@@ -2080,12 +2211,8 @@ Future<void> _openQuickAction(
           detail: detail,
           patient: patient,
         ),
-        _PatientQuickAction.opdCheckIn => OpdEncounterDialog(
-          providerSchedules: const <OpdProviderSchedule>[],
-          appointments: const <OpdAppointment>[],
-          initialPatient: patient,
-          initialPatientId: _patientApiId(patient),
-          source: 'patient_registry',
+        _PatientQuickAction.opdCheckIn => _PatientOpdEncounterDialog(
+          patient: patient,
           onSubmit: (Map<String, Object?> payload) async {
             final Object? existingEncounterId =
                 payload['existing_encounter_id'];
@@ -2387,6 +2514,95 @@ class _PatientDischargeQuickDialogState
   }
 }
 
+class _PatientOpdEncounterDialog extends ConsumerStatefulWidget {
+  const _PatientOpdEncounterDialog({
+    required this.patient,
+    required this.onSubmit,
+  });
+
+  final Patient patient;
+  final Future<AppFailure?> Function(Map<String, Object?>) onSubmit;
+
+  @override
+  ConsumerState<_PatientOpdEncounterDialog> createState() =>
+      _PatientOpdEncounterDialogState();
+}
+
+class _PatientOpdEncounterDialogState
+    extends ConsumerState<_PatientOpdEncounterDialog> {
+  bool _isLoading = true;
+  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
+  List<OpdAppointment> _appointments = const <OpdAppointment>[];
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadEncounterData());
+  }
+
+  Future<void> _loadEncounterData() async {
+    final String search =
+        widget.patient.effectiveIdentifier ?? widget.patient.id;
+    final Result<List<OpdProviderSchedule>> scheduleResult = await ref
+        .read(opdRepositoryProvider)
+        .listProviderSchedules();
+    final Result<AppPage<OpdAppointment>> appointmentResult = await ref
+        .read(opdRepositoryProvider)
+        .listAppointments(OpdAppointmentQuery(search: search));
+    if (!mounted) {
+      return;
+    }
+    AppFailure? failure;
+    var schedules = const <OpdProviderSchedule>[];
+    var appointments = const <OpdAppointment>[];
+    scheduleResult.when(
+      success: (List<OpdProviderSchedule> value) => schedules = value,
+      failure: (AppFailure value) => failure = value,
+    );
+    appointmentResult.when(
+      success: (AppPage<OpdAppointment> value) => appointments = value.items,
+      failure: (AppFailure value) => failure ??= value,
+    );
+    setState(() {
+      _providerSchedules = schedules;
+      _appointments = appointments;
+      _failure = failure;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    if (_isLoading) {
+      return AppDialog(
+        title: Text(l10n.opdCheckInAction),
+        icon: const Icon(Icons.login_outlined),
+        scrollable: true,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            const LinearProgressIndicator(),
+            SizedBox(height: Theme.of(context).spacing.md),
+            const AppPatientDetailSkeleton(),
+          ],
+        ),
+      );
+    }
+
+    return OpdEncounterDialog(
+      providerSchedules: _providerSchedules,
+      appointments: _appointments,
+      initialPatient: widget.patient,
+      initialPatientId: _patientApiId(widget.patient),
+      source: 'patient_registry',
+      onSubmit: widget.onSubmit,
+    );
+  }
+}
+
 class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
   const PatientAppointmentQuickDialog({
     required this.patient,
@@ -2405,18 +2621,17 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
 class _PatientAppointmentQuickDialogState
     extends ConsumerState<PatientAppointmentQuickDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _timeController = TextEditingController(
-    text: '09:00',
-  );
   final TextEditingController _durationController = TextEditingController(
     text: '30',
   );
   final TextEditingController _reasonController = TextEditingController();
   DateTime? _date = DateTime.now();
+  TimeOfDay? _startTime = const TimeOfDay(hour: 9, minute: 0);
   String? _facilityId;
   String? _providerId;
   String _status = 'SCHEDULED';
   List<OpdProviderOption> _providers = const <OpdProviderOption>[];
+  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -2430,7 +2645,6 @@ class _PatientAppointmentQuickDialogState
 
   @override
   void dispose() {
-    _timeController.dispose();
     _durationController.dispose();
     _reasonController.dispose();
     super.dispose();
@@ -2458,7 +2672,50 @@ class _PatientAppointmentQuickDialogState
         children: <Widget>[
           if (widget.referenceData.facilities.length > 1)
             _facilitySelect(context),
-          _appointmentScheduleFields(context),
+          AppFormSection(
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppDateField(
+                value: _date,
+                firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                labelText: l10n.patientsAppointmentDateLabel,
+                pickerButtonLabel: l10n.patientsDatePickerAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                enabled: !_isSaving,
+                isRequired: true,
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: (DateTime? value) => setState(() => _date = value),
+              ),
+              AppResponsiveFieldRow(
+                gap: AppResponsiveFieldRowGap.form,
+                children: <Widget>[
+                  AppTimeField(
+                    value: _startTime,
+                    labelText: l10n.patientsAppointmentTimeLabel,
+                    pickerButtonLabel: l10n.appTimePickerAction,
+                    invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+                    hintText: l10n.patientsTimeHint,
+                    enabled: !_isSaving,
+                    isRequired: true,
+                    validator: (TimeOfDay? value) =>
+                        value == null ? l10n.validationRequired : null,
+                    onChanged: (TimeOfDay? value) {
+                      setState(() => _startTime = value);
+                    },
+                  ),
+                  AppTextField(
+                    controller: _durationController,
+                    labelText: l10n.patientsAppointmentDurationLabel,
+                    enabled: !_isSaving,
+                    isRequired: true,
+                    keyboardType: TextInputType.number,
+                    validator: _durationValidator(context),
+                  ),
+                ],
+              ),
+            ],
+          ),
           AppResponsiveFieldRow.two(
             left: _statusSelect(context),
             right: _providerSelect(context),
@@ -2484,101 +2741,6 @@ class _PatientAppointmentQuickDialogState
           onPressed: _submit,
         ),
       ],
-    );
-  }
-
-  Widget _appointmentScheduleFields(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final double gap = theme.spacing.sm;
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final Widget dateField = _appointmentDateField(context);
-        final Widget timeField = _appointmentTimeField(context);
-        final Widget durationField = _appointmentDurationField(context);
-
-        if (constraints.maxWidth >= 680) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(flex: 6, child: dateField),
-              SizedBox(width: gap),
-              SizedBox(width: 136, child: timeField),
-              SizedBox(width: gap),
-              SizedBox(width: 164, child: durationField),
-            ],
-          );
-        }
-
-        if (constraints.maxWidth >= 500) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              dateField,
-              SizedBox(height: gap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  SizedBox(width: 136, child: timeField),
-                  SizedBox(width: gap),
-                  SizedBox(width: 164, child: durationField),
-                ],
-              ),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            dateField,
-            SizedBox(height: gap),
-            timeField,
-            SizedBox(height: gap),
-            durationField,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _appointmentDateField(BuildContext context) {
-    final l10n = context.l10n;
-
-    return PatientDateField(
-      value: _date,
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      labelText: l10n.patientsAppointmentDateLabel,
-      isRequired: true,
-      enabled: !_isSaving,
-      validator: AppValidators.requiredValue(l10n.validationRequired),
-      onChanged: (DateTime? value) => _date = value,
-    );
-  }
-
-  Widget _appointmentTimeField(BuildContext context) {
-    final l10n = context.l10n;
-
-    return AppTextField(
-      controller: _timeController,
-      labelText: l10n.patientsAppointmentTimeLabel,
-      hintText: l10n.patientsTimeHint,
-      enabled: !_isSaving,
-      isRequired: true,
-      keyboardType: TextInputType.datetime,
-      validator: _timeValidator(context),
-    );
-  }
-
-  Widget _appointmentDurationField(BuildContext context) {
-    return AppTextField(
-      controller: _durationController,
-      labelText: context.l10n.patientsAppointmentDurationLabel,
-      enabled: !_isSaving,
-      isRequired: true,
-      keyboardType: TextInputType.number,
-      validator: _durationValidator(context),
     );
   }
 
@@ -2611,42 +2773,52 @@ class _PatientAppointmentQuickDialogState
       enabled: !_isSaving,
       isLoading: _isLoadingProviders,
       onChanged: (String? value) => setState(() => _providerId = value),
-      options: _providerSelectOptions(_providers),
+      options: _providerSelectOptions(
+        _providers,
+        schedules: _providerSchedules,
+      ),
     );
   }
 
   Future<void> _loadProviders() async {
     setState(() => _isLoadingProviders = true);
-    final Result<List<OpdProviderOption>> result = await ref
+    final Result<List<OpdProviderOption>> providerResult = await ref
         .read(opdRepositoryProvider)
         .listProviders();
+    final Result<List<OpdProviderSchedule>> scheduleResult = await ref
+        .read(opdRepositoryProvider)
+        .listProviderSchedules();
     if (!mounted) {
       return;
     }
-    result.when(
-      success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providers = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingProviders = false;
-        });
-      },
+    AppFailure? failure;
+    var providers = const <OpdProviderOption>[];
+    var schedules = const <OpdProviderSchedule>[];
+    providerResult.when(
+      success: (List<OpdProviderOption> value) => providers = value,
+      failure: (AppFailure value) => failure = value,
     );
+    scheduleResult.when(
+      success: (List<OpdProviderSchedule> value) => schedules = value,
+      failure: (AppFailure value) => failure ??= value,
+    );
+    setState(() {
+      _providers = dedupeOpdProviderOptions(providers);
+      _providerSchedules = schedules;
+      _failure = failure;
+      _isLoadingProviders = false;
+    });
   }
 
   Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
-    final DateTime scheduledStart = _combineDateAndTime(
-      _date!,
-      _timeController.text,
-    )!;
+    final DateTime? scheduledStart = _combineDateAndTimeOfDay(_date, _startTime);
+    if (scheduledStart == null) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
     final int duration = int.parse(_durationController.text.trim());
 
     setState(() {
@@ -2682,6 +2854,13 @@ class _PatientAppointmentQuickDialogState
         });
       },
     );
+  }
+
+  DateTime? _combineDateAndTimeOfDay(DateTime? date, TimeOfDay? time) {
+    if (date == null || time == null) {
+      return null;
+    }
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 }
 
@@ -3509,10 +3688,9 @@ class _PatientReportPrintPreviewDialogState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    final PatientDetail effectiveDetail = _effectivePatientDetail(
-      widget.patient,
-      widget.detail,
-    );
+    final PatientDetail? liveDetail = _livePatientDetail(ref, widget.patient.id);
+    final PatientDetail effectiveDetail = liveDetail ??
+        _effectivePatientDetail(widget.patient, widget.detail);
     final _PatientReportSelection selection = _PatientReportSelection(
       periodMode: _periodMode,
       singleDate: _singleDate,
@@ -4208,6 +4386,22 @@ class _PatientReportRowPreview extends StatelessWidget {
   }
 }
 
+PatientDetail? _livePatientDetail(WidgetRef ref, String patientId) {
+  final AsyncValue<Result<PatientRegistryState>> state = ref.watch(
+    patientRegistryControllerProvider,
+  );
+  return state.maybeWhen(
+    data: (Result<PatientRegistryState> result) => result.when(
+      success: (PatientRegistryState value) {
+        final PatientDetail? selected = value.selectedDetail;
+        return selected?.patient.id == patientId ? selected : null;
+      },
+      failure: (_) => null,
+    ),
+    orElse: () => null,
+  );
+}
+
 PatientDetail _effectivePatientDetail(Patient patient, PatientDetail? detail) {
   return detail ??
       PatientDetail(
@@ -4390,10 +4584,6 @@ _PatientReportDocument _buildPatientReportDocument(
       title: l10n.patientsReportPatientInfoSectionTitle,
       emptyText: emptyText,
       rows: <_PatientReportRow>[
-        _PatientReportRow(
-          label: l10n.patientsNameLabel,
-          value: patient.effectiveDisplayName,
-        ),
         _PatientReportRow(
           label: l10n.patientsIdentifierLabel,
           value: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
@@ -6725,24 +6915,13 @@ List<AppTriageOption> _statusTriageOptions(Iterable<String> values) {
 }
 
 List<AppSelectOption<String>> _providerSelectOptions(
-  List<OpdProviderOption> providers,
-) {
+  List<OpdProviderOption> providers, {
+  List<OpdProviderSchedule> schedules = const <OpdProviderSchedule>[],
+}) {
   return opdProviderSelectOptions(
     providers: providers,
-    schedules: const <OpdProviderSchedule>[],
+    schedules: schedules,
   );
-}
-
-FormFieldValidator<String> _timeValidator(BuildContext context) {
-  return (String? value) {
-    final String normalized = value?.trim() ?? '';
-    if (normalized.isEmpty) {
-      return context.l10n.validationRequired;
-    }
-    return _parseTime(normalized) == null
-        ? context.l10n.patientsTimeInvalidMessage
-        : null;
-  };
 }
 
 FormFieldValidator<String> _durationValidator(BuildContext context) {
@@ -6755,24 +6934,6 @@ FormFieldValidator<String> _durationValidator(BuildContext context) {
         ? context.l10n.patientsDurationInvalidMessage
         : null;
   };
-}
-
-DateTime? _combineDateAndTime(DateTime date, String time) {
-  final (int, int)? parsed = _parseTime(time);
-  if (parsed == null) {
-    return null;
-  }
-  return DateTime(date.year, date.month, date.day, parsed.$1, parsed.$2);
-}
-
-(int, int)? _parseTime(String value) {
-  final RegExpMatch? match = RegExp(
-    r'^([01]?\d|2[0-3]):([0-5]\d)$',
-  ).firstMatch(value.trim());
-  if (match == null) {
-    return null;
-  }
-  return (int.parse(match.group(1)!), int.parse(match.group(2)!));
 }
 
 Map<String, Object?> _withoutEmptyPayload(Map<String, Object?> payload) {

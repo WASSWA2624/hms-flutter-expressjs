@@ -212,6 +212,14 @@ class AppButton extends StatelessWidget {
             AppButtonVariant.tertiary => Colors.transparent,
           };
         }
+        if (variant == AppButtonVariant.secondary &&
+            states.contains(WidgetState.hovered)) {
+          return colorScheme.primary.withValues(alpha: 0.05);
+        }
+        if (variant == AppButtonVariant.secondary &&
+            states.contains(WidgetState.pressed)) {
+          return colorScheme.primary.withValues(alpha: 0.08);
+        }
         return switch (variant) {
           AppButtonVariant.primary => colorScheme.primary,
           AppButtonVariant.secondary ||
@@ -243,12 +251,17 @@ class AppButton extends StatelessWidget {
         }
         final bool disabled = states.contains(WidgetState.disabled);
         final bool focused = states.contains(WidgetState.focused);
+        final bool hovered = states.contains(WidgetState.hovered);
         final Color borderColor = disabled
             ? colorScheme.onSurface.withValues(alpha: 0.12)
-            : colorScheme.primary.withValues(alpha: focused ? 0.74 : 0.48);
+            : focused
+            ? colorScheme.primary.withValues(alpha: 0.72)
+            : hovered
+            ? colorScheme.primary.withValues(alpha: 0.56)
+            : colorScheme.outline.withValues(alpha: 0.44);
         return BorderSide(
           color: borderColor,
-          width: focused ? 1.4 : theme.appTokens.dividerThickness,
+          width: focused ? 1.25 : 1,
         );
       }),
     );

@@ -29,6 +29,7 @@ final homeControllerProvider =
     });
 
 const Set<String> _homeDashboardRealtimeEvents = <String>{
+  ...RealtimeEventGroups.patients,
   ...RealtimeEventGroups.appointments,
   ...RealtimeEventGroups.opdFlow,
   ...RealtimeEventGroups.admissions,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
@@ -290,9 +291,22 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     final bool shouldRefreshSearchEntries =
         !_isSyncingControllerText && widget.searchable;
     if (hasText != _hasControllerText || shouldRefreshSearchEntries) {
-      setState(() {
-        _hasControllerText = hasText;
-      });
+      void updateControllerState() {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _hasControllerText = hasText;
+        });
+      }
+
+      if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+        updateControllerState();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => updateControllerState(),
+        );
+      }
     }
 
     if (!_isSyncingControllerText) {
