@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
@@ -46,6 +50,20 @@ final class TenantFacilitySetupController
 
   @override
   Future<Result<FacilitySetupSnapshot>> build() {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.tenantFacility,
+      includeCrudMutations: true,
+      shouldRefresh: (RealtimeMessage message) {
+        return RealtimeScope.matchesMessage(
+          message: message,
+          facilityId: _selectedFacilityId,
+        );
+      },
+      onRefresh: (_) async {
+        await refresh();
+      },
+    );
     return ref
         .read(tenantFacilityRepositoryProvider)
         .loadSetup(facilityId: _selectedFacilityId);

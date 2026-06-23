@@ -246,4 +246,20 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.integrationFailure,
     RealtimeEvents.integrationReplayComplete,
   };
+
+  static const Set<String> reports = <String>{
+    RealtimeEvents.facilityLayoutUpdated,
+    ...subscriptions,
+    ...integrations,
+  };
+
+  static const Set<String> tenantFacility = <String>{
+    RealtimeEvents.facilityLayoutUpdated,
+    ...subscriptions,
+  };
+
+  static const Set<String> settings = <String>{
+    ...subscriptions,
+    ...integrations,
+  };
 }

@@ -10,6 +10,7 @@
  */
 
 const { logger } = require('@lib/logging');
+const { publishAuditRealtime } = require('@lib/realtime/audit-realtime');
 const VALID_AUDIT_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE', 'ACCESS', 'EXPORT', 'LOGIN', 'LOGOUT']);
 const INVALID_ID_LITERALS = new Set(['unknown', 'undefined', 'null', 'n/a', 'na']);
 const UPDATE_ACTION_ALIASES = new Set([
@@ -202,6 +203,8 @@ const createAuditLog = async (auditData) => {
             created_at: new Date()
           }
         });
+
+        await publishAuditRealtime(auditData, resolvedTenantId, action);
       } catch (err) {
         // Log error but don't throw (non-blocking)
         logger.error('Failed to create audit log entry', {

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
@@ -18,6 +20,12 @@ final class ReportsWorkspaceController
 
   @override
   Future<Result<ReportsWorkspaceState>> build() async {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.reports,
+      includeCrudMutations: true,
+      onRefresh: (_) => refresh(),
+    );
     const ReportsWorkspaceQuery query = ReportsWorkspaceQuery();
     final Result<ReportsWorkspaceOverview> overviewResult =
         await _loadReportingOverview(query);

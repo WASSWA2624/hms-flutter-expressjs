@@ -15,6 +15,7 @@ final homeControllerProvider =
       listenForRealtimeRefresh(
         ref: ref,
         events: _homeDashboardRealtimeEvents,
+        includeCrudMutations: true,
         debounce: const Duration(milliseconds: 600),
         shouldRefresh: (RealtimeMessage message) {
           return _matchesDashboardScope(request, message.payload);

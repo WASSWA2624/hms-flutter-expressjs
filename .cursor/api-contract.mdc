@@ -149,6 +149,7 @@ Realtime sync keeps multi-user UI state aligned with persisted data.
 - Workspace controllers subscribe through `listenForRealtimeRefresh` (see `frontend/.cursor/realtime_sync.mdc`).
 - Filter events with tenant/facility scope before triggering refresh.
 - Debounce bursty updates; defer refresh while local saves are in flight.
+- Backend modules with `createAuditLog` mutations auto-emit `{entity}.{operation}` events unless opted out (see `backend/.cursor/websockets.mdc`).
 
 ## Related rules
 

@@ -27,6 +27,7 @@ WebSockets are for **server → client** state propagation. CRUD mutations must 
 - Refresh by re-fetching authoritative HTTP data — do not merge raw websocket payloads into domain entities.
 - Websocket failures must not block writes; HTTP remains source of truth for mutations.
 - Reconnect on auth token rotation via `realtimeMessagesProvider`.
+- Use `includeCrudMutations: true` when a workspace should refresh on audit-driven `{entity}.{operation}` events from any backend module.
 
 ## Core layout
 
@@ -38,6 +39,7 @@ core/realtime/
 ├── realtime_events.dart       # event constants (mirror backend)
 ├── realtime_event_groups.dart # workspace event bundles
 ├── realtime_refresh.dart      # debounced controller listener
+├── realtime_crud_events.dart  # audit-driven {entity}.{operation} matcher
 └── realtime_scope.dart        # tenant/facility payload filters
 ```
 
@@ -47,6 +49,7 @@ core/realtime/
 listenForRealtimeRefresh(
   ref: ref,
   events: RealtimeEventGroups.opd,
+  includeCrudMutations: true,
   shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
   shouldRefresh: (message) => RealtimeScope.matchesMessage(
     message: message,

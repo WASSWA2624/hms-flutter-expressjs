@@ -21,6 +21,20 @@ Every user-visible mutation path must follow:
 HTTP write -> service validates + persists -> audit log -> publish domain event -> gateway delivers to scoped recipients
 ```
 
+### Automatic module coverage
+
+`createAuditLog` invokes `@lib/realtime/audit-realtime.js` for `CREATE`, `UPDATE`, and `DELETE` audit actions. Any service that already calls `createAuditLog` on mutations participates in realtime sync without extra wiring.
+
+- Default event shape: `{entity}.{created|updated|deleted|canceled|rescheduled|activated|deactivated}`
+- Opt out per call: `realtime: false` in audit data
+- Override event: `realtime_event: 'custom.event'`
+- Override payload: `realtime_payload: { ... }`
+- Skip list for bespoke publishers: `@lib/realtime/config.js` (`REALTIME_SKIP_ENTITIES`)
+
+### Manual publishers
+
+Use `@lib/websocket` helpers (`publishDomainEvent`, `publishCrudRealtimeEvent`, `emitToUsers`) when a module needs richer payloads or non-CRUD workflow events. Add the entity to `REALTIME_SKIP_ENTITIES` to prevent duplicate audit-driven events.
+
 Rules:
 
 - Publish **after** the database transaction commits. Delivery failure must not roll back persistence.

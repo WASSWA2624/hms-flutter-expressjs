@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/realtime/realtime_crud_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
@@ -23,6 +24,7 @@ void listenForRealtimeRefresh({
   RealtimeRefreshDefer? shouldDefer,
   Duration debounce = const Duration(milliseconds: 250),
   bool refreshOnReconnect = true,
+  bool includeCrudMutations = false,
 }) {
   final Set<String> eventSet = Set<String>.unmodifiable(<String>{
     ...events,
@@ -75,7 +77,10 @@ void listenForRealtimeRefresh({
     AsyncValue<RealtimeMessage> next,
   ) {
     if (next case AsyncData<RealtimeMessage>(value: final message)) {
-      if (!eventSet.contains(message.event)) {
+      final bool matchesNamedEvent = eventSet.contains(message.event);
+      final bool matchesCrudEvent =
+          includeCrudMutations && RealtimeCrudEvents.matches(message.event);
+      if (!matchesNamedEvent && !matchesCrudEvent) {
         return;
       }
       if (message.event != RealtimeEvents.authenticated &&
