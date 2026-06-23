@@ -104,7 +104,6 @@ class OpdConsultationBillingBreakdownPanel extends StatelessWidget {
             SizedBox(height: theme.spacing.sm),
             AppInfoTileGrid(
               minItemWidth: 140,
-              borderedTiles: true,
               emptyValue: l10n.profileUnknownValue,
               items: <AppInfoTileData>[
                 AppInfoTileData(

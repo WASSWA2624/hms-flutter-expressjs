@@ -14,30 +14,30 @@ String clinicalPrescriptionReadableSummary({
   String? instructions,
 }) {
   final String name = clinicalActionTrimmedOrNull(drugName) ?? 'Medication';
-  final String? dose = clinicalActionJoinDisplay(<String?>[
+  final String dose = clinicalActionJoinDisplay(<String?>[
     clinicalActionTrimmedOrNull(doseAmount?.toString()),
     clinicalActionTrimmedOrNull(doseUnit),
   ], separator: ' ');
-  final String? qty = clinicalActionJoinDisplay(<String?>[
+  final String qty = clinicalActionJoinDisplay(<String?>[
     clinicalActionTrimmedOrNull(quantity?.toString()),
     clinicalActionTrimmedOrNull(quantityUnit),
   ], separator: ' ');
-  final String? duration = clinicalActionJoinDisplay(<String?>[
+  final String duration = clinicalActionJoinDisplay(<String?>[
     clinicalActionTrimmedOrNull(durationValue?.toString()),
     clinicalActionTrimmedOrNull(durationUnit),
   ], separator: ' ');
-  final String? sig = clinicalActionJoinDisplay(<String?>[
-    if (dose != null && dose.isNotEmpty) dose,
+  final String sig = clinicalActionJoinDisplay(<String?>[
+    if (dose.isNotEmpty) dose,
     if (route != null && route.trim().isNotEmpty)
       clinicalActionApiLabel(route.trim()),
     if (frequency != null && frequency.trim().isNotEmpty)
       _frequencyReadable(frequency.trim()),
-    if (duration != null && duration.isNotEmpty) 'for $duration',
+    if (duration.isNotEmpty) 'for $duration',
   ], separator: ' ');
   final List<String> parts = <String>[
-    if (dose != null && dose.isNotEmpty) '$name $dose' else name,
-    if (sig != null && sig.isNotEmpty) '— $sig',
-    if (qty != null && qty.isNotEmpty) '(Qty: $qty)',
+    if (dose.isNotEmpty) '$name $dose' else name,
+    if (sig.isNotEmpty) '— $sig',
+    if (qty.isNotEmpty) '(Qty: $qty)',
   ];
   final String summary = parts.join(' ');
   final String? note = clinicalActionTrimmedOrNull(instructions);
