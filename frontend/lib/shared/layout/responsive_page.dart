@@ -354,10 +354,12 @@ class AppScreenSection extends StatelessWidget {
     final double padding = theme.spacing.md;
     final double headingGap = compact ? theme.spacing.sm : theme.spacing.md;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
+    return Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: EdgeInsets.all(padding),
         child: Column(

@@ -2,9 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
+import 'package:hosspi_hms/core/security/session_refresh_service.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
-import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final sessionTokenProvider = Provider<SessionTokenProvider>((ref) {
   return SessionTokenProvider(ref);
@@ -19,7 +18,8 @@ final class SessionTokenProvider {
 
   SessionManager get _sessionManager => _ref.read(sessionManagerProvider);
 
-  AuthRepository get _authRepository => _ref.read(authRepositoryProvider);
+  SessionRefreshService get _refreshService =>
+      _ref.read(sessionRefreshServiceProvider);
 
   Future<String?> readAccessToken() async {
     final SessionTokens? tokens = await _sessionManager.readTokens();
@@ -44,7 +44,7 @@ final class SessionTokenProvider {
   }
 
   Future<AuthSession?> restorePersistedSession() async {
-    final result = await _authRepository.restoreSession();
+    final result = await _refreshService.restoreSession();
     return result.when(
       success: (AuthSession? session) async {
         if (session != null) {
@@ -65,7 +65,7 @@ final class SessionTokenProvider {
       return null;
     }
 
-    final refreshResult = await _authRepository.refreshSession(tokens);
+    final refreshResult = await _refreshService.refreshSession(tokens);
     return refreshResult.when(
       success: (AuthSession session) async {
         await _sessionManager.persistSession(session);

@@ -2295,19 +2295,22 @@ class _LabResultFlagCell extends StatelessWidget {
         ),
         if (canMutate && draft.enabled) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(
-              l10n.labInterpretationOverrideLabel,
-              style: theme.textTheme.bodySmall,
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                l10n.labInterpretationOverrideLabel,
+                style: theme.textTheme.bodySmall,
+              ),
+              value: draft.interpretationOverride,
+              onChanged: (bool? value) {
+                draft.interpretationOverride = value ?? false;
+                draft.notifyChanged();
+              },
             ),
-            value: draft.interpretationOverride,
-            onChanged: (bool? value) {
-              draft.interpretationOverride = value ?? false;
-              draft.notifyChanged();
-            },
           ),
           if (draft.interpretationOverride)
             AppTextField(
@@ -2782,11 +2785,12 @@ class _LabReportPreviewDialogState
           ),
         ),
         SizedBox(height: theme.spacing.sm),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLowest,
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+        Material(
+          color: theme.colorScheme.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
           ),
+          clipBehavior: Clip.antiAlias,
           child: SwitchListTile(
             value: _showOrderDetails,
             dense: true,

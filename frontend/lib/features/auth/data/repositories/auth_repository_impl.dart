@@ -4,11 +4,10 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/api_response.dart';
-import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
-import 'package:hosspi_hms/core/security/session_refresh_coordinator.dart';
+import 'package:hosspi_hms/core/security/session_refresh_service.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/dtos/auth_session_dto.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
@@ -16,61 +15,31 @@ import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dar
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     apiClient: ref.watch(apiClientProvider),
+    publicApiClient: ref.watch(publicApiClientProvider),
+    sessionRefreshService: ref.watch(sessionRefreshServiceProvider),
     sessionManager: ref.watch(sessionManagerProvider),
-    refreshCoordinator: ref.watch(sessionRefreshCoordinatorProvider),
-    failureMapper: ref.watch(networkFailureMapperProvider),
   );
 });
 
 final class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl({
     required ApiClient apiClient,
+    required ApiClient publicApiClient,
+    required SessionRefreshService sessionRefreshService,
     required SessionManager sessionManager,
-    required SessionRefreshCoordinator refreshCoordinator,
-    NetworkFailureMapper failureMapper = const NetworkFailureMapper(),
   }) : _apiClient = apiClient,
-       _sessionManager = sessionManager,
-       _refreshCoordinator = refreshCoordinator,
-       _failureMapper = failureMapper;
+       _publicApiClient = publicApiClient,
+       _sessionRefreshService = sessionRefreshService,
+       _sessionManager = sessionManager;
 
   final ApiClient _apiClient;
+  final ApiClient _publicApiClient;
+  final SessionRefreshService _sessionRefreshService;
   final SessionManager _sessionManager;
-  final SessionRefreshCoordinator _refreshCoordinator;
-  final NetworkFailureMapper _failureMapper;
 
   @override
-  Future<Result<AuthSession?>> restoreSession() async {
-    try {
-      final tokens = await _sessionManager.readTokens();
-      if (tokens == null) {
-        return const Result<AuthSession?>.success(null);
-      }
-
-      if (!tokens.isAccessTokenExpired(DateTime.now().toUtc())) {
-        return Result<AuthSession?>.success(AuthSession.fromTokens(tokens));
-      }
-
-      if (!tokens.hasRefreshToken) {
-        await _sessionManager.clearSession();
-        return const Result<AuthSession?>.success(null);
-      }
-
-      final refreshResult = await refreshSession(tokens);
-      return refreshResult.when(
-        success: (AuthSession session) async {
-          await _sessionManager.persistSession(session);
-          return Result<AuthSession?>.success(session);
-        },
-        failure: (AppFailure failure) async {
-          await _sessionManager.clearSession();
-          return Result<AuthSession?>.failure(failure);
-        },
-      );
-    } catch (error, stackTrace) {
-      return Result<AuthSession?>.failure(
-        _failureMapper.map(error, stackTrace),
-      );
-    }
+  Future<Result<AuthSession?>> restoreSession() {
+    return _sessionRefreshService.restoreSession();
   }
 
   @override
@@ -102,7 +71,7 @@ final class AuthRepositoryImpl implements AuthRepository {
         'facility_id': _normalizedOptional(facilityId),
     };
 
-    final result = await _apiClient.post<AuthSession>(
+    final result = await _publicApiClient.post<AuthSession>(
       ApiEndpoints.auth(AuthEndpoint.login),
       data: payload,
       decoder: (data) => ApiResponseEnvelope.decodeData<AuthSession>(
@@ -127,7 +96,7 @@ final class AuthRepositoryImpl implements AuthRepository {
     String? location,
     String? interests,
   }) {
-    return _apiClient.post<void>(
+    return _publicApiClient.post<void>(
       ApiEndpoints.auth(AuthEndpoint.register),
       data: <String, Object?>{
         'email': email.trim().toLowerCase(),
@@ -161,7 +130,7 @@ final class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return _apiClient.post<void>(
+    return _publicApiClient.post<void>(
       ApiEndpoints.auth(AuthEndpoint.verifyEmail),
       data: <String, Object?>{
         'token': normalizedToken,
@@ -187,7 +156,7 @@ final class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return _apiClient.post<void>(
+    return _publicApiClient.post<void>(
       ApiEndpoints.auth(AuthEndpoint.resendVerification),
       data: <String, Object?>{'email': normalizedEmail, 'type': 'email'},
       decoder: (data) =>
@@ -197,24 +166,7 @@ final class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens) {
-    final refreshToken = tokens.refreshToken;
-    if (refreshToken == null) {
-      return Future.value(
-        const Result<AuthSession>.failure(AppFailure.unauthorized()),
-      );
-    }
-
-    return _refreshCoordinator.run(() {
-      return _apiClient.post<AuthSession>(
-        ApiEndpoints.auth(AuthEndpoint.refresh),
-        data: <String, Object?>{'refresh_token': refreshToken},
-        decoder: (data) => ApiResponseEnvelope.decodeData<AuthSession>(
-          data,
-          decoder: (payload) =>
-              AuthSessionDto.fromResponseData(payload).toEntity(),
-        ),
-      );
-    });
+    return _sessionRefreshService.refreshSession(tokens);
   }
 
   @override
@@ -248,7 +200,6 @@ final class AuthRepositoryImpl implements AuthRepository {
           ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
     );
 
-    await _sessionManager.clearSession();
     return result.when(
       success: (_) => const Result<void>.success(null),
       failure: (failure) => Result<void>.failure(failure),

@@ -13,22 +13,51 @@ final networkFailureMapperProvider = Provider<NetworkFailureMapper>((ref) {
   return const NetworkFailureMapper();
 });
 
+BaseOptions _dioBaseOptions(AppConfig config) {
+  return BaseOptions(
+    baseUrl: config.apiBaseUrl.toString(),
+    connectTimeout: config.apiTimeout,
+    receiveTimeout: config.apiTimeout,
+    sendTimeout: config.apiTimeout,
+  );
+}
+
+final publicDioProvider = Provider<Dio>((ref) {
+  final config = ref.watch(appConfigProvider);
+  final csrfDio = Dio(_dioBaseOptions(config));
+  configureDioAdapter(csrfDio);
+
+  final dio = Dio(_dioBaseOptions(config));
+  configureDioAdapter(dio);
+  dio.interceptors.addAll(<Interceptor>[
+    CsrfInterceptor(tokenDio: csrfDio),
+    SafeDiagnosticsInterceptor(
+      enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,
+    ),
+  ]);
+
+  ref.onDispose(() {
+    csrfDio.close(force: true);
+    dio.close(force: true);
+  });
+
+  return dio;
+});
+
+final publicApiClientProvider = Provider<ApiClient>((ref) {
+  return DioApiClient(
+    dio: ref.watch(publicDioProvider),
+    failureMapper: ref.watch(networkFailureMapperProvider),
+  );
+});
+
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final tokenProvider = ref.watch(sessionTokenProvider);
-  BaseOptions baseOptions() {
-    return BaseOptions(
-      baseUrl: config.apiBaseUrl.toString(),
-      connectTimeout: config.apiTimeout,
-      receiveTimeout: config.apiTimeout,
-      sendTimeout: config.apiTimeout,
-    );
-  }
-
-  final csrfDio = Dio(baseOptions());
+  final csrfDio = Dio(_dioBaseOptions(config));
   configureDioAdapter(csrfDio);
 
-  final dio = Dio(baseOptions());
+  final dio = Dio(_dioBaseOptions(config));
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
     CsrfInterceptor(tokenDio: csrfDio),

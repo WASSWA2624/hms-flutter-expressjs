@@ -27,11 +27,12 @@ class AppContentPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final _AppPanelToneColors colors = _toneColors(theme, tone);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor ?? colors.container,
-        border: Border.all(color: borderColor ?? colors.border),
+    return Material(
+      color: backgroundColor ?? colors.container,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: borderColor ?? colors.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(padding: padding ?? _padding(theme), child: child),
     );
   }

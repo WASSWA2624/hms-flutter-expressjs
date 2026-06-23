@@ -1128,30 +1128,33 @@ class _ColumnVisibilityDialogState<T>
                     !column.alwaysVisible &&
                     (!isChecked || _visibleColumnKeys.length > 1);
 
-                return CheckboxListTile(
-                  value: isChecked,
-                  title: Text(column.label),
-                  subtitle: column.tooltip == null
-                      ? null
-                      : Text(column.tooltip!),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  onChanged: canChange
-                      ? (bool? value) {
-                          setState(() {
-                            final Set<String> next = Set<String>.of(
-                              _visibleColumnKeys,
-                            );
-                            if (value ?? false) {
-                              next.add(column.key);
-                            } else {
-                              next.remove(column.key);
-                            }
-                            _visibleColumnKeys = next;
-                          });
-                        }
-                      : null,
+                return Material(
+                  type: MaterialType.transparency,
+                  child: CheckboxListTile(
+                    value: isChecked,
+                    title: Text(column.label),
+                    subtitle: column.tooltip == null
+                        ? null
+                        : Text(column.tooltip!),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: canChange
+                        ? (bool? value) {
+                            setState(() {
+                              final Set<String> next = Set<String>.of(
+                                _visibleColumnKeys,
+                              );
+                              if (value ?? false) {
+                                next.add(column.key);
+                              } else {
+                                next.remove(column.key);
+                              }
+                              _visibleColumnKeys = next;
+                            });
+                          }
+                        : null,
+                  ),
                 );
               },
             ),
