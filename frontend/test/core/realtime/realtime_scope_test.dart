@@ -40,9 +40,9 @@ void main() {
     });
 
     test('matchesMessage delegates to payload scope checks', () {
-      final RealtimeMessage message = RealtimeMessage(
+      const RealtimeMessage message = RealtimeMessage(
         event: 'patient.updated',
-        payload: const <String, Object?>{'tenant_id': 'tenant-1'},
+        payload: <String, Object?>{'tenant_id': 'tenant-1'},
       );
 
       expect(

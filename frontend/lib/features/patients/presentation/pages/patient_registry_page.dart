@@ -14,7 +14,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
@@ -136,27 +136,14 @@ class _PatientRegistryContentState
       title: l10n.patientsTitle,
       leadingIcon: AppRouteIcons.patients,
       compactSummaryCards: true,
+      inlineSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _PatientRegistryContent._writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-          final bool iconOnly =
-              breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-          if (iconOnly) {
-            return AppIconButton(
-              icon: Icons.person_add_alt_1_outlined,
-              semanticLabel: l10n.patientsAddAction,
-              tooltip: l10n.patientsAddAction,
-              enabled: isAllowed,
-              onPressed: () {
-                _openPatientForm(context, ref);
-              },
-            );
-          }
-
-          return AppButton.primary(
-            label: l10n.patientsAddAction,
-            leadingIcon: Icons.person_add_alt_1_outlined,
+          return AppIconButton(
+            icon: Icons.person_add_alt_1_outlined,
+            semanticLabel: l10n.patientsAddAction,
+            tooltip: l10n.patientsAddAction,
             enabled: isAllowed,
             onPressed: () {
               _openPatientForm(context, ref);
@@ -193,13 +180,15 @@ class _PatientRegistryContentState
       summaryCards: <Widget>[
         if (widget.state.overview.totalPatients > 0)
           AppWorkspaceSummaryCard(
-            label: _PatientSummaryText.allPatients,
+            label: l10n.opdSummaryAllPatientsLabel,
             value: AppFormatters.compactNumber(
               widget.state.overview.totalPatients,
               Localizations.localeOf(context),
             ),
             icon: Icons.groups_outlined,
             compact: true,
+            navigation: true,
+            selected: widget.state.query.isActive == null,
             onPressed: () {
               unawaited(
                 _applySummaryQuery(
@@ -219,6 +208,8 @@ class _PatientRegistryContentState
             ),
             icon: Icons.how_to_reg_outlined,
             compact: true,
+            navigation: true,
+            selected: widget.state.query.isActive == true,
             onPressed: () {
               unawaited(
                 _applySummaryQuery(
@@ -326,10 +317,6 @@ class _PatientRegistryContentState
       await _showFailureIfNeeded(context, failure);
     }
   }
-}
-
-abstract final class _PatientSummaryText {
-  static const String allPatients = 'All patients';
 }
 
 @immutable
@@ -862,11 +849,10 @@ class _PatientList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final bool showFacilityLabel = _showPatientFacilityInList(ref);
 
     return AppListTable<Patient>(
       page: state.page,
-      title: l10n.patientsTableTitle,
-      description: l10n.patientsTableDescription,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<Patient>(
@@ -918,8 +904,10 @@ class _PatientList extends ConsumerWidget {
                 left.effectiveDisplayName,
                 right.effectiveDisplayName,
               ),
-          cellBuilder: (_, Patient patient) =>
-              _PatientNameCell(patient: patient),
+          cellBuilder: (_, Patient patient) => _PatientNameCell(
+            patient: patient,
+            showFacilityLabel: showFacilityLabel,
+          ),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsAgeSexColumnLabel,
@@ -981,8 +969,10 @@ class _PatientList extends ConsumerWidget {
           ),
         ),
       ],
-      mobileItemBuilder: (_, Patient patient) =>
-          _PatientMobileRow(patient: patient),
+      mobileItemBuilder: (_, Patient patient) => _PatientMobileRow(
+        patient: patient,
+        showFacilityLabel: showFacilityLabel,
+      ),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
         await _openPatientDetail(context, ref, patient.id);
@@ -1041,13 +1031,20 @@ Future<void> _openPatientDetail(
 }
 
 class _PatientNameCell extends StatelessWidget {
-  const _PatientNameCell({required this.patient});
+  const _PatientNameCell({
+    required this.patient,
+    required this.showFacilityLabel,
+  });
 
   final Patient patient;
+  final bool showFacilityLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final String? facilitySubtitle = showFacilityLabel
+        ? patient.facilityLabel
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1055,7 +1052,7 @@ class _PatientNameCell extends StatelessWidget {
       children: <Widget>[
         AppListItemText(
           title: patient.effectiveDisplayName,
-          subtitle: patient.facilityLabel,
+          subtitle: facilitySubtitle,
           titleStyle: theme.textTheme.titleSmall,
         ),
         if (patient.requiresCompletion)
@@ -1269,9 +1266,13 @@ class _NextActionCell extends StatelessWidget {
 }
 
 class _PatientMobileRow extends StatelessWidget {
-  const _PatientMobileRow({required this.patient});
+  const _PatientMobileRow({
+    required this.patient,
+    required this.showFacilityLabel,
+  });
 
   final Patient patient;
+  final bool showFacilityLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1282,6 +1283,8 @@ class _PatientMobileRow extends StatelessWidget {
       leadingIcon: Icons.account_circle_outlined,
       title: patient.effectiveDisplayName,
       details: <Widget>[
+        if (showFacilityLabel && patient.facilityLabel != null)
+          Text(patient.facilityLabel!),
         Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
         _AgeSexText(patient: patient),
         if (patient.primaryPhone != null || patient.primaryEmail != null)
@@ -6540,6 +6543,10 @@ Future<bool?> _showDeleteDialog(
       ],
     ),
   );
+}
+
+bool _showPatientFacilityInList(WidgetRef ref) {
+  return ref.watch(appAccessPolicyProvider).hasRole(AppRole.superAdmin);
 }
 
 PatientRegistryState? _readCurrentState(WidgetRef ref) {

@@ -5,7 +5,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
@@ -93,6 +92,8 @@ class AppWorkspace extends StatelessWidget {
     this.padding,
     this.scrollable = true,
     this.compactSummaryCards = false,
+    this.compactHeader = true,
+    this.inlineSummaryCards = false,
     super.key,
   });
 
@@ -111,20 +112,31 @@ class AppWorkspace extends StatelessWidget {
   final EdgeInsets? padding;
   final bool scrollable;
   final bool compactSummaryCards;
+  final bool compactHeader;
+  final bool inlineSummaryCards;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final double contentGap = ResponsiveSpacing.contentGapFor(
-      breakpoint,
-      spacing: theme.spacing,
-    );
+    final double contentGap = compactHeader
+        ? ResponsiveSpacing.compactContentGapFor(
+            breakpoint,
+            spacing: theme.spacing,
+          )
+        : ResponsiveSpacing.contentGapFor(
+            breakpoint,
+            spacing: theme.spacing,
+          );
     final Widget? effectiveLeading =
         leading ??
         (leadingIcon == null
             ? null
-            : AppWorkspaceTitleIcon(icon: leadingIcon!, semanticLabel: title));
+            : AppWorkspaceTitleIcon(
+                icon: leadingIcon!,
+                semanticLabel: title,
+                compact: compactHeader,
+              ));
     final List<Widget> children = <Widget>[
       AppWorkspaceHeader(
         title: title,
@@ -132,6 +144,7 @@ class AppWorkspace extends StatelessWidget {
         leading: effectiveLeading,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
+        compact: compactHeader,
       ),
     ];
 
@@ -146,6 +159,7 @@ class AppWorkspace extends StatelessWidget {
         ..add(
           AppWorkspaceSummaryGrid(
             compact: compactSummaryCards,
+            inline: inlineSummaryCards,
             children: summaryCards,
           ),
         );
@@ -193,6 +207,7 @@ class AppWorkspaceHeader extends StatelessWidget {
     this.leading,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
+    this.compact = true,
     super.key,
   });
 
@@ -201,6 +216,7 @@ class AppWorkspaceHeader extends StatelessWidget {
   final Widget? leading;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +228,7 @@ class AppWorkspaceHeader extends StatelessWidget {
       leading: leading,
       title: title,
       status: status,
+      compact: compact,
     );
     final Widget actionBar = _WorkspaceHeaderActions(
       actions: actions,
@@ -223,7 +240,9 @@ class AppWorkspaceHeader extends StatelessWidget {
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: theme.spacing.xs),
+        padding: EdgeInsets.only(
+          bottom: compact ? theme.spacing.xs : theme.spacing.sm,
+        ),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool stackHeader =
@@ -297,28 +316,34 @@ class AppWorkspaceTitleIcon extends StatelessWidget {
   const AppWorkspaceTitleIcon({
     required this.icon,
     required this.semanticLabel,
+    this.compact = true,
     super.key,
   });
 
   final IconData icon;
   final String semanticLabel;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final double dimension = compact ? 28 : 32;
+    final double iconSize = compact
+        ? theme.appTokens.listIconSize
+        : theme.appTokens.listIconSize + 2;
 
     return Semantics(
       image: true,
       label: semanticLabel,
       child: ExcludeSemantics(
         child: SizedBox.square(
-          dimension: 32,
+          dimension: dimension,
           child: Center(
             child: Icon(
               icon,
               color: colorScheme.primary,
-              size: theme.appTokens.listIconSize + 2,
+              size: iconSize,
             ),
           ),
         ),
@@ -333,6 +358,7 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
     this.maxColumns = 6,
     this.compact = false,
     this.compactItemWidth = 218,
+    this.inline = false,
     super.key,
   });
 
@@ -340,6 +366,7 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
   final int maxColumns;
   final bool compact;
   final double compactItemWidth;
+  final bool inline;
 
   @override
   Widget build(BuildContext context) {
@@ -350,6 +377,15 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (inline) {
+          return Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: children,
+          );
+        }
+
         if (compact) {
           final double gap = constraints.maxWidth < AppBreakpoints.md
               ? theme.spacing.sm
@@ -429,6 +465,8 @@ class AppWorkspaceSummaryCard extends StatefulWidget {
     this.tone,
     this.onPressed,
     this.compact = false,
+    this.navigation = false,
+    this.selected = false,
     super.key,
   });
 
@@ -440,6 +478,8 @@ class AppWorkspaceSummaryCard extends StatefulWidget {
   final AppWorkspaceStatusTone? tone;
   final VoidCallback? onPressed;
   final bool compact;
+  final bool navigation;
+  final bool selected;
 
   @override
   State<AppWorkspaceSummaryCard> createState() =>
@@ -500,27 +540,41 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
     final bool interactive = widget.onPressed != null;
     final bool active = interactive && (_hovered || _focused);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool navigation = widget.navigation;
     final bool iconOnlyCompact =
-        widget.compact &&
-        (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm);
+        navigation ||
+        (widget.compact &&
+            (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm));
     final Color accentColor = _summaryAccentColor(theme, widget.tone);
-    final BorderRadius borderRadius = iconOnlyCompact
+    final BorderRadius borderRadius = navigation
+        ? BorderRadius.circular(theme.radius.sm)
+        : iconOnlyCompact
         ? BorderRadius.zero
         : BorderRadius.circular(theme.radius.sm);
-    final Color surfaceColor = Color.alphaBlend(
-      accentColor.withValues(alpha: active ? 0.055 : 0.025),
-      colorScheme.surface,
-    );
-    final Color borderColor = Color.alphaBlend(
-      accentColor.withValues(alpha: active ? 0.34 : 0.14),
-      colorScheme.outlineVariant,
-    );
-    final double scale = _pressed
+    final bool selected = widget.selected;
+    final Color surfaceColor = navigation
+        ? Color.alphaBlend(
+            accentColor.withValues(alpha: selected ? 0.14 : active ? 0.08 : 0.04),
+            colorScheme.surface,
+          )
+        : Color.alphaBlend(
+            accentColor.withValues(alpha: active ? 0.055 : 0.025),
+            colorScheme.surface,
+          );
+    final Color borderColor = navigation
+        ? accentColor.withValues(alpha: selected ? 0.42 : active ? 0.28 : 0.12)
+        : Color.alphaBlend(
+            accentColor.withValues(alpha: active ? 0.34 : 0.14),
+            colorScheme.outlineVariant,
+          );
+    final double scale = navigation
+        ? 1
+        : _pressed
         ? 0.985
         : active
         ? 1.01
         : 1;
-    final List<BoxShadow> boxShadow = iconOnlyCompact
+    final List<BoxShadow> boxShadow = iconOnlyCompact || navigation
         ? const <BoxShadow>[]
         : _summaryCardShadow(
             colorScheme: colorScheme,
@@ -535,62 +589,81 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
       status: widget.status,
       icon: widget.icon,
       compact: widget.compact,
+      navigation: navigation,
+      selected: selected,
       interactive: interactive,
-      active: active,
+      active: active || selected,
       accentColor: accentColor,
+    );
+
+    final Widget interactiveCard = MouseRegion(
+      cursor: interactive
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      onEnter: (_) {
+        _setHovered(true);
+      },
+      onExit: (_) {
+        _setHovered(false);
+      },
+      child: AnimatedScale(
+        duration: _animationDuration,
+        curve: Curves.easeOutCubic,
+        scale: scale,
+        child: AnimatedContainer(
+          duration: _animationDuration,
+          curve: Curves.easeOutCubic,
+          decoration: iconOnlyCompact && !navigation
+              ? null
+              : BoxDecoration(
+                  color: navigation || !iconOnlyCompact ? surfaceColor : null,
+                  border: navigation || !iconOnlyCompact
+                      ? Border.all(color: borderColor)
+                      : null,
+                  borderRadius: borderRadius,
+                  boxShadow: boxShadow,
+                ),
+          child: Material(
+            color: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+            clipBehavior: iconOnlyCompact && !navigation
+                ? Clip.none
+                : Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onPressed,
+              onFocusChange: _setFocused,
+              onHighlightChanged: _setPressed,
+              hoverColor: navigation
+                  ? accentColor.withValues(alpha: 0.06)
+                  : Colors.transparent,
+              focusColor: navigation
+                  ? accentColor.withValues(alpha: 0.08)
+                  : Colors.transparent,
+              highlightColor: iconOnlyCompact && !navigation
+                  ? Colors.transparent
+                  : accentColor.withValues(alpha: 0.08),
+              splashColor: iconOnlyCompact && !navigation
+                  ? Colors.transparent
+                  : accentColor.withValues(alpha: 0.10),
+              child: cardBody,
+            ),
+          ),
+        ),
+      ),
     );
 
     return Semantics(
       button: interactive,
       enabled: interactive ? true : null,
+      selected: selected,
       onTap: widget.onPressed,
-      child: MouseRegion(
-        cursor: interactive
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.basic,
-        onEnter: (_) {
-          _setHovered(true);
-        },
-        onExit: (_) {
-          _setHovered(false);
-        },
-        child: AnimatedScale(
-          duration: _animationDuration,
-          curve: Curves.easeOutCubic,
-          scale: scale,
-          child: AnimatedContainer(
-            duration: _animationDuration,
-            curve: Curves.easeOutCubic,
-            decoration: iconOnlyCompact
-                ? null
-                : BoxDecoration(
-                    color: surfaceColor,
-                    border: Border.all(color: borderColor),
-                    borderRadius: borderRadius,
-                    boxShadow: boxShadow,
-                  ),
-            child: Material(
-              color: Colors.transparent,
-              shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              clipBehavior: iconOnlyCompact ? Clip.none : Clip.antiAlias,
-              child: InkWell(
-                onTap: widget.onPressed,
-                onFocusChange: _setFocused,
-                onHighlightChanged: _setPressed,
-                hoverColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                highlightColor: iconOnlyCompact
-                    ? Colors.transparent
-                    : accentColor.withValues(alpha: 0.08),
-                splashColor: iconOnlyCompact
-                    ? Colors.transparent
-                    : accentColor.withValues(alpha: 0.10),
-                child: cardBody,
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: navigation
+          ? Tooltip(
+              message: _joinSummarySemantics(widget.label, widget.value),
+              preferBelow: false,
+              child: interactiveCard,
+            )
+          : interactiveCard,
     );
   }
 }
@@ -606,6 +679,8 @@ class _SummaryCardBody extends StatelessWidget {
     this.description,
     this.status,
     this.icon,
+    this.navigation = false,
+    this.selected = false,
   });
 
   final String label;
@@ -614,6 +689,8 @@ class _SummaryCardBody extends StatelessWidget {
   final AppWorkspaceStatus? status;
   final IconData? icon;
   final bool compact;
+  final bool navigation;
+  final bool selected;
   final bool interactive;
   final bool active;
   final Color accentColor;
@@ -627,6 +704,41 @@ class _SummaryCardBody extends StatelessWidget {
         ? null
         : description!.trim();
     final bool overlayValue = _shouldOverlaySummaryValue(value);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool iconOnly =
+        !navigation &&
+        compact &&
+        (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm);
+
+    if (navigation) {
+      return Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              icon ?? Icons.insights_outlined,
+              color: accentColor,
+              size: theme.appTokens.listIconSize,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              value.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: accentColor,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final double minHeight = compact
         ? trimmedDescription == null && status == null && overlayValue
               ? 54
@@ -642,10 +754,6 @@ class _SummaryCardBody extends StatelessWidget {
     final TextStyle? valueStyle = compact
         ? theme.textTheme.labelLarge
         : theme.textTheme.titleSmall;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool iconOnly =
-        compact &&
-        (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm);
 
     if (iconOnly) {
       final String semanticLabel = _joinSummarySemantics(label, value);
@@ -2262,11 +2370,13 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
     required this.title,
     required this.status,
     required this.leading,
+    this.compact = true,
   });
 
   final String title;
   final AppWorkspaceStatus? status;
   final Widget? leading;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -2274,12 +2384,17 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextTheme textTheme = theme.textTheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final TextStyle? titleStyle = switch (breakpoint) {
-      AppBreakpoint.xs ||
-      AppBreakpoint.sm ||
-      AppBreakpoint.md => textTheme.titleLarge,
-      _ => textTheme.headlineSmall,
-    };
+    final TextStyle? titleStyle = compact
+        ? switch (breakpoint) {
+            AppBreakpoint.xs || AppBreakpoint.sm => textTheme.titleMedium,
+            _ => textTheme.titleLarge,
+          }
+        : switch (breakpoint) {
+            AppBreakpoint.xs ||
+            AppBreakpoint.sm ||
+            AppBreakpoint.md => textTheme.titleLarge,
+            _ => textTheme.headlineSmall,
+          };
     final Widget text = _WorkspaceHeaderText(
       title: title,
       status: status,
@@ -2378,13 +2493,6 @@ class _WorkspaceHeaderActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool showIconLabels =
-        expandIconButtons &&
-        switch (breakpoint) {
-          AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => false,
-          _ => true,
-        };
 
     return Wrap(
       spacing: theme.spacing.xs,
@@ -2393,42 +2501,11 @@ class _WorkspaceHeaderActions extends StatelessWidget {
       children: <Widget>[
         for (final Widget action in actions)
           AppActionLabelScope(
-            showLabels: showIconLabels,
-            forceIconOnly: expandIconButtons && !showIconLabels,
-            child: _WorkspaceHeaderAction(
-              action: action,
-              showIconLabel: showIconLabels,
-            ),
+            showLabels: false,
+            forceIconOnly: expandIconButtons,
+            child: action,
           ),
       ],
-    );
-  }
-}
-
-class _WorkspaceHeaderAction extends StatelessWidget {
-  const _WorkspaceHeaderAction({
-    required this.action,
-    required this.showIconLabel,
-  });
-
-  final Widget action;
-  final bool showIconLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget item = action;
-    if (!showIconLabel || item is! AppIconButton) {
-      return item;
-    }
-
-    return AppButton.secondary(
-      label: item.semanticLabel,
-      leadingIcon: item.icon,
-      enabled: item.enabled,
-      isLoading: item.isLoading,
-      tooltip: item.tooltip,
-      autofocus: item.autofocus,
-      onPressed: item.onPressed,
     );
   }
 }

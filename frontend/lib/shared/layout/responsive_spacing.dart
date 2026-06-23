@@ -42,4 +42,15 @@ abstract final class ResponsiveSpacing {
       AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => spacing.lg,
     };
   }
+
+  static double compactContentGapFor(
+    AppBreakpoint breakpoint, {
+    required AppSpacingTokens spacing,
+  }) {
+    return switch (breakpoint) {
+      AppBreakpoint.xs || AppBreakpoint.sm => spacing.sm,
+      AppBreakpoint.md || AppBreakpoint.lg => spacing.md,
+      AppBreakpoint.xl || AppBreakpoint.xxl => spacing.md,
+    };
+  }
 }
