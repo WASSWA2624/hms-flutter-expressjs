@@ -1,313 +1,260 @@
-# Clinical Request & Radiology Workflow — UI/UX Refinement Prompt
+# Pharmacy Module — Implementation Prompt
 
 ## Objective
 
-Refine **clinical request dialogs** and the **Radiology workflow detail view** so staff can see and confirm service prices **at the moment a request is made**, and so the radiology floor/reporter experience is clearer and more polished.
+Complete the **Pharmacy Module** for Hosspi HMS so pharmacists can manage medication inventory, maintain drugs and formulary entries, receive orders from clinical workflows, collect or confirm payment when appropriate, and execute the full dispense lifecycle with accuracy, traceability, and clear cross-module handoffs.
 
-**Core billing principle:** Billing is incorporated **inside the requesting module's modal dialog**—not as a separate step in the lab, radiology, or pharmacy workbench. When someone orders a lab test, imaging study, or prescription, they see per-item pricing and a running total before submitting.
+**Payment rule:** medication charges may be settled at the **cashier/billing desk** or **directly at the pharmacy** — both paths must be supported without duplicate charging or ambiguous payment state.
 
-Preserve existing architecture (`Clinical*ActionDialog`, `RadiologyWorkspaceController`, `AppWorkspace*` components, l10n keys). Extend rather than replace unless a component clearly blocks the goals below.
-
----
-
-## Scope
-
-| In scope | Out of scope |
-|----------|--------------|
-| Shared clinical request dialogs (lab, radiology, pharmacy/prescription) | Unrelated modules (IPD admissions, referrals, etc.) unless they share the same request-dialog pattern |
-| Radiology workspace create-order dialog (`_CreateOrderForm`) | Standalone billing-workspace-only flows as the primary entry point |
-| Radiology workflow detail panel and operational dialogs | Backend API redesign unless required for catalog pricing or charge creation |
-| Read-only payment status on order/workflow detail views | New branding or color palette outside the app theme |
+Deliver a **professional, calm, healthcare-grade workspace** that is easy to scan under pressure: clear hierarchy, minimal cognitive load, predictable actions, and no raw internal identifiers in the UI.
 
 ---
 
-## 1. Request-Time Billing — Lab, Radiology & Pharmacy
+## Current State (read before changing code)
 
-**Problem:** Request dialogs let users select tests, studies, or medicines but show **no pricing**. Workflow detail views then display a passive **"Billing gate unavailable"** alert with no cost context. Staff cannot tell patients what they will pay before the request is placed.
+### Already in place
 
-**Principle:** Price visibility and charge initiation belong in the **request modal**, at order creation time, regardless of which module opened the dialog (Clinical workspace, OPD flow actions, Lab workspace, Radiology workspace).
+| Area | Location / API | Notes |
+|------|----------------|-------|
+| Frontend scaffold | `frontend/lib/features/pharmacy/` | `data/`, `domain/`, `presentation/` layers exist |
+| Workspace UI | `pharmacy_workspace_page.dart` | Order queue, summary cards, order detail, dispense/attest/return/cancel dialogs, formulary stock dialog (read-only drug search) |
+| Controller | `pharmacy_workspace_controller.dart` | Realtime refresh, pagination, filters, drug search |
+| Repository (partial) | `pharmacy_repository.dart` / `pharmacy_repository_impl.dart` | Workbench, workflow, drug search, prepare/attest/cancel/return dispense |
+| Backend workspace API | `backend/src/modules/pharmacy-workspace/` | `/api/v1/pharmacy/workbench`, `/drugs`, order workflow + dispense mutations, `/inventory/stock`, `/inventory/adjust` |
+| Standalone APIs | `/api/v1/drugs`, `/formulary-items`, `/inventory-items`, `/stock-movements` | CRUD and list endpoints available |
+| Permissions | `AppPermissions.pharmacyRead`, `pharmacyWrite` | Route is permission-gated |
+| Order intake (upstream) | `clinical_prescription_action_dialog.dart`, `clinical_workspace_controller.dart` | Clinical/OPD modules create pharmacy orders via repository |
+| Prescription-time billing | `clinical_request_billing_panel.dart`, `clinical_request_billing_state.dart` | Pay now vs bill later at order creation (`ClinicalRequestPaymentMode`) |
+| Billing workspace | `frontend/lib/features/billing/` | Cashier/billing desk queues and payment recording |
+| Order billing fields (API) | `pharmacy.serializer.js` → `mapClinicalOrderBillingFields` | Payment status and billing metadata serialized on pharmacy orders |
+| Localization | `frontend/lib/l10n/app_en.arb` | Pharmacy strings partially defined |
 
-### 1.1 Shared billing panel (new shared component)
+### Known gaps to close
 
-Introduce a reusable **`ClinicalRequestBillingPanel`** (or equivalent) modelled on `OpdConsultationBillingBreakdownPanel` (`shared/opd_actions/opd_consultation_billing_breakdown.dart`):
-
-| Element | Behaviour |
-|---------|-----------|
-| **Line items** | One row per selected test, study, or medicine: name, quantity, unit price, line total |
-| **Subtotal / total** | Running total updates as items are added or removed |
-| **Currency** | Use tenant/facility currency from catalog or billing API |
-| **Payment status** | On edit flows: show Paid / Partial / Unpaid / Not billed |
-| **Pay now (optional)** | When permissions allow (`AppPermissions.billingWrite` or equivalent), expose **Record payment** inline before submit |
-| **Submit without payment** | Allow request submission with **Bill later** when policy permits; persist `paymentStatus` on the order |
-
-Panel placement: **sticky footer or right column** inside each request dialog, always visible while selecting items.
-
-### 1.2 Laboratory — `ClinicalLabOrderActionDialog`
-
-**Entry points:** Clinical workspace (`_openLabDialog`), Lab workspace (`_openCreateLabOrderDialog` / `_openEditLabOrderDialog`), OPD flow actions.
-
-**Requirements:**
-
-- Show **unit price** beside each test/panel in the catalog picker and in the selected-items list.
-- Display **`ClinicalRequestBillingPanel`** with line totals for all selected `labTestIds` and `labPanelIds`.
-- On submit (`onRequest` / `onUpdate`), include billing payload in `orderContext.toPayload(...)` when payment is recorded (amount, method, reference)—coordinate with backend contract.
-- When editing an existing order, pre-populate billing panel from order payment fields.
-
-**Acceptance criteria:**
-
-- [ ] Clinician sees total lab cost before confirming the request.
-- [ ] Per-test and per-panel prices are visible in both catalog and selected lists.
-- [ ] Payment can be captured in-dialog or deferred with explicit status.
-
-### 1.3 Radiology — `ClinicalRadiologyOrderActionDialog` & `_CreateOrderForm`
-
-**Entry points:** Clinical workspace (`_openRadiologyDialog`), Radiology workspace (`_showCreateOrderDialog` / `_CreateOrderForm`).
-
-**Requirements:**
-
-- Show **study price** from radiology catalog (`ClinicalActionCatalogOption`) when adding to `_RadiologySelectedRequestsPanel`.
-- Add **`ClinicalRequestBillingPanel`** to both dialogs; total reflects all pending studies.
-- On submit, attach billing/charge data to the create-order payload so `order.hasBillingGate` and `paymentStatus` are populated immediately.
-- In the radiology workflow detail view, **display** payment status read-only in `_WorkflowSummarySection`—do **not** add a separate "Bill procedure" action; link to edit order only if amendment is supported.
-
-**Acceptance criteria:**
-
-- [ ] Requester sees imaging cost before the order is created.
-- [ ] "Billing gate unavailable" no longer appears for orders created through the updated dialog.
-- [ ] Workflow detail reflects payment status without requiring a second billing visit.
-
-### 1.4 Pharmacy — `ClinicalPrescriptionActionDialog`
-
-**Entry points:** Clinical workspace (`_openPrescriptionDialog`), OPD flow actions.
-
-**Requirements:**
-
-- Show **unit price** per drug in the catalog dropdown and on each `_PrescriptionLineFormState` card (quantity × unit price = line total).
-- Add **`ClinicalRequestBillingPanel`** summarizing all prescription lines.
-- Support billing at prescribe time (pay now) or bill-on-dispense if that matches pharmacy workflow—surface the chosen mode clearly in the dialog.
-- Include billing fields in `controller.prescribe` payload when payment is taken upfront.
-
-**Acceptance criteria:**
-
-- [ ] Prescriber or clerk sees medicine costs before submitting the prescription.
-- [ ] Multi-line prescriptions show an accurate running total.
-- [ ] Pharmacy dispense workflow can read existing payment status when applicable.
-
-### 1.5 Catalog pricing data
-
-- Resolve prices from catalog entities (`LabCatalogItem`, radiology catalog options, drug reference data) or a lightweight **price lookup API** if not yet on catalog DTOs.
-- Handle **missing price** gracefully: show "Price not set" with a warning badge; block submit or allow override per tenant policy.
-- Reuse `billing_entities.dart` / `unitPrice` conventions where charges are persisted.
-
-### 1.6 Workflow detail views (read-only reflection)
-
-Lab order detail, radiology workflow detail, and pharmacy dispense views should **reflect** billing state created at request time:
-
-- Human-readable **Paid / Partial / Unpaid / Not billed** in summary sections.
-- No primary "Bill tests" / "Bill procedure" buttons on detail panels—the request dialog is the billing entry point.
-- Optional **Amend charges** only when editing an open order through the same request dialog pattern.
+- **Inventory management UI** — backend supports stock list and adjust; frontend repository does not expose `getInventoryStock` / `adjustInventoryStock` yet.
+- **Drug CRUD** — search exists; create/update/delete flows are not wired in the pharmacy feature.
+- **Formulary management** — formulary APIs exist; no dedicated pharmacy UI for formulary create/edit/link-to-drug.
+- **Workbench inventory panel** — schema supports `panel=inventory`; frontend always requests `panel=orders`.
+- **Billing and payment UI** — workspace shows placeholder `pharmacyBillingGateUnavailable*` messaging; dispense dialog references billing gate info but does not record payment. Mirror the **Radiology** billing-gate pattern (`hasBillingGate`, payment status on detail, `ClinicalRequestBillingPanel` in workflow dialogs).
+- **Pending-payment filter** — `PharmacyOrderFilter.pendingPayment` exists but is not backend-backed; wire to order `payment_status` or hide until supported.
+- **Filter completeness** — other client-only filters (`partialStock`, `urgent`, `discharge`) are not backend-backed; either implement or hide until supported.
+- **Tests** — limited pharmacy-specific widget/controller coverage compared with lab/radiology clinical-action tests.
 
 ---
 
-## 2. Perform Study — Simplify & Auto-fill
+## Scope — Core Capabilities
 
-**Problem:** The **Perform imaging study** dialog (`_showStudyDialog` / `_StudyForm`) asks for optional modality, performed-at, and notes, but technologists mainly need a one-step **mark as performed** action. Performed date/time does not auto-populate.
+Implement or finish the following, in priority order.
 
-**Requirements:**
+### 1. Medication order queue and dispensing workflow
 
-- Default **Performed at** to the current local date/time on dialog open; still allow override.
-- Pre-fill **Modality** from the order (`order.normalizedModality`); hide or collapse the field when it matches the order.
-- Reduce visual noise: do not repeat "(optional)" on every label—use helper text or section description once.
-- After save, the **Studies and assets** section must show the new study immediately (controller refresh already exists—verify UI reflects it without manual reload).
+**Goal:** Pharmacists can review, process, dispense, partially dispense, attest, return, and cancel orders end-to-end.
 
-**Acceptance criteria:**
+**Actions:**
 
-- [ ] Single-click **Perform study** flow with sensible defaults.
-- [ ] Performed timestamp appears in Studies section and workflow timeline without page refresh.
+- Keep the primary workspace focused on the **order queue → order detail → action panel** flow.
+- Ensure workflow actions respect `PharmacyOrderWorkflow.nextActions` and permission gates (`pharmacyWrite`).
+- Support statuses: `ORDERED`, `PARTIALLY_DISPENSED`, `DISPENSED`, `CANCELLED`.
+- Dispense dialogs must capture line quantities, optional inventory item mapping, batch ref, and reason/notes where required by API schemas.
+- Preserve realtime sync via `RealtimeEventGroups.pharmacyWorkspace`; avoid stale detail when the selected order updates.
+- Use display IDs (`displayId`, `displayTitle`) — never surface raw UUIDs to users (see `backend_gap_cleanup_test.dart`).
 
----
+**Reference APIs:** `GET /pharmacy/orders/:id/workflow`, `POST .../prepare-dispense`, `.../attest-dispense`, `.../cancel`, `.../return`.
 
-## 3. Workflow Progress — Clarity & Navigation
+### 2. Pharmacy inventory management
 
-**Problem:** `_WorkflowProgressSection` displays six steps in a static grid. Steps are not clickable, the active step is only mildly distinct, and users cannot return to an earlier step.
+**Goal:** View stock levels, identify low/out-of-stock items, and post controlled adjustments.
 
-**Requirements:**
+**Actions:**
 
-- Make each `_WorkflowStepTile` **interactive** when the user has permission for that step:
-  - Clicking a completed or current step scrolls to—or expands—the relevant section (Request details, Studies and assets, Report, Doctor review).
-  - Visually distinguish **completed**, **current**, and **upcoming** states (stronger border/weight on current; connecting vertical timeline line on compact layouts).
-- Add short **step descriptions** (tooltip or subtitle) so "Review study details" vs "Perform imaging study" is unambiguous.
-- Collapse completed steps on wide layouts into a compact summary row to reduce vertical space; expand on demand.
+- Extend `PharmacyRepository` with `getInventoryStock` and `adjustInventoryStock` mapped to `/pharmacy/inventory/stock` and `/pharmacy/inventory/adjust`.
+- Add DTOs/entities for stock rows and adjustment input; follow existing `PharmacyInventoryStock` shapes where possible.
+- Provide a dedicated **Inventory** area (secondary panel, tab, or route section) — not buried inside dispense-only dialogs.
+- Show: item name/SKU, quantity on hand, reorder/low-stock indicators, facility context when present.
+- Adjustment flow: quantity delta, reason (`PURCHASE`, `DISPENSE`, `RETURN`, `DAMAGE`, `EXPIRY`, `OTHER`), optional notes; gate writes with `pharmacyWrite` or `operationsWrite` per backend.
+- Subscribe inventory views to relevant realtime events (`inventoryStockUpdated`, `inventoryLowStock`, etc.).
 
-**Acceptance criteria:**
+### 3. Drug creation and management
 
-- [ ] User can navigate back to any completed step from the progress strip.
-- [ ] Current step is immediately obvious at a glance.
-- [ ] Progress section uses less vertical space on desktop when steps are complete.
+**Goal:** Pharmacists can maintain the drug catalog used by prescriptions and dispensing.
 
----
+**Actions:**
 
-## 4. Workflow Summary — Purpose & Layout
+- Wire CRUD to `/api/v1/drugs` (list already partially covered by `/pharmacy/drugs` search).
+- Provide list + create/edit dialog (or slide-over) with validated fields aligned to backend drug schema (name, code, form, strength, etc.).
+- Link drug rows to stock status badges consistent with `stock_status` filter values.
+- Keep destructive actions (soft delete) behind confirmation and permission checks.
 
-**Problem:** `_WorkflowSummarySection` sits between progress and request details without clear purpose; metadata (ordered at, modality, payment) feels disconnected from actions.
+### 4. Formulary creation and management
 
-**Requirements:**
+**Goal:** Tenant-scoped formulary links drugs to orderable, billable catalog entries.
 
-- Rename or subtitle the section to **Order metadata** (or merge into the patient context header) so its role is obvious.
-- Display only high-signal fields in the summary; move duplicate fields (order ID, study name already in header) out.
-- Use a responsive **key-value grid** with consistent label/value typography: muted labels, semibold values.
-- Style **"Not available"** placeholders (`profileUnknownValue`) as subdued italic secondary text—not the same weight as real data.
-- Show **payment status** set at request time (from §1.6); no duplicate billing actions here.
+**Actions:**
 
-**Acceptance criteria:**
+- Wire list/create/update to `/api/v1/formulary-items`.
+- UI: searchable formulary table, add/edit linking drug + formulary metadata per backend schema.
+- Differentiate **formulary catalog** (what can be prescribed) from **inventory stock** (what is on hand).
+- Reuse patterns from `clinical_catalog_select_helpers.dart` where clinical modules pick formulary drugs.
 
-- [ ] No duplicate order/study info between header and summary.
-- [ ] Summary reads as contextual metadata, not a second header.
+### 5. Cross-module order intake
 
----
+**Goal:** Orders from Clinical, OPD, Nursing, and Discharge arrive seamlessly; pharmacy does not re-enter clinical data.
 
-## 5. Report Section — Real-time Updates & Inline Editing
+**Actions:**
 
-**Problem:** Saving a draft via **Draft radiology report** (`_showReportDialog`) does not update `_ReportingSection` in real time; users must dismiss and re-open to see changes. Report actions are icon-only and hard to discover. The report preview is read-only.
+- Do not duplicate prescription capture in pharmacy — intake stays in `ClinicalPrescriptionActionDialog` and module controllers.
+- Pharmacy workspace should show order source context (patient, encounter, prescriber, priority) on detail panels.
+- When an order is cancelled upstream, reflect status via refresh/realtime without broken selected-detail state.
+- Optional: deep-link from clinical pharmacy order rows to pharmacy workspace with order pre-selected (if routing support is straightforward).
+- At prescription time, clinicians may choose **bill later** (patient pays at cashier or pharmacy) or **pay now** (if `billingWrite` is granted). Pharmacy must reflect whichever path was chosen.
 
-**Requirements:**
+### 6. Billing and payment (cashier or pharmacy)
 
-- After `createDraft` / `updateDraft` succeeds, **immediately refresh** `selectedWorkflow` in `RadiologyWorkspaceController` and rebuild `_ReportingSection` without closing the detail panel.
-- Add **inline edit** for draft reports directly in the Report panel (expand `AppReportPreviewPanel` or replace with an editable area when `latestDraftResult` exists and `canCreateDraftResult`).
-- Promote primary actions from icon-only to labeled buttons where space allows: **Draft report**, **Release report**, **Request finalization**.
-- Remove redundant default text in **Report narrative** (e.g. stray `"Findings:"` prefix when a dedicated Findings field exists).
-- Show **live preview** of formatted report (findings + impression + narrative) as the user types in the draft dialog.
+**Goal:** Support the two valid payment paths — **cashier/billing desk** and **pharmacy counter** — with a single source of truth for payment status on each order.
 
-**Acceptance criteria:**
+**Business rules:**
 
-- [ ] Saving draft updates the Report section content within 1 render cycle.
-- [ ] Draft text is editable from the main panel without opening the dialog (dialog remains for focused entry).
-- [ ] Released vs draft status badges update immediately after save/release.
+| Path | When | Who | Expected behavior |
+|------|------|-----|-------------------|
+| **Cashier / billing** | Patient pays before or after clinical visit | Billing staff in `features/billing/` | Order shows unpaid/partial until billing records payment; pharmacy sees updated status and may gate dispense until paid (per facility policy). |
+| **Pharmacy counter** | Patient pays at dispense time | Pharmacist with `billingWrite` (and `pharmacyWrite`) | Collect payment in pharmacy workspace or dispense dialog using shared billing components; update order payment status before or as part of prepare-dispense. |
+| **Paid at prescription** | Clinician selects pay now in `ClinicalPrescriptionActionDialog` | Prescriber / clerk with `billingWrite` | Order arrives with `payment_status` already `PAID` (or partial); pharmacy shows paid state and proceeds to dispense without re-collection. |
 
----
+**Actions:**
 
-## 6. Studies & Assets — Upload & Preview
+- Parse billing fields from pharmacy order/workflow DTOs (`payment_status`, totals, currency, line-item prices) — backend already exposes these via `mapClinicalOrderBillingFields`.
+- Add `hasBillingGate` / `effectivePaymentStatus` (or equivalent) on `PharmacyOrder` entities, following `RadiologyOrder` in `radiology_entities.dart`.
+- Replace placeholder billing alerts with real status chips on the order detail header (paid, partial, unpaid, not billed).
+- Integrate `ClinicalRequestBillingPanel` (or `showClinicalRequestBillingDialog`) for **record payment at pharmacy** flows; gate on `AppPermissions.billingWrite`.
+- Enforce dispense readiness: when billing gate applies, block or warn on prepare-dispense if payment is required and unpaid — match radiology’s `radiologyNextActionConfirmBilling` pattern with pharmacy-specific copy.
+- Implement **pending payment** queue filter backed by API (`payment_status` / billing gate), not client-only filtering.
+- Ensure billing desk and pharmacy actions update the same order billing record — no duplicate charges; show clear “paid at billing” vs “paid at pharmacy” context when audit metadata exists.
+- Reuse `clinicalRequestPaymentStatusLabel`, payment methods, and `ClinicalRequestBillingSubmit.toPayloadMap()` for API consistency.
 
-**Problem:** When no study exists, `_StudiesSection` shows an empty state with no upload affordance. After perform study, there is no obvious way to add images. Technologists cannot preview the report while working.
-
-**Requirements:**
-
-- In the empty state, show a **Perform study** or **Upload images** CTA (disabled with explanation if prerequisites are not met).
-- After a study exists, surface `_StudyBlock` upload controls prominently (drag-and-drop zone, file picker, supported formats already defined: JPEG/PNG/WebP).
-- Add a **Report preview** collapsible panel in the Studies section (read-only) so floor staff can see draft/released report text without scrolling to the Report section.
-- Thumbnail grid for uploaded assets with remove/sync actions visible without extra clicks.
-
-**Acceptance criteria:**
-
-- [ ] User can upload images immediately after study is performed.
-- [ ] Empty state includes a clear next action.
-- [ ] Technologist can view current report preview from Studies section.
+**Reference:** `radiology_workspace_page.dart` (billing column, detail payment field, billing dialog in workflow), `clinical_prescription_action_dialog.dart` (pay now at order creation), `frontend/lib/features/billing/` (cashier queues).
 
 ---
 
-## 7. Role Separation — Technologist vs Reporter
+## UI / UX Requirements
 
-**Problem:** One flat layout serves both the person who performs imaging and the person who writes the report.
+Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **Lab** and **Radiology** (`AppWorkspace`, `AppListTable`, `AppWorkspaceDetailPanel`, `AppActionPanel`).
 
-**Requirements:**
+### Organization
 
-- Introduce a **role toggle** or **view mode** (persisted per session) with two presets:
-  - **Imaging floor:** emphasizes Workflow progress (perform + upload steps), Studies and assets, billing status, report preview. De-emphasizes or hides release/finalization actions.
-  - **Reporting:** emphasizes Request details, Report section (draft/edit/release), references, doctor review. De-emphasizes perform-study controls.
-- Default view inferred from permissions (`canWork`, `canRequest`) when possible.
-- Section order in `_RadiologyDetailBody` should reorder based on active view mode.
+- **Single primary task per screen region:** queue (left/list), detail (center/right), actions (grouped panel).
+- **Progressive disclosure:** summary cards for at-a-glance counts; filters collapsed in advanced filter; complex forms in dialogs.
+- **Three logical domains, clearly separated:**
+  1. **Operations** — order queue and dispensing (default landing).
+  2. **Payment** — payment status on order detail; record-payment action when unpaid and user has `billingWrite` (pharmacy path). Cashier path stays in billing workspace — pharmacy only displays status and gates dispense.
+  3. **Catalog & stock** — drugs, formulary, inventory (secondary navigation or workspace sections).
+- Use consistent section titles, descriptions, and empty states (localized via `app_en.arb`).
 
-**Acceptance criteria:**
+### Simplicity
 
-- [ ] Each role lands on a focused layout within 0 extra clicks when permissions allow.
-- [ ] Actions irrelevant to the current role are hidden, not merely disabled.
+- Reduce visual noise: avoid duplicate controls, redundant badges, and nested cards.
+- Default the queue filter to **ready to dispense** (`ORDERED`); expose other statuses via summary chips or filter.
+- Limit table columns to what pharmacists need at a glance; hide optional columns via column visibility.
+- Form layouts: one column on narrow viewports; group related fields; show validation inline.
+- Action panel: primary action first (Record payment when unpaid and allowed, then Dispense), destructive actions last (Cancel), disabled with tooltip when not allowed (e.g. dispense blocked pending payment).
+- Payment UI: one compact billing summary on order detail (status + amount); full payment form only in dialog — avoid repeating billing fields in dispense and detail panels.
+- Loading/saving: use existing `AppWorkspace` status tone and `AsyncStateScaffold` patterns — no blocking full-page reloads for minor updates.
 
----
+### Professional healthcare feel
 
-## 8. Doctor Review & Timeline
-
-**Problem:** `_DoctorReviewPanel` shows status only—no action. `_TimelineSection` uses plain radio icons with no connector line; events may appear out of chronological order.
-
-**Requirements:**
-
-- Add **Open report** and **Acknowledge review** (or equivalent) buttons to `_DoctorReviewPanel` when `canRequestFinalization` / attestation applies.
-- Render timeline as a **vertical connected timeline** (line + nodes); sort events **newest first** or **oldest first** consistently (pick one, document in UI).
-- Timestamp formatting via existing `_formatDateTime` / `AppFormatters.dateTime`.
-
-**Acceptance criteria:**
-
-- [ ] Doctor review panel has at least one clear call-to-action.
-- [ ] Timeline is visually connected and chronologically consistent.
+- Accurate terminology (order, dispense, attest, return — not generic “submit”).
+- Audit-friendly: show who/when on workflow history when API provides it.
+- Print patient instructions via existing `printFormTemplateDocument` integration.
+- Accessibility: semantic labels on search, tables, and action buttons; keyboard-navigable dialogs.
 
 ---
 
-## 9. Visual Polish (Look & Feel)
+## Architecture and Conventions
 
-Apply across request dialogs, radiology detail view, and operational dialogs:
+Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
 
-| Area | Improvement |
+| Rule | Requirement |
 |------|-------------|
-| **Request dialogs** | Two-column layout on wide screens: item picker left, selected items + billing panel right; single column on compact |
-| **Billing panel** | Inset `surfaceContainerLowest` background, bold total row, aligned currency formatting via `AppFormatters` |
-| **Section cards** | Subtle elevation or `surfaceContainerLow` background; consistent `borderRadius` and padding via theme spacing |
-| **Patient context header** | Harmonize status chips (Completed, Billing, Ready for review)—consistent icon size, tone, and wrap behavior |
-| **Typography** | Stronger label/value hierarchy in `_DetailLine`; reduce wide label-value gaps on desktop |
-| **Modals** | Increase vertical spacing between fields; labels above inputs for multi-line fields; primary action right-aligned in footer |
-| **Empty states** | Illustration + title + body + CTA button; `minHeight` without excessive whitespace |
-| **Action buttons** | Group header actions (Perform study, Draft report, Release report) with spacing; primary action visually dominant |
-| **Workflow step tiles** | Rounded corners, clearer active-state ring, optional step number badge |
-| **Report preview box** | Light inset background, monospace or body-large for clinical text, max-height with scroll |
+| Layering | UI/controllers → repository interface → repository impl → API client. No API calls from widgets. |
+| State | Riverpod `AsyncNotifier` controllers; `Result<T>` / `AppFailure` for errors. |
+| DTOs | `data/dtos/` with explicit mappers to `domain/entities/`. |
+| Localization | Add keys to `app_en.arb` first; run codegen; no hard-coded user strings. |
+| Permissions | `AccessGate` / `AppAccessActionGate` for write actions. |
+| Shared UI | Prefer `lib/shared/components`, `forms`, `layout` before new widgets. |
+| File size | Extract widgets to `presentation/widgets/` when pages grow; keep pages compositional. |
+| Tests | Mirror structure under `test/features/pharmacy/`; cover controller transitions, DTO mapping, critical dialogs. |
 
-Do not introduce one-off colors; use `Theme.of(context).colorScheme` and existing `AppWorkspaceStatusTone` values.
+**Do not** add feature business logic to `core/` or `shared/` unless it is genuinely cross-module (clinical prescription dialog already lives in `shared/clinical_actions/`).
 
 ---
 
-## 10. Dialog-Specific Fixes
+## Suggested Implementation Order
 
-### Perform imaging study (`_StudyForm`)
-- Auto-fill performed-at; collapse optional fields.
-- Footer: Cancel (text) + **Perform study** (primary with icon).
+1. **Repository + DTO completion** — inventory endpoints, then drug/formulary CRUD contracts.
+2. **Controller state** — inventory panel state, formulary/drug mutation loading flags, error surfacing.
+3. **Billing + payment** — entity/DTO billing fields, detail status, record-payment dialog, dispense billing gate, pending-payment filter.
+4. **UI — dispensing polish** — verify partial dispense, return, and edge cases; simplify action panel layout.
+5. **UI — catalog & inventory** — drugs, formulary, stock panels with clear navigation between them.
+6. **Integration hardening** — realtime, filter alignment, clinical handoff and billing-desk ↔ pharmacy payment sync smoke paths.
+7. **Tests + quality gate** — see below.
 
-### Draft radiology report (`_ReportForm` / `_showReportDialog`)
-- Increase spacing between Findings, Impression, and Report narrative fields.
-- Sync narrative field with findings/impression on save.
-- On successful save: close dialog **and** refresh detail panel.
-
-### Release report (`_showFinalizeDialog`)
-- Show read-only summary of findings/impression above release notes.
-- Disable release if draft is empty or unchanged from last release.
+Work in small, reviewable increments. One clear responsibility per new file.
 
 ---
 
-## Implementation Notes
+## Acceptance Criteria
 
-### Request dialogs (billing)
-- `shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`
-- `shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart`
-- `shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart`
-- `features/radiology/presentation/pages/radiology_workspace_page.dart` (`_CreateOrderForm`)
-- Call sites: `clinical_workspace_page.dart`, `lab_workspace_page.dart`, `opd_flow_actions_dialog.dart`
-
-### Radiology workflow (operations)
-- Primary file: `radiology_workspace_page.dart` (~5k lines)—extract sub-widgets only when it improves readability.
-- Controller: `radiology_workspace_controller.dart` — ensure all mutations call `_refreshSelectedWorkflow()` or equivalent.
-
-### Billing reference
-- `shared/opd_actions/opd_consultation_billing_breakdown.dart` — UI pattern for totals panel
-- `features/billing/domain/entities/billing_entities.dart` — `unitPrice` conventions
-
-- All user-visible strings via `app_en.arb` (and sibling locale files).
-- Test on **web desktop** (~1280px) and **compact** (<640px) per existing `LayoutBuilder` breakpoints.
+- [ ] Pharmacist can open Pharmacy workspace, filter/search orders, open detail, and complete prepare → attest dispense flow.
+- [ ] Partial dispense, return, and cancel paths work with API validation errors shown in UI.
+- [ ] Inventory stock is listable; authorized users can post adjustments with reason.
+- [ ] Drugs can be created and edited from pharmacy UI; search reflects changes after save.
+- [ ] Formulary items can be listed and managed; linked drugs appear in clinical prescription picker.
+- [ ] Orders created from Clinical prescription flow appear in pharmacy queue without manual refresh (realtime or sync).
+- [ ] Payment status is visible on pharmacy order detail; pending-payment filter works against API-backed status.
+- [ ] Unpaid orders can be paid at the **pharmacy counter** (with `billingWrite`) or reflect payment recorded at the **cashier/billing desk** without duplicate charges.
+- [ ] Orders prescribed with pay-now billing arrive as paid; bill-later orders remain dispensable only after payment (per billing gate rules).
+- [ ] All user-facing strings localized; permissions enforced; no raw internal IDs in production UI.
+- [ ] UI is organized into clear Operations, Payment, and Catalog/Stock areas with calm, scannable layout.
+- [ ] `flutter analyze` and `flutter test` pass; new tests cover repository mapping and primary workspace flows.
 
 ---
 
-## Definition of Done
+## Quality Gate
 
-1. Lab, radiology, and pharmacy **request dialogs** show per-item prices and a running total; payment can be captured or deferred at submit.
-2. Workflow detail views display payment status read-only—no separate billing step required after a properly submitted request.
-3. Perform study is a fast, defaulted action; assets upload is discoverable.
-4. Workflow steps are navigable; summary/metadata section is purposeful.
-5. Report drafts update the UI immediately; inline editing is available.
-6. Technologist and reporter views are distinguishable.
-7. Doctor review and timeline are actionable and visually coherent.
-8. Overall UI feels intentional: spacing, hierarchy, empty states, and modals match the quality of other HOSSPI workspace modules.
+Before marking complete, run from `frontend/`:
+
+```sh
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+Add focused tests during development; run the full gate before PR or merge.
+
+---
+
+## Key File References
+
+```
+frontend/lib/features/pharmacy/
+├── data/dtos/pharmacy_dtos.dart
+├── data/repositories/pharmacy_repository_impl.dart
+├── domain/entities/pharmacy_entities.dart
+├── domain/repositories/pharmacy_repository.dart
+└── presentation/
+    ├── controllers/pharmacy_workspace_controller.dart
+    └── pages/pharmacy_workspace_page.dart
+
+frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart
+frontend/lib/shared/clinical_actions/clinical_request_billing_panel.dart
+frontend/lib/shared/clinical_actions/clinical_request_billing_state.dart
+frontend/lib/features/billing/
+frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart  # billing-gate reference
+
+backend/src/modules/pharmacy-workspace/
+backend/src/lib/billing/clinical-request-billing.js
+backend/src/modules/pharmacy-order/
+backend/src/modules/drug/
+backend/src/modules/formulary-item/
+backend/src/modules/inventory-item/
+```
