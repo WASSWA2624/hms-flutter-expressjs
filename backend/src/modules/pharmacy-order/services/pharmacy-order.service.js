@@ -25,6 +25,7 @@ const {
 const {
   mapPharmacyOrderRecord,
 } = require('@services/pharmacy-workspace/pharmacy.serializer');
+const { persistPharmacyOrderBilling } = require('@lib/billing/clinical-request-billing');
 
 const ORDER_SCOPE_INCLUDE = PHARMACY_ORDER_WITH_RELATIONS_INCLUDE;
 
@@ -340,6 +341,7 @@ const getPharmacyOrderById = async (id, userId, ipAddress, user = {}) => {
 const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
+    const billing = data.billing;
     const items = Array.isArray(data.items) ? data.items : [];
     const payload = {
       ...data,
@@ -348,6 +350,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     };
     const orderedAt = normalizeOptionalDate(data.ordered_at);
     delete payload.items;
+    delete payload.billing;
     if (orderedAt) {
       payload.ordered_at = orderedAt;
     } else {
@@ -365,9 +368,32 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
 
     const pharmacyOrder = await pharmacyOrderRepository.create(payload, ORDER_SCOPE_INCLUDE);
 
+    if (billing) {
+      const patientRecord = await prisma.patient.findFirst({
+        where: { id: payload.patient_id, deleted_at: null },
+        select: { id: true, tenant_id: true, facility_id: true },
+      });
+      if (patientRecord) {
+        await prisma.$transaction(async (tx) => {
+          await persistPharmacyOrderBilling(tx, {
+            orderId: pharmacyOrder.id,
+            billing,
+            tenantId: patientRecord.tenant_id,
+            facilityId: patientRecord.facility_id || scope.facility_id || null,
+            patientId: patientRecord.id,
+            description: 'Pharmacy prescription',
+          });
+        });
+      }
+    }
+
+    const persistedOrder = billing
+      ? await pharmacyOrderRepository.findById(pharmacyOrder.id, ORDER_SCOPE_INCLUDE)
+      : pharmacyOrder;
+
     await createPrescriptionDetailNote({
       encounterId: payload.encounter_id,
-      items: pharmacyOrder.items || items,
+      items: persistedOrder.items || items,
       userId,
     });
 
@@ -382,7 +408,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return serializePharmacyOrder(pharmacyOrder);
+    return serializePharmacyOrder(persistedOrder);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

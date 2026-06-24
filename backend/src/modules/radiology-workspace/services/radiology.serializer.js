@@ -1,4 +1,9 @@
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
+const {
+  mapClinicalOrderBillingFields,
+  mapCatalogUnitPriceFields,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -33,6 +38,7 @@ const mapRadiologyTestRecord = (record) => {
     name: toText(record.name) || null,
     code: toText(record.code) || null,
     modality: toText(record.modality).toUpperCase() || null,
+    ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
@@ -184,6 +190,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     !Array.isArray(record.request_details)
       ? record.request_details
       : {};
+  const storedBilling = extractStoredClinicalBilling(record);
   const testDisplayName =
     toText(test?.name) ||
     toText(test?.code) ||
@@ -232,6 +239,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
       ),
       new_test_name: toText(requestDetails.new_test_name) || null,
       modality,
+      ...(storedBilling ? { billing: storedBilling } : {}),
     },
     requested_tests: [
       {
@@ -257,6 +265,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     unsynced_study_count: unsyncedStudyCount,
     results,
     imaging_studies: studies,
+    ...mapClinicalOrderBillingFields(record),
   };
 };
 

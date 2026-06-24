@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -85,7 +84,7 @@ final class ClinicalRequestBillingSubmit {
   Map<String, Object?> toRequestDetailsBilling({num? lineAmount}) {
     return <String, Object?>{
       ...toPayloadMap(),
-      if (lineAmount != null) 'line_amount': lineAmount,
+      'line_amount': ?lineAmount,
     };
   }
 }
@@ -252,6 +251,21 @@ Map<String, Object?> mergeClinicalRequestBillingIntoRequestDetails(
     ...requestDetails,
     'billing': billing.toRequestDetailsBilling(lineAmount: lineAmount),
   };
+}
+
+num? clinicalRequestBillingLineAmount(
+  ClinicalRequestBillingSubmit? billing,
+  String catalogItemId,
+) {
+  if (billing == null) {
+    return null;
+  }
+  for (final ClinicalRequestBillingLineItem item in billing.lineItems) {
+    if (item.id == catalogItemId) {
+      return item.lineTotal;
+    }
+  }
+  return null;
 }
 
 String resolveClinicalRequestBillingCurrency(

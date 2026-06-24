@@ -2612,7 +2612,7 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
                         'priority': request.priority,
                       },
                       _billingSubmit,
-                      lineAmount: _radiologyRequestLineAmount(
+                      lineAmount: clinicalRequestBillingLineAmount(
                         _billingSubmit,
                         request.radiologyTestId,
                       ),
@@ -5576,21 +5576,6 @@ String _joinDisplay(Iterable<String?> values) {
       .map((String? value) => value?.trim() ?? '')
       .where((String value) => value.isNotEmpty)
       .join(' | ');
-}
-
-num? _radiologyRequestLineAmount(
-  ClinicalRequestBillingSubmit? billing,
-  String radiologyTestId,
-) {
-  if (billing == null) {
-    return null;
-  }
-  for (final ClinicalRequestBillingLineItem item in billing.lineItems) {
-    if (item.id == radiologyTestId) {
-      return item.lineTotal;
-    }
-  }
-  return null;
 }
 
 String _composeRadiologyReportText({

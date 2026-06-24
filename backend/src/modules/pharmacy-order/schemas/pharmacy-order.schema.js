@@ -12,6 +12,7 @@ const {
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
+const { clinicalRequestBillingSchema } = require('@lib/billing/clinical-request-billing.schema');
 
 // ==================== Body Schemas ====================
 
@@ -136,7 +137,8 @@ const createPharmacyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   patient_id: uuidOrFriendlyIdentifierSchema,
   ordered_at: z.string().datetime().optional(),
-  items: z.array(pharmacyOrderItemSchema).min(1)
+  items: z.array(pharmacyOrderItemSchema).min(1),
+  billing: clinicalRequestBillingSchema.optional().nullable(),
 });
 
 /**

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -28,7 +29,10 @@ void main() {
             ],
           ),
           onSubmit:
-              ({required List<ClinicalActionRadiologyRequest> requests}) async {
+              ({
+                required List<ClinicalActionRadiologyRequest> requests,
+                ClinicalRequestBillingSubmit? billing,
+              }) async {
                 return null;
               },
         ),
@@ -64,12 +68,14 @@ Future<void> _pumpDialog(WidgetTester tester, Widget dialog) async {
   addTearDown(tester.view.resetPhysicalSize);
 
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      home: Scaffold(body: dialog),
+    ProviderScope(
+      child: MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(body: dialog),
+      ),
     ),
   );
   await tester.pumpAndSettle();

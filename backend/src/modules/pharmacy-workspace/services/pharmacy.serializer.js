@@ -1,4 +1,8 @@
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
+const {
+  mapClinicalOrderBillingFields,
+  mapCatalogUnitPriceFields,
+} = require('@lib/billing/clinical-request-billing');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -152,6 +156,7 @@ const mapDrugRecord = (record) => {
     code: toText(record.code) || null,
     form: toText(record.form) || null,
     strength: toText(record.strength) || null,
+    ...mapCatalogUnitPriceFields(record),
     quantity_on_hand: quantityOnHand,
     available_quantity: quantityOnHand,
     stock_level: quantityOnHand,
@@ -371,6 +376,7 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
     pending_attestation_batches: pendingAttestationBatches,
     items,
     dispense_attestations: attestations,
+    ...mapClinicalOrderBillingFields(record),
   };
 };
 

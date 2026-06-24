@@ -1,5 +1,9 @@
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
+  mapClinicalOrderBillingFields,
+  mapCatalogUnitPriceFields,
+} = require('@lib/billing/clinical-request-billing');
+const {
   buildLabReferenceRangeRowSummary,
   buildLabReferenceRangeSummary,
 } = require('@services/lab-workspace/lab.configuration');
@@ -223,6 +227,7 @@ const mapLabTestRecord = (record) => {
     unit_option_count: unitOptions.length,
     result_options: resultOptions,
     result_option_count: resultOptions.length,
+    ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
@@ -244,6 +249,7 @@ const mapLabPanelRecord = (record) => {
     description: toText(record.description) || null,
     panel_items: panelItems,
     test_count: panelItems.length,
+    ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
@@ -436,6 +442,7 @@ const mapLabOrderRecord = (record, options = {}) => {
     sample_count: samples.length,
     items,
     samples,
+    ...mapClinicalOrderBillingFields(record),
   };
 };
 

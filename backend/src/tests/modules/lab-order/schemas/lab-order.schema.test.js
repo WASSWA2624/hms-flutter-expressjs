@@ -79,6 +79,29 @@ describe('Lab Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts optional request-time billing payload', () => {
+      const result = createLabOrderSchema.safeParse({
+        ...validData,
+        billing: {
+          payment_status: 'PENDING',
+          currency: 'USD',
+          total_amount: 40,
+          line_items: [
+            {
+              id: 'LBT0000001',
+              label: 'CBC',
+              quantity: 1,
+              unit_price: 40,
+              line_total: 40,
+            },
+          ],
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.billing.payment_status).toBe('PENDING');
+    });
+
     it('accepts standard catalog test and panel request selections', () => {
       const result = createLabOrderSchema.safeParse({
         ...validData,

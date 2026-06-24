@@ -2924,6 +2924,8 @@ model lab_test {
   unit              String?   @db.VarChar(40)
   description       String?   @db.VarChar(255)
   reference_range   String?   @db.VarChar(255)
+  unit_price        Decimal?  @db.Decimal(12, 2)
+  currency          String?   @db.VarChar(10)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -2955,6 +2957,8 @@ model lab_panel {
   code              String?   @db.VarChar(80)
   category          String?   @db.VarChar(80)
   description       String?   @db.VarChar(255)
+  unit_price        Decimal?  @db.Decimal(12, 2)
+  currency          String?   @db.VarChar(10)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -3058,6 +3062,7 @@ model lab_order {
   status             LabOrderStatus
   ordered_at         DateTime       @default(now())
   ordered_by_user_id String?        @db.VarChar(36)
+  billing_snapshot   Json?
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
   deleted_at         DateTime?
@@ -3192,6 +3197,8 @@ model radiology_test {
   name              String          @db.VarChar(255)
   code              String?         @db.VarChar(80)
   modality          ImagingModality
+  unit_price        Decimal?        @db.Decimal(12, 2)
+  currency          String?         @db.VarChar(10)
   created_at        DateTime        @default(now())
   updated_at        DateTime        @updatedAt
   deleted_at        DateTime?
@@ -3327,6 +3334,8 @@ model drug {
   code              String?   @db.VarChar(80)
   form              String?   @db.VarChar(80)
   strength          String?   @db.VarChar(80)
+  unit_price        Decimal?  @db.Decimal(12, 2)
+  currency          String?   @db.VarChar(10)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -3393,6 +3402,7 @@ model pharmacy_order {
   encounter_id      String?             @db.VarChar(36)
   patient_id        String              @db.VarChar(36)
   status            PharmacyOrderStatus
+  billing_snapshot  Json?
   ordered_at        DateTime            @default(now())
   created_at        DateTime            @default(now())
   updated_at        DateTime            @updatedAt

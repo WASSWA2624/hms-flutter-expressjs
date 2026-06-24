@@ -9,6 +9,7 @@
 
 const { z } = require('zod');
 const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/validation/zod');
+const { clinicalRequestBillingSchema } = require('@lib/billing/clinical-request-billing.schema');
 
 // ==================== Body Schemas ====================
 
@@ -68,7 +69,8 @@ const createLabOrderSchema = z
     patient_id: uuidOrFriendlyIdentifierSchema,
     status: labOrderStatusSchema.optional().default('ORDERED'),
     requested_tests: z.array(labOrderRequestedTestSchema).max(MAX_REQUESTED_LAB_TESTS).optional(),
-    requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional()
+    requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional(),
+    billing: clinicalRequestBillingSchema.optional().nullable()
   })
   .superRefine((value, ctx) => {
     const requestedTests = Array.isArray(value.requested_tests) ? value.requested_tests : [];
@@ -92,7 +94,8 @@ const updateLabOrderSchema = z.object({
   status: labOrderStatusSchema.optional(),
   ordered_at: z.string().datetime().optional(),
   requested_tests: z.array(labOrderRequestedTestSchema).max(MAX_REQUESTED_LAB_TESTS).optional(),
-  requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional()
+  requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional(),
+  billing: clinicalRequestBillingSchema.optional().nullable()
 });
 
 const deleteLabOrderSchema = z.object({

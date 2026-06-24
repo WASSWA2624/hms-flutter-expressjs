@@ -547,7 +547,7 @@ final class ClinicalWorkspaceController
                     'priority': request.priority,
                   },
                   billing,
-                  lineAmount: _radiologyRequestLineAmount(
+                  lineAmount: clinicalRequestBillingLineAmount(
                     billing,
                     request.radiologyTestId,
                   ),
@@ -1632,19 +1632,4 @@ final class ClinicalWorkspaceController
       Result<ClinicalWorkspaceState>.success(nextState),
     );
   }
-}
-
-num? _radiologyRequestLineAmount(
-  ClinicalRequestBillingSubmit? billing,
-  String radiologyTestId,
-) {
-  if (billing == null) {
-    return null;
-  }
-  for (final ClinicalRequestBillingLineItem item in billing.lineItems) {
-    if (item.id == radiologyTestId) {
-      return item.lineTotal;
-    }
-  }
-  return null;
 }

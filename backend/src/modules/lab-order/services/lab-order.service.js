@@ -15,6 +15,7 @@ const {
 } = require('@services/lab-workspace/lab.shared');
 const { mapLabOrderRecord } = require('@services/lab-workspace/lab.serializer');
 const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
+const { persistLabOrderBilling } = require('@lib/billing/clinical-request-billing');
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -46231,6 +46232,8 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
 const createLabOrder = async (data, userId, ipAddress) => {
   try {
     const payload = { ...data };
+    const billing = payload.billing;
+    delete payload.billing;
     const requestedTests = Array.isArray(payload.requested_tests) ? payload.requested_tests : [];
     const requestedPanels = Array.isArray(payload.requested_panels) ? payload.requested_panels : [];
     delete payload.requested_tests;
@@ -46242,7 +46245,8 @@ const createLabOrder = async (data, userId, ipAddress) => {
       where: { deleted_at: null },
       select: {
         id: true,
-        tenant_id: true
+        tenant_id: true,
+        facility_id: true,
       },
       errorKey: 'errors.patient.not_found'
     });
@@ -46280,6 +46284,18 @@ const createLabOrder = async (data, userId, ipAddress) => {
     }
 
     const labOrder = await labOrderRepository.create(payload);
+    if (billing) {
+      await prisma.$transaction(async (tx) => {
+        await persistLabOrderBilling(tx, {
+          orderId: labOrder.id,
+          billing,
+          tenantId: patientRecord.tenant_id,
+          facilityId: patientRecord.facility_id || null,
+          patientId: patientRecord.id,
+          description: 'Laboratory order',
+        });
+      });
+    }
     const createdOrder = await labOrderRepository.findById(labOrder.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
 
     createAuditLog({
@@ -46314,6 +46330,8 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     });
 
     const payload = { ...data };
+    const billing = payload.billing;
+    delete payload.billing;
     const hasRequestedTests = Object.prototype.hasOwnProperty.call(payload, 'requested_tests');
     const hasRequestedPanels = Object.prototype.hasOwnProperty.call(payload, 'requested_panels');
     const shouldReplaceItems = hasRequestedTests || hasRequestedPanels;
@@ -46381,6 +46399,25 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     }
 
     const updated = await labOrderRepository.update(before.id, payload);
+    if (billing) {
+      const patientId = payload.patient_id || before.patient_id;
+      const patientRecord = await prisma.patient.findFirst({
+        where: { id: patientId, deleted_at: null },
+        select: { id: true, tenant_id: true, facility_id: true },
+      });
+      if (patientRecord) {
+        await prisma.$transaction(async (tx) => {
+          await persistLabOrderBilling(tx, {
+            orderId: updated.id,
+            billing,
+            tenantId: patientRecord.tenant_id,
+            facilityId: patientRecord.facility_id || null,
+            patientId: patientRecord.id,
+            description: 'Laboratory order',
+          });
+        });
+      }
+    }
     const labOrder = await labOrderRepository.findById(updated.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
 
     createAuditLog({

@@ -15,6 +15,7 @@ const {
 const {
   mapRadiologyOrderRecord,
 } = require('@services/radiology-workspace/radiology.serializer');
+const { persistRadiologyOrderBilling } = require('@lib/billing/clinical-request-billing');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
@@ -358,7 +359,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
       });
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, deleted_at: null },
-      select: { tenant_id: true },
+      select: { tenant_id: true, facility_id: true },
     });
     if (!patient) {
       throw new HttpError('errors.patient.not_found', 404);
@@ -406,6 +407,26 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         clinical_note: sanitizeString(request?.clinical_note) || null,
         request_details: requestDetails,
       });
+
+      const billing = requestDetails?.billing;
+      if (billing) {
+        await prisma.$transaction(async (tx) => {
+          await persistRadiologyOrderBilling(tx, {
+            orderId: radiologyOrder.id,
+            requestDetails,
+            billing,
+            tenantId: patient.tenant_id,
+            facilityId: patient.facility_id || null,
+            patientId,
+            catalogItemId:
+              sanitizeString(request?.radiology_test_id) ||
+              sanitizeString(requestDetails?.radiology_test_id) ||
+              radiologyTestId,
+            description: `Radiology: ${testLabel}`,
+          });
+        });
+      }
+
       const serializedRadiologyOrder = await fetchSerializedRadiologyOrderById(
         radiologyOrder.id
       );

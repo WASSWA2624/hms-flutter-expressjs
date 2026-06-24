@@ -61,6 +61,10 @@ class _ClinicalRequestBillingPanelState
       ),
     );
     _referenceController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialized = true;
+      _notifyChanged();
+    });
   }
 
   @override
@@ -69,7 +73,31 @@ class _ClinicalRequestBillingPanelState
     if (!_initialized) {
       return;
     }
-    _notifyChanged();
+    if (_lineItemsChanged(oldWidget.lineItems, widget.lineItems) ||
+        oldWidget.initialCurrency != widget.initialCurrency) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyChanged());
+    }
+  }
+
+  bool _lineItemsChanged(
+    List<ClinicalRequestBillingLineItem> previous,
+    List<ClinicalRequestBillingLineItem> next,
+  ) {
+    if (previous.length != next.length) {
+      return true;
+    }
+    for (var index = 0; index < previous.length; index++) {
+      final ClinicalRequestBillingLineItem before = previous[index];
+      final ClinicalRequestBillingLineItem after = next[index];
+      if (before.id != after.id ||
+          before.label != after.label ||
+          before.quantity != after.quantity ||
+          before.unitPrice != after.unitPrice ||
+          before.currency != after.currency) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -95,9 +123,6 @@ class _ClinicalRequestBillingPanelState
     final ClinicalRequestPaymentStatus paymentStatus = _resolvePaymentStatus(
       total: total,
     );
-
-    _initialized = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifyChanged());
 
     return DecoratedBox(
       decoration: BoxDecoration(
