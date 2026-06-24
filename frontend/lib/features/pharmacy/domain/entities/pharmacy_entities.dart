@@ -28,17 +28,234 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
     };
   }
 
+  bool? get backendPendingPayment {
+    if (this == PharmacyOrderFilter.pendingPayment) {
+      return true;
+    }
+    return null;
+  }
+
   bool get isBackendBacked {
     return switch (this) {
       PharmacyOrderFilter.all ||
       PharmacyOrderFilter.ready ||
       PharmacyOrderFilter.partial ||
       PharmacyOrderFilter.completed ||
-      PharmacyOrderFilter.cancelled => true,
-      PharmacyOrderFilter.pendingPayment ||
+      PharmacyOrderFilter.cancelled ||
+      PharmacyOrderFilter.pendingPayment => true,
       PharmacyOrderFilter.partialStock ||
       PharmacyOrderFilter.urgent ||
       PharmacyOrderFilter.discharge => false,
+    };
+  }
+}
+
+enum PharmacyCatalogTab { drugs, formulary, inventory }
+
+@immutable
+final class PharmacyFormularyQuery {
+  const PharmacyFormularyQuery({
+    this.search = '',
+    this.isActive,
+    this.pageRequest = const AppPageRequest(pageSize: 10),
+  });
+
+  final String search;
+  final bool? isActive;
+  final AppPageRequest pageRequest;
+
+  PharmacyFormularyQuery copyWith({
+    String? search,
+    bool? isActive,
+    AppPageRequest? pageRequest,
+    bool clearIsActive = false,
+  }) {
+    return PharmacyFormularyQuery(
+      search: search ?? this.search,
+      isActive: clearIsActive ? null : isActive ?? this.isActive,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+}
+
+@immutable
+final class PharmacyInventoryStockQuery {
+  const PharmacyInventoryStockQuery({
+    this.search = '',
+    this.lowStockOnly = false,
+    this.pageRequest = const AppPageRequest(pageSize: 10),
+  });
+
+  final String search;
+  final bool lowStockOnly;
+  final AppPageRequest pageRequest;
+
+  PharmacyInventoryStockQuery copyWith({
+    String? search,
+    bool? lowStockOnly,
+    AppPageRequest? pageRequest,
+  }) {
+    return PharmacyInventoryStockQuery(
+      search: search ?? this.search,
+      lowStockOnly: lowStockOnly ?? this.lowStockOnly,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+}
+
+@immutable
+final class PharmacyInventoryStockSummary {
+  const PharmacyInventoryStockSummary({
+    this.totalStockRows = 0,
+    this.lowStockRows = 0,
+    this.almostOutOfStockRows = 0,
+    this.outOfStockRows = 0,
+    this.pendingStockRows = 0,
+  });
+
+  final int totalStockRows;
+  final int lowStockRows;
+  final int almostOutOfStockRows;
+  final int outOfStockRows;
+  final int pendingStockRows;
+}
+
+@immutable
+final class PharmacyInventoryWorkbench {
+  const PharmacyInventoryWorkbench({
+    required this.summary,
+    required this.stocks,
+  });
+
+  final PharmacyInventoryStockSummary summary;
+  final AppPage<PharmacyInventoryStock> stocks;
+}
+
+@immutable
+final class PharmacyFormularyItem {
+  const PharmacyFormularyItem({
+    required this.id,
+    this.displayId,
+    this.tenantId,
+    this.drugId,
+    this.drugDisplayName,
+    this.drugCode,
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? tenantId;
+  final String? drugId;
+  final String? drugDisplayName;
+  final String? drugCode;
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[drugDisplayName, drugCode, displayId]) ??
+        id;
+  }
+}
+
+@immutable
+final class PharmacyDrugInput {
+  const PharmacyDrugInput({
+    required this.tenantId,
+    required this.name,
+    this.code,
+    this.form,
+    this.strength,
+  });
+
+  final String tenantId;
+  final String name;
+  final String? code;
+  final String? form;
+  final String? strength;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'tenant_id': tenantId,
+      'name': name,
+      'code': code,
+      'form': form,
+      'strength': strength,
+    };
+  }
+}
+
+@immutable
+final class PharmacyDrugUpdateInput {
+  const PharmacyDrugUpdateInput({
+    this.name,
+    this.code,
+    this.form,
+    this.strength,
+  });
+
+  final String? name;
+  final String? code;
+  final String? form;
+  final String? strength;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      if (name != null) 'name': name,
+      if (code != null) 'code': code,
+      if (form != null) 'form': form,
+      if (strength != null) 'strength': strength,
+    };
+  }
+}
+
+@immutable
+final class PharmacyFormularyItemInput {
+  const PharmacyFormularyItemInput({
+    required this.tenantId,
+    required this.drugId,
+    this.isActive = true,
+  });
+
+  final String tenantId;
+  final String drugId;
+  final bool isActive;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'tenant_id': tenantId,
+      'drug_id': drugId,
+      'is_active': isActive,
+    };
+  }
+}
+
+@immutable
+final class PharmacyInventoryAdjustInput {
+  const PharmacyInventoryAdjustInput({
+    required this.inventoryItemId,
+    required this.quantityDelta,
+    this.reason,
+    this.notes,
+    this.facilityId,
+  });
+
+  final String inventoryItemId;
+  final int quantityDelta;
+  final String? reason;
+  final String? notes;
+  final String? facilityId;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'inventory_item_id': inventoryItemId,
+      'quantity_delta': quantityDelta,
+      'reason': reason,
+      'notes': notes,
+      'facility_id': facilityId,
     };
   }
 }
@@ -155,6 +372,9 @@ final class PharmacyOrder {
     this.pendingAttestationBatches = const <PharmacyPendingBatch>[],
     this.items = const <PharmacyOrderItem>[],
     this.attestations = const <PharmacyAttestation>[],
+    this.paymentStatus,
+    this.billing = const <String, Object?>{},
+    this.prescriberDisplayName,
   });
 
   final String id;
@@ -178,13 +398,12 @@ final class PharmacyOrder {
   final List<PharmacyPendingBatch> pendingAttestationBatches;
   final List<PharmacyOrderItem> items;
   final List<PharmacyAttestation> attestations;
+  final String? paymentStatus;
+  final Map<String, Object?> billing;
+  final String? prescriberDisplayName;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[
-          patientDisplayName,
-          displayId,
-        ]) ??
-        '';
+    return _firstNonEmpty(<String?>[patientDisplayName, displayId]) ?? '';
   }
 
   bool get hasPendingAttestation {
@@ -232,6 +451,52 @@ final class PharmacyOrder {
       }
     }
     return null;
+  }
+
+  bool get hasBillingGate {
+    return effectivePaymentStatus != null;
+  }
+
+  String? get effectivePaymentStatus {
+    final String? direct = _trimmedOrNull(paymentStatus);
+    if (direct != null) {
+      return direct;
+    }
+    final Object? nested = billing['payment_status'];
+    return _trimmedOrNull(nested?.toString());
+  }
+
+  num? get billingTotalAmount {
+    final Object? value = billing['total_amount'] ?? billing['line_amount'];
+    if (value is num) {
+      return value;
+    }
+    if (value is String) {
+      return num.tryParse(value.trim());
+    }
+    return null;
+  }
+
+  String? get billingCurrency {
+    return _trimmedOrNull(billing['currency']?.toString());
+  }
+
+  bool get isPaymentSatisfied {
+    final String normalized = (effectivePaymentStatus ?? '').toUpperCase();
+    return <String>{'PAID', 'NOT_REQUIRED', 'NO_CHARGE'}.contains(normalized);
+  }
+
+  bool get requiresPaymentBeforeDispense {
+    if (!hasBillingGate) {
+      return false;
+    }
+    final String normalized = (effectivePaymentStatus ?? '').toUpperCase();
+    return <String>{'UNPAID', 'PARTIAL'}.contains(normalized);
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
   }
 
   PharmacyOrder copyWith({
@@ -577,6 +842,7 @@ final class PharmacyDrug {
     this.pendingStock = false,
     this.stockMappings = const <PharmacyDrugStockMapping>[],
     this.stockRows = const <PharmacyInventoryStock>[],
+    this.tenantId,
     this.createdAt,
     this.updatedAt,
   });
@@ -595,6 +861,7 @@ final class PharmacyDrug {
   final bool pendingStock;
   final List<PharmacyDrugStockMapping> stockMappings;
   final List<PharmacyInventoryStock> stockRows;
+  final String? tenantId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -724,24 +991,38 @@ final class PharmacyWorkspaceState {
     required this.workbench,
     required this.drugQuery,
     required this.drugs,
+    required this.formularyQuery,
+    required this.formularyItems,
+    required this.inventoryQuery,
+    required this.inventoryWorkbench,
     this.selectedWorkflow,
     this.lastFailure,
     this.isRefreshingOrders = false,
     this.isRefreshingDetail = false,
     this.isRefreshingDrugs = false,
+    this.isRefreshingFormulary = false,
+    this.isRefreshingInventory = false,
     this.isSaving = false,
+    this.catalogTab = PharmacyCatalogTab.drugs,
   });
 
   final PharmacyWorkbenchQuery query;
   final PharmacyWorkbench workbench;
   final PharmacyDrugQuery drugQuery;
   final AppPage<PharmacyDrug> drugs;
+  final PharmacyFormularyQuery formularyQuery;
+  final AppPage<PharmacyFormularyItem> formularyItems;
+  final PharmacyInventoryStockQuery inventoryQuery;
+  final PharmacyInventoryWorkbench inventoryWorkbench;
   final PharmacyOrderWorkflow? selectedWorkflow;
   final Object? lastFailure;
   final bool isRefreshingOrders;
   final bool isRefreshingDetail;
   final bool isRefreshingDrugs;
+  final bool isRefreshingFormulary;
+  final bool isRefreshingInventory;
   final bool isSaving;
+  final PharmacyCatalogTab catalogTab;
 
   int get workloadCount {
     return workbench.summary.orderedQueue +
@@ -754,12 +1035,19 @@ final class PharmacyWorkspaceState {
     PharmacyWorkbench? workbench,
     PharmacyDrugQuery? drugQuery,
     AppPage<PharmacyDrug>? drugs,
+    PharmacyFormularyQuery? formularyQuery,
+    AppPage<PharmacyFormularyItem>? formularyItems,
+    PharmacyInventoryStockQuery? inventoryQuery,
+    PharmacyInventoryWorkbench? inventoryWorkbench,
     PharmacyOrderWorkflow? selectedWorkflow,
     Object? lastFailure,
     bool? isRefreshingOrders,
     bool? isRefreshingDetail,
     bool? isRefreshingDrugs,
+    bool? isRefreshingFormulary,
+    bool? isRefreshingInventory,
     bool? isSaving,
+    PharmacyCatalogTab? catalogTab,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
   }) {
@@ -768,6 +1056,10 @@ final class PharmacyWorkspaceState {
       workbench: workbench ?? this.workbench,
       drugQuery: drugQuery ?? this.drugQuery,
       drugs: drugs ?? this.drugs,
+      formularyQuery: formularyQuery ?? this.formularyQuery,
+      formularyItems: formularyItems ?? this.formularyItems,
+      inventoryQuery: inventoryQuery ?? this.inventoryQuery,
+      inventoryWorkbench: inventoryWorkbench ?? this.inventoryWorkbench,
       selectedWorkflow: clearSelectedWorkflow
           ? null
           : selectedWorkflow ?? this.selectedWorkflow,
@@ -775,7 +1067,12 @@ final class PharmacyWorkspaceState {
       isRefreshingOrders: isRefreshingOrders ?? this.isRefreshingOrders,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isRefreshingDrugs: isRefreshingDrugs ?? this.isRefreshingDrugs,
+      isRefreshingFormulary:
+          isRefreshingFormulary ?? this.isRefreshingFormulary,
+      isRefreshingInventory:
+          isRefreshingInventory ?? this.isRefreshingInventory,
       isSaving: isSaving ?? this.isSaving,
+      catalogTab: catalogTab ?? this.catalogTab,
     );
   }
 }

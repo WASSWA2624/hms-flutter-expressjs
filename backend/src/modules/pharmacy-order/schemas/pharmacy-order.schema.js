@@ -153,7 +153,8 @@ const updatePharmacyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(PHARMACY_ORDER_STATUS_VALUES).optional(),
-  ordered_at: z.string().datetime().optional()
+  ordered_at: z.string().datetime().optional(),
+  billing: clinicalRequestBillingSchema.optional().nullable(),
 });
 
 /**

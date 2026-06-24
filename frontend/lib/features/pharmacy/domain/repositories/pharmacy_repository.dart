@@ -9,6 +9,41 @@ abstract interface class PharmacyRepository {
 
   Future<Result<AppPage<PharmacyDrug>>> searchDrugs(PharmacyDrugQuery query);
 
+  Future<Result<PharmacyInventoryWorkbench>> getInventoryStock(
+    PharmacyInventoryStockQuery query,
+  );
+
+  Future<Result<PharmacyInventoryWorkbench>> adjustInventoryStock(
+    PharmacyInventoryAdjustInput input,
+  );
+
+  Future<Result<PharmacyDrug>> createDrug(PharmacyDrugInput input);
+
+  Future<Result<PharmacyDrug>> updateDrug(
+    String drugId,
+    PharmacyDrugUpdateInput input,
+  );
+
+  Future<Result<void>> deleteDrug(String drugId);
+
+  Future<Result<AppPage<PharmacyFormularyItem>>> listFormularyItems(
+    PharmacyFormularyQuery query,
+  );
+
+  Future<Result<PharmacyFormularyItem>> createFormularyItem(
+    PharmacyFormularyItemInput input,
+  );
+
+  Future<Result<PharmacyFormularyItem>> updateFormularyItem(
+    String formularyItemId, {
+    bool? isActive,
+  });
+
+  Future<Result<PharmacyOrderWorkflow>> recordOrderBilling(
+    String orderId,
+    Map<String, Object?> billing,
+  );
+
   Future<Result<PharmacyMutationResult>> prepareDispense({
     required String orderId,
     required List<PharmacyDispenseLineInput> items,

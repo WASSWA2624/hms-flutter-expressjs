@@ -6128,6 +6128,123 @@ class AppLocalizationsEn extends AppLocalizations {
       'Payment clearance is unavailable for this order.';
 
   @override
+  String get pharmacyPaymentColumnLabel => 'Payment';
+
+  @override
+  String get pharmacyPaymentLabel => 'Payment';
+
+  @override
+  String get pharmacyPaymentAmountLabel => 'Amount due';
+
+  @override
+  String get pharmacyRecordPaymentAction => 'Record payment';
+
+  @override
+  String get pharmacyNextActionConfirmBilling => 'Confirm billing';
+
+  @override
+  String get pharmacyDispenseBlockedPaymentBody =>
+      'Collect or confirm payment before dispensing this order.';
+
+  @override
+  String get pharmacyPriorityFieldLabel => 'Priority';
+
+  @override
+  String get pharmacyCatalogTabDrugs => 'Drugs';
+
+  @override
+  String get pharmacyCatalogTabFormulary => 'Formulary';
+
+  @override
+  String get pharmacyCatalogTabInventory => 'Inventory';
+
+  @override
+  String get pharmacyCatalogPanelTitle => 'Catalog and stock';
+
+  @override
+  String get pharmacyAddDrugAction => 'Add drug';
+
+  @override
+  String get pharmacyEditDrugAction => 'Edit drug';
+
+  @override
+  String get pharmacyDeleteDrugAction => 'Delete drug';
+
+  @override
+  String get pharmacyDrugNameLabel => 'Drug name';
+
+  @override
+  String get pharmacyDrugCodeLabel => 'Drug code';
+
+  @override
+  String get pharmacyDrugFormLabel => 'Form';
+
+  @override
+  String get pharmacyDrugStrengthLabel => 'Strength';
+
+  @override
+  String get pharmacyAddFormularyAction => 'Add formulary item';
+
+  @override
+  String get pharmacyFormularyDrugLabel => 'Drug';
+
+  @override
+  String get pharmacyFormularyActiveLabel => 'Active';
+
+  @override
+  String get pharmacyNoFormularyTitle => 'No formulary items';
+
+  @override
+  String get pharmacyNoFormularyBody =>
+      'Formulary entries linking drugs to prescribing will appear here.';
+
+  @override
+  String get pharmacyInventoryPanelTitle => 'Inventory stock';
+
+  @override
+  String get pharmacyInventoryPanelDescription =>
+      'Review on-hand quantities and post controlled adjustments.';
+
+  @override
+  String get pharmacyNoInventoryTitle => 'No inventory rows';
+
+  @override
+  String get pharmacyNoInventoryBody =>
+      'Matching inventory stock rows will appear here.';
+
+  @override
+  String get pharmacyInventoryQuantityColumnLabel => 'On hand';
+
+  @override
+  String get pharmacyInventoryFacilityColumnLabel => 'Facility';
+
+  @override
+  String get pharmacyAdjustStockAction => 'Adjust stock';
+
+  @override
+  String get pharmacyAdjustStockDialogTitle => 'Adjust inventory';
+
+  @override
+  String get pharmacyQuantityDeltaLabel => 'Quantity change';
+
+  @override
+  String get pharmacyStockReasonLabel => 'Reason';
+
+  @override
+  String get pharmacyLowStockOnlyFilterLabel => 'Low stock only';
+
+  @override
+  String get pharmacyDeleteDrugDialogTitle => 'Delete drug';
+
+  @override
+  String get pharmacyDeleteDrugDialogBody =>
+      'Remove this drug from the catalog?';
+
+  @override
+  String get pharmacyDispenseDialogBody =>
+      'Enter dispense quantities and optional stock mapping for each medicine line.';
+
+  @override
   String get pharmacyBatchRefLabel => 'Batch reference';
 
   @override

@@ -5,6 +5,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
@@ -42,8 +44,16 @@ final class PharmacyWorkspaceController
     await _syncVisibleData();
   }
 
-  Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshDrugs: true);
+  Future<AppFailure?> refresh({
+    bool refreshCatalog = true,
+    bool refreshInventory = true,
+  }) {
+    return _syncVisibleData(
+      showLoading: true,
+      refreshDrugs: refreshCatalog,
+      refreshFormulary: refreshCatalog,
+      refreshInventory: refreshInventory,
+    );
   }
 
   Future<AppFailure?> applySearch(String search) async {
@@ -193,6 +203,249 @@ final class PharmacyWorkspaceController
     return _refreshDrugs(showLoading: true);
   }
 
+  Future<AppFailure?> applyFormularySearch(String search) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        formularyQuery: current.formularyQuery.copyWith(
+          search: search.trim(),
+          pageRequest: current.formularyQuery.pageRequest.first(),
+        ),
+        isRefreshingFormulary: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshFormulary(showLoading: true);
+  }
+
+  Future<AppFailure?> changeFormularyPage(AppPageRequest request) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        formularyQuery: current.formularyQuery.copyWith(pageRequest: request),
+        isRefreshingFormulary: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshFormulary(showLoading: true);
+  }
+
+  Future<AppFailure?> applyInventorySearch(String search) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: current.inventoryQuery.copyWith(
+          search: search.trim(),
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  Future<AppFailure?> applyInventoryLowStockOnly(bool lowStockOnly) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: current.inventoryQuery.copyWith(
+          lowStockOnly: lowStockOnly,
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  Future<AppFailure?> changeInventoryPage(AppPageRequest request) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: current.inventoryQuery.copyWith(pageRequest: request),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  void setCatalogTab(PharmacyCatalogTab tab) {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null || current.catalogTab == tab) {
+      return;
+    }
+    _emit(current.copyWith(catalogTab: tab));
+    if (tab == PharmacyCatalogTab.formulary &&
+        current.formularyItems.items.isEmpty) {
+      unawaited(_refreshFormulary(showLoading: true));
+    }
+    if (tab == PharmacyCatalogTab.inventory &&
+        current.inventoryWorkbench.stocks.items.isEmpty) {
+      unawaited(_refreshInventory(showLoading: true));
+    }
+  }
+
+  Future<AppFailure?> createDrug(PharmacyDrugInput input) async {
+    final Result<PharmacyDrug> result = await _repository.createDrug(input);
+    return result.when(
+      success: (_) async {
+        await _refreshDrugs(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> updateDrug(
+    String drugId,
+    PharmacyDrugUpdateInput input,
+  ) async {
+    final Result<PharmacyDrug> result = await _repository.updateDrug(
+      drugId,
+      input,
+    );
+    return result.when(
+      success: (_) async {
+        await _refreshDrugs(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> deleteDrug(String drugId) async {
+    final Result<void> result = await _repository.deleteDrug(drugId);
+    return result.when(
+      success: (_) async {
+        await _refreshDrugs(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> createFormularyItem(
+    PharmacyFormularyItemInput input,
+  ) async {
+    final Result<PharmacyFormularyItem> result = await _repository
+        .createFormularyItem(input);
+    return result.when(
+      success: (_) async {
+        await _refreshFormulary(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> updateFormularyItem(
+    String formularyItemId, {
+    bool? isActive,
+  }) async {
+    final Result<PharmacyFormularyItem> result = await _repository
+        .updateFormularyItem(formularyItemId, isActive: isActive);
+    return result.when(
+      success: (_) async {
+        await _refreshFormulary(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> adjustInventoryStock(
+    PharmacyInventoryAdjustInput input,
+  ) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<PharmacyInventoryWorkbench> result = await _repository
+        .adjustInventoryStock(input);
+    return result.when(
+      success: (_) async {
+        final AppFailure? failure = await _refreshInventory(showLoading: false);
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false));
+        }
+        return failure;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> recordOrderBilling(Map<String, Object?> billing) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    final PharmacyOrderWorkflow? workflow = current?.selectedWorkflow;
+    if (current == null || workflow == null) {
+      return AppFailure.validation();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<PharmacyOrderWorkflow> result = await _repository
+        .recordOrderBilling(workflow.order.id, billing);
+    return result.when(
+      success: (PharmacyOrderWorkflow updated) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedWorkflow: updated,
+              workbench: _replaceOrder(latest.workbench, updated.order),
+              isSaving: false,
+            ),
+          );
+        }
+        unawaited(_refreshOrders(showLoading: false));
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  String? resolveTenantId() {
+    final SessionState sessionState = ref.read(sessionStateProvider);
+    return sessionState.session?.tenantId;
+  }
+
   Future<AppFailure?> prepareDispense({
     required List<PharmacyDispenseLineInput> items,
     String? dispenseBatchRef,
@@ -256,6 +509,9 @@ final class PharmacyWorkspaceController
   Future<Result<PharmacyWorkspaceState>> _loadInitialState() async {
     const PharmacyWorkbenchQuery query = PharmacyWorkbenchQuery();
     const PharmacyDrugQuery drugQuery = PharmacyDrugQuery();
+    const PharmacyFormularyQuery formularyQuery = PharmacyFormularyQuery();
+    const PharmacyInventoryStockQuery inventoryQuery =
+        PharmacyInventoryStockQuery();
     final Result<PharmacyWorkbench> workbenchResult = await _repository
         .loadWorkbench(query);
     final PharmacyWorkbench? workbench = _successOrNull(workbenchResult);
@@ -272,6 +528,21 @@ final class PharmacyWorkspaceController
         workbench: workbench,
         drugQuery: drugQuery,
         drugs: drugs,
+        formularyQuery: formularyQuery,
+        formularyItems: AppPage<PharmacyFormularyItem>(
+          items: const <PharmacyFormularyItem>[],
+          request: formularyQuery.pageRequest,
+          totalItemCount: 0,
+        ),
+        inventoryQuery: inventoryQuery,
+        inventoryWorkbench: PharmacyInventoryWorkbench(
+          summary: const PharmacyInventoryStockSummary(),
+          stocks: AppPage<PharmacyInventoryStock>(
+            items: const <PharmacyInventoryStock>[],
+            request: inventoryQuery.pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
       ),
     );
   }
@@ -285,6 +556,8 @@ final class PharmacyWorkspaceController
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshDrugs = false,
+    bool refreshFormulary = false,
+    bool refreshInventory = false,
   }) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
@@ -298,6 +571,8 @@ final class PharmacyWorkspaceController
           isRefreshingOrders: true,
           isRefreshingDetail: current.selectedWorkflow != null,
           isRefreshingDrugs: refreshDrugs,
+          isRefreshingFormulary: refreshFormulary,
+          isRefreshingInventory: refreshInventory,
           clearLastFailure: true,
         ),
       );
@@ -314,6 +589,12 @@ final class PharmacyWorkspaceController
       if (refreshDrugs) {
         await _refreshDrugs(showLoading: showLoading);
       }
+      if (refreshFormulary) {
+        await _refreshFormulary(showLoading: showLoading);
+      }
+      if (refreshInventory) {
+        await _refreshInventory(showLoading: showLoading);
+      }
 
       final PharmacyOrderWorkflow? selected = _currentState?.selectedWorkflow;
       if (selected != null) {
@@ -329,6 +610,8 @@ final class PharmacyWorkspaceController
             isRefreshingOrders: false,
             isRefreshingDetail: false,
             isRefreshingDrugs: false,
+            isRefreshingFormulary: false,
+            isRefreshingInventory: false,
           ),
         );
       }
@@ -407,6 +690,74 @@ final class PharmacyWorkspaceController
         if (latest != null) {
           _emit(
             latest.copyWith(isRefreshingDrugs: false, lastFailure: failure),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _refreshFormulary({required bool showLoading}) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+
+    final Result<AppPage<PharmacyFormularyItem>> result = await _repository
+        .listFormularyItems(current.formularyQuery);
+    return result.when(
+      success: (AppPage<PharmacyFormularyItem> items) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              formularyItems: items,
+              isRefreshingFormulary: false,
+              clearLastFailure: true,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(isRefreshingFormulary: false, lastFailure: failure),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _refreshInventory({required bool showLoading}) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+
+    final Result<PharmacyInventoryWorkbench> result = await _repository
+        .getInventoryStock(current.inventoryQuery);
+    return result.when(
+      success: (PharmacyInventoryWorkbench workbench) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              inventoryWorkbench: workbench,
+              isRefreshingInventory: false,
+              clearLastFailure: true,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final PharmacyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(isRefreshingInventory: false, lastFailure: failure),
           );
         }
         return failure;

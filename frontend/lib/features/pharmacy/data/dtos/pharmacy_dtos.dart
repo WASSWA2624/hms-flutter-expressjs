@@ -163,6 +163,11 @@ final class PharmacyOrderDto {
           .toList(growable: false),
       items: items,
       attestations: attestations,
+      paymentStatus:
+          _string(json['payment_status']) ??
+          _string(_map(json['billing'])['payment_status']),
+      billing: _map(json['billing']),
+      prescriberDisplayName: _string(json['prescriber_display_name']),
     );
   }
 }
@@ -409,6 +414,125 @@ final class PharmacyDrugDto {
           .map((PharmacyInventoryStockDto dto) => dto.toEntity())
           .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
           .toList(growable: false),
+      tenantId: _string(json['tenant_id']),
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
+    );
+  }
+}
+
+final class PharmacyInventoryWorkbenchDto {
+  const PharmacyInventoryWorkbenchDto({required this.workbench});
+
+  final PharmacyInventoryWorkbench workbench;
+
+  factory PharmacyInventoryWorkbenchDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final PharmacyJsonMap response = _expectMap(responseData);
+    final PharmacyJsonMap data = _map(response['data']);
+    final List<PharmacyInventoryStock> stocks = _list(data['stocks'])
+        .map(PharmacyInventoryStockDto.new)
+        .map((PharmacyInventoryStockDto dto) => dto.toEntity())
+        .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return PharmacyInventoryWorkbenchDto(
+      workbench: PharmacyInventoryWorkbench(
+        summary: PharmacyInventoryStockSummaryDto(
+          _map(data['summary']),
+        ).toEntity(),
+        stocks: AppPage<PharmacyInventoryStock>(
+          items: stocks,
+          request: request,
+          totalItemCount: _int(_map(data['pagination'])['total']),
+        ),
+      ),
+    );
+  }
+}
+
+final class PharmacyInventoryStockSummaryDto {
+  const PharmacyInventoryStockSummaryDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacyInventoryStockSummary toEntity() {
+    return PharmacyInventoryStockSummary(
+      totalStockRows: _int(json['total_stock_rows']) ?? 0,
+      lowStockRows: _int(json['low_stock_rows']) ?? 0,
+      almostOutOfStockRows: _int(json['almost_out_of_stock_rows']) ?? 0,
+      outOfStockRows: _int(json['out_of_stock_rows']) ?? 0,
+      pendingStockRows: _int(json['pending_stock_rows']) ?? 0,
+    );
+  }
+}
+
+final class PharmacyFormularyItemPageDto {
+  const PharmacyFormularyItemPageDto({required this.page});
+
+  final AppPage<PharmacyFormularyItem> page;
+
+  factory PharmacyFormularyItemPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final PharmacyJsonMap response = _expectMap(responseData);
+    final Object? data = response['data'];
+    final List<PharmacyFormularyItem> items = _extractFormularyList(data)
+        .map(PharmacyFormularyItemDto.new)
+        .map((PharmacyFormularyItemDto dto) => dto.toEntity())
+        .where((PharmacyFormularyItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return PharmacyFormularyItemPageDto(
+      page: AppPage<PharmacyFormularyItem>(
+        items: items,
+        request: request,
+        totalItemCount: _extractPaginationTotal(data),
+      ),
+    );
+  }
+}
+
+List<PharmacyJsonMap> _extractFormularyList(Object? data) {
+  if (data is List) {
+    return data.whereType<PharmacyJsonMap>().toList(growable: false);
+  }
+  if (data is PharmacyJsonMap) {
+    return _list(data['formulary_items']).isNotEmpty
+        ? _list(data['formulary_items'])
+        : _list(data['items']);
+  }
+  return const <PharmacyJsonMap>[];
+}
+
+int? _extractPaginationTotal(Object? data) {
+  if (data is PharmacyJsonMap) {
+    return _int(_map(data['pagination'])['total']) ??
+        _int(data['total']) ??
+        _int(data['total_count']);
+  }
+  return null;
+}
+
+final class PharmacyFormularyItemDto {
+  const PharmacyFormularyItemDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacyFormularyItem toEntity() {
+    final PharmacyJsonMap drug = _map(json['drug']);
+    return PharmacyFormularyItem(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      tenantId: _string(json['tenant_id']),
+      drugId: _string(json['drug_id']) ?? _string(drug['id']),
+      drugDisplayName: _string(drug['name']),
+      drugCode: _string(drug['code']),
+      isActive: _bool(json['is_active'], fallback: true),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );

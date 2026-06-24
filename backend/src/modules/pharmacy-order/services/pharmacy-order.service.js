@@ -431,6 +431,8 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
     // Get current state for audit
     const { scope, pharmacyOrder: before } = await findScopedOrderOrThrow(id, user);
     const payload = { ...data };
+    const billing = payload.billing;
+    delete payload.billing;
 
     if (data.ordered_at !== undefined) {
       const orderedAt = normalizeOptionalDate(data.ordered_at);
@@ -451,6 +453,31 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
 
     const pharmacyOrder = await pharmacyOrderRepository.update(before.id, payload, ORDER_SCOPE_INCLUDE);
 
+    if (billing) {
+      const patientId = pharmacyOrder.patient_id || before.patient_id;
+      const patientRecord = await prisma.patient.findFirst({
+        where: { id: patientId, deleted_at: null },
+        select: { id: true, tenant_id: true, facility_id: true },
+      });
+      if (patientRecord) {
+        await prisma.$transaction(async (tx) => {
+          await persistPharmacyOrderBilling(tx, {
+            orderId: pharmacyOrder.id,
+            billing,
+            tenantId: patientRecord.tenant_id,
+            facilityId: patientRecord.facility_id || null,
+            patientId: patientRecord.id,
+            description: 'Pharmacy order',
+          });
+        });
+      }
+    }
+
+    const refreshedOrder = await pharmacyOrderRepository.findById(
+      pharmacyOrder.id,
+      ORDER_SCOPE_INCLUDE
+    );
+
     // Create audit log (non-blocking)
     createAuditLog({
       tenant_id: before?.patient?.tenant_id || scope.tenant_id || null,
@@ -458,11 +485,11 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
       action: 'UPDATE',
       entity: 'pharmacy_order',
       entity_id: pharmacyOrder.id,
-      diff: { before, after: pharmacyOrder },
+      diff: { before, after: refreshedOrder || pharmacyOrder },
       ip_address: ipAddress
     }).catch(() => {});
 
-    return serializePharmacyOrder(pharmacyOrder);
+    return serializePharmacyOrder(refreshedOrder || pharmacyOrder);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

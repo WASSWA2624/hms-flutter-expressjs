@@ -31,6 +31,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'limit': request.pageSize,
         'search': query.search,
         'status': query.filter.backendStatus,
+        'pending_payment': query.filter.backendPendingPayment,
         'sort_by': 'ordered_at',
         'order': 'desc',
       }),
@@ -63,6 +64,163 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       }),
       decoder: (Object? data) =>
           PharmacyDrugPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<PharmacyInventoryWorkbench>> getInventoryStock(
+    PharmacyInventoryStockQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<PharmacyInventoryWorkbench>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'inventory',
+        'stock',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'low_stock_only': query.lowStockOnly ? true : null,
+        'sort_by': 'updated_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) =>
+          PharmacyInventoryWorkbenchDto.fromResponse(data, request).workbench,
+    );
+  }
+
+  @override
+  Future<Result<PharmacyInventoryWorkbench>> adjustInventoryStock(
+    PharmacyInventoryAdjustInput input,
+  ) {
+    return _apiClient.post<PharmacyInventoryWorkbench>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'inventory',
+        'adjust',
+      ]),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        final PharmacyJsonMap payload = _map(response['data']);
+        final List<PharmacyInventoryStock> stocks = _list(payload['stocks'])
+            .map(PharmacyInventoryStockDto.new)
+            .map((PharmacyInventoryStockDto dto) => dto.toEntity())
+            .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
+            .toList(growable: false);
+        return PharmacyInventoryWorkbench(
+          summary: const PharmacyInventoryStockSummary(),
+          stocks: AppPage<PharmacyInventoryStock>(
+            items: stocks,
+            request: const AppPageRequest(pageSize: 10),
+            totalItemCount: stocks.length,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrug>> createDrug(PharmacyDrugInput input) {
+    return _apiClient.post<PharmacyDrug>(
+      ApiEndpoints.collection(HmsApiResource.drugs),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyDrugDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrug>> updateDrug(
+    String drugId,
+    PharmacyDrugUpdateInput input,
+  ) {
+    return _apiClient.put<PharmacyDrug>(
+      ApiEndpoints.byId(HmsApiResource.drugs, drugId),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyDrugDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteDrug(String drugId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.drugs, drugId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<AppPage<PharmacyFormularyItem>>> listFormularyItems(
+    PharmacyFormularyQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<PharmacyFormularyItem>>(
+      ApiEndpoints.collection(HmsApiResource.formularyItems),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'is_active': query.isActive,
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) =>
+          PharmacyFormularyItemPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<PharmacyFormularyItem>> createFormularyItem(
+    PharmacyFormularyItemInput input,
+  ) {
+    return _apiClient.post<PharmacyFormularyItem>(
+      ApiEndpoints.collection(HmsApiResource.formularyItems),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyFormularyItemDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyFormularyItem>> updateFormularyItem(
+    String formularyItemId, {
+    bool? isActive,
+  }) {
+    return _apiClient.put<PharmacyFormularyItem>(
+      ApiEndpoints.byId(HmsApiResource.formularyItems, formularyItemId),
+      data: _withoutEmpty(<String, Object?>{
+        if (isActive != null) 'is_active': isActive,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyFormularyItemDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyOrderWorkflow>> recordOrderBilling(
+    String orderId,
+    Map<String, Object?> billing,
+  ) async {
+    final Result<void> updateResult = await _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.pharmacyOrders, orderId),
+      data: <String, Object?>{'billing': billing},
+      decoder: (_) {},
+    );
+    return updateResult.when(
+      success: (_) => loadOrderWorkflow(orderId),
+      failure: (failure) => Result<PharmacyOrderWorkflow>.failure(failure),
     );
   }
 
@@ -157,6 +315,24 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       action,
     ]);
   }
+}
+
+PharmacyJsonMap _expectMap(Object? value) {
+  if (value is PharmacyJsonMap) {
+    return value;
+  }
+  throw const FormatException('Expected pharmacy response object.');
+}
+
+PharmacyJsonMap _map(Object? value) {
+  return value is PharmacyJsonMap ? value : <String, Object?>{};
+}
+
+List<PharmacyJsonMap> _list(Object? value) {
+  if (value is! List) {
+    return const <PharmacyJsonMap>[];
+  }
+  return value.whereType<PharmacyJsonMap>().toList(growable: false);
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

@@ -11482,6 +11482,228 @@ abstract class AppLocalizations {
   /// **'Payment clearance is unavailable for this order.'**
   String get pharmacyBillingGateUnavailableBody;
 
+  /// Pharmacy queue payment column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get pharmacyPaymentColumnLabel;
+
+  /// Pharmacy order detail payment field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get pharmacyPaymentLabel;
+
+  /// Pharmacy billing amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount due'**
+  String get pharmacyPaymentAmountLabel;
+
+  /// Pharmacy record payment action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Record payment'**
+  String get pharmacyRecordPaymentAction;
+
+  /// Pharmacy next action when billing is not configured.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm billing'**
+  String get pharmacyNextActionConfirmBilling;
+
+  /// Pharmacy dispense blocked due to unpaid billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect or confirm payment before dispensing this order.'**
+  String get pharmacyDispenseBlockedPaymentBody;
+
+  /// Pharmacy order priority field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get pharmacyPriorityFieldLabel;
+
+  /// Pharmacy catalog drugs tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Drugs'**
+  String get pharmacyCatalogTabDrugs;
+
+  /// Pharmacy catalog formulary tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulary'**
+  String get pharmacyCatalogTabFormulary;
+
+  /// Pharmacy catalog inventory tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get pharmacyCatalogTabInventory;
+
+  /// Pharmacy catalog panel dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog and stock'**
+  String get pharmacyCatalogPanelTitle;
+
+  /// Pharmacy add drug action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add drug'**
+  String get pharmacyAddDrugAction;
+
+  /// Pharmacy edit drug action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit drug'**
+  String get pharmacyEditDrugAction;
+
+  /// Pharmacy delete drug action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete drug'**
+  String get pharmacyDeleteDrugAction;
+
+  /// Pharmacy drug name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug name'**
+  String get pharmacyDrugNameLabel;
+
+  /// Pharmacy drug code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug code'**
+  String get pharmacyDrugCodeLabel;
+
+  /// Pharmacy drug form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Form'**
+  String get pharmacyDrugFormLabel;
+
+  /// Pharmacy drug strength field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength'**
+  String get pharmacyDrugStrengthLabel;
+
+  /// Pharmacy add formulary item action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add formulary item'**
+  String get pharmacyAddFormularyAction;
+
+  /// Pharmacy formulary drug selector label.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug'**
+  String get pharmacyFormularyDrugLabel;
+
+  /// Pharmacy formulary active status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get pharmacyFormularyActiveLabel;
+
+  /// Empty pharmacy formulary list title.
+  ///
+  /// In en, this message translates to:
+  /// **'No formulary items'**
+  String get pharmacyNoFormularyTitle;
+
+  /// Empty pharmacy formulary list body.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulary entries linking drugs to prescribing will appear here.'**
+  String get pharmacyNoFormularyBody;
+
+  /// Pharmacy inventory panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory stock'**
+  String get pharmacyInventoryPanelTitle;
+
+  /// Pharmacy inventory panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Review on-hand quantities and post controlled adjustments.'**
+  String get pharmacyInventoryPanelDescription;
+
+  /// Empty pharmacy inventory list title.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory rows'**
+  String get pharmacyNoInventoryTitle;
+
+  /// Empty pharmacy inventory list body.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching inventory stock rows will appear here.'**
+  String get pharmacyNoInventoryBody;
+
+  /// Pharmacy inventory quantity column label.
+  ///
+  /// In en, this message translates to:
+  /// **'On hand'**
+  String get pharmacyInventoryQuantityColumnLabel;
+
+  /// Pharmacy inventory facility column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get pharmacyInventoryFacilityColumnLabel;
+
+  /// Pharmacy adjust inventory action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust stock'**
+  String get pharmacyAdjustStockAction;
+
+  /// Pharmacy adjust inventory dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust inventory'**
+  String get pharmacyAdjustStockDialogTitle;
+
+  /// Pharmacy inventory quantity delta field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity change'**
+  String get pharmacyQuantityDeltaLabel;
+
+  /// Pharmacy stock adjustment reason label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get pharmacyStockReasonLabel;
+
+  /// Pharmacy inventory low stock filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock only'**
+  String get pharmacyLowStockOnlyFilterLabel;
+
+  /// Pharmacy delete drug confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete drug'**
+  String get pharmacyDeleteDrugDialogTitle;
+
+  /// Pharmacy delete drug confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this drug from the catalog?'**
+  String get pharmacyDeleteDrugDialogBody;
+
+  /// Pharmacy dispense dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter dispense quantities and optional stock mapping for each medicine line.'**
+  String get pharmacyDispenseDialogBody;
+
   /// Pharmacy dispense batch reference field label.
   ///
   /// In en, this message translates to:

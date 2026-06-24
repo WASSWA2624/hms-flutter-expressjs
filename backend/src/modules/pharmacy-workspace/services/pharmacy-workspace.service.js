@@ -556,6 +556,15 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
     where.status = filters.status;
   }
 
+  if (filters.pending_payment === true) {
+    appendAnd(where, {
+      OR: [
+        { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
+        { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } },
+      ],
+    });
+  }
+
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
 
   const searchTerm = normalizeSearchTerm(filters.search);

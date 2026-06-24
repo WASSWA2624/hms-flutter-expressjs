@@ -20,6 +20,7 @@ const orderWorkflowParamsSchema = z.object({
 const getPharmacyWorkbenchQuerySchema = listQuerySchema.extend({
   panel: panelSchema.optional(),
   status: pharmacyOrderStatusSchema.optional(),
+  pending_payment: z.coerce.boolean().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),

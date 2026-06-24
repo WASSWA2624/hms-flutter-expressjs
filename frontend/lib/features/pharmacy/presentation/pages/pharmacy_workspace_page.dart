@@ -15,8 +15,12 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -117,10 +121,10 @@ class _PharmacyWorkspaceContentState
       ),
       secondaryActions: <Widget>[
         AppButton.secondary(
-          label: l10n.pharmacyDrugPanelTitle,
+          label: l10n.pharmacyCatalogPanelTitle,
           leadingIcon: Icons.inventory_2_outlined,
           onPressed: () {
-            unawaited(_openFormularyStockDialog(context, state));
+            unawaited(_openCatalogDialog(context, state));
           },
         ),
         AppIconButton(
@@ -322,6 +326,18 @@ class _PharmacyQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<PharmacyOrder>(
+            label: l10n.pharmacyPaymentColumnLabel,
+            id: 'billing',
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareText(
+                  left.effectivePaymentStatus,
+                  right.effectivePaymentStatus,
+                ),
+            cellBuilder: (BuildContext context, PharmacyOrder item) {
+              return Text(_billingGateLabel(context, item));
+            },
+          ),
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyStatusColumnLabel,
             sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
                 appListTableCompareText(left.status, right.status),
@@ -464,10 +480,12 @@ class _PharmacyDetailPanel extends ConsumerWidget {
                 label: l10n.pharmacyPendingBatchLabel,
                 tone: AppWorkspaceStatusTone.warning,
               ),
-            AppWorkspaceStatus(
-              label: l10n.pharmacyBillingGateUnavailableTitle,
-              tone: AppWorkspaceStatusTone.info,
-            ),
+            if (!order.hasBillingGate)
+              AppWorkspaceStatus(
+                label: l10n.pharmacyBillingGateUnavailableTitle,
+                tone: AppWorkspaceStatusTone.warning,
+                icon: Icons.receipt_long_outlined,
+              ),
           ],
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
@@ -480,17 +498,40 @@ class _PharmacyDetailPanel extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.pharmacyEncounterFieldLabel,
-              value: '',
+              value: order.encounterId ?? '',
               icon: Icons.assignment_outlined,
-              copyable: true,
+              copyable: (order.encounterId ?? '').isNotEmpty,
               copyTooltip: l10n.opdCopyEncounterIdAction,
               copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
+            if (order.hasBillingGate)
+              AppWorkspacePatientContextField(
+                label: l10n.pharmacyPaymentLabel,
+                value: clinicalRequestPaymentStatusDisplayLabel(
+                  l10n,
+                  order.effectivePaymentStatus,
+                ),
+              ),
+            if (order.hasBillingGate && order.billingTotalAmount != null)
+              AppWorkspacePatientContextField(
+                label: l10n.pharmacyPaymentAmountLabel,
+                value: clinicalRequestPriceLabel(
+                  context,
+                  order.billingTotalAmount!,
+                  order.billingCurrency,
+                ),
+              ),
             AppWorkspacePatientContextField(
               label: l10n.pharmacySourceFieldLabel,
               value: _apiLabel(order.orderSource ?? ''),
               icon: Icons.account_tree_outlined,
             ),
+            if ((order.priority ?? '').isNotEmpty)
+              AppWorkspacePatientContextField(
+                label: l10n.pharmacyPriorityFieldLabel,
+                value: _apiLabel(order.priority ?? ''),
+                icon: Icons.priority_high_outlined,
+              ),
             AppWorkspacePatientContextField(
               label: l10n.pharmacyOrderedFieldLabel,
               value: _dateTimeLabel(context, order.orderedAt),
@@ -552,6 +593,56 @@ Future<void> _openPharmacyDetailDialog(
   );
 }
 
+Future<void> _openCatalogDialog(
+  BuildContext context,
+  PharmacyWorkspaceState state,
+) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.pharmacyCatalogPanelTitle),
+      icon: const Icon(Icons.inventory_2_outlined),
+      scrollable: true,
+      maxWidth: 1080,
+      content: PharmacyCatalogPanel(state: state),
+    ),
+  );
+}
+
+Future<void> _openRecordPaymentDialog(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyOrder order,
+) async {
+  final ClinicalRequestBillingSubmit? billing =
+      await showClinicalRequestBillingDialog(
+        context: context,
+        lineItems: pharmacyOrderBillingLineItems(order),
+        initialPaymentStatus: clinicalRequestPaymentStatusFromValue(
+          order.effectivePaymentStatus,
+        ),
+        initialPaidAmount: order.billing['paid_amount'] is num
+            ? order.billing['paid_amount'] as num
+            : num.tryParse(order.billing['paid_amount']?.toString() ?? ''),
+        initialCurrency: order.billingCurrency,
+      );
+  if (billing == null || !context.mounted) {
+    return;
+  }
+
+  final AppFailure? failure = await ref
+      .read(pharmacyWorkspaceControllerProvider.notifier)
+      .recordOrderBilling(billing.toPayloadMap());
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+    if (failure == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.pharmacySavedMessage)),
+      );
+    }
+  }
+}
+
 Future<void> _openFormularyStockDialog(
   BuildContext context,
   PharmacyWorkspaceState state,
@@ -585,6 +676,10 @@ class _PharmacyActionPanel extends ConsumerWidget {
     required this.writeRequirement,
   });
 
+  static const AccessRequirement _billingRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+  );
+
   final PharmacyOrderWorkflow workflow;
   final AccessRequirement writeRequirement;
 
@@ -598,16 +693,31 @@ class _PharmacyActionPanel extends ConsumerWidget {
         workflow.nextActions.canAttestDispense || order.canAttestDispense;
     final bool canCancel = workflow.nextActions.canCancel || order.canCancel;
     final bool canReturn = workflow.nextActions.canReturn || order.canReturn;
+    final bool paymentBlocksDispense =
+        order.requiresPaymentBeforeDispense && canPrepare;
 
     return AppAccessActionGate(
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) => AppActionPanel(
         title: l10n.pharmacyActionsPanelTitle,
         actions: <AppActionItem>[
+          if (order.requiresPaymentBeforeDispense)
+            AppAccessActionGate(
+              requirement: _billingRequirement,
+              builder: (BuildContext context, bool canBill) => AppActionItem(
+                label: l10n.pharmacyRecordPaymentAction,
+                leadingIcon: Icons.payments_outlined,
+                enabled: canBill,
+                onPressed: () => _openRecordPaymentDialog(context, ref, order),
+              ),
+            ),
           AppActionItem(
             label: l10n.pharmacyDispenseAction,
             leadingIcon: Icons.medication_liquid_outlined,
-            enabled: isAllowed && canPrepare,
+            enabled: isAllowed && canPrepare && !paymentBlocksDispense,
+            tooltip: paymentBlocksDispense
+                ? l10n.pharmacyDispenseBlockedPaymentBody
+                : null,
             onPressed: () => _openDispenseDialog(context, workflow),
           ),
           AppActionItem(
@@ -783,13 +893,15 @@ class _PharmacyWorkflowReadinessPanel extends StatelessWidget {
     final List<PharmacyOrderItem> items = workflow.items.isEmpty
         ? workflow.order.items
         : workflow.items;
-    final bool hasStockMapping = items.isNotEmpty &&
+    final bool hasStockMapping =
+        items.isNotEmpty &&
         items.every(
           (PharmacyOrderItem item) =>
               item.defaultStockMapping != null || item.stockMappings.isNotEmpty,
         );
     final bool hasPendingBatch = workflow.order.hasPendingAttestation;
-    final bool canDispense = workflow.nextActions.canPrepareDispense ||
+    final bool canDispense =
+        workflow.nextActions.canPrepareDispense ||
         workflow.order.canPrepareDispense;
 
     return AppWorkspaceDetailPanel(
@@ -799,9 +911,7 @@ class _PharmacyWorkflowReadinessPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _ReadinessLine(
-            icon: canDispense
-                ? Icons.check_circle_outline
-                : Icons.info_outline,
+            icon: canDispense ? Icons.check_circle_outline : Icons.info_outline,
             text: canDispense
                 ? l10n.pharmacyReadinessDispenseAvailable
                 : l10n.pharmacyReadinessDispenseBlocked,
@@ -1172,7 +1282,11 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
       content: AppFormShell(
         formKey: _formKey,
         formStatus: _failure == null
-            ? _FormInfo(text: l10n.pharmacyBillingGateUnavailableBody)
+            ? _FormInfo(
+                text: widget.workflow.order.requiresPaymentBeforeDispense
+                    ? l10n.pharmacyDispenseBlockedPaymentBody
+                    : l10n.pharmacyDispenseDialogBody,
+              )
             : AppFailureStateView(failure: _failure!),
         enabled: !_isSaving,
         children: <Widget>[
@@ -1842,7 +1956,6 @@ List<AppSelectOption<PharmacyOrderFilter>> _orderFilterOptions(
     AppSelectOption<PharmacyOrderFilter>(
       value: PharmacyOrderFilter.pendingPayment,
       label: l10n.pharmacyFilterPendingPayment,
-      enabled: false,
     ),
     AppSelectOption<PharmacyOrderFilter>(
       value: PharmacyOrderFilter.partialStock,
@@ -2012,6 +2125,17 @@ String _timelineLabel(BuildContext context, PharmacyTimelineItem item) {
     return context.l10n.pharmacyTimelineBatchEvent(type, batch!);
   }
   return type.isEmpty ? context.l10n.pharmacyTimelineOrderPlaced : type;
+}
+
+String _billingGateLabel(BuildContext context, PharmacyOrder order) {
+  final AppLocalizations l10n = context.l10n;
+  if (!order.hasBillingGate) {
+    return l10n.pharmacyBillingGateUnavailableTitle;
+  }
+  return clinicalRequestPaymentStatusDisplayLabel(
+    l10n,
+    order.effectivePaymentStatus,
+  );
 }
 
 String _dispenseProgressLabel(BuildContext context, PharmacyOrder order) {

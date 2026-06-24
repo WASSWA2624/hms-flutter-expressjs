@@ -7887,6 +7887,154 @@
   "@pharmacyBillingGateUnavailableBody": {
     "description": "Pharmacy billing gate unavailable body."
   },
+  "pharmacyPaymentColumnLabel": "Payment",
+  "@pharmacyPaymentColumnLabel": {
+    "description": "Pharmacy queue payment column label."
+  },
+  "pharmacyPaymentLabel": "Payment",
+  "@pharmacyPaymentLabel": {
+    "description": "Pharmacy order detail payment field label."
+  },
+  "pharmacyPaymentAmountLabel": "Amount due",
+  "@pharmacyPaymentAmountLabel": {
+    "description": "Pharmacy billing amount field label."
+  },
+  "pharmacyRecordPaymentAction": "Record payment",
+  "@pharmacyRecordPaymentAction": {
+    "description": "Pharmacy record payment action label."
+  },
+  "pharmacyNextActionConfirmBilling": "Confirm billing",
+  "@pharmacyNextActionConfirmBilling": {
+    "description": "Pharmacy next action when billing is not configured."
+  },
+  "pharmacyDispenseBlockedPaymentBody": "Collect or confirm payment before dispensing this order.",
+  "@pharmacyDispenseBlockedPaymentBody": {
+    "description": "Pharmacy dispense blocked due to unpaid billing."
+  },
+  "pharmacyPriorityFieldLabel": "Priority",
+  "@pharmacyPriorityFieldLabel": {
+    "description": "Pharmacy order priority field label."
+  },
+  "pharmacyCatalogTabDrugs": "Drugs",
+  "@pharmacyCatalogTabDrugs": {
+    "description": "Pharmacy catalog drugs tab label."
+  },
+  "pharmacyCatalogTabFormulary": "Formulary",
+  "@pharmacyCatalogTabFormulary": {
+    "description": "Pharmacy catalog formulary tab label."
+  },
+  "pharmacyCatalogTabInventory": "Inventory",
+  "@pharmacyCatalogTabInventory": {
+    "description": "Pharmacy catalog inventory tab label."
+  },
+  "pharmacyCatalogPanelTitle": "Catalog and stock",
+  "@pharmacyCatalogPanelTitle": {
+    "description": "Pharmacy catalog panel dialog title."
+  },
+  "pharmacyAddDrugAction": "Add drug",
+  "@pharmacyAddDrugAction": {
+    "description": "Pharmacy add drug action label."
+  },
+  "pharmacyEditDrugAction": "Edit drug",
+  "@pharmacyEditDrugAction": {
+    "description": "Pharmacy edit drug action label."
+  },
+  "pharmacyDeleteDrugAction": "Delete drug",
+  "@pharmacyDeleteDrugAction": {
+    "description": "Pharmacy delete drug action label."
+  },
+  "pharmacyDrugNameLabel": "Drug name",
+  "@pharmacyDrugNameLabel": {
+    "description": "Pharmacy drug name field label."
+  },
+  "pharmacyDrugCodeLabel": "Drug code",
+  "@pharmacyDrugCodeLabel": {
+    "description": "Pharmacy drug code field label."
+  },
+  "pharmacyDrugFormLabel": "Form",
+  "@pharmacyDrugFormLabel": {
+    "description": "Pharmacy drug form field label."
+  },
+  "pharmacyDrugStrengthLabel": "Strength",
+  "@pharmacyDrugStrengthLabel": {
+    "description": "Pharmacy drug strength field label."
+  },
+  "pharmacyAddFormularyAction": "Add formulary item",
+  "@pharmacyAddFormularyAction": {
+    "description": "Pharmacy add formulary item action label."
+  },
+  "pharmacyFormularyDrugLabel": "Drug",
+  "@pharmacyFormularyDrugLabel": {
+    "description": "Pharmacy formulary drug selector label."
+  },
+  "pharmacyFormularyActiveLabel": "Active",
+  "@pharmacyFormularyActiveLabel": {
+    "description": "Pharmacy formulary active status label."
+  },
+  "pharmacyNoFormularyTitle": "No formulary items",
+  "@pharmacyNoFormularyTitle": {
+    "description": "Empty pharmacy formulary list title."
+  },
+  "pharmacyNoFormularyBody": "Formulary entries linking drugs to prescribing will appear here.",
+  "@pharmacyNoFormularyBody": {
+    "description": "Empty pharmacy formulary list body."
+  },
+  "pharmacyInventoryPanelTitle": "Inventory stock",
+  "@pharmacyInventoryPanelTitle": {
+    "description": "Pharmacy inventory panel title."
+  },
+  "pharmacyInventoryPanelDescription": "Review on-hand quantities and post controlled adjustments.",
+  "@pharmacyInventoryPanelDescription": {
+    "description": "Pharmacy inventory panel description."
+  },
+  "pharmacyNoInventoryTitle": "No inventory rows",
+  "@pharmacyNoInventoryTitle": {
+    "description": "Empty pharmacy inventory list title."
+  },
+  "pharmacyNoInventoryBody": "Matching inventory stock rows will appear here.",
+  "@pharmacyNoInventoryBody": {
+    "description": "Empty pharmacy inventory list body."
+  },
+  "pharmacyInventoryQuantityColumnLabel": "On hand",
+  "@pharmacyInventoryQuantityColumnLabel": {
+    "description": "Pharmacy inventory quantity column label."
+  },
+  "pharmacyInventoryFacilityColumnLabel": "Facility",
+  "@pharmacyInventoryFacilityColumnLabel": {
+    "description": "Pharmacy inventory facility column label."
+  },
+  "pharmacyAdjustStockAction": "Adjust stock",
+  "@pharmacyAdjustStockAction": {
+    "description": "Pharmacy adjust inventory action label."
+  },
+  "pharmacyAdjustStockDialogTitle": "Adjust inventory",
+  "@pharmacyAdjustStockDialogTitle": {
+    "description": "Pharmacy adjust inventory dialog title."
+  },
+  "pharmacyQuantityDeltaLabel": "Quantity change",
+  "@pharmacyQuantityDeltaLabel": {
+    "description": "Pharmacy inventory quantity delta field label."
+  },
+  "pharmacyStockReasonLabel": "Reason",
+  "@pharmacyStockReasonLabel": {
+    "description": "Pharmacy stock adjustment reason label."
+  },
+  "pharmacyLowStockOnlyFilterLabel": "Low stock only",
+  "@pharmacyLowStockOnlyFilterLabel": {
+    "description": "Pharmacy inventory low stock filter label."
+  },
+  "pharmacyDeleteDrugDialogTitle": "Delete drug",
+  "@pharmacyDeleteDrugDialogTitle": {
+    "description": "Pharmacy delete drug confirmation title."
+  },
+  "pharmacyDeleteDrugDialogBody": "Remove this drug from the catalog?",
+  "@pharmacyDeleteDrugDialogBody": {
+    "description": "Pharmacy delete drug confirmation body."
+  },
+  "pharmacyDispenseDialogBody": "Enter dispense quantities and optional stock mapping for each medicine line.",
+  "@pharmacyDispenseDialogBody": {
+    "description": "Pharmacy dispense dialog body."
+  },
   "pharmacyBatchRefLabel": "Batch reference",
   "@pharmacyBatchRefLabel": {
     "description": "Pharmacy dispense batch reference field label."
