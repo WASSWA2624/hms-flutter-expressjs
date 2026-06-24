@@ -18,11 +18,17 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 - Components adapt to supported screen sizes and input methods.
 - Components use [`design-system.mdc`](./design-system.mdc) tokens for colors, spacing, typography, radius, and elevation.
 - Before creating new UI, check `lib/shared/` for an existing component; add reusable widgets there, one-off widgets in the feature.
+- Module work-queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc) unless the screen type is excluded there (auth, simple settings, static profile).
 
 ## Standard catalog
 
 | Component | Built on | Purpose |
 |---|---|---|
+| `AppWorkspace` | composition | module work-queue shell: summary cards, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
+| `AppListTable` | `ListView` / table layout | paginated worklist with mobile adaptive mode |
+| `AppWorkspaceDetailPanel` | composition | selected row detail sections |
+| `AppActionPanel` / `AppActionList` | composition | grouped primary/secondary actions |
+| `AppWorkspaceMutationDialog` | `AppDialog` | consistent mutation forms from workspace |
 | `AppButton` | `FilledButton`, `OutlinedButton`, `TextButton` | primary, secondary, tertiary actions |
 | `AppIconButton` | `IconButton` | compact icon actions with semantic labels |
 | `AppTextField` | `TextFormField` | text, number, password, multiline |
@@ -54,7 +60,15 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 - Date fields use locale-aware formatting.
 - Password fields provide accessible show/hide when used.
 
+## Anti-patterns
+
+- Do not introduce parallel button, dialog, table, or workspace abstractions when the standard catalog already covers the use case.
+- Do not embed module-specific copy in `lib/shared/` — shared widgets accept localized strings from callers.
+- Do not use raw Material buttons/fields on module workspaces when `AppButton` / `AppTextField` / `AppWorkspace` apply.
+
 ## See also
+
+- [`ui-workspace.mdc`](./ui-workspace.mdc) — module screen contract
 
 - [`ui-patterns.mdc`](./ui-patterns.mdc) — forms and tables
 - [`ui-feedback.mdc`](./ui-feedback.mdc) — async states

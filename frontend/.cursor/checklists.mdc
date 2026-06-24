@@ -14,7 +14,8 @@ Purpose: release gates only. Detailed standards live in owner files in [`index.m
 - [ ] Theme/tokens per [`design-system.mdc`](./design-system.mdc)
 - [ ] Components per [`components.mdc`](./components.mdc)
 - [ ] Layouts/shell per [`layouts.mdc`](./layouts.mdc)
-- [ ] Localization: no hard-coded user-facing strings
+- [ ] Module workspaces per [`ui-workspace.mdc`](./ui-workspace.mdc) (new/changed queue screens)
+- [ ] Localization: no hard-coded user-facing strings; no `_FeatureText` private copy classes
 - [ ] Auth/permissions align with backend entitlements
 - [ ] API integration per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
 - [ ] `flutter analyze` and `flutter test` pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc))
@@ -23,8 +24,10 @@ Purpose: release gates only. Detailed standards live in owner files in [`index.m
 
 - [ ] Standard `data/domain/presentation` structure
 - [ ] Shared components reused from `lib/shared/`
+- [ ] Queue screens follow [`ui-workspace.mdc`](./ui-workspace.mdc) layout stack
 - [ ] UI feedback states per [`ui-feedback.mdc`](./ui-feedback.mdc)
 - [ ] Forms/tables per [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [ ] No raw UUIDs, enum codes, or magic color/spacing constants in presentation UI
 - [ ] Tests for controller and critical UI
 
 ## See also

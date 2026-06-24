@@ -18,6 +18,8 @@ Defines how user-facing text, formatting, and accessibility labels are handled.
 - Keep localization keys descriptive and stable.
 - Include accessibility labels and error messages in localization files.
 - Do not concatenate translated strings when interpolation or pluralization is required.
+- Do not use private feature string holder classes (`_BillingText`, `_IcuText`, `_EmergencyText`, etc.) — add keys to `app_en.arb` and use `context.l10n` / `AppLocalizations`.
+- Controllers and repositories must not own user-facing copy; pass localized strings from presentation or use l10n in the UI layer.
 
 ## File standard
 ```txt

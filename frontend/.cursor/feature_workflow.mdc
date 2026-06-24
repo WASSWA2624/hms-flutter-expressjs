@@ -13,6 +13,7 @@ Defines the repeatable process for adding a new feature to the template or an ap
 - Define domain models and repository contracts before wiring UI to real data sources when the flow is non-trivial.
 - Add localization keys before adding user-facing text to widgets.
 - Use shared components before creating feature-specific widgets.
+- Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module before implementation.
 - Add tests for controller logic, repository mapping, and important widgets.
 - Update docs when the feature changes app structure or conventions.
 
@@ -23,9 +24,11 @@ Defines the repeatable process for adding a new feature to the template or an ap
 ## Acceptance checklist
 - The feature works at supported breakpoints.
 - No architecture boundary is violated.
+- Queue screens match [`ui-workspace.mdc`](./ui-workspace.mdc) when applicable.
 - Tests and localization are included.
 
 ## Related rules
+- [`ui-workspace.mdc`](./ui-workspace.mdc)
 - [`architecture.md`](./architecture.mdc)
 - [`project_structure.md`](./project_structure.mdc)
 - [`components.mdc`](./components.mdc)

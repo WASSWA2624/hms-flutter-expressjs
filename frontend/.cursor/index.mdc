@@ -39,6 +39,8 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 | [`components.mdc`](./components.mdc) | Shared component catalog and styling |
 | [`layouts.mdc`](./layouts.mdc) | Breakpoints, shell, max widths |
 | [`ui-patterns.mdc`](./ui-patterns.mdc) | Forms, tables, search, filters |
+| [`ui-workspace.mdc`](./ui-workspace.mdc) | Module workspace layout (`AppWorkspace`, `AppListTable`) |
+| [`flows/opd-flow.mdc`](../../.cursor/flows/opd-flow.mdc) | OPD UI rules §6 (summary cards, shared components) |
 | [`ui-feedback.mdc`](./ui-feedback.mdc) | Loading, empty, error, success, dialogs |
 | [`navigation.mdc`](./navigation.mdc) | Routing and guards |
 | [`accessibility.mdc`](./accessibility.mdc) | Accessibility baseline |

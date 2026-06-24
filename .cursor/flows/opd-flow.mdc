@@ -82,7 +82,7 @@ Actions must be visible only when both the current backend stage and current use
 
 ## 6. UI Rules
 
-- Before creating new UI components or modifying the existing UI component, check the frontend/lib/shared/* folder for appropriate reusable component(s) and reuse them instead of reinventing the wheeel. If none exists, create the new UI/component, determine if it will be reused (if yes, create it in appropriate sub-folder with in frontend/lib/shared/* folder and re-use it, else, create it in any appropriate folder for one-time use.
+- Before creating new UI components or modifying the existing UI component, check the `frontend/lib/shared/*` folder for appropriate reusable component(s) and reuse them instead of reinventing the wheel. If none exists, create the new UI/component, determine if it will be reused (if yes, create it in the appropriate sub-folder within `frontend/lib/shared/*` and re-use it, else create it in any appropriate folder for one-time use).
 - Use `AppWorkspace`, compact summary cards, `AppListTable`, search/filter controls, status badges, detail panels, and focused dialogs.
 - Use hospital workflow language in labels; do not expose enum names to normal users.
 - Summary cards must filter the current worklist, not open modal lists.

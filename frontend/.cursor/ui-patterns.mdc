@@ -46,7 +46,19 @@ Purpose: uniform data-entry and data-display interaction patterns.
 - Localize result counts, empty states, and errors.
 - Searchable selects: overlay/menu pattern; filters resettable and visually clear.
 
+## Module workspaces
+
+Clinical and operational queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc):
+
+- `AppWorkspace` → `AppListTable` → `AppWorkspaceDetailPanel` → `AppActionPanel`
+- Summary cards filter the worklist; status badges use hospital language
+- Permission-gated actions; display IDs not raw UUIDs
+
+Reference implementations: `lab_workspace_page.dart`, `billing_workspace_page.dart`, `ipd_workspace_page.dart`.
+
 ## See also
+
+- [`ui-workspace.mdc`](./ui-workspace.mdc)
 
 - [`components.mdc`](./components.mdc)
 - [`ui-feedback.mdc`](./ui-feedback.mdc)

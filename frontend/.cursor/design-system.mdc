@@ -17,6 +17,21 @@ Purpose: single source of truth for the HOSSPI HMS visual system.
 - Theme changes must update the app reactively.
 - Shared components read colors, typography, shape, and spacing from the active theme or design tokens.
 
+## Token access (mandatory)
+
+Read tokens through theme extensions — do not duplicate numeric constants in features:
+
+```dart
+final theme = Theme.of(context);
+theme.spacing.md;           // AppSpacingTokens via app_theme_extensions
+theme.appTokens;            // AppDesignTokens
+theme.colorScheme.primary;  // ColorScheme roles
+```
+
+- Use `theme.textTheme` for typography — not inline `TextStyle(fontSize: 14, ...)`.
+- Use `AppWorkspaceStatusTone` / semantic status colors from theme extensions for status chips — not ad-hoc `Colors.green`.
+- Use `AppFormatters` / `app_formatters.dart` for currency and dates — not manual string building.
+
 ## Color standard
 
 | Theme | Baseline |

@@ -24,6 +24,8 @@ Purpose: naming, imports, style, and file focus.
 - Small focused widgets; no business logic in widgets.
 - Typed models, not maps, for app data.
 - No hard-coded route strings, user-facing text, colors, spacing, or repeated formatting.
+- Presentation files must not define private UI copy classes (`_XxxText`) — use `app_en.arb`.
+- `*_workspace_page.dart` files should stay compositional; extract widgets when approaching ~800 lines.
 - Treat analyzer warnings seriously.
 
 ## File focus

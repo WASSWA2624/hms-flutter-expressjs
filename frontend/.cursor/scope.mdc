@@ -37,6 +37,7 @@ Product modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-w
 | State | Riverpod providers with override-ready boundaries |
 | Localization | English ARB baseline, `l10n.yaml`, generated l10n |
 | Components | Shared buttons, fields, dialogs, state views, layout helpers ([`components.mdc`](./components.mdc)) |
+| Module workspaces | `AppWorkspace` + `AppListTable` contract ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
 | Quality | format, analyze, tests, CI commands |
 
 ## Implementation standard

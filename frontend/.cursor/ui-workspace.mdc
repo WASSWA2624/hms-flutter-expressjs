@@ -1,0 +1,69 @@
+---
+description: Module workspace layout contract for uniform clinical and operational screens
+alwaysApply: false
+globs: ["frontend/lib/features/**/presentation/**"]
+---
+# Module Workspace UI Contract
+
+Purpose: keep clinical and operational module screens visually and behaviorally consistent.
+
+**Scope:** applies to **new** screens and **material** changes to existing workspace pages. Legacy large pages may be refactored incrementally; do not block urgent fixes on full extraction.
+
+## Mandatory layout stack
+
+Module work queues (OPD, IPD, Lab, Billing, Nursing, etc.) must use this stack unless the interaction model is fundamentally different (e.g. auth, simple settings):
+
+| Layer | Shared widget | Responsibility |
+|---|---|---|
+| Page root | `AsyncStateScaffold` | loading, error, retry ([`ui-feedback.mdc`](./ui-feedback.mdc)) |
+| Page width | `ResponsivePage` + `PageMaxWidth` | padding and max width ([`layouts.mdc`](./layouts.mdc)) |
+| Workspace shell | `AppWorkspace` | title, summary cards, worklist, detail, status tone |
+| Worklist | `AppListTable` | columns, pagination, mobile list fallback, selection |
+| Detail | `AppWorkspaceDetailPanel` | selected item sections |
+| Actions | `AppActionPanel` / `AppActionList` | primary actions grouped by role/state |
+| Mutations | `AppDialog`, `AppWorkspaceMutationDialog` | focused forms; not full-page for small edits |
+
+Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/components.dart`, and `shared/actions/actions.dart` before adding feature-local equivalents.
+
+## Mandatory behavior (aligned with OPD/IPD flows)
+
+- **Summary cards filter** the current worklist — they must not open modal lists of the same data.
+- **Hide zero-value summary cards** when the workspace pattern expects it.
+- **Hospital workflow language** in labels — never expose raw enum names, API stage codes, or internal IDs to users.
+- **Display IDs only** — use `displayId`, patient display name, human-friendly refs; never surface raw UUIDs in production UI.
+- **Role + state gating** — show actions only when backend stage and user permission both allow; disable with tooltip when helpful.
+- **Row refresh** — after small modal mutations, refresh the affected row, detail panel, summary counts, and nav badges; avoid full-page reload when the controller supports targeted refresh.
+- **Realtime** — subscribe to the module's `RealtimeEventGroups` where the feature already defines one.
+
+## Forbidden patterns
+
+- Custom full-page `Scaffold` + hand-rolled table for a module that fits the workspace contract.
+- Duplicate status chips (one clearance state is enough; do not stack redundant badges).
+- Private feature string classes (`_BillingText`, `_IcuText`, etc.) — use `app_en.arb` ([`localization_i18n.mdc`](./localization_i18n.mdc)).
+- Hard-coded colors, spacing, or `TextStyle` in feature presentation code ([`design-system.mdc`](./design-system.mdc)).
+- Inline `SnackBar` success copy that bypasses localization.
+- Creating a new table/list component when `AppListTable` satisfies the need.
+
+## File organization
+
+| File | Max guidance | Owns |
+|---|---|---|
+| `*_workspace_page.dart` | prefer `< 800` lines | composition, wiring |
+| `presentation/widgets/` | extract when page grows | summary cards, detail sections, dialogs |
+| `*_workspace_controller.dart` | — | mutations, filters, selection |
+
+When a workspace page exceeds ~800 lines, extract widgets before adding more inline UI.
+
+## Before adding UI (checklist)
+
+1. Search `frontend/lib/shared/` for an existing component or pattern.
+2. Open a reference module with the same shape (e.g. Lab, Billing, IPD) and match its structure.
+3. Add `app_en.arb` keys before user-facing strings.
+4. Confirm permissions via `AccessGate` / `AppAccessActionGate`.
+
+## See also
+
+- [`.cursor/flows/opd-flow.mdc`](../../.cursor/flows/opd-flow.mdc) §6 UI rules
+- [`ui-patterns.mdc`](./ui-patterns.mdc) — forms, tables, search
+- [`components.mdc`](./components.mdc) — shared catalog
+- [`permissions.mdc`](./permissions.mdc) — action visibility
