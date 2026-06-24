@@ -2715,11 +2715,7 @@ bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
 }
 
-String _isoText(DateTime? value) {
-  return value?.toUtc().toIso8601String() ?? '';
-}
-
-final DateTime _subscriptionFirstDate = DateTime(2000, 1, 1);
+final DateTime _subscriptionFirstDate = DateTime(2000);
 final DateTime _subscriptionLastDate = DateTime(2100, 12, 31);
 
 DateTime? _dateOnly(DateTime? value) {
