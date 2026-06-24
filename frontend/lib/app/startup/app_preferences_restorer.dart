@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract final class AppPreferenceKeys {
   static const String themeMode = 'app.theme_mode';
   static const String locale = 'app.locale';
+  static const String reduceMotion = 'app.accessibility.reduce_motion';
+  static const String boldText = 'app.accessibility.bold_text';
+  static const String textScaleLevel = 'app.accessibility.text_scale_level';
 }
 
 abstract final class AppPreferencesRestorer {
@@ -54,5 +58,17 @@ abstract final class AppPreferencesRestorer {
 
     return normalizedValue == languageCode ||
         normalizedValue == '$languageCode-$countryCode';
+  }
+
+  static AppAccessibilityPreferences restoreAccessibility(
+    SharedPreferences preferences,
+  ) {
+    return AppAccessibilityPreferences(
+      reduceMotion: preferences.getBool(AppPreferenceKeys.reduceMotion) ?? false,
+      boldText: preferences.getBool(AppPreferenceKeys.boldText) ?? false,
+      textScaleLevel: AppTextScaleLevel.fromStorage(
+        preferences.getInt(AppPreferenceKeys.textScaleLevel),
+      ),
+    );
   }
 }

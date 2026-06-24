@@ -1,8 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
-import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
+import 'package:hosspi_hms/features/profile/presentation/controllers/user_profile_controller.dart';
+import 'package:hosspi_hms/features/profile/presentation/state/user_profile_state.dart';
+import 'package:hosspi_hms/features/profile/presentation/widgets/edit_user_profile_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -13,13 +24,76 @@ class UserProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final session = ref.watch(
-      sessionStateProvider.select((state) => state.session),
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<UserProfileState>> profileState = ref.watch(
+      userProfileControllerProvider,
     );
-    final profile = session?.user ?? AuthUserProfile(email: session?.subject);
 
-    if (session == null || profile.displayName == null) {
+    return profileState.when(
+      loading: () => AppScreen(
+        title: l10n.profileTitle,
+        body: l10n.profileBody,
+        maxWidth: PageMaxWidth.dashboard,
+        children: <Widget>[
+          AppStateView(
+            variant: AppStateViewVariant.loading,
+            title: l10n.profileLoadingTitle,
+            body: l10n.profileLoadingBody,
+          ),
+        ],
+      ),
+      error: (_, _) => AppScreen(
+        title: l10n.profileTitle,
+        body: l10n.profileBody,
+        maxWidth: PageMaxWidth.dashboard,
+        children: <Widget>[
+          AppFailureStateView(
+            failure: const AppFailure.unexpected(),
+            title: l10n.profileUnavailableTitle,
+            onRetry: () => unawaited(
+              ref.read(userProfileControllerProvider.notifier).refresh(),
+            ),
+          ),
+        ],
+      ),
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) {
+          return _ProfileContent(state: state);
+        },
+        failure: (AppFailure failure) {
+          return AppScreen(
+            title: l10n.profileTitle,
+            body: l10n.profileBody,
+            maxWidth: PageMaxWidth.dashboard,
+            children: <Widget>[
+              AppFailureStateView(
+                failure: failure,
+                title: l10n.profileUnavailableTitle,
+                onRetry: () => unawaited(
+                  ref.read(userProfileControllerProvider.notifier).refresh(),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileContent extends ConsumerWidget {
+  const _ProfileContent({required this.state});
+
+  final UserProfileState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final UserProfileView view = state.view;
+    final AuthUserProfile profile = view.profile;
+    final AuthSession session = view.session;
+
+    if (profile.displayName == null && session.subject == null) {
       return AppScreen(
         title: l10n.profileTitle,
         body: l10n.profileBody,
@@ -33,15 +107,43 @@ class UserProfilePage extends ConsumerWidget {
       );
     }
 
+    final List<String> roles = view.roles;
+    final List<AppPermission> permissions = view.permissions;
+
     return AppScreen(
       title: l10n.profileTitle,
       body: l10n.profileBody,
       maxWidth: PageMaxWidth.dashboard,
+      headerActions: <Widget>[
+        if (view.record != null)
+          AppButton.secondary(
+            label: l10n.profileEditActionTitle,
+            leadingIcon: Icons.edit_outlined,
+            enabled: !state.isSaving,
+            onPressed: state.isSaving
+                ? null
+                : () => unawaited(_editProfile(context, ref, view.record!)),
+          ),
+        AppButton.secondary(
+          label: l10n.profileChangePasswordActionTitle,
+          leadingIcon: Icons.lock_reset_outlined,
+          onPressed: () => unawaited(_changePassword(context)),
+        ),
+        AppButton.secondary(
+          label: l10n.commonRefreshActionLabel,
+          leadingIcon: Icons.refresh,
+          onPressed: () => unawaited(
+            ref.read(userProfileControllerProvider.notifier).refresh(),
+          ),
+        ),
+      ],
       children: <Widget>[
         _ProfileSummary(
           profile: profile,
-          permissionCount: session.permissions.length,
+          permissionCount: permissions.length,
+          roleCount: roles.length,
         ),
+        SizedBox(height: Theme.of(context).spacing.lg),
         _ProfileSectionGrid(
           sections: <Widget>[
             AppScreenSection(
@@ -67,7 +169,7 @@ class UserProfilePage extends ConsumerWidget {
                   ),
                   _ProfileDetailItem(
                     label: l10n.profileUserIdLabel,
-                    value: _value(profile.displayId, l10n),
+                    value: _value(profile.displayId ?? profile.id, l10n),
                     selectable: true,
                     copyTooltip: l10n.copyUserIdAction,
                     copiedMessage: l10n.userIdCopiedMessage,
@@ -117,18 +219,109 @@ class UserProfilePage extends ConsumerWidget {
                 ],
               ),
             ),
+            AppScreenSection(
+              title: l10n.profileRolesSectionTitle,
+              body: l10n.profileRolesSectionBody,
+              child: roles.isEmpty
+                  ? Text(
+                      l10n.profileRolesEmpty,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : Wrap(
+                      spacing: Theme.of(context).spacing.sm,
+                      runSpacing: Theme.of(context).spacing.sm,
+                      children: <Widget>[
+                        for (final String role in roles)
+                          _ProfileBadge(
+                            label: _formatProfileToken(role) ?? role,
+                          ),
+                      ],
+                    ),
+            ),
+            AppScreenSection(
+              title: l10n.profilePermissionsSectionTitle,
+              body: l10n.profilePermissionsSectionBody,
+              child: permissions.isEmpty
+                  ? Text(
+                      l10n.profilePermissionsEmpty,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : Wrap(
+                      spacing: Theme.of(context).spacing.sm,
+                      runSpacing: Theme.of(context).spacing.sm,
+                      children: <Widget>[
+                        for (final AppPermission permission in permissions)
+                          _ProfileBadge(label: permission.value),
+                      ],
+                    ),
+            ),
           ],
         ),
       ],
     );
   }
+
+  Future<void> _editProfile(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfileRecord record,
+  ) async {
+    final UserProfileDraft? draft = await showAppDialog<UserProfileDraft>(
+      context: context,
+      builder: (_) => EditUserProfileDialog(record: record),
+    );
+    if (draft == null || !context.mounted) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(userProfileControllerProvider.notifier)
+        .saveProfile(draft);
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved
+              ? context.l10n.profileSaveSuccessMessage
+              : context.l10n.profileSaveErrorMessage,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changePassword(BuildContext context) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ChangePasswordDialog(),
+    );
+
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
+      );
+      context.go(AppRoutes.login.location());
+    }
+  }
 }
 
 class _ProfileSummary extends StatelessWidget {
-  const _ProfileSummary({required this.profile, required this.permissionCount});
+  const _ProfileSummary({
+    required this.profile,
+    required this.permissionCount,
+    required this.roleCount,
+  });
 
   final AuthUserProfile profile;
   final int permissionCount;
+  final int roleCount;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +336,7 @@ class _ProfileSummary extends StatelessWidget {
     final badges = <String>{
       if (profile.overallRole != null) profile.overallRole!,
       if (profile.userType != null) profile.userType!,
+      l10n.profileRoleCountLabel(roleCount),
       l10n.profilePermissionCountLabel(permissionCount),
     }.toList(growable: false);
 

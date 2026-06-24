@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_controller.dart';
 import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
-import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
 import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
 import 'package:hosspi_hms/app/startup/app_startup_state.dart';
 import 'package:hosspi_hms/app/startup/startup_providers.dart';
@@ -12,34 +12,40 @@ import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  group('AppLocaleController', () {
+  group('AppAccessibilityController', () {
     setUp(() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
     });
 
-    test('starts from restored startup state', () async {
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
+    test('restores accessibility preferences from startup state', () {
       final ProviderContainer container = ProviderContainer(
         overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
           appStartupStateProvider.overrideWithValue(
             const AppStartupState(
               themeMode: ThemeMode.light,
-              locale: Locale('en'),
-              accessibility: AppAccessibilityPreferences(),
+              locale: null,
+              accessibility: AppAccessibilityPreferences(
+                reduceMotion: true,
+                boldText: true,
+                textScaleLevel: AppTextScaleLevel.large,
+              ),
               storageReadiness: StorageReadiness.ready(),
-              sessionReadiness: SessionState.ready(),
+              sessionReadiness: SessionState.unauthenticated(),
             ),
           ),
         ],
       );
       addTearDown(container.dispose);
 
-      expect(container.read(appLocaleProvider), const Locale('en'));
+      expect(container.read(appAccessibilityProvider).reduceMotion, isTrue);
+      expect(container.read(appAccessibilityProvider).boldText, isTrue);
+      expect(
+        container.read(appAccessibilityProvider).textScaleLevel,
+        AppTextScaleLevel.large,
+      );
     });
 
-    test('updates state and persists locale', () async {
+    test('persists accessibility preferences', () async {
       final SharedPreferences preferences =
           await SharedPreferences.getInstance();
       final ProviderContainer container = ProviderContainer(
@@ -53,11 +59,25 @@ void main() {
       addTearDown(container.dispose);
 
       await container
-          .read(appLocaleProvider.notifier)
-          .setLocale(const Locale('en'));
+          .read(appAccessibilityProvider.notifier)
+          .setReduceMotion(true);
+      await container
+          .read(appAccessibilityProvider.notifier)
+          .setBoldText(true);
+      await container
+          .read(appAccessibilityProvider.notifier)
+          .setTextScaleLevel(AppTextScaleLevel.extraLarge);
 
-      expect(container.read(appLocaleProvider), const Locale('en'));
-      expect(preferences.getString(AppPreferenceKeys.locale), 'en');
+      expect(preferences.getBool(AppPreferenceKeys.reduceMotion), isTrue);
+      expect(preferences.getBool(AppPreferenceKeys.boldText), isTrue);
+      expect(
+        preferences.getInt(AppPreferenceKeys.textScaleLevel),
+        AppTextScaleLevel.extraLarge.storageValue,
+      );
+      expect(
+        AppPreferencesRestorer.restoreAccessibility(preferences).textScaleLevel,
+        AppTextScaleLevel.extraLarge,
+      );
     });
   });
 }

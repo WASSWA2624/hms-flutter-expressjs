@@ -12,5 +12,6 @@
       "@modules/*": ["src/modules/*"]
     }
   },
+  "include": ["src/**/*.js", "scripts/**/*.js", "prisma/**/*.js"],
   "exclude": ["node_modules", "logs"]
 }

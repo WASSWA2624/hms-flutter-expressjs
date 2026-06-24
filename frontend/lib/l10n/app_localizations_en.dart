@@ -2787,6 +2787,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUnknownValue => 'Not available';
 
   @override
+  String get profileLoadingTitle => 'Loading profile';
+
+  @override
+  String get profileLoadingBody =>
+      'Refreshing account, role, and permission details.';
+
+  @override
+  String get profileRolesSectionTitle => 'Assigned roles';
+
+  @override
+  String get profileRolesSectionBody =>
+      'Roles currently linked to your account.';
+
+  @override
+  String get profileRolesEmpty => 'No roles are assigned to this account.';
+
+  @override
+  String get profilePermissionsSectionTitle => 'Direct permissions';
+
+  @override
+  String get profilePermissionsSectionBody =>
+      'Permissions granted directly to your account.';
+
+  @override
+  String get profilePermissionsEmpty =>
+      'No direct permissions are assigned to this account.';
+
+  @override
+  String profileRoleCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count roles',
+      one: '1 role',
+      zero: 'No roles',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileChangePasswordActionTitle => 'Change password';
+
+  @override
+  String get profileEditActionTitle => 'Edit profile';
+
+  @override
+  String get profileEditDialogTitle => 'Edit profile';
+
+  @override
+  String get profileEditDialogBody =>
+      'Update the name and demographic details stored in your user profile.';
+
+  @override
+  String get profileEditFirstNameLabel => 'First name';
+
+  @override
+  String get profileEditMiddleNameLabel => 'Middle name';
+
+  @override
+  String get profileEditLastNameLabel => 'Last name';
+
+  @override
+  String get profileEditGenderLabel => 'Gender';
+
+  @override
+  String get profileGenderMale => 'Male';
+
+  @override
+  String get profileGenderFemale => 'Female';
+
+  @override
+  String get profileGenderOther => 'Other';
+
+  @override
+  String get profileGenderUnknown => 'Unknown';
+
+  @override
+  String get profileSaveSuccessMessage => 'Profile updated.';
+
+  @override
+  String get profileSaveErrorMessage => 'Profile could not be updated.';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -2841,6 +2924,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSaveErrorMessage => 'The preference could not be saved.';
+
+  @override
+  String get settingsAccessibilitySectionTitle => 'Accessibility';
+
+  @override
+  String get settingsAccessibilitySectionBody =>
+      'Improve readability and reduce motion across clinical workspaces.';
+
+  @override
+  String get settingsReduceMotionLabel => 'Reduce motion';
+
+  @override
+  String get settingsReduceMotionDescription =>
+      'Use simpler transitions and fewer animations.';
+
+  @override
+  String get settingsBoldTextLabel => 'Bold text';
+
+  @override
+  String get settingsBoldTextDescription =>
+      'Increase text weight for easier reading.';
+
+  @override
+  String get settingsTextScaleFieldLabel => 'Text size';
+
+  @override
+  String get settingsTextScaleNormal => 'Normal';
+
+  @override
+  String get settingsTextScaleLarge => 'Large';
+
+  @override
+  String get settingsTextScaleExtraLarge => 'Extra large';
+
+  @override
+  String get settingsSubscriptionsActionBody =>
+      'Review plans, module entitlements, invoices, licenses, and renewal state.';
 
   @override
   String get settingsAccountSectionTitle => 'Account and security';

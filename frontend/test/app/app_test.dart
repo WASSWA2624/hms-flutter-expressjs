@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_router.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
@@ -46,6 +47,7 @@ void main() {
         AppStartupState(
           themeMode: ThemeMode.system,
           locale: englishLocale,
+          accessibility: const AppAccessibilityPreferences(),
           storageReadiness: const StorageReadiness.ready(),
           sessionReadiness: authenticatedSessionState,
         ),
@@ -191,6 +193,7 @@ void main() {
             AppStartupState(
               themeMode: ThemeMode.dark,
               locale: englishLocale,
+              accessibility: const AppAccessibilityPreferences(),
               storageReadiness: const StorageReadiness.ready(),
               sessionReadiness: authenticatedSessionState,
             ),

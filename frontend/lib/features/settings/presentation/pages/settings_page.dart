@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_controller.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
@@ -29,6 +31,9 @@ class SettingsPage extends ConsumerWidget {
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
     final Locale selectedLocale =
         ref.watch(appLocaleProvider) ?? _englishLocale;
+    final AppAccessibilityPreferences accessibility = ref.watch(
+      appAccessibilityProvider,
+    );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final List<_SettingsAction> adminActions = _adminActions(context, l10n)
         .where((_SettingsAction action) {
@@ -48,6 +53,7 @@ class SettingsPage extends ConsumerWidget {
             ref
               ..invalidate(appLocaleProvider)
               ..invalidate(appThemeModeProvider)
+              ..invalidate(appAccessibilityProvider)
               ..invalidate(appAccessPolicyProvider)
               ..invalidate(settingsWorkspaceControllerProvider);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -119,6 +125,57 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
             AppScreenSection(
+              title: l10n.settingsAccessibilitySectionTitle,
+              body: l10n.settingsAccessibilitySectionBody,
+              child: Column(
+                children: <Widget>[
+                  AppCheckboxField(
+                    title: l10n.settingsReduceMotionLabel,
+                    subtitle: l10n.settingsReduceMotionDescription,
+                    value: accessibility.reduceMotion,
+                    onChanged: (bool value) {
+                      unawaited(_setReduceMotion(context, ref, value));
+                    },
+                  ),
+                  SizedBox(height: Theme.of(context).spacing.md),
+                  AppCheckboxField(
+                    title: l10n.settingsBoldTextLabel,
+                    subtitle: l10n.settingsBoldTextDescription,
+                    value: accessibility.boldText,
+                    onChanged: (bool value) {
+                      unawaited(_setBoldText(context, ref, value));
+                    },
+                  ),
+                  SizedBox(height: Theme.of(context).spacing.lg),
+                  AppSelectField<AppTextScaleLevel>(
+                    labelText: l10n.settingsTextScaleFieldLabel,
+                    value: accessibility.textScaleLevel,
+                    options: <AppSelectOption<AppTextScaleLevel>>[
+                      AppSelectOption<AppTextScaleLevel>(
+                        value: AppTextScaleLevel.normal,
+                        label: l10n.settingsTextScaleNormal,
+                      ),
+                      AppSelectOption<AppTextScaleLevel>(
+                        value: AppTextScaleLevel.large,
+                        label: l10n.settingsTextScaleLarge,
+                      ),
+                      AppSelectOption<AppTextScaleLevel>(
+                        value: AppTextScaleLevel.extraLarge,
+                        label: l10n.settingsTextScaleExtraLarge,
+                      ),
+                    ],
+                    onChanged: (AppTextScaleLevel? level) {
+                      if (level == null) {
+                        return;
+                      }
+
+                      unawaited(_setTextScaleLevel(context, ref, level));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            AppScreenSection(
               title: l10n.settingsAccountSectionTitle,
               body: l10n.settingsAccountSectionBody,
               child: _SettingsActionList(
@@ -182,6 +239,50 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _setReduceMotion(
+    BuildContext context,
+    WidgetRef ref,
+    bool value,
+  ) async {
+    try {
+      await ref.read(appAccessibilityProvider.notifier).setReduceMotion(value);
+    } catch (_) {
+      if (context.mounted) {
+        _showSaveError(context);
+      }
+    }
+  }
+
+  Future<void> _setBoldText(
+    BuildContext context,
+    WidgetRef ref,
+    bool value,
+  ) async {
+    try {
+      await ref.read(appAccessibilityProvider.notifier).setBoldText(value);
+    } catch (_) {
+      if (context.mounted) {
+        _showSaveError(context);
+      }
+    }
+  }
+
+  Future<void> _setTextScaleLevel(
+    BuildContext context,
+    WidgetRef ref,
+    AppTextScaleLevel level,
+  ) async {
+    try {
+      await ref
+          .read(appAccessibilityProvider.notifier)
+          .setTextScaleLevel(level);
+    } catch (_) {
+      if (context.mounted) {
+        _showSaveError(context);
+      }
+    }
+  }
+
   Future<void> _changePassword(BuildContext context) async {
     final changed = await showAppDialog<bool>(
       context: context,
@@ -237,8 +338,7 @@ List<_SettingsAction> _adminActions(
     _SettingsAction(
       icon: Icons.workspace_premium_outlined,
       title: l10n.navigationSubscriptionsLabel,
-      body:
-          'Review plans, module entitlements, invoices, licenses, and renewal state.',
+      body: l10n.settingsSubscriptionsActionBody,
       requirement: _subscriptionsRequirement,
       onTap: () => context.go(AppRoutes.subscriptions.location()),
     ),

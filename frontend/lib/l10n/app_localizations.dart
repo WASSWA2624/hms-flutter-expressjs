@@ -5368,6 +5368,144 @@ abstract class AppLocalizations {
   /// **'Not available'**
   String get profileUnknownValue;
 
+  /// Profile screen title while profile data loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading profile'**
+  String get profileLoadingTitle;
+
+  /// Profile screen body while profile data loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing account, role, and permission details.'**
+  String get profileLoadingBody;
+
+  /// Profile section title for assigned roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned roles'**
+  String get profileRolesSectionTitle;
+
+  /// Profile section body for assigned roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles currently linked to your account.'**
+  String get profileRolesSectionBody;
+
+  /// Empty state when the profile has no roles.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles are assigned to this account.'**
+  String get profileRolesEmpty;
+
+  /// Profile section title for direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct permissions'**
+  String get profilePermissionsSectionTitle;
+
+  /// Profile section body for direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions granted directly to your account.'**
+  String get profilePermissionsSectionBody;
+
+  /// Empty state when the profile has no direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No direct permissions are assigned to this account.'**
+  String get profilePermissionsEmpty;
+
+  /// Profile role count badge label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No roles} =1{1 role} other{{count} roles}}'**
+  String profileRoleCountLabel(int count);
+
+  /// Profile action title for changing password.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get profileChangePasswordActionTitle;
+
+  /// Profile action title for editing profile details.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get profileEditActionTitle;
+
+  /// Dialog title for editing profile details.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get profileEditDialogTitle;
+
+  /// Dialog body for editing profile details.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the name and demographic details stored in your user profile.'**
+  String get profileEditDialogBody;
+
+  /// Edit profile first name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get profileEditFirstNameLabel;
+
+  /// Edit profile middle name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Middle name'**
+  String get profileEditMiddleNameLabel;
+
+  /// Edit profile last name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get profileEditLastNameLabel;
+
+  /// Edit profile gender field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get profileEditGenderLabel;
+
+  /// Profile gender option for male.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get profileGenderMale;
+
+  /// Profile gender option for female.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get profileGenderFemale;
+
+  /// Profile gender option for other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get profileGenderOther;
+
+  /// Profile gender option for unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get profileGenderUnknown;
+
+  /// Snackbar message after profile update succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated.'**
+  String get profileSaveSuccessMessage;
+
+  /// Snackbar message after profile update fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile could not be updated.'**
+  String get profileSaveErrorMessage;
+
   /// Settings page title.
   ///
   /// In en, this message translates to:
@@ -5475,6 +5613,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The preference could not be saved.'**
   String get settingsSaveErrorMessage;
+
+  /// Settings section title for accessibility preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get settingsAccessibilitySectionTitle;
+
+  /// Settings section body for accessibility preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve readability and reduce motion across clinical workspaces.'**
+  String get settingsAccessibilitySectionBody;
+
+  /// Accessibility option label for reducing motion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduce motion'**
+  String get settingsReduceMotionLabel;
+
+  /// Accessibility option description for reducing motion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use simpler transitions and fewer animations.'**
+  String get settingsReduceMotionDescription;
+
+  /// Accessibility option label for bold text.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold text'**
+  String get settingsBoldTextLabel;
+
+  /// Accessibility option description for bold text.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase text weight for easier reading.'**
+  String get settingsBoldTextDescription;
+
+  /// Accessibility field label for text scale preference.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get settingsTextScaleFieldLabel;
+
+  /// Accessibility text scale option for normal size.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get settingsTextScaleNormal;
+
+  /// Accessibility text scale option for large size.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get settingsTextScaleLarge;
+
+  /// Accessibility text scale option for extra large size.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra large'**
+  String get settingsTextScaleExtraLarge;
+
+  /// Settings action body for opening subscriptions administration.
+  ///
+  /// In en, this message translates to:
+  /// **'Review plans, module entitlements, invoices, licenses, and renewal state.'**
+  String get settingsSubscriptionsActionBody;
 
   /// Settings section title for account and security entry points.
   ///

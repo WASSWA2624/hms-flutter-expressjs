@@ -3647,6 +3647,103 @@
   "@profileUnknownValue": {
     "description": "Fallback value for unavailable profile fields."
   },
+  "profileLoadingTitle": "Loading profile",
+  "@profileLoadingTitle": {
+    "description": "Profile screen title while profile data loads."
+  },
+  "profileLoadingBody": "Refreshing account, role, and permission details.",
+  "@profileLoadingBody": {
+    "description": "Profile screen body while profile data loads."
+  },
+  "profileRolesSectionTitle": "Assigned roles",
+  "@profileRolesSectionTitle": {
+    "description": "Profile section title for assigned roles."
+  },
+  "profileRolesSectionBody": "Roles currently linked to your account.",
+  "@profileRolesSectionBody": {
+    "description": "Profile section body for assigned roles."
+  },
+  "profileRolesEmpty": "No roles are assigned to this account.",
+  "@profileRolesEmpty": {
+    "description": "Empty state when the profile has no roles."
+  },
+  "profilePermissionsSectionTitle": "Direct permissions",
+  "@profilePermissionsSectionTitle": {
+    "description": "Profile section title for direct permissions."
+  },
+  "profilePermissionsSectionBody": "Permissions granted directly to your account.",
+  "@profilePermissionsSectionBody": {
+    "description": "Profile section body for direct permissions."
+  },
+  "profilePermissionsEmpty": "No direct permissions are assigned to this account.",
+  "@profilePermissionsEmpty": {
+    "description": "Empty state when the profile has no direct permissions."
+  },
+  "profileRoleCountLabel": "{count, plural, =0{No roles} =1{1 role} other{{count} roles}}",
+  "@profileRoleCountLabel": {
+    "description": "Profile role count badge label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChangePasswordActionTitle": "Change password",
+  "@profileChangePasswordActionTitle": {
+    "description": "Profile action title for changing password."
+  },
+  "profileEditActionTitle": "Edit profile",
+  "@profileEditActionTitle": {
+    "description": "Profile action title for editing profile details."
+  },
+  "profileEditDialogTitle": "Edit profile",
+  "@profileEditDialogTitle": {
+    "description": "Dialog title for editing profile details."
+  },
+  "profileEditDialogBody": "Update the name and demographic details stored in your user profile.",
+  "@profileEditDialogBody": {
+    "description": "Dialog body for editing profile details."
+  },
+  "profileEditFirstNameLabel": "First name",
+  "@profileEditFirstNameLabel": {
+    "description": "Edit profile first name field label."
+  },
+  "profileEditMiddleNameLabel": "Middle name",
+  "@profileEditMiddleNameLabel": {
+    "description": "Edit profile middle name field label."
+  },
+  "profileEditLastNameLabel": "Last name",
+  "@profileEditLastNameLabel": {
+    "description": "Edit profile last name field label."
+  },
+  "profileEditGenderLabel": "Gender",
+  "@profileEditGenderLabel": {
+    "description": "Edit profile gender field label."
+  },
+  "profileGenderMale": "Male",
+  "@profileGenderMale": {
+    "description": "Profile gender option for male."
+  },
+  "profileGenderFemale": "Female",
+  "@profileGenderFemale": {
+    "description": "Profile gender option for female."
+  },
+  "profileGenderOther": "Other",
+  "@profileGenderOther": {
+    "description": "Profile gender option for other."
+  },
+  "profileGenderUnknown": "Unknown",
+  "@profileGenderUnknown": {
+    "description": "Profile gender option for unknown."
+  },
+  "profileSaveSuccessMessage": "Profile updated.",
+  "@profileSaveSuccessMessage": {
+    "description": "Snackbar message after profile update succeeds."
+  },
+  "profileSaveErrorMessage": "Profile could not be updated.",
+  "@profileSaveErrorMessage": {
+    "description": "Snackbar message after profile update fails."
+  },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Settings page title."
@@ -3718,6 +3815,50 @@
   "settingsSaveErrorMessage": "The preference could not be saved.",
   "@settingsSaveErrorMessage": {
     "description": "Snackbar message shown when saving a setting fails."
+  },
+  "settingsAccessibilitySectionTitle": "Accessibility",
+  "@settingsAccessibilitySectionTitle": {
+    "description": "Settings section title for accessibility preferences."
+  },
+  "settingsAccessibilitySectionBody": "Improve readability and reduce motion across clinical workspaces.",
+  "@settingsAccessibilitySectionBody": {
+    "description": "Settings section body for accessibility preferences."
+  },
+  "settingsReduceMotionLabel": "Reduce motion",
+  "@settingsReduceMotionLabel": {
+    "description": "Accessibility option label for reducing motion."
+  },
+  "settingsReduceMotionDescription": "Use simpler transitions and fewer animations.",
+  "@settingsReduceMotionDescription": {
+    "description": "Accessibility option description for reducing motion."
+  },
+  "settingsBoldTextLabel": "Bold text",
+  "@settingsBoldTextLabel": {
+    "description": "Accessibility option label for bold text."
+  },
+  "settingsBoldTextDescription": "Increase text weight for easier reading.",
+  "@settingsBoldTextDescription": {
+    "description": "Accessibility option description for bold text."
+  },
+  "settingsTextScaleFieldLabel": "Text size",
+  "@settingsTextScaleFieldLabel": {
+    "description": "Accessibility field label for text scale preference."
+  },
+  "settingsTextScaleNormal": "Normal",
+  "@settingsTextScaleNormal": {
+    "description": "Accessibility text scale option for normal size."
+  },
+  "settingsTextScaleLarge": "Large",
+  "@settingsTextScaleLarge": {
+    "description": "Accessibility text scale option for large size."
+  },
+  "settingsTextScaleExtraLarge": "Extra large",
+  "@settingsTextScaleExtraLarge": {
+    "description": "Accessibility text scale option for extra large size."
+  },
+  "settingsSubscriptionsActionBody": "Review plans, module entitlements, invoices, licenses, and renewal state.",
+  "@settingsSubscriptionsActionBody": {
+    "description": "Settings action body for opening subscriptions administration."
   },
   "settingsAccountSectionTitle": "Account and security",
   "@settingsAccountSectionTitle": {

@@ -768,32 +768,75 @@ String? _mappedSettingsRoute(String? backendRoute) {
   }
 
   final String route = backendRoute.trim();
-  if (_accessAdminRoutes.contains(route)) {
-    return AppRoutes.accessAdmin.location();
+  final String? accessAdminRoute = _accessAdminRouteForSettingsRoute(route);
+  if (accessAdminRoute != null) {
+    return accessAdminRoute;
   }
   if (_tenantFacilityRoutes.contains(route)) {
     return AppRoutes.tenantFacilitySetup.location();
   }
 
-  // Security sub-pages are not implemented as dedicated frontend routes yet.
-  // Keep their actions disabled instead of pretending navigation exists.
+  // Dedicated security screens (API keys, MFA, OAuth) are not routed yet.
   return null;
 }
 
-const Set<String> _accessAdminRoutes = <String>{
-  '/settings/users',
-  '/settings/users/create',
-  '/settings/roles',
-  '/settings/roles/create',
-  '/settings/permissions',
-  '/settings/permissions/create',
-  '/settings/role-permissions',
-  '/settings/role-permissions/create',
-  '/settings/user-roles',
-  '/settings/user-roles/create',
-  '/settings/user-profiles',
-  '/settings/user-profiles/create',
-};
+String? _accessAdminRouteForSettingsRoute(String route) {
+  final Map<String, String>? query = _settingsAccessAdminRouteQueries[route];
+  if (query == null) {
+    return null;
+  }
+
+  return AppRoutes.accessAdmin.location(queryParameters: query);
+}
+
+const Map<String, Map<String, String>> _settingsAccessAdminRouteQueries =
+    <String, Map<String, String>>{
+      '/settings/users': <String, String>{
+        'resource': 'users',
+        'panel': 'directory',
+      },
+      '/settings/users/create': <String, String>{
+        'resource': 'users',
+        'panel': 'directory',
+      },
+      '/settings/roles': <String, String>{'resource': 'roles', 'panel': 'roles'},
+      '/settings/roles/create': <String, String>{
+        'resource': 'roles',
+        'panel': 'roles',
+      },
+      '/settings/permissions': <String, String>{
+        'resource': 'permissions',
+        'panel': 'permissions',
+      },
+      '/settings/permissions/create': <String, String>{
+        'resource': 'permissions',
+        'panel': 'permissions',
+      },
+      '/settings/role-permissions': <String, String>{
+        'resource': 'role-permissions',
+        'panel': 'permissions',
+      },
+      '/settings/role-permissions/create': <String, String>{
+        'resource': 'role-permissions',
+        'panel': 'permissions',
+      },
+      '/settings/user-roles': <String, String>{
+        'resource': 'user-roles',
+        'panel': 'roles',
+      },
+      '/settings/user-roles/create': <String, String>{
+        'resource': 'user-roles',
+        'panel': 'roles',
+      },
+      '/settings/user-profiles': <String, String>{
+        'resource': 'users',
+        'panel': 'directory',
+      },
+      '/settings/user-profiles/create': <String, String>{
+        'resource': 'users',
+        'panel': 'directory',
+      },
+    };
 
 const Set<String> _tenantFacilityRoutes = <String>{
   '/settings/tenants',

@@ -46,6 +46,7 @@ final class AppStartupInitializer {
     final startupState = AppStartupState(
       themeMode: AppPreferencesRestorer.restoreThemeMode(preferences),
       locale: AppPreferencesRestorer.restoreLocale(preferences),
+      accessibility: AppPreferencesRestorer.restoreAccessibility(preferences),
       storageReadiness: storageReadiness,
       sessionReadiness: sessionReadiness,
     );

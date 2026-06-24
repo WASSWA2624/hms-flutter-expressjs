@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_router.dart';
 import 'package:hosspi_hms/app/startup/app_startup_state.dart';
@@ -25,6 +26,7 @@ List<Object?> testReadyAppOverrides({
       AppStartupState(
         themeMode: themeMode,
         locale: locale,
+        accessibility: const AppAccessibilityPreferences(),
         storageReadiness: storageReadiness,
         sessionReadiness: sessionState,
       ),
