@@ -10348,11 +10348,17 @@ abstract class AppLocalizations {
   /// **'Urgent'**
   String get radiologyPriorityUrgentLabel;
 
-  /// Radiology stat priority label.
+  /// Radiology stat priority label with immediate meaning.
   ///
   /// In en, this message translates to:
-  /// **'STAT'**
+  /// **'STAT (Immediately)'**
   String get radiologyPriorityStatLabel;
+
+  /// Helper text explaining STAT radiology priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Statim — perform immediately'**
+  String get radiologyPriorityStatHint;
 
   /// Radiology left laterality label.
   ///
@@ -10383,6 +10389,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a body region to filter the imaging catalog.'**
   String get clinicalRadiologyBodyRegionPickerHint;
+
+  /// Title for radiology workflow step progress section.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow progress'**
+  String get radiologyWorkflowProgressTitle;
+
+  /// Radiology workflow step: receive request.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive imaging request'**
+  String get radiologyWorkflowStepReceive;
+
+  /// Radiology workflow step: review details.
+  ///
+  /// In en, this message translates to:
+  /// **'Review study details'**
+  String get radiologyWorkflowStepReview;
+
+  /// Radiology workflow step: perform study.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform imaging study'**
+  String get radiologyWorkflowStepPerform;
+
+  /// Radiology workflow step: upload assets.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload study assets'**
+  String get radiologyWorkflowStepUpload;
+
+  /// Radiology workflow step: draft report.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter findings and conclusions'**
+  String get radiologyWorkflowStepReport;
+
+  /// Radiology workflow step: release report.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize and release report'**
+  String get radiologyWorkflowStepRelease;
 
   /// Localized text for radiologyReportSectionTitle.
   ///
@@ -23295,11 +23343,35 @@ abstract class AppLocalizations {
   /// **'Attach images'**
   String get radiologyAttachImagesTitle;
 
-  /// Radiology disabled image attachment body.
+  /// Radiology image attachment helper body.
   ///
   /// In en, this message translates to:
-  /// **'Image attachment stays disabled here until upload storage is fully wired end to end.'**
-  String get radiologyAttachImagesDisabledBody;
+  /// **'Choose one or more images, add captions, then upload to attach them to this study.'**
+  String get radiologyAttachImagesBody;
+
+  /// Radiology upload selected images action.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload images'**
+  String get radiologyUploadImagesAction;
+
+  /// Caption label for radiology study images.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption'**
+  String get radiologyAssetCaptionLabel;
+
+  /// Remove radiology study image action.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get radiologyRemoveAssetAction;
+
+  /// Print option to include study images on radiology report.
+  ///
+  /// In en, this message translates to:
+  /// **'Include study images'**
+  String get radiologyPrintIncludeImagesLabel;
 
   /// Radiology choose images action.
   ///

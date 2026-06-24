@@ -31,6 +31,11 @@ final class RadiologyWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.radiology,
+      includeCrudMutations: true,
+      shouldDefer: () {
+        final RadiologyWorkspaceState? current = _currentState;
+        return _isSyncing || (current?.isMutating ?? false);
+      },
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<RadiologyWorkspaceState> result = await _loadInitialState();
@@ -406,6 +411,102 @@ final class RadiologyWorkspaceController
   ) {
     return _mutate(
       () => _repository.syncStudyToPacs(study.effectiveDisplayId, payload),
+    );
+  }
+
+  Future<AppFailure?> uploadStudyAssets({
+    required ImagingStudy study,
+    required List<StudyAssetUploadRequest> uploads,
+  }) async {
+    for (final StudyAssetUploadRequest upload in uploads) {
+      final Result<StudyAssetUploadSession> initResult = await _repository
+          .initStudyAssetUpload(study.effectiveDisplayId, <String, Object?>{
+            'file_name': upload.fileName,
+            'content_type': upload.contentType,
+            'size_bytes': upload.sizeBytes,
+          });
+      final StudyAssetUploadSession? session = initResult.when(
+        success: (StudyAssetUploadSession value) => value,
+        failure: (_) => null,
+      );
+      if (session == null) {
+        return initResult.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+      }
+
+      final AppFailure? commitFailure = await _mutate(
+        () => _repository.commitStudyAssetUpload(
+          study.effectiveDisplayId,
+          <String, Object?>{
+            'storage_key': session.storageKey,
+            'file_name': upload.caption?.trim().isNotEmpty == true
+                ? upload.caption!.trim()
+                : upload.fileName,
+            'content_type': upload.contentType,
+            'upload_token': session.uploadToken,
+          },
+        ),
+      );
+      if (commitFailure != null) {
+        return commitFailure;
+      }
+    }
+    return null;
+  }
+
+  Future<AppFailure?> deleteStudyAsset(ImagingAsset asset) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<void> result = await _repository.deleteStudyAsset(
+      asset.effectiveDisplayId,
+    );
+    return result.when(
+      success: (_) async {
+        final String? orderId = current.selectedWorkflow?.order.effectiveDisplayId;
+        if (orderId != null) {
+          final Result<RadiologyWorkflow> workflowResult = await _repository
+              .getWorkflow(orderId);
+          workflowResult.when(
+            success: (RadiologyWorkflow workflow) {
+              final RadiologyWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(
+                  latest.copyWith(
+                    selectedWorkflow: workflow,
+                    orders: _replaceOrder(latest.orders, workflow.order),
+                    isMutating: false,
+                  ),
+                );
+              }
+            },
+            failure: (_) {
+              final RadiologyWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(latest.copyWith(isMutating: false));
+              }
+            },
+          );
+        } else {
+          final RadiologyWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(latest.copyWith(isMutating: false));
+          }
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
     );
   }
 

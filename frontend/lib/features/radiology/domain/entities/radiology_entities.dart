@@ -679,6 +679,8 @@ final class ImagingAsset {
   final String? contentType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  String get effectiveDisplayId => displayId ?? id;
 }
 
 @immutable
@@ -801,6 +803,21 @@ final class RadiologyReferenceOption {
     }
     return '$label | $normalizedSubtitle';
   }
+}
+
+@immutable
+final class StudyAssetUploadRequest {
+  const StudyAssetUploadRequest({
+    required this.fileName,
+    this.contentType,
+    this.sizeBytes,
+    this.caption,
+  });
+
+  final String fileName;
+  final String? contentType;
+  final int? sizeBytes;
+  final String? caption;
 }
 
 String? _stringValue(Object? value) {

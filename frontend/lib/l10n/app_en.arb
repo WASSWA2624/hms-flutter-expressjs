@@ -7122,9 +7122,13 @@
   "@radiologyPriorityUrgentLabel": {
     "description": "Radiology urgent priority label."
   },
-  "radiologyPriorityStatLabel": "STAT",
+  "radiologyPriorityStatLabel": "STAT (Immediately)",
   "@radiologyPriorityStatLabel": {
-    "description": "Radiology stat priority label."
+    "description": "Radiology stat priority label with immediate meaning."
+  },
+  "radiologyPriorityStatHint": "Statim — perform immediately",
+  "@radiologyPriorityStatHint": {
+    "description": "Helper text explaining STAT radiology priority."
   },
   "radiologyLateralityLeft": "LEFT",
   "@radiologyLateralityLeft": {
@@ -7145,6 +7149,34 @@
   "clinicalRadiologyBodyRegionPickerHint": "Select a body region to filter the imaging catalog.",
   "@clinicalRadiologyBodyRegionPickerHint": {
     "description": "Helper text for the radiology body region chip picker."
+  },
+  "radiologyWorkflowProgressTitle": "Workflow progress",
+  "@radiologyWorkflowProgressTitle": {
+    "description": "Title for radiology workflow step progress section."
+  },
+  "radiologyWorkflowStepReceive": "Receive imaging request",
+  "@radiologyWorkflowStepReceive": {
+    "description": "Radiology workflow step: receive request."
+  },
+  "radiologyWorkflowStepReview": "Review study details",
+  "@radiologyWorkflowStepReview": {
+    "description": "Radiology workflow step: review details."
+  },
+  "radiologyWorkflowStepPerform": "Perform imaging study",
+  "@radiologyWorkflowStepPerform": {
+    "description": "Radiology workflow step: perform study."
+  },
+  "radiologyWorkflowStepUpload": "Upload study assets",
+  "@radiologyWorkflowStepUpload": {
+    "description": "Radiology workflow step: upload assets."
+  },
+  "radiologyWorkflowStepReport": "Enter findings and conclusions",
+  "@radiologyWorkflowStepReport": {
+    "description": "Radiology workflow step: draft report."
+  },
+  "radiologyWorkflowStepRelease": "Finalize and release report",
+  "@radiologyWorkflowStepRelease": {
+    "description": "Radiology workflow step: release report."
   },
   "radiologyReportSectionTitle": "Report",
   "@radiologyReportSectionTitle": {
@@ -16055,9 +16087,25 @@
   "@radiologyAttachImagesTitle": {
     "description": "Radiology attach images panel title."
   },
-  "radiologyAttachImagesDisabledBody": "Image attachment stays disabled here until upload storage is fully wired end to end.",
-  "@radiologyAttachImagesDisabledBody": {
-    "description": "Radiology disabled image attachment body."
+  "radiologyAttachImagesBody": "Choose one or more images, add captions, then upload to attach them to this study.",
+  "@radiologyAttachImagesBody": {
+    "description": "Radiology image attachment helper body."
+  },
+  "radiologyUploadImagesAction": "Upload images",
+  "@radiologyUploadImagesAction": {
+    "description": "Radiology upload selected images action."
+  },
+  "radiologyAssetCaptionLabel": "Caption",
+  "@radiologyAssetCaptionLabel": {
+    "description": "Caption label for radiology study images."
+  },
+  "radiologyRemoveAssetAction": "Remove image",
+  "@radiologyRemoveAssetAction": {
+    "description": "Remove radiology study image action."
+  },
+  "radiologyPrintIncludeImagesLabel": "Include study images",
+  "@radiologyPrintIncludeImagesLabel": {
+    "description": "Print option to include study images on radiology report."
   },
   "radiologyChooseImagesAction": "Choose images",
   "@radiologyChooseImagesAction": {

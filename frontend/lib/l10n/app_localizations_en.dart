@@ -5520,7 +5520,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyPriorityUrgentLabel => 'Urgent';
 
   @override
-  String get radiologyPriorityStatLabel => 'STAT';
+  String get radiologyPriorityStatLabel => 'STAT (Immediately)';
+
+  @override
+  String get radiologyPriorityStatHint => 'Statim — perform immediately';
 
   @override
   String get radiologyLateralityLeft => 'LEFT';
@@ -5537,6 +5540,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalRadiologyBodyRegionPickerHint =>
       'Select a body region to filter the imaging catalog.';
+
+  @override
+  String get radiologyWorkflowProgressTitle => 'Workflow progress';
+
+  @override
+  String get radiologyWorkflowStepReceive => 'Receive imaging request';
+
+  @override
+  String get radiologyWorkflowStepReview => 'Review study details';
+
+  @override
+  String get radiologyWorkflowStepPerform => 'Perform imaging study';
+
+  @override
+  String get radiologyWorkflowStepUpload => 'Upload study assets';
+
+  @override
+  String get radiologyWorkflowStepReport => 'Enter findings and conclusions';
+
+  @override
+  String get radiologyWorkflowStepRelease => 'Finalize and release report';
 
   @override
   String get radiologyReportSectionTitle => 'Report';
@@ -12390,8 +12414,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyAttachImagesTitle => 'Attach images';
 
   @override
-  String get radiologyAttachImagesDisabledBody =>
-      'Image attachment stays disabled here until upload storage is fully wired end to end.';
+  String get radiologyAttachImagesBody =>
+      'Choose one or more images, add captions, then upload to attach them to this study.';
+
+  @override
+  String get radiologyUploadImagesAction => 'Upload images';
+
+  @override
+  String get radiologyAssetCaptionLabel => 'Caption';
+
+  @override
+  String get radiologyRemoveAssetAction => 'Remove image';
+
+  @override
+  String get radiologyPrintIncludeImagesLabel => 'Include study images';
 
   @override
   String get radiologyChooseImagesAction => 'Choose images';

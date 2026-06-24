@@ -262,6 +262,55 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     );
   }
 
+  @override
+  Future<Result<StudyAssetUploadSession>> initStudyAssetUpload(
+    String studyId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<StudyAssetUploadSession>(
+      _radiologyEndpoint(<String>['studies', studyId, 'assets', 'init-upload']),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) {
+        final Map<String, Object?> json = data is Map
+            ? Map<String, Object?>.from(data)
+            : const <String, Object?>{};
+        String? readString(Object? value) {
+          if (value is String) {
+            final String trimmed = value.trim();
+            return trimmed.isEmpty ? null : trimmed;
+          }
+          return null;
+        }
+
+        return StudyAssetUploadSession(
+          storageKey: readString(json['storage_key']) ?? '',
+          uploadToken: readString(json['upload_token']) ?? '',
+          uploadUrl: readString(json['upload_url']),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Result<RadiologyWorkflow>> commitStudyAssetUpload(
+    String studyId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<RadiologyWorkflow>(
+      _radiologyEndpoint(<String>['studies', studyId, 'assets', 'commit-upload']),
+      data: _withoutEmpty(payload),
+      decoder: _decodeWorkflow,
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteStudyAsset(String assetId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.imagingAssets, assetId),
+      decoder: (_) {},
+    );
+  }
+
   Future<Result<RadiologyWorkflow>> _postOrderAction(
     String orderId,
     String action,

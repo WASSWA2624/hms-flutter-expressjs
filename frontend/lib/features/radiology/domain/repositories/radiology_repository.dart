@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -96,6 +97,31 @@ abstract interface class RadiologyRepository {
     String studyId,
     Map<String, Object?> payload,
   );
+
+  Future<Result<StudyAssetUploadSession>> initStudyAssetUpload(
+    String studyId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<RadiologyWorkflow>> commitStudyAssetUpload(
+    String studyId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteStudyAsset(String assetId);
+}
+
+@immutable
+final class StudyAssetUploadSession {
+  const StudyAssetUploadSession({
+    required this.storageKey,
+    required this.uploadToken,
+    this.uploadUrl,
+  });
+
+  final String storageKey;
+  final String uploadToken;
+  final String? uploadUrl;
 }
 
 final class RadiologyWorkbench {

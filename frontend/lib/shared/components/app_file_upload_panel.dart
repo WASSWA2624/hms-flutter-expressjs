@@ -18,6 +18,8 @@ class AppFileUploadPanel extends StatelessWidget {
     this.clearIcon = Icons.close,
     this.enabled = true,
     this.isLoading = false,
+    this.uploadLabel,
+    this.onUpload,
     this.tone = AppWorkspaceStatusTone.neutral,
     super.key,
   });
@@ -34,6 +36,8 @@ class AppFileUploadPanel extends StatelessWidget {
   final IconData clearIcon;
   final bool enabled;
   final bool isLoading;
+  final String? uploadLabel;
+  final VoidCallback? onUpload;
   final AppWorkspaceStatusTone tone;
 
   @override
@@ -67,6 +71,16 @@ class AppFileUploadPanel extends StatelessWidget {
                 leadingIcon: clearIcon,
                 enabled: canInteract,
                 onPressed: canInteract ? onClear : null,
+              ),
+            if (fileNames.isNotEmpty &&
+                uploadLabel != null &&
+                onUpload != null)
+              AppButton.primary(
+                label: uploadLabel!,
+                leadingIcon: Icons.cloud_upload_outlined,
+                isLoading: isLoading,
+                enabled: enabled,
+                onPressed: canInteract ? onUpload : null,
               ),
           ],
         ),

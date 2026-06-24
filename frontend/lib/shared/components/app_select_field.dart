@@ -245,7 +245,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           searchCallback: enableSearch
               ? widget.searchCallback ?? _searchEntries
               : null,
-          requestFocusOnTap: true,
+          requestFocusOnTap: widget.searchable,
           focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
           validator: widget.validator,
