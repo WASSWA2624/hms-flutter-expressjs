@@ -191,6 +191,35 @@ final class FacilityContactAddress {
   final String? country;
 }
 
+final class TenantSubscriptionSummary {
+  const TenantSubscriptionSummary({
+    this.planLabel,
+    this.status,
+    this.activeModulesCount = 0,
+    this.subscriptionId,
+  });
+
+  final String? planLabel;
+  final String? status;
+  final int activeModulesCount;
+  final String? subscriptionId;
+
+  bool get hasActivePlan =>
+      planLabel != null && planLabel!.trim().isNotEmpty;
+}
+
+final class FacilitySetupPermissions {
+  const FacilitySetupPermissions({
+    this.canManageTenant = false,
+    this.canManageFacility = false,
+    this.canViewSubscriptions = false,
+  });
+
+  final bool canManageTenant;
+  final bool canManageFacility;
+  final bool canViewSubscriptions;
+}
+
 final class FacilitySetupSnapshot {
   const FacilitySetupSnapshot({
     this.tenant,
@@ -203,6 +232,8 @@ final class FacilitySetupSnapshot {
     this.wards = const <WardProfile>[],
     this.rooms = const <RoomProfile>[],
     this.beds = const <BedProfile>[],
+    this.subscriptionSummary,
+    this.permissions = const FacilitySetupPermissions(),
   });
 
   final TenantProfile? tenant;
@@ -215,6 +246,8 @@ final class FacilitySetupSnapshot {
   final List<WardProfile> wards;
   final List<RoomProfile> rooms;
   final List<BedProfile> beds;
+  final TenantSubscriptionSummary? subscriptionSummary;
+  final FacilitySetupPermissions permissions;
 
   FacilitySetupSnapshot copyWith({
     Object? tenant = _facilitySetupSnapshotUnset,
@@ -227,6 +260,8 @@ final class FacilitySetupSnapshot {
     List<WardProfile>? wards,
     List<RoomProfile>? rooms,
     List<BedProfile>? beds,
+    Object? subscriptionSummary = _facilitySetupSnapshotUnset,
+    FacilitySetupPermissions? permissions,
   }) {
     return FacilitySetupSnapshot(
       tenant: identical(tenant, _facilitySetupSnapshotUnset)
@@ -243,6 +278,10 @@ final class FacilitySetupSnapshot {
       wards: wards ?? this.wards,
       rooms: rooms ?? this.rooms,
       beds: beds ?? this.beds,
+      subscriptionSummary: identical(subscriptionSummary, _facilitySetupSnapshotUnset)
+          ? this.subscriptionSummary
+          : subscriptionSummary as TenantSubscriptionSummary?,
+      permissions: permissions ?? this.permissions,
     );
   }
 

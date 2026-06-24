@@ -2998,6 +2998,61 @@ class AppLocalizationsEn extends AppLocalizations {
       'Rooms, wards, or beds are configured';
 
   @override
+  String get tenantFacilityWizardTitle => 'Guided setup';
+
+  @override
+  String get tenantFacilityWizardBody =>
+      'Complete the main setup flow in order before daily operations begin.';
+
+  @override
+  String get tenantFacilityWizardStepTenant => 'Tenant profile';
+
+  @override
+  String get tenantFacilityWizardStepFacility => 'Facility identity';
+
+  @override
+  String get tenantFacilityWizardStepOrganization => 'Departments and units';
+
+  @override
+  String get tenantFacilityWizardStepCareSpaces => 'Wards, rooms, and beds';
+
+  @override
+  String get tenantFacilityWizardContinueAction => 'Continue setup';
+
+  @override
+  String get tenantFacilityInvalidBranchSelection =>
+      'Select a branch that belongs to this facility.';
+
+  @override
+  String get tenantFacilityInvalidDepartmentSelection =>
+      'Select a department that belongs to this facility.';
+
+  @override
+  String get tenantFacilityInvalidWardSelection =>
+      'Select a ward that belongs to this facility.';
+
+  @override
+  String get tenantFacilityInvalidRoomSelection =>
+      'Select a room that belongs to this facility.';
+
+  @override
+  String get tenantFacilitySubscriptionSummaryTitle => 'Subscription status';
+
+  @override
+  String get tenantFacilitySubscriptionNoPlan => 'No active subscription';
+
+  @override
+  String tenantFacilitySubscriptionModulesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active modules',
+      one: '1 active module',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get tenantFacilityPermissionsTitle => 'Permission gates';
 
   @override

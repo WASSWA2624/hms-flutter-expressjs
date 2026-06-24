@@ -62,7 +62,6 @@ void main() {
           .read(subscriptionsWorkspaceControllerProvider.notifier)
           .applyRouteQuery(
             const SubscriptionsWorkspaceQuery(
-              resource: SubscriptionResource.subscriptions,
               recordId: 'SUB-001',
               action: 'view',
             ),

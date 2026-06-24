@@ -399,3 +399,177 @@ bool? _optionalBool(JsonMap json, String key) {
 JsonMap _map(Object? value) {
   return value is JsonMap ? value : const <String, Object?>{};
 }
+
+final class TenantSubscriptionSummaryDto {
+  const TenantSubscriptionSummaryDto({
+    this.planLabel,
+    this.status,
+    this.activeModulesCount = 0,
+    this.subscriptionId,
+  });
+
+  factory TenantSubscriptionSummaryDto.fromJson(JsonMap json) {
+    return TenantSubscriptionSummaryDto(
+      planLabel: _optionalString(json, 'plan_label'),
+      status: _optionalString(json, 'status'),
+      activeModulesCount: _optionalInt(json, 'active_modules_count') ?? 0,
+      subscriptionId: _optionalString(json, 'subscription_id'),
+    );
+  }
+
+  final String? planLabel;
+  final String? status;
+  final int activeModulesCount;
+  final String? subscriptionId;
+
+  TenantSubscriptionSummary toEntity() {
+    return TenantSubscriptionSummary(
+      planLabel: planLabel,
+      status: status,
+      activeModulesCount: activeModulesCount,
+      subscriptionId: subscriptionId,
+    );
+  }
+}
+
+final class FacilitySetupPermissionsDto {
+  const FacilitySetupPermissionsDto({
+    required this.canManageTenant,
+    required this.canManageFacility,
+    required this.canViewSubscriptions,
+  });
+
+  factory FacilitySetupPermissionsDto.fromJson(JsonMap json) {
+    return FacilitySetupPermissionsDto(
+      canManageTenant: _optionalBool(json, 'can_manage_tenant') ?? false,
+      canManageFacility: _optionalBool(json, 'can_manage_facility') ?? false,
+      canViewSubscriptions:
+          _optionalBool(json, 'can_view_subscriptions') ?? false,
+    );
+  }
+
+  final bool canManageTenant;
+  final bool canManageFacility;
+  final bool canViewSubscriptions;
+
+  FacilitySetupPermissions toEntity() {
+    return FacilitySetupPermissions(
+      canManageTenant: canManageTenant,
+      canManageFacility: canManageFacility,
+      canViewSubscriptions: canViewSubscriptions,
+    );
+  }
+}
+
+final class FacilitySetupWorkspaceDto {
+  const FacilitySetupWorkspaceDto({
+    required this.snapshot,
+  });
+
+  factory FacilitySetupWorkspaceDto.fromResponse(Object? data) {
+    return ApiResponseEnvelope.decodeData<FacilitySetupWorkspaceDto>(
+      data,
+      decoder: (Object? payload) {
+        final JsonMap json = payload is JsonMap
+            ? payload
+            : _requireWorkspaceMap(payload);
+        return FacilitySetupWorkspaceDto.fromJson(json);
+      },
+    );
+  }
+
+  factory FacilitySetupWorkspaceDto.fromJson(JsonMap json) {
+    final JsonMap contactAddressJson = _map(json['contact_address']);
+    final JsonMap permissionsJson = _map(json['permissions']);
+    final Object? subscriptionSummaryJson = json['subscription_summary'];
+
+    return FacilitySetupWorkspaceDto(
+      snapshot: FacilitySetupSnapshot(
+        tenant: json['tenant'] is JsonMap
+            ? TenantProfileDto.fromJson(json['tenant'] as JsonMap).toEntity()
+            : null,
+        facility: json['facility'] is JsonMap
+            ? FacilityProfileDto.fromJson(json['facility'] as JsonMap).toEntity()
+            : null,
+        facilities: _decodeOptionalList<FacilityProfileDto>(
+          json['facilities'],
+          FacilityProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        contactAddress: FacilityContactAddress(
+          phone: _optionalString(contactAddressJson, 'phone'),
+          email: _optionalString(contactAddressJson, 'email'),
+          addressLine1: _optionalString(contactAddressJson, 'address_line1'),
+          city: _optionalString(contactAddressJson, 'city'),
+          country: _optionalString(contactAddressJson, 'country'),
+        ),
+        branches: _decodeOptionalList<BranchProfileDto>(
+          json['branches'],
+          BranchProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        departments: _decodeOptionalList<DepartmentProfileDto>(
+          json['departments'],
+          DepartmentProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        units: _decodeOptionalList<UnitProfileDto>(
+          json['units'],
+          UnitProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        wards: _decodeOptionalList<WardProfileDto>(
+          json['wards'],
+          WardProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        rooms: _decodeOptionalList<RoomProfileDto>(
+          json['rooms'],
+          RoomProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        beds: _decodeOptionalList<BedProfileDto>(
+          json['beds'],
+          BedProfileDto.fromJson,
+        ).map((dto) => dto.toEntity()).toList(growable: false),
+        subscriptionSummary: subscriptionSummaryJson is JsonMap
+            ? TenantSubscriptionSummaryDto.fromJson(subscriptionSummaryJson)
+                .toEntity()
+            : null,
+        permissions: permissionsJson.isEmpty
+            ? const FacilitySetupPermissions()
+            : FacilitySetupPermissionsDto.fromJson(permissionsJson).toEntity(),
+      ),
+    );
+  }
+
+  final FacilitySetupSnapshot snapshot;
+
+  FacilitySetupSnapshot toEntity() => snapshot;
+}
+
+JsonMap _requireWorkspaceMap(Object? value) {
+  if (value is! JsonMap) {
+    throw const FormatException('Expected tenant facility workspace data.');
+  }
+
+  return value;
+}
+
+int? _optionalInt(JsonMap json, String key) {
+  final Object? value = json[key];
+  if (value is int) {
+    return value;
+  }
+
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+
+  return null;
+}
+
+List<T> _decodeOptionalList<T>(
+  Object? data,
+  T Function(JsonMap json) decoder,
+) {
+  if (data == null) {
+    return <T>[];
+  }
+
+  return decodeList<T>(data, decoder);
+}

@@ -3875,6 +3875,67 @@
   "@tenantFacilityChecklistLocations": {
     "description": "Checklist item for physical locations."
   },
+  "tenantFacilityWizardTitle": "Guided setup",
+  "@tenantFacilityWizardTitle": {
+    "description": "Guided setup wizard section title."
+  },
+  "tenantFacilityWizardBody": "Complete the main setup flow in order before daily operations begin.",
+  "@tenantFacilityWizardBody": {
+    "description": "Guided setup wizard section body."
+  },
+  "tenantFacilityWizardStepTenant": "Tenant profile",
+  "@tenantFacilityWizardStepTenant": {
+    "description": "Wizard step label for tenant profile."
+  },
+  "tenantFacilityWizardStepFacility": "Facility identity",
+  "@tenantFacilityWizardStepFacility": {
+    "description": "Wizard step label for facility identity."
+  },
+  "tenantFacilityWizardStepOrganization": "Departments and units",
+  "@tenantFacilityWizardStepOrganization": {
+    "description": "Wizard step label for organizational structure."
+  },
+  "tenantFacilityWizardStepCareSpaces": "Wards, rooms, and beds",
+  "@tenantFacilityWizardStepCareSpaces": {
+    "description": "Wizard step label for care spaces."
+  },
+  "tenantFacilityWizardContinueAction": "Continue setup",
+  "@tenantFacilityWizardContinueAction": {
+    "description": "Wizard action to open the next incomplete setup step."
+  },
+  "tenantFacilityInvalidBranchSelection": "Select a branch that belongs to this facility.",
+  "@tenantFacilityInvalidBranchSelection": {
+    "description": "Validation message for invalid branch selection."
+  },
+  "tenantFacilityInvalidDepartmentSelection": "Select a department that belongs to this facility.",
+  "@tenantFacilityInvalidDepartmentSelection": {
+    "description": "Validation message for invalid department selection."
+  },
+  "tenantFacilityInvalidWardSelection": "Select a ward that belongs to this facility.",
+  "@tenantFacilityInvalidWardSelection": {
+    "description": "Validation message for invalid ward selection."
+  },
+  "tenantFacilityInvalidRoomSelection": "Select a room that belongs to this facility.",
+  "@tenantFacilityInvalidRoomSelection": {
+    "description": "Validation message for invalid room selection."
+  },
+  "tenantFacilitySubscriptionSummaryTitle": "Subscription status",
+  "@tenantFacilitySubscriptionSummaryTitle": {
+    "description": "Subscription summary card title on tenant facility setup."
+  },
+  "tenantFacilitySubscriptionNoPlan": "No active subscription",
+  "@tenantFacilitySubscriptionNoPlan": {
+    "description": "Subscription summary when tenant has no active plan."
+  },
+  "tenantFacilitySubscriptionModulesCount": "{count, plural, =1{1 active module} other{{count} active modules}}",
+  "@tenantFacilitySubscriptionModulesCount": {
+    "description": "Subscription summary module count label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tenantFacilityPermissionsTitle": "Permission gates",
   "@tenantFacilityPermissionsTitle": {
     "description": "Permission summary section title."

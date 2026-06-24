@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,8 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -226,13 +230,23 @@ List<Widget> _setupSummaryCards(
     if (canViewSubscriptions)
       AppWorkspaceSummaryCard(
         icon: Icons.workspace_premium_outlined,
-        label: l10n.navigationSubscriptionsLabel,
-        value: 'Plans, modules, invoices',
-        description:
-            'Review subscription status, module entitlements, and renewal health.',
-        status: const AppWorkspaceStatus(
-          label: 'Commercial',
-          tone: AppWorkspaceStatusTone.info,
+        label: l10n.tenantFacilitySubscriptionSummaryTitle,
+        value: snapshot.subscriptionSummary?.hasActivePlan == true
+            ? snapshot.subscriptionSummary!.planLabel!
+            : l10n.tenantFacilitySubscriptionNoPlan,
+        description: snapshot.subscriptionSummary?.hasActivePlan == true
+            ? tenantFacilityJoinParts(<String?>[
+                snapshot.subscriptionSummary?.status,
+                l10n.tenantFacilitySubscriptionModulesCount(
+                  snapshot.subscriptionSummary?.activeModulesCount ?? 0,
+                ),
+              ])
+            : l10n.navigationSubscriptionsLabel,
+        status: AppWorkspaceStatus(
+          label: snapshot.subscriptionSummary?.status ?? 'Commercial',
+          tone: snapshot.subscriptionSummary?.hasActivePlan == true
+              ? AppWorkspaceStatusTone.success
+              : AppWorkspaceStatusTone.info,
           icon: Icons.insights_outlined,
         ),
         compact: true,
@@ -702,48 +716,6 @@ AppFailure _setupFailure(Object error) {
   return const AppFailure.unexpected();
 }
 
-class _SetupChecklist extends StatelessWidget {
-  const _SetupChecklist({required this.snapshot});
-
-  final FacilitySetupSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppScreenSection(
-      title: l10n.tenantFacilityChecklistTitle,
-      body: l10n.tenantFacilityChecklistBody(
-        snapshot.completedChecklistItems,
-        4,
-      ),
-      child: Column(
-        children: <Widget>[
-          _ChecklistItem(
-            completed: snapshot.hasTenant,
-            label: l10n.tenantFacilityChecklistTenant,
-          ),
-          _ChecklistItem(
-            completed: snapshot.hasFacilityIdentity,
-            label: l10n.tenantFacilityChecklistIdentity,
-          ),
-          _ChecklistItem(
-            completed: snapshot.hasDepartmentsAndUnits,
-            label: l10n.tenantFacilityChecklistDepartments,
-          ),
-          _ChecklistItem(
-            completed:
-                snapshot.roomsCount > 0 ||
-                snapshot.wardsCount > 0 ||
-                snapshot.bedsCount > 0,
-            label: l10n.tenantFacilityChecklistLocations,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SetupBody extends StatelessWidget {
   const _SetupBody({
     required this.snapshot,
@@ -762,7 +734,13 @@ class _SetupBody extends StatelessWidget {
       children: <Widget>[
         _SetupGrid(
           children: <Widget>[
-            _SetupChecklist(snapshot: snapshot),
+            TenantFacilitySetupWizard(
+              snapshot: snapshot,
+              onStepSelected: (TenantFacilitySetupWizardStep step) {
+                _openWizardStep(context, step);
+              },
+            ),
+            TenantFacilitySetupChecklist(snapshot: snapshot),
             _PermissionGateSummary(
               canManageTenant: canManageTenant,
               canManageFacility: canManageFacility,
@@ -774,32 +752,19 @@ class _SetupBody extends StatelessWidget {
   }
 }
 
-class _ChecklistItem extends StatelessWidget {
-  const _ChecklistItem({required this.completed, required this.label});
-
-  final bool completed;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.xs),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            completed ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: completed
-                ? theme.statusColors.success
-                : theme.colorScheme.onSurfaceVariant,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.xs),
-          Expanded(child: Text(label)),
-        ],
-      ),
-    );
+void _openWizardStep(
+  BuildContext context,
+  TenantFacilitySetupWizardStep step,
+) {
+  switch (step) {
+    case TenantFacilitySetupWizardStep.tenant:
+      unawaited(_openTenantProfileModal(context));
+    case TenantFacilitySetupWizardStep.facility:
+      unawaited(_openFacilityProfileModal(context));
+    case TenantFacilitySetupWizardStep.organization:
+      unawaited(_openDepartmentsModal(context));
+    case TenantFacilitySetupWizardStep.careSpaces:
+      unawaited(_openWardsModal(context));
   }
 }
 
@@ -1275,7 +1240,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   }
 }
 
-const String _noneSelection = '__none__';
+const String _noneSelection = tenantFacilityNoneSelection;
 
 class _BranchSetupSection extends ConsumerWidget {
   const _BranchSetupSection({
@@ -2108,6 +2073,12 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                 for (final BranchProfile branch in widget.snapshot.branches)
                   AppSelectOption<String>(value: branch.id, label: branch.name),
               ],
+              validator: tenantFacilityValidReferenceSelection(
+                validIds: widget.snapshot.branches
+                    .map((BranchProfile branch) => branch.id)
+                    .toList(growable: false),
+                invalidMessage: l10n.tenantFacilityInvalidBranchSelection,
+              ),
               onChanged: (String? value) {
                 setState(() {
                   _branchId = value ?? _noneSelection;
@@ -2249,6 +2220,12 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
                     label: department.name,
                   ),
               ],
+              validator: tenantFacilityValidReferenceSelection(
+                validIds: widget.snapshot.departments
+                    .map((DepartmentProfile department) => department.id)
+                    .toList(growable: false),
+                invalidMessage: l10n.tenantFacilityInvalidDepartmentSelection,
+              ),
               onChanged: (String? value) {
                 setState(() {
                   _departmentId = value ?? _noneSelection;
@@ -2411,6 +2388,12 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
                     label: department.name,
                   ),
               ],
+              validator: tenantFacilityValidReferenceSelection(
+                validIds: widget.snapshot.departments
+                    .map((DepartmentProfile department) => department.id)
+                    .toList(growable: false),
+                invalidMessage: l10n.tenantFacilityInvalidDepartmentSelection,
+              ),
               onChanged: (String? value) {
                 setState(() {
                   _departmentId = value ?? _noneSelection;
@@ -2549,7 +2532,21 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
                 for (final WardProfile ward in widget.snapshot.wards)
                   AppSelectOption<String>(value: ward.id, label: ward.name),
               ],
-              validator: _requiredSelection(l10n),
+              validator: (String? value) {
+                final String? requiredError = tenantFacilityRequiredSelection(
+                  l10n,
+                )(value);
+                if (requiredError != null) {
+                  return requiredError;
+                }
+
+                return tenantFacilityValidReferenceSelection(
+                  validIds: widget.snapshot.wards
+                      .map((WardProfile ward) => ward.id)
+                      .toList(growable: false),
+                  invalidMessage: l10n.tenantFacilityInvalidWardSelection,
+                )(value);
+              },
               onChanged: (String? value) {
                 setState(() {
                   _wardId = value ?? _noneSelection;
@@ -2688,7 +2685,21 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
                 for (final WardProfile ward in widget.snapshot.wards)
                   AppSelectOption<String>(value: ward.id, label: ward.name),
               ],
-              validator: _requiredSelection(l10n),
+              validator: (String? value) {
+                final String? requiredError = tenantFacilityRequiredSelection(
+                  l10n,
+                )(value);
+                if (requiredError != null) {
+                  return requiredError;
+                }
+
+                return tenantFacilityValidReferenceSelection(
+                  validIds: widget.snapshot.wards
+                      .map((WardProfile ward) => ward.id)
+                      .toList(growable: false),
+                  invalidMessage: l10n.tenantFacilityInvalidWardSelection,
+                )(value);
+              },
               onChanged: (String? value) {
                 final String nextWardId = value ?? _noneSelection;
                 final List<RoomProfile> nextRooms =
@@ -2721,6 +2732,12 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
                 for (final RoomProfile room in rooms)
                   AppSelectOption<String>(value: room.id, label: room.name),
               ],
+              validator: tenantFacilityValidReferenceSelection(
+                validIds: rooms
+                    .map((RoomProfile room) => room.id)
+                    .toList(growable: false),
+                invalidMessage: l10n.tenantFacilityInvalidRoomSelection,
+              ),
               onChanged: (String? value) {
                 setState(() {
                   _roomId = value ?? _noneSelection;
@@ -2926,11 +2943,6 @@ Future<void> _deleteEntity({
   if (!deleted) {
     return;
   }
-}
-
-FormFieldValidator<String> _requiredSelection(AppLocalizations l10n) {
-  return (String? value) =>
-      _optionalSelection(value) == null ? l10n.validationRequired : null;
 }
 
 String? _optionalSelection(String? value) {

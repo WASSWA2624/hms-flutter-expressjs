@@ -24,6 +24,10 @@ enum HmsApiResource {
   beds('beds', HmsApiEndpointGroup.tenantFacility),
   addresses('addresses', HmsApiEndpointGroup.tenantFacility),
   contacts('contacts', HmsApiEndpointGroup.tenantFacility),
+  tenantFacilityWorkspace(
+    'tenant-facility-workspace',
+    HmsApiEndpointGroup.tenantFacility,
+  ),
   users('users', HmsApiEndpointGroup.accessControl),
   userProfiles('user-profiles', HmsApiEndpointGroup.accessControl),
   roles('roles', HmsApiEndpointGroup.accessControl),

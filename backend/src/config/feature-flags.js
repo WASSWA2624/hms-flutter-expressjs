@@ -41,6 +41,10 @@ const FEATURE_FLAGS = Object.freeze({
     process.env.FEATURE_SETTINGS_WORKSPACE_V1,
     defaultWorkspaceFlag(false)
   ),
+  tenant_facility_workspace_v1: parseFlag(
+    process.env.FEATURE_TENANT_FACILITY_WORKSPACE_V1,
+    defaultWorkspaceFlag(false)
+  ),
   hr_workspace_v1: parseFlag(process.env.FEATURE_HR_WORKSPACE_V1, true),
   housekeeping_workspace_v1: parseFlag(process.env.FEATURE_HOUSEKEEPING_WORKSPACE_V1, true),
   biomedical_workspace_v1: parseFlag(process.env.FEATURE_BIOMEDICAL_WORKSPACE_V1, true),

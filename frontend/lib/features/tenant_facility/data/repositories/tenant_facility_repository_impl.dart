@@ -25,6 +25,41 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   @override
   Future<Result<FacilitySetupSnapshot>> loadSetup({String? facilityId}) async {
+    final workspaceResult = await _loadSetupFromWorkspace(facilityId: facilityId);
+    if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
+      return Result<FacilitySetupSnapshot>.success(value);
+    }
+    if (workspaceResult case ResultFailure<FacilitySetupSnapshot>(:final failure)) {
+      if (failure.category != AppFailureCategory.notFound) {
+        return Result<FacilitySetupSnapshot>.failure(failure);
+      }
+    }
+
+    return _loadSetupComposed(facilityId: facilityId);
+  }
+
+  Future<Result<FacilitySetupSnapshot>> _loadSetupFromWorkspace({
+    String? facilityId,
+  }) {
+    return _apiClient.get<FacilitySetupSnapshot>(
+      ApiEndpoints.nested(
+        HmsApiResource.tenantFacilityWorkspace,
+        'setup',
+        const <String>[],
+      ),
+      queryParameters: _withoutEmpty(<String, String?>{
+        if (_normalizedOptional(facilityId) case final String selectedFacilityId)
+          'facility_id': selectedFacilityId,
+      }),
+      decoder: (Object? data) {
+        return FacilitySetupWorkspaceDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  Future<Result<FacilitySetupSnapshot>> _loadSetupComposed({
+    String? facilityId,
+  }) async {
     final tenantsResult = await _listTenants();
     return tenantsResult.when(
       success: (List<TenantProfile> tenants) async {
@@ -944,5 +979,13 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   static bool _isForbidden(AppFailure failure) {
     return failure.category == AppFailureCategory.forbidden;
+  }
+
+  static Map<String, String> _withoutEmpty(Map<String, String?> values) {
+    return <String, String>{
+      for (final MapEntry<String, String?> entry in values.entries)
+        if (entry.value != null && entry.value!.trim().isNotEmpty)
+          entry.key: entry.value!.trim(),
+    };
   }
 }

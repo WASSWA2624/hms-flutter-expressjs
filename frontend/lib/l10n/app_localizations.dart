@@ -5662,6 +5662,90 @@ abstract class AppLocalizations {
   /// **'Rooms, wards, or beds are configured'**
   String get tenantFacilityChecklistLocations;
 
+  /// Guided setup wizard section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Guided setup'**
+  String get tenantFacilityWizardTitle;
+
+  /// Guided setup wizard section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the main setup flow in order before daily operations begin.'**
+  String get tenantFacilityWizardBody;
+
+  /// Wizard step label for tenant profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant profile'**
+  String get tenantFacilityWizardStepTenant;
+
+  /// Wizard step label for facility identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility identity'**
+  String get tenantFacilityWizardStepFacility;
+
+  /// Wizard step label for organizational structure.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments and units'**
+  String get tenantFacilityWizardStepOrganization;
+
+  /// Wizard step label for care spaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Wards, rooms, and beds'**
+  String get tenantFacilityWizardStepCareSpaces;
+
+  /// Wizard action to open the next incomplete setup step.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue setup'**
+  String get tenantFacilityWizardContinueAction;
+
+  /// Validation message for invalid branch selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a branch that belongs to this facility.'**
+  String get tenantFacilityInvalidBranchSelection;
+
+  /// Validation message for invalid department selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a department that belongs to this facility.'**
+  String get tenantFacilityInvalidDepartmentSelection;
+
+  /// Validation message for invalid ward selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a ward that belongs to this facility.'**
+  String get tenantFacilityInvalidWardSelection;
+
+  /// Validation message for invalid room selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a room that belongs to this facility.'**
+  String get tenantFacilityInvalidRoomSelection;
+
+  /// Subscription summary card title on tenant facility setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription status'**
+  String get tenantFacilitySubscriptionSummaryTitle;
+
+  /// Subscription summary when tenant has no active plan.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscription'**
+  String get tenantFacilitySubscriptionNoPlan;
+
+  /// Subscription summary module count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 active module} other{{count} active modules}}'**
+  String tenantFacilitySubscriptionModulesCount(int count);
+
   /// Permission summary section title.
   ///
   /// In en, this message translates to:
