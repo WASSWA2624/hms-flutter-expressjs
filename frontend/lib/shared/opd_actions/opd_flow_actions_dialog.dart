@@ -334,10 +334,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     }
 
     if (!terminal) {
-      final bool clinicalStage = <String>{
-        'WAITING_DOCTOR_REVIEW',
-        'WAITING_DISPOSITION',
-      }.contains(stage);
+      final bool clinicalStage = _isClinicalReviewStage(stage);
       final bool canAdjustBilling =
           nextActionKey != 'billing' &&
           (consultationPaid || consultationPaymentRequired);

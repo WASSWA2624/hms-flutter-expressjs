@@ -682,6 +682,15 @@ Future<void> _openLabDetailDialog(
     context: context,
     builder: (_) => LabResultEntryDialog(
       canMutate: canMutate,
+      onCreateAdditionalOrder: canMutate
+          ? (BuildContext dialogContext, LabOrderWorkflow workflow) {
+              return _openAdditionalLabOrderDialog(
+                dialogContext,
+                state,
+                workflow.order,
+              );
+            }
+          : null,
       onEditOrder: (BuildContext dialogContext, LabOrderWorkflow workflow) {
         return _openEditLabOrderDialog(dialogContext, state, workflow);
       },
@@ -1521,6 +1530,38 @@ Future<void> _openCreateLabOrderDialog(
     return;
   }
 
+  await _openLabOrderActionDialog(
+    context,
+    state,
+    orderContext: orderContext,
+  );
+}
+
+Future<void> _openAdditionalLabOrderDialog(
+  BuildContext context,
+  LabWorkspaceState state,
+  LabOrderSummary order,
+) async {
+  final String? patientId = order.patientId?.trim();
+  if (patientId == null || patientId.isEmpty) {
+    return;
+  }
+
+  await _openLabOrderActionDialog(
+    context,
+    state,
+    orderContext: LabOrderContextInput(
+      patientId: patientId,
+      encounterId: order.encounterId,
+    ),
+  );
+}
+
+Future<void> _openLabOrderActionDialog(
+  BuildContext context,
+  LabWorkspaceState state, {
+  required LabOrderContextInput orderContext,
+}) async {
   ClinicalActionLabOrderRecord? existingOrder;
   final String? existingOrderId = orderContext.normalizedExistingOrderId;
   if (existingOrderId != null) {
@@ -1659,75 +1700,10 @@ Future<void> _openEditLabOrderDialog(
     return;
   }
 
-  ClinicalActionLabOrderRecord? existingOrder;
-  final String? existingOrderId = orderContext.normalizedExistingOrderId;
-  if (existingOrderId != null) {
-    existingOrder = await _loadExistingLabOrderRecord(
-      context,
-      state,
-      existingOrderId,
-    );
-    if (existingOrder == null || !context.mounted) {
-      return;
-    }
-  }
-
-  await _showActionResult(
+  await _openLabOrderActionDialog(
     context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ClinicalLabOrderActionDialog(
-        referenceData: _clinicalReferenceData(state),
-        existingOrder: existingOrder,
-        onSearchLabTests:
-            ({
-              required String termType,
-              String? query,
-              int? limit,
-              String source = 'ALL',
-            }) {
-              return ProviderScope.containerOf(context)
-                  .read(clinicalRepositoryProvider)
-                  .searchClinicalTerms(
-                    termType: termType,
-                    query: query,
-                    limit: limit ?? 80,
-                    source: source,
-                  );
-            },
-        onRequest:
-            ({
-              required List<String> labTestIds,
-              required List<String> labPanelIds,
-              ClinicalRequestBillingSubmit? billing,
-            }) {
-              return _readLabController(context).createOrder(
-                orderContext.toPayload(
-                  labTestIds: labTestIds,
-                  labPanelIds: labPanelIds,
-                  billing: billing,
-                ),
-              );
-            },
-        onUpdate:
-            ({
-              required String labOrderId,
-              required List<String> labTestIds,
-              required List<String> labPanelIds,
-              ClinicalRequestBillingSubmit? billing,
-            }) {
-              return _readLabController(context).updateOrder(
-                labOrderId,
-                orderContext.toPayload(
-                  labTestIds: labTestIds,
-                  labPanelIds: labPanelIds,
-                  billing: billing,
-                ),
-              );
-            },
-      ),
-    ),
+    state,
+    orderContext: orderContext,
   );
 }
 

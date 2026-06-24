@@ -20,6 +20,7 @@ class LabResultEntryDialog extends ConsumerStatefulWidget {
   const LabResultEntryDialog({
     required this.canMutate,
     this.onEditOrder,
+    this.onCreateAdditionalOrder,
     this.onDeleteOrder,
     super.key,
   });
@@ -27,6 +28,8 @@ class LabResultEntryDialog extends ConsumerStatefulWidget {
   final bool canMutate;
   final Future<void> Function(BuildContext context, LabOrderWorkflow workflow)?
   onEditOrder;
+  final Future<void> Function(BuildContext context, LabOrderWorkflow workflow)?
+  onCreateAdditionalOrder;
   final Future<void> Function(BuildContext context, LabOrderWorkflow workflow)?
   onDeleteOrder;
 
@@ -298,6 +301,18 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                 enabled: !_isSaving,
                 onPressed: () => _openPrintPreview(context, workflows),
               ),
+              if (workflows.length == 1 &&
+                  canMutate &&
+                  widget.onCreateAdditionalOrder != null)
+                AppButton.secondary(
+                  label: l10n.labCreateAction,
+                  leadingIcon: Icons.add_circle_outline,
+                  enabled: !_isSaving,
+                  onPressed: () => widget.onCreateAdditionalOrder?.call(
+                    context,
+                    workflows.first,
+                  ),
+                ),
               if (workflows.length == 1 &&
                   canMutate &&
                   widget.onEditOrder != null)

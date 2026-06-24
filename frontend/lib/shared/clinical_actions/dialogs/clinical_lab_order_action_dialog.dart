@@ -129,13 +129,18 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       icon: const Icon(Icons.science_outlined),
       maxWidth: 920,
       closeEnabled: !_isSaving,
-      content: SizedBox(
-        height: bodyHeight,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            SegmentedButton<_LabRequestSelectionKind>(
+      content: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double maxHeight = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : bodyHeight;
+          return SizedBox(
+            height: maxHeight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (_failure != null) AppFailureStateView(failure: _failure!),
+                SegmentedButton<_LabRequestSelectionKind>(
               segments: <ButtonSegment<_LabRequestSelectionKind>>[
                 ButtonSegment<_LabRequestSelectionKind>(
                   value: _LabRequestSelectionKind.tests,
@@ -248,62 +253,79 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                 ),
               ),
             ],
-            SizedBox(height: theme.spacing.md),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool twoColumns = constraints.maxWidth >= 760;
-                  final Widget catalogPanel = _LabCatalogResultsPanel(
-                    results: searchResults,
-                    kind: _selectionKind,
-                    isSaving: _isSaving,
-                    isEditing: _editingIndex != null,
-                    onSelected: _addOrUpdateRequest,
-                    isDuplicate: _isDuplicateSelection,
-                  );
-                  final Widget selectedPanel = _LabSelectedRequestsPanel(
-                    requests: _requests,
-                    editingIndex: _editingIndex,
-                    isSaving: _isSaving,
-                    onEdit: _editRequest,
-                    onDelete: _deleteRequest,
-                  );
-
-                  if (!twoColumns) {
-                    return Column(
-                      children: <Widget>[
-                        Expanded(child: catalogPanel),
-                        SizedBox(height: theme.spacing.md),
-                        Expanded(child: selectedPanel),
-                      ],
-                    );
-                  }
-
-                  return Row(
+                SizedBox(height: theme.spacing.md),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      Expanded(child: catalogPanel),
-                      SizedBox(width: theme.spacing.md),
-                      Expanded(child: selectedPanel),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder:
+                              (BuildContext context, BoxConstraints constraints) {
+                            final bool twoColumns = constraints.maxWidth >= 760;
+                            final Widget catalogPanel = _LabCatalogResultsPanel(
+                              results: searchResults,
+                              kind: _selectionKind,
+                              isSaving: _isSaving,
+                              isEditing: _editingIndex != null,
+                              onSelected: _addOrUpdateRequest,
+                              isDuplicate: _isDuplicateSelection,
+                            );
+                            final Widget selectedPanel = _LabSelectedRequestsPanel(
+                              requests: _requests,
+                              editingIndex: _editingIndex,
+                              isSaving: _isSaving,
+                              onEdit: _editRequest,
+                              onDelete: _deleteRequest,
+                            );
+
+                            if (!twoColumns) {
+                              return Column(
+                                children: <Widget>[
+                                  Expanded(child: catalogPanel),
+                                  SizedBox(height: theme.spacing.md),
+                                  Expanded(child: selectedPanel),
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Expanded(child: catalogPanel),
+                                SizedBox(width: theme.spacing.md),
+                                Expanded(child: selectedPanel),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: theme.spacing.md),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: ClinicalRequestBillingPanel(
+                            lineItems: clinicalRequestBillingLineItems(
+                              options: _requests
+                                  .map(
+                                    (_PendingLabRequest request) =>
+                                        request.option,
+                                  )
+                                  .toList(growable: false),
+                            ),
+                            enabled: !_isSaving,
+                            onChanged: (ClinicalRequestBillingSubmit value) {
+                              setState(() => _billingSubmit = value);
+                            },
+                          ),
+                        ),
+                      ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: theme.spacing.md),
-            ClinicalRequestBillingPanel(
-              lineItems: clinicalRequestBillingLineItems(
-                options: _requests
-                    .map((_PendingLabRequest request) => request.option)
-                    .toList(growable: false),
-              ),
-              enabled: !_isSaving,
-              onChanged: (ClinicalRequestBillingSubmit value) {
-                setState(() => _billingSubmit = value);
-              },
-            ),
-          ],
-        ),
+          );
+        },
       ),
       actions: <Widget>[
         AppButton.tertiary(
