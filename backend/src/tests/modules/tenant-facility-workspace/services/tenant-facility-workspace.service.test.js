@@ -165,6 +165,20 @@ describe('tenant-facility-workspace service', () => {
     expect(result.permissions.can_manage_tenant).toBe(true);
   });
 
+  it('resolves scoped foreign-key public ids from uuid storage', async () => {
+    const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
+
+    expect(result.facility.tenant_id).toBe('TEN0001');
+    expect(result.branches[0].tenant_id).toBe('TEN0001');
+    expect(result.branches[0].facility_id).toBe('FAC0001');
+    expect(result.departments[0].tenant_id).toBe('TEN0001');
+    expect(result.departments[0].facility_id).toBe('FAC0001');
+    expect(result.departments[0].branch_id).toBe('BRN0001');
+    expect(result.units[0].department_id).toBe('DEP0001');
+    expect(result.wards[0].facility_id).toBe('FAC0001');
+    expect(result.beds[0].ward_id).toBe('WRD0001');
+  });
+
   it('returns tenant context required payload without facility records', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',

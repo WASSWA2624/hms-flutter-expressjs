@@ -6,6 +6,54 @@ const { serializeSubscription } = require('@lib/subscriptions/serializers');
 
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
 
+const buildIdentifierMap = (recordGroups = []) => {
+  const map = new Map();
+
+  const register = (record) => {
+    if (!record?.id) return;
+    const publicId = safePublicId(record.human_friendly_id, record.id);
+    if (!publicId) return;
+    map.set(String(record.id), publicId);
+    if (record.human_friendly_id) {
+      map.set(String(record.human_friendly_id), publicId);
+    }
+  };
+
+  recordGroups.flat().forEach(register);
+  return map;
+};
+
+const buildSerializeContext = (tenant, facility, facilityRecords = {}) => {
+  const scope = {
+    tenant_id: safePublicId(tenant?.human_friendly_id, tenant?.id),
+    facility_id: safePublicId(facility?.human_friendly_id, facility?.id),
+  };
+
+  const idMap = buildIdentifierMap([
+    tenant ? [tenant] : [],
+    facility ? [facility] : [],
+    facilityRecords.branches || [],
+    facilityRecords.departments || [],
+    facilityRecords.units || [],
+    facilityRecords.wards || [],
+    facilityRecords.rooms || [],
+    facilityRecords.beds || [],
+  ]);
+
+  return { scope, idMap };
+};
+
+const resolveFk = (value, context, scopeKey = null) => {
+  if (value) {
+    const mapped = context.idMap.get(String(value));
+    if (mapped) return mapped;
+    const direct = safePublicId(value);
+    if (direct) return direct;
+  }
+
+  return scopeKey ? context.scope[scopeKey] || null : null;
+};
+
 const WRITE_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
@@ -67,7 +115,7 @@ const serializeTenant = (record) => {
   };
 };
 
-const serializeFacility = (record) => {
+const serializeFacility = (record, context = null) => {
   if (!record) return null;
 
   const extensionJson =
@@ -77,7 +125,9 @@ const serializeFacility = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
-    tenant_id: safePublicId(record.tenant_id),
+    tenant_id: context
+      ? resolveFk(record.tenant_id, context, 'tenant_id')
+      : safePublicId(record.tenant_id),
     name: record.name,
     facility_type: record.facility_type,
     is_active: Boolean(record.is_active),
@@ -87,59 +137,89 @@ const serializeFacility = (record) => {
   };
 };
 
-const serializeBranch = (record) => ({
+const serializeBranch = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
   name: record.name,
   is_active: Boolean(record.is_active),
 });
 
-const serializeDepartment = (record) => ({
+const serializeDepartment = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
-  branch_id: safePublicId(record.branch_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  branch_id: context
+    ? resolveFk(record.branch_id, context)
+    : safePublicId(record.branch_id),
   name: record.name,
   short_name: record.short_name || null,
   department_type: record.department_type,
   is_active: Boolean(record.is_active),
 });
 
-const serializeUnit = (record) => ({
+const serializeUnit = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
-  department_id: safePublicId(record.department_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  department_id: context
+    ? resolveFk(record.department_id, context)
+    : safePublicId(record.department_id),
   name: record.name,
   is_active: Boolean(record.is_active),
 });
 
-const serializeWard = (record) => ({
+const serializeWard = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
-  department_id: safePublicId(record.department_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  department_id: context
+    ? resolveFk(record.department_id, context)
+    : safePublicId(record.department_id),
   name: record.name,
   ward_type: record.ward_type,
   is_active: Boolean(record.is_active),
 });
 
-const serializeRoom = (record) => ({
+const serializeRoom = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
-  ward_id: safePublicId(record.ward_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  ward_id: context ? resolveFk(record.ward_id, context) : safePublicId(record.ward_id),
   name: record.name,
   floor: record.floor || null,
 });
 
-const serializeBed = (record) => ({
+const serializeBed = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
-  tenant_id: safePublicId(record.tenant_id),
-  facility_id: safePublicId(record.facility_id),
-  ward_id: safePublicId(record.ward_id),
-  room_id: safePublicId(record.room_id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  ward_id: context ? resolveFk(record.ward_id, context) : safePublicId(record.ward_id),
+  room_id: context ? resolveFk(record.room_id, context) : safePublicId(record.room_id),
   label: record.label,
   status: record.status,
 });
@@ -284,20 +364,29 @@ const getSetup = async (filters = {}, user = {}) => {
     facilityRecords.contacts,
     facilityRecords.addresses
   );
+  const serializeContext = buildSerializeContext(
+    tenant,
+    selectedFacility,
+    facilityRecords
+  );
 
   const payload = {
     state: 'ready',
     generated_at: new Date().toISOString(),
     tenant: serializeTenant(tenant),
-    facility: serializeFacility(selectedFacility),
-    facilities: facilities.map(serializeFacility),
+    facility: serializeFacility(selectedFacility, serializeContext),
+    facilities: facilities.map((entry) => serializeFacility(entry, serializeContext)),
     contact_address: contactAddress,
-    branches: facilityRecords.branches.map(serializeBranch),
-    departments: facilityRecords.departments.map(serializeDepartment),
-    units: facilityRecords.units.map(serializeUnit),
-    wards: facilityRecords.wards.map(serializeWard),
-    rooms: facilityRecords.rooms.map(serializeRoom),
-    beds: facilityRecords.beds.map(serializeBed),
+    branches: facilityRecords.branches.map((entry) =>
+      serializeBranch(entry, serializeContext)
+    ),
+    departments: facilityRecords.departments.map((entry) =>
+      serializeDepartment(entry, serializeContext)
+    ),
+    units: facilityRecords.units.map((entry) => serializeUnit(entry, serializeContext)),
+    wards: facilityRecords.wards.map((entry) => serializeWard(entry, serializeContext)),
+    rooms: facilityRecords.rooms.map((entry) => serializeRoom(entry, serializeContext)),
+    beds: facilityRecords.beds.map((entry) => serializeBed(entry, serializeContext)),
     checklist: buildChecklist({
       tenant,
       facility: selectedFacility,
