@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -22,11 +23,63 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class RoomsBedsWorkspacePage extends ConsumerWidget {
-  const RoomsBedsWorkspacePage({super.key});
+class RoomsBedsWorkspacePage extends ConsumerStatefulWidget {
+  const RoomsBedsWorkspacePage({this.initialQuery, super.key});
+
+  final RoomsBedsQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoomsBedsWorkspacePage> createState() {
+    return _RoomsBedsWorkspacePageState();
+  }
+}
+
+class _RoomsBedsWorkspacePageState extends ConsumerState<RoomsBedsWorkspacePage> {
+  String? _appliedRouteSignature;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant RoomsBedsWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_querySignature(oldWidget.initialQuery) !=
+        _querySignature(widget.initialQuery)) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(RoomsBedsQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    final String? signature = _querySignature(query);
+    if (signature == null || _appliedRouteSignature == signature) {
+      return;
+    }
+    _appliedRouteSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(roomsBedsWorkspaceControllerProvider.notifier)
+          .applyRouteQuery(query);
+    });
+  }
+
+  String? _querySignature(RoomsBedsQuery? query) {
+    if (query == null) {
+      return null;
+    }
+    return '${query.wardId}|${query.roomId}|${query.bedId}|${query.status?.apiValue}|${query.search}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final AsyncValue<Result<RoomsBedsWorkspaceState>> workspace = ref.watch(
       roomsBedsWorkspaceControllerProvider,
@@ -113,29 +166,8 @@ class _RoomsBedsWorkspaceContentState
             : AppWorkspaceStatusTone.success,
         icon: state.isSaving ? Icons.sync_outlined : Icons.sensors_outlined,
       ),
-      primaryAction: canAdminBeds
-          ? AppButton.primary(
-              label: l10n.tenantFacilityAddBedAction,
-              leadingIcon: Icons.add,
-              enabled: !state.isSaving,
-              onPressed: () => _showBedDialog(context, ref, state),
-            )
-          : null,
+      primaryAction: null,
       secondaryActions: <Widget>[
-        if (canAdminBeds)
-          AppButton.secondary(
-            label: l10n.tenantFacilityAddRoomAction,
-            leadingIcon: Icons.meeting_room_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _showRoomDialog(context, ref, state),
-          ),
-        if (canAdminBeds)
-          AppButton.secondary(
-            label: l10n.tenantFacilityAddWardAction,
-            leadingIcon: Icons.apartment_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _showWardDialog(context, ref, state),
-          ),
         AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
@@ -149,6 +181,13 @@ class _RoomsBedsWorkspaceContentState
                   }
                 },
         ),
+        if (canAdminBeds)
+          AppButton.secondary(
+            label: l10n.roomsBedsManageCatalogAction,
+            leadingIcon: Icons.apartment_outlined,
+            enabled: !state.isSaving,
+            onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+          ),
         AppButton.tertiary(
           label: l10n.navigationSetupLabel,
           leadingIcon: Icons.settings_outlined,
@@ -189,12 +228,20 @@ class _RoomsBedsWorkspaceContentState
           onPressed: () => controller.applyStatus(BedSetupStatus.reserved),
         ),
         AppWorkspaceSummaryCard(
-          label: l10n.tenantFacilityBedStatusOutOfService,
-          value: state.outOfServiceCount.toString(),
+          label: l10n.tenantFacilityBedStatusCleaning,
+          value: state.cleaningCount.toString(),
+          icon: Icons.cleaning_services_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          compact: true,
+          onPressed: () => controller.applyStatus(BedSetupStatus.cleaning),
+        ),
+        AppWorkspaceSummaryCard(
+          label: l10n.tenantFacilityBedStatusBlocked,
+          value: state.blockedCount.toString(),
           icon: Icons.block_outlined,
           tone: AppWorkspaceStatusTone.error,
           compact: true,
-          onPressed: () => controller.applyStatus(BedSetupStatus.outOfService),
+          onPressed: () => controller.applyStatus(BedSetupStatus.blocked),
         ),
       ],
       body: Column(
@@ -207,12 +254,6 @@ class _RoomsBedsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          AppMessagePanel(
-            title: l10n.roomsBedsBackendGapsTitle,
-            message: l10n.roomsBedsBackendGapsBody,
-            icon: Icons.api_outlined,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
           _BedBoardPanel(
             state: state,
             canAdminBeds: canAdminBeds,
@@ -308,7 +349,7 @@ class _BedBoardPanel extends ConsumerWidget {
                 key: _statusFilterKey,
                 label: l10n.roomsBedsStatusFilterLabel,
                 allLabel: l10n.roomsBedsAllStatusesLabel,
-                choices: _statusChoices(l10n),
+                choices: roomsBedsStatusFilterChoices(l10n),
               ),
             ],
             filterValue: _filterValue(state.query),
@@ -318,7 +359,7 @@ class _BedBoardPanel extends ConsumerWidget {
               final String? facilityId = value.option(_facilityFilterKey);
               final String? wardId = value.option(_wardFilterKey);
               final String? roomId = value.option(_roomFilterKey);
-              final BedSetupStatus? status = _statusFromFilter(
+              final BedSetupStatus? status = roomsBedsStatusFromFilter(
                 value.option(_statusFilterKey),
               );
               if (facilityId != state.query.facilityId) {
@@ -403,7 +444,7 @@ class _BedBoardPanel extends ConsumerWidget {
               },
               cellBuilder: (BuildContext context, BedBoardItem item) {
                 return AppWorkspaceStatusBadge(
-                  status: _statusFor(context, item),
+                  status: roomsBedsStatusBadge(context.l10n, item.status),
                 );
               },
             ),
@@ -423,12 +464,12 @@ class _BedBoardPanel extends ConsumerWidget {
               label: l10n.roomsBedsNextActionColumnLabel,
               sortComparator: (BedBoardItem left, BedBoardItem right) {
                 return appListTableCompareText(
-                  _nextActionLabel(context, left),
-                  _nextActionLabel(context, right),
+                  roomsBedsNextActionLabel(context.l10n, left),
+                  roomsBedsNextActionLabel(context.l10n, right),
                 );
               },
               cellBuilder: (BuildContext context, BedBoardItem item) {
-                return Text(_nextActionLabel(context, item));
+                return Text(roomsBedsNextActionLabel(context.l10n, item));
               },
             ),
           ],
@@ -526,7 +567,7 @@ class _BedDetailContent extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.roomsBedsStatusColumnLabel,
-              value: _statusLabel(l10n, item.status),
+              value: roomsBedsStatusLabel(l10n, item.status),
               icon: Icons.fact_check_outlined,
             ),
             AppInfoTileData(
@@ -546,29 +587,43 @@ class _BedDetailContent extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.roomsBedsReadinessLabel,
-              value: _readinessLabel(context, item),
+              value: roomsBedsReadinessLabel(l10n, item),
               icon: Icons.cleaning_services_outlined,
             ),
           ],
         ),
+        if (admissionId != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.tertiary(
+              label: l10n.roomsBedsOpenIpdAdmissionAction,
+              leadingIcon: Icons.open_in_new,
+              onPressed: () {
+                final String? target = _readableDisplayText(
+                      admissionDisplayId,
+                    ) ??
+                    _readableDisplayText(admissionId);
+                if (target == null) {
+                  return;
+                }
+                context.go(
+                  AppRoutes.ipd.location(
+                    queryParameters: <String, String>{'admission': target},
+                  ),
+                );
+              },
+            ),
+          ),
         if (canAdminBeds || canIpdWrite)
           Wrap(
             spacing: Theme.of(context).spacing.sm,
             runSpacing: Theme.of(context).spacing.sm,
             children: <Widget>[
-              if (canAdminBeds)
-                AppButton.secondary(
-                  label: l10n.tenantFacilityEditBedTitle,
-                  leadingIcon: Icons.edit_outlined,
-                  enabled: !state.isSaving,
-                  onPressed: () =>
-                      _showBedDialog(context, ref, state, item: item),
-                ),
-              if (canAdminBeds && item.status != BedSetupStatus.reserved)
+              if (canAdminBeds && !item.isOccupied)
                 AppButton.secondary(
                   label: l10n.roomsBedsReserveAction,
                   leadingIcon: Icons.event_available_outlined,
-                  enabled: !state.isSaving && !item.isOccupied,
+                  enabled: !state.isSaving && item.isAvailable,
                   onPressed: () => _updateBedStatus(
                     context,
                     controller,
@@ -576,7 +631,7 @@ class _BedDetailContent extends ConsumerWidget {
                     BedSetupStatus.reserved,
                   ),
                 ),
-              if (canAdminBeds && item.status != BedSetupStatus.available)
+              if (canAdminBeds && !item.isAvailable)
                 AppButton.secondary(
                   label: l10n.roomsBedsMarkAvailableAction,
                   leadingIcon: Icons.check_circle_outline,
@@ -588,17 +643,53 @@ class _BedDetailContent extends ConsumerWidget {
                     BedSetupStatus.available,
                   ),
                 ),
-              if (canAdminBeds && item.status != BedSetupStatus.outOfService)
+              if (canAdminBeds && !item.isOccupied && item.status != BedSetupStatus.cleaning)
                 AppButton.secondary(
-                  label: l10n.roomsBedsMarkOutOfServiceAction,
-                  leadingIcon: Icons.block_outlined,
-                  enabled: !state.isSaving && !item.isOccupied,
+                  label: l10n.roomsBedsMarkCleaningAction,
+                  leadingIcon: Icons.cleaning_services_outlined,
+                  enabled: !state.isSaving,
                   onPressed: () => _updateBedStatus(
                     context,
                     controller,
                     item,
-                    BedSetupStatus.outOfService,
+                    BedSetupStatus.cleaning,
                   ),
+                ),
+              if (canAdminBeds && !item.isOccupied && item.status != BedSetupStatus.maintenance)
+                AppButton.secondary(
+                  label: l10n.roomsBedsMarkMaintenanceAction,
+                  leadingIcon: Icons.build_outlined,
+                  enabled: !state.isSaving,
+                  onPressed: () => _updateBedStatus(
+                    context,
+                    controller,
+                    item,
+                    BedSetupStatus.maintenance,
+                  ),
+                ),
+              if (canAdminBeds && !item.isOccupied && !item.isBlocked)
+                AppButton.secondary(
+                  label: l10n.roomsBedsMarkBlockedAction,
+                  leadingIcon: Icons.block_outlined,
+                  enabled: !state.isSaving,
+                  onPressed: () => _updateBedStatus(
+                    context,
+                    controller,
+                    item,
+                    BedSetupStatus.blocked,
+                  ),
+                ),
+              if (canAdminBeds && item.isCleaning)
+                AppButton.tertiary(
+                  label: l10n.roomsBedsOpenHousekeepingAction,
+                  leadingIcon: Icons.cleaning_services_outlined,
+                  onPressed: () => context.go(AppRoutes.housekeeping.location()),
+                ),
+              if (canAdminBeds && (item.isMaintenance || item.isBlocked))
+                AppButton.tertiary(
+                  label: l10n.roomsBedsOpenOperationsAction,
+                  leadingIcon: Icons.handyman_outlined,
+                  onPressed: () => context.go(AppRoutes.operations.location()),
                 ),
               if (canIpdWrite)
                 AppButton.secondary(
@@ -634,6 +725,18 @@ class _BedDetailContent extends ConsumerWidget {
                     item,
                     admissionId,
                     admissionDisplayId: admissionDisplayId,
+                  ),
+                ),
+              if (canIpdWrite && item.hasOpenTransfer && admissionId != null)
+                AppButton.secondary(
+                  label: l10n.roomsBedsManageTransferAction,
+                  leadingIcon: Icons.move_down_outlined,
+                  enabled: !state.isSaving,
+                  onPressed: () => _showTransferUpdateDialog(
+                    context,
+                    controller,
+                    item,
+                    admissionId,
                   ),
                 ),
             ],
@@ -712,10 +815,12 @@ class _BedMobileItem extends StatelessWidget {
           _assignmentLabel(context, item),
         ]),
       ),
-      trailing: AppWorkspaceStatusBadge(status: _statusFor(context, item)),
+      trailing: AppWorkspaceStatusBadge(
+        status: roomsBedsStatusBadge(l10n, item.status),
+      ),
       leading: Icon(
         item.isOccupied ? Icons.person_pin_circle_outlined : Icons.bed_outlined,
-        semanticLabel: _statusLabel(l10n, item.status),
+        semanticLabel: roomsBedsStatusLabel(l10n, item.status),
       ),
     );
   }
@@ -755,431 +860,6 @@ class _TwoLineCell extends StatelessWidget {
           ),
       ],
     );
-  }
-}
-
-class _WardForm extends StatefulWidget {
-  const _WardForm({required this.state, required this.onSubmit, this.ward});
-
-  final RoomsBedsWorkspaceState state;
-  final WardProfile? ward;
-  final Future<AppFailure?> Function({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    required WardSetupType type,
-    String? departmentId,
-    required bool isActive,
-  })
-  onSubmit;
-
-  @override
-  State<_WardForm> createState() => _WardFormState();
-}
-
-class _WardFormState extends State<_WardForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late WardSetupType _type;
-  String? _departmentId;
-  bool _isActive = true;
-  bool _isSubmitting = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.ward?.name);
-    _type = widget.ward?.type ?? WardSetupType.general;
-    _departmentId = widget.ward?.departmentId;
-    _isActive = widget.ward?.isActive ?? true;
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
-      children: <Widget>[
-        AppTextField(
-          controller: _nameController,
-          labelText: l10n.tenantFacilityWardNameLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.roomsBedsRequiredMessage(l10n.tenantFacilityWardNameLabel),
-          ),
-        ),
-        AppSelectField<WardSetupType>(
-          labelText: l10n.tenantFacilityWardTypeLabel,
-          value: _type,
-          isRequired: true,
-          options: <AppSelectOption<WardSetupType>>[
-            for (final WardSetupType type in WardSetupType.values)
-              AppSelectOption<WardSetupType>(
-                value: type,
-                label: _wardTypeLabel(l10n, type),
-              ),
-          ],
-          onChanged: (WardSetupType? value) {
-            if (value != null) {
-              setState(() => _type = value);
-            }
-          },
-        ),
-        AppSelectField<String>(
-          labelText: l10n.tenantFacilityWardDepartmentLabel,
-          value: _departmentId,
-          options: <AppSelectOption<String>>[
-            for (final DepartmentProfile department
-                in widget.state.referenceData.snapshot.departments)
-              AppSelectOption<String>(
-                value: department.id,
-                label: department.name,
-              ),
-          ],
-          onChanged: (String? value) => setState(() => _departmentId = value),
-        ),
-        AppSwitchField(
-          title: l10n.tenantFacilityActiveLabel,
-          value: _isActive,
-          onChanged: (bool value) => setState(() => _isActive = value),
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.tenantFacilitySaveAction,
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final TenantProfile? tenant = widget.state.referenceData.tenant;
-    final FacilityProfile? facility = widget.state.referenceData.facility;
-    if (tenant == null || facility == null) {
-      return;
-    }
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      id: widget.ward?.id,
-      tenantId: tenant.id,
-      facilityId: facility.id,
-      name: _nameController.text.trim(),
-      type: _type,
-      departmentId: _departmentId,
-      isActive: _isActive,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-}
-
-class _RoomForm extends StatefulWidget {
-  const _RoomForm({required this.state, required this.onSubmit, this.room});
-
-  final RoomsBedsWorkspaceState state;
-  final RoomProfile? room;
-  final Future<AppFailure?> Function({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    String? wardId,
-    String? floor,
-  })
-  onSubmit;
-
-  @override
-  State<_RoomForm> createState() => _RoomFormState();
-}
-
-class _RoomFormState extends State<_RoomForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _floorController;
-  String? _wardId;
-  bool _isSubmitting = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.room?.name);
-    _floorController = TextEditingController(text: widget.room?.floor);
-    _wardId = widget.room?.wardId;
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _floorController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
-      children: <Widget>[
-        AppTextField(
-          controller: _nameController,
-          labelText: l10n.tenantFacilityRoomNameLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.roomsBedsRequiredMessage(l10n.tenantFacilityRoomNameLabel),
-          ),
-        ),
-        AppSelectField<String>(
-          labelText: l10n.tenantFacilityRoomWardLabel,
-          value: _wardId,
-          options: <AppSelectOption<String>>[
-            for (final WardProfile ward in widget.state.referenceData.wards)
-              AppSelectOption<String>(value: ward.id, label: ward.name),
-          ],
-          onChanged: (String? value) => setState(() => _wardId = value),
-        ),
-        AppTextField(
-          controller: _floorController,
-          labelText: l10n.tenantFacilityRoomFloorLabel,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.tenantFacilitySaveAction,
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final TenantProfile? tenant = widget.state.referenceData.tenant;
-    final FacilityProfile? facility = widget.state.referenceData.facility;
-    if (tenant == null || facility == null) {
-      return;
-    }
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      id: widget.room?.id,
-      tenantId: tenant.id,
-      facilityId: facility.id,
-      name: _nameController.text.trim(),
-      wardId: _wardId,
-      floor: _floorController.text.trim(),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-}
-
-class _BedForm extends StatefulWidget {
-  const _BedForm({required this.state, required this.onSubmit, this.item});
-
-  final RoomsBedsWorkspaceState state;
-  final BedBoardItem? item;
-  final Future<AppFailure?> Function({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String wardId,
-    required String label,
-    required BedSetupStatus status,
-    String? roomId,
-  })
-  onSubmit;
-
-  @override
-  State<_BedForm> createState() => _BedFormState();
-}
-
-class _BedFormState extends State<_BedForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _labelController;
-  late BedSetupStatus _status;
-  String? _wardId;
-  String? _roomId;
-  bool _isSubmitting = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    final BedBoardItem? item = widget.item;
-    _labelController = TextEditingController(text: item?.label);
-    _status = item?.status ?? BedSetupStatus.available;
-    _wardId = item?.wardId ?? widget.state.referenceData.wards.firstOrNull?.id;
-    _roomId = item?.roomId;
-  }
-
-  @override
-  void dispose() {
-    _labelController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<RoomProfile> rooms = widget.state.referenceData.rooms
-        .where((RoomProfile room) => _wardId == null || room.wardId == _wardId)
-        .toList(growable: false);
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
-      children: <Widget>[
-        AppTextField(
-          controller: _labelController,
-          labelText: l10n.tenantFacilityBedLabelLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.roomsBedsRequiredMessage(l10n.tenantFacilityBedLabelLabel),
-          ),
-        ),
-        AppSelectField<String>(
-          labelText: l10n.tenantFacilityBedWardLabel,
-          value: _wardId,
-          isRequired: true,
-          options: <AppSelectOption<String>>[
-            for (final WardProfile ward in widget.state.referenceData.wards)
-              AppSelectOption<String>(value: ward.id, label: ward.name),
-          ],
-          validator: AppValidators.requiredValue<String>(
-            l10n.roomsBedsRequiredMessage(l10n.tenantFacilityBedWardLabel),
-          ),
-          onChanged: (String? value) {
-            setState(() {
-              _wardId = value;
-              if (rooms.every((RoomProfile room) => room.id != _roomId)) {
-                _roomId = null;
-              }
-            });
-          },
-        ),
-        AppSelectField<String>(
-          labelText: l10n.tenantFacilityBedRoomLabel,
-          value: _roomId,
-          options: <AppSelectOption<String>>[
-            for (final RoomProfile room in rooms)
-              AppSelectOption<String>(value: room.id, label: room.name),
-          ],
-          onChanged: (String? value) => setState(() => _roomId = value),
-        ),
-        AppSelectField<BedSetupStatus>(
-          labelText: l10n.tenantFacilityBedStatusLabel,
-          value: _status,
-          options: <AppSelectOption<BedSetupStatus>>[
-            for (final BedSetupStatus status in BedSetupStatus.values)
-              AppSelectOption<BedSetupStatus>(
-                value: status,
-                label: _statusLabel(l10n, status),
-              ),
-          ],
-          onChanged: (BedSetupStatus? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.tenantFacilitySaveAction,
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final TenantProfile? tenant = widget.state.referenceData.tenant;
-    final FacilityProfile? facility = widget.state.referenceData.facility;
-    final String? wardId = _wardId;
-    if (tenant == null || facility == null || wardId == null) {
-      return;
-    }
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      id: widget.item?.id,
-      tenantId: tenant.id,
-      facilityId: facility.id,
-      wardId: wardId,
-      label: _labelController.text.trim(),
-      status: _status,
-      roomId: _roomId,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
   }
 }
 
@@ -1412,75 +1092,135 @@ class _TransferFormState extends State<_TransferForm> {
   }
 }
 
-Future<void> _showWardDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RoomsBedsWorkspaceState state, {
-  WardProfile? ward,
-}) async {
-  final AppLocalizations l10n = context.l10n;
-  final RoomsBedsWorkspaceController controller = ref.read(
-    roomsBedsWorkspaceControllerProvider.notifier,
-  );
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(
-      ward == null
-          ? l10n.tenantFacilityAddWardTitle
-          : l10n.tenantFacilityEditWardTitle,
-    ),
-    content: _WardForm(state: state, ward: ward, onSubmit: controller.saveWard),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
-  }
+class _TransferUpdateForm extends StatefulWidget {
+  const _TransferUpdateForm({
+    required this.controller,
+    required this.item,
+    required this.admissionId,
+    this.transferRequestId,
+    this.transferStatus,
+  });
+
+  final RoomsBedsWorkspaceController controller;
+  final BedBoardItem item;
+  final String admissionId;
+  final String? transferRequestId;
+  final String? transferStatus;
+
+  @override
+  State<_TransferUpdateForm> createState() => _TransferUpdateFormState();
 }
 
-Future<void> _showRoomDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RoomsBedsWorkspaceState state, {
-  RoomProfile? room,
-}) async {
-  final AppLocalizations l10n = context.l10n;
-  final RoomsBedsWorkspaceController controller = ref.read(
-    roomsBedsWorkspaceControllerProvider.notifier,
-  );
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(
-      room == null
-          ? l10n.tenantFacilityAddRoomTitle
-          : l10n.tenantFacilityEditRoomTitle,
-    ),
-    content: _RoomForm(state: state, room: room, onSubmit: controller.saveRoom),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
-  }
-}
+class _TransferUpdateFormState extends State<_TransferUpdateForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late String _action;
+  String? _bedId;
+  bool _isSubmitting = false;
+  AppFailure? _failure;
 
-Future<void> _showBedDialog(
-  BuildContext context,
-  WidgetRef ref,
-  RoomsBedsWorkspaceState state, {
-  BedBoardItem? item,
-}) async {
-  final AppLocalizations l10n = context.l10n;
-  final RoomsBedsWorkspaceController controller = ref.read(
-    roomsBedsWorkspaceControllerProvider.notifier,
-  );
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(
-      item == null
-          ? l10n.tenantFacilityAddBedTitle
-          : l10n.tenantFacilityEditBedTitle,
-    ),
-    content: _BedForm(state: state, item: item, onSubmit: controller.saveBed),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
+  @override
+  void initState() {
+    super.initState();
+    _action = roomsBedsTransferActionForStatus(widget.transferStatus);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<BedBoardItem> destinationBeds = widget.controller
+        .availableDestinationBeds(excludeBedId: widget.item.id);
+
+    return AppFormShell(
+      formKey: _formKey,
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
+      children: <Widget>[
+        AppSelectField<String>(
+          labelText: l10n.ipdTransferActionFieldLabel,
+          value: _action,
+          options: <AppSelectOption<String>>[
+            AppSelectOption<String>(
+              value: 'APPROVE',
+              label: l10n.ipdTransferApproveAction,
+            ),
+            AppSelectOption<String>(
+              value: 'START',
+              label: l10n.ipdTransferStartAction,
+            ),
+            AppSelectOption<String>(
+              value: 'COMPLETE',
+              label: l10n.ipdTransferCompleteAction,
+            ),
+            AppSelectOption<String>(
+              value: 'CANCEL',
+              label: l10n.ipdTransferCancelAction,
+            ),
+          ],
+          onChanged: (String? value) {
+            if (value != null) {
+              setState(() => _action = value);
+            }
+          },
+        ),
+        if (roomsBedsTransferRequiresDestinationBed(_action))
+          AppSelectField<String>(
+            labelText: l10n.ipdDestinationBedFieldLabel,
+            value: _bedId,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              for (final BedBoardItem bed in destinationBeds)
+                AppSelectOption<String>(
+                  value: bed.id,
+                  label: _joinDisplay(<String?>[bed.label, bed.ward?.name]),
+                ),
+            ],
+            validator: AppValidators.requiredValue<String>(
+              l10n.roomsBedsRequiredMessage(l10n.ipdDestinationBedFieldLabel),
+            ),
+            onChanged: (String? value) => setState(() => _bedId = value),
+          ),
+        AppFormActions(
+          cancelLabel: l10n.commonCancelActionLabel,
+          submitLabel: l10n.roomsBedsManageTransferAction,
+          submitIcon: Icons.move_down_outlined,
+          isSubmitting: _isSubmitting,
+          onCancel: () => Navigator.of(context).pop(false),
+          onSubmit: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    if (roomsBedsTransferRequiresDestinationBed(_action) && _bedId == null) {
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await widget.controller.updateTransfer(
+      item: widget.item,
+      admissionId: widget.admissionId,
+      action: _action,
+      transferRequestId: widget.transferRequestId,
+      toBedId: _bedId,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }
 
@@ -1490,12 +1230,26 @@ Future<void> _showAssignDialog(
   BedBoardItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
+  final WardSetupType? wardType = item.ward?.type;
+  final String? suitabilityHint = wardType == null || wardType == WardSetupType.general
+      ? null
+      : switch (wardType) {
+          WardSetupType.icu => l10n.tenantFacilityWardTypeIcu,
+          WardSetupType.maternity => l10n.tenantFacilityWardTypeMaternity,
+          WardSetupType.pediatric => l10n.tenantFacilityWardTypePediatric,
+          WardSetupType.surgical => l10n.tenantFacilityWardTypeSurgical,
+          WardSetupType.other => l10n.tenantFacilityWardTypeOther,
+          WardSetupType.general => l10n.tenantFacilityWardTypeGeneral,
+        };
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
     title: Text(l10n.roomsBedsAssignDialogTitle),
     content: _AdmissionActionForm(
       submitLabel: l10n.roomsBedsAssignAction,
       submitIcon: Icons.login_outlined,
+      body: suitabilityHint == null
+          ? null
+          : l10n.roomsBedsAssignWardSuitabilityHint(suitabilityHint),
       onSubmit: (String admissionId) {
         return controller.assignBed(item: item, admissionId: admissionId);
       },
@@ -1563,6 +1317,29 @@ Future<void> _showTransferDialog(
   }
 }
 
+Future<void> _showTransferUpdateDialog(
+  BuildContext context,
+  RoomsBedsWorkspaceController controller,
+  BedBoardItem item,
+  String admissionId,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+    context: context,
+    title: Text(l10n.roomsBedsTransferUpdateDialogTitle),
+    content: _TransferUpdateForm(
+      controller: controller,
+      item: item,
+      admissionId: admissionId,
+      transferRequestId: item.admissionContext?.transferRequestId,
+      transferStatus: item.admissionContext?.transferStatus,
+    ),
+  );
+  if (context.mounted && saved == true) {
+    _showSaved(context);
+  }
+}
+
 Future<void> _updateBedStatus(
   BuildContext context,
   RoomsBedsWorkspaceController controller,
@@ -1588,52 +1365,6 @@ bool _canAdminBeds(AppAccessPolicy accessPolicy) {
       ]);
 }
 
-AppWorkspaceStatus _statusFor(BuildContext context, BedBoardItem item) {
-  return AppWorkspaceStatus(
-    label: _statusLabel(context.l10n, item.status),
-    tone: _statusTone(item.status),
-    icon: _statusIcon(item.status),
-  );
-}
-
-AppWorkspaceStatusTone _statusTone(BedSetupStatus status) {
-  return switch (status) {
-    BedSetupStatus.available => AppWorkspaceStatusTone.success,
-    BedSetupStatus.occupied => AppWorkspaceStatusTone.info,
-    BedSetupStatus.reserved => AppWorkspaceStatusTone.warning,
-    BedSetupStatus.outOfService => AppWorkspaceStatusTone.error,
-  };
-}
-
-IconData _statusIcon(BedSetupStatus status) {
-  return switch (status) {
-    BedSetupStatus.available => Icons.check_circle_outline,
-    BedSetupStatus.occupied => Icons.person_pin_circle_outlined,
-    BedSetupStatus.reserved => Icons.event_available_outlined,
-    BedSetupStatus.outOfService => Icons.block_outlined,
-  };
-}
-
-String _statusLabel(AppLocalizations l10n, BedSetupStatus status) {
-  return switch (status) {
-    BedSetupStatus.available => l10n.tenantFacilityBedStatusAvailable,
-    BedSetupStatus.occupied => l10n.tenantFacilityBedStatusOccupied,
-    BedSetupStatus.reserved => l10n.tenantFacilityBedStatusReserved,
-    BedSetupStatus.outOfService => l10n.tenantFacilityBedStatusOutOfService,
-  };
-}
-
-String _wardTypeLabel(AppLocalizations l10n, WardSetupType type) {
-  return switch (type) {
-    WardSetupType.general => l10n.tenantFacilityWardTypeGeneral,
-    WardSetupType.icu => l10n.tenantFacilityWardTypeIcu,
-    WardSetupType.maternity => l10n.tenantFacilityWardTypeMaternity,
-    WardSetupType.pediatric => l10n.tenantFacilityWardTypePediatric,
-    WardSetupType.surgical => l10n.tenantFacilityWardTypeSurgical,
-    WardSetupType.other => l10n.tenantFacilityWardTypeOther,
-  };
-}
-
 String _locationLabel(BuildContext context, BedBoardItem item) {
   return _joinDisplay(<String?>[
     item.ward?.name,
@@ -1656,26 +1387,6 @@ String _assignmentLabel(BuildContext context, BedBoardItem item) {
     return context.l10n.roomsBedsAssignmentNotLinked;
   }
   return context.l10n.profileUnknownValue;
-}
-
-String _nextActionLabel(BuildContext context, BedBoardItem item) {
-  final AppLocalizations l10n = context.l10n;
-  return switch (item.status) {
-    BedSetupStatus.available => l10n.roomsBedsNextActionAssign,
-    BedSetupStatus.occupied => l10n.roomsBedsNextActionReleaseOrTransfer,
-    BedSetupStatus.reserved => l10n.roomsBedsNextActionAssignOrReleaseHold,
-    BedSetupStatus.outOfService => l10n.roomsBedsNextActionResolveBlock,
-  };
-}
-
-String _readinessLabel(BuildContext context, BedBoardItem item) {
-  if (item.isAvailable) {
-    return context.l10n.roomsBedsReadyLabel;
-  }
-  if (item.isOutOfService) {
-    return context.l10n.roomsBedsUnavailableLabel;
-  }
-  return context.l10n.roomsBedsReadinessBackendGapLabel;
 }
 
 String _dateLabel(BuildContext context, DateTime? value) {
@@ -1735,17 +1446,6 @@ List<AppSearchBarFilterChoice> _roomChoices(List<RoomProfile> rooms) {
   ];
 }
 
-List<AppSearchBarFilterChoice> _statusChoices(AppLocalizations l10n) {
-  return <AppSearchBarFilterChoice>[
-    for (final BedSetupStatus status in BedSetupStatus.values)
-      AppSearchBarFilterChoice(
-        value: status.apiValue,
-        label: _statusLabel(l10n, status),
-        icon: _statusIcon(status),
-      ),
-  ];
-}
-
 AppSearchBarFilterValue _filterValue(RoomsBedsQuery query) {
   return AppSearchBarFilterValue(
     options: <String, String>{
@@ -1755,18 +1455,6 @@ AppSearchBarFilterValue _filterValue(RoomsBedsQuery query) {
       if (query.status != null) _statusFilterKey: query.status!.apiValue,
     },
   );
-}
-
-BedSetupStatus? _statusFromFilter(String? value) {
-  if (value == null) {
-    return null;
-  }
-  for (final BedSetupStatus status in BedSetupStatus.values) {
-    if (status.apiValue == value) {
-      return status;
-    }
-  }
-  return null;
 }
 
 String _joinDisplay(Iterable<String?> values) {

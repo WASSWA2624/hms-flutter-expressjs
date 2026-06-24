@@ -2539,7 +2539,7 @@ const releaseBed = async (id, data, context = {}) => {
 
     await tx.bed.update({
       where: { id: activeBedAssignment.bed_id },
-      data: { status: "AVAILABLE" },
+      data: { status: "CLEANING" },
     });
 
     return {

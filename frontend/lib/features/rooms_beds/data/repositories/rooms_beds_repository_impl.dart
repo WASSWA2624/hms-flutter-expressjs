@@ -33,67 +33,6 @@ final class RoomsBedsRepositoryImpl implements RoomsBedsRepository {
   }
 
   @override
-  Future<Result<WardProfile>> saveWard({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    required WardSetupType type,
-    String? departmentId,
-    required bool isActive,
-  }) {
-    return _setupRepository.saveWard(
-      id: id,
-      tenantId: tenantId,
-      facilityId: facilityId,
-      name: name,
-      type: type,
-      departmentId: departmentId,
-      isActive: isActive,
-    );
-  }
-
-  @override
-  Future<Result<RoomProfile>> saveRoom({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    String? wardId,
-    String? floor,
-  }) {
-    return _setupRepository.saveRoom(
-      id: id,
-      tenantId: tenantId,
-      facilityId: facilityId,
-      name: name,
-      wardId: wardId,
-      floor: floor,
-    );
-  }
-
-  @override
-  Future<Result<BedProfile>> saveBed({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String wardId,
-    required String label,
-    required BedSetupStatus status,
-    String? roomId,
-  }) {
-    return _setupRepository.saveBed(
-      id: id,
-      tenantId: tenantId,
-      facilityId: facilityId,
-      wardId: wardId,
-      label: label,
-      status: status,
-      roomId: roomId,
-    );
-  }
-
-  @override
   Future<Result<List<BedAssignmentRecord>>> listBedAssignmentsForBed(
     String bedId,
   ) {
@@ -107,6 +46,16 @@ final class RoomsBedsRepositoryImpl implements RoomsBedsRepository {
         'order': 'desc',
       },
       decoder: decodeBedAssignmentRecords,
+    );
+  }
+
+  @override
+  Future<Result<BedAdmissionContext>> loadAdmissionContext(
+    String admissionId,
+  ) {
+    return _apiClient.get<BedAdmissionContext>(
+      ApiEndpoints.byId(HmsApiResource.ipdFlows, admissionId),
+      decoder: decodeBedAdmissionContext,
     );
   }
 
@@ -150,6 +99,40 @@ final class RoomsBedsRepositoryImpl implements RoomsBedsRepository {
         'to_ward_id': toWardId,
         'requested_at': DateTime.now().toUtc().toIso8601String(),
       },
+    );
+  }
+
+  @override
+  Future<Result<void>> updateTransfer({
+    required String admissionId,
+    required String action,
+    String? transferRequestId,
+    String? toBedId,
+  }) {
+    return _postIpdAction(
+      admissionId,
+      <String>['update-transfer'],
+      <String, Object?>{
+        'action': action,
+        'transfer_request_id': _normalizedOptional(transferRequestId),
+        'to_bed_id': _normalizedOptional(toBedId),
+      },
+    );
+  }
+
+  @override
+  Future<Result<BedProfile>> updateBedStatus({
+    required BedProfile bed,
+    required BedSetupStatus status,
+  }) {
+    return _setupRepository.saveBed(
+      id: bed.id,
+      tenantId: bed.tenantId,
+      facilityId: bed.facilityId,
+      wardId: bed.wardId,
+      label: bed.label,
+      status: status,
+      roomId: bed.roomId,
     );
   }
 

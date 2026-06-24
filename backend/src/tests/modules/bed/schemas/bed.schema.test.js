@@ -53,7 +53,15 @@ describe('Bed Schema Validation', () => {
     });
 
     it('should validate all bed statuses', () => {
-      const statuses = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE'];
+      const statuses = [
+        'AVAILABLE',
+        'OCCUPIED',
+        'RESERVED',
+        'CLEANING',
+        'MAINTENANCE',
+        'BLOCKED',
+        'OUT_OF_SERVICE',
+      ];
       statuses.forEach(status => {
         const validData = {
           tenant_id: '123e4567-e89b-12d3-a456-426614174000',

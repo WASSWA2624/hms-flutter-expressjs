@@ -27,7 +27,15 @@ enum DepartmentSetupType {
 
 enum WardSetupType { general, icu, maternity, pediatric, surgical, other }
 
-enum BedSetupStatus { available, occupied, reserved, outOfService }
+enum BedSetupStatus {
+  available,
+  occupied,
+  reserved,
+  cleaning,
+  maintenance,
+  blocked,
+  outOfService,
+}
 
 final class TenantProfile {
   const TenantProfile({
@@ -385,6 +393,9 @@ extension BedSetupStatusX on BedSetupStatus {
       BedSetupStatus.available => 'AVAILABLE',
       BedSetupStatus.occupied => 'OCCUPIED',
       BedSetupStatus.reserved => 'RESERVED',
+      BedSetupStatus.cleaning => 'CLEANING',
+      BedSetupStatus.maintenance => 'MAINTENANCE',
+      BedSetupStatus.blocked => 'BLOCKED',
       BedSetupStatus.outOfService => 'OUT_OF_SERVICE',
     };
   }
@@ -393,8 +404,19 @@ extension BedSetupStatusX on BedSetupStatus {
     return switch (value?.trim().toUpperCase()) {
       'OCCUPIED' => BedSetupStatus.occupied,
       'RESERVED' => BedSetupStatus.reserved,
+      'CLEANING' => BedSetupStatus.cleaning,
+      'MAINTENANCE' => BedSetupStatus.maintenance,
+      'BLOCKED' => BedSetupStatus.blocked,
       'OUT_OF_SERVICE' => BedSetupStatus.outOfService,
       _ => BedSetupStatus.available,
     };
   }
+
+  bool get isAssignable => this == BedSetupStatus.available;
+
+  bool get isNonAssignableOperational =>
+      this == BedSetupStatus.cleaning ||
+      this == BedSetupStatus.maintenance ||
+      this == BedSetupStatus.blocked ||
+      this == BedSetupStatus.outOfService;
 }

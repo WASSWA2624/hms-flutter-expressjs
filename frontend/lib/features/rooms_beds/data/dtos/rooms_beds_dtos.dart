@@ -24,6 +24,30 @@ final class BedAssignmentRecordDto {
   }
 }
 
+final class BedAdmissionContextDto {
+  const BedAdmissionContextDto(this.json);
+
+  final RoomsBedsJsonMap json;
+
+  BedAdmissionContext toEntity() {
+    final RoomsBedsJsonMap admission = _map(json['admission']);
+    final RoomsBedsJsonMap openTransfer = _map(json['open_transfer_request']);
+    return BedAdmissionContext(
+      admissionId:
+          _string(json['id']) ??
+          _string(json['admission_id']) ??
+          _string(admission['id']) ??
+          '',
+      admissionDisplayId:
+          _string(json['display_id']) ??
+          _string(admission['human_friendly_id']) ??
+          _string(admission['display_id']),
+      transferRequestId: _string(openTransfer['id']),
+      transferStatus: _string(openTransfer['status']),
+    );
+  }
+}
+
 List<BedAssignmentRecord> decodeBedAssignmentRecords(Object? responseData) {
   final RoomsBedsJsonMap response = _expectMap(responseData);
   return _list(response['data'])
@@ -37,6 +61,16 @@ List<BedAssignmentRecord> decodeBedAssignmentRecords(Object? responseData) {
       .toList(growable: false);
 }
 
+BedAdmissionContext decodeBedAdmissionContext(Object? responseData) {
+  final RoomsBedsJsonMap response = _expectMap(responseData);
+  final RoomsBedsJsonMap payload = _map(response['data'] ?? response);
+  final BedAdmissionContext context = BedAdmissionContextDto(payload).toEntity();
+  if (context.admissionId.isEmpty) {
+    throw const FormatException('Expected admission id in IPD flow response.');
+  }
+  return context;
+}
+
 void decodeSuccessfulVoid(Object? responseData) {
   _expectMap(responseData);
 }
@@ -47,6 +81,13 @@ RoomsBedsJsonMap _expectMap(Object? value) {
   }
 
   throw const FormatException('Expected response object.');
+}
+
+RoomsBedsJsonMap _map(Object? value) {
+  if (value is RoomsBedsJsonMap) {
+    return value;
+  }
+  return const <String, Object?>{};
 }
 
 List<RoomsBedsJsonMap> _list(Object? value) {

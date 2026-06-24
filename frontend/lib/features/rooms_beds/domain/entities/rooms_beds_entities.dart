@@ -9,27 +9,52 @@ final class RoomsBedsQuery {
     this.facilityId,
     this.wardId,
     this.roomId,
+    this.bedId,
     this.status,
     this.pageRequest = const AppPageRequest(),
   });
+
+  factory RoomsBedsQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    return RoomsBedsQuery(
+      search: params['search'] ?? '',
+      facilityId: _nonEmpty(params['facilityId'] ?? params['facility_id']),
+      wardId: _nonEmpty(params['wardId'] ?? params['ward']),
+      roomId: _nonEmpty(params['roomId'] ?? params['room']),
+      bedId: _nonEmpty(params['bedId'] ?? params['bed']),
+      status: BedSetupStatusX.fromApiValue(params['status']),
+    );
+  }
 
   final String search;
   final String? facilityId;
   final String? wardId;
   final String? roomId;
+  final String? bedId;
   final BedSetupStatus? status;
   final AppPageRequest pageRequest;
+
+  bool get hasRouteTargeting {
+    return search.trim().isNotEmpty ||
+        facilityId != null ||
+        wardId != null ||
+        roomId != null ||
+        bedId != null ||
+        status != null;
+  }
 
   RoomsBedsQuery copyWith({
     String? search,
     String? facilityId,
     String? wardId,
     String? roomId,
+    String? bedId,
     BedSetupStatus? status,
     AppPageRequest? pageRequest,
     bool clearFacility = false,
     bool clearWard = false,
     bool clearRoom = false,
+    bool clearBed = false,
     bool clearStatus = false,
   }) {
     return RoomsBedsQuery(
@@ -37,6 +62,7 @@ final class RoomsBedsQuery {
       facilityId: clearFacility ? null : facilityId ?? this.facilityId,
       wardId: clearWard ? null : wardId ?? this.wardId,
       roomId: clearRoom ? null : roomId ?? this.roomId,
+      bedId: clearBed ? null : bedId ?? this.bedId,
       status: clearStatus ? null : status ?? this.status,
       pageRequest: pageRequest ?? this.pageRequest,
     );
@@ -47,6 +73,7 @@ final class RoomsBedsQuery {
         facilityId != null ||
         wardId != null ||
         roomId != null ||
+        bedId != null ||
         status != null;
   }
 }
@@ -73,6 +100,28 @@ final class BedAssignmentRecord {
 }
 
 @immutable
+final class BedAdmissionContext {
+  const BedAdmissionContext({
+    required this.admissionId,
+    this.admissionDisplayId,
+    this.transferRequestId,
+    this.transferStatus,
+  });
+
+  final String admissionId;
+  final String? admissionDisplayId;
+  final String? transferRequestId;
+  final String? transferStatus;
+
+  bool get hasOpenTransfer {
+    final String normalized = (transferStatus ?? '').trim().toUpperCase();
+    return normalized == 'REQUESTED' ||
+        normalized == 'APPROVED' ||
+        normalized == 'IN_PROGRESS';
+  }
+}
+
+@immutable
 final class BedBoardItem {
   const BedBoardItem({
     required this.bed,
@@ -81,6 +130,7 @@ final class BedBoardItem {
     this.room,
     this.activeAssignment,
     this.assignmentHistory = const <BedAssignmentRecord>[],
+    this.admissionContext,
   });
 
   final BedProfile bed;
@@ -89,6 +139,7 @@ final class BedBoardItem {
   final RoomProfile? room;
   final BedAssignmentRecord? activeAssignment;
   final List<BedAssignmentRecord> assignmentHistory;
+  final BedAdmissionContext? admissionContext;
 
   String get id => bed.id;
   String get label => bed.label;
@@ -98,12 +149,19 @@ final class BedBoardItem {
   String? get roomId => bed.roomId;
   String? get currentAdmissionId => activeAssignment?.admissionId;
   String? get currentAdmissionDisplayId =>
-      activeAssignment?.admissionDisplayId ?? activeAssignment?.admissionId;
+      admissionContext?.admissionDisplayId ??
+      activeAssignment?.admissionDisplayId ??
+      activeAssignment?.admissionId;
 
-  bool get isAvailable => status == BedSetupStatus.available;
+  bool get isAvailable => status.isAssignable;
   bool get isOccupied => status == BedSetupStatus.occupied;
   bool get isReserved => status == BedSetupStatus.reserved;
-  bool get isOutOfService => status == BedSetupStatus.outOfService;
+  bool get isCleaning => status == BedSetupStatus.cleaning;
+  bool get isMaintenance => status == BedSetupStatus.maintenance;
+  bool get isBlocked =>
+      status == BedSetupStatus.blocked || status == BedSetupStatus.outOfService;
+  bool get isOutOfService => status.isNonAssignableOperational;
+  bool get hasOpenTransfer => admissionContext?.hasOpenTransfer ?? false;
 
   BedBoardItem copyWith({
     BedProfile? bed,
@@ -112,7 +170,9 @@ final class BedBoardItem {
     RoomProfile? room,
     BedAssignmentRecord? activeAssignment,
     List<BedAssignmentRecord>? assignmentHistory,
+    BedAdmissionContext? admissionContext,
     bool clearActiveAssignment = false,
+    bool clearAdmissionContext = false,
   }) {
     return BedBoardItem(
       bed: bed ?? this.bed,
@@ -123,6 +183,9 @@ final class BedBoardItem {
           ? null
           : activeAssignment ?? this.activeAssignment,
       assignmentHistory: assignmentHistory ?? this.assignmentHistory,
+      admissionContext: clearAdmissionContext
+          ? null
+          : admissionContext ?? this.admissionContext,
     );
   }
 
@@ -141,6 +204,8 @@ final class BedBoardItem {
       room?.name,
       room?.floor,
       activeAssignment?.admissionId,
+      activeAssignment?.admissionDisplayId,
+      admissionContext?.admissionDisplayId,
     ].whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
     );
@@ -189,8 +254,17 @@ final class RoomsBedsWorkspaceState {
   int get availableCount => _statusCount(BedSetupStatus.available);
   int get occupiedCount => _statusCount(BedSetupStatus.occupied);
   int get reservedCount => _statusCount(BedSetupStatus.reserved);
-  int get outOfServiceCount => _statusCount(BedSetupStatus.outOfService);
-  int get workloadCount => occupiedCount + reservedCount + outOfServiceCount;
+  int get cleaningCount => _statusCount(BedSetupStatus.cleaning);
+  int get maintenanceCount => _statusCount(BedSetupStatus.maintenance);
+  int get blockedCount =>
+      _statusCount(BedSetupStatus.blocked) +
+      _statusCount(BedSetupStatus.outOfService);
+  int get workloadCount =>
+      occupiedCount +
+      reservedCount +
+      cleaningCount +
+      maintenanceCount +
+      blockedCount;
 
   RoomsBedsWorkspaceState copyWith({
     RoomsBedsQuery? query,
@@ -219,4 +293,9 @@ final class RoomsBedsWorkspaceState {
       return bed.status == status;
     }).length;
   }
+}
+
+String? _nonEmpty(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }

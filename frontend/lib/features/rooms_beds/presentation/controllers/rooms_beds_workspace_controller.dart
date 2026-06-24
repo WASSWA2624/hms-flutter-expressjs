@@ -40,6 +40,20 @@ final class RoomsBedsWorkspaceController
     return _loadState(RoomsBedsQuery(facilityId: facilityId));
   }
 
+  Future<AppFailure?> applyRouteQuery(RoomsBedsQuery query) async {
+    final String? facilityId = ref.read(appAccessPolicyProvider).facilityId;
+    final RoomsBedsQuery resolved = query.copyWith(
+      facilityId: query.facilityId ?? facilityId,
+    );
+    _emitLoading(resolved);
+    final Result<RoomsBedsWorkspaceState> result = await _loadState(
+      resolved,
+      selectedBedId: resolved.bedId,
+    );
+    state = AsyncData<Result<RoomsBedsWorkspaceState>>(result);
+    return result.when(success: (_) => null, failure: (failure) => failure);
+  }
+
   Future<AppFailure?> refresh() async {
     final RoomsBedsWorkspaceState? current = _currentState;
     if (current == null) {
@@ -80,6 +94,7 @@ final class RoomsBedsWorkspaceController
           clearFacility: facilityId == null,
           clearWard: true,
           clearRoom: true,
+          clearBed: true,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
@@ -101,6 +116,7 @@ final class RoomsBedsWorkspaceController
         wardId: wardId,
         clearWard: wardId == null,
         clearRoom: true,
+        clearBed: true,
         pageRequest: query.pageRequest.first(),
       );
     });
@@ -111,6 +127,7 @@ final class RoomsBedsWorkspaceController
       return query.copyWith(
         roomId: roomId,
         clearRoom: roomId == null,
+        clearBed: true,
         pageRequest: query.pageRequest.first(),
       );
     });
@@ -146,12 +163,25 @@ final class RoomsBedsWorkspaceController
     final Result<List<BedAssignmentRecord>> assignmentsResult =
         await _repository.listBedAssignmentsForBed(bed.id);
     return assignmentsResult.when(
-      success: (List<BedAssignmentRecord> assignments) {
-        final BedBoardItem selected = bed.copyWith(
+      success: (List<BedAssignmentRecord> assignments) async {
+        BedBoardItem selected = bed.copyWith(
           activeAssignment: _activeAssignment(assignments),
           assignmentHistory: assignments,
           clearActiveAssignment: _activeAssignment(assignments) == null,
         );
+
+        final String? admissionId = selected.currentAdmissionId;
+        if (admissionId != null && admissionId.trim().isNotEmpty) {
+          final Result<BedAdmissionContext> contextResult = await _repository
+              .loadAdmissionContext(admissionId);
+          contextResult.when(
+            success: (BedAdmissionContext context) {
+              selected = selected.copyWith(admissionContext: context);
+            },
+            failure: (_) {},
+          );
+        }
+
         final RoomsBedsWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
@@ -178,128 +208,16 @@ final class RoomsBedsWorkspaceController
     }
   }
 
-  Future<AppFailure?> saveWard({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    required WardSetupType type,
-    String? departmentId,
-    required bool isActive,
-  }) async {
-    final RoomsBedsWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    return _mutateSetup<WardProfile>(
-      current,
-      () => _repository.saveWard(
-        id: id,
-        tenantId: tenantId,
-        facilityId: facilityId,
-        name: name,
-        type: type,
-        departmentId: departmentId,
-        isActive: isActive,
-      ),
-      (FacilitySetupSnapshot snapshot, WardProfile ward) {
-        return snapshot.copyWith(
-          wards: _upsertById<WardProfile>(
-            snapshot.wards,
-            ward,
-            (WardProfile item) => item.id,
-          ),
-        );
-      },
-    );
-  }
-
-  Future<AppFailure?> saveRoom({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String name,
-    String? wardId,
-    String? floor,
-  }) async {
-    final RoomsBedsWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    return _mutateSetup<RoomProfile>(
-      current,
-      () => _repository.saveRoom(
-        id: id,
-        tenantId: tenantId,
-        facilityId: facilityId,
-        name: name,
-        wardId: wardId,
-        floor: floor,
-      ),
-      (FacilitySetupSnapshot snapshot, RoomProfile room) {
-        return snapshot.copyWith(
-          rooms: _upsertById<RoomProfile>(
-            snapshot.rooms,
-            room,
-            (RoomProfile item) => item.id,
-          ),
-        );
-      },
-    );
-  }
-
-  Future<AppFailure?> saveBed({
-    String? id,
-    required String tenantId,
-    required String facilityId,
-    required String wardId,
-    required String label,
-    required BedSetupStatus status,
-    String? roomId,
-  }) async {
-    final RoomsBedsWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    return _mutateSetup<BedProfile>(
-      current,
-      () => _repository.saveBed(
-        id: id,
-        tenantId: tenantId,
-        facilityId: facilityId,
-        wardId: wardId,
-        label: label,
-        status: status,
-        roomId: roomId,
-      ),
-      (FacilitySetupSnapshot snapshot, BedProfile bed) {
-        return snapshot.copyWith(
-          beds: _upsertById<BedProfile>(
-            snapshot.beds,
-            bed,
-            (BedProfile item) => item.id,
-          ),
-        );
-      },
-    );
-  }
-
   Future<AppFailure?> updateBedStatus(
     BedBoardItem item,
     BedSetupStatus status,
-  ) {
-    return saveBed(
-      id: item.bed.id,
-      tenantId: item.bed.tenantId,
-      facilityId: item.bed.facilityId,
-      wardId: item.bed.wardId,
-      label: item.bed.label,
-      status: status,
-      roomId: item.bed.roomId,
-    );
+  ) async {
+    final RoomsBedsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    return _mutateBedStatus(current, item, status);
   }
 
   Future<AppFailure?> assignBed({
@@ -332,7 +250,8 @@ final class RoomsBedsWorkspaceController
       current,
       () => _repository.releaseBed(admissionId: admissionId),
       item: item,
-      status: BedSetupStatus.available,
+      status: BedSetupStatus.cleaning,
+      clearAssignment: true,
     );
   }
 
@@ -354,10 +273,30 @@ final class RoomsBedsWorkspaceController
     );
 
     return result.when(
-      success: (_) {
+      success: (_) async {
+        final Result<BedAdmissionContext> contextResult = await _repository
+            .loadAdmissionContext(admissionId);
         final RoomsBedsWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isSaving: false, clearLastFailure: true));
+          BedBoardItem? selected = latest.selectedBed?.id == item.id
+              ? latest.selectedBed
+              : item;
+          contextResult.when(
+            success: (BedAdmissionContext context) {
+              selected = selected?.copyWith(admissionContext: context);
+            },
+            failure: (_) {},
+          );
+          _emit(
+            latest.copyWith(
+              isSaving: false,
+              clearLastFailure: true,
+              selectedBed: selected,
+              beds: selected == null
+                  ? latest.beds
+                  : _replaceBedItem(latest.beds, selected!),
+            ),
+          );
         }
         return null;
       },
@@ -369,6 +308,78 @@ final class RoomsBedsWorkspaceController
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> updateTransfer({
+    required BedBoardItem item,
+    required String admissionId,
+    required String action,
+    String? transferRequestId,
+    String? toBedId,
+  }) async {
+    final RoomsBedsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await _repository.updateTransfer(
+      admissionId: admissionId,
+      action: action,
+      transferRequestId: transferRequestId,
+      toBedId: toBedId,
+    );
+
+    return result.when(
+      success: (_) async {
+        final Result<RoomsBedsWorkspaceState> reload = await _loadState(
+          current.query,
+          selectedBedId: item.id,
+        );
+        state = AsyncData<Result<RoomsBedsWorkspaceState>>(reload);
+        return reload.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+      },
+      failure: (AppFailure failure) {
+        final RoomsBedsWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  List<BedBoardItem> availableDestinationBeds({String? excludeBedId}) {
+    final RoomsBedsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return const <BedBoardItem>[];
+    }
+
+    return current.referenceData.beds
+        .where((BedProfile bed) {
+          if (excludeBedId != null && bed.id == excludeBedId) {
+            return false;
+          }
+          return bed.status.isAssignable;
+        })
+        .map((BedProfile bed) {
+          return BedBoardItem(
+            bed: bed,
+            facility: current.referenceData.facility,
+            ward: current.referenceData.wards
+                .where((WardProfile ward) => ward.id == bed.wardId)
+                .firstOrNull,
+            room: bed.roomId == null
+                ? null
+                : current.referenceData.rooms
+                      .where((RoomProfile room) => room.id == bed.roomId)
+                      .firstOrNull,
+          );
+        })
+        .toList(growable: false);
   }
 
   Future<Result<RoomsBedsWorkspaceState>> _loadState(
@@ -387,7 +398,7 @@ final class RoomsBedsWorkspaceController
         final RoomsBedsWorkspaceState nextState = await _stateFromSnapshot(
           resolvedQuery,
           snapshot,
-          selectedBedId: selectedBedId,
+          selectedBedId: selectedBedId ?? resolvedQuery.bedId,
         );
         return Result<RoomsBedsWorkspaceState>.success(nextState);
       },
@@ -422,29 +433,30 @@ final class RoomsBedsWorkspaceController
     return null;
   }
 
-  Future<AppFailure?> _mutateSetup<T>(
+  Future<AppFailure?> _mutateBedStatus(
     RoomsBedsWorkspaceState current,
-    Future<Result<T>> Function() action,
-    FacilitySetupSnapshot Function(FacilitySetupSnapshot snapshot, T value)
-    updateSnapshot,
+    BedBoardItem item,
+    BedSetupStatus status,
   ) async {
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<T> result = await action();
+    final Result<BedProfile> result = await _repository.updateBedStatus(
+      bed: item.bed,
+      status: status,
+    );
     return result.when(
-      success: (T value) async {
+      success: (BedProfile bed) async {
         final RoomsBedsWorkspaceState? latest = _currentState;
         if (latest == null) {
           return null;
         }
-
-        final FacilitySetupSnapshot snapshot = updateSnapshot(
+        final FacilitySetupSnapshot snapshot = _replaceBedProfile(
           latest.referenceData.snapshot,
-          value,
+          bed,
         );
         final RoomsBedsWorkspaceState nextState = await _stateFromSnapshot(
           latest.query,
           snapshot,
-          selectedBedId: latest.selectedBed?.id,
+          selectedBedId: item.id,
         );
         _emit(nextState.copyWith(isSaving: false, clearLastFailure: true));
         return null;
@@ -464,6 +476,7 @@ final class RoomsBedsWorkspaceController
     Future<Result<void>> Function() action, {
     required BedBoardItem item,
     required BedSetupStatus status,
+    bool clearAssignment = false,
   }) async {
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<void> result = await action();
@@ -483,6 +496,36 @@ final class RoomsBedsWorkspaceController
           snapshot,
           selectedBedId: item.id,
         );
+        if (clearAssignment) {
+          final BedBoardItem? selected = nextState.selectedBed;
+          if (selected != null) {
+            _emit(
+              nextState.copyWith(
+                isSaving: false,
+                clearLastFailure: true,
+                selectedBed: selected.copyWith(
+                  clearActiveAssignment: true,
+                  clearAdmissionContext: true,
+                  assignmentHistory: selected.assignmentHistory
+                      .map(
+                        (BedAssignmentRecord record) => record.isActive
+                            ? BedAssignmentRecord(
+                                id: record.id,
+                                admissionId: record.admissionId,
+                                bedId: record.bedId,
+                                admissionDisplayId: record.admissionDisplayId,
+                                assignedAt: record.assignedAt,
+                                releasedAt: DateTime.now().toUtc(),
+                              )
+                            : record,
+                      )
+                      .toList(growable: false),
+                ),
+              ),
+            );
+            return null;
+          }
+        }
         _emit(nextState.copyWith(isSaving: false, clearLastFailure: true));
         return null;
       },
@@ -507,7 +550,7 @@ final class RoomsBedsWorkspaceController
     final AppPage<BedBoardItem> page = _pageFromSnapshot(query, snapshot);
     final AppPage<BedBoardItem> pageWithAssignments =
         await _attachAssignmentsToPage(page);
-    final BedBoardItem? selectedBed = selectedBedId == null
+    BedBoardItem? selectedBed = selectedBedId == null
         ? null
         : await _selectedBedFromSnapshot(
             selectedBedId,
@@ -548,6 +591,9 @@ final class RoomsBedsWorkspaceController
             return false;
           }
           if (query.roomId != null && bed.roomId != query.roomId) {
+            return false;
+          }
+          if (query.bedId != null && bed.id != query.bedId) {
             return false;
           }
           if (query.status != null && bed.status != query.status) {
@@ -593,8 +639,7 @@ final class RoomsBedsWorkspaceController
   }
 
   Future<BedBoardItem> _attachAssignmentsIfOperational(BedBoardItem item) {
-    if (item.status == BedSetupStatus.available ||
-        item.status == BedSetupStatus.outOfService) {
+    if (item.status.isAssignable || item.status.isNonAssignableOperational) {
       return Future<BedBoardItem>.value(item);
     }
     return _attachAssignments(item);
@@ -604,13 +649,24 @@ final class RoomsBedsWorkspaceController
     final Result<List<BedAssignmentRecord>> result = await _repository
         .listBedAssignmentsForBed(item.id);
     return result.when(
-      success: (List<BedAssignmentRecord> assignments) {
-        final BedAssignmentRecord? active = _activeAssignment(assignments);
-        return item.copyWith(
-          activeAssignment: active,
+      success: (List<BedAssignmentRecord> assignments) async {
+        BedBoardItem next = item.copyWith(
+          activeAssignment: _activeAssignment(assignments),
           assignmentHistory: assignments,
-          clearActiveAssignment: active == null,
+          clearActiveAssignment: _activeAssignment(assignments) == null,
         );
+        final String? admissionId = next.currentAdmissionId;
+        if (admissionId != null && admissionId.trim().isNotEmpty) {
+          final Result<BedAdmissionContext> contextResult = await _repository
+              .loadAdmissionContext(admissionId);
+          contextResult.when(
+            success: (BedAdmissionContext context) {
+              next = next.copyWith(admissionContext: context);
+            },
+            failure: (_) {},
+          );
+        }
+        return next;
       },
       failure: (_) => item,
     );
@@ -672,21 +728,34 @@ final class RoomsBedsWorkspaceController
     String bedId,
     BedSetupStatus status,
   ) {
+    final BedProfile? bed = snapshot.beds
+        .where((BedProfile item) => item.id == bedId)
+        .firstOrNull;
+    if (bed == null) {
+      return snapshot;
+    }
+    return _replaceBedProfile(
+      snapshot,
+      BedProfile(
+        id: bed.id,
+        tenantId: bed.tenantId,
+        facilityId: bed.facilityId,
+        wardId: bed.wardId,
+        label: bed.label,
+        status: status,
+        roomId: bed.roomId,
+      ),
+    );
+  }
+
+  FacilitySetupSnapshot _replaceBedProfile(
+    FacilitySetupSnapshot snapshot,
+    BedProfile bed,
+  ) {
     return snapshot.copyWith(
       beds: <BedProfile>[
-        for (final BedProfile bed in snapshot.beds)
-          if (bed.id == bedId)
-            BedProfile(
-              id: bed.id,
-              tenantId: bed.tenantId,
-              facilityId: bed.facilityId,
-              wardId: bed.wardId,
-              label: bed.label,
-              status: status,
-              roomId: bed.roomId,
-            )
-          else
-            bed,
+        for (final BedProfile current in snapshot.beds)
+          if (current.id == bed.id) bed else current,
       ],
     );
   }
@@ -699,24 +768,27 @@ final class RoomsBedsWorkspaceController
         .firstOrNull;
   }
 
-  List<T> _upsertById<T>(List<T> items, T value, String Function(T item) idOf) {
-    final String id = idOf(value);
-    final int index = items.indexWhere((T item) => idOf(item) == id);
-    if (index == -1) {
-      return <T>[...items, value];
-    }
-
-    final List<T> next = List<T>.of(items);
-    next[index] = value;
-    return next;
-  }
-
   RoomsBedsWorkspaceState? get _currentState {
     final Result<RoomsBedsWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<RoomsBedsWorkspaceState>(value: final value) => value,
       _ => null,
     };
+  }
+
+  void _emitLoading(RoomsBedsQuery query) {
+    final RoomsBedsWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(
+        current.copyWith(
+          query: query,
+          isRefreshing: true,
+          clearLastFailure: true,
+        ),
+      );
+      return;
+    }
+    state = const AsyncValue<Result<RoomsBedsWorkspaceState>>.loading();
   }
 
   void _emit(RoomsBedsWorkspaceState nextState) {

@@ -15,6 +15,16 @@ void main() {
   setUpAll(() {
     registerFallbackValue(WardSetupType.general);
     registerFallbackValue(BedSetupStatus.available);
+    registerFallbackValue(
+      const BedProfile(
+        id: 'BED-001',
+        tenantId: 'TEN-001',
+        facilityId: 'FAC-001',
+        wardId: 'WRD-001',
+        label: 'A1',
+        status: BedSetupStatus.available,
+      ),
+    );
   });
 
   group('RoomsBedsWorkspaceController', () {
@@ -53,14 +63,9 @@ void main() {
       _stubSetup(repository);
       _stubAssignments(repository);
       when(
-        () => repository.saveBed(
-          id: any(named: 'id'),
-          tenantId: any(named: 'tenantId'),
-          facilityId: any(named: 'facilityId'),
-          wardId: any(named: 'wardId'),
-          label: any(named: 'label'),
+        () => repository.updateBedStatus(
+          bed: any(named: 'bed'),
           status: any(named: 'status'),
-          roomId: any(named: 'roomId'),
         ),
       ).thenAnswer(
         (_) async => const Result<BedProfile>.success(
@@ -106,14 +111,9 @@ void main() {
       expect(after.beds.items.first.status, BedSetupStatus.reserved);
       expect(after.beds.items.last.status, BedSetupStatus.occupied);
       verify(
-        () => repository.saveBed(
-          id: 'BED-001',
-          tenantId: 'TEN-001',
-          facilityId: 'FAC-001',
-          wardId: 'WRD-001',
-          label: 'A1',
+        () => repository.updateBedStatus(
+          bed: before.beds.items.first.bed,
           status: BedSetupStatus.reserved,
-          roomId: 'ROM-001',
         ),
       ).called(1);
       verify(
@@ -130,6 +130,14 @@ void _stubSetup(_MockRoomsBedsRepository repository) {
 }
 
 void _stubAssignments(_MockRoomsBedsRepository repository) {
+  when(() => repository.loadAdmissionContext(any())).thenAnswer(
+    (_) async => const Result<BedAdmissionContext>.success(
+      BedAdmissionContext(
+        admissionId: 'ADM-001',
+        admissionDisplayId: 'Admission 001',
+      ),
+    ),
+  );
   when(() => repository.listBedAssignmentsForBed(any())).thenAnswer((
     invocation,
   ) async {

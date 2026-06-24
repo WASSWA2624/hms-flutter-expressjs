@@ -4392,6 +4392,18 @@
   "@tenantFacilityBedStatusOutOfService": {
     "description": "Out of service bed status label."
   },
+  "tenantFacilityBedStatusCleaning": "Cleaning",
+  "@tenantFacilityBedStatusCleaning": {
+    "description": "Cleaning bed status label."
+  },
+  "tenantFacilityBedStatusMaintenance": "Maintenance",
+  "@tenantFacilityBedStatusMaintenance": {
+    "description": "Maintenance bed status label."
+  },
+  "tenantFacilityBedStatusBlocked": "Blocked",
+  "@tenantFacilityBedStatusBlocked": {
+    "description": "Blocked bed status label."
+  },
   "tenantFacilitySavedMessage": "Setup changes saved.",
   "@tenantFacilitySavedMessage": {
     "description": "Snackbar shown after setup changes are saved."
@@ -14573,6 +14585,74 @@
   "@roomsBedsBackendGapsBody": {
     "description": "Body for the rooms and beds unavailable workflow notice."
   },
+  "roomsBedsManageCatalogAction": "Manage catalog",
+  "@roomsBedsManageCatalogAction": {
+    "description": "Action label to open tenant facility setup for ward, room, and bed catalog maintenance."
+  },
+  "roomsBedsOpenIpdAdmissionAction": "Open IPD admission",
+  "@roomsBedsOpenIpdAdmissionAction": {
+    "description": "Action label to navigate to the linked IPD admission detail."
+  },
+  "roomsBedsManageTransferAction": "Manage transfer",
+  "@roomsBedsManageTransferAction": {
+    "description": "Action label to approve, start, complete, or cancel an IPD transfer."
+  },
+  "roomsBedsTransferUpdateDialogTitle": "Update transfer",
+  "@roomsBedsTransferUpdateDialogTitle": {
+    "description": "Dialog title for completing an IPD transfer from the bed board."
+  },
+  "roomsBedsOpenHousekeepingAction": "Open housekeeping",
+  "@roomsBedsOpenHousekeepingAction": {
+    "description": "Action label to open housekeeping workspace for bed turnover."
+  },
+  "roomsBedsOpenOperationsAction": "Open operations",
+  "@roomsBedsOpenOperationsAction": {
+    "description": "Action label to open operations workspace for maintenance or blocked beds."
+  },
+  "roomsBedsMarkCleaningAction": "Mark cleaning",
+  "@roomsBedsMarkCleaningAction": {
+    "description": "Action label to mark a bed as cleaning."
+  },
+  "roomsBedsMarkMaintenanceAction": "Mark maintenance",
+  "@roomsBedsMarkMaintenanceAction": {
+    "description": "Action label to mark a bed as maintenance."
+  },
+  "roomsBedsMarkBlockedAction": "Mark blocked",
+  "@roomsBedsMarkBlockedAction": {
+    "description": "Action label to mark a bed as blocked."
+  },
+  "roomsBedsNextActionCompleteTransfer": "Complete transfer",
+  "@roomsBedsNextActionCompleteTransfer": {
+    "description": "Next action label when a transfer is pending for an occupied bed."
+  },
+  "roomsBedsNextActionMarkAvailable": "Mark available",
+  "@roomsBedsNextActionMarkAvailable": {
+    "description": "Next action label for beds in cleaning status."
+  },
+  "roomsBedsNextActionResolveMaintenance": "Resolve maintenance",
+  "@roomsBedsNextActionResolveMaintenance": {
+    "description": "Next action label for beds in maintenance status."
+  },
+  "roomsBedsCleaningReadinessLabel": "Awaiting turnover",
+  "@roomsBedsCleaningReadinessLabel": {
+    "description": "Readiness label for beds in cleaning status."
+  },
+  "roomsBedsMaintenanceReadinessLabel": "Under maintenance",
+  "@roomsBedsMaintenanceReadinessLabel": {
+    "description": "Readiness label for beds in maintenance status."
+  },
+  "roomsBedsBlockedReadinessLabel": "Blocked",
+  "@roomsBedsBlockedReadinessLabel": {
+    "description": "Readiness label for blocked beds."
+  },
+  "roomsBedsOccupiedReadinessLabel": "In use",
+  "@roomsBedsOccupiedReadinessLabel": {
+    "description": "Readiness label for occupied beds."
+  },
+  "roomsBedsReservedReadinessLabel": "Held",
+  "@roomsBedsReservedReadinessLabel": {
+    "description": "Readiness label for reserved beds."
+  },
   "roomsBedsBoardTitle": "Bed board",
   "@roomsBedsBoardTitle": {
     "description": "Title for the rooms and beds board panel."
@@ -14747,6 +14827,15 @@
   "roomsBedsAssignDialogTitle": "Assign bed",
   "@roomsBedsAssignDialogTitle": {
     "description": "Dialog title for assigning a bed."
+  },
+  "roomsBedsAssignWardSuitabilityHint": "Confirm patient suitability for {wardType} before assigning this bed.",
+  "@roomsBedsAssignWardSuitabilityHint": {
+    "description": "Hint shown when assigning a bed in a specialized ward.",
+    "placeholders": {
+      "wardType": {
+        "type": "String"
+      }
+    }
   },
   "roomsBedsReleaseDialogTitle": "Release bed",
   "@roomsBedsReleaseDialogTitle": {

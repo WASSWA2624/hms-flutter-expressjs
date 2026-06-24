@@ -3415,6 +3415,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityBedStatusOutOfService => 'Out of service';
 
   @override
+  String get tenantFacilityBedStatusCleaning => 'Cleaning';
+
+  @override
+  String get tenantFacilityBedStatusMaintenance => 'Maintenance';
+
+  @override
+  String get tenantFacilityBedStatusBlocked => 'Blocked';
+
+  @override
   String get tenantFacilitySavedMessage => 'Setup changes saved.';
 
   @override
@@ -11261,6 +11270,57 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.';
 
   @override
+  String get roomsBedsManageCatalogAction => 'Manage catalog';
+
+  @override
+  String get roomsBedsOpenIpdAdmissionAction => 'Open IPD admission';
+
+  @override
+  String get roomsBedsManageTransferAction => 'Manage transfer';
+
+  @override
+  String get roomsBedsTransferUpdateDialogTitle => 'Update transfer';
+
+  @override
+  String get roomsBedsOpenHousekeepingAction => 'Open housekeeping';
+
+  @override
+  String get roomsBedsOpenOperationsAction => 'Open operations';
+
+  @override
+  String get roomsBedsMarkCleaningAction => 'Mark cleaning';
+
+  @override
+  String get roomsBedsMarkMaintenanceAction => 'Mark maintenance';
+
+  @override
+  String get roomsBedsMarkBlockedAction => 'Mark blocked';
+
+  @override
+  String get roomsBedsNextActionCompleteTransfer => 'Complete transfer';
+
+  @override
+  String get roomsBedsNextActionMarkAvailable => 'Mark available';
+
+  @override
+  String get roomsBedsNextActionResolveMaintenance => 'Resolve maintenance';
+
+  @override
+  String get roomsBedsCleaningReadinessLabel => 'Awaiting turnover';
+
+  @override
+  String get roomsBedsMaintenanceReadinessLabel => 'Under maintenance';
+
+  @override
+  String get roomsBedsBlockedReadinessLabel => 'Blocked';
+
+  @override
+  String get roomsBedsOccupiedReadinessLabel => 'In use';
+
+  @override
+  String get roomsBedsReservedReadinessLabel => 'Held';
+
+  @override
   String get roomsBedsBoardTitle => 'Bed board';
 
   @override
@@ -11387,6 +11447,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomsBedsAssignDialogTitle => 'Assign bed';
+
+  @override
+  String roomsBedsAssignWardSuitabilityHint(String wardType) {
+    return 'Confirm patient suitability for $wardType before assigning this bed.';
+  }
 
   @override
   String get roomsBedsReleaseDialogTitle => 'Release bed';

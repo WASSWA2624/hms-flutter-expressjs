@@ -3215,6 +3215,9 @@ String _bedStatusLabel(AppLocalizations l10n, BedSetupStatus status) {
     BedSetupStatus.available => l10n.tenantFacilityBedStatusAvailable,
     BedSetupStatus.occupied => l10n.tenantFacilityBedStatusOccupied,
     BedSetupStatus.reserved => l10n.tenantFacilityBedStatusReserved,
+    BedSetupStatus.cleaning => l10n.tenantFacilityBedStatusCleaning,
+    BedSetupStatus.maintenance => l10n.tenantFacilityBedStatusMaintenance,
+    BedSetupStatus.blocked => l10n.tenantFacilityBedStatusBlocked,
     BedSetupStatus.outOfService => l10n.tenantFacilityBedStatusOutOfService,
   };
 }

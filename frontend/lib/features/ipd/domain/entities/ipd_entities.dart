@@ -25,6 +25,23 @@ final class IpdAdmissionQuery {
   final String? wardId;
   final AppPageRequest pageRequest;
 
+  factory IpdAdmissionQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    return IpdAdmissionQuery(
+      search:
+          params['search'] ??
+          params['admission'] ??
+          params['admissionId'] ??
+          params['admission_id'] ??
+          '',
+      wardId: _nonEmpty(params['wardId'] ?? params['ward']),
+    );
+  }
+
+  bool get hasRouteTargeting {
+    return search.trim().isNotEmpty || wardId != null;
+  }
+
   IpdAdmissionQuery copyWith({
     String? search,
     IpdQueueScope? scope,
@@ -516,4 +533,9 @@ String? _joinDisplay(Iterable<String?> values) {
       .where((String value) => value.isNotEmpty)
       .join(' | ');
   return joined.isEmpty ? null : joined;
+}
+
+String? _nonEmpty(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }

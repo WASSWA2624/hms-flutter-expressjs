@@ -55,11 +55,59 @@ const AccessRequirement _ipdClinicalWriteRequirement = AccessRequirement(
   activeModules: <String>['inpatient-bed-management'],
 );
 
-class IpdWorkspacePage extends ConsumerWidget {
-  const IpdWorkspacePage({super.key});
+class IpdWorkspacePage extends ConsumerStatefulWidget {
+  const IpdWorkspacePage({this.initialQuery, super.key});
+
+  final IpdAdmissionQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<IpdWorkspacePage> createState() => _IpdWorkspacePageState();
+}
+
+class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
+  String? _appliedRouteSignature;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant IpdWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_querySignature(oldWidget.initialQuery) !=
+        _querySignature(widget.initialQuery)) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(IpdAdmissionQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    final String? signature = _querySignature(query);
+    if (signature == null || _appliedRouteSignature == signature) {
+      return;
+    }
+    _appliedRouteSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(ipdWorkspaceControllerProvider.notifier).applyRouteQuery(query);
+    });
+  }
+
+  String? _querySignature(IpdAdmissionQuery? query) {
+    if (query == null) {
+      return null;
+    }
+    return '${query.search}|${query.wardId}|${query.scope.name}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final AsyncValue<Result<IpdWorkspaceState>> state = ref.watch(
       ipdWorkspaceControllerProvider,

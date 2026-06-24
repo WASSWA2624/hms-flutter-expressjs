@@ -45,6 +45,26 @@ final class IpdWorkspaceController
     return _syncVisibleData(showLoading: true, refreshReferenceData: true);
   }
 
+  Future<AppFailure?> applyRouteQuery(IpdAdmissionQuery query) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      _emitLoading(query);
+      final Result<IpdWorkspaceState> result = await _loadInitialState(query);
+      state = AsyncData<Result<IpdWorkspaceState>>(result);
+      _startSync();
+      return result.when(success: (_) => null, failure: (failure) => failure);
+    }
+
+    _emit(
+      current.copyWith(
+        query: query,
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorklist(showLoading: true);
+  }
+
   Future<AppFailure?> applySearch(String search) async {
     final IpdWorkspaceState? current = _currentState;
     if (current == null) {
@@ -288,8 +308,9 @@ final class IpdWorkspaceController
     );
   }
 
-  Future<Result<IpdWorkspaceState>> _loadInitialState() async {
-    const IpdAdmissionQuery query = IpdAdmissionQuery();
+  Future<Result<IpdWorkspaceState>> _loadInitialState([
+    IpdAdmissionQuery query = const IpdAdmissionQuery(),
+  ]) async {
     final Result<AppPage<IpdAdmissionSummary>> admissionsResult =
         await _repository.listAdmissions(query);
     final AppPage<IpdAdmissionSummary>? admissions = _successOrNull(
@@ -513,6 +534,21 @@ final class IpdWorkspaceController
       ResultSuccess<IpdWorkspaceState>(value: final value) => value,
       _ => null,
     };
+  }
+
+  void _emitLoading(IpdAdmissionQuery query) {
+    final IpdWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(
+        current.copyWith(
+          query: query,
+          isRefreshing: true,
+          clearLastFailure: true,
+        ),
+      );
+      return;
+    }
+    state = const AsyncValue<Result<IpdWorkspaceState>>.loading();
   }
 
   void _emit(IpdWorkspaceState nextState) {

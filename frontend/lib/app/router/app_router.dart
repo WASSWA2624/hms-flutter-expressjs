@@ -177,12 +177,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.ipd.path,
             name: AppRoutes.ipd.name,
-            builder: (_, _) => const IpdWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return IpdWorkspacePage(
+                initialQuery: IpdAdmissionQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.roomsBeds.path,
             name: AppRoutes.roomsBeds.name,
-            builder: (_, _) => const RoomsBedsWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return RoomsBedsWorkspacePage(
+                initialQuery: RoomsBedsQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.icu.path,

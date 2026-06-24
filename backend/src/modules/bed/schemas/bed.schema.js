@@ -26,7 +26,15 @@ const createBedSchema = z.object({
   ward_id: uuidSchema,
   room_id: uuidSchema.optional().nullable(),
   label: z.string().trim().min(1).max(50),
-  status: z.enum(['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE'])
+  status: z.enum([
+    'AVAILABLE',
+    'OCCUPIED',
+    'RESERVED',
+    'CLEANING',
+    'MAINTENANCE',
+    'BLOCKED',
+    'OUT_OF_SERVICE',
+  ])
 });
 
 /**
@@ -39,7 +47,15 @@ const updateBedSchema = z.object({
   ward_id: uuidSchema.optional(),
   room_id: uuidSchema.optional().nullable(),
   label: z.string().trim().min(1).max(50).optional(),
-  status: z.enum(['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE']).optional()
+  status: z.enum([
+    'AVAILABLE',
+    'OCCUPIED',
+    'RESERVED',
+    'CLEANING',
+    'MAINTENANCE',
+    'BLOCKED',
+    'OUT_OF_SERVICE',
+  ]).optional()
 });
 
 // ==================== URL Params ====================
@@ -64,7 +80,15 @@ const listBedsQuerySchema = listQuerySchema.extend({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   ward_id: uuidOrFriendlyIdentifierSchema.optional(),
   room_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE']).optional(),
+  status: z.enum([
+    'AVAILABLE',
+    'OCCUPIED',
+    'RESERVED',
+    'CLEANING',
+    'MAINTENANCE',
+    'BLOCKED',
+    'OUT_OF_SERVICE',
+  ]).optional(),
   search: z.string().trim().optional()
 });
 

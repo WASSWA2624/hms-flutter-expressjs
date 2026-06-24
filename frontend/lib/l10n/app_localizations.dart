@@ -6430,6 +6430,24 @@ abstract class AppLocalizations {
   /// **'Out of service'**
   String get tenantFacilityBedStatusOutOfService;
 
+  /// Cleaning bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get tenantFacilityBedStatusCleaning;
+
+  /// Maintenance bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get tenantFacilityBedStatusMaintenance;
+
+  /// Blocked bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get tenantFacilityBedStatusBlocked;
+
   /// Snackbar shown after setup changes are saved.
   ///
   /// In en, this message translates to:
@@ -21171,6 +21189,108 @@ abstract class AppLocalizations {
   /// **'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.'**
   String get roomsBedsBackendGapsBody;
 
+  /// Action label to open tenant facility setup for ward, room, and bed catalog maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage catalog'**
+  String get roomsBedsManageCatalogAction;
+
+  /// Action label to navigate to the linked IPD admission detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Open IPD admission'**
+  String get roomsBedsOpenIpdAdmissionAction;
+
+  /// Action label to approve, start, complete, or cancel an IPD transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage transfer'**
+  String get roomsBedsManageTransferAction;
+
+  /// Dialog title for completing an IPD transfer from the bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'Update transfer'**
+  String get roomsBedsTransferUpdateDialogTitle;
+
+  /// Action label to open housekeeping workspace for bed turnover.
+  ///
+  /// In en, this message translates to:
+  /// **'Open housekeeping'**
+  String get roomsBedsOpenHousekeepingAction;
+
+  /// Action label to open operations workspace for maintenance or blocked beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Open operations'**
+  String get roomsBedsOpenOperationsAction;
+
+  /// Action label to mark a bed as cleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark cleaning'**
+  String get roomsBedsMarkCleaningAction;
+
+  /// Action label to mark a bed as maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark maintenance'**
+  String get roomsBedsMarkMaintenanceAction;
+
+  /// Action label to mark a bed as blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark blocked'**
+  String get roomsBedsMarkBlockedAction;
+
+  /// Next action label when a transfer is pending for an occupied bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete transfer'**
+  String get roomsBedsNextActionCompleteTransfer;
+
+  /// Next action label for beds in cleaning status.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark available'**
+  String get roomsBedsNextActionMarkAvailable;
+
+  /// Next action label for beds in maintenance status.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve maintenance'**
+  String get roomsBedsNextActionResolveMaintenance;
+
+  /// Readiness label for beds in cleaning status.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting turnover'**
+  String get roomsBedsCleaningReadinessLabel;
+
+  /// Readiness label for beds in maintenance status.
+  ///
+  /// In en, this message translates to:
+  /// **'Under maintenance'**
+  String get roomsBedsMaintenanceReadinessLabel;
+
+  /// Readiness label for blocked beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get roomsBedsBlockedReadinessLabel;
+
+  /// Readiness label for occupied beds.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get roomsBedsOccupiedReadinessLabel;
+
+  /// Readiness label for reserved beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Held'**
+  String get roomsBedsReservedReadinessLabel;
+
   /// Title for the rooms and beds board panel.
   ///
   /// In en, this message translates to:
@@ -21416,6 +21536,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assign bed'**
   String get roomsBedsAssignDialogTitle;
+
+  /// Hint shown when assigning a bed in a specialized ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm patient suitability for {wardType} before assigning this bed.'**
+  String roomsBedsAssignWardSuitabilityHint(String wardType);
 
   /// Dialog title for releasing a bed.
   ///
