@@ -6,7 +6,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 void main() {
   group('PharmacyOrderDto', () {
     test('maps billing fields from order payload', () {
-      final PharmacyOrder order = PharmacyOrderDto(<String, Object?>{
+      final PharmacyOrder order = const PharmacyOrderDto(<String, Object?>{
         'id': 'PO-100',
         'display_id': 'PO-100',
         'status': 'ORDERED',
@@ -35,7 +35,7 @@ void main() {
     });
 
     test('treats paid orders as payment satisfied', () {
-      final PharmacyOrder order = PharmacyOrderDto(<String, Object?>{
+      final PharmacyOrder order = const PharmacyOrderDto(<String, Object?>{
         'id': 'PO-101',
         'display_id': 'PO-101',
         'status': 'ORDERED',

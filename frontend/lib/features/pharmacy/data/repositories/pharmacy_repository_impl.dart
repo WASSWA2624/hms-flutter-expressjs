@@ -199,7 +199,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
     return _apiClient.put<PharmacyFormularyItem>(
       ApiEndpoints.byId(HmsApiResource.formularyItems, formularyItemId),
       data: _withoutEmpty(<String, Object?>{
-        if (isActive != null) 'is_active': isActive,
+        'is_active': ?isActive,
       }),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);

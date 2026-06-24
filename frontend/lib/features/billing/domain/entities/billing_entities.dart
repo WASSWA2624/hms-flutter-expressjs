@@ -661,7 +661,7 @@ final class BillingLedgerQuery {
   const BillingLedgerQuery({
     this.from,
     this.to,
-    this.pageRequest = const AppPageRequest(pageSize: 20),
+    this.pageRequest = const AppPageRequest(),
   });
 
   final DateTime? from;

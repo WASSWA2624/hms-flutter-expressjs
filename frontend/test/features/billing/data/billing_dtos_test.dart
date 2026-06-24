@@ -147,7 +147,7 @@ void main() {
             },
           },
         },
-        const AppPageRequest(pageSize: 20),
+        const AppPageRequest(),
       ).toEntity();
 
       expect(ledger.patientDisplayId, 'PAT-001');
