@@ -99,6 +99,11 @@ IconData billingQueueIcon(BillingQueueType queue) {
   };
 }
 
+String billingPatientName(BuildContext context, BillingWorkItem item) {
+  final String name = item.patientDisplayName?.trim() ?? '';
+  return name.isEmpty ? context.l10n.billingUnknownPatient : name;
+}
+
 String billingDetailTitle(BuildContext context, BillingWorkItem item) {
   final AppLocalizations l10n = context.l10n;
   if (item.isInvoice) {

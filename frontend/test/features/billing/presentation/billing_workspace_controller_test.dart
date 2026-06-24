@@ -20,6 +20,16 @@ void main() {
     registerFallbackValue(
       const BillingPaymentDraft(amount: '1000.00', method: 'CASH'),
     );
+    registerFallbackValue(
+      const BillingRefundDraft(
+        paymentId: 'payment-1',
+        amount: '500.00',
+        reason: 'Overcharge',
+      ),
+    );
+    registerFallbackValue(
+      const BillingAdjustmentDraft(amount: '-50.00', reason: 'Goodwill'),
+    );
     registerFallbackValue(const BillingApprovalDecisionDraft());
     registerFallbackValue(const BillingClaimActionDraft());
     registerFallbackValue(const BillingLedgerQuery());
@@ -147,6 +157,164 @@ void main() {
 
       expect(failure, isNull);
       verify(() => repository.approveApproval('approval-1', any())).called(1);
+    });
+
+    test('rejects selected approval and refreshes workspace', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem approval = BillingWorkItem(
+        id: 'approval-1',
+        displayId: 'APR-001',
+        kind: BillingWorkItemKind.approval,
+        status: 'PENDING',
+      );
+      _stubInitialLoad(repository, items: <BillingWorkItem>[approval]);
+      when(() => repository.rejectApproval(any(), any())).thenAnswer(
+        (_) async => const Result<BillingMutationResult>.success(
+          BillingMutationResult(approval: approval),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+      container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .selectItem(approval);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .rejectSelectedApproval(
+            const BillingApprovalDecisionDraft(reason: 'Insufficient detail'),
+          );
+
+      expect(failure, isNull);
+      verify(() => repository.rejectApproval('approval-1', any())).called(1);
+    });
+
+    test('requests a refund through the repository', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem invoice = BillingWorkItem(
+        id: 'invoice-1',
+        displayId: 'INV-001',
+        kind: BillingWorkItemKind.invoice,
+        tenantId: 'tenant-1',
+        billingStatus: 'PAID',
+        amount: 1000,
+      );
+      BillingRefundDraft? submittedDraft;
+      _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
+      when(() => repository.requestRefund(any())).thenAnswer((
+        invocation,
+      ) async {
+        submittedDraft =
+            invocation.positionalArguments.single as BillingRefundDraft;
+        return const Result<BillingMutationResult>.success(
+          BillingMutationResult(),
+        );
+      });
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .requestRefund(
+            const BillingRefundDraft(
+              paymentId: 'payment-1',
+              amount: '500.00',
+              reason: 'Overcharge',
+            ),
+          );
+
+      expect(failure, isNull);
+      expect(submittedDraft?.paymentId, 'payment-1');
+      verify(() => repository.requestRefund(any())).called(1);
+    });
+
+    test(
+      'flags pending approval when adjustment requires authorization',
+      () async {
+        final _MockBillingRepository repository = _MockBillingRepository();
+        const BillingWorkItem invoice = BillingWorkItem(
+          id: 'invoice-1',
+          displayId: 'INV-001',
+          kind: BillingWorkItemKind.invoice,
+          tenantId: 'tenant-1',
+          billingStatus: 'ISSUED',
+          amount: 1000,
+        );
+        _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
+        when(() => repository.requestAdjustment(any(), any())).thenAnswer(
+          (_) async => const Result<BillingMutationResult>.success(
+            BillingMutationResult(approvalRequired: true),
+          ),
+        );
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(billingWorkspaceControllerProvider.future);
+
+        final AppFailure? failure = await container
+            .read(billingWorkspaceControllerProvider.notifier)
+            .requestAdjustment(
+              const BillingAdjustmentDraft(
+                amount: '-50.00',
+                reason: 'Goodwill',
+              ),
+            );
+
+        expect(failure, isNull);
+        final Result<BillingWorkspaceState> result = container
+            .read(billingWorkspaceControllerProvider)
+            .requireValue;
+        final BillingWorkspaceState state = result.when(
+          success: (BillingWorkspaceState value) => value,
+          failure: (AppFailure failure) => fail(failure.code),
+        );
+        expect(state.lastActionPendingApproval, isTrue);
+        verify(() => repository.requestAdjustment(any(), any())).called(1);
+      },
+    );
+
+    test('submits the selected claim through the repository', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem claim = BillingWorkItem(
+        id: 'claim-1',
+        displayId: 'CLM-001',
+        kind: BillingWorkItemKind.claim,
+        status: 'DRAFT',
+      );
+      _stubInitialLoad(repository, items: <BillingWorkItem>[claim]);
+      when(() => repository.submitClaim(any(), any())).thenAnswer(
+        (_) async => const Result<BillingMutationResult>.success(
+          BillingMutationResult(claim: claim),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+      container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .selectItem(claim);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .submitSelectedClaim(
+            const BillingClaimActionDraft(notes: 'Submitting'),
+          );
+
+      expect(failure, isNull);
+      verify(() => repository.submitClaim('claim-1', any())).called(1);
     });
   });
 }

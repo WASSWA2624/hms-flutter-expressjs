@@ -335,7 +335,7 @@ class _BillingQueuePanel extends ConsumerWidget {
                 ),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return _TwoLineCell(
-                title: item.effectivePatientName,
+                title: billingPatientName(context, item),
                 subtitle: billingJoinDisplay(<String?>[
                   item.effectivePatientNumber,
                   item.effectiveDisplayId,
@@ -496,7 +496,7 @@ class _BillingMobileTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  item.effectivePatientName,
+                  billingPatientName(context, item),
                   style: theme.textTheme.titleSmall,
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -606,15 +606,15 @@ class _PaymentFormState extends State<_PaymentForm> {
           amountController: _amountController,
           currency: widget.item.currency ?? appDefaultCurrencyCode,
           onCurrencyChanged: (_) {},
-          amountLabelText: 'Amount received',
-          currencyLabelText: 'Currency',
+          amountLabelText: context.l10n.billingAmountReceivedLabel,
+          currencyLabelText: context.l10n.billingCurrencyLabel,
           isRequired: true,
           allowZero: false,
           maxAmount: widget.item.balanceDue,
         ),
         AppSelectField<String>(
           value: _method,
-          labelText: 'Payment method',
+          labelText: context.l10n.billingPaymentMethodLabel,
           options: <AppSelectOption<String>>[
             for (final String method in billingPaymentMethods)
               AppSelectOption<String>(
@@ -630,22 +630,22 @@ class _PaymentFormState extends State<_PaymentForm> {
         ),
         AppTextField(
           controller: _referenceController,
-          labelText: 'Reference',
+          labelText: context.l10n.billingReferenceLabel,
           hintText: context.l10n.billingPaymentReferenceHint,
         ),
         AppTextField(
           controller: _payerController,
-          labelText: 'Payer',
+          labelText: context.l10n.billingPayerLabel,
           hintText: context.l10n.billingPayerHint,
         ),
         AppCheckboxField(
-          title: 'Generate receipt after payment',
+          title: context.l10n.billingGenerateReceiptLabel,
           value: _issueReceipt,
           onChanged: (bool value) => setState(() => _issueReceipt = value),
         ),
         AppFormActions(
           cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: 'Receive payment',
+          submitLabel: context.l10n.billingReceivePayment,
           submitIcon: Icons.point_of_sale,
           onCancel: () => Navigator.of(context).maybePop(),
           onSubmit: () {
@@ -709,7 +709,7 @@ class _RefundFormState extends State<_RefundForm> {
       children: <Widget>[
         AppSelectField<String>(
           value: _paymentId,
-          labelText: 'Payment',
+          labelText: context.l10n.billingPaymentLabel,
           options: <AppSelectOption<String>>[
             for (final BillingPayment payment in widget.item.payments)
               if (payment.isRefundable)
@@ -731,25 +731,27 @@ class _RefundFormState extends State<_RefundForm> {
           amountController: _amountController,
           currency: widget.item.currency ?? appDefaultCurrencyCode,
           onCurrencyChanged: (_) {},
-          amountLabelText: 'Refund amount',
-          currencyLabelText: 'Currency',
+          amountLabelText: context.l10n.billingRefundAmountLabel,
+          currencyLabelText: context.l10n.billingCurrencyLabel,
           isRequired: true,
           allowZero: false,
         ),
         AppTextField(
           controller: _reasonController,
-          labelText: 'Reason',
+          labelText: context.l10n.billingReasonLabel,
           isRequired: true,
-          validator: AppValidators.requiredText('Enter a refund reason.'),
+          validator: AppValidators.requiredText(
+            context.l10n.billingRefundReasonValidation,
+          ),
         ),
         AppTextField(
           controller: _notesController,
-          labelText: 'Notes',
+          labelText: context.l10n.billingNotesLabel,
           maxLines: 3,
         ),
         AppFormActions(
           cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: 'Request refund',
+          submitLabel: context.l10n.billingRequestRefund,
           submitIcon: Icons.assignment_return_outlined,
           onCancel: () => Navigator.of(context).maybePop(),
           onSubmit: () {
@@ -802,12 +804,12 @@ class _AdjustmentFormState extends State<_AdjustmentForm> {
       children: <Widget>[
         AppTextField(
           controller: _amountController,
-          labelText: 'Adjustment amount (+/-)',
+          labelText: context.l10n.billingAdjustmentAmountLabel,
           isRequired: true,
           validator: (String? value) {
             final String normalized = value?.replaceAll(',', '').trim() ?? '';
             if (!RegExp(r'^-?\d+(\.\d{1,2})?$').hasMatch(normalized)) {
-              return 'Enter a signed amount, for example -10.00 or 25.00.';
+              return context.l10n.billingAdjustmentAmountValidation;
             }
             return null;
           },
@@ -815,7 +817,7 @@ class _AdjustmentFormState extends State<_AdjustmentForm> {
         ),
         AppSelectField<String>(
           value: _status,
-          labelText: 'Applied status',
+          labelText: context.l10n.billingAppliedStatusLabel,
           options: <AppSelectOption<String>>[
             AppSelectOption<String>(
               value: 'ISSUED',
@@ -842,18 +844,20 @@ class _AdjustmentFormState extends State<_AdjustmentForm> {
         ),
         AppTextField(
           controller: _reasonController,
-          labelText: 'Reason',
+          labelText: context.l10n.billingReasonLabel,
           isRequired: true,
-          validator: AppValidators.requiredText('Enter an adjustment reason.'),
+          validator: AppValidators.requiredText(
+            context.l10n.billingAdjustmentReasonValidation,
+          ),
         ),
         AppTextField(
           controller: _notesController,
-          labelText: 'Notes',
+          labelText: context.l10n.billingNotesLabel,
           maxLines: 3,
         ),
         AppFormActions(
           cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: 'Request adjustment',
+          submitLabel: context.l10n.billingRequestAdjustment,
           submitIcon: Icons.tune,
           onCancel: () => Navigator.of(context).maybePop(),
           onSubmit: () {
@@ -906,11 +910,13 @@ class _ReasonFormState extends State<_ReasonForm> {
           controller: _reasonController,
           labelText: widget.reasonLabel,
           isRequired: true,
-          validator: AppValidators.requiredText('Enter a reason.'),
+          validator: AppValidators.requiredText(
+            context.l10n.billingReasonValidation,
+          ),
         ),
         AppTextField(
           controller: _notesController,
-          labelText: 'Notes',
+          labelText: context.l10n.billingNotesLabel,
           maxLines: 3,
         ),
         AppFormActions(
@@ -960,7 +966,9 @@ class _NotesFormState extends State<_NotesForm> {
       children: <Widget>[
         AppTextField(
           controller: _controller,
-          labelText: widget.email ? 'Recipient email' : 'Notes',
+          labelText: widget.email
+              ? context.l10n.billingRecipientEmailLabel
+              : context.l10n.billingNotesLabel,
           keyboardType: widget.email ? TextInputType.emailAddress : null,
           maxLines: widget.email ? 1 : 3,
         ),
@@ -1016,24 +1024,24 @@ class _CloseFormState extends State<_CloseForm> {
             amountController: _expectedController,
             currency: appDefaultCurrencyCode,
             onCurrencyChanged: (_) {},
-            amountLabelText: 'Expected amount',
-            currencyLabelText: 'Currency',
+            amountLabelText: context.l10n.billingExpectedAmountLabel,
+            currencyLabelText: context.l10n.billingCurrencyLabel,
           ),
           AppCurrencyAmountField(
             amountController: _actualController,
             currency: appDefaultCurrencyCode,
             onCurrencyChanged: (_) {},
-            amountLabelText: 'Actual amount',
-            currencyLabelText: 'Currency',
+            amountLabelText: context.l10n.billingActualAmountLabel,
+            currencyLabelText: context.l10n.billingCurrencyLabel,
           ),
         ],
         AppTextField(
           controller: _notesController,
-          labelText: 'Notes',
+          labelText: context.l10n.billingNotesLabel,
           maxLines: 3,
         ),
         AppCheckboxField(
-          title: 'Submit for approval',
+          title: context.l10n.billingSubmitForApprovalLabel,
           value: _submit,
           onChanged: (bool value) => setState(() => _submit = value),
         ),
@@ -1135,9 +1143,9 @@ Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     title: Text(context.l10n.billingVoidInvoice),
     icon: const Icon(Icons.block_outlined),
-    content: const _ReasonForm(
-      submitLabel: 'Request void',
-      reasonLabel: 'Void reason',
+    content: _ReasonForm(
+      submitLabel: context.l10n.billingRequestVoidAction,
+      reasonLabel: context.l10n.billingVoidReasonLabel,
     ),
   );
   if (payload == null || !context.mounted) {
@@ -1160,7 +1168,7 @@ Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     title: Text(context.l10n.billingIssueInvoice),
     icon: const Icon(Icons.outbox_outlined),
-    content: const _NotesForm(submitLabel: 'Issue'),
+    content: _NotesForm(submitLabel: context.l10n.billingIssueAction),
   );
   if (!context.mounted) {
     return;
@@ -1179,7 +1187,10 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     title: Text(context.l10n.billingSendInvoice),
     icon: const Icon(Icons.send_outlined),
-    content: const _NotesForm(submitLabel: 'Send', email: true),
+    content: _NotesForm(
+      submitLabel: context.l10n.billingSendAction,
+      email: true,
+    ),
   );
   if (!context.mounted) {
     return;
@@ -1198,7 +1209,10 @@ Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     title: Text(context.l10n.billingCloseShift),
     icon: const Icon(Icons.schedule_send_outlined),
-    content: const _CloseForm(title: 'Close shift', shiftClose: true),
+    content: _CloseForm(
+      title: context.l10n.billingCloseShift,
+      shiftClose: true,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1217,7 +1231,7 @@ Future<void> _showDayCloseDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     title: Text(context.l10n.billingCloseDay),
     icon: const Icon(Icons.today_outlined),
-    content: const _CloseForm(title: 'Close day', shiftClose: false),
+    content: _CloseForm(title: context.l10n.billingCloseDay, shiftClose: false),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1529,7 +1543,7 @@ class _ClaimReconcileFormState extends State<_ClaimReconcileForm> {
         ),
         AppTextField(
           controller: _notesController,
-          labelText: 'Notes',
+          labelText: l10n.billingNotesLabel,
           maxLines: 3,
         ),
         AppFormActions(

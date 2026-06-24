@@ -940,6 +940,144 @@ abstract class AppLocalizations {
   /// **'Paid'**
   String get billingStatusPaid;
 
+  /// Label for the payment amount field in the receive payment form.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount received'**
+  String get billingAmountReceivedLabel;
+
+  /// Label for currency selectors in billing amount fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get billingCurrencyLabel;
+
+  /// Label for the payment method selector in the receive payment form.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get billingPaymentMethodLabel;
+
+  /// Label for the payment transaction reference field.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get billingReferenceLabel;
+
+  /// Label for the payer field in the receive payment form.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer'**
+  String get billingPayerLabel;
+
+  /// Checkbox label to generate a receipt after recording a payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate receipt after payment'**
+  String get billingGenerateReceiptLabel;
+
+  /// Label for the payment selector in the refund form.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get billingPaymentLabel;
+
+  /// Label for the refund amount field in the refund form.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund amount'**
+  String get billingRefundAmountLabel;
+
+  /// Validation message shown when a refund reason is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a refund reason.'**
+  String get billingRefundReasonValidation;
+
+  /// Label for optional notes fields across billing dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get billingNotesLabel;
+
+  /// Label for the signed adjustment amount field in the adjustment form.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment amount (+/-)'**
+  String get billingAdjustmentAmountLabel;
+
+  /// Validation message for the signed adjustment amount field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a signed amount, for example -10.00 or 25.00.'**
+  String get billingAdjustmentAmountValidation;
+
+  /// Label for the applied status selector in the adjustment form.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied status'**
+  String get billingAppliedStatusLabel;
+
+  /// Validation message shown when an adjustment reason is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an adjustment reason.'**
+  String get billingAdjustmentReasonValidation;
+
+  /// Validation message shown when a generic reason field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason.'**
+  String get billingReasonValidation;
+
+  /// Label for the recipient email field when sending an invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient email'**
+  String get billingRecipientEmailLabel;
+
+  /// Label for the expected amount field in the shift close form.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected amount'**
+  String get billingExpectedAmountLabel;
+
+  /// Label for the actual amount field in the shift close form.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual amount'**
+  String get billingActualAmountLabel;
+
+  /// Checkbox label to submit a shift or day close for approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for approval'**
+  String get billingSubmitForApprovalLabel;
+
+  /// Submit label for the void invoice request form.
+  ///
+  /// In en, this message translates to:
+  /// **'Request void'**
+  String get billingRequestVoidAction;
+
+  /// Label for the void reason field in the void invoice form.
+  ///
+  /// In en, this message translates to:
+  /// **'Void reason'**
+  String get billingVoidReasonLabel;
+
+  /// Fallback label shown when a billing work item has no patient name.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown patient'**
+  String get billingUnknownPatient;
+
+  /// Compact quantity label for an invoice line item.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty {quantity}'**
+  String billingQuantityLabel(int quantity);
+
   /// Navigation label for the subscriptions workspace.
   ///
   /// In en, this message translates to:

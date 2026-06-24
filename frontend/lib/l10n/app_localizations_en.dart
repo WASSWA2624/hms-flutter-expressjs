@@ -449,6 +449,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingStatusPaid => 'Paid';
 
   @override
+  String get billingAmountReceivedLabel => 'Amount received';
+
+  @override
+  String get billingCurrencyLabel => 'Currency';
+
+  @override
+  String get billingPaymentMethodLabel => 'Payment method';
+
+  @override
+  String get billingReferenceLabel => 'Reference';
+
+  @override
+  String get billingPayerLabel => 'Payer';
+
+  @override
+  String get billingGenerateReceiptLabel => 'Generate receipt after payment';
+
+  @override
+  String get billingPaymentLabel => 'Payment';
+
+  @override
+  String get billingRefundAmountLabel => 'Refund amount';
+
+  @override
+  String get billingRefundReasonValidation => 'Enter a refund reason.';
+
+  @override
+  String get billingNotesLabel => 'Notes';
+
+  @override
+  String get billingAdjustmentAmountLabel => 'Adjustment amount (+/-)';
+
+  @override
+  String get billingAdjustmentAmountValidation =>
+      'Enter a signed amount, for example -10.00 or 25.00.';
+
+  @override
+  String get billingAppliedStatusLabel => 'Applied status';
+
+  @override
+  String get billingAdjustmentReasonValidation => 'Enter an adjustment reason.';
+
+  @override
+  String get billingReasonValidation => 'Enter a reason.';
+
+  @override
+  String get billingRecipientEmailLabel => 'Recipient email';
+
+  @override
+  String get billingExpectedAmountLabel => 'Expected amount';
+
+  @override
+  String get billingActualAmountLabel => 'Actual amount';
+
+  @override
+  String get billingSubmitForApprovalLabel => 'Submit for approval';
+
+  @override
+  String get billingRequestVoidAction => 'Request void';
+
+  @override
+  String get billingVoidReasonLabel => 'Void reason';
+
+  @override
+  String get billingUnknownPatient => 'Unknown patient';
+
+  @override
+  String billingQuantityLabel(int quantity) {
+    return 'Qty $quantity';
+  }
+
+  @override
   String get navigationSubscriptionsLabel => 'Subscriptions';
 
   @override

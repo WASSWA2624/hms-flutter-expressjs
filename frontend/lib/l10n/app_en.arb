@@ -569,6 +569,103 @@
   "@billingStatusPaid": {
     "description": "Paid billing status label."
   },
+  "billingAmountReceivedLabel": "Amount received",
+  "@billingAmountReceivedLabel": {
+    "description": "Label for the payment amount field in the receive payment form."
+  },
+  "billingCurrencyLabel": "Currency",
+  "@billingCurrencyLabel": {
+    "description": "Label for currency selectors in billing amount fields."
+  },
+  "billingPaymentMethodLabel": "Payment method",
+  "@billingPaymentMethodLabel": {
+    "description": "Label for the payment method selector in the receive payment form."
+  },
+  "billingReferenceLabel": "Reference",
+  "@billingReferenceLabel": {
+    "description": "Label for the payment transaction reference field."
+  },
+  "billingPayerLabel": "Payer",
+  "@billingPayerLabel": {
+    "description": "Label for the payer field in the receive payment form."
+  },
+  "billingGenerateReceiptLabel": "Generate receipt after payment",
+  "@billingGenerateReceiptLabel": {
+    "description": "Checkbox label to generate a receipt after recording a payment."
+  },
+  "billingPaymentLabel": "Payment",
+  "@billingPaymentLabel": {
+    "description": "Label for the payment selector in the refund form."
+  },
+  "billingRefundAmountLabel": "Refund amount",
+  "@billingRefundAmountLabel": {
+    "description": "Label for the refund amount field in the refund form."
+  },
+  "billingRefundReasonValidation": "Enter a refund reason.",
+  "@billingRefundReasonValidation": {
+    "description": "Validation message shown when a refund reason is missing."
+  },
+  "billingNotesLabel": "Notes",
+  "@billingNotesLabel": {
+    "description": "Label for optional notes fields across billing dialogs."
+  },
+  "billingAdjustmentAmountLabel": "Adjustment amount (+/-)",
+  "@billingAdjustmentAmountLabel": {
+    "description": "Label for the signed adjustment amount field in the adjustment form."
+  },
+  "billingAdjustmentAmountValidation": "Enter a signed amount, for example -10.00 or 25.00.",
+  "@billingAdjustmentAmountValidation": {
+    "description": "Validation message for the signed adjustment amount field."
+  },
+  "billingAppliedStatusLabel": "Applied status",
+  "@billingAppliedStatusLabel": {
+    "description": "Label for the applied status selector in the adjustment form."
+  },
+  "billingAdjustmentReasonValidation": "Enter an adjustment reason.",
+  "@billingAdjustmentReasonValidation": {
+    "description": "Validation message shown when an adjustment reason is missing."
+  },
+  "billingReasonValidation": "Enter a reason.",
+  "@billingReasonValidation": {
+    "description": "Validation message shown when a generic reason field is empty."
+  },
+  "billingRecipientEmailLabel": "Recipient email",
+  "@billingRecipientEmailLabel": {
+    "description": "Label for the recipient email field when sending an invoice."
+  },
+  "billingExpectedAmountLabel": "Expected amount",
+  "@billingExpectedAmountLabel": {
+    "description": "Label for the expected amount field in the shift close form."
+  },
+  "billingActualAmountLabel": "Actual amount",
+  "@billingActualAmountLabel": {
+    "description": "Label for the actual amount field in the shift close form."
+  },
+  "billingSubmitForApprovalLabel": "Submit for approval",
+  "@billingSubmitForApprovalLabel": {
+    "description": "Checkbox label to submit a shift or day close for approval."
+  },
+  "billingRequestVoidAction": "Request void",
+  "@billingRequestVoidAction": {
+    "description": "Submit label for the void invoice request form."
+  },
+  "billingVoidReasonLabel": "Void reason",
+  "@billingVoidReasonLabel": {
+    "description": "Label for the void reason field in the void invoice form."
+  },
+  "billingUnknownPatient": "Unknown patient",
+  "@billingUnknownPatient": {
+    "description": "Fallback label shown when a billing work item has no patient name."
+  },
+  "billingQuantityLabel": "Qty {quantity}",
+  "@billingQuantityLabel": {
+    "description": "Compact quantity label for an invoice line item.",
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "navigationSubscriptionsLabel": "Subscriptions",
   "@navigationSubscriptionsLabel": {
     "description": "Navigation label for the subscriptions workspace."

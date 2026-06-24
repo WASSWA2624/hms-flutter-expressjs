@@ -75,7 +75,7 @@ class BillingDetailBody extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
-          patientName: item.effectivePatientName,
+          patientName: billingPatientName(context, item),
           patientNumber:
               item.effectivePatientNumber ??
               item.displayId ??
@@ -415,7 +415,7 @@ class _InvoiceLineItemsSection extends StatelessWidget {
             _DetailRow(
               title: lineItem.description,
               subtitle: billingJoinDisplay(<String?>[
-                'Qty ${lineItem.quantity}',
+                l10n.billingQuantityLabel(lineItem.quantity),
                 lineItem.sourceContextLabel,
               ]),
               trailing: billingMoney(
