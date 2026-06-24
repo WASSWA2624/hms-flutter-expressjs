@@ -322,6 +322,14 @@ final class RadiologyWorkspaceController
     );
   }
 
+  void setDetailViewMode(RadiologyDetailViewMode mode) {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null || current.detailViewMode == mode) {
+      return;
+    }
+    _emit(current.copyWith(detailViewMode: mode));
+  }
+
   Future<AppFailure?> createOrder(Map<String, Object?> payload) {
     return _mutate(() => _repository.createOrder(payload));
   }

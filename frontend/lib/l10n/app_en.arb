@@ -16279,5 +16279,153 @@
         "type": "int"
       }
     }
+  },
+  "clinicalRequestBillingSectionTitle": "Request billing",
+  "@clinicalRequestBillingSectionTitle": {
+    "description": "Title for clinical request billing panel."
+  },
+  "clinicalRequestBillingNoItemsLabel": "Add items to see pricing.",
+  "@clinicalRequestBillingNoItemsLabel": {
+    "description": "Empty billing panel message."
+  },
+  "clinicalRequestBillingTotalLabel": "Total",
+  "@clinicalRequestBillingTotalLabel": {
+    "description": "Billing total row label."
+  },
+  "clinicalRequestPriceNotSetLabel": "Price not set",
+  "@clinicalRequestPriceNotSetLabel": {
+    "description": "Shown when catalog item has no price."
+  },
+  "clinicalRequestPriceWarningLabel": "Some items have no price set",
+  "@clinicalRequestPriceWarningLabel": {
+    "description": "Warning when billing line items lack prices."
+  },
+  "clinicalRequestBillLaterAction": "Bill later",
+  "@clinicalRequestBillLaterAction": {
+    "description": "Defer payment at request time."
+  },
+  "clinicalRequestPayNowAction": "Pay now",
+  "@clinicalRequestPayNowAction": {
+    "description": "Capture payment at request time."
+  },
+  "clinicalRequestPaymentPaidLabel": "Paid",
+  "@clinicalRequestPaymentPaidLabel": {
+    "description": "Payment status paid."
+  },
+  "clinicalRequestPaymentPartialLabel": "Partial",
+  "@clinicalRequestPaymentPartialLabel": {
+    "description": "Payment status partial."
+  },
+  "clinicalRequestPaymentUnpaidLabel": "Unpaid",
+  "@clinicalRequestPaymentUnpaidLabel": {
+    "description": "Payment status unpaid."
+  },
+  "clinicalRequestPaymentNotBilledLabel": "Not billed",
+  "@clinicalRequestPaymentNotBilledLabel": {
+    "description": "Payment status not billed."
+  },
+  "radiologyOrderMetadataTitle": "Order metadata",
+  "@radiologyOrderMetadataTitle": {
+    "description": "Radiology order metadata section title."
+  },
+  "radiologyOrderMetadataSubtitle": "Timing, modality, and payment context",
+  "@radiologyOrderMetadataSubtitle": {
+    "description": "Radiology order metadata section subtitle."
+  },
+  "radiologyViewModeImagingFloorLabel": "Imaging floor",
+  "@radiologyViewModeImagingFloorLabel": {
+    "description": "Technologist radiology view mode."
+  },
+  "radiologyViewModeReportingLabel": "Reporting",
+  "@radiologyViewModeReportingLabel": {
+    "description": "Reporter radiology view mode."
+  },
+  "radiologyViewModeToggleLabel": "View mode",
+  "@radiologyViewModeToggleLabel": {
+    "description": "Radiology detail view mode toggle label."
+  },
+  "radiologyWorkflowStepReceiveDescription": "Acknowledge the incoming imaging request",
+  "@radiologyWorkflowStepReceiveDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowStepReviewDescription": "Review study details and clinical notes",
+  "@radiologyWorkflowStepReviewDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowStepPerformDescription": "Mark the imaging study as performed",
+  "@radiologyWorkflowStepPerformDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowStepUploadDescription": "Upload images and sync assets",
+  "@radiologyWorkflowStepUploadDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowStepReportDescription": "Draft and edit the radiology report",
+  "@radiologyWorkflowStepReportDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowStepReleaseDescription": "Release the finalized report",
+  "@radiologyWorkflowStepReleaseDescription": {
+    "description": "Workflow step description."
+  },
+  "radiologyWorkflowProgressCollapsedSummary": "{completed} of {total} steps complete",
+  "@radiologyWorkflowProgressCollapsedSummary": {
+    "description": "Collapsed workflow progress summary.",
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "radiologyStudiesPerformStudyCta": "Perform study",
+  "@radiologyStudiesPerformStudyCta": {
+    "description": "Studies empty state CTA."
+  },
+  "radiologyStudiesUploadImagesCta": "Upload images",
+  "@radiologyStudiesUploadImagesCta": {
+    "description": "Studies upload CTA."
+  },
+  "radiologyStudiesPerformFirstHint": "Perform the study before uploading images.",
+  "@radiologyStudiesPerformFirstHint": {
+    "description": "Hint when upload is blocked."
+  },
+  "radiologyStudiesReportPreviewTitle": "Report preview",
+  "@radiologyStudiesReportPreviewTitle": {
+    "description": "Report preview in studies section."
+  },
+  "radiologyDoctorReviewOpenReportAction": "Open report",
+  "@radiologyDoctorReviewOpenReportAction": {
+    "description": "Doctor review open report action."
+  },
+  "radiologyDoctorReviewAcknowledgeAction": "Acknowledge review",
+  "@radiologyDoctorReviewAcknowledgeAction": {
+    "description": "Doctor review acknowledge action."
+  },
+  "radiologyReportInlineEditHelper": "Edit the draft below or open the full editor.",
+  "@radiologyReportInlineEditHelper": {
+    "description": "Inline report editing helper text."
+  },
+  "radiologyReportLivePreviewTitle": "Live preview",
+  "@radiologyReportLivePreviewTitle": {
+    "description": "Live report preview title."
+  },
+  "radiologyStudyFormHelper": "Optional details can be adjusted before saving.",
+  "@radiologyStudyFormHelper": {
+    "description": "Perform study dialog helper text."
+  },
+  "radiologyReleaseReportSummaryTitle": "Report summary",
+  "@radiologyReleaseReportSummaryTitle": {
+    "description": "Release report summary title."
+  },
+  "radiologyReleaseEmptyDraftMessage": "Add report content before releasing.",
+  "@radiologyReleaseEmptyDraftMessage": {
+    "description": "Release blocked when draft empty."
+  },
+  "radiologyPrescriptionBillOnDispenseLabel": "Bill on dispense",
+  "@radiologyPrescriptionBillOnDispenseLabel": {
+    "description": "Pharmacy bill on dispense mode."
+  },
+  "radiologyPrescriptionPayAtPrescribeLabel": "Pay at prescribe",
+  "@radiologyPrescriptionPayAtPrescribeLabel": {
+    "description": "Pharmacy pay at prescribe mode."
   }
 }

@@ -23594,6 +23594,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} studies'**
   String radiologyPrintStudyCount(int count);
+
+  /// Title for clinical request billing panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request billing'**
+  String get clinicalRequestBillingSectionTitle;
+
+  /// Empty billing panel message.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items to see pricing.'**
+  String get clinicalRequestBillingNoItemsLabel;
+
+  /// Billing total row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get clinicalRequestBillingTotalLabel;
+
+  /// Shown when catalog item has no price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price not set'**
+  String get clinicalRequestPriceNotSetLabel;
+
+  /// Warning when billing line items lack prices.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items have no price set'**
+  String get clinicalRequestPriceWarningLabel;
+
+  /// Defer payment at request time.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill later'**
+  String get clinicalRequestBillLaterAction;
+
+  /// Capture payment at request time.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay now'**
+  String get clinicalRequestPayNowAction;
+
+  /// Payment status paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get clinicalRequestPaymentPaidLabel;
+
+  /// Payment status partial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get clinicalRequestPaymentPartialLabel;
+
+  /// Payment status unpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid'**
+  String get clinicalRequestPaymentUnpaidLabel;
+
+  /// Payment status not billed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not billed'**
+  String get clinicalRequestPaymentNotBilledLabel;
+
+  /// Radiology order metadata section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Order metadata'**
+  String get radiologyOrderMetadataTitle;
+
+  /// Radiology order metadata section subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing, modality, and payment context'**
+  String get radiologyOrderMetadataSubtitle;
+
+  /// Technologist radiology view mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging floor'**
+  String get radiologyViewModeImagingFloorLabel;
+
+  /// Reporter radiology view mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting'**
+  String get radiologyViewModeReportingLabel;
+
+  /// Radiology detail view mode toggle label.
+  ///
+  /// In en, this message translates to:
+  /// **'View mode'**
+  String get radiologyViewModeToggleLabel;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge the incoming imaging request'**
+  String get radiologyWorkflowStepReceiveDescription;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Review study details and clinical notes'**
+  String get radiologyWorkflowStepReviewDescription;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the imaging study as performed'**
+  String get radiologyWorkflowStepPerformDescription;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload images and sync assets'**
+  String get radiologyWorkflowStepUploadDescription;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft and edit the radiology report'**
+  String get radiologyWorkflowStepReportDescription;
+
+  /// Workflow step description.
+  ///
+  /// In en, this message translates to:
+  /// **'Release the finalized report'**
+  String get radiologyWorkflowStepReleaseDescription;
+
+  /// Collapsed workflow progress summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} steps complete'**
+  String radiologyWorkflowProgressCollapsedSummary(int completed, int total);
+
+  /// Studies empty state CTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform study'**
+  String get radiologyStudiesPerformStudyCta;
+
+  /// Studies upload CTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload images'**
+  String get radiologyStudiesUploadImagesCta;
+
+  /// Hint when upload is blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform the study before uploading images.'**
+  String get radiologyStudiesPerformFirstHint;
+
+  /// Report preview in studies section.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get radiologyStudiesReportPreviewTitle;
+
+  /// Doctor review open report action.
+  ///
+  /// In en, this message translates to:
+  /// **'Open report'**
+  String get radiologyDoctorReviewOpenReportAction;
+
+  /// Doctor review acknowledge action.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge review'**
+  String get radiologyDoctorReviewAcknowledgeAction;
+
+  /// Inline report editing helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the draft below or open the full editor.'**
+  String get radiologyReportInlineEditHelper;
+
+  /// Live report preview title.
+  ///
+  /// In en, this message translates to:
+  /// **'Live preview'**
+  String get radiologyReportLivePreviewTitle;
+
+  /// Perform study dialog helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional details can be adjusted before saving.'**
+  String get radiologyStudyFormHelper;
+
+  /// Release report summary title.
+  ///
+  /// In en, this message translates to:
+  /// **'Report summary'**
+  String get radiologyReleaseReportSummaryTitle;
+
+  /// Release blocked when draft empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add report content before releasing.'**
+  String get radiologyReleaseEmptyDraftMessage;
+
+  /// Pharmacy bill on dispense mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill on dispense'**
+  String get radiologyPrescriptionBillOnDispenseLabel;
+
+  /// Pharmacy pay at prescribe mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay at prescribe'**
+  String get radiologyPrescriptionPayAtPrescribeLabel;
 }
 
 class _AppLocalizationsDelegate

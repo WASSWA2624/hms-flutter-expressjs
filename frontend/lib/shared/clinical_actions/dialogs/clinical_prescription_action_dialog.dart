@@ -6,6 +6,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -20,6 +22,7 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
   final ClinicalActionReferenceData referenceData;
   final Future<AppFailure?> Function({
     required List<Map<String, Object?>> items,
+    ClinicalRequestBillingSubmit? billing,
   })
   onSubmit;
 
@@ -35,6 +38,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   int _nextLineId = 0;
   bool _isSaving = false;
   AppFailure? _failure;
+  ClinicalRequestBillingSubmit? _billingSubmit;
+  ClinicalRequestPaymentMode _dispenseBillingMode =
+      ClinicalRequestPaymentMode.billLater;
 
   @override
   void initState() {
@@ -53,6 +59,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final List<AppSelectOption<String>> drugOptions = _drugCatalogOptions(
       widget.referenceData.drugs,
     );
@@ -78,6 +85,36 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
               enabled: !_isSaving,
               fullWidth: true,
               onPressed: _addLine,
+            ),
+            SizedBox(height: theme.spacing.md),
+            SegmentedButton<ClinicalRequestPaymentMode>(
+              segments: <ButtonSegment<ClinicalRequestPaymentMode>>[
+                ButtonSegment<ClinicalRequestPaymentMode>(
+                  value: ClinicalRequestPaymentMode.billLater,
+                  icon: const Icon(Icons.local_pharmacy_outlined),
+                  label: Text(l10n.radiologyPrescriptionBillOnDispenseLabel),
+                ),
+                ButtonSegment<ClinicalRequestPaymentMode>(
+                  value: ClinicalRequestPaymentMode.payNow,
+                  icon: const Icon(Icons.payments_outlined),
+                  label: Text(l10n.radiologyPrescriptionPayAtPrescribeLabel),
+                ),
+              ],
+              selected: <ClinicalRequestPaymentMode>{_dispenseBillingMode},
+              showSelectedIcon: false,
+              onSelectionChanged: _isSaving
+                  ? null
+                  : (Set<ClinicalRequestPaymentMode> values) {
+                      setState(() => _dispenseBillingMode = values.first);
+                    },
+            ),
+            SizedBox(height: theme.spacing.md),
+            ClinicalRequestBillingPanel(
+              lineItems: _prescriptionBillingLineItems(),
+              enabled: !_isSaving && _dispenseBillingMode == ClinicalRequestPaymentMode.payNow,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                setState(() => _billingSubmit = value);
+              },
             ),
           ],
         ),
@@ -167,7 +204,12 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
         }),
     ];
 
-    final AppFailure? failure = await widget.onSubmit(items: items);
+    final AppFailure? failure = await widget.onSubmit(
+      items: items,
+      billing: _dispenseBillingMode == ClinicalRequestPaymentMode.payNow
+          ? _billingSubmit
+          : null,
+    );
     _finishSubmit(failure);
   }
 
@@ -183,6 +225,41 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+
+  List<ClinicalRequestBillingLineItem> _prescriptionBillingLineItems() {
+    final List<ClinicalActionCatalogOption> options =
+        <ClinicalActionCatalogOption>[];
+    final Map<String, num> quantities = <String, num>{};
+    for (final _PrescriptionLineFormState line in _lines) {
+      final String? drugId = line.drugId?.trim();
+      if (drugId == null || drugId.isEmpty) {
+        continue;
+      }
+      quantities[drugId] = int.tryParse(line.quantityController.text.trim()) ?? 1;
+      ClinicalActionCatalogOption? option;
+      for (final ClinicalActionCatalogOption drug
+          in widget.referenceData.drugs) {
+        if (drug.apiId == drugId) {
+          option = drug;
+          break;
+        }
+      }
+      options.add(
+        option ??
+            ClinicalActionCatalogOption(
+              id: drugId,
+              name: clinicalActionCatalogDisplayLabelById(
+                widget.referenceData.drugs,
+                drugId,
+              ),
+            ),
+      );
+    }
+    return clinicalRequestBillingLineItems(
+      options: options,
+      quantities: quantities,
+    );
   }
 }
 

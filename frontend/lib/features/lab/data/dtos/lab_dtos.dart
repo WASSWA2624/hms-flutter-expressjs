@@ -161,6 +161,8 @@ final class LabCatalogItemDto {
           .where((LabPanelItem item) => item.id.isNotEmpty)
           .toList(growable: false),
       testCount: _int(json['test_count']),
+      unitPrice: _num(json['unit_price']) ?? _num(json['price']),
+      currency: _string(json['currency']),
       updatedAt: _date(json['updated_at']),
     );
   }

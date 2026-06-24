@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.da
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
@@ -39,17 +40,21 @@ final class LabOrderContextInput {
   Map<String, Object?> toPayload({
     required List<String> labTestIds,
     required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
   }) {
-    return <String, Object?>{
-      'patient_id': patientId.trim(),
-      'encounter_id': encounterId?.trim(),
-      'requested_tests': labTestIds
-          .map((String id) => <String, Object?>{'lab_test_id': id})
-          .toList(growable: false),
-      'requested_panels': labPanelIds
-          .map((String id) => <String, Object?>{'lab_panel_id': id})
-          .toList(growable: false),
-    };
+    return mergeClinicalRequestBilling(
+      <String, Object?>{
+        'patient_id': patientId.trim(),
+        'encounter_id': encounterId?.trim(),
+        'requested_tests': labTestIds
+            .map((String id) => <String, Object?>{'lab_test_id': id})
+            .toList(growable: false),
+        'requested_panels': labPanelIds
+            .map((String id) => <String, Object?>{'lab_panel_id': id})
+            .toList(growable: false),
+      },
+      billing,
+    );
   }
 }
 

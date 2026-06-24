@@ -128,6 +128,8 @@ final class RadiologyCatalogTestDto {
       status: _string(json['status']),
       source: _string(json['source']),
       searchText: _string(json['search_text']),
+      unitPrice: _num(json['unit_price']) ?? _num(json['price']),
+      currency: _string(json['currency']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );
@@ -241,7 +243,8 @@ final class RadiologyOrderDto {
       clinicalNote: _string(json['clinical_note']) ?? _string(json['notes']),
       paymentStatus:
           _string(json['payment_status']) ??
-          _string(_map(json['billing'])['payment_status']),
+          _string(_map(json['billing'])['payment_status']) ??
+          _string(_map(_map(json['request_details'])['billing'])['payment_status']),
       authorizationStatus:
           _string(json['authorization_status']) ??
           _string(_map(json['billing'])['authorization_status']),
@@ -619,6 +622,16 @@ int? _int(Object? value) {
   }
   if (value is String) {
     return int.tryParse(value);
+  }
+  return null;
+}
+
+num? _num(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value);
   }
   return null;
 }

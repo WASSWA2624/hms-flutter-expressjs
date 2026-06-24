@@ -711,6 +711,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             ({
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return ref
                   .read(opdWorkspaceControllerProvider.notifier)
@@ -735,6 +736,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               required String labOrderId,
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return ref
                   .read(opdWorkspaceControllerProvider.notifier)
@@ -763,7 +765,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
-        onSubmit: ({required List<ClinicalActionRadiologyRequest> requests}) {
+        onSubmit: ({
+          required List<ClinicalActionRadiologyRequest> requests,
+          ClinicalRequestBillingSubmit? billing,
+        }) {
           return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
             flow,
             <String, Object?>{
@@ -803,7 +808,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
-        onSubmit: ({required List<Map<String, Object?>> items}) {
+        onSubmit: ({
+          required List<Map<String, Object?>> items,
+          ClinicalRequestBillingSubmit? billing,
+        }) {
           return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
             flow,
             <String, Object?>{

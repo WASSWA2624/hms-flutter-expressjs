@@ -220,6 +220,8 @@ final class LabCatalogItem {
     this.resultOptions = const <LabResultOption>[],
     this.panelItems = const <LabPanelItem>[],
     this.testCount = 0,
+    this.unitPrice,
+    this.currency,
     this.updatedAt,
   });
 
@@ -240,6 +242,8 @@ final class LabCatalogItem {
   final List<LabResultOption> resultOptions;
   final List<LabPanelItem> panelItems;
   final int testCount;
+  final num? unitPrice;
+  final String? currency;
   final DateTime? updatedAt;
 
   String get apiId => displayId ?? id;

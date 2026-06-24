@@ -7,6 +7,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -22,6 +24,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   final List<ClinicalActionRadiologyRequest> initialRequests;
   final Future<AppFailure?> Function({
     required List<ClinicalActionRadiologyRequest> requests,
+    ClinicalRequestBillingSubmit? billing,
   })
   onSubmit;
 
@@ -66,6 +69,7 @@ class _RadiologyOrderDialogState
   int? _editingIndex;
   bool _isSaving = false;
   AppFailure? _failure;
+  ClinicalRequestBillingSubmit? _billingSubmit;
 
   @override
   void initState() {
@@ -349,6 +353,18 @@ class _RadiologyOrderDialogState
                 },
               ),
             ),
+            SizedBox(height: theme.spacing.md),
+            ClinicalRequestBillingPanel(
+              lineItems: clinicalRequestBillingLineItems(
+                options: _requests
+                    .map((_PendingRadiologyRequest request) => request.option)
+                    .toList(growable: false),
+              ),
+              enabled: !_isSaving,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                setState(() => _billingSubmit = value);
+              },
+            ),
           ],
         ),
       ),
@@ -601,6 +617,7 @@ class _RadiologyOrderDialogState
             modality: request.modality,
           ),
       ],
+      billing: _billingSubmit,
     );
     _finishSubmit(failure);
   }
@@ -955,6 +972,17 @@ class _RadiologyCatalogOptionLabel extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
+        Text(
+          clinicalRequestPriceLabel(
+            context,
+            clinicalCatalogOptionUnitPrice(option),
+            clinicalCatalogOptionCurrency(option),
+          ),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

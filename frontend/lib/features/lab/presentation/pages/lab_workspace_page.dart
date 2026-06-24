@@ -1562,11 +1562,13 @@ Future<void> _openCreateLabOrderDialog(
             ({
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return _readLabController(context).createOrder(
                 orderContext.toPayload(
                   labTestIds: labTestIds,
                   labPanelIds: labPanelIds,
+                  billing: billing,
                 ),
               );
             },
@@ -1575,12 +1577,14 @@ Future<void> _openCreateLabOrderDialog(
               required String labOrderId,
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return _readLabController(context).updateOrder(
                 labOrderId,
                 orderContext.toPayload(
                   labTestIds: labTestIds,
                   labPanelIds: labPanelIds,
+                  billing: billing,
                 ),
               );
             },
@@ -1696,11 +1700,13 @@ Future<void> _openEditLabOrderDialog(
             ({
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return _readLabController(context).createOrder(
                 orderContext.toPayload(
                   labTestIds: labTestIds,
                   labPanelIds: labPanelIds,
+                  billing: billing,
                 ),
               );
             },
@@ -1709,12 +1715,14 @@ Future<void> _openEditLabOrderDialog(
               required String labOrderId,
               required List<String> labTestIds,
               required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
             }) {
               return _readLabController(context).updateOrder(
                 labOrderId,
                 orderContext.toPayload(
                   labTestIds: labTestIds,
                   labPanelIds: labPanelIds,
+                  billing: billing,
                 ),
               );
             },
@@ -1907,9 +1915,13 @@ ClinicalActionCatalogOption _clinicalCatalogOption(LabCatalogItem item) {
       item.unit,
       item.referenceRange,
     ]),
+    unitPrice: item.unitPrice,
+    currency: item.currency,
     metadata: <String, Object?>{
       'type': item.type.name,
       if (item.description != null) 'description': item.description,
+      if (item.unitPrice != null) 'unit_price': item.unitPrice,
+      if (item.currency != null) 'currency': item.currency,
     },
     childIds: item.panelItems
         .map((LabPanelItem item) => item.labTestId)

@@ -438,6 +438,7 @@ final class ClinicalWorkspaceController
   Future<AppFailure?> requestLab({
     required List<String> labTestIds,
     required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
   }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
     if (entry == null || entry.apiPatientId == null) {
@@ -446,19 +447,22 @@ final class ClinicalWorkspaceController
 
     return _mutateSelectedEncounter(() async {
       final Result<void> orderResult = await _repository.createLabOrder(
-        <String, Object?>{
-          'encounter_id': entry.encounterId,
-          'patient_id': entry.apiPatientId,
-          'ordered_at': DateTime.now().toUtc().toIso8601String(),
-          'requested_tests': <Map<String, Object?>>[
-            for (final String id in labTestIds)
-              <String, Object?>{'lab_test_id': id},
-          ],
-          'requested_panels': <Map<String, Object?>>[
-            for (final String id in labPanelIds)
-              <String, Object?>{'lab_panel_id': id},
-          ],
-        },
+        mergeClinicalRequestBilling(
+          <String, Object?>{
+            'encounter_id': entry.encounterId,
+            'patient_id': entry.apiPatientId,
+            'ordered_at': DateTime.now().toUtc().toIso8601String(),
+            'requested_tests': <Map<String, Object?>>[
+              for (final String id in labTestIds)
+                <String, Object?>{'lab_test_id': id},
+            ],
+            'requested_panels': <Map<String, Object?>>[
+              for (final String id in labPanelIds)
+                <String, Object?>{'lab_panel_id': id},
+            ],
+          },
+          billing,
+        ),
       );
       final AppFailure? failure = _failureOrNull(orderResult);
       if (failure != null) {
@@ -479,18 +483,25 @@ final class ClinicalWorkspaceController
     required String labOrderId,
     required List<String> labTestIds,
     required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
   }) {
     return _mutateSelectedEncounter(
-      () => _repository.updateLabOrder(labOrderId, <String, Object?>{
-        'requested_tests': <Map<String, Object?>>[
-          for (final String id in labTestIds)
-            <String, Object?>{'lab_test_id': id},
-        ],
-        'requested_panels': <Map<String, Object?>>[
-          for (final String id in labPanelIds)
-            <String, Object?>{'lab_panel_id': id},
-        ],
-      }),
+      () => _repository.updateLabOrder(
+        labOrderId,
+        mergeClinicalRequestBilling(
+          <String, Object?>{
+            'requested_tests': <Map<String, Object?>>[
+              for (final String id in labTestIds)
+                <String, Object?>{'lab_test_id': id},
+            ],
+            'requested_panels': <Map<String, Object?>>[
+              for (final String id in labPanelIds)
+                <String, Object?>{'lab_panel_id': id},
+            ],
+          },
+          billing,
+        ),
+      ),
     );
   }
 
@@ -510,6 +521,7 @@ final class ClinicalWorkspaceController
 
   Future<AppFailure?> requestRadiology({
     required List<ClinicalRadiologyRequest> requests,
+    ClinicalRequestBillingSubmit? billing,
   }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
     if (entry == null || entry.apiPatientId == null || requests.isEmpty) {
@@ -527,12 +539,19 @@ final class ClinicalWorkspaceController
               <String, Object?>{
                 'radiology_test_id': request.radiologyTestId,
                 'clinical_note': request.clinicalNote,
-                'request_details': <String, Object?>{
-                  'modality': request.modality,
-                  'body_region': request.bodyRegion,
-                  'laterality': request.laterality,
-                  'priority': request.priority,
-                },
+                'request_details': mergeClinicalRequestBillingIntoRequestDetails(
+                  <String, Object?>{
+                    'modality': request.modality,
+                    'body_region': request.bodyRegion,
+                    'laterality': request.laterality,
+                    'priority': request.priority,
+                  },
+                  billing,
+                  lineAmount: _radiologyRequestLineAmount(
+                    billing,
+                    request.radiologyTestId,
+                  ),
+                ),
               },
           ],
         },
@@ -575,7 +594,10 @@ final class ClinicalWorkspaceController
     );
   }
 
-  Future<AppFailure?> prescribe({required List<Map<String, Object?>> items}) {
+  Future<AppFailure?> prescribe({
+    required List<Map<String, Object?>> items,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
     if (entry == null || entry.apiPatientId == null || items.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
@@ -583,12 +605,15 @@ final class ClinicalWorkspaceController
 
     return _mutateSelectedEncounter(() async {
       final Result<void> orderResult = await _repository.createPharmacyOrder(
-        <String, Object?>{
-          'encounter_id': entry.encounterId,
-          'patient_id': entry.apiPatientId,
-          'ordered_at': DateTime.now().toUtc().toIso8601String(),
-          'items': items,
-        },
+        mergeClinicalRequestBilling(
+          <String, Object?>{
+            'encounter_id': entry.encounterId,
+            'patient_id': entry.apiPatientId,
+            'ordered_at': DateTime.now().toUtc().toIso8601String(),
+            'items': items,
+          },
+          billing,
+        ),
       );
       final AppFailure? failure = _failureOrNull(orderResult);
       if (failure != null) {
@@ -1607,4 +1632,19 @@ final class ClinicalWorkspaceController
       Result<ClinicalWorkspaceState>.success(nextState),
     );
   }
+}
+
+num? _radiologyRequestLineAmount(
+  ClinicalRequestBillingSubmit? billing,
+  String radiologyTestId,
+) {
+  if (billing == null) {
+    return null;
+  }
+  for (final ClinicalRequestBillingLineItem item in billing.lineItems) {
+    if (item.id == radiologyTestId) {
+      return item.lineTotal;
+    }
+  }
+  return null;
 }

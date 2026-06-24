@@ -12554,4 +12554,125 @@ class AppLocalizationsEn extends AppLocalizations {
   String radiologyPrintStudyCount(int count) {
     return '$count studies';
   }
+
+  @override
+  String get clinicalRequestBillingSectionTitle => 'Request billing';
+
+  @override
+  String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';
+
+  @override
+  String get clinicalRequestBillingTotalLabel => 'Total';
+
+  @override
+  String get clinicalRequestPriceNotSetLabel => 'Price not set';
+
+  @override
+  String get clinicalRequestPriceWarningLabel => 'Some items have no price set';
+
+  @override
+  String get clinicalRequestBillLaterAction => 'Bill later';
+
+  @override
+  String get clinicalRequestPayNowAction => 'Pay now';
+
+  @override
+  String get clinicalRequestPaymentPaidLabel => 'Paid';
+
+  @override
+  String get clinicalRequestPaymentPartialLabel => 'Partial';
+
+  @override
+  String get clinicalRequestPaymentUnpaidLabel => 'Unpaid';
+
+  @override
+  String get clinicalRequestPaymentNotBilledLabel => 'Not billed';
+
+  @override
+  String get radiologyOrderMetadataTitle => 'Order metadata';
+
+  @override
+  String get radiologyOrderMetadataSubtitle =>
+      'Timing, modality, and payment context';
+
+  @override
+  String get radiologyViewModeImagingFloorLabel => 'Imaging floor';
+
+  @override
+  String get radiologyViewModeReportingLabel => 'Reporting';
+
+  @override
+  String get radiologyViewModeToggleLabel => 'View mode';
+
+  @override
+  String get radiologyWorkflowStepReceiveDescription =>
+      'Acknowledge the incoming imaging request';
+
+  @override
+  String get radiologyWorkflowStepReviewDescription =>
+      'Review study details and clinical notes';
+
+  @override
+  String get radiologyWorkflowStepPerformDescription =>
+      'Mark the imaging study as performed';
+
+  @override
+  String get radiologyWorkflowStepUploadDescription =>
+      'Upload images and sync assets';
+
+  @override
+  String get radiologyWorkflowStepReportDescription =>
+      'Draft and edit the radiology report';
+
+  @override
+  String get radiologyWorkflowStepReleaseDescription =>
+      'Release the finalized report';
+
+  @override
+  String radiologyWorkflowProgressCollapsedSummary(int completed, int total) {
+    return '$completed of $total steps complete';
+  }
+
+  @override
+  String get radiologyStudiesPerformStudyCta => 'Perform study';
+
+  @override
+  String get radiologyStudiesUploadImagesCta => 'Upload images';
+
+  @override
+  String get radiologyStudiesPerformFirstHint =>
+      'Perform the study before uploading images.';
+
+  @override
+  String get radiologyStudiesReportPreviewTitle => 'Report preview';
+
+  @override
+  String get radiologyDoctorReviewOpenReportAction => 'Open report';
+
+  @override
+  String get radiologyDoctorReviewAcknowledgeAction => 'Acknowledge review';
+
+  @override
+  String get radiologyReportInlineEditHelper =>
+      'Edit the draft below or open the full editor.';
+
+  @override
+  String get radiologyReportLivePreviewTitle => 'Live preview';
+
+  @override
+  String get radiologyStudyFormHelper =>
+      'Optional details can be adjusted before saving.';
+
+  @override
+  String get radiologyReleaseReportSummaryTitle => 'Report summary';
+
+  @override
+  String get radiologyReleaseEmptyDraftMessage =>
+      'Add report content before releasing.';
+
+  @override
+  String get radiologyPrescriptionBillOnDispenseLabel => 'Bill on dispense';
+
+  @override
+  String get radiologyPrescriptionPayAtPrescribeLabel => 'Pay at prescribe';
 }

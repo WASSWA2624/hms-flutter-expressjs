@@ -9,6 +9,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -34,12 +36,14 @@ class ClinicalLabOrderActionDialog extends StatefulWidget {
   final Future<AppFailure?> Function({
     required List<String> labTestIds,
     required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
   })
   onRequest;
   final Future<AppFailure?> Function({
     required String labOrderId,
     required List<String> labTestIds,
     required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
   })
   onUpdate;
 
@@ -87,6 +91,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   bool _isSearching = false;
   bool _isSaving = false;
   AppFailure? _failure;
+  ClinicalRequestBillingSubmit? _billingSubmit;
 
   @override
   void initState() {
@@ -284,6 +289,18 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                   );
                 },
               ),
+            ),
+            SizedBox(height: theme.spacing.md),
+            ClinicalRequestBillingPanel(
+              lineItems: clinicalRequestBillingLineItems(
+                options: _requests
+                    .map((_PendingLabRequest request) => request.option)
+                    .toList(growable: false),
+              ),
+              enabled: !_isSaving,
+              onChanged: (ClinicalRequestBillingSubmit value) {
+                setState(() => _billingSubmit = value);
+              },
             ),
           ],
         ),
@@ -593,11 +610,13 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
         ? await widget.onRequest(
             labTestIds: labTestIds,
             labPanelIds: labPanelIds,
+            billing: _billingSubmit,
           )
         : await widget.onUpdate(
             labOrderId: existingOrder.id,
             labTestIds: labTestIds,
             labPanelIds: labPanelIds,
+            billing: _billingSubmit,
           );
     _finishSubmit(failure);
   }
@@ -751,6 +770,17 @@ class _LabCatalogOptionRow extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
+                Text(
+                  clinicalRequestPriceLabel(
+                    context,
+                    clinicalCatalogOptionUnitPrice(option),
+                    clinicalCatalogOptionCurrency(option),
+                  ),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -909,6 +939,17 @@ class _LabSelectedRequestRow extends StatelessWidget {
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  Text(
+                    clinicalRequestPriceLabel(
+                      context,
+                      clinicalCatalogOptionUnitPrice(request.option),
+                      clinicalCatalogOptionCurrency(request.option),
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository_impl.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
@@ -368,6 +369,7 @@ final class NursingWorkspaceController
 
   Future<AppFailure?> prescribeMedication({
     required List<Map<String, Object?>> items,
+    ClinicalRequestBillingSubmit? billing,
   }) {
     final NursingPatientDetail? detail = _selectedDetail;
     final String? encounterId = detail?.summary.encounterDisplayId?.trim();
@@ -383,12 +385,17 @@ final class NursingWorkspaceController
 
     return _mutateSelected((NursingPatientSummary summary) async {
       final Result<void> result = await _clinicalRepository
-          .createPharmacyOrder(<String, Object?>{
-            'encounter_id': encounterId,
-            'patient_id': patientId,
-            'ordered_at': DateTime.now().toUtc().toIso8601String(),
-            'items': items,
-          });
+          .createPharmacyOrder(
+            mergeClinicalRequestBilling(
+              <String, Object?>{
+                'encounter_id': encounterId,
+                'patient_id': patientId,
+                'ordered_at': DateTime.now().toUtc().toIso8601String(),
+                'items': items,
+              },
+              billing,
+            ),
+          );
       return result.when<Future<Result<NursingPatientDetail>>>(
         success: (_) => _repository.loadPatientDetail(summary),
         failure: (AppFailure failure) async =>

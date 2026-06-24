@@ -13,6 +13,8 @@ final class ClinicalActionCatalogOption {
     this.parentId,
     this.secondaryId,
     this.searchText,
+    this.unitPrice,
+    this.currency,
     this.metadata = const <String, Object?>{},
     this.childIds = const <String>[],
     this.childCodes = const <String>[],
@@ -28,6 +30,8 @@ final class ClinicalActionCatalogOption {
   final String? parentId;
   final String? secondaryId;
   final String? searchText;
+  final num? unitPrice;
+  final String? currency;
   final Map<String, Object?> metadata;
   final List<String> childIds;
   final List<String> childCodes;

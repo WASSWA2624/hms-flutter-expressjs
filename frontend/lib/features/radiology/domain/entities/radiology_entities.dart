@@ -102,7 +102,8 @@ final class RadiologyWorkspaceQuery {
   }
 }
 
-@immutable
+enum RadiologyDetailViewMode { imagingFloor, reporting }
+
 final class RadiologyWorkspaceState {
   const RadiologyWorkspaceState({
     required this.orders,
@@ -112,6 +113,7 @@ final class RadiologyWorkspaceState {
     this.catalogTests = const <RadiologyCatalogTest>[],
     this.equipmentRecords = const <RadiologyEquipmentRecord>[],
     this.selectedWorkflow,
+    this.detailViewMode = RadiologyDetailViewMode.imagingFloor,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
     this.isMutating = false,
@@ -125,6 +127,7 @@ final class RadiologyWorkspaceState {
   final List<RadiologyCatalogTest> catalogTests;
   final List<RadiologyEquipmentRecord> equipmentRecords;
   final RadiologyWorkflow? selectedWorkflow;
+  final RadiologyDetailViewMode detailViewMode;
   final bool isRefreshing;
   final bool isRefreshingDetail;
   final bool isMutating;
@@ -159,6 +162,7 @@ final class RadiologyWorkspaceState {
     List<RadiologyCatalogTest>? catalogTests,
     List<RadiologyEquipmentRecord>? equipmentRecords,
     RadiologyWorkflow? selectedWorkflow,
+    RadiologyDetailViewMode? detailViewMode,
     bool? isRefreshing,
     bool? isRefreshingDetail,
     bool? isMutating,
@@ -176,6 +180,7 @@ final class RadiologyWorkspaceState {
       selectedWorkflow: clearSelectedWorkflow
           ? null
           : selectedWorkflow ?? this.selectedWorkflow,
+      detailViewMode: detailViewMode ?? this.detailViewMode,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isMutating: isMutating ?? this.isMutating,
@@ -200,6 +205,8 @@ final class RadiologyCatalogTest {
     this.status,
     this.source,
     this.searchText,
+    this.unitPrice,
+    this.currency,
     this.createdAt,
     this.updatedAt,
   });
@@ -216,6 +223,8 @@ final class RadiologyCatalogTest {
   final String? status;
   final String? source;
   final String? searchText;
+  final num? unitPrice;
+  final String? currency;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -501,7 +510,24 @@ final class RadiologyOrder {
   }
 
   bool get hasBillingGate {
-    return paymentStatus != null || authorizationStatus != null;
+    return effectivePaymentStatus != null || authorizationStatus != null;
+  }
+
+  String? get effectivePaymentStatus {
+    final String? direct = _trimmedOrNull(paymentStatus);
+    if (direct != null) {
+      return direct;
+    }
+    final Object? billing = requestDetails['billing'];
+    if (billing is Map) {
+      return _trimmedOrNull(billing['payment_status']?.toString());
+    }
+    return null;
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
   }
 }
 
