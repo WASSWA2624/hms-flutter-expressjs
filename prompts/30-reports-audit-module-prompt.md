@@ -24,7 +24,7 @@ Complete **Reports, Dashboards, and Audit** for HOSSPI HMS: role-based reports, 
 | Inpatient reports | Admission, LOS, bed occupancy, discharge metrics |
 | Audit logs | Who changed OPD stage, IPD bed assignment, discharge finalize |
 | PHI access logs | Patient chart access review for compliance |
-| Dashboard overlap | [prompts/28-home-dashboard-module-prompt.md](./28-home-dashboard-module-prompt.md) for landing KPIs; this module for deep reports |
+| Dashboard overlap | [prompts/07-home-dashboard-module-prompt.md](./07-home-dashboard-module-prompt.md) for landing KPIs; this module for deep reports |
 
 ### App write-up
 
@@ -78,5 +78,5 @@ Complete **Reports, Dashboards, and Audit** for HOSSPI HMS: role-based reports, 
 frontend/lib/features/reports/
 backend/src/modules/reports-workspace/, audit-log/, phi-access-log/
 
-Related prompts: prompts/28-home-dashboard-module-prompt.md, prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md
+Related prompts: prompts/07-home-dashboard-module-prompt.md, prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md
 ```

@@ -27,7 +27,7 @@ HR does not implement patient flow stages. Integration is **indirect**:
 | Ward/ICU staffing | Rosters and shift assignments align nursing coverage with ward workload (Nursing/IPD modules consume assigned staff as users) |
 | Payroll | Operational — not on critical path for single patient flow |
 
-When linking to billing for payroll deductions or stipends, see [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) — HR does not own patient billing.
+When linking to billing for payroll deductions or stipends, see [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md) — HR does not own patient billing.
 
 ---
 
@@ -109,5 +109,5 @@ frontend/lib/features/hr/
 backend/src/modules/hr-workspace/
 backend/src/modules/staff-profile/, roster/, payroll-run/
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md (role staffing context only)
+Related prompts: prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md (role staffing context only)
 ```

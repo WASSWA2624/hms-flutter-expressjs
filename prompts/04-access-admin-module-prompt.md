@@ -21,7 +21,7 @@ Complete **Users, Roles, and Permissions** administration for HOSSPI HMS so tena
 | Concept | Access admin responsibility |
 | ------- | --------------------------- |
 | Role matrices | Ensure roles exist for reception, nurse, doctor, billing, lab, radiology, pharmacy per flow §5 / §13 |
-| Module entitlements | Tie subscription module flags to role visibility ([prompts/26-subscriptions-module-prompt.md](./26-subscriptions-module-prompt.md)) |
+| Module entitlements | Tie subscription module flags to role visibility ([prompts/02-subscriptions-module-prompt.md](./02-subscriptions-module-prompt.md)) |
 | Multi-role users | Support users with more than one role per app-write-up |
 | Scope | Tenant, facility, department, ward scope on assignments where applicable |
 
@@ -39,7 +39,7 @@ Complete **Users, Roles, and Permissions** administration for HOSSPI HMS so tena
 | Backend | `user`, `role`, `permission`, `role-assignment`, `module-entitlement` patterns | CRUD across modules |
 | Frontend | **No dedicated feature folder** — settings workspace maps routes; UI largely unimplemented |
 | Home | `manage_users_roles` action → settings/tenant routes | Navigation stub |
-| HR | Staff profiles link to users | [prompts/14-hr-module-prompt.md](./14-hr-module-prompt.md) |
+| HR | Staff profiles link to users | [prompts/24-hr-module-prompt.md](./24-hr-module-prompt.md) |
 | Permissions client | `frontend/lib/core/permissions/` | Consumes session permissions |
 
 ### Known gaps
@@ -78,5 +78,5 @@ backend/src/modules/user/, role/, permission/
 frontend/lib/core/permissions/
 frontend/lib/features/settings/
 
-Related prompts: prompts/23-tenant-facility-module-prompt.md, prompts/26-subscriptions-module-prompt.md, prompts/14-hr-module-prompt.md, prompts/27-settings-profile-module-prompt.md
+Related prompts: prompts/03-tenant-facility-module-prompt.md, prompts/02-subscriptions-module-prompt.md, prompts/24-hr-module-prompt.md, prompts/06-settings-profile-module-prompt.md
 ```

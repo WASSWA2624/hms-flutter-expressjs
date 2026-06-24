@@ -180,5 +180,5 @@ frontend/lib/features/opd/
 backend/src/modules/opd-flow/
 backend/src/modules/triage/
 
-Related prompts: prompts/05-ipd-module-prompt.md, prompts/03-clinical-module-prompt.md, prompts/12-billing-module-prompt.md, prompts/09-lab-module-prompt.md, prompts/19-radiology-module-prompt.md
+Related prompts: prompts/19-ipd-module-prompt.md, prompts/14-clinical-module-prompt.md, prompts/09-billing-module-prompt.md, prompts/16-lab-module-prompt.md, prompts/17-radiology-module-prompt.md
 ```

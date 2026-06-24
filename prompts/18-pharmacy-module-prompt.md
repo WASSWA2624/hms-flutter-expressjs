@@ -136,5 +136,5 @@ frontend/lib/features/pharmacy/
 backend/src/modules/pharmacy-workspace/
 frontend/lib/shared/clinical_actions/dialogs/clinical_prescription_action_dialog.dart
 
-Related prompts: prompts/03-clinical-module-prompt.md, prompts/08-discharge-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/12-billing-module-prompt.md
+Related prompts: prompts/14-clinical-module-prompt.md, prompts/22-discharge-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/09-billing-module-prompt.md
 ```

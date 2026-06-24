@@ -145,5 +145,5 @@ frontend/lib/features/theater/
 backend/src/modules/theatre-flow/
 backend/src/modules/emergency-case/
 
-Related prompts: prompts/05-ipd-module-prompt.md, prompts/06-icu-module-prompt.md, prompts/02-emergency-module-prompt.md, prompts/12-billing-module-prompt.md
+Related prompts: prompts/19-ipd-module-prompt.md, prompts/20-icu-module-prompt.md, prompts/13-emergency-module-prompt.md, prompts/09-billing-module-prompt.md
 ```

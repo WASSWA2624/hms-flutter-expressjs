@@ -42,13 +42,21 @@ When rules disagree, apply this order:
 
 ## Module implementation prompts
 
-Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01`–`33`). Use them with the flow files and `app-write-up.mdc` when implementing or completing a product module.
+Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01`–`33`) in **recommended implementation order** (foundation → patient registry → outpatient → diagnostics → inpatient → operations → platform closeout). Use them with the flow files and `app-write-up.mdc`.
 
-| Range | Modules |
-|-------|---------|
-| 01–11 | Clinical path: OPD, Emergency, Clinical, Nursing, IPD, ICU, Theater, Discharge, Lab, Pharmacy, Physiotherapy |
-| 12–19 | Financial & diagnostics: Billing, Claims, HR, Biomedical, Operations, Housekeeping, Mortuary, Radiology |
-| 20–33 | Platform & admin: Patients, Triage, Rooms/Beds, Tenant/Facility, Access admin, Auth, Subscriptions, Settings/Profile, Home/Dashboard, Communications, Reports/Audit, Integrations, Dental (planned), Demo seed |
+| # | Module | # | Module | # | Module |
+|---|--------|---|--------|---|--------|
+| 01 | Auth | 12 | OPD | 23 | Physiotherapy |
+| 02 | Subscriptions | 13 | Emergency | 24 | HR |
+| 03 | Tenant & facility | 14 | Clinical | 25 | Biomedical |
+| 04 | Access admin | 15 | Nursing | 26 | Operations |
+| 05 | Rooms & beds | 16 | Lab | 27 | Housekeeping |
+| 06 | Settings & profile | 17 | Radiology | 28 | Mortuary |
+| 07 | Home & dashboard | 18 | Pharmacy | 29 | Communications |
+| 08 | Patients | 19 | IPD | 30 | Reports & audit |
+| 09 | Billing | 20 | ICU | 31 | Integrations |
+| 10 | Claims | 21 | Theater | 32 | Dental (planned) |
+| 11 | Triage | 22 | Discharge | 33 | Demo & seed |
 
 ## Cross-stack invariants
 

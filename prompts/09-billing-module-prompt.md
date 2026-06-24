@@ -35,7 +35,7 @@ Deliver a **professional, calm, cashier-grade workspace** that is easy to scan u
 | ----------- | ----------------------------- |
 | `WAITING_CONSULTATION_PAYMENT` | Consultation invoice/payment via `pay-consultation` integration |
 | Worklist billing state | Show payment relevance without replacing OPD stage ownership |
-| Insured outpatient | Coverage and claims per [prompts/13-claims-module-prompt.md](./13-claims-module-prompt.md) |
+| Insured outpatient | Coverage and claims per [prompts/10-claims-module-prompt.md](./10-claims-module-prompt.md) |
 
 ### App write-up (`../.cursor/app-write-up.mdc`)
 

@@ -136,5 +136,5 @@ frontend/lib/features/discharge/
 backend/src/modules/ipd-flow/
 backend/src/modules/discharge-summary/
 
-Related prompts: prompts/05-ipd-module-prompt.md, prompts/12-billing-module-prompt.md, prompts/10-pharmacy-module-prompt.md, prompts/04-nursing-module-prompt.md, prompts/17-housekeeping-module-prompt.md
+Related prompts: prompts/19-ipd-module-prompt.md, prompts/09-billing-module-prompt.md, prompts/18-pharmacy-module-prompt.md, prompts/15-nursing-module-prompt.md, prompts/27-housekeeping-module-prompt.md
 ```

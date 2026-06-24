@@ -83,5 +83,5 @@ frontend/lib/features/home/
 backend/src/modules/dashboard-workspace/
 frontend/lib/app/router/app_router.dart
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/29-communications-module-prompt.md, prompts/30-reports-audit-module-prompt.md
+Related prompts: prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/29-communications-module-prompt.md, prompts/30-reports-audit-module-prompt.md
 ```

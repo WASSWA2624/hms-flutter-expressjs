@@ -7,7 +7,7 @@ Complete the **Integrations Module** for HOSSPI HMS: API keys, external integrat
 **Source of truth:**
 
 1. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Integrations row
-2. Clinical modules — PACS in [prompts/19-radiology-module-prompt.md](./19-radiology-module-prompt.md); FHIR patient sync may reference patient registry
+2. Clinical modules — PACS in [prompts/17-radiology-module-prompt.md](./17-radiology-module-prompt.md); FHIR patient sync may reference patient registry
 
 **Central rule:** integrations are **admin/technical** configuration. OPD and IPD flows consume outcomes (e.g., imaging from PACS, lab results from external LIS) via backend services — not via ad-hoc UI in clinical workspaces.
 
@@ -74,5 +74,5 @@ Complete the **Integrations Module** for HOSSPI HMS: API keys, external integrat
 frontend/lib/features/integrations/
 backend/src/modules/integration/, api-key/, webhook-subscription/, interop/
 
-Related prompts: prompts/19-radiology-module-prompt.md, prompts/23-tenant-facility-module-prompt.md
+Related prompts: prompts/17-radiology-module-prompt.md, prompts/03-tenant-facility-module-prompt.md
 ```

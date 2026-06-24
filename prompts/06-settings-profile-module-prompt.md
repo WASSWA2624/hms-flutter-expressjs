@@ -9,7 +9,7 @@ Complete **General Settings** and **User Profile** for HOSSPI HMS: user-level pr
 1. [app-write-up.mdc](../.cursor/app-write-up.mdc) — General settings row; Authentication row (password)
 2. Platform UX rules in `frontend/.cursor/` — localization, accessibility, theme
 
-**Central rule:** settings change **user experience** only, not hospital organizational data (that is [prompts/23-tenant-facility-module-prompt.md](./23-tenant-facility-module-prompt.md)) or clinical records.
+**Central rule:** settings change **user experience** only, not hospital organizational data (that is [prompts/03-tenant-facility-module-prompt.md](./03-tenant-facility-module-prompt.md)) or clinical records.
 
 ---
 
@@ -39,7 +39,7 @@ Complete **General Settings** and **User Profile** for HOSSPI HMS: user-level pr
 - Settings workspace is largely a **navigation hub** — few mutable preferences persisted
 - Security sub-routes disabled in `settings_workspace_section.dart`
 - Profile does not call `user-profile` APIs — shows `AuthSession` only
-- Users/roles routes stubbed → [prompts/24-access-admin-module-prompt.md](./24-access-admin-module-prompt.md)
+- Users/roles routes stubbed → [prompts/04-access-admin-module-prompt.md](./04-access-admin-module-prompt.md)
 - Feature flag `settings_workspace_v1`
 
 ---
@@ -70,5 +70,5 @@ frontend/lib/features/settings/
 frontend/lib/features/profile/
 backend/src/modules/settings-workspace/
 
-Related prompts: prompts/25-auth-module-prompt.md, prompts/24-access-admin-module-prompt.md, prompts/23-tenant-facility-module-prompt.md
+Related prompts: prompts/01-auth-module-prompt.md, prompts/04-access-admin-module-prompt.md, prompts/03-tenant-facility-module-prompt.md
 ```

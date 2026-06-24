@@ -10,7 +10,7 @@ Complete the **Rooms, Wards, and Beds Module** for HOSSPI HMS so facility admins
 2. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §3 bed management, §14.2 bed board, statuses, assign/transfer/release
 3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — indirect; bed ops are post-admit only
 
-**Central rule:** master ward/room/bed structure is owned by **facility catalog** ([prompts/23-tenant-facility-module-prompt.md](./23-tenant-facility-module-prompt.md)). This module focuses on **operational bed board**: status, assignment, and IPD orchestration actions.
+**Central rule:** master ward/room/bed structure is owned by **facility catalog** ([prompts/03-tenant-facility-module-prompt.md](./03-tenant-facility-module-prompt.md)). This module focuses on **operational bed board**: status, assignment, and IPD orchestration actions.
 
 ---
 
@@ -38,8 +38,8 @@ Complete the **Rooms, Wards, and Beds Module** for HOSSPI HMS so facility admins
 
 | Module | Integration |
 | ------ | ----------- |
-| Housekeeping | Bed `Cleaning` → turnover tasks ([prompts/17-housekeeping-module-prompt.md](./17-housekeeping-module-prompt.md)) |
-| Operations | `Maintenance`/`Blocked` beds link to maintenance requests ([prompts/16-operations-module-prompt.md](./16-operations-module-prompt.md)) |
+| Housekeeping | Bed `Cleaning` → turnover tasks ([prompts/27-housekeeping-module-prompt.md](./27-housekeeping-module-prompt.md)) |
+| Operations | `Maintenance`/`Blocked` beds link to maintenance requests ([prompts/26-operations-module-prompt.md](./26-operations-module-prompt.md)) |
 | IPD workspace | Patient board + bed board may share data — avoid duplicate bed CRUD |
 
 ---
@@ -90,5 +90,5 @@ frontend/lib/features/rooms_beds/
 frontend/lib/features/tenant_facility/
 backend/src/modules/bed/, ward/, room/, ipd-flow/
 
-Related prompts: prompts/05-ipd-module-prompt.md, prompts/23-tenant-facility-module-prompt.md, prompts/17-housekeeping-module-prompt.md
+Related prompts: prompts/19-ipd-module-prompt.md, prompts/03-tenant-facility-module-prompt.md, prompts/27-housekeeping-module-prompt.md
 ```

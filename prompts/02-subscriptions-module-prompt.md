@@ -74,5 +74,5 @@ Complete **Subscription Management** for HOSSPI HMS so tenant admins and platfor
 frontend/lib/features/subscriptions/
 backend/src/modules/subscriptions-workspace/
 
-Related prompts: prompts/23-tenant-facility-module-prompt.md, prompts/24-access-admin-module-prompt.md
+Related prompts: prompts/03-tenant-facility-module-prompt.md, prompts/04-access-admin-module-prompt.md
 ```

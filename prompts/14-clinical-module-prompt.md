@@ -140,5 +140,5 @@ frontend/lib/shared/clinical_actions/
 backend/src/modules/clinical-note/, lab-order/, pharmacy-order/, radiology-order/
 backend/src/modules/opd-flow/, ipd-flow/
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/09-lab-module-prompt.md, prompts/10-pharmacy-module-prompt.md, prompts/19-radiology-module-prompt.md
+Related prompts: prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/16-lab-module-prompt.md, prompts/18-pharmacy-module-prompt.md, prompts/17-radiology-module-prompt.md
 ```

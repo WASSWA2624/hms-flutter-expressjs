@@ -187,5 +187,5 @@ backend/src/modules/radiology-workspace/
 frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart
 frontend/lib/shared/clinical_actions/clinical_radiology_catalog_helpers.dart
 
-Related prompts: prompts/03-clinical-module-prompt.md, prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/09-lab-module-prompt.md, prompts/12-billing-module-prompt.md
+Related prompts: prompts/14-clinical-module-prompt.md, prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/16-lab-module-prompt.md, prompts/09-billing-module-prompt.md
 ```

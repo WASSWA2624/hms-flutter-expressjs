@@ -97,5 +97,5 @@ Deliver a **search-first registry workspace**: fast lookup, safe registration, r
 frontend/lib/features/patients/
 backend/src/modules/patient/
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/02-emergency-module-prompt.md, prompts/21-triage-module-prompt.md
+Related prompts: prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/13-emergency-module-prompt.md, prompts/11-triage-module-prompt.md
 ```

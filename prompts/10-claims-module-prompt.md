@@ -9,7 +9,7 @@ Complete the **Insurance and Claims Module** for HOSSPI HMS so insurance desk st
 1. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Insurance and claims module boundaries vs Billing
 2. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §4 insurance authorization, deposit gates, discharge financial closure
 3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — consultation payment gate and payer context on OPD encounters
-4. [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) — shared claims/pre-auth work items in billing workspace
+4. [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md) — shared claims/pre-auth work items in billing workspace
 
 **Central rule:** coverage, pre-auth, and claims attach to **patient + payer + invoice/encounter** context. Claims module owns insurer workflow state — Billing owns invoice balances and cashier actions. Do not duplicate invoice line capture in Claims.
 
@@ -22,7 +22,7 @@ Deliver an **audit-ready insurance workspace** (standalone or integrated with Bi
 1. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Claims owns coverage, pre-auth, submission, tracking.
 2. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §4 payment timing, insurance/credit paths, discharge settlement.
 3. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — payer on worklist, payment gate.
-4. Re-read [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) — §3 insurance claims gaps in billing workspace.
+4. Re-read [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md) — §3 insurance claims gaps in billing workspace.
 
 ---
 
@@ -65,7 +65,7 @@ Deliver an **audit-ready insurance workspace** (standalone or integrated with Bi
 | Frontend workspace | `frontend/lib/features/claims/` | `claims_workspace_page`, controller, repository |
 | Backend APIs | `/api/v1/insurance-claims`, `/pre-authorizations`, `/coverage-plans` | CRUD, submit, reconcile — **no** `claims-workspace` aggregator |
 | Billing workspace | `CLAIMS_PENDING` queue, claim work items | Overlaps — invoice-centric detail in billing |
-| Billing repository gaps | Partial claim/pre-auth mutations | See [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) §3 |
+| Billing repository gaps | Partial claim/pre-auth mutations | See [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md) §3 |
 | IPD references | Insurance desk role in ipd-flow §13 | Authorization gates not fully wired in IPD UI |
 
 ### Known gaps to close
@@ -138,5 +138,5 @@ backend/src/modules/pre-authorization/
 backend/src/modules/coverage-plan/
 frontend/lib/features/billing/
 
-Related prompts: prompts/12-billing-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/01-opd-module-prompt.md
+Related prompts: prompts/09-billing-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/12-opd-module-prompt.md
 ```

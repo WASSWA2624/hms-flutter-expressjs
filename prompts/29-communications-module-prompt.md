@@ -75,5 +75,5 @@ Complete **Notifications and Communications** for HOSSPI HMS: in-app notificatio
 frontend/lib/features/communications/
 backend/src/modules/communications-workspace/, notification/, conversation/
 
-Related prompts: prompts/28-home-dashboard-module-prompt.md, prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md
+Related prompts: prompts/07-home-dashboard-module-prompt.md, prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md
 ```

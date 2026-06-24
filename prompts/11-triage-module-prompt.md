@@ -10,7 +10,7 @@ Complete **OPD Triage** for HOSSPI HMS so nurses and front-office staff can capt
 2. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — `WAITING_VITALS`, nurse role §5, entry paths §2
 3. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — urgent routing to admission when triage indicates (via disposition, not triage-owned)
 
-**Central rule:** triage data attaches to the **OPD encounter** (or triage queue row linked to it). Triage does not create duplicate OPD encounters. Emergency cases use `triage-assessments` on the emergency case — coordinate boundaries with [prompts/02-emergency-module-prompt.md](./02-emergency-module-prompt.md).
+**Central rule:** triage data attaches to the **OPD encounter** (or triage queue row linked to it). Triage does not create duplicate OPD encounters. Emergency cases use `triage-assessments` on the emergency case — coordinate boundaries with [prompts/13-emergency-module-prompt.md](./13-emergency-module-prompt.md).
 
 **Note:** There is no standalone `features/triage/` route — triage is implemented across OPD workspace, Clinical worklist, Patient registry quick actions, and Emergency. This prompt defines the **cross-cutting triage contract** to keep implementations aligned.
 
@@ -59,7 +59,7 @@ Complete **OPD Triage** for HOSSPI HMS so nurses and front-office staff can capt
 ### Known gaps
 
 - Split model: `/triage` flow queue vs `/triage-assessments` on emergency cases
-- Nursing workspace lacks dedicated OPD vitals queue (see [prompts/04-nursing-module-prompt.md](./04-nursing-module-prompt.md))
+- Nursing workspace lacks dedicated OPD vitals queue (see [prompts/15-nursing-module-prompt.md](./15-nursing-module-prompt.md))
 - No dedicated triage workspace backend aggregator (unlike lab/pharmacy workbench)
 - OPD and Emergency triage UIs use different entities — document mapping
 - No standalone `/triage` route in Flutter router
@@ -95,5 +95,5 @@ backend/src/modules/opd-flow/
 frontend/lib/features/opd/
 frontend/lib/shared/ (triage/vitals components)
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/04-nursing-module-prompt.md, prompts/20-patients-module-prompt.md, prompts/02-emergency-module-prompt.md
+Related prompts: prompts/12-opd-module-prompt.md, prompts/15-nursing-module-prompt.md, prompts/08-patients-module-prompt.md, prompts/13-emergency-module-prompt.md
 ```

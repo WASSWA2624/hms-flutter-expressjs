@@ -40,7 +40,7 @@ Biomedical does not own patient encounters. Integration is **operational**:
 | Biomedical workspace | `backend/src/modules/biomedical-workspace/` | `GET /biomedical`, lookups, `POST /biomedical/fault-reports` |
 | Equipment modules | `equipment-work-order`, `equipment-registry`, `equipment-maintenance-plan`, calibration, downtime, spare-parts, etc. | Granular legacy CRUD |
 | Feature flag | `biomedical_workspace_v1` | Required for workspace |
-| Operations cross-link | Operations can convert to biomedical work order | See prompts/16-operations-module-prompt.md |
+| Operations cross-link | Operations can convert to biomedical work order | See prompts/26-operations-module-prompt.md |
 
 ### Known gaps to close
 
@@ -110,5 +110,5 @@ frontend/lib/features/biomedical/
 backend/src/modules/biomedical-workspace/
 backend/src/modules/equipment-work-order/, equipment-registry/
 
-Related prompts: prompts/16-operations-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/06-icu-module-prompt.md, prompts/07-theater-module-prompt.md
+Related prompts: prompts/26-operations-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/20-icu-module-prompt.md, prompts/21-theater-module-prompt.md
 ```

@@ -46,7 +46,7 @@ Complete **Authentication and Session** for HOSSPI HMS: login, logout, registrat
 
 - No forgot/reset-password UI (backend may exist)
 - No MFA, OAuth, or phone verification UI
-- Profile page does not refresh from `/auth/me` ([prompts/27-settings-profile-module-prompt.md](./27-settings-profile-module-prompt.md))
+- Profile page does not refresh from `/auth/me` ([prompts/06-settings-profile-module-prompt.md](./06-settings-profile-module-prompt.md))
 - Limited frontend tests for session edge cases
 - Tenant approval state UX after registration
 
@@ -80,5 +80,5 @@ frontend/lib/core/security/
 backend/src/modules/auth/
 frontend/lib/app/router/app_router.dart
 
-Related prompts: prompts/23-tenant-facility-module-prompt.md, prompts/27-settings-profile-module-prompt.md
+Related prompts: prompts/03-tenant-facility-module-prompt.md, prompts/06-settings-profile-module-prompt.md
 ```

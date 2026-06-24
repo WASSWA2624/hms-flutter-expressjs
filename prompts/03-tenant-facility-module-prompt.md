@@ -30,7 +30,7 @@ Complete **Tenant and Facility Settings** for HOSSPI HMS so platform, tenant, an
 | ---------- | ---------------- |
 | Tenant settings | Tenant profile, subscription relationship, enabled modules, tenant admins |
 | Facility settings | Facility identity, branches, departments, units, wards, beds, defaults |
-| Rooms, wards, beds | Physical structure — operational bed board is [prompts/22-rooms-beds-module-prompt.md](./22-rooms-beds-module-prompt.md) |
+| Rooms, wards, beds | Physical structure — operational bed board is [prompts/05-rooms-beds-module-prompt.md](./05-rooms-beds-module-prompt.md) |
 
 ---
 
@@ -40,13 +40,13 @@ Complete **Tenant and Facility Settings** for HOSSPI HMS so platform, tenant, an
 |------|----------------|-------|
 | Frontend | `frontend/lib/features/tenant_facility/` | `tenant_facility_setup_page.dart`, repository, catalog panels |
 | Backend | `tenant`, `facility`, `branch`, `department`, `unit`, `ward`, `room`, `bed`, `contact`, `address` | Granular CRUD |
-| Auth bootstrap | Registration may seed default tenant/facility | See [prompts/25-auth-module-prompt.md](./25-auth-module-prompt.md) |
-| Settings hub | Routes to tenant_facility for catalog sections | [prompts/27-settings-profile-module-prompt.md](./27-settings-profile-module-prompt.md) |
+| Auth bootstrap | Registration may seed default tenant/facility | See [prompts/01-auth-module-prompt.md](./01-auth-module-prompt.md) |
+| Settings hub | Routes to tenant_facility for catalog sections | [prompts/06-settings-profile-module-prompt.md](./06-settings-profile-module-prompt.md) |
 
 ### Known gaps
 
 - No backend `tenant-facility-workspace` aggregator — client composes many calls
-- Users/roles admin not in this feature ([prompts/24-access-admin-module-prompt.md](./24-access-admin-module-prompt.md))
+- Users/roles admin not in this feature ([prompts/04-access-admin-module-prompt.md](./04-access-admin-module-prompt.md))
 - Large monolithic setup page — split by entity or wizard steps
 - Facility clinical catalog (diagnoses, procedures) partially in shared clinical catalog UI
 - Validation gaps on optional branch/department fields
@@ -78,5 +78,5 @@ Complete **Tenant and Facility Settings** for HOSSPI HMS so platform, tenant, an
 frontend/lib/features/tenant_facility/
 backend/src/modules/tenant/, facility/, ward/, room/, bed/
 
-Related prompts: prompts/22-rooms-beds-module-prompt.md, prompts/26-subscriptions-module-prompt.md, prompts/24-access-admin-module-prompt.md
+Related prompts: prompts/05-rooms-beds-module-prompt.md, prompts/02-subscriptions-module-prompt.md, prompts/04-access-admin-module-prompt.md
 ```

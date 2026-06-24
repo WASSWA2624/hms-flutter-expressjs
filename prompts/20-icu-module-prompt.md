@@ -300,7 +300,7 @@ Implement or finish the following, in priority order. Each item maps to `icu-flo
 - Show billing snapshot on detail when API provides: `Billing Deferred`, deposit status, insurance pre-auth, running balance.
 - Gate elective high-cost ICU procedures on clearance when policy requires; emergency path allows proceed-first-bill-later.
 - Orders from ICU use shared billing panel — charges post to IPD bill automatically.
-- Link to billing workspace for deposits and interim bills (see [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md)).
+- Link to billing workspace for deposits and interim bills (see [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md)).
 
 ---
 

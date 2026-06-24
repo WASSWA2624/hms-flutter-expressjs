@@ -135,5 +135,5 @@ frontend/lib/features/lab/
 backend/src/modules/lab-workspace/
 frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart
 
-Related prompts: prompts/03-clinical-module-prompt.md, prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/12-billing-module-prompt.md, prompts/19-radiology-module-prompt.md
+Related prompts: prompts/14-clinical-module-prompt.md, prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/09-billing-module-prompt.md, prompts/17-radiology-module-prompt.md
 ```

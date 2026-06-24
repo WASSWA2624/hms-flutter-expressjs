@@ -82,5 +82,5 @@ Seed must support steps 1–7:
 backend/scripts/seeders/
 backend/env.template.txt
 
-Related prompts: prompts/01-opd-module-prompt.md, prompts/05-ipd-module-prompt.md, prompts/25-auth-module-prompt.md, prompts/26-subscriptions-module-prompt.md
+Related prompts: prompts/12-opd-module-prompt.md, prompts/19-ipd-module-prompt.md, prompts/01-auth-module-prompt.md, prompts/02-subscriptions-module-prompt.md
 ```
