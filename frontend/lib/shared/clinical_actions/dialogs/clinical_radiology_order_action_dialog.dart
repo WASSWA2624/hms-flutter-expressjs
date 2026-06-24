@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
@@ -68,6 +69,7 @@ class _RadiologyOrderDialogState
     extends State<ClinicalRadiologyOrderActionDialog> {
   final List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
   int? _editingIndex;
+  String? _focusedSelectionId;
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
@@ -183,46 +185,76 @@ class _RadiologyOrderDialogState
 
   Widget _buildSelectedPanel(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalRadiologyRequestSelectedTitle,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+    final _PendingRadiologyRequest? focusedRequest = _focusedRequest();
+    final List<AppSelectOption<String>> options = <AppSelectOption<String>>[
+      for (final _PendingRadiologyRequest request in _requests)
+        AppSelectOption<String>(
+          value: request.id,
+          label: request.option.displayTitle,
+          searchText: clinicalCatalogOptionSearchText(
+            request.option,
+            extra: <String?>[
+              request.modality,
+              request.bodyRegion,
+              request.laterality,
+              request.priority,
+              request.clinicalNote,
+            ],
+          ),
+          leadingIcon: Icon(clinicalRadiologyCatalogIcon(request.option)),
+          labelWidget: ClinicalCatalogOptionLabel(
+            option: request.option,
+            subtitle: clinicalActionJoinDisplay(<String?>[
+              clinicalRadiologyModalityDisplayLabel(
+                l10n,
+                request.modality ??
+                    clinicalRadiologyOptionModality(request.option),
               ),
-            ),
+              request.bodyRegion ??
+                  clinicalRadiologyOptionBodyRegion(request.option),
+              clinicalRadiologyLateralityLabel(l10n, request.laterality),
+              request.priority == null
+                  ? null
+                  : clinicalActionApiLabel(request.priority!),
+              request.clinicalNote,
+            ]),
           ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: _requests.isEmpty
-                ? Center(child: Text(l10n.clinicalRadiologyRequestNoSelection))
-                : ListView.separated(
-                    itemCount: _requests.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      return _RadiologySelectedRequestRow(
-                        request: _requests[index],
-                        isEditing: _editingIndex == index,
-                        isSaving: _isSaving,
-                        onEdit: () => _editRequest(index),
-                        onDelete: () => _deleteRequest(index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+        ),
+    ];
+
+    return ClinicalRequestSelectionManager(
+      title: l10n.clinicalRadiologyRequestSelectedTitle,
+      emptyLabel: l10n.clinicalRadiologyRequestNoSelection,
+      options: options,
+      value: _focusedSelectionId,
+      enabled: !_isSaving,
+      onChanged: (String? value) {
+        setState(() => _focusedSelectionId = value);
+      },
+      onEdit: focusedRequest == null
+          ? null
+          : () => _editRequest(_requestIndex(focusedRequest)),
+      onDelete: focusedRequest == null
+          ? null
+          : () => _deleteRequest(_requestIndex(focusedRequest)),
+    );
+  }
+
+  _PendingRadiologyRequest? _focusedRequest() {
+    if (_focusedSelectionId == null) {
+      return null;
+    }
+    for (final _PendingRadiologyRequest request in _requests) {
+      if (request.id == _focusedSelectionId) {
+        return request;
+      }
+    }
+    return null;
+  }
+
+  int _requestIndex(_PendingRadiologyRequest request) {
+    return _requests.indexWhere(
+      (_PendingRadiologyRequest item) => item.id == request.id,
     );
   }
 
@@ -306,8 +338,12 @@ class _RadiologyOrderDialogState
     if (index < 0 || index >= _requests.length) {
       return;
     }
+    final String removedId = _requests[index].id;
     setState(() {
       _requests.removeAt(index);
+      if (_focusedSelectionId == removedId) {
+        _focusedSelectionId = null;
+      }
       if (_editingIndex == index) {
         _editingIndex = null;
       } else if (_editingIndex case final int editingIndex
@@ -371,115 +407,5 @@ class _RadiologyOrderDialogState
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _RadiologySelectedRequestRow extends StatelessWidget {
-  const _RadiologySelectedRequestRow({
-    required this.request,
-    required this.isEditing,
-    required this.isSaving,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final _PendingRadiologyRequest request;
-  final bool isEditing;
-  final bool isSaving;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = clinicalActionJoinDisplay(<String?>[
-      clinicalRadiologyModalityDisplayLabel(
-        l10n,
-        request.modality ?? clinicalRadiologyOptionModality(request.option),
-      ),
-      request.bodyRegion ?? clinicalRadiologyOptionBodyRegion(request.option),
-      clinicalRadiologyLateralityLabel(l10n, request.laterality),
-      request.priority == null
-          ? null
-          : clinicalActionApiLabel(request.priority!),
-      request.option.status,
-    ]);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isEditing
-            ? colorScheme.primaryContainer.withValues(alpha: 0.38)
-            : null,
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              clinicalRadiologyCatalogIcon(request.option),
-              color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    request.option.displayTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  if (clinicalActionHasText(request.clinicalNote))
-                    Text(
-                      request.clinicalNote!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  Text(
-                    clinicalRequestCatalogPriceLabel(context, request.option),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: l10n.clinicalRadiologyEditSelectionAction,
-              onPressed: isSaving ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: l10n.clinicalRadiologyDeleteSelectionAction,
-              onPressed: isSaving ? null : onDelete,
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

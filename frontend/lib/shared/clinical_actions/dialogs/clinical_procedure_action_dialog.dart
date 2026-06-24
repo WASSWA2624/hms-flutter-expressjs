@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_procedure_catalog_dialog.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -37,6 +38,7 @@ class ClinicalProcedureActionDialog extends StatefulWidget {
 class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
   final List<ClinicalActionCatalogOption> _selectedProcedures =
       <ClinicalActionCatalogOption>[];
+  String? _focusedProcedureId;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -70,13 +72,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
               onAddItems: _openCatalogPicker,
             ),
             SizedBox(height: theme.spacing.md),
-            Expanded(
-              child: _ProcedureSelectedPanel(
-                procedures: _selectedProcedures,
-                isSaving: _isSaving,
-                onDelete: _removeProcedure,
-              ),
-            ),
+            Expanded(child: _buildSelectedPanel(context)),
           ],
         ),
       ),
@@ -93,6 +89,58 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
           onPressed: _submit,
         ),
       ],
+    );
+  }
+
+  Widget _buildSelectedPanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ClinicalActionCatalogOption? focusedProcedure =
+        _focusedProcedure();
+
+    return ClinicalRequestSelectionManager(
+      title: l10n.clinicalProcedureSelectedTitle,
+      emptyLabel: l10n.clinicalProcedureNoSelection,
+      options: clinicalCatalogSelectOptions(
+        _selectedProcedures,
+        icon: Icons.healing_outlined,
+        labelBuilder: (ClinicalActionCatalogOption procedure) {
+          return ClinicalCatalogOptionLabel(
+            option: procedure,
+            title: _procedureTitle(procedure),
+            subtitle: clinicalActionJoinDisplay(<String?>[
+              clinicalActionTrimmedOrNull(procedure.code),
+              procedure.displaySubtitle,
+            ]),
+          );
+        },
+      ),
+      value: _focusedProcedureId,
+      enabled: !_isSaving,
+      onChanged: (String? value) {
+        setState(() => _focusedProcedureId = value);
+      },
+      onEdit: null,
+      onDelete: focusedProcedure == null
+          ? null
+          : () => _removeProcedure(_procedureIndex(focusedProcedure)),
+    );
+  }
+
+  ClinicalActionCatalogOption? _focusedProcedure() {
+    if (_focusedProcedureId == null) {
+      return null;
+    }
+    for (final ClinicalActionCatalogOption procedure in _selectedProcedures) {
+      if (procedure.apiId == _focusedProcedureId) {
+        return procedure;
+      }
+    }
+    return null;
+  }
+
+  int _procedureIndex(ClinicalActionCatalogOption procedure) {
+    return _selectedProcedures.indexWhere(
+      (ClinicalActionCatalogOption item) => item.apiId == procedure.apiId,
     );
   }
 
@@ -118,8 +166,12 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
     if (index < 0 || index >= _selectedProcedures.length) {
       return;
     }
+    final String removedId = _selectedProcedures[index].apiId;
     setState(() {
       _selectedProcedures.removeAt(index);
+      if (_focusedProcedureId == removedId) {
+        _focusedProcedureId = null;
+      }
       _failure = null;
     });
   }
@@ -154,142 +206,6 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _ProcedureSelectedPanel extends StatelessWidget {
-  const _ProcedureSelectedPanel({
-    required this.procedures,
-    required this.isSaving,
-    required this.onDelete,
-  });
-
-  final List<ClinicalActionCatalogOption> procedures;
-  final bool isSaving;
-  final ValueChanged<int> onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.clinicalProcedureSelectedTitle,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
-                Text(
-                  l10n.clinicalProcedureSelectedCount(procedures.length),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: procedures.isEmpty
-                ? Center(child: Text(l10n.clinicalProcedureNoSelection))
-                : ListView.separated(
-                    itemCount: procedures.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      return _ProcedureSelectedRow(
-                        procedure: procedures[index],
-                        isSaving: isSaving,
-                        onDelete: () => onDelete(index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProcedureSelectedRow extends StatelessWidget {
-  const _ProcedureSelectedRow({
-    required this.procedure,
-    required this.isSaving,
-    required this.onDelete,
-  });
-
-  final ClinicalActionCatalogOption procedure;
-  final bool isSaving;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = clinicalActionJoinDisplay(<String?>[
-      clinicalActionTrimmedOrNull(procedure.code),
-      procedure.displaySubtitle,
-    ]);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Icons.healing_outlined,
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  _procedureTitle(procedure),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
-            onPressed: isSaving ? null : onDelete,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-    );
   }
 }
 

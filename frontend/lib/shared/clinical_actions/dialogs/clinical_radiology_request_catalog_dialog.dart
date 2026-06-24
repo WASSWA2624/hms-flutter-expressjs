@@ -5,9 +5,9 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 @immutable
@@ -114,7 +114,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
     final bool selectedIsDuplicate = selectedCatalogOption != null &&
         widget.isDuplicate(selectedCatalogOption);
     final List<AppSelectOption<String>> catalogSelectOptions =
-        _radiologyCatalogSelectOptions(visibleCatalogOptions);
+        clinicalRadiologyCatalogSelectOptions(l10n, visibleCatalogOptions);
     final List<AppSelectOption<String>> modalityOptions =
         clinicalRadiologyModalityOptions(
           l10n,
@@ -241,11 +241,21 @@ class _ClinicalRadiologyRequestCatalogDialogState
             ),
             SizedBox(height: theme.spacing.md),
             Expanded(
-              child: _RadiologyCatalogSelectPanel(
-                value: _selectedCatalogId,
+              child: ClinicalCatalogSelectPanel(
+                title: l10n.clinicalRadiologyCatalogSelectTitle,
+                body: catalogSelectOptions.isEmpty
+                    ? l10n.clinicalRadiologyRequestNoCatalogOptions
+                    : l10n.clinicalRadiologyCatalogSelectBody,
+                labelText: l10n.clinicalRadiologyCatalogSelectLabel,
+                hintText: l10n.clinicalRadiologyCatalogSelectHint,
                 options: catalogSelectOptions,
+                value: _selectedCatalogId,
                 isEditing: _isEditing,
                 selectedIsDuplicate: selectedIsDuplicate,
+                addLabel: l10n.clinicalRadiologyAddSelectionAction,
+                updateLabel: l10n.clinicalRadiologyUpdateSelectionAction,
+                duplicateMessage:
+                    l10n.clinicalRadiologyDuplicateSelectionMessage,
                 onChanged: (String? value) {
                   setState(() => _selectedCatalogId = value);
                 },
@@ -403,99 +413,6 @@ class _ClinicalRadiologyRequestCatalogDialogState
   }
 }
 
-class _RadiologyCatalogSelectPanel extends StatelessWidget {
-  const _RadiologyCatalogSelectPanel({
-    required this.value,
-    required this.options,
-    required this.isEditing,
-    required this.selectedIsDuplicate,
-    required this.onChanged,
-    required this.onSearchTextChanged,
-    required this.onAdd,
-  });
-
-  final String? value;
-  final List<AppSelectOption<String>> options;
-  final bool isEditing;
-  final bool selectedIsDuplicate;
-  final ValueChanged<String?> onChanged;
-  final ValueChanged<String> onSearchTextChanged;
-  final VoidCallback? onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String actionLabel = isEditing
-        ? l10n.clinicalRadiologyUpdateSelectionAction
-        : l10n.clinicalRadiologyAddSelectionAction;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              l10n.clinicalRadiologyCatalogSelectTitle,
-              style: theme.textTheme.labelLarge,
-            ),
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              options.isEmpty
-                  ? l10n.clinicalRadiologyRequestNoCatalogOptions
-                  : l10n.clinicalRadiologyCatalogSelectBody,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: AppSelectField<String>.searchable(
-                    value: value,
-                    labelText: l10n.clinicalRadiologyCatalogSelectLabel,
-                    hintText: l10n.clinicalRadiologyCatalogSelectHint,
-                    options: options,
-                    onChanged: onChanged,
-                    onSearchTextChanged: onSearchTextChanged,
-                    menuHeight: 360,
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Padding(
-                  padding: EdgeInsets.only(top: theme.spacing.xs),
-                  child: AppButton.primary(
-                    label: actionLabel,
-                    leadingIcon: isEditing ? Icons.done_outlined : Icons.add,
-                    enabled: !selectedIsDuplicate && onAdd != null,
-                    onPressed: selectedIsDuplicate ? null : onAdd,
-                  ),
-                ),
-              ],
-            ),
-            if (selectedIsDuplicate) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                l10n.clinicalRadiologyDuplicateSelectionMessage,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.error,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _RadiologyBodyRegionPicker extends StatelessWidget {
   const _RadiologyBodyRegionPicker({
     required this.regions,
@@ -559,84 +476,6 @@ class _RadiologyBodyRegionPicker extends StatelessWidget {
                 },
               ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-List<AppSelectOption<String>> _radiologyCatalogSelectOptions(
-  List<ClinicalActionCatalogOption> options,
-) {
-  return <AppSelectOption<String>>[
-    for (final ClinicalActionCatalogOption option in options)
-      AppSelectOption<String>(
-        value: option.apiId,
-        label: option.displayTitle,
-        searchText: clinicalActionJoinDisplay(<String?>[
-          option.apiId,
-          option.displayTitle,
-          option.displaySubtitle,
-          clinicalRadiologyOptionModality(option),
-          clinicalRadiologyOptionBodyRegion(option),
-          clinicalRadiologyOptionLaterality(option),
-          clinicalRadiologyOptionPriority(option),
-          option.searchText,
-        ]),
-        leadingIcon: Icon(clinicalRadiologyCatalogIcon(option)),
-        labelWidget: _RadiologyCatalogOptionLabel(option: option),
-      ),
-  ];
-}
-
-class _RadiologyCatalogOptionLabel extends StatelessWidget {
-  const _RadiologyCatalogOptionLabel({required this.option});
-
-  final ClinicalActionCatalogOption option;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppLocalizations l10n = context.l10n;
-    final String subtitle = clinicalActionJoinDisplay(<String?>[
-      clinicalRadiologyModalityDisplayLabel(
-        l10n,
-        clinicalRadiologyOptionModality(option),
-      ),
-      clinicalRadiologyOptionBodyRegion(option),
-      clinicalRadiologyOptionLaterality(option),
-      clinicalRadiologyOptionPriority(option),
-      option.status,
-      option.displaySubtitle,
-    ]);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          option.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (subtitle.isNotEmpty)
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        Text(
-          clinicalRequestCatalogPriceLabel(context, option),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: colorScheme.primary,
-            fontWeight: FontWeight.w600,
-          ),
         ),
       ],
     );

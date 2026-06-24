@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
@@ -41,6 +42,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   ClinicalRequestBillingSubmit? _billingSubmit;
   ClinicalRequestPaymentMode _dispenseBillingMode =
       ClinicalRequestPaymentMode.billLater;
+  String? _focusedLineId;
 
   @override
   void initState() {
@@ -148,54 +150,88 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   Widget _buildSelectedLinesPanel(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final _PrescriptionLineFormState? focusedLine = _focusedLine();
+    final List<AppSelectOption<String>> options = <AppSelectOption<String>>[
+      for (final _PrescriptionLineFormState line in _lines)
+        AppSelectOption<String>(
+          value: line.id.toString(),
+          label: clinicalActionCatalogDisplayLabelById(
+                widget.referenceData.drugs,
+                line.drugId,
+              ) ??
+              l10n.clinicalPrescriptionNoMedicinesLabel,
+          searchText: clinicalPrescriptionReadableSummary(
+            drugName: clinicalActionCatalogDisplayLabelById(
+              widget.referenceData.drugs,
+              line.drugId,
+            ),
+            quantity: line.quantityController.text.trim(),
+            quantityUnit: line.quantityUnit,
+            doseAmount: line.doseAmountController.text.trim(),
+            doseUnit: line.doseUnit,
+            route: line.route,
+            frequency: line.frequency,
+            durationValue: line.durationController.text.trim(),
+            durationUnit: line.durationUnit,
+            instructions: line.instructionsController.text.trim(),
+          ).toLowerCase(),
+          leadingIcon: const Icon(Icons.medication_outlined),
+          labelWidget: Text(
+            clinicalPrescriptionReadableSummary(
+              drugName: clinicalActionCatalogDisplayLabelById(
+                widget.referenceData.drugs,
+                line.drugId,
+              ),
+              quantity: line.quantityController.text.trim(),
+              quantityUnit: line.quantityUnit,
+              doseAmount: line.doseAmountController.text.trim(),
+              doseUnit: line.doseUnit,
+              route: line.route,
+              frequency: line.frequency,
+              durationValue: line.durationController.text.trim(),
+              durationUnit: line.durationUnit,
+              instructions: line.instructionsController.text.trim(),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+    ];
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalPrescriptionHeaderTitle,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+    return ClinicalRequestSelectionManager(
+      title: l10n.clinicalPrescriptionHeaderTitle,
+      emptyLabel: l10n.clinicalPrescriptionNoMedicinesLabel,
+      options: options,
+      value: _focusedLineId,
+      enabled: !_isSaving,
+      onChanged: (String? value) {
+        setState(() => _focusedLineId = value);
+      },
+      onEdit: focusedLine == null
+          ? null
+          : () => _openLineDialog(
+              editIndex: _lines.indexWhere(
+                (_PrescriptionLineFormState line) =>
+                    line.id == focusedLine.id,
               ),
             ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: _lines.isEmpty
-                ? Center(
-                    child: Text(l10n.clinicalPrescriptionNoMedicinesLabel),
-                  )
-                : ListView.separated(
-              itemCount: _lines.length,
-              separatorBuilder: (_, _) =>
-                  Divider(height: 1, color: colorScheme.outlineVariant),
-              itemBuilder: (BuildContext context, int index) {
-                final _PrescriptionLineFormState line = _lines[index];
-                return _PrescriptionLineSummaryRow(
-                  index: index,
-                  line: line,
-                  drugLabel: clinicalActionCatalogDisplayLabelById(
-                    widget.referenceData.drugs,
-                    line.drugId,
-                  ),
-                  enabled: !_isSaving,
-                  canRemove: _lines.length > 1,
-                  onEdit: () => _openLineDialog(editIndex: index),
-                  onRemove: () => _removeLine(line),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+      onDelete: focusedLine == null || _lines.length <= 1
+          ? null
+          : () => _removeLine(focusedLine),
     );
+  }
+
+  _PrescriptionLineFormState? _focusedLine() {
+    if (_focusedLineId == null) {
+      return null;
+    }
+    for (final _PrescriptionLineFormState line in _lines) {
+      if (line.id.toString() == _focusedLineId) {
+        return line;
+      }
+    }
+    return null;
   }
 
   Future<void> _openLineDialog({int? editIndex}) async {
@@ -297,6 +333,9 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
 
   void _removeLine(_PrescriptionLineFormState line) {
     setState(() {
+      if (_focusedLineId == line.id.toString()) {
+        _focusedLineId = null;
+      }
       _lines.remove(line);
       line.dispose();
     });
@@ -416,98 +455,6 @@ class _PrescriptionLineFormState {
     doseAmountController.dispose();
     durationController.dispose();
     instructionsController.dispose();
-  }
-}
-
-class _PrescriptionLineSummaryRow extends StatelessWidget {
-  const _PrescriptionLineSummaryRow({
-    required this.index,
-    required this.line,
-    required this.drugLabel,
-    required this.enabled,
-    required this.canRemove,
-    required this.onEdit,
-    required this.onRemove,
-  });
-
-  final int index;
-  final _PrescriptionLineFormState line;
-  final String? drugLabel;
-  final bool enabled;
-  final bool canRemove;
-  final VoidCallback onEdit;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String summary = clinicalPrescriptionReadableSummary(
-      drugName: drugLabel,
-      quantity: line.quantityController.text.trim(),
-      quantityUnit: line.quantityUnit,
-      doseAmount: line.doseAmountController.text.trim(),
-      doseUnit: line.doseUnit,
-      route: line.route,
-      frequency: line.frequency,
-      durationValue: line.durationController.text.trim(),
-      durationUnit: line.durationUnit,
-      instructions: line.instructionsController.text.trim(),
-    );
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(
-            Icons.medication_outlined,
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  '${index + 1}. ${drugLabel ?? l10n.clinicalPrescriptionDrugLabel}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  summary,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.clinicalLabRequestEditSelectionAction,
-            onPressed: enabled ? onEdit : null,
-            icon: const Icon(Icons.edit_outlined),
-          ),
-          if (canRemove)
-            IconButton(
-              tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
-              onPressed: enabled ? onRemove : null,
-              icon: const Icon(Icons.delete_outline),
-            ),
-        ],
-      ),
-    );
   }
 }
 

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -50,12 +51,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   static const int _searchLimit = 80;
   static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
 
-  late final TextEditingController _searchController;
   Timer? _searchDebounce;
   String _diagnosisType = 'PRIMARY';
   ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
   String _searchQuery = '';
   int _searchRequest = 0;
+  String? _selectedCatalogId;
+  String? _focusedDiagnosisId;
   List<ClinicalActionCatalogOption> _catalogOptions =
       const <ClinicalActionCatalogOption>[];
   final List<ClinicalActionCatalogOption> _selectedDiagnoses =
@@ -67,7 +69,6 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
     _searchRequest += 1;
     unawaited(_loadDiagnosisCatalog('', _searchRequest));
   }
@@ -75,7 +76,6 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -126,52 +126,19 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
               },
             ),
             SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _searchController,
-              labelText: l10n.clinicalDiagnosisSearchLabel,
-              hintText: l10n.clinicalDiagnosisSearchHint,
-              enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.manage_search_outlined),
-              suffixIcon: _searchController.text.isEmpty
-                  ? null
-                  : AppIconButton(
-                      icon: Icons.close,
-                      semanticLabel: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      onPressed: _isSaving ? null : _clearSearch,
-                    ),
-              onChanged: _scheduleSearch,
-            ),
-            if (_isSearching) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              const LinearProgressIndicator(),
-            ],
-            SizedBox(height: theme.spacing.md),
             Expanded(
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool twoColumns = constraints.maxWidth >= 760;
-                  final Widget catalogPanel = _DiagnosisCatalogResultsPanel(
-                    results: searchResults,
-                    isSaving: _isSaving,
-                    onSelected: _addDiagnosis,
-                    isDuplicate: _isDuplicateSelection,
-                  );
-                  final Widget selectedPanel = _DiagnosisSelectedPanel(
-                    diagnoses: _selectedDiagnoses,
-                    diagnosisType: _diagnosisType,
-                    isSaving: _isSaving,
-                    onDelete: _removeDiagnosis,
-                  );
+                  final Widget catalogPanel =
+                      _buildCatalogPanel(context, searchResults);
+                  final Widget selectedPanel =
+                      _buildSelectedDiagnosesPanel(context);
 
                   if (!twoColumns) {
                     return Column(
                       children: <Widget>[
-                        Expanded(child: catalogPanel),
+                        catalogPanel,
                         SizedBox(height: theme.spacing.md),
                         Expanded(child: selectedPanel),
                       ],
@@ -248,7 +215,10 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   void _scheduleSearch(String value) {
     _searchDebounce?.cancel();
     final String query = value.trim();
-    setState(() => _searchQuery = query);
+    setState(() {
+      _searchQuery = query;
+      _selectedCatalogId = null;
+    });
     _searchDebounce = Timer(_searchDebounceDuration, () {
       if (!mounted) {
         return;
@@ -282,23 +252,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     });
   }
 
-  void _clearSearch() {
-    _searchDebounce?.cancel();
-    _searchRequest += 1;
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _failure = null;
-    });
-    unawaited(_loadDiagnosisCatalog('', _searchRequest));
-  }
-
   void _addDiagnosis(ClinicalActionCatalogOption option) {
     if (_isDuplicateSelection(option)) {
       return;
     }
     setState(() {
       _selectedDiagnoses.add(option);
+      _selectedCatalogId = null;
       _failure = null;
     });
   }
@@ -307,10 +267,114 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     if (index < 0 || index >= _selectedDiagnoses.length) {
       return;
     }
+    final String removedId = _selectedDiagnoses[index].apiId;
     setState(() {
       _selectedDiagnoses.removeAt(index);
+      if (_focusedDiagnosisId == removedId) {
+        _focusedDiagnosisId = null;
+      }
       _failure = null;
     });
+  }
+
+  Widget _buildCatalogPanel(
+    BuildContext context,
+    _DiagnosisCatalogSearchResults searchResults,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final List<ClinicalActionCatalogOption> options = searchResults.options;
+    final List<AppSelectOption<String>> selectOptions =
+        clinicalCatalogSelectOptions(
+      options,
+      icon: Icons.medical_information_outlined,
+      labelBuilder: (ClinicalActionCatalogOption option) {
+        return ClinicalCatalogOptionLabel(
+          option: option,
+          title: _diagnosisTitle(option),
+          subtitle: _diagnosisSubtitle(option),
+        );
+      },
+    );
+    final ClinicalActionCatalogOption? selectedOption =
+        clinicalActionCatalogOptionById(options, _selectedCatalogId);
+    final bool selectedIsDuplicate = selectedOption != null &&
+        _isDuplicateSelection(selectedOption);
+
+    return ClinicalCatalogSelectPanel(
+      title: l10n.clinicalDiagnosisMatchesLabel(
+        options.length,
+        searchResults.totalMatches,
+      ),
+      body: options.isEmpty
+          ? l10n.clinicalDiagnosisNoCatalogOptions
+          : l10n.clinicalDiagnosisSearchHint,
+      labelText: l10n.clinicalDiagnosisSearchLabel,
+      hintText: l10n.clinicalDiagnosisSearchHint,
+      options: selectOptions,
+      value: _selectedCatalogId,
+      enabled: !_isSaving,
+      isLoading: _isSearching,
+      selectedIsDuplicate: selectedIsDuplicate,
+      duplicateMessage: l10n.clinicalRadiologyDuplicateSelectionMessage,
+      onChanged: (String? value) {
+        setState(() => _selectedCatalogId = value);
+      },
+      onSearchTextChanged: _scheduleSearch,
+      onAdd: selectedOption == null || selectedIsDuplicate
+          ? null
+          : () => _addDiagnosis(selectedOption),
+    );
+  }
+
+  Widget _buildSelectedDiagnosesPanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ClinicalActionCatalogOption? focusedDiagnosis = _focusedDiagnosis();
+
+    return ClinicalRequestSelectionManager(
+      title: l10n.clinicalDiagnosisSelectedTitle,
+      emptyLabel: l10n.clinicalDiagnosisNoSelection,
+      options: clinicalCatalogSelectOptions(
+        _selectedDiagnoses,
+        icon: Icons.rule_outlined,
+        labelBuilder: (ClinicalActionCatalogOption option) {
+          return ClinicalCatalogOptionLabel(
+            option: option,
+            title: _diagnosisTitle(option),
+            subtitle: clinicalActionJoinDisplay(<String?>[
+              clinicalActionApiLabel(_diagnosisType),
+              _diagnosisSubtitle(option),
+            ]),
+          );
+        },
+      ),
+      value: _focusedDiagnosisId,
+      enabled: !_isSaving,
+      onChanged: (String? value) {
+        setState(() => _focusedDiagnosisId = value);
+      },
+      onEdit: null,
+      onDelete: focusedDiagnosis == null
+          ? null
+          : () => _removeDiagnosis(_diagnosisIndex(focusedDiagnosis)),
+    );
+  }
+
+  ClinicalActionCatalogOption? _focusedDiagnosis() {
+    if (_focusedDiagnosisId == null) {
+      return null;
+    }
+    for (final ClinicalActionCatalogOption diagnosis in _selectedDiagnoses) {
+      if (diagnosis.apiId == _focusedDiagnosisId) {
+        return diagnosis;
+      }
+    }
+    return null;
+  }
+
+  int _diagnosisIndex(ClinicalActionCatalogOption diagnosis) {
+    return _selectedDiagnoses.indexWhere(
+      (ClinicalActionCatalogOption item) => item.apiId == diagnosis.apiId,
+    );
   }
 
   bool _isDuplicateSelection(ClinicalActionCatalogOption option) {
@@ -354,281 +418,6 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _DiagnosisCatalogResultsPanel extends StatelessWidget {
-  const _DiagnosisCatalogResultsPanel({
-    required this.results,
-    required this.isSaving,
-    required this.onSelected,
-    required this.isDuplicate,
-  });
-
-  final _DiagnosisCatalogSearchResults results;
-  final bool isSaving;
-  final ValueChanged<ClinicalActionCatalogOption> onSelected;
-  final bool Function(ClinicalActionCatalogOption option) isDuplicate;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<ClinicalActionCatalogOption> options = results.options;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalDiagnosisMatchesLabel(
-                options.length,
-                results.totalMatches,
-              ),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: options.isEmpty
-                ? Center(child: Text(l10n.clinicalDiagnosisNoCatalogOptions))
-                : ListView.separated(
-                    itemCount: options.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      final ClinicalActionCatalogOption option = options[index];
-                      final bool duplicate = isDuplicate(option);
-                      return _DiagnosisCatalogOptionRow(
-                        option: option,
-                        isSaving: isSaving,
-                        isDuplicate: duplicate,
-                        onSelected: duplicate ? null : () => onSelected(option),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DiagnosisCatalogOptionRow extends StatelessWidget {
-  const _DiagnosisCatalogOptionRow({
-    required this.option,
-    required this.isSaving,
-    required this.isDuplicate,
-    required this.onSelected,
-  });
-
-  final ClinicalActionCatalogOption option;
-  final bool isSaving;
-  final bool isDuplicate;
-  final VoidCallback? onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = _diagnosisSubtitle(option);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Icons.medical_information_outlined,
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  _diagnosisTitle(option),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          TextButton.icon(
-            onPressed: isSaving || isDuplicate ? null : onSelected,
-            icon: Icon(Icons.add, size: theme.appTokens.listIconSize),
-            label: Text(l10n.clinicalLabRequestAddSelectionAction),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DiagnosisSelectedPanel extends StatelessWidget {
-  const _DiagnosisSelectedPanel({
-    required this.diagnoses,
-    required this.diagnosisType,
-    required this.isSaving,
-    required this.onDelete,
-  });
-
-  final List<ClinicalActionCatalogOption> diagnoses;
-  final String diagnosisType;
-  final bool isSaving;
-  final ValueChanged<int> onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.clinicalDiagnosisSelectedTitle,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
-                Text(
-                  l10n.clinicalDiagnosisSelectedCount(diagnoses.length),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: diagnoses.isEmpty
-                ? Center(child: Text(l10n.clinicalDiagnosisNoSelection))
-                : ListView.separated(
-                    itemCount: diagnoses.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      return _DiagnosisSelectedRow(
-                        option: diagnoses[index],
-                        diagnosisType: diagnosisType,
-                        isSaving: isSaving,
-                        onDelete: () => onDelete(index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DiagnosisSelectedRow extends StatelessWidget {
-  const _DiagnosisSelectedRow({
-    required this.option,
-    required this.diagnosisType,
-    required this.isSaving,
-    required this.onDelete,
-  });
-
-  final ClinicalActionCatalogOption option;
-  final String diagnosisType;
-  final bool isSaving;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = clinicalActionJoinDisplay(<String?>[
-      clinicalActionApiLabel(diagnosisType),
-      _diagnosisSubtitle(option),
-    ]);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Icons.rule_outlined,
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  _diagnosisTitle(option),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
-            onPressed: isSaving ? null : onDelete,
-            icon: const Icon(Icons.delete_outline),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -337,4 +338,52 @@ bool _containsAny(String haystack, Iterable<String> needles) {
     }
   }
   return false;
+}
+
+List<AppSelectOption<String>> clinicalRadiologyCatalogSelectOptions(
+  AppLocalizations l10n,
+  List<ClinicalActionCatalogOption> options,
+) {
+  return clinicalCatalogSelectOptions(
+    options,
+    iconBuilder: clinicalRadiologyCatalogIcon,
+    extraSearchValues: (ClinicalActionCatalogOption option) =>
+        <String?>[
+      clinicalRadiologyOptionModality(option),
+      clinicalRadiologyOptionBodyRegion(option),
+      clinicalRadiologyOptionLaterality(option),
+      clinicalRadiologyOptionPriority(option),
+    ],
+    labelBuilder: (ClinicalActionCatalogOption option) =>
+        ClinicalRadiologyCatalogOptionLabel(l10n: l10n, option: option),
+  );
+}
+
+class ClinicalRadiologyCatalogOptionLabel extends StatelessWidget {
+  const ClinicalRadiologyCatalogOptionLabel({
+    required this.l10n,
+    required this.option,
+    super.key,
+  });
+
+  final AppLocalizations l10n;
+  final ClinicalActionCatalogOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClinicalCatalogOptionLabel(
+      option: option,
+      subtitle: clinicalActionJoinDisplay(<String?>[
+        clinicalRadiologyModalityDisplayLabel(
+          l10n,
+          clinicalRadiologyOptionModality(option),
+        ),
+        clinicalRadiologyOptionBodyRegion(option),
+        clinicalRadiologyOptionLaterality(option),
+        clinicalRadiologyOptionPriority(option),
+        option.status,
+        option.displaySubtitle,
+      ]),
+    );
+  }
 }

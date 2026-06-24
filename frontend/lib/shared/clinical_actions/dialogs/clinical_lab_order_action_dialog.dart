@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart';
@@ -64,6 +65,7 @@ final class _PendingLabRequest {
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
   int? _editingIndex;
+  String? _focusedSelectionId;
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
@@ -145,63 +147,57 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
 
   Widget _buildSelectedPanel(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final _PendingLabRequest? focusedRequest = _focusedRequest();
+    final List<AppSelectOption<String>> options = clinicalCatalogSelectOptions(
+      _requests.map((_PendingLabRequest request) => request.option).toList(),
+      icon: Icons.science_outlined,
+      labelBuilder: (ClinicalActionCatalogOption option) {
+        final _PendingLabRequest request = _requests.firstWhere(
+          (_PendingLabRequest item) => item.option.apiId == option.apiId,
+        );
+        return ClinicalCatalogOptionLabel(
+          option: option,
+          subtitle: clinicalActionJoinDisplay(<String?>[
+            _labRequestTypeLabel(l10n, request.kind),
+            option.displaySubtitle,
+          ]),
+        );
+      },
+    );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalLabRequestSelectedTitle,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: _requests.isEmpty
-                ? Center(child: Text(l10n.clinicalLabRequestNoSelection))
-                : ListView.separated(
-                    itemCount: _requests.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      final _PendingLabRequest request = _requests[index];
-                      final String typeLabel = _labRequestTypeLabel(
-                        l10n,
-                        request.kind,
-                      );
-                      return ClinicalRequestSelectedCatalogRow(
-                        title: request.option.displayTitle,
-                        subtitle: clinicalActionJoinDisplay(<String?>[
-                          typeLabel,
-                          request.option.displaySubtitle,
-                        ]),
-                        priceLabel: clinicalRequestCatalogPriceLabel(
-                          context,
-                          request.option,
-                        ),
-                        leadingIcon:
-                            request.kind == _LabRequestSelectionKind.tests
-                            ? Icons.science_outlined
-                            : Icons.inventory_2_outlined,
-                        isEditing: _editingIndex == index,
-                        enabled: !_isSaving,
-                        onEdit: () => _editRequest(index),
-                        onDelete: () => _deleteRequest(index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+    return ClinicalRequestSelectionManager(
+      title: l10n.clinicalLabRequestSelectedTitle,
+      emptyLabel: l10n.clinicalLabRequestNoSelection,
+      options: options,
+      value: _focusedSelectionId,
+      enabled: !_isSaving,
+      onChanged: (String? value) {
+        setState(() => _focusedSelectionId = value);
+      },
+      onEdit: focusedRequest == null
+          ? null
+          : () => _editRequest(_requestIndex(focusedRequest)),
+      onDelete: focusedRequest == null
+          ? null
+          : () => _deleteRequest(_requestIndex(focusedRequest)),
+    );
+  }
+
+  _PendingLabRequest? _focusedRequest() {
+    if (_focusedSelectionId == null) {
+      return null;
+    }
+    for (final _PendingLabRequest request in _requests) {
+      if (request.id == _focusedSelectionId) {
+        return request;
+      }
+    }
+    return null;
+  }
+
+  int _requestIndex(_PendingLabRequest request) {
+    return _requests.indexWhere(
+      (_PendingLabRequest item) => item.id == request.id,
     );
   }
 
@@ -370,8 +366,12 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     if (index < 0 || index >= _requests.length) {
       return;
     }
+    final String removedId = _requests[index].id;
     setState(() {
       _requests.removeAt(index);
+      if (_focusedSelectionId == removedId) {
+        _focusedSelectionId = null;
+      }
       if (_editingIndex == index) {
         _editingIndex = null;
       } else if (_editingIndex case final int editingIndex
