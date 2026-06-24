@@ -502,6 +502,8 @@ final class ClinicalCatalogOptionDto {
         _string(json['procedure_type']),
         _string(json['source']),
       ]),
+      unitPrice: _num(json['unit_price']) ?? _num(json['price']),
+      currency: _string(json['currency']),
       metadata: _withoutNullValues(<String, Object?>{
         'modality': _string(json['modality']),
         'body_region': _string(json['body_region']),
@@ -510,6 +512,8 @@ final class ClinicalCatalogOptionDto {
         'procedure_type': _string(json['procedure_type']),
         'ward_name': _string(_map(json['ward'])['name']),
         'room_name': _string(_map(json['room'])['name']),
+        'unit_price': _num(json['unit_price']) ?? _num(json['price']),
+        'currency': _string(json['currency']),
       }),
       childIds: panelItems
           .map((ClinicalJsonMap item) => _string(item['lab_test_id']))
@@ -557,10 +561,16 @@ final class ClinicalTermOptionDto {
         category,
         source,
       ]),
+      unitPrice: _num(json['unit_price']) ?? _num(json['price']),
+      currency: _string(json['currency']),
       metadata: _withoutNullValues(<String, Object?>{
         'source': source,
         'item_id': _string(json['item_id']),
         'term_type': _string(json['term_type']),
+        'unit_price': _num(json['unit_price']) ?? _num(json['price']),
+        'currency': _string(json['currency']),
+        if (_map(json['metadata'])['specimen_type'] != null)
+          'specimen_type': _string(_map(json['metadata'])['specimen_type']),
       }),
     );
   }
@@ -694,6 +704,16 @@ int _int(Object? value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+num? _num(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value.trim());
+  }
+  return null;
 }
 
 bool _isUrgentEncounter(ClinicalJsonMap json) {

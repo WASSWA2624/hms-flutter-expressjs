@@ -163,6 +163,8 @@ const findLabTests = async (where = {}, take = 500) => {
         code: true,
         category: true,
         specimen_type: true,
+        unit_price: true,
+        currency: true,
       },
     });
   } catch (error) {

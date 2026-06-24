@@ -9,6 +9,7 @@ const clinicalTermRepository = require('@repositories/clinical-term/clinical-ter
 const clinicalTermService = require('@services/clinical-term/clinical-term.service');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
 
 const CATALOG_SOURCES = new Set(['FAVORITES', 'FACILITY', 'GLOBAL', 'ALL']);
@@ -73,6 +74,7 @@ const mapLabTestRow = (row, source = 'GLOBAL') => ({
   category: row.category || null,
   source,
   origin: source === 'FACILITY' ? 'FACILITY_LAB_CATALOG' : 'GLOBAL_LAB_CATALOG',
+  ...mapCatalogUnitPriceFields(row),
   metadata: {
     specimen_type: row.specimen_type || null,
   },

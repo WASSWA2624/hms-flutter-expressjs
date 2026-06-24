@@ -139,4 +139,51 @@ void main() {
       expect(item.instructions, 'Take after meals');
     });
   });
+
+  group('decodeClinicalTermOptions', () {
+    test('maps catalog unit price and currency from clinical catalog search', () {
+      final options = decodeClinicalTermOptions(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LBT-BMP',
+            'item_id': 'uuid-bmp',
+            'term_type': 'LAB_TEST',
+            'code': 'BMP',
+            'name': 'Basic Metabolic Panel',
+            'description': 'Basic Metabolic Panel',
+            'category': 'CHEMISTRY',
+            'source': 'GLOBAL',
+            'unit_price': 18000,
+            'currency': 'UGX',
+          },
+        ],
+      });
+
+      expect(options, hasLength(1));
+      expect(options.single.unitPrice, 18000);
+      expect(options.single.currency, 'UGX');
+    });
+  });
+
+  group('decodeCatalogOptions', () {
+    test('maps catalog unit price and currency from lab catalog API', () {
+      final options = decodeCatalogOptions(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LBT-BMP',
+            'human_friendly_id': 'LBT-BMP',
+            'name': 'Basic Metabolic Panel',
+            'code': 'BMP',
+            'category': 'CHEMISTRY',
+            'unit_price': '22000.00',
+            'currency': 'UGX',
+          },
+        ],
+      });
+
+      expect(options, hasLength(1));
+      expect(options.single.unitPrice, 22000);
+      expect(options.single.currency, 'UGX');
+    });
+  });
 }

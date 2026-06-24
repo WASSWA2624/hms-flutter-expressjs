@@ -4,6 +4,32 @@ const {
   LAB_TEST_CATALOG,
 } = require('./data/uganda-lab-catalog');
 
+const LAB_CATALOG_CURRENCY = 'UGX';
+
+const resolveLabTestUnitPrice = (testSpec) => {
+  const category = String(testSpec.category || '').trim().toUpperCase();
+  const priceByCategory = {
+    CHEMISTRY: 18000,
+    HEMATOLOGY: 15000,
+    'CRITICAL CARE': 25000,
+    MICROBIOLOGY: 22000,
+    SEROLOGY: 20000,
+    IMMUNOLOGY: 24000,
+    MOLECULAR: 45000,
+    URINALYSIS: 12000,
+    COAGULATION: 20000,
+    ENDOCRINOLOGY: 28000,
+    PARASITOLOGY: 18000,
+    HISTOPATHOLOGY: 35000,
+  };
+  return priceByCategory[category] ?? 15000;
+};
+
+const resolveLabPanelUnitPrice = (panelSpec, testCount) => {
+  const base = resolveLabTestUnitPrice({ category: panelSpec.category });
+  return Math.round(base * Math.max(testCount, 1) * 0.85);
+};
+
 const buildNestedLabTestPayload = (testSpec, includeDeleteMany = false) => ({
   tenant_id: undefined,
   name: testSpec.name,
@@ -14,6 +40,8 @@ const buildNestedLabTestPayload = (testSpec, includeDeleteMany = false) => ({
   description: testSpec.description,
   unit: testSpec.unit,
   reference_range: testSpec.reference_range,
+  unit_price: testSpec.unit_price ?? resolveLabTestUnitPrice(testSpec),
+  currency: testSpec.currency ?? LAB_CATALOG_CURRENCY,
   reference_ranges: {
     ...(includeDeleteMany ? { deleteMany: {} } : {}),
     create: testSpec.reference_ranges.map((entry, index) => ({
@@ -109,6 +137,10 @@ const seedLabCatalogForTenant = async (
         code: panelSpec.code,
         category: panelSpec.category,
         description: panelSpec.description,
+        unit_price:
+          panelSpec.unit_price ??
+          resolveLabPanelUnitPrice(panelSpec, panelItems.length),
+        currency: panelSpec.currency ?? LAB_CATALOG_CURRENCY,
         panel_items: {
           create: panelItems,
         },
@@ -120,6 +152,10 @@ const seedLabCatalogForTenant = async (
           code: panelSpec.code,
           category: panelSpec.category,
           description: panelSpec.description,
+          unit_price:
+            panelSpec.unit_price ??
+            resolveLabPanelUnitPrice(panelSpec, panelItems.length),
+          currency: panelSpec.currency ?? LAB_CATALOG_CURRENCY,
           panel_items: {
             deleteMany: {},
             create: panelItems,
