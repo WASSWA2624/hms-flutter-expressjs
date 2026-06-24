@@ -892,6 +892,30 @@ abstract class AppLocalizations {
   /// **'Patient, sponsor, insurer, or contact'**
   String get billingPayerHint;
 
+  /// File type label for invoice PDF save dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF document'**
+  String get billingPdfFileTypeLabel;
+
+  /// Insurance claim approved status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get billingClaimStatusApproved;
+
+  /// Insurance claim rejected status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get billingClaimStatusRejected;
+
+  /// Insurance claim paid status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get billingClaimStatusPaid;
+
   /// Draft billing status label.
   ///
   /// In en, this message translates to:

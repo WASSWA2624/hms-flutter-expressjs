@@ -1279,7 +1279,7 @@ Future<void> _downloadInvoiceDocument(
   bool saved = false;
   await result.when(
     success: (BillingInvoiceDocument document) async {
-      saved = await _saveInvoicePdf(document);
+      saved = await _saveInvoicePdf(context, document);
     },
     failure: (AppFailure _) async {},
   );
@@ -1297,12 +1297,18 @@ Future<void> _downloadInvoiceDocument(
   );
 }
 
-Future<bool> _saveInvoicePdf(BillingInvoiceDocument document) async {
+Future<bool> _saveInvoicePdf(
+  BuildContext context,
+  BillingInvoiceDocument document,
+) async {
   try {
     final FileSaveLocation? location = await getSaveLocation(
       suggestedName: document.fileName,
       acceptedTypeGroups: <XTypeGroup>[
-        const XTypeGroup(label: 'PDF', extensions: <String>['pdf']),
+        XTypeGroup(
+          label: context.l10n.billingPdfFileTypeLabel,
+          extensions: <String>['pdf'],
+        ),
       ],
     );
     if (location == null) {
@@ -1501,10 +1507,19 @@ class _ClaimReconcileFormState extends State<_ClaimReconcileForm> {
         AppSelectField<String>(
           value: _status,
           labelText: l10n.billingStatusColumn,
-          options: const <AppSelectOption<String>>[
-            AppSelectOption<String>(value: 'APPROVED', label: 'Approved'),
-            AppSelectOption<String>(value: 'REJECTED', label: 'Rejected'),
-            AppSelectOption<String>(value: 'PAID', label: 'Paid'),
+          options: <AppSelectOption<String>>[
+            AppSelectOption<String>(
+              value: 'APPROVED',
+              label: l10n.billingClaimStatusApproved,
+            ),
+            AppSelectOption<String>(
+              value: 'REJECTED',
+              label: l10n.billingClaimStatusRejected,
+            ),
+            AppSelectOption<String>(
+              value: 'PAID',
+              label: l10n.billingClaimStatusPaid,
+            ),
           ],
           onChanged: (String? value) {
             if (value != null) {

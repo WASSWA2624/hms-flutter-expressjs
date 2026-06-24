@@ -537,6 +537,22 @@
   "@billingPayerHint": {
     "description": "Hint for payer field."
   },
+  "billingPdfFileTypeLabel": "PDF document",
+  "@billingPdfFileTypeLabel": {
+    "description": "File type label for invoice PDF save dialog."
+  },
+  "billingClaimStatusApproved": "Approved",
+  "@billingClaimStatusApproved": {
+    "description": "Insurance claim approved status label."
+  },
+  "billingClaimStatusRejected": "Rejected",
+  "@billingClaimStatusRejected": {
+    "description": "Insurance claim rejected status label."
+  },
+  "billingClaimStatusPaid": "Paid",
+  "@billingClaimStatusPaid": {
+    "description": "Insurance claim paid status label."
+  },
   "billingStatusDraft": "Draft",
   "@billingStatusDraft": {
     "description": "Draft billing status label."

@@ -425,6 +425,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingPayerHint => 'Patient, sponsor, insurer, or contact';
 
   @override
+  String get billingPdfFileTypeLabel => 'PDF document';
+
+  @override
+  String get billingClaimStatusApproved => 'Approved';
+
+  @override
+  String get billingClaimStatusRejected => 'Rejected';
+
+  @override
+  String get billingClaimStatusPaid => 'Paid';
+
+  @override
   String get billingStatusDraft => 'Draft';
 
   @override
