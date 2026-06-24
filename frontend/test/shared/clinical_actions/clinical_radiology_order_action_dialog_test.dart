@@ -38,6 +38,9 @@ void main() {
         ),
       );
 
+      await tester.tap(find.text('Add study'));
+      await tester.pumpAndSettle();
+
       final Finder catalogField = find.byType(TextField).last;
 
       await tester.tap(catalogField);

@@ -12559,6 +12559,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestBillingSectionTitle => 'Request billing';
 
   @override
+  String get clinicalRequestAddCatalogItemsAction => 'Add items';
+
+  @override
+  String get clinicalRequestReviewBillingAction => 'Review billing';
+
+  @override
+  String get clinicalRequestCatalogPickerDoneAction => 'Done';
+
+  @override
+  String get clinicalRequestMainPanelHelp =>
+      'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.';
+
+  @override
+  String clinicalRequestFlowItemCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'No items',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clinicalLabRequestCatalogPickerTitle => 'Choose lab tests';
+
+  @override
+  String get clinicalRadiologyCatalogPickerTitle => 'Choose imaging study';
+
+  @override
+  String get clinicalRadiologyAddStudyAction => 'Add study';
+
+  @override
+  String get clinicalProcedureCatalogPickerTitle => 'Choose procedures';
+
+  @override
+  String get clinicalPrescriptionLineDialogTitle => 'Add medicine';
+
+  @override
+  String get clinicalPrescriptionEditLineDialogTitle => 'Edit medicine';
+
+  @override
+  String get clinicalPrescriptionNoMedicinesLabel => 'No medicines added yet';
+
+  @override
   String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';
 
   @override

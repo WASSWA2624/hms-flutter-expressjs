@@ -7,11 +7,10 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 class ClinicalLabOrderActionDialog extends StatefulWidget {
@@ -62,33 +61,9 @@ final class _PendingLabRequest {
   String get id => option.apiId;
 }
 
-final class _LabCatalogSearchResults {
-  const _LabCatalogSearchResults({
-    required this.options,
-    required this.totalMatches,
-  });
-
-  final List<ClinicalActionCatalogOption> options;
-  final int totalMatches;
-}
-
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
-  static const int _maxVisibleCatalogOptions = 80;
-  static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
-
-  late final TextEditingController _searchController;
-  Timer? _searchDebounce;
-  _LabRequestSelectionKind _selectionKind = _LabRequestSelectionKind.tests;
-  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
-  String _searchQuery = '';
-  int _searchRequest = 0;
-  List<ClinicalActionCatalogOption> _testCatalogOptions =
-      const <ClinicalActionCatalogOption>[];
-  List<ClinicalActionCatalogOption> _favoriteTestOptions =
-      const <ClinicalActionCatalogOption>[];
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
   int? _editingIndex;
-  bool _isSearching = false;
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
@@ -96,30 +71,22 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
     _requests.addAll(_initialRequests());
-    _searchRequest += 1;
-    unawaited(_loadTestCatalog('', _searchRequest));
-    unawaited(_loadFavoriteTests());
-  }
-
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.64)
-        .clamp(420.0, 620.0)
-        .toDouble();
-    final List<ClinicalActionCatalogOption> catalog = _catalogForSelection();
-    final _LabCatalogSearchResults searchResults = _searchCatalog(catalog);
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool isEditingOrder = widget.existingOrder != null;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        clinicalRequestBillingLineItems(
+          options: _requests
+              .map((_PendingLabRequest request) => request.option)
+              .toList(growable: false),
+        );
+
     return AppDialog(
       title: Text(
         isEditingOrder
@@ -127,205 +94,36 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             : l10n.clinicalRequestLabAction,
       ),
       icon: const Icon(Icons.science_outlined),
-      maxWidth: 920,
+      maxWidth: 560,
       closeEnabled: !_isSaving,
-      content: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double maxHeight = constraints.maxHeight.isFinite
-              ? constraints.maxHeight
-              : bodyHeight;
-          return SizedBox(
-            height: maxHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (_failure != null) AppFailureStateView(failure: _failure!),
-                SegmentedButton<_LabRequestSelectionKind>(
-              segments: <ButtonSegment<_LabRequestSelectionKind>>[
-                ButtonSegment<_LabRequestSelectionKind>(
-                  value: _LabRequestSelectionKind.tests,
-                  icon: const Icon(Icons.science_outlined),
-                  label: Text(l10n.clinicalLabRequestTestsModeLabel),
-                ),
-                ButtonSegment<_LabRequestSelectionKind>(
-                  value: _LabRequestSelectionKind.panels,
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  label: Text(l10n.clinicalLabRequestPanelsModeLabel),
-                ),
-              ],
-              selected: <_LabRequestSelectionKind>{_selectionKind},
-              showSelectedIcon: false,
-              style: ButtonStyle(
-                minimumSize: WidgetStatePropertyAll<Size>(
-                  Size(theme.spacing.none, 44),
-                ),
-                shape: const WidgetStatePropertyAll<OutlinedBorder>(
-                  RoundedRectangleBorder(),
-                ),
+      content: SizedBox(
+        height: (MediaQuery.sizeOf(context).height * 0.5).clamp(360.0, 520.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            Text(
+              l10n.clinicalRequestMainPanelHelp,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
-              onSelectionChanged: _isSaving
-                  ? null
-                  : (Set<_LabRequestSelectionKind> values) {
-                      setState(() {
-                        _selectionKind = values.first;
-                        _failure = null;
-                      });
-                      if (values.first == _LabRequestSelectionKind.tests) {
-                        _searchRequest += 1;
-                        unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
-                      }
-                    },
             ),
-            if (_selectionKind == _LabRequestSelectionKind.tests) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              ClinicalCatalogLayerSelector(
-                value: _catalogSource,
-                enabled: !_isSaving,
-                onChanged: (ClinicalCatalogSource source) {
-                  setState(() => _catalogSource = source);
-                  _searchRequest += 1;
-                  unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
-                },
-              ),
-              if (_favoriteTestOptions.isNotEmpty) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    l10n.labOrderFavoriteTestsLabel,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    for (final ClinicalActionCatalogOption option
-                        in _favoriteTestOptions)
-                      ActionChip(
-                        label: Text(option.displayTitle),
-                        onPressed: _isSaving
-                            ? null
-                            : () => _addOrUpdateRequest(option),
-                      ),
-                  ],
-                ),
-              ],
-            ],
             SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _searchController,
-              labelText: l10n.clinicalLabRequestSearchLabel,
-              hintText: l10n.clinicalLabRequestSearchHint,
+            ClinicalRequestFlowToolbar(
               enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isEmpty
-                  ? null
-                  : AppIconButton(
-                      icon: Icons.close,
-                      semanticLabel: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      onPressed: _isSaving ? null : _clearSearch,
-                    ),
-              onChanged: _scheduleSearch,
+              onAddItems: _openCatalogPicker,
+              onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
             ),
-            if (_isSearching &&
-                _selectionKind == _LabRequestSelectionKind.tests) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              const LinearProgressIndicator(),
-            ],
-            if (_editingIndex != null) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AppButton.tertiary(
-                  label: l10n.clinicalLabRequestCancelEditAction,
-                  leadingIcon: Icons.close,
-                  enabled: !_isSaving,
-                  onPressed: _cancelEdit,
-                ),
-              ),
-            ],
-                SizedBox(height: theme.spacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder:
-                              (BuildContext context, BoxConstraints constraints) {
-                            final bool twoColumns = constraints.maxWidth >= 760;
-                            final Widget catalogPanel = _LabCatalogResultsPanel(
-                              results: searchResults,
-                              kind: _selectionKind,
-                              isSaving: _isSaving,
-                              isEditing: _editingIndex != null,
-                              onSelected: _addOrUpdateRequest,
-                              isDuplicate: _isDuplicateSelection,
-                            );
-                            final Widget selectedPanel = _LabSelectedRequestsPanel(
-                              requests: _requests,
-                              editingIndex: _editingIndex,
-                              isSaving: _isSaving,
-                              onEdit: _editRequest,
-                              onDelete: _deleteRequest,
-                            );
-
-                            if (!twoColumns) {
-                              return Column(
-                                children: <Widget>[
-                                  Expanded(child: catalogPanel),
-                                  SizedBox(height: theme.spacing.md),
-                                  Expanded(child: selectedPanel),
-                                ],
-                              );
-                            }
-
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                Expanded(child: catalogPanel),
-                                SizedBox(width: theme.spacing.md),
-                                Expanded(child: selectedPanel),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      SizedBox(height: theme.spacing.md),
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: ClinicalRequestBillingPanel(
-                            lineItems: clinicalRequestBillingLineItems(
-                              options: _requests
-                                  .map(
-                                    (_PendingLabRequest request) =>
-                                        request.option,
-                                  )
-                                  .toList(growable: false),
-                            ),
-                            enabled: !_isSaving,
-                            onChanged: (ClinicalRequestBillingSubmit value) {
-                              setState(() => _billingSubmit = value);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            SizedBox(height: theme.spacing.md),
+            ClinicalRequestFlowSummaryBar(
+              itemCount: _requests.length,
+              lineItems: lineItems,
+              billing: _billingSubmit,
             ),
-          );
-        },
+            SizedBox(height: theme.spacing.md),
+            Expanded(child: _buildSelectedPanel(context)),
+          ],
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -343,6 +141,128 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
         ),
       ],
     );
+  }
+
+  Widget _buildSelectedPanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Text(
+              l10n.clinicalLabRequestSelectedTitle,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: _requests.isEmpty
+                ? Center(child: Text(l10n.clinicalLabRequestNoSelection))
+                : ListView.separated(
+                    itemCount: _requests.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      final _PendingLabRequest request = _requests[index];
+                      final String typeLabel = _labRequestTypeLabel(
+                        l10n,
+                        request.kind,
+                      );
+                      return ClinicalRequestSelectedCatalogRow(
+                        title: request.option.displayTitle,
+                        subtitle: clinicalActionJoinDisplay(<String?>[
+                          typeLabel,
+                          request.option.displaySubtitle,
+                        ]),
+                        priceLabel: clinicalRequestCatalogPriceLabel(
+                          context,
+                          request.option,
+                        ),
+                        leadingIcon:
+                            request.kind == _LabRequestSelectionKind.tests
+                            ? Icons.science_outlined
+                            : Icons.inventory_2_outlined,
+                        isEditing: _editingIndex == index,
+                        enabled: !_isSaving,
+                        onEdit: () => _editRequest(index),
+                        onDelete: () => _deleteRequest(index),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openCatalogPicker() async {
+    final int? editingIndex = _editingIndex;
+    final _PendingLabRequest? editingRequest =
+        editingIndex != null &&
+            editingIndex >= 0 &&
+            editingIndex < _requests.length
+        ? _requests[editingIndex]
+        : null;
+
+    await showClinicalLabRequestCatalogDialog(
+      context: context,
+      referenceData: widget.referenceData,
+      onSearchLabTests: widget.onSearchLabTests,
+      initialKind: editingRequest == null
+          ? ClinicalLabRequestCatalogKind.tests
+          : editingRequest.kind == _LabRequestSelectionKind.tests
+          ? ClinicalLabRequestCatalogKind.tests
+          : ClinicalLabRequestCatalogKind.panels,
+      editingOption: editingRequest?.option,
+      editingKind: editingRequest == null
+          ? null
+          : editingRequest.kind == _LabRequestSelectionKind.tests
+          ? ClinicalLabRequestCatalogKind.tests
+          : ClinicalLabRequestCatalogKind.panels,
+      isDuplicate: (ClinicalActionCatalogOption option, ClinicalLabRequestCatalogKind kind) {
+        final _LabRequestSelectionKind selectionKind =
+            kind == ClinicalLabRequestCatalogKind.tests
+            ? _LabRequestSelectionKind.tests
+            : _LabRequestSelectionKind.panels;
+        return _isDuplicateSelection(option, selectionKind, editingIndex);
+      },
+      onAdd: (ClinicalActionCatalogOption option, ClinicalLabRequestCatalogKind kind) {
+        _addOrUpdateRequest(
+          option,
+          kind == ClinicalLabRequestCatalogKind.tests
+              ? _LabRequestSelectionKind.tests
+              : _LabRequestSelectionKind.panels,
+        );
+      },
+    );
+  }
+
+  Future<void> _openBillingDialog() async {
+    final ClinicalRequestBillingSubmit? billing =
+        await showClinicalRequestBillingDialog(
+          context: context,
+          lineItems: clinicalRequestBillingLineItems(
+            options: _requests
+                .map((_PendingLabRequest request) => request.option)
+                .toList(growable: false),
+          ),
+          initialBilling: _billingSubmit,
+          enabled: !_isSaving,
+        );
+    if (!mounted || billing == null) {
+      return;
+    }
+    setState(() => _billingSubmit = billing);
   }
 
   List<_PendingLabRequest> _initialRequests() {
@@ -382,11 +302,9 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                 ),
           )
           .map((ClinicalActionLabOrderItem item) {
-            final ClinicalActionCatalogOption option =
-                _catalogOptionForLabOrderItem(item);
             return _PendingLabRequest(
               kind: _LabRequestSelectionKind.tests,
-              option: option,
+              option: _catalogOptionForLabOrderItem(item),
             );
           }),
     ];
@@ -415,132 +333,13 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     );
   }
 
-  List<ClinicalActionCatalogOption> _catalogForSelection() {
-    return switch (_selectionKind) {
-      _LabRequestSelectionKind.tests =>
-        _testCatalogOptions.isNotEmpty
-            ? _testCatalogOptions
-            : widget.referenceData.labTests,
-      _LabRequestSelectionKind.panels => widget.referenceData.labPanels,
-    };
-  }
-
-  Future<void> _loadTestCatalog(String query, int requestId) async {
-    setState(() => _isSearching = true);
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await widget.onSearchLabTests(
-      termType: ClinicalCatalogTermType.labTest.apiValue,
-      query: query.trim().isEmpty ? null : query.trim(),
-      limit: _maxVisibleCatalogOptions,
-      source: _catalogSource.apiValue,
-    );
-    if (!mounted || requestId != _searchRequest) {
-      return;
-    }
-    setState(() {
-      _isSearching = false;
-      _testCatalogOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => widget.referenceData.labTests,
-      );
-    });
-  }
-
-  Future<void> _loadFavoriteTests() async {
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await widget.onSearchLabTests(
-      termType: ClinicalCatalogTermType.labTest.apiValue,
-      limit: 12,
-      source: ClinicalCatalogSource.favorites.apiValue,
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _favoriteTestOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => const <ClinicalActionCatalogOption>[],
-      );
-    });
-  }
-
-  _LabCatalogSearchResults _searchCatalog(
-    List<ClinicalActionCatalogOption> catalog,
+  void _addOrUpdateRequest(
+    ClinicalActionCatalogOption option,
+    _LabRequestSelectionKind kind,
   ) {
-    final List<String> tokens = _searchQuery
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((String token) => token.isNotEmpty)
-        .toList(growable: false);
-    if (tokens.isEmpty) {
-      return _LabCatalogSearchResults(
-        options: catalog
-            .take(_maxVisibleCatalogOptions)
-            .toList(growable: false),
-        totalMatches: catalog.length,
-      );
-    }
-
-    final List<ClinicalActionCatalogOption> visible =
-        <ClinicalActionCatalogOption>[];
-    var totalMatches = 0;
-    for (final ClinicalActionCatalogOption option in catalog) {
-      final String searchText = _catalogSearchText(option);
-      final bool isMatch = tokens.every(searchText.contains);
-      if (!isMatch) {
-        continue;
-      }
-      totalMatches += 1;
-      if (visible.length < _maxVisibleCatalogOptions) {
-        visible.add(option);
-      }
-    }
-
-    return _LabCatalogSearchResults(
-      options: visible,
-      totalMatches: totalMatches,
-    );
-  }
-
-  String _catalogSearchText(ClinicalActionCatalogOption option) {
-    return clinicalActionJoinDisplay(<String?>[
-      option.apiId,
-      option.displayTitle,
-      option.displaySubtitle,
-      option.name,
-      option.code,
-      option.category,
-      option.secondaryText,
-      option.status,
-    ]).toLowerCase();
-  }
-
-  void _scheduleSearch(String value) {
-    setState(() => _searchQuery = value.trim());
-    if (_selectionKind != _LabRequestSelectionKind.tests) {
-      return;
-    }
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(_searchDebounceDuration, () {
-      _searchRequest += 1;
-      unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
-    });
-  }
-
-  void _clearSearch() {
-    setState(_resetSearch);
-  }
-
-  void _resetSearch() {
-    _searchController.clear();
-    _searchQuery = '';
-  }
-
-  void _addOrUpdateRequest(ClinicalActionCatalogOption option) {
     final int? editingIndex = _editingIndex;
     final _PendingLabRequest request = _PendingLabRequest(
-      kind: _selectionKind,
+      kind: kind,
       option: option,
     );
     setState(() {
@@ -550,7 +349,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
           editingIndex < _requests.length) {
         _requests[editingIndex] = request;
         _editingIndex = null;
-        _resetSearch();
         return;
       }
       _requests.add(request);
@@ -561,14 +359,11 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     if (index < 0 || index >= _requests.length) {
       return;
     }
-    final _PendingLabRequest request = _requests[index];
     setState(() {
-      _selectionKind = request.kind;
       _editingIndex = index;
       _failure = null;
-      _searchController.text = request.option.displayTitle;
-      _searchQuery = request.option.displayTitle;
     });
+    unawaited(_openCatalogPicker());
   }
 
   void _deleteRequest(int index) {
@@ -579,7 +374,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       _requests.removeAt(index);
       if (_editingIndex == index) {
         _editingIndex = null;
-        _resetSearch();
       } else if (_editingIndex case final int editingIndex
           when editingIndex > index) {
         _editingIndex = editingIndex - 1;
@@ -588,22 +382,17 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     });
   }
 
-  void _cancelEdit() {
-    setState(() {
-      _editingIndex = null;
-      _failure = null;
-      _resetSearch();
-    });
-  }
-
-  bool _isDuplicateSelection(ClinicalActionCatalogOption option) {
-    final int? editingIndex = _editingIndex;
+  bool _isDuplicateSelection(
+    ClinicalActionCatalogOption option,
+    _LabRequestSelectionKind kind,
+    int? editingIndex,
+  ) {
     for (var index = 0; index < _requests.length; index += 1) {
       if (index == editingIndex) {
         continue;
       }
       final _PendingLabRequest request = _requests[index];
-      if (request.kind == _selectionKind && request.id == option.apiId) {
+      if (request.kind == kind && request.id == option.apiId) {
         return true;
       }
     }
@@ -655,340 +444,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _LabCatalogResultsPanel extends StatelessWidget {
-  const _LabCatalogResultsPanel({
-    required this.results,
-    required this.kind,
-    required this.isSaving,
-    required this.isEditing,
-    required this.onSelected,
-    required this.isDuplicate,
-  });
-
-  final _LabCatalogSearchResults results;
-  final _LabRequestSelectionKind kind;
-  final bool isSaving;
-  final bool isEditing;
-  final ValueChanged<ClinicalActionCatalogOption> onSelected;
-  final bool Function(ClinicalActionCatalogOption option) isDuplicate;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<ClinicalActionCatalogOption> options = results.options;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalLabRequestMatchesLabel(
-                options.length,
-                results.totalMatches,
-              ),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: options.isEmpty
-                ? Center(child: Text(l10n.clinicalLabRequestNoCatalogOptions))
-                : ListView.separated(
-                    itemCount: options.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      final ClinicalActionCatalogOption option = options[index];
-                      final bool duplicate = isDuplicate(option);
-                      return _LabCatalogOptionRow(
-                        option: option,
-                        kind: kind,
-                        isSaving: isSaving,
-                        isEditing: isEditing,
-                        isDuplicate: duplicate,
-                        onSelected: duplicate ? null : () => onSelected(option),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabCatalogOptionRow extends StatelessWidget {
-  const _LabCatalogOptionRow({
-    required this.option,
-    required this.kind,
-    required this.isSaving,
-    required this.isEditing,
-    required this.isDuplicate,
-    required this.onSelected,
-  });
-
-  final ClinicalActionCatalogOption option;
-  final _LabRequestSelectionKind kind;
-  final bool isSaving;
-  final bool isEditing;
-  final bool isDuplicate;
-  final VoidCallback? onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String actionLabel = isEditing
-        ? l10n.clinicalLabRequestUpdateSelectionAction
-        : l10n.clinicalLabRequestAddSelectionAction;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            kind == _LabRequestSelectionKind.tests
-                ? Icons.science_outlined
-                : Icons.inventory_2_outlined,
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  option.displayTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (option.displaySubtitle != null)
-                  Text(
-                    option.displaySubtitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                Text(
-                  clinicalRequestPriceLabel(
-                    context,
-                    clinicalCatalogOptionUnitPrice(option),
-                    clinicalCatalogOptionCurrency(option),
-                  ),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton.icon(
-            onPressed: isSaving || isDuplicate ? null : onSelected,
-            icon: Icon(
-              isEditing ? Icons.done_outlined : Icons.add,
-              size: theme.appTokens.listIconSize,
-            ),
-            label: Text(actionLabel),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabSelectedRequestsPanel extends StatelessWidget {
-  const _LabSelectedRequestsPanel({
-    required this.requests,
-    required this.editingIndex,
-    required this.isSaving,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final List<_PendingLabRequest> requests;
-  final int? editingIndex;
-  final bool isSaving;
-  final ValueChanged<int> onEdit;
-  final ValueChanged<int> onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.clinicalLabRequestSelectedTitle,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
-                Text(
-                  l10n.clinicalLabRequestSelectedCount(requests.length),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: requests.isEmpty
-                ? Center(child: Text(l10n.clinicalLabRequestNoSelection))
-                : ListView.separated(
-                    itemCount: requests.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      return _LabSelectedRequestRow(
-                        request: requests[index],
-                        isEditing: editingIndex == index,
-                        isSaving: isSaving,
-                        onEdit: () => onEdit(index),
-                        onDelete: () => onDelete(index),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabSelectedRequestRow extends StatelessWidget {
-  const _LabSelectedRequestRow({
-    required this.request,
-    required this.isEditing,
-    required this.isSaving,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final _PendingLabRequest request;
-  final bool isEditing;
-  final bool isSaving;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String typeLabel = _labRequestTypeLabel(l10n, request.kind);
-    final String subtitle = clinicalActionJoinDisplay(<String?>[
-      typeLabel,
-      request.option.displaySubtitle,
-    ]);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isEditing
-            ? colorScheme.primaryContainer.withValues(alpha: 0.38)
-            : null,
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              request.kind == _LabRequestSelectionKind.tests
-                  ? Icons.science_outlined
-                  : Icons.inventory_2_outlined,
-              color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    request.option.displayTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  Text(
-                    clinicalRequestPriceLabel(
-                      context,
-                      clinicalCatalogOptionUnitPrice(request.option),
-                      clinicalCatalogOptionCurrency(request.option),
-                    ),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: l10n.clinicalLabRequestEditSelectionAction,
-              onPressed: isSaving ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
-              onPressed: isSaving ? null : onDelete,
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -6,9 +6,9 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
@@ -45,7 +45,6 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   @override
   void initState() {
     super.initState();
-    _lines.add(_createLine());
   }
 
   @override
@@ -60,63 +59,74 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<AppSelectOption<String>> drugOptions = _drugCatalogOptions(
-      widget.referenceData.drugs,
-    );
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        _prescriptionBillingLineItems();
 
     return AppDialog(
       title: Text(l10n.clinicalPrescribeAction),
       icon: const Icon(Icons.medication_outlined),
-      maxWidth: 980,
-      scrollable: true,
+      maxWidth: 560,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.spacious,
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            _PrescriptionIntroPanel(itemCount: _lines.length),
-            for (var index = 0; index < _lines.length; index += 1)
-              _buildLineCard(index, drugOptions),
-            AppButton.secondary(
-              label: l10n.clinicalPrescriptionAddMedicineAction,
-              leadingIcon: Icons.add_circle_outline,
-              enabled: !_isSaving,
-              fullWidth: true,
-              onPressed: _addLine,
-            ),
-            SizedBox(height: theme.spacing.md),
-            SegmentedButton<ClinicalRequestPaymentMode>(
-              segments: <ButtonSegment<ClinicalRequestPaymentMode>>[
-                ButtonSegment<ClinicalRequestPaymentMode>(
-                  value: ClinicalRequestPaymentMode.billLater,
-                  icon: const Icon(Icons.local_pharmacy_outlined),
-                  label: Text(l10n.radiologyPrescriptionBillOnDispenseLabel),
+      content: SizedBox(
+        height: (MediaQuery.sizeOf(context).height * 0.5).clamp(360.0, 520.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (_failure != null) AppFailureStateView(failure: _failure!),
+              Text(
+                l10n.clinicalRequestMainPanelHelp,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                ButtonSegment<ClinicalRequestPaymentMode>(
-                  value: ClinicalRequestPaymentMode.payNow,
-                  icon: const Icon(Icons.payments_outlined),
-                  label: Text(l10n.radiologyPrescriptionPayAtPrescribeLabel),
+              ),
+              SizedBox(height: theme.spacing.md),
+              ClinicalRequestFlowToolbar(
+                enabled: !_isSaving,
+                addItemsLabel: l10n.clinicalPrescriptionAddMedicineAction,
+                onAddItems: () => _openLineDialog(),
+                onReviewBilling:
+                    _dispenseBillingMode == ClinicalRequestPaymentMode.payNow &&
+                        lineItems.isNotEmpty
+                    ? _openBillingDialog
+                    : null,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              SegmentedButton<ClinicalRequestPaymentMode>(
+                segments: <ButtonSegment<ClinicalRequestPaymentMode>>[
+                  ButtonSegment<ClinicalRequestPaymentMode>(
+                    value: ClinicalRequestPaymentMode.billLater,
+                    icon: const Icon(Icons.local_pharmacy_outlined),
+                    label: Text(l10n.radiologyPrescriptionBillOnDispenseLabel),
+                  ),
+                  ButtonSegment<ClinicalRequestPaymentMode>(
+                    value: ClinicalRequestPaymentMode.payNow,
+                    icon: const Icon(Icons.payments_outlined),
+                    label: Text(l10n.radiologyPrescriptionPayAtPrescribeLabel),
+                  ),
+                ],
+                selected: <ClinicalRequestPaymentMode>{_dispenseBillingMode},
+                showSelectedIcon: false,
+                onSelectionChanged: _isSaving
+                    ? null
+                    : (Set<ClinicalRequestPaymentMode> values) {
+                        setState(() => _dispenseBillingMode = values.first);
+                      },
+              ),
+              if (_dispenseBillingMode == ClinicalRequestPaymentMode.payNow) ...<Widget>[
+                SizedBox(height: theme.spacing.md),
+                ClinicalRequestFlowSummaryBar(
+                  itemCount: _lines.where((line) => line.drugId?.isNotEmpty ?? false).length,
+                  lineItems: lineItems,
+                  billing: _billingSubmit,
                 ),
               ],
-              selected: <ClinicalRequestPaymentMode>{_dispenseBillingMode},
-              showSelectedIcon: false,
-              onSelectionChanged: _isSaving
-                  ? null
-                  : (Set<ClinicalRequestPaymentMode> values) {
-                      setState(() => _dispenseBillingMode = values.first);
-                    },
-            ),
-            SizedBox(height: theme.spacing.md),
-            ClinicalRequestBillingPanel(
-              lineItems: _prescriptionBillingLineItems(),
-              enabled: !_isSaving && _dispenseBillingMode == ClinicalRequestPaymentMode.payNow,
-              onChanged: (ClinicalRequestBillingSubmit value) {
-                setState(() => _billingSubmit = value);
-              },
-            ),
-          ],
+              SizedBox(height: theme.spacing.md),
+              Expanded(child: _buildSelectedLinesPanel(context)),
+            ],
+          ),
         ),
       ),
       actions: <Widget>[
@@ -135,22 +145,146 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     );
   }
 
-  Widget _buildLineCard(int index, List<AppSelectOption<String>> drugOptions) {
-    final _PrescriptionLineFormState line = _lines[index];
-    return _PrescriptionLineCard(
-      key: ValueKey<int>(line.id),
-      index: index,
-      line: line,
-      drugOptions: drugOptions,
-      selectedDrugLabel: clinicalActionCatalogDisplayLabelById(
-        widget.referenceData.drugs,
-        line.drugId,
+  Widget _buildSelectedLinesPanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      enabled: !_isSaving,
-      canRemove: !_isSaving && _lines.length > 1,
-      onChanged: () => setState(() {}),
-      onRemove: () => _removeLine(line),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Text(
+              l10n.clinicalPrescriptionHeaderTitle,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: _lines.isEmpty
+                ? Center(
+                    child: Text(l10n.clinicalPrescriptionNoMedicinesLabel),
+                  )
+                : ListView.separated(
+              itemCount: _lines.length,
+              separatorBuilder: (_, _) =>
+                  Divider(height: 1, color: colorScheme.outlineVariant),
+              itemBuilder: (BuildContext context, int index) {
+                final _PrescriptionLineFormState line = _lines[index];
+                return _PrescriptionLineSummaryRow(
+                  index: index,
+                  line: line,
+                  drugLabel: clinicalActionCatalogDisplayLabelById(
+                    widget.referenceData.drugs,
+                    line.drugId,
+                  ),
+                  enabled: !_isSaving,
+                  canRemove: _lines.length > 1,
+                  onEdit: () => _openLineDialog(editIndex: index),
+                  onRemove: () => _removeLine(line),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _openLineDialog({int? editIndex}) async {
+    final List<AppSelectOption<String>> drugOptions = _drugCatalogOptions(
+      widget.referenceData.drugs,
+    );
+    final _PrescriptionLineFormState line = editIndex == null
+        ? _createLine()
+        : _lines[editIndex];
+    final bool isNew = editIndex == null;
+
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: !_isSaving,
+      builder: (BuildContext context) {
+        final AppLocalizations l10n = context.l10n;
+        final GlobalKey<FormState> lineFormKey = GlobalKey<FormState>();
+        return AppDialog(
+          title: Text(
+            isNew
+                ? l10n.clinicalPrescriptionLineDialogTitle
+                : l10n.clinicalPrescriptionEditLineDialogTitle,
+          ),
+          icon: const Icon(Icons.medication_outlined),
+          maxWidth: 640,
+          scrollable: true,
+          content: Form(
+            key: lineFormKey,
+            child: _PrescriptionLineCard(
+              key: ValueKey<int>(line.id),
+              index: editIndex ?? _lines.length,
+              line: line,
+              drugOptions: drugOptions,
+              selectedDrugLabel: clinicalActionCatalogDisplayLabelById(
+                widget.referenceData.drugs,
+                line.drugId,
+              ),
+              enabled: !_isSaving,
+              canRemove: false,
+              onChanged: () {},
+              onRemove: () {},
+            ),
+          ),
+          actions: <Widget>[
+            AppButton.tertiary(
+              label: l10n.commonCancelActionLabel,
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            AppButton.primary(
+              label: l10n.clinicalRequestCatalogPickerDoneAction,
+              onPressed: () {
+                if (!(lineFormKey.currentState?.validate() ?? false)) {
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || saved != true) {
+      if (isNew) {
+        line.dispose();
+      }
+      return;
+    }
+
+    setState(() {
+      if (isNew) {
+        _lines.add(line);
+      }
+      _failure = null;
+    });
+  }
+
+  Future<void> _openBillingDialog() async {
+    final ClinicalRequestBillingSubmit? billing =
+        await showClinicalRequestBillingDialog(
+          context: context,
+          lineItems: _prescriptionBillingLineItems(),
+          initialBilling: _billingSubmit,
+          enabled: !_isSaving,
+        );
+    if (!mounted || billing == null) {
+      return;
+    }
+    setState(() => _billingSubmit = billing);
   }
 
   _PrescriptionLineFormState _createLine() {
@@ -161,16 +295,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
     return line;
   }
 
-  void _addLine() {
-    setState(() {
-      _lines.add(_createLine());
-    });
-  }
-
   void _removeLine(_PrescriptionLineFormState line) {
-    if (_lines.length <= 1) {
-      return;
-    }
     setState(() {
       _lines.remove(line);
       line.dispose();
@@ -178,6 +303,10 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   }
 
   Future<void> _submit() async {
+    if (_lines.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -290,110 +419,93 @@ class _PrescriptionLineFormState {
   }
 }
 
-class _PrescriptionIntroPanel extends StatelessWidget {
-  const _PrescriptionIntroPanel({required this.itemCount});
+class _PrescriptionLineSummaryRow extends StatelessWidget {
+  const _PrescriptionLineSummaryRow({
+    required this.index,
+    required this.line,
+    required this.drugLabel,
+    required this.enabled,
+    required this.canRemove,
+    required this.onEdit,
+    required this.onRemove,
+  });
 
-  final int itemCount;
+  final int index;
+  final _PrescriptionLineFormState line;
+  final String? drugLabel;
+  final bool enabled;
+  final bool canRemove;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.36),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(theme.spacing.sm),
-                child: Icon(
-                  Icons.medication_liquid_outlined,
-                  color: colorScheme.onPrimary,
-                  size: theme.appTokens.listIconSize,
-                ),
-              ),
-            ),
-            SizedBox(width: theme.spacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    l10n.clinicalPrescriptionHeaderTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    l10n.clinicalPrescriptionHeaderBody,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            _PrescriptionCountBadge(count: itemCount),
-          ],
-        ),
-      ),
+    final String summary = clinicalPrescriptionReadableSummary(
+      drugName: drugLabel,
+      quantity: line.quantityController.text.trim(),
+      quantityUnit: line.quantityUnit,
+      doseAmount: line.doseAmountController.text.trim(),
+      doseUnit: line.doseUnit,
+      route: line.route,
+      frequency: line.frequency,
+      durationValue: line.durationController.text.trim(),
+      durationUnit: line.durationUnit,
+      instructions: line.instructionsController.text.trim(),
     );
-  }
-}
 
-class _PrescriptionCountBadge extends StatelessWidget {
-  const _PrescriptionCountBadge({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
       ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.format_list_numbered_outlined,
-              size: theme.appTokens.listIconSize,
-              color: colorScheme.primary,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.medication_outlined,
+            color: colorScheme.primary,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  '${index + 1}. ${drugLabel ?? l10n.clinicalPrescriptionDrugLabel}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  summary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              count.toString(),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          IconButton(
+            tooltip: l10n.clinicalLabRequestEditSelectionAction,
+            onPressed: enabled ? onEdit : null,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          if (canRemove)
+            IconButton(
+              tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+              onPressed: enabled ? onRemove : null,
+              icon: const Icon(Icons.delete_outline),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

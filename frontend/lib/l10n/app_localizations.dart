@@ -23601,6 +23601,78 @@ abstract class AppLocalizations {
   /// **'Request billing'**
   String get clinicalRequestBillingSectionTitle;
 
+  /// Open nested catalog picker from request dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items'**
+  String get clinicalRequestAddCatalogItemsAction;
+
+  /// Open nested billing dialog from request dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review billing'**
+  String get clinicalRequestReviewBillingAction;
+
+  /// Close nested catalog or billing dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get clinicalRequestCatalogPickerDoneAction;
+
+  /// Help text on modular clinical request main dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.'**
+  String get clinicalRequestMainPanelHelp;
+
+  /// Selected item count on request flow summary bar.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
+  String clinicalRequestFlowItemCountLabel(int count);
+
+  /// Nested lab catalog picker dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose lab tests'**
+  String get clinicalLabRequestCatalogPickerTitle;
+
+  /// Nested radiology catalog picker dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose imaging study'**
+  String get clinicalRadiologyCatalogPickerTitle;
+
+  /// Open radiology catalog picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add study'**
+  String get clinicalRadiologyAddStudyAction;
+
+  /// Nested procedure catalog picker dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose procedures'**
+  String get clinicalProcedureCatalogPickerTitle;
+
+  /// Nested prescription line editor title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add medicine'**
+  String get clinicalPrescriptionLineDialogTitle;
+
+  /// Nested prescription line editor title when editing.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit medicine'**
+  String get clinicalPrescriptionEditLineDialogTitle;
+
+  /// Empty prescription selection state.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines added yet'**
+  String get clinicalPrescriptionNoMedicinesLabel;
+
   /// Empty billing panel message.
   ///
   /// In en, this message translates to:

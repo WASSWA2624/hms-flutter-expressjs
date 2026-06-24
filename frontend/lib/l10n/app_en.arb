@@ -16284,6 +16284,59 @@
   "@clinicalRequestBillingSectionTitle": {
     "description": "Title for clinical request billing panel."
   },
+  "clinicalRequestAddCatalogItemsAction": "Add items",
+  "@clinicalRequestAddCatalogItemsAction": {
+    "description": "Open nested catalog picker from request dialog."
+  },
+  "clinicalRequestReviewBillingAction": "Review billing",
+  "@clinicalRequestReviewBillingAction": {
+    "description": "Open nested billing dialog from request dialog."
+  },
+  "clinicalRequestCatalogPickerDoneAction": "Done",
+  "@clinicalRequestCatalogPickerDoneAction": {
+    "description": "Close nested catalog or billing dialog."
+  },
+  "clinicalRequestMainPanelHelp": "Review your selection below. Use Add items to browse the catalog, then review billing before submitting.",
+  "@clinicalRequestMainPanelHelp": {
+    "description": "Help text on modular clinical request main dialog."
+  },
+  "clinicalRequestFlowItemCountLabel": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
+  "@clinicalRequestFlowItemCountLabel": {
+    "description": "Selected item count on request flow summary bar.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalLabRequestCatalogPickerTitle": "Choose lab tests",
+  "@clinicalLabRequestCatalogPickerTitle": {
+    "description": "Nested lab catalog picker dialog title."
+  },
+  "clinicalRadiologyCatalogPickerTitle": "Choose imaging study",
+  "@clinicalRadiologyCatalogPickerTitle": {
+    "description": "Nested radiology catalog picker dialog title."
+  },
+  "clinicalRadiologyAddStudyAction": "Add study",
+  "@clinicalRadiologyAddStudyAction": {
+    "description": "Open radiology catalog picker."
+  },
+  "clinicalProcedureCatalogPickerTitle": "Choose procedures",
+  "@clinicalProcedureCatalogPickerTitle": {
+    "description": "Nested procedure catalog picker dialog title."
+  },
+  "clinicalPrescriptionLineDialogTitle": "Add medicine",
+  "@clinicalPrescriptionLineDialogTitle": {
+    "description": "Nested prescription line editor title."
+  },
+  "clinicalPrescriptionEditLineDialogTitle": "Edit medicine",
+  "@clinicalPrescriptionEditLineDialogTitle": {
+    "description": "Nested prescription line editor title when editing."
+  },
+  "clinicalPrescriptionNoMedicinesLabel": "No medicines added yet",
+  "@clinicalPrescriptionNoMedicinesLabel": {
+    "description": "Empty prescription selection state."
+  },
   "clinicalRequestBillingNoItemsLabel": "Add items to see pricing.",
   "@clinicalRequestBillingNoItemsLabel": {
     "description": "Empty billing panel message."
