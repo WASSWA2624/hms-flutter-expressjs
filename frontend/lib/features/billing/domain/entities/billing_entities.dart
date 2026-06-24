@@ -154,6 +154,9 @@ final class BillingInvoiceItem {
     this.quantity = 1,
     this.unitPrice = 0,
     this.totalPrice = 0,
+    this.sourceModule,
+    this.sourceOrderDisplayId,
+    this.encounterDisplayId,
   });
 
   final String id;
@@ -161,6 +164,20 @@ final class BillingInvoiceItem {
   final int quantity;
   final num unitPrice;
   final num totalPrice;
+  final String? sourceModule;
+  final String? sourceOrderDisplayId;
+  final String? encounterDisplayId;
+
+  String? get sourceContextLabel {
+    final List<String> parts = <String>[
+      if ((sourceModule ?? '').trim().isNotEmpty) sourceModule!.trim(),
+      if ((sourceOrderDisplayId ?? '').trim().isNotEmpty)
+        sourceOrderDisplayId!.trim(),
+      if ((encounterDisplayId ?? '').trim().isNotEmpty)
+        encounterDisplayId!.trim(),
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
 }
 
 @immutable
@@ -232,6 +249,19 @@ final class BillingWorkItem {
     this.payments = const <BillingPayment>[],
     this.adjustments = const <BillingAdjustment>[],
     this.financials = const BillingFinancials(),
+    this.approvalType,
+    this.requestReason,
+    this.requestedByDisplayId,
+    this.requestedAt,
+    this.decidedAt,
+    this.targetDisplayId,
+    this.linkedInvoiceId,
+    this.submittedAt,
+    this.approvedAt,
+    this.encounterId,
+    this.encounterDisplayId,
+    this.settlementAmount,
+    this.decisionNotes,
   });
 
   final String id;
@@ -253,6 +283,19 @@ final class BillingWorkItem {
   final List<BillingPayment> payments;
   final List<BillingAdjustment> adjustments;
   final BillingFinancials financials;
+  final String? approvalType;
+  final String? requestReason;
+  final String? requestedByDisplayId;
+  final DateTime? requestedAt;
+  final DateTime? decidedAt;
+  final String? targetDisplayId;
+  final String? linkedInvoiceId;
+  final DateTime? submittedAt;
+  final DateTime? approvedAt;
+  final String? encounterId;
+  final String? encounterDisplayId;
+  final num? settlementAmount;
+  final String? decisionNotes;
 
   bool get isInvoice => kind == BillingWorkItemKind.invoice;
 
@@ -311,6 +354,34 @@ final class BillingWorkItem {
 
   bool get canRequestVoid => isInvoice && !_isCancelled;
 
+  bool get isApproval => kind == BillingWorkItemKind.approval;
+
+  bool get isClaim => kind == BillingWorkItemKind.claim;
+
+  bool get isPreAuthorization => kind == BillingWorkItemKind.preAuthorization;
+
+  bool get canApproveOrReject {
+    return isApproval && _normalizedStatus == 'PENDING';
+  }
+
+  bool get canSubmitClaim {
+    return isClaim && _normalizedStatus != 'SUBMITTED';
+  }
+
+  bool get canReconcileClaim {
+    return isClaim && _normalizedStatus == 'SUBMITTED';
+  }
+
+  bool get canFinalizeEncounterBilling {
+    return isInvoice &&
+        (encounterId?.isNotEmpty ?? false) &&
+        balanceDue <= 0 &&
+        !_isCancelled &&
+        _normalizedBillingStatus != 'DRAFT';
+  }
+
+  String get _normalizedStatus => (status ?? '').trim().toUpperCase();
+
   BillingClearanceState get clearanceState {
     if (kind == BillingWorkItemKind.claim ||
         kind == BillingWorkItemKind.preAuthorization) {
@@ -362,6 +433,19 @@ final class BillingWorkItem {
     List<BillingPayment>? payments,
     List<BillingAdjustment>? adjustments,
     BillingFinancials? financials,
+    String? approvalType,
+    String? requestReason,
+    String? requestedByDisplayId,
+    DateTime? requestedAt,
+    DateTime? decidedAt,
+    String? targetDisplayId,
+    String? linkedInvoiceId,
+    DateTime? submittedAt,
+    DateTime? approvedAt,
+    String? encounterId,
+    String? encounterDisplayId,
+    num? settlementAmount,
+    String? decisionNotes,
   }) {
     return BillingWorkItem(
       id: id ?? this.id,
@@ -373,7 +457,8 @@ final class BillingWorkItem {
       patientDisplayId: patientDisplayId ?? this.patientDisplayId,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
       invoiceDisplayId: invoiceDisplayId ?? this.invoiceDisplayId,
-      coveragePlanDisplayId: coveragePlanDisplayId ?? this.coveragePlanDisplayId,
+      coveragePlanDisplayId:
+          coveragePlanDisplayId ?? this.coveragePlanDisplayId,
       status: status ?? this.status,
       billingStatus: billingStatus ?? this.billingStatus,
       amount: amount ?? this.amount,
@@ -383,6 +468,19 @@ final class BillingWorkItem {
       payments: payments ?? this.payments,
       adjustments: adjustments ?? this.adjustments,
       financials: financials ?? this.financials,
+      approvalType: approvalType ?? this.approvalType,
+      requestReason: requestReason ?? this.requestReason,
+      requestedByDisplayId: requestedByDisplayId ?? this.requestedByDisplayId,
+      requestedAt: requestedAt ?? this.requestedAt,
+      decidedAt: decidedAt ?? this.decidedAt,
+      targetDisplayId: targetDisplayId ?? this.targetDisplayId,
+      linkedInvoiceId: linkedInvoiceId ?? this.linkedInvoiceId,
+      submittedAt: submittedAt ?? this.submittedAt,
+      approvedAt: approvedAt ?? this.approvedAt,
+      encounterId: encounterId ?? this.encounterId,
+      encounterDisplayId: encounterDisplayId ?? this.encounterDisplayId,
+      settlementAmount: settlementAmount ?? this.settlementAmount,
+      decisionNotes: decisionNotes ?? this.decisionNotes,
     );
   }
 }
@@ -392,14 +490,19 @@ final class BillingMutationResult {
   const BillingMutationResult({
     this.invoice,
     this.payment,
+    this.approval,
+    this.claim,
     this.approvalRequired = false,
   });
 
   final BillingWorkItem? invoice;
   final BillingPayment? payment;
+  final BillingWorkItem? approval;
+  final BillingWorkItem? claim;
   final bool approvalRequired;
 
-  bool get hasImmediatePatch => invoice != null || payment != null;
+  bool get hasImmediatePatch =>
+      invoice != null || payment != null || approval != null || claim != null;
 }
 
 @immutable
@@ -452,6 +555,7 @@ final class BillingWorkspaceState {
     this.lastFailure,
     this.isRefreshing = false,
     this.isSaving = false,
+    this.lastActionPendingApproval = false,
   });
 
   final BillingWorkspaceQuery query;
@@ -461,6 +565,7 @@ final class BillingWorkspaceState {
   final Object? lastFailure;
   final bool isRefreshing;
   final bool isSaving;
+  final bool lastActionPendingApproval;
 
   int get workloadCount => overview.summary.workloadCount;
 
@@ -484,6 +589,7 @@ final class BillingWorkspaceState {
     Object? lastFailure,
     bool? isRefreshing,
     bool? isSaving,
+    bool? lastActionPendingApproval,
     bool clearSelectedItem = false,
     bool clearLastFailure = false,
   }) {
@@ -497,6 +603,8 @@ final class BillingWorkspaceState {
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isSaving: isSaving ?? this.isSaving,
+      lastActionPendingApproval:
+          lastActionPendingApproval ?? this.lastActionPendingApproval,
     );
   }
 }
@@ -546,6 +654,108 @@ final class BillingAdjustmentDraft {
   final String reason;
   final String? status;
   final String? notes;
+}
+
+@immutable
+final class BillingLedgerQuery {
+  const BillingLedgerQuery({
+    this.from,
+    this.to,
+    this.pageRequest = const AppPageRequest(pageSize: 20),
+  });
+
+  final DateTime? from;
+  final DateTime? to;
+  final AppPageRequest pageRequest;
+}
+
+@immutable
+final class BillingLedgerSummary {
+  const BillingLedgerSummary({
+    this.totalInvoiced = 0,
+    this.totalAdjustments = 0,
+    this.totalPaid = 0,
+    this.totalRefunded = 0,
+    this.netPaid = 0,
+    this.balanceDue = 0,
+  });
+
+  final num totalInvoiced;
+  final num totalAdjustments;
+  final num totalPaid;
+  final num totalRefunded;
+  final num netPaid;
+  final num balanceDue;
+}
+
+@immutable
+final class BillingLedgerEntry {
+  const BillingLedgerEntry({
+    required this.id,
+    required this.kind,
+    this.action,
+    this.status,
+    this.displayId,
+    this.invoiceDisplayId,
+    this.patientDisplayName,
+    this.amount = 0,
+    this.currency,
+    this.timelineAt,
+  });
+
+  final String id;
+  final BillingWorkItemKind kind;
+  final String? action;
+  final String? status;
+  final String? displayId;
+  final String? invoiceDisplayId;
+  final String? patientDisplayName;
+  final num amount;
+  final String? currency;
+  final DateTime? timelineAt;
+}
+
+@immutable
+final class BillingPatientLedger {
+  const BillingPatientLedger({
+    required this.patientId,
+    this.patientDisplayId,
+    this.patientDisplayName,
+    this.summary = const BillingLedgerSummary(),
+    this.entries = const <BillingLedgerEntry>[],
+    this.totalEntryCount,
+  });
+
+  final String patientId;
+  final String? patientDisplayId;
+  final String? patientDisplayName;
+  final BillingLedgerSummary summary;
+  final List<BillingLedgerEntry> entries;
+  final int? totalEntryCount;
+}
+
+@immutable
+final class BillingInvoiceDocument {
+  const BillingInvoiceDocument({required this.bytes, required this.fileName});
+
+  final List<int> bytes;
+  final String fileName;
+}
+
+@immutable
+final class BillingApprovalDecisionDraft {
+  const BillingApprovalDecisionDraft({this.decisionNotes, this.reason});
+
+  final String? decisionNotes;
+  final String? reason;
+}
+
+@immutable
+final class BillingClaimActionDraft {
+  const BillingClaimActionDraft({this.notes, this.status});
+
+  final String? notes;
+  final String? status;
 }
 
 @immutable

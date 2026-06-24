@@ -370,6 +370,552 @@ abstract class AppLocalizations {
   /// **'Billing'**
   String get navigationBillingLabel;
 
+  /// Title for the billing cashier workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billingWorkspaceTitle;
+
+  /// Loading title for the billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading billing workspace'**
+  String get billingLoadingTitle;
+
+  /// Loading body for the billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching invoices, payments, refunds, and closeout queues.'**
+  String get billingLoadingBody;
+
+  /// Live status label for billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get billingStatusLive;
+
+  /// Saving status label for billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting'**
+  String get billingStatusPosting;
+
+  /// Description for the billing worklist panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier worklist for invoices, payments, claims, and approvals.'**
+  String get billingWorklistDescription;
+
+  /// Label for all billing work items queue.
+  ///
+  /// In en, this message translates to:
+  /// **'All billing work items'**
+  String get billingAllWorkItems;
+
+  /// Label for invoices awaiting payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting payment'**
+  String get billingAwaitingPayment;
+
+  /// Label for draft invoices needing issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue queue'**
+  String get billingIssueQueue;
+
+  /// Label for pending insurance claims queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims pending'**
+  String get billingClaimsPending;
+
+  /// Label for approval-required queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals'**
+  String get billingApprovals;
+
+  /// Label for overdue invoices queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get billingOverdue;
+
+  /// Label for needs-issue queue filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs issue'**
+  String get billingNeedsIssue;
+
+  /// Label for approval-required queue filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get billingApprovalRequired;
+
+  /// Label for billing queue filter group.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get billingQueueLabel;
+
+  /// Search hint for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice, patient, or reference'**
+  String get billingSearchHint;
+
+  /// Semantic label for billing search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search billing worklist'**
+  String get billingSearchSemanticLabel;
+
+  /// Clear action for billing search.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear billing search'**
+  String get billingClearSearch;
+
+  /// Title for billing advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing filters'**
+  String get billingFiltersTitle;
+
+  /// Empty state title for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'No billing items'**
+  String get billingEmptyTitle;
+
+  /// Empty state body for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'This queue has no invoices or billing actions right now.'**
+  String get billingEmptyBody;
+
+  /// Patient column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get billingPatientColumn;
+
+  /// Status column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get billingStatusColumn;
+
+  /// Amount column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get billingAmountColumn;
+
+  /// Paid column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get billingPaidColumn;
+
+  /// Balance column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get billingBalanceColumn;
+
+  /// Updated column label in billing table.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get billingUpdatedColumn;
+
+  /// Invoice label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get billingInvoiceLabel;
+
+  /// Receive payment action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive payment'**
+  String get billingReceivePayment;
+
+  /// Issue invoice action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get billingIssueAction;
+
+  /// Refund action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get billingRefundAction;
+
+  /// Adjustment action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust'**
+  String get billingAdjustAction;
+
+  /// Void invoice action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Void'**
+  String get billingVoidAction;
+
+  /// Send invoice action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get billingSendAction;
+
+  /// Close shift action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Close shift'**
+  String get billingCloseShift;
+
+  /// Close day action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Close day'**
+  String get billingCloseDay;
+
+  /// Issue invoice dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue invoice'**
+  String get billingIssueInvoice;
+
+  /// Send invoice dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invoice'**
+  String get billingSendInvoice;
+
+  /// Void invoice dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Void invoice'**
+  String get billingVoidInvoice;
+
+  /// Request adjustment dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Request adjustment'**
+  String get billingRequestAdjustment;
+
+  /// Request refund dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Request refund'**
+  String get billingRequestRefund;
+
+  /// Due amount label.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get billingDueLabel;
+
+  /// Empty line items message.
+  ///
+  /// In en, this message translates to:
+  /// **'No line items returned for this invoice.'**
+  String get billingNoLineItems;
+
+  /// Empty payments message.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments recorded for this invoice.'**
+  String get billingNoPayments;
+
+  /// Empty adjustments message.
+  ///
+  /// In en, this message translates to:
+  /// **'No billing adjustments recorded.'**
+  String get billingNoAdjustments;
+
+  /// Line items section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Line items'**
+  String get billingLineItemsTitle;
+
+  /// Payments section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get billingPaymentsTitle;
+
+  /// Adjustments section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustments'**
+  String get billingAdjustmentsTitle;
+
+  /// Financial summary section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial summary'**
+  String get billingFinancialSummaryTitle;
+
+  /// Invoice detail dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice detail'**
+  String get billingInvoiceDetailTitle;
+
+  /// Generic billing item detail title.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing item'**
+  String get billingItemDetailTitle;
+
+  /// Claim detail dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance claim'**
+  String get billingClaimDetailTitle;
+
+  /// Approval detail dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval request'**
+  String get billingApprovalDetailTitle;
+
+  /// Pre-authorization detail dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-authorization'**
+  String get billingPreAuthDetailTitle;
+
+  /// Success snackbar after billing mutation.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing action saved.'**
+  String get billingActionSaved;
+
+  /// Snackbar when billing action requires approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted. Pending approval before it takes effect.'**
+  String get billingActionPendingApproval;
+
+  /// Success message after invoice PDF download.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice document saved.'**
+  String get billingDocumentDownloaded;
+
+  /// Failure message when PDF save is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice document could not be saved on this device.'**
+  String get billingDocumentUnavailable;
+
+  /// Tooltip for invoice document download.
+  ///
+  /// In en, this message translates to:
+  /// **'Download invoice PDF'**
+  String get billingDocumentTooltip;
+
+  /// Action to open patient financial ledger.
+  ///
+  /// In en, this message translates to:
+  /// **'View ledger'**
+  String get billingViewLedgerAction;
+
+  /// Patient ledger dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ledger'**
+  String get billingLedgerTitle;
+
+  /// Empty patient ledger message.
+  ///
+  /// In en, this message translates to:
+  /// **'No ledger entries for this patient in the selected period.'**
+  String get billingLedgerEmpty;
+
+  /// Approve billing approval action.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get billingApproveAction;
+
+  /// Reject billing approval action.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get billingRejectAction;
+
+  /// Submit insurance claim action.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit claim'**
+  String get billingSubmitClaimAction;
+
+  /// Reconcile insurance claim action.
+  ///
+  /// In en, this message translates to:
+  /// **'Record insurer response'**
+  String get billingReconcileClaimAction;
+
+  /// Finalize encounter billing when balances are cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize financial clearance'**
+  String get billingFinalizeEncounterAction;
+
+  /// Body for finalize encounter billing confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'All linked charges are issued and settled. Confirm financial clearance for this encounter.'**
+  String get billingFinalizeEncounterBody;
+
+  /// Encounter field label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get billingEncounterLabel;
+
+  /// Coverage plan field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plan'**
+  String get billingCoveragePlanLabel;
+
+  /// Approval request type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Request type'**
+  String get billingRequestTypeLabel;
+
+  /// Approval requester label.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested by'**
+  String get billingRequesterLabel;
+
+  /// Reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get billingReasonLabel;
+
+  /// Linked invoice field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked invoice'**
+  String get billingLinkedInvoiceLabel;
+
+  /// Cleared clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared'**
+  String get billingClearanceCleared;
+
+  /// Partially paid clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially paid'**
+  String get billingClearancePartiallyPaid;
+
+  /// Deferred clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred'**
+  String get billingClearanceDeferred;
+
+  /// Insured clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Insured'**
+  String get billingClearanceInsured;
+
+  /// Pending authorization clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending authorization'**
+  String get billingClearancePendingAuth;
+
+  /// Blocked clearance state label.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get billingClearanceBlocked;
+
+  /// Fallback when a billing timestamp is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get billingNotRecorded;
+
+  /// Fallback for unknown billing values.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get billingUnknownValue;
+
+  /// Previous page label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get billingPreviousPageLabel;
+
+  /// Next page label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get billingNextPageLabel;
+
+  /// Clear billing filters action.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get billingClearFilters;
+
+  /// Hint for payment reference field.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money, card, or bank reference'**
+  String get billingPaymentReferenceHint;
+
+  /// Hint for payer field.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient, sponsor, insurer, or contact'**
+  String get billingPayerHint;
+
+  /// Draft billing status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get billingStatusDraft;
+
+  /// Issued billing status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued'**
+  String get billingStatusIssued;
+
+  /// Partial billing status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get billingStatusPartial;
+
+  /// Paid billing status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get billingStatusPaid;
+
   /// Navigation label for the subscriptions workspace.
   ///
   /// In en, this message translates to:

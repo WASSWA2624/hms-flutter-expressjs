@@ -33,9 +33,9 @@ List<ClinicalRequestBillingLineItem> _lineItemsFromBillingMap(
   }
 
   return raw
-      .whereType<Map>()
+      .whereType<Map<String, Object?>>()
       .map(
-        (Map<dynamic, dynamic> entry) => ClinicalRequestBillingLineItem(
+        (Map<String, Object?> entry) => ClinicalRequestBillingLineItem(
           id: entry['id']?.toString() ?? entry['label']?.toString() ?? '',
           label: entry['label']?.toString() ?? '',
           quantity: _asNum(entry['quantity']) ?? 1,

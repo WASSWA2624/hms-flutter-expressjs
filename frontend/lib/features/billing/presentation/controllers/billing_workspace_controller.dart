@@ -207,6 +207,67 @@ final class BillingWorkspaceController
     return _submitMaintenanceAction(() => _repository.closeDay(draft));
   }
 
+  Future<Result<BillingPatientLedger>> fetchPatientLedger(
+    String patientIdentifier, {
+    BillingLedgerQuery query = const BillingLedgerQuery(),
+  }) {
+    return _repository.getPatientLedger(patientIdentifier, query);
+  }
+
+  Future<Result<BillingInvoiceDocument>> downloadInvoiceDocument(
+    String invoiceId,
+  ) {
+    return _repository.getInvoiceDocument(invoiceId);
+  }
+
+  Future<AppFailure?> approveSelectedApproval(
+    BillingApprovalDecisionDraft draft,
+  ) {
+    final BillingWorkItem? selected = _selectedApproval;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(() => _repository.approveApproval(selected.id, draft));
+  }
+
+  Future<AppFailure?> rejectSelectedApproval(
+    BillingApprovalDecisionDraft draft,
+  ) {
+    final BillingWorkItem? selected = _selectedApproval;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(() => _repository.rejectApproval(selected.id, draft));
+  }
+
+  Future<AppFailure?> submitSelectedClaim(BillingClaimActionDraft draft) {
+    final BillingWorkItem? selected = _selectedClaim;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(() => _repository.submitClaim(selected.id, draft));
+  }
+
+  Future<AppFailure?> reconcileSelectedClaim(BillingClaimActionDraft draft) {
+    final BillingWorkItem? selected = _selectedClaim;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(() => _repository.reconcileClaim(selected.id, draft));
+  }
+
+  Future<AppFailure?> updateSelectedPreAuthorization(
+    Map<String, Object?> payload,
+  ) {
+    final BillingWorkItem? selected = _selectedPreAuthorization;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitAction(
+      () => _repository.updatePreAuthorization(selected.id, payload),
+    );
+  }
+
   Future<AppFailure?> _submitAction(
     Future<Result<BillingMutationResult>> Function() submit,
   ) async {
@@ -225,11 +286,21 @@ final class BillingWorkspaceController
           _emit(patched.copyWith(isSaving: false, isRefreshing: true));
         }
         final String? preferredSelectedId =
-            mutation.invoice?.id ?? current.selectedItem?.id;
+            mutation.invoice?.id ??
+            mutation.approval?.id ??
+            mutation.claim?.id ??
+            current.selectedItem?.id;
         final AppFailure? failure = await _refreshWorkspace(
           preferredSelectedId: preferredSelectedId,
         );
         await _flushPendingRefresh(preferredSelectedId: preferredSelectedId);
+        if (patched != null) {
+          _emit(
+            _currentState!.copyWith(
+              lastActionPendingApproval: mutation.approvalRequired,
+            ),
+          );
+        }
         return failure;
       },
       failure: (AppFailure failure) async {
@@ -336,7 +407,9 @@ final class BillingWorkspaceController
     }
   }
 
-  Future<AppFailure?> _flushPendingRefresh({String? preferredSelectedId}) async {
+  Future<AppFailure?> _flushPendingRefresh({
+    String? preferredSelectedId,
+  }) async {
     if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
       return null;
     }
@@ -350,18 +423,23 @@ final class BillingWorkspaceController
     }
 
     final BillingWorkspaceState? current = _currentState;
-    final BillingWorkItem? invoice = mutation.invoice;
-    if (current == null || invoice == null) {
+    if (current == null) {
+      return;
+    }
+
+    final BillingWorkItem? patchItem =
+        mutation.invoice ?? mutation.approval ?? mutation.claim;
+    if (patchItem == null) {
       return;
     }
 
     final AppPage<BillingWorkItem> workItems = _upsertWorkItem(
       current.workItems,
-      invoice,
+      patchItem,
     );
-    final BillingWorkItem selected = current.selectedItem?.id == invoice.id
-        ? invoice
-        : current.selectedItem ?? invoice;
+    final BillingWorkItem selected = current.selectedItem?.id == patchItem.id
+        ? patchItem
+        : current.selectedItem ?? patchItem;
     _emit(
       current.copyWith(
         workItems: workItems,
@@ -411,6 +489,21 @@ final class BillingWorkspaceController
   BillingWorkItem? get _selectedInvoice {
     final BillingWorkItem? selected = _currentState?.selectedItem;
     return selected != null && selected.isInvoice ? selected : null;
+  }
+
+  BillingWorkItem? get _selectedApproval {
+    final BillingWorkItem? selected = _currentState?.selectedItem;
+    return selected != null && selected.isApproval ? selected : null;
+  }
+
+  BillingWorkItem? get _selectedClaim {
+    final BillingWorkItem? selected = _currentState?.selectedItem;
+    return selected != null && selected.isClaim ? selected : null;
+  }
+
+  BillingWorkItem? get _selectedPreAuthorization {
+    final BillingWorkItem? selected = _currentState?.selectedItem;
+    return selected != null && selected.isPreAuthorization ? selected : null;
   }
 
   BillingWorkspaceState? get _currentState {

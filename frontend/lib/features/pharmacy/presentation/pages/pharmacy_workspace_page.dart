@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
@@ -643,22 +644,6 @@ Future<void> _openRecordPaymentDialog(
   }
 }
 
-Future<void> _openFormularyStockDialog(
-  BuildContext context,
-  PharmacyWorkspaceState state,
-) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.pharmacyDrugPanelTitle),
-      icon: const Icon(Icons.inventory_2_outlined),
-      scrollable: true,
-      maxWidth: 980,
-      content: _DrugStockPanel(state: state),
-    ),
-  );
-}
-
 PharmacyWorkspaceState? _readPharmacyState(WidgetRef ref) {
   return ref
       .read(pharmacyWorkspaceControllerProvider)
@@ -676,10 +661,6 @@ class _PharmacyActionPanel extends ConsumerWidget {
     required this.writeRequirement,
   });
 
-  static const AccessRequirement _billingRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.billingWrite],
-  );
-
   final PharmacyOrderWorkflow workflow;
   final AccessRequirement writeRequirement;
 
@@ -687,6 +668,9 @@ class _PharmacyActionPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final PharmacyOrder order = workflow.order;
+    final bool canBill = ref
+        .watch(appAccessPolicyProvider)
+        .grants(AppPermissions.billingWrite);
     final bool canPrepare =
         workflow.nextActions.canPrepareDispense || order.canPrepareDispense;
     final bool canAttest =
@@ -696,49 +680,58 @@ class _PharmacyActionPanel extends ConsumerWidget {
     final bool paymentBlocksDispense =
         order.requiresPaymentBeforeDispense && canPrepare;
 
+    final List<AppActionItem> actions = <AppActionItem>[
+      if (order.requiresPaymentBeforeDispense)
+        AppActionItem(
+          label: l10n.pharmacyRecordPaymentAction,
+          leadingIcon: Icons.payments_outlined,
+          enabled: canBill,
+          onPressed: () => _openRecordPaymentDialog(context, ref, order),
+        ),
+      AppActionItem(
+        label: l10n.pharmacyDispenseAction,
+        leadingIcon: Icons.medication_liquid_outlined,
+        enabled: canPrepare && !paymentBlocksDispense,
+        tooltip: paymentBlocksDispense
+            ? l10n.pharmacyDispenseBlockedPaymentBody
+            : null,
+        onPressed: () => _openDispenseDialog(context, workflow),
+      ),
+      AppActionItem(
+        label: l10n.pharmacyAttestAction,
+        leadingIcon: Icons.verified_outlined,
+        enabled: canAttest,
+        onPressed: () => _openAttestDialog(context, workflow),
+      ),
+      AppActionItem(
+        label: l10n.pharmacyReturnAction,
+        leadingIcon: Icons.keyboard_return_outlined,
+        enabled: canReturn,
+        onPressed: () => _openReturnDialog(context, workflow),
+      ),
+      AppActionItem(
+        label: l10n.pharmacyCancelOrderAction,
+        leadingIcon: Icons.cancel_outlined,
+        enabled: canCancel,
+        onPressed: () => _openCancelDialog(context),
+      ),
+    ];
+
     return AppAccessActionGate(
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) => AppActionPanel(
         title: l10n.pharmacyActionsPanelTitle,
-        actions: <AppActionItem>[
-          if (order.requiresPaymentBeforeDispense)
-            AppAccessActionGate(
-              requirement: _billingRequirement,
-              builder: (BuildContext context, bool canBill) => AppActionItem(
-                label: l10n.pharmacyRecordPaymentAction,
-                leadingIcon: Icons.payments_outlined,
-                enabled: canBill,
-                onPressed: () => _openRecordPaymentDialog(context, ref, order),
+        actions: actions
+            .map(
+              (AppActionItem action) => AppActionItem(
+                label: action.label,
+                leadingIcon: action.leadingIcon,
+                enabled: isAllowed && action.enabled,
+                tooltip: action.tooltip,
+                onPressed: action.onPressed,
               ),
-            ),
-          AppActionItem(
-            label: l10n.pharmacyDispenseAction,
-            leadingIcon: Icons.medication_liquid_outlined,
-            enabled: isAllowed && canPrepare && !paymentBlocksDispense,
-            tooltip: paymentBlocksDispense
-                ? l10n.pharmacyDispenseBlockedPaymentBody
-                : null,
-            onPressed: () => _openDispenseDialog(context, workflow),
-          ),
-          AppActionItem(
-            label: l10n.pharmacyAttestAction,
-            leadingIcon: Icons.verified_outlined,
-            enabled: isAllowed && canAttest,
-            onPressed: () => _openAttestDialog(context, workflow),
-          ),
-          AppActionItem(
-            label: l10n.pharmacyReturnAction,
-            leadingIcon: Icons.keyboard_return_outlined,
-            enabled: isAllowed && canReturn,
-            onPressed: () => _openReturnDialog(context, workflow),
-          ),
-          AppActionItem(
-            label: l10n.pharmacyCancelOrderAction,
-            leadingIcon: Icons.cancel_outlined,
-            enabled: isAllowed && canCancel,
-            onPressed: () => _openCancelDialog(context),
-          ),
-        ],
+            )
+            .toList(growable: false),
         extraActions: <Widget>[
           AppReportActionButton.print(
             label: l10n.pharmacyPrintInstructionsAction,

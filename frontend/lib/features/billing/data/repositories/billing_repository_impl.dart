@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -150,7 +151,9 @@ final class BillingRepositoryImpl implements BillingRepository {
   }
 
   @override
-  Future<Result<BillingMutationResult>> requestRefund(BillingRefundDraft draft) {
+  Future<Result<BillingMutationResult>> requestRefund(
+    BillingRefundDraft draft,
+  ) {
     return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>[
         'billing',
@@ -232,6 +235,147 @@ final class BillingRepositoryImpl implements BillingRepository {
       decoder: (_) {},
     );
   }
+
+  @override
+  Future<Result<BillingPatientLedger>> getPatientLedger(
+    String patientIdentifier,
+    BillingLedgerQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<BillingPatientLedger>(
+      ApiEndpoints.nested(HmsApiResource.billing, 'patients', <String>[
+        patientIdentifier,
+        'ledger',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'from': query.from?.toUtc().toIso8601String(),
+        'to': query.to?.toUtc().toIso8601String(),
+      }),
+      decoder: (Object? data) {
+        return BillingPatientLedgerDto.fromResponse(data, request).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<BillingMutationResult>> approveApproval(
+    String approvalId,
+    BillingApprovalDecisionDraft draft,
+  ) {
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.apiV1(<String>[
+        'billing',
+        'approvals',
+        approvalId,
+        'approve',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'decision_notes': draft.decisionNotes,
+      }),
+      decoder: (Object? data) => BillingMutationResultDto.fromResponse(
+        data,
+        fallbackQueue: BillingQueueType.approvalRequired,
+      ).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<BillingMutationResult>> rejectApproval(
+    String approvalId,
+    BillingApprovalDecisionDraft draft,
+  ) {
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.apiV1(<String>[
+        'billing',
+        'approvals',
+        approvalId,
+        'reject',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'reason': draft.reason,
+        'decision_notes': draft.decisionNotes,
+      }),
+      decoder: (Object? data) => BillingMutationResultDto.fromResponse(
+        data,
+        fallbackQueue: BillingQueueType.approvalRequired,
+      ).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<BillingInvoiceDocument>> getInvoiceDocument(String invoiceId) {
+    return _apiClient.get<BillingInvoiceDocument>(
+      ApiEndpoints.apiV1(<String>[
+        'billing',
+        'invoices',
+        invoiceId,
+        'document',
+      ]),
+      options: Options(responseType: ResponseType.bytes),
+      decoder: (Object? data) {
+        final List<int> bytes = _decodeBytes(data);
+        return BillingInvoiceDocument(
+          bytes: bytes,
+          fileName: 'invoice-$invoiceId.pdf',
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Result<BillingMutationResult>> submitClaim(
+    String claimId,
+    BillingClaimActionDraft draft,
+  ) {
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.nested(HmsApiResource.insuranceClaims, claimId, <String>[
+        'submit',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'notes': draft.notes,
+        'submitted_at': DateTime.now().toUtc().toIso8601String(),
+      }),
+      decoder: (Object? data) => BillingMutationResultDto.fromResponse(
+        data,
+        fallbackQueue: BillingQueueType.claimsPending,
+      ).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<BillingMutationResult>> reconcileClaim(
+    String claimId,
+    BillingClaimActionDraft draft,
+  ) {
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.nested(HmsApiResource.insuranceClaims, claimId, <String>[
+        'reconcile',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'status': draft.status,
+        'notes': draft.notes,
+      }),
+      decoder: (Object? data) => BillingMutationResultDto.fromResponse(
+        data,
+        fallbackQueue: BillingQueueType.claimsPending,
+      ).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<BillingMutationResult>> updatePreAuthorization(
+    String preAuthorizationId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<BillingMutationResult>(
+      ApiEndpoints.byId(HmsApiResource.preAuthorizations, preAuthorizationId),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
+    );
+  }
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {
@@ -275,4 +419,14 @@ String _signedDecimalString(String value) {
 String? _nullableDecimalString(String? value) {
   final String? normalized = _nonEmpty(value);
   return normalized == null ? null : _decimalString(normalized);
+}
+
+List<int> _decodeBytes(Object? data) {
+  if (data is List<int>) {
+    return data;
+  }
+  if (data is List) {
+    return data.whereType<int>().toList(growable: false);
+  }
+  return const <int>[];
 }

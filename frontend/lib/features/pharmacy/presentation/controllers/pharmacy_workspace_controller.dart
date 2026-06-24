@@ -443,7 +443,7 @@ final class PharmacyWorkspaceController
 
   String? resolveTenantId() {
     final SessionState sessionState = ref.read(sessionStateProvider);
-    return sessionState.session?.tenantId;
+    return sessionState.session?.user?.tenantId;
   }
 
   Future<AppFailure?> prepareDispense({
@@ -849,6 +849,8 @@ final class PharmacyWorkspaceController
             quantityRemainingTotal: item.quantityRemainingTotal,
             pendingAttestationBatchCount: item.pendingAttestationBatchCount,
             pendingAttestationBatches: item.pendingAttestationBatches,
+            paymentStatus: item.paymentStatus,
+            billing: item.billing,
           ),
           items: selected.items,
           attestations: selected.attestations,

@@ -94,5 +94,65 @@ void main() {
       expect(item.items.single.description, 'Consultation');
       expect(item.firstRefundablePayment?.id, 'payment-1');
     });
+
+    test('parses approval work items', () {
+      final page = BillingWorkItemPageDto.fromResponse(<String, Object?>{
+        'data': <String, Object?>{
+          'queue': 'APPROVAL_REQUIRED',
+          'items': <Object?>[
+            <String, Object?>{
+              'id': 'approval-1',
+              'display_id': 'APR-001',
+              'approval_type': 'REFUND',
+              'status': 'PENDING',
+              'reason': 'Large refund',
+              'requested_by_user_display_id': 'USR-001',
+              'target_display_id': 'INV-001',
+            },
+          ],
+          'pagination': <String, Object?>{'total': 1},
+        },
+      }, const AppPageRequest(pageSize: 12)).page;
+
+      final BillingWorkItem item = page.items.single;
+      expect(item.kind, BillingWorkItemKind.approval);
+      expect(item.canApproveOrReject, isTrue);
+      expect(item.approvalType, 'REFUND');
+    });
+
+    test('parses patient ledger', () {
+      final BillingPatientLedger ledger = BillingPatientLedgerDto.fromResponse(
+        <String, Object?>{
+          'data': <String, Object?>{
+            'patient': <String, Object?>{
+              'id': 'patient-1',
+              'display_id': 'PAT-001',
+              'display_name': 'Jane Doe',
+            },
+            'summary': <String, Object?>{
+              'total_invoiced': '1000.00',
+              'net_paid': '400.00',
+              'balance_due': '600.00',
+            },
+            'ledger': <String, Object?>{
+              'items': <Object?>[
+                <String, Object?>{
+                  'type': 'INVOICE',
+                  'display_id': 'INV-001',
+                  'amount': '1000.00',
+                  'timeline_at': '2026-05-17T08:00:00.000Z',
+                },
+              ],
+              'pagination': <String, Object?>{'total': 1},
+            },
+          },
+        },
+        const AppPageRequest(pageSize: 20),
+      ).toEntity();
+
+      expect(ledger.patientDisplayId, 'PAT-001');
+      expect(ledger.summary.balanceDue, 600);
+      expect(ledger.entries.single.kind, BillingWorkItemKind.invoice);
+    });
   });
 }

@@ -42,4 +42,36 @@ abstract interface class BillingRepository {
   Future<Result<void>> closeShift(BillingCloseDraft draft);
 
   Future<Result<void>> closeDay(BillingCloseDraft draft);
+
+  Future<Result<BillingPatientLedger>> getPatientLedger(
+    String patientIdentifier,
+    BillingLedgerQuery query,
+  );
+
+  Future<Result<BillingMutationResult>> approveApproval(
+    String approvalId,
+    BillingApprovalDecisionDraft draft,
+  );
+
+  Future<Result<BillingMutationResult>> rejectApproval(
+    String approvalId,
+    BillingApprovalDecisionDraft draft,
+  );
+
+  Future<Result<BillingInvoiceDocument>> getInvoiceDocument(String invoiceId);
+
+  Future<Result<BillingMutationResult>> submitClaim(
+    String claimId,
+    BillingClaimActionDraft draft,
+  );
+
+  Future<Result<BillingMutationResult>> reconcileClaim(
+    String claimId,
+    BillingClaimActionDraft draft,
+  );
+
+  Future<Result<BillingMutationResult>> updatePreAuthorization(
+    String preAuthorizationId,
+    Map<String, Object?> payload,
+  );
 }

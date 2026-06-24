@@ -151,16 +151,34 @@ final class BillingWorkItemDto {
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       tenantId: _string(json['tenant_id']),
       facilityId: _string(json['facility_id']),
-      patientId: _string(json['patient_id']),
-      patientDisplayId: _string(json['patient_display_id']),
-      patientDisplayName: _string(json['patient_display_name']),
-      invoiceDisplayId: _string(json['invoice_display_id']),
-      coveragePlanDisplayId: _string(json['coverage_plan_display_id']),
+      patientId:
+          _string(json['patient_id']) ??
+          _string(_map(json['invoice'])['patient_id']) ??
+          _string(_map(_map(json['invoice'])['patient'])['id']),
+      patientDisplayId:
+          _string(json['patient_display_id']) ??
+          _string(_map(_map(json['invoice'])['patient'])['human_friendly_id']),
+      patientDisplayName:
+          _string(json['patient_display_name']) ??
+          _patientName(_map(_map(json['invoice'])['patient'])),
+      invoiceDisplayId:
+          _string(json['invoice_display_id']) ??
+          _string(_map(json['invoice'])['display_id']) ??
+          _string(_map(json['invoice'])['human_friendly_id']),
+      coveragePlanDisplayId:
+          _string(json['coverage_plan_display_id']) ??
+          _string(_map(json['coverage_plan'])['human_friendly_id']),
       status: _string(json['status']),
       billingStatus: _string(json['billing_status']),
       amount: _num(json['total_amount']) ?? _num(json['amount']) ?? 0,
-      currency: _string(json['currency']),
-      timelineAt: _date(json['timeline_at']) ?? _date(json['issued_at']),
+      currency:
+          _string(json['currency']) ??
+          _string(_map(json['invoice'])['currency']),
+      timelineAt:
+          _date(json['timeline_at']) ??
+          _date(json['issued_at']) ??
+          _date(json['submitted_at']) ??
+          _date(json['requested_at']),
       items: _list(json['items'])
           .map(BillingInvoiceItemDto.new)
           .map((BillingInvoiceItemDto dto) => dto.toEntity())
@@ -177,6 +195,24 @@ final class BillingWorkItemDto {
           .where((BillingAdjustment item) => item.id.isNotEmpty)
           .toList(growable: false),
       financials: financials,
+      approvalType: _string(json['approval_type']),
+      requestReason: _string(json['reason']),
+      requestedByDisplayId:
+          _string(json['requested_by_user_display_id']) ??
+          _string(_map(json['requested_by_user'])['human_friendly_id']),
+      requestedAt: _date(json['requested_at']),
+      decidedAt: _date(json['decided_at']),
+      targetDisplayId: _string(json['target_display_id']),
+      linkedInvoiceId:
+          _string(json['invoice_id']) ??
+          _string(_map(json['invoice'])['id']) ??
+          _string(_map(json['payload_json'])['invoice_id']),
+      submittedAt: _date(json['submitted_at']),
+      approvedAt: _date(json['approved_at']),
+      encounterId: _string(json['encounter_id']),
+      encounterDisplayId: _string(json['encounter_display_id']),
+      settlementAmount: _num(json['settlement_amount']),
+      decisionNotes: _string(json['decision_notes']),
     );
   }
 }
@@ -243,6 +279,7 @@ final class BillingInvoiceItemDto {
   final BillingJsonMap json;
 
   BillingInvoiceItem toEntity() {
+    final BillingJsonMap metadata = _map(json['metadata_json']);
     return BillingInvoiceItem(
       id: _firstString(<Object?>[
         json['id'],
@@ -254,6 +291,14 @@ final class BillingInvoiceItemDto {
       quantity: _int(json['quantity']) ?? 1,
       unitPrice: _num(json['unit_price']) ?? 0,
       totalPrice: _num(json['total_price']) ?? 0,
+      sourceModule:
+          _string(metadata['source_module']) ?? _string(json['source_module']),
+      sourceOrderDisplayId:
+          _string(metadata['order_display_id']) ??
+          _string(json['order_display_id']),
+      encounterDisplayId:
+          _string(metadata['encounter_display_id']) ??
+          _string(json['encounter_display_id']),
     );
   }
 }
@@ -333,6 +378,16 @@ final class BillingMutationResultDto {
       paymentJson = json;
     }
 
+    BillingJsonMap approvalJson = _map(json['approval']);
+    if (approvalJson.isEmpty && _looksLikeApproval(json)) {
+      approvalJson = json;
+    }
+
+    BillingJsonMap claimJson = _map(json['claim']);
+    if (claimJson.isEmpty && _looksLikeClaim(json)) {
+      claimJson = json;
+    }
+
     final BillingWorkItem? invoice = invoiceJson.isEmpty
         ? null
         : BillingWorkItemDto(
@@ -342,12 +397,95 @@ final class BillingMutationResultDto {
     final BillingPayment? payment = paymentJson.isEmpty
         ? null
         : BillingPaymentDto(paymentJson).toEntity();
+    final BillingWorkItem? approval = approvalJson.isEmpty
+        ? null
+        : BillingWorkItemDto(
+            approvalJson,
+            fallbackQueue: BillingQueueType.approvalRequired,
+          ).toEntity();
+    final BillingWorkItem? claim = claimJson.isEmpty
+        ? null
+        : BillingWorkItemDto(
+            claimJson,
+            fallbackQueue: BillingQueueType.claimsPending,
+          ).toEntity();
 
     return BillingMutationResult(
       invoice: invoice?.id.isEmpty == true ? null : invoice,
       payment: payment?.id.isEmpty == true ? null : payment,
-      approvalRequired: json['approval_required'] == true ||
+      approval: approval?.id.isEmpty == true ? null : approval,
+      claim: claim?.id.isEmpty == true ? null : claim,
+      approvalRequired:
+          json['approval_required'] == true ||
           _map(json['approval']).isNotEmpty,
+    );
+  }
+}
+
+final class BillingPatientLedgerDto {
+  const BillingPatientLedgerDto(this.json, {required this.request});
+
+  final BillingJsonMap json;
+  final AppPageRequest request;
+
+  factory BillingPatientLedgerDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    return BillingPatientLedgerDto(_dataMap(responseData), request: request);
+  }
+
+  BillingPatientLedger toEntity() {
+    final BillingJsonMap patient = _map(json['patient']);
+    final BillingJsonMap summary = _map(json['summary']);
+    final BillingJsonMap ledger = _map(json['ledger']);
+    final List<BillingLedgerEntry> entries = _list(ledger['items'])
+        .map(BillingLedgerEntryDto.new)
+        .map((BillingLedgerEntryDto dto) => dto.toEntity())
+        .where((BillingLedgerEntry entry) => entry.id.isNotEmpty)
+        .toList(growable: false);
+
+    return BillingPatientLedger(
+      patientId: _firstString(<Object?>[patient['id'], patient['display_id']]),
+      patientDisplayId: _string(patient['display_id']),
+      patientDisplayName: _string(patient['display_name']),
+      summary: BillingLedgerSummary(
+        totalInvoiced: _num(summary['total_invoiced']) ?? 0,
+        totalAdjustments: _num(summary['total_adjustments']) ?? 0,
+        totalPaid: _num(summary['total_paid']) ?? 0,
+        totalRefunded: _num(summary['total_refunded']) ?? 0,
+        netPaid: _num(summary['net_paid']) ?? 0,
+        balanceDue: _num(summary['balance_due']) ?? 0,
+      ),
+      entries: entries,
+      totalEntryCount:
+          _int(_map(ledger['pagination'])['total']) ?? entries.length,
+    );
+  }
+}
+
+final class BillingLedgerEntryDto {
+  const BillingLedgerEntryDto(this.json);
+
+  final BillingJsonMap json;
+
+  BillingLedgerEntry toEntity() {
+    return BillingLedgerEntry(
+      id: _firstString(<Object?>[
+        json['display_id'],
+        json['invoice_display_id'],
+        json['payment_display_id'],
+        json['id'],
+      ]),
+      kind: _kind(json, BillingQueueType.pendingPayment),
+      action: _string(json['action']),
+      status: _string(json['status']),
+      displayId: _string(json['display_id']),
+      invoiceDisplayId: _string(json['invoice_display_id']),
+      patientDisplayName: _string(json['patient_display_name']),
+      amount: _num(json['amount']) ?? 0,
+      currency: _string(json['currency']),
+      timelineAt: _date(json['timeline_at']),
     );
   }
 }
@@ -409,6 +547,16 @@ bool _looksLikePayment(BillingJsonMap json) {
       (json.containsKey('paid_at') || json.containsKey('transaction_ref'));
 }
 
+bool _looksLikeApproval(BillingJsonMap json) {
+  return json.containsKey('approval_type') || json.containsKey('target_entity');
+}
+
+bool _looksLikeClaim(BillingJsonMap json) {
+  return json.containsKey('coverage_plan_id') &&
+      json.containsKey('invoice_id') &&
+      !json.containsKey('billing_status');
+}
+
 BillingWorkItemKind _kind(BillingJsonMap json, BillingQueueType fallbackQueue) {
   final String type = (_string(json['type']) ?? '').trim().toUpperCase();
   if (type == 'INVOICE' || json.containsKey('billing_status')) {
@@ -420,20 +568,32 @@ BillingWorkItemKind _kind(BillingJsonMap json, BillingQueueType fallbackQueue) {
   if (type == 'REFUND') {
     return BillingWorkItemKind.refund;
   }
-  if (type == 'CLAIM' || json.containsKey('coverage_plan_id')) {
+  if (type == 'CLAIM' ||
+      json.containsKey('coverage_plan_id') && json.containsKey('invoice_id')) {
     return BillingWorkItemKind.claim;
   }
   if (type == 'ADJUSTMENT') {
     return BillingWorkItemKind.adjustment;
   }
   if (type == 'APPROVAL' ||
+      json.containsKey('approval_type') ||
       fallbackQueue == BillingQueueType.approvalRequired) {
     return BillingWorkItemKind.approval;
   }
-  if (type == 'PRE_AUTH') {
+  if (type == 'PRE_AUTH' ||
+      json.containsKey('requested_at') &&
+          json.containsKey('coverage_plan_id') &&
+          !json.containsKey('invoice_id')) {
     return BillingWorkItemKind.preAuthorization;
   }
   return BillingWorkItemKind.other;
+}
+
+String? _patientName(BillingJsonMap patient) {
+  final String first = _string(patient['first_name']) ?? '';
+  final String last = _string(patient['last_name']) ?? '';
+  final String combined = '$first $last'.trim();
+  return combined.isEmpty ? null : combined;
 }
 
 BillingJsonMap _dataMap(Object? responseData) {

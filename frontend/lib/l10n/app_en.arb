@@ -189,6 +189,370 @@
   "@navigationBillingLabel": {
     "description": "Navigation label for the billing workspace."
   },
+  "billingWorkspaceTitle": "Billing",
+  "@billingWorkspaceTitle": {
+    "description": "Title for the billing cashier workspace."
+  },
+  "billingLoadingTitle": "Loading billing workspace",
+  "@billingLoadingTitle": {
+    "description": "Loading title for the billing workspace."
+  },
+  "billingLoadingBody": "Fetching invoices, payments, refunds, and closeout queues.",
+  "@billingLoadingBody": {
+    "description": "Loading body for the billing workspace."
+  },
+  "billingStatusLive": "Live",
+  "@billingStatusLive": {
+    "description": "Live status label for billing workspace."
+  },
+  "billingStatusPosting": "Posting",
+  "@billingStatusPosting": {
+    "description": "Saving status label for billing workspace."
+  },
+  "billingWorklistDescription": "Cashier worklist for invoices, payments, claims, and approvals.",
+  "@billingWorklistDescription": {
+    "description": "Description for the billing worklist panel."
+  },
+  "billingAllWorkItems": "All billing work items",
+  "@billingAllWorkItems": {
+    "description": "Label for all billing work items queue."
+  },
+  "billingAwaitingPayment": "Awaiting payment",
+  "@billingAwaitingPayment": {
+    "description": "Label for invoices awaiting payment."
+  },
+  "billingIssueQueue": "Issue queue",
+  "@billingIssueQueue": {
+    "description": "Label for draft invoices needing issue."
+  },
+  "billingClaimsPending": "Claims pending",
+  "@billingClaimsPending": {
+    "description": "Label for pending insurance claims queue."
+  },
+  "billingApprovals": "Approvals",
+  "@billingApprovals": {
+    "description": "Label for approval-required queue."
+  },
+  "billingOverdue": "Overdue",
+  "@billingOverdue": {
+    "description": "Label for overdue invoices queue."
+  },
+  "billingNeedsIssue": "Needs issue",
+  "@billingNeedsIssue": {
+    "description": "Label for needs-issue queue filter."
+  },
+  "billingApprovalRequired": "Approval required",
+  "@billingApprovalRequired": {
+    "description": "Label for approval-required queue filter."
+  },
+  "billingQueueLabel": "Queue",
+  "@billingQueueLabel": {
+    "description": "Label for billing queue filter group."
+  },
+  "billingSearchHint": "Invoice, patient, or reference",
+  "@billingSearchHint": {
+    "description": "Search hint for billing worklist."
+  },
+  "billingSearchSemanticLabel": "Search billing worklist",
+  "@billingSearchSemanticLabel": {
+    "description": "Semantic label for billing search field."
+  },
+  "billingClearSearch": "Clear billing search",
+  "@billingClearSearch": {
+    "description": "Clear action for billing search."
+  },
+  "billingFiltersTitle": "Billing filters",
+  "@billingFiltersTitle": {
+    "description": "Title for billing advanced filters."
+  },
+  "billingEmptyTitle": "No billing items",
+  "@billingEmptyTitle": {
+    "description": "Empty state title for billing worklist."
+  },
+  "billingEmptyBody": "This queue has no invoices or billing actions right now.",
+  "@billingEmptyBody": {
+    "description": "Empty state body for billing worklist."
+  },
+  "billingPatientColumn": "Patient",
+  "@billingPatientColumn": {
+    "description": "Patient column label in billing table."
+  },
+  "billingStatusColumn": "Status",
+  "@billingStatusColumn": {
+    "description": "Status column label in billing table."
+  },
+  "billingAmountColumn": "Amount",
+  "@billingAmountColumn": {
+    "description": "Amount column label in billing table."
+  },
+  "billingPaidColumn": "Paid",
+  "@billingPaidColumn": {
+    "description": "Paid column label in billing table."
+  },
+  "billingBalanceColumn": "Balance",
+  "@billingBalanceColumn": {
+    "description": "Balance column label in billing table."
+  },
+  "billingUpdatedColumn": "Updated",
+  "@billingUpdatedColumn": {
+    "description": "Updated column label in billing table."
+  },
+  "billingInvoiceLabel": "Invoice",
+  "@billingInvoiceLabel": {
+    "description": "Invoice label in billing detail."
+  },
+  "billingReceivePayment": "Receive payment",
+  "@billingReceivePayment": {
+    "description": "Receive payment action label."
+  },
+  "billingIssueAction": "Issue",
+  "@billingIssueAction": {
+    "description": "Issue invoice action label."
+  },
+  "billingRefundAction": "Refund",
+  "@billingRefundAction": {
+    "description": "Refund action label."
+  },
+  "billingAdjustAction": "Adjust",
+  "@billingAdjustAction": {
+    "description": "Adjustment action label."
+  },
+  "billingVoidAction": "Void",
+  "@billingVoidAction": {
+    "description": "Void invoice action label."
+  },
+  "billingSendAction": "Send",
+  "@billingSendAction": {
+    "description": "Send invoice action label."
+  },
+  "billingCloseShift": "Close shift",
+  "@billingCloseShift": {
+    "description": "Close shift action label."
+  },
+  "billingCloseDay": "Close day",
+  "@billingCloseDay": {
+    "description": "Close day action label."
+  },
+  "billingIssueInvoice": "Issue invoice",
+  "@billingIssueInvoice": {
+    "description": "Issue invoice dialog title."
+  },
+  "billingSendInvoice": "Send invoice",
+  "@billingSendInvoice": {
+    "description": "Send invoice dialog title."
+  },
+  "billingVoidInvoice": "Void invoice",
+  "@billingVoidInvoice": {
+    "description": "Void invoice dialog title."
+  },
+  "billingRequestAdjustment": "Request adjustment",
+  "@billingRequestAdjustment": {
+    "description": "Request adjustment dialog title."
+  },
+  "billingRequestRefund": "Request refund",
+  "@billingRequestRefund": {
+    "description": "Request refund dialog title."
+  },
+  "billingDueLabel": "Due",
+  "@billingDueLabel": {
+    "description": "Due amount label."
+  },
+  "billingNoLineItems": "No line items returned for this invoice.",
+  "@billingNoLineItems": {
+    "description": "Empty line items message."
+  },
+  "billingNoPayments": "No payments recorded for this invoice.",
+  "@billingNoPayments": {
+    "description": "Empty payments message."
+  },
+  "billingNoAdjustments": "No billing adjustments recorded.",
+  "@billingNoAdjustments": {
+    "description": "Empty adjustments message."
+  },
+  "billingLineItemsTitle": "Line items",
+  "@billingLineItemsTitle": {
+    "description": "Line items section title."
+  },
+  "billingPaymentsTitle": "Payments",
+  "@billingPaymentsTitle": {
+    "description": "Payments section title."
+  },
+  "billingAdjustmentsTitle": "Adjustments",
+  "@billingAdjustmentsTitle": {
+    "description": "Adjustments section title."
+  },
+  "billingFinancialSummaryTitle": "Financial summary",
+  "@billingFinancialSummaryTitle": {
+    "description": "Financial summary section title."
+  },
+  "billingInvoiceDetailTitle": "Invoice detail",
+  "@billingInvoiceDetailTitle": {
+    "description": "Invoice detail dialog title."
+  },
+  "billingItemDetailTitle": "Billing item",
+  "@billingItemDetailTitle": {
+    "description": "Generic billing item detail title."
+  },
+  "billingClaimDetailTitle": "Insurance claim",
+  "@billingClaimDetailTitle": {
+    "description": "Claim detail dialog title."
+  },
+  "billingApprovalDetailTitle": "Approval request",
+  "@billingApprovalDetailTitle": {
+    "description": "Approval detail dialog title."
+  },
+  "billingPreAuthDetailTitle": "Pre-authorization",
+  "@billingPreAuthDetailTitle": {
+    "description": "Pre-authorization detail dialog title."
+  },
+  "billingActionSaved": "Billing action saved.",
+  "@billingActionSaved": {
+    "description": "Success snackbar after billing mutation."
+  },
+  "billingActionPendingApproval": "Submitted. Pending approval before it takes effect.",
+  "@billingActionPendingApproval": {
+    "description": "Snackbar when billing action requires approval."
+  },
+  "billingDocumentDownloaded": "Invoice document saved.",
+  "@billingDocumentDownloaded": {
+    "description": "Success message after invoice PDF download."
+  },
+  "billingDocumentUnavailable": "Invoice document could not be saved on this device.",
+  "@billingDocumentUnavailable": {
+    "description": "Failure message when PDF save is unavailable."
+  },
+  "billingDocumentTooltip": "Download invoice PDF",
+  "@billingDocumentTooltip": {
+    "description": "Tooltip for invoice document download."
+  },
+  "billingViewLedgerAction": "View ledger",
+  "@billingViewLedgerAction": {
+    "description": "Action to open patient financial ledger."
+  },
+  "billingLedgerTitle": "Patient ledger",
+  "@billingLedgerTitle": {
+    "description": "Patient ledger dialog title."
+  },
+  "billingLedgerEmpty": "No ledger entries for this patient in the selected period.",
+  "@billingLedgerEmpty": {
+    "description": "Empty patient ledger message."
+  },
+  "billingApproveAction": "Approve",
+  "@billingApproveAction": {
+    "description": "Approve billing approval action."
+  },
+  "billingRejectAction": "Reject",
+  "@billingRejectAction": {
+    "description": "Reject billing approval action."
+  },
+  "billingSubmitClaimAction": "Submit claim",
+  "@billingSubmitClaimAction": {
+    "description": "Submit insurance claim action."
+  },
+  "billingReconcileClaimAction": "Record insurer response",
+  "@billingReconcileClaimAction": {
+    "description": "Reconcile insurance claim action."
+  },
+  "billingFinalizeEncounterAction": "Finalize financial clearance",
+  "@billingFinalizeEncounterAction": {
+    "description": "Finalize encounter billing when balances are cleared."
+  },
+  "billingFinalizeEncounterBody": "All linked charges are issued and settled. Confirm financial clearance for this encounter.",
+  "@billingFinalizeEncounterBody": {
+    "description": "Body for finalize encounter billing confirmation."
+  },
+  "billingEncounterLabel": "Encounter",
+  "@billingEncounterLabel": {
+    "description": "Encounter field label in billing detail."
+  },
+  "billingCoveragePlanLabel": "Coverage plan",
+  "@billingCoveragePlanLabel": {
+    "description": "Coverage plan field label."
+  },
+  "billingRequestTypeLabel": "Request type",
+  "@billingRequestTypeLabel": {
+    "description": "Approval request type label."
+  },
+  "billingRequesterLabel": "Requested by",
+  "@billingRequesterLabel": {
+    "description": "Approval requester label."
+  },
+  "billingReasonLabel": "Reason",
+  "@billingReasonLabel": {
+    "description": "Reason field label."
+  },
+  "billingLinkedInvoiceLabel": "Linked invoice",
+  "@billingLinkedInvoiceLabel": {
+    "description": "Linked invoice field label."
+  },
+  "billingClearanceCleared": "Cleared",
+  "@billingClearanceCleared": {
+    "description": "Cleared clearance state label."
+  },
+  "billingClearancePartiallyPaid": "Partially paid",
+  "@billingClearancePartiallyPaid": {
+    "description": "Partially paid clearance state label."
+  },
+  "billingClearanceDeferred": "Deferred",
+  "@billingClearanceDeferred": {
+    "description": "Deferred clearance state label."
+  },
+  "billingClearanceInsured": "Insured",
+  "@billingClearanceInsured": {
+    "description": "Insured clearance state label."
+  },
+  "billingClearancePendingAuth": "Pending authorization",
+  "@billingClearancePendingAuth": {
+    "description": "Pending authorization clearance state label."
+  },
+  "billingClearanceBlocked": "Blocked",
+  "@billingClearanceBlocked": {
+    "description": "Blocked clearance state label."
+  },
+  "billingNotRecorded": "Not recorded",
+  "@billingNotRecorded": {
+    "description": "Fallback when a billing timestamp is missing."
+  },
+  "billingUnknownValue": "Unknown",
+  "@billingUnknownValue": {
+    "description": "Fallback for unknown billing values."
+  },
+  "billingPreviousPageLabel": "Previous page",
+  "@billingPreviousPageLabel": {
+    "description": "Previous page label for billing worklist."
+  },
+  "billingNextPageLabel": "Next page",
+  "@billingNextPageLabel": {
+    "description": "Next page label for billing worklist."
+  },
+  "billingClearFilters": "Clear",
+  "@billingClearFilters": {
+    "description": "Clear billing filters action."
+  },
+  "billingPaymentReferenceHint": "Mobile money, card, or bank reference",
+  "@billingPaymentReferenceHint": {
+    "description": "Hint for payment reference field."
+  },
+  "billingPayerHint": "Patient, sponsor, insurer, or contact",
+  "@billingPayerHint": {
+    "description": "Hint for payer field."
+  },
+  "billingStatusDraft": "Draft",
+  "@billingStatusDraft": {
+    "description": "Draft billing status label."
+  },
+  "billingStatusIssued": "Issued",
+  "@billingStatusIssued": {
+    "description": "Issued billing status label."
+  },
+  "billingStatusPartial": "Partial",
+  "@billingStatusPartial": {
+    "description": "Partial billing status label."
+  },
+  "billingStatusPaid": "Paid",
+  "@billingStatusPaid": {
+    "description": "Paid billing status label."
+  },
   "navigationSubscriptionsLabel": "Subscriptions",
   "@navigationSubscriptionsLabel": {
     "description": "Navigation label for the subscriptions workspace."

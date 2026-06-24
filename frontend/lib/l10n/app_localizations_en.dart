@@ -156,6 +156,287 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationBillingLabel => 'Billing';
 
   @override
+  String get billingWorkspaceTitle => 'Billing';
+
+  @override
+  String get billingLoadingTitle => 'Loading billing workspace';
+
+  @override
+  String get billingLoadingBody =>
+      'Fetching invoices, payments, refunds, and closeout queues.';
+
+  @override
+  String get billingStatusLive => 'Live';
+
+  @override
+  String get billingStatusPosting => 'Posting';
+
+  @override
+  String get billingWorklistDescription =>
+      'Cashier worklist for invoices, payments, claims, and approvals.';
+
+  @override
+  String get billingAllWorkItems => 'All billing work items';
+
+  @override
+  String get billingAwaitingPayment => 'Awaiting payment';
+
+  @override
+  String get billingIssueQueue => 'Issue queue';
+
+  @override
+  String get billingClaimsPending => 'Claims pending';
+
+  @override
+  String get billingApprovals => 'Approvals';
+
+  @override
+  String get billingOverdue => 'Overdue';
+
+  @override
+  String get billingNeedsIssue => 'Needs issue';
+
+  @override
+  String get billingApprovalRequired => 'Approval required';
+
+  @override
+  String get billingQueueLabel => 'Queue';
+
+  @override
+  String get billingSearchHint => 'Invoice, patient, or reference';
+
+  @override
+  String get billingSearchSemanticLabel => 'Search billing worklist';
+
+  @override
+  String get billingClearSearch => 'Clear billing search';
+
+  @override
+  String get billingFiltersTitle => 'Billing filters';
+
+  @override
+  String get billingEmptyTitle => 'No billing items';
+
+  @override
+  String get billingEmptyBody =>
+      'This queue has no invoices or billing actions right now.';
+
+  @override
+  String get billingPatientColumn => 'Patient';
+
+  @override
+  String get billingStatusColumn => 'Status';
+
+  @override
+  String get billingAmountColumn => 'Amount';
+
+  @override
+  String get billingPaidColumn => 'Paid';
+
+  @override
+  String get billingBalanceColumn => 'Balance';
+
+  @override
+  String get billingUpdatedColumn => 'Updated';
+
+  @override
+  String get billingInvoiceLabel => 'Invoice';
+
+  @override
+  String get billingReceivePayment => 'Receive payment';
+
+  @override
+  String get billingIssueAction => 'Issue';
+
+  @override
+  String get billingRefundAction => 'Refund';
+
+  @override
+  String get billingAdjustAction => 'Adjust';
+
+  @override
+  String get billingVoidAction => 'Void';
+
+  @override
+  String get billingSendAction => 'Send';
+
+  @override
+  String get billingCloseShift => 'Close shift';
+
+  @override
+  String get billingCloseDay => 'Close day';
+
+  @override
+  String get billingIssueInvoice => 'Issue invoice';
+
+  @override
+  String get billingSendInvoice => 'Send invoice';
+
+  @override
+  String get billingVoidInvoice => 'Void invoice';
+
+  @override
+  String get billingRequestAdjustment => 'Request adjustment';
+
+  @override
+  String get billingRequestRefund => 'Request refund';
+
+  @override
+  String get billingDueLabel => 'Due';
+
+  @override
+  String get billingNoLineItems => 'No line items returned for this invoice.';
+
+  @override
+  String get billingNoPayments => 'No payments recorded for this invoice.';
+
+  @override
+  String get billingNoAdjustments => 'No billing adjustments recorded.';
+
+  @override
+  String get billingLineItemsTitle => 'Line items';
+
+  @override
+  String get billingPaymentsTitle => 'Payments';
+
+  @override
+  String get billingAdjustmentsTitle => 'Adjustments';
+
+  @override
+  String get billingFinancialSummaryTitle => 'Financial summary';
+
+  @override
+  String get billingInvoiceDetailTitle => 'Invoice detail';
+
+  @override
+  String get billingItemDetailTitle => 'Billing item';
+
+  @override
+  String get billingClaimDetailTitle => 'Insurance claim';
+
+  @override
+  String get billingApprovalDetailTitle => 'Approval request';
+
+  @override
+  String get billingPreAuthDetailTitle => 'Pre-authorization';
+
+  @override
+  String get billingActionSaved => 'Billing action saved.';
+
+  @override
+  String get billingActionPendingApproval =>
+      'Submitted. Pending approval before it takes effect.';
+
+  @override
+  String get billingDocumentDownloaded => 'Invoice document saved.';
+
+  @override
+  String get billingDocumentUnavailable =>
+      'Invoice document could not be saved on this device.';
+
+  @override
+  String get billingDocumentTooltip => 'Download invoice PDF';
+
+  @override
+  String get billingViewLedgerAction => 'View ledger';
+
+  @override
+  String get billingLedgerTitle => 'Patient ledger';
+
+  @override
+  String get billingLedgerEmpty =>
+      'No ledger entries for this patient in the selected period.';
+
+  @override
+  String get billingApproveAction => 'Approve';
+
+  @override
+  String get billingRejectAction => 'Reject';
+
+  @override
+  String get billingSubmitClaimAction => 'Submit claim';
+
+  @override
+  String get billingReconcileClaimAction => 'Record insurer response';
+
+  @override
+  String get billingFinalizeEncounterAction => 'Finalize financial clearance';
+
+  @override
+  String get billingFinalizeEncounterBody =>
+      'All linked charges are issued and settled. Confirm financial clearance for this encounter.';
+
+  @override
+  String get billingEncounterLabel => 'Encounter';
+
+  @override
+  String get billingCoveragePlanLabel => 'Coverage plan';
+
+  @override
+  String get billingRequestTypeLabel => 'Request type';
+
+  @override
+  String get billingRequesterLabel => 'Requested by';
+
+  @override
+  String get billingReasonLabel => 'Reason';
+
+  @override
+  String get billingLinkedInvoiceLabel => 'Linked invoice';
+
+  @override
+  String get billingClearanceCleared => 'Cleared';
+
+  @override
+  String get billingClearancePartiallyPaid => 'Partially paid';
+
+  @override
+  String get billingClearanceDeferred => 'Deferred';
+
+  @override
+  String get billingClearanceInsured => 'Insured';
+
+  @override
+  String get billingClearancePendingAuth => 'Pending authorization';
+
+  @override
+  String get billingClearanceBlocked => 'Blocked';
+
+  @override
+  String get billingNotRecorded => 'Not recorded';
+
+  @override
+  String get billingUnknownValue => 'Unknown';
+
+  @override
+  String get billingPreviousPageLabel => 'Previous page';
+
+  @override
+  String get billingNextPageLabel => 'Next page';
+
+  @override
+  String get billingClearFilters => 'Clear';
+
+  @override
+  String get billingPaymentReferenceHint =>
+      'Mobile money, card, or bank reference';
+
+  @override
+  String get billingPayerHint => 'Patient, sponsor, insurer, or contact';
+
+  @override
+  String get billingStatusDraft => 'Draft';
+
+  @override
+  String get billingStatusIssued => 'Issued';
+
+  @override
+  String get billingStatusPartial => 'Partial';
+
+  @override
+  String get billingStatusPaid => 'Paid';
+
+  @override
   String get navigationSubscriptionsLabel => 'Subscriptions';
 
   @override

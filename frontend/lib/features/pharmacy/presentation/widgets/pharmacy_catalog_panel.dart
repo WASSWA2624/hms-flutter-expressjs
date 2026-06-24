@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
@@ -28,7 +29,7 @@ class PharmacyCatalogPanel extends ConsumerStatefulWidget {
 }
 
 class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
+  static final AccessRequirement _writeRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[
       AppPermissions.pharmacyWrite,
       AppPermissions.operationsWrite,
@@ -199,6 +200,12 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             },
           ),
         ],
+        mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
+          return ListTile(
+            title: Text(item.displayTitle),
+            subtitle: Text(item.code ?? ''),
+          );
+        },
       ),
     );
   }
@@ -461,6 +468,9 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
             },
           ),
         ],
+        mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
+          return ListTile(title: Text(item.displayTitle));
+        },
       ),
     );
   }
@@ -672,6 +682,12 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
             },
           ),
         ],
+        mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
+          return ListTile(
+            title: Text(item.inventoryItem?.displayTitle ?? ''),
+            subtitle: Text(item.quantity.toString()),
+          );
+        },
       ),
     );
   }

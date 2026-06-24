@@ -20,6 +20,9 @@ void main() {
     registerFallbackValue(
       const BillingPaymentDraft(amount: '1000.00', method: 'CASH'),
     );
+    registerFallbackValue(const BillingApprovalDecisionDraft());
+    registerFallbackValue(const BillingClaimActionDraft());
+    registerFallbackValue(const BillingLedgerQuery());
   });
 
   group('BillingWorkspaceController', () {
@@ -111,6 +114,40 @@ void main() {
         verify(() => repository.listWorkItems(any())).called(2);
       },
     );
+
+    test('approves selected approval and refreshes workspace', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem approval = BillingWorkItem(
+        id: 'approval-1',
+        displayId: 'APR-001',
+        kind: BillingWorkItemKind.approval,
+        status: 'PENDING',
+      );
+      _stubInitialLoad(repository, items: <BillingWorkItem>[approval]);
+      when(() => repository.approveApproval(any(), any())).thenAnswer(
+        (_) async => const Result<BillingMutationResult>.success(
+          BillingMutationResult(approval: approval),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+      container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .selectItem(approval);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .approveSelectedApproval(
+            const BillingApprovalDecisionDraft(decisionNotes: 'Approved'),
+          );
+
+      expect(failure, isNull);
+      verify(() => repository.approveApproval('approval-1', any())).called(1);
+    });
   });
 }
 

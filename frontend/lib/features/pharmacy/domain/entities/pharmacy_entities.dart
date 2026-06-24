@@ -512,6 +512,8 @@ final class PharmacyOrder {
     List<PharmacyPendingBatch>? pendingAttestationBatches,
     List<PharmacyOrderItem>? items,
     List<PharmacyAttestation>? attestations,
+    String? paymentStatus,
+    Map<String, Object?>? billing,
   }) {
     return PharmacyOrder(
       id: id,
@@ -541,6 +543,9 @@ final class PharmacyOrder {
           pendingAttestationBatches ?? this.pendingAttestationBatches,
       items: items ?? this.items,
       attestations: attestations ?? this.attestations,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      billing: billing ?? this.billing,
+      prescriberDisplayName: prescriberDisplayName,
     );
   }
 }
