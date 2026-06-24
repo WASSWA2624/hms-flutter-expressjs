@@ -120,6 +120,14 @@ final class HomeDashboard {
         alerts.any((HomeAlertItem alert) => alert.count > 0) ||
         activity.isNotEmpty;
   }
+
+  int get attentionCount {
+    final int alertTotal = alerts.fold<int>(
+      0,
+      (int sum, HomeAlertItem item) => sum + item.count,
+    );
+    return alertTotal + queuePreview.length;
+  }
 }
 
 final class HomeDashboardProfile {

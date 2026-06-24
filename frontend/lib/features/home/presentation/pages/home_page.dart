@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -109,7 +110,7 @@ class _HomeDashboardContent extends ConsumerWidget {
             ),
             if (dashboard.isTenantContextRequired) ...<Widget>[
               SizedBox(height: spacing.lg),
-              _TenantContextRequiredPanel(
+              HomeTenantContextPanel(
                 tenantOptions: dashboard.tenantOptions,
                 request: request,
               ),
@@ -417,6 +418,7 @@ class _HomeMainGrid extends StatelessWidget {
             dashboard.profile.emptyActionIds,
             actions,
           ),
+          usesFallbackData: dashboard.usesFallbackData,
         );
         final Widget secondary = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,6 +427,7 @@ class _HomeMainGrid extends StatelessWidget {
               title: _alertsTitle(dashboard.profile.role),
               description: _alertsDescription(dashboard.profile.role),
               alerts: dashboard.alerts,
+              usesFallbackData: dashboard.usesFallbackData,
             ),
             SizedBox(height: gap),
             _ActivityPanel(activity: dashboard.activity),
@@ -472,6 +475,7 @@ class _PrimaryQueuePanel extends StatelessWidget {
     required this.items,
     required this.emptyMessage,
     required this.emptyActions,
+    required this.usesFallbackData,
   });
 
   final String title;
@@ -479,12 +483,15 @@ class _PrimaryQueuePanel extends StatelessWidget {
   final List<HomeQueueItem> items;
   final String emptyMessage;
   final List<_HomeActionDefinition> emptyActions;
+  final bool usesFallbackData;
 
   @override
   Widget build(BuildContext context) {
     return AppSectionPanel(
       title: title,
-      description: description,
+      description: usesFallbackData && items.isNotEmpty
+          ? '$description Profile shortcuts until live dashboard data is available.'
+          : description,
       leadingIcon: Icons.format_list_bulleted,
       trailing: _ViewAllButton(target: _firstQueueTarget(items)),
       children: <Widget>[
@@ -502,17 +509,21 @@ class _AlertsPanel extends StatelessWidget {
     required this.title,
     required this.description,
     required this.alerts,
+    required this.usesFallbackData,
   });
 
   final String title;
   final String description;
   final List<HomeAlertItem> alerts;
+  final bool usesFallbackData;
 
   @override
   Widget build(BuildContext context) {
     return AppSectionPanel(
       title: title,
-      description: description,
+      description: usesFallbackData && alerts.isNotEmpty
+          ? '$description Open linked modules for live signals.'
+          : description,
       leadingIcon: Icons.warning_amber_outlined,
       children: <Widget>[
         if (alerts.isEmpty)
@@ -963,52 +974,6 @@ class _DonutChartPainter extends CustomPainter {
   }
 }
 
-class _TenantContextRequiredPanel extends StatelessWidget {
-  const _TenantContextRequiredPanel({
-    required this.tenantOptions,
-    required this.request,
-  });
-
-  final List<HomeTenantOption> tenantOptions;
-  final HomeDashboardRequest request;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSectionPanel(
-      title: 'Tenant context required',
-      description: 'Choose a tenant to view operational dashboard content.',
-      leadingIcon: Icons.account_tree_outlined,
-      children: <Widget>[
-        if (tenantOptions.isEmpty)
-          const _QuietState(message: 'No tenant options were returned.')
-        else
-          AppResponsiveWrap(
-            minItemWidth: 220,
-            children: <Widget>[
-              for (final HomeTenantOption option in tenantOptions)
-                AppButton.secondary(
-                  label: option.label,
-                  leadingIcon: Icons.business_outlined,
-                  onPressed: () {
-                    context.go(
-                      AppRoutes.home.location(
-                        queryParameters: <String, String>{
-                          'tenant_id': option.id,
-                          if (request.facilityId != null)
-                            'facility_id': request.facilityId!,
-                          if (request.branchId != null)
-                            'branch_id': request.branchId!,
-                        },
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-      ],
-    );
-  }
-}
 
 class _QueueRow extends StatelessWidget {
   const _QueueRow({required this.item});

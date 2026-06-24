@@ -337,6 +337,10 @@ class _ButtonContent extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       softWrap: false,
+      style: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+      ),
     );
 
     if (!isLoading && leadingIcon == null) {
@@ -354,7 +358,7 @@ class _ButtonContent extends StatelessWidget {
           loadingColor: loadingColor,
         ),
         SizedBox(width: spacing.sm),
-        Flexible(child: labelText),
+        labelText,
       ],
     );
   }

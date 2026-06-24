@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
@@ -76,5 +77,12 @@ final class _FakeHomeRepository implements HomeRepository {
     lastRequest = request;
 
     return result;
+  }
+
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
   }
 }

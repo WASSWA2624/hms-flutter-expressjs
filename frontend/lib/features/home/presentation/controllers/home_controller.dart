@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 
 final homeControllerProvider =
     FutureProvider.family<Result<HomeDashboard>, HomeDashboardRequest>((
@@ -26,6 +27,14 @@ final homeControllerProvider =
       );
 
       return ref.watch(homeRepositoryProvider).loadDashboard(request);
+    });
+
+final homeLookupsControllerProvider =
+    FutureProvider.family<Result<HomeDashboardLookups>, HomeDashboardRequest>((
+      ref,
+      request,
+    ) {
+      return ref.watch(homeRepositoryProvider).loadLookups(request);
     });
 
 const Set<String> _homeDashboardRealtimeEvents = <String>{

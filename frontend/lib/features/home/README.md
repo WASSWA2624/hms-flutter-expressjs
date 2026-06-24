@@ -1,17 +1,34 @@
 # Home Feature
 
-`home` is the starter example feature. It exists to show the feature-first
-folder boundary without adding product-specific behavior.
+Role-based landing dashboard for HOSSPI HMS staff after login.
 
-Layer ownership:
+## Capabilities
 
-- `presentation/` owns pages, widgets, controllers, and view state.
-- `domain/` owns entities, value objects, repository contracts, services, and
-  use cases.
-- `data/` owns repository implementations, DTOs, mappers, and data sources.
+- Role-specific quick actions, shortcuts, KPI strip, queue preview, and alerts
+- Live data from `GET /dashboard-workspace/workspace` when tenant context and feature flag allow
+- Graceful profile fallback when the workspace API is unavailable or disabled
+- Tenant/facility/branch context selection via `GET /dashboard-workspace/lookups`
+- Realtime refresh on patient, OPD, IPD, billing, and communications domain events
 
-Boundary rules:
+## Layout
 
-- Presentation must not call APIs, storage, databases, or platform services.
-- Domain must not depend on Flutter widgets or external data models.
-- Data must map external models into domain models before returning them.
+```
+presentation/
+  controllers/home_controller.dart
+  pages/home_page.dart
+  widgets/home_context_panel.dart
+domain/
+  entities/home_dashboard.dart
+  entities/home_dashboard_profiles.dart
+  entities/home_dashboard_guided_content.dart
+  entities/home_dashboard_lookups.dart
+data/
+  repositories/home_repository_impl.dart
+  dtos/
+```
+
+## Boundary rules
+
+- Presentation must not call APIs directly; use `HomeRepository` via Riverpod controllers.
+- Domain entities are the UI source of truth for dashboard shape.
+- Data maps API DTOs into domain entities before returning them.

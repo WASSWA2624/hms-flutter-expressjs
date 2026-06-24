@@ -56,8 +56,8 @@ abstract final class AppTheme {
       hoverColor: palette.hoverColor,
       splashColor: palette.splashColor,
       highlightColor: palette.highlightColor,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
       textTheme: baseTextTheme.apply(
         bodyColor: palette.bodyTextColor,
         displayColor: palette.displayTextColor,
@@ -130,7 +130,7 @@ abstract final class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        isDense: true,
+        isDense: false,
         filled: true,
         fillColor: palette.inputFillColor,
         hoverColor: palette.inputHoverColor,

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -8,7 +9,10 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_dtos.dart';
+import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_guided_content.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 
@@ -37,11 +41,12 @@ final class HomeRepositoryImpl implements HomeRepository {
   Future<Result<HomeDashboard>> loadDashboard(
     HomeDashboardRequest request,
   ) async {
+    final HomeDashboardRequest effectiveRequest = _effectiveRequest(request);
     final HomeDashboardProfile localProfile = homeProfileForRoles(
       _accessPolicy.roles,
     );
 
-    if (_shouldUseLocalDashboard(localProfile, request)) {
+    if (_shouldUseLocalDashboard(localProfile, effectiveRequest)) {
       return Result<HomeDashboard>.success(
         _localDashboard(localProfile, usesFallbackData: true),
       );
@@ -53,31 +58,96 @@ final class HomeRepositoryImpl implements HomeRepository {
         'workspace',
         const <String>[],
       ),
-      queryParameters: request.toQueryParameters(),
+      queryParameters: effectiveRequest.toQueryParameters(),
       decoder: (Object? data) {
         return HomeDashboardDto.fromResponse(data).toEntity();
       },
     );
 
-    return result.map((HomeDashboard dashboard) {
-      final HomeDashboardProfile profile =
-          dashboard.profile.role == AppRole.other
-          ? localProfile
-          : dashboard.profile;
-      final List<String> quickActionIds = dashboard.quickActionIds.isEmpty
-          ? mergedHomeQuickActions(_accessPolicy.roles)
-          : dashboard.quickActionIds;
-      final List<String> shortcutIds = _mergeIds(<Iterable<String>>[
-        dashboard.shortcutIds,
-        mergedHomeShortcuts(_accessPolicy.roles),
-      ]);
+    return result.when(
+      success: (HomeDashboard dashboard) {
+        return Result<HomeDashboard>.success(
+          _mergeDashboard(localProfile, dashboard),
+        );
+      },
+      failure: (AppFailure failure) {
+        if (_shouldFallbackToLocalDashboard(failure)) {
+          return Result<HomeDashboard>.success(
+            _localDashboard(localProfile, usesFallbackData: true),
+          );
+        }
+        return Result<HomeDashboard>.failure(failure);
+      },
+    );
+  }
 
-      return dashboard.copyWith(
-        profile: profile,
-        quickActionIds: quickActionIds,
-        shortcutIds: shortcutIds,
-      );
-    });
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    final HomeDashboardProfile localProfile = homeProfileForRoles(
+      _accessPolicy.roles,
+    );
+    if (_session == null || localProfile.role == AppRole.other) {
+      return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+    }
+
+    final HomeDashboardRequest effectiveRequest = _effectiveRequest(request);
+    final result = await _apiClient().get<HomeDashboardLookups>(
+      ApiEndpoints.nested(
+        HmsApiResource.dashboardWorkspace,
+        'lookups',
+        const <String>[],
+      ),
+      queryParameters: effectiveRequest.toQueryParameters(),
+      decoder: (Object? data) {
+        return HomeDashboardLookupsDto.fromResponse(data).toEntity();
+      },
+    );
+
+    return result.when(
+      success: (HomeDashboardLookups lookups) {
+        return Result<HomeDashboardLookups>.success(lookups);
+      },
+      failure: (AppFailure failure) {
+        if (_shouldFallbackToLocalDashboard(failure)) {
+          return const Result<HomeDashboardLookups>.success(
+            HomeDashboardLookups(),
+          );
+        }
+        return Result<HomeDashboardLookups>.failure(failure);
+      },
+    );
+  }
+
+  HomeDashboard _mergeDashboard(
+    HomeDashboardProfile localProfile,
+    HomeDashboard dashboard,
+  ) {
+    final HomeDashboardProfile profile = dashboard.profile.role == AppRole.other
+        ? localProfile
+        : dashboard.profile;
+    final List<String> quickActionIds = dashboard.quickActionIds.isEmpty
+        ? mergedHomeQuickActions(_accessPolicy.roles)
+        : dashboard.quickActionIds;
+    final List<String> shortcutIds = _mergeIds(<Iterable<String>>[
+      dashboard.shortcutIds,
+      mergedHomeShortcuts(_accessPolicy.roles),
+    ]);
+
+    return dashboard.copyWith(
+      profile: profile,
+      quickActionIds: quickActionIds,
+      shortcutIds: shortcutIds,
+    );
+  }
+
+  HomeDashboardRequest _effectiveRequest(HomeDashboardRequest request) {
+    return HomeDashboardRequest(
+      tenantId: request.tenantId ?? _accessPolicy.tenantId,
+      facilityId: request.facilityId ?? _accessPolicy.facilityId,
+      branchId: request.branchId ?? _accessPolicy.branchId,
+    );
   }
 
   bool _shouldUseLocalDashboard(
@@ -95,6 +165,11 @@ final class HomeRepositoryImpl implements HomeRepository {
     }
 
     return !_accessPolicy.hasTenantContext && !request.hasTenantContext;
+  }
+
+  bool _shouldFallbackToLocalDashboard(AppFailure failure) {
+    return failure.category == AppFailureCategory.notFound ||
+        failure.category == AppFailureCategory.forbidden;
   }
 
   HomeDashboard _localDashboard(
@@ -130,8 +205,8 @@ final class HomeRepositoryImpl implements HomeRepository {
       distribution: HomeDashboardDistribution.empty,
       quickActionIds: quickActions,
       shortcutIds: shortcuts,
-      queuePreview: const <HomeQueueItem>[],
-      alerts: const <HomeAlertItem>[],
+      queuePreview: guidedFallbackQueueHints(profile),
+      alerts: guidedFallbackAlerts(profile),
       activity: const <HomeActivityItem>[],
       tenantOptions: const <HomeTenantOption>[],
       generatedAt: DateTime.now().toUtc(),

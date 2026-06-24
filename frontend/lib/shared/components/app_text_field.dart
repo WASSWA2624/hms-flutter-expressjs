@@ -146,7 +146,19 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final InputDecorationThemeData inputTheme = theme.inputDecorationTheme;
     final bool canEdit = widget.enabled && !widget.isLoading;
+    final bool useRichLabel =
+        AppFieldRequirementScope.shouldShowOptionalIndicator(context) &&
+        !widget.isRequired &&
+        (widget.labelText?.trim().isNotEmpty ?? false);
+    final String? resolvedLabelText = useRichLabel
+        ? null
+        : appFieldLabel(widget.labelText, isRequired: widget.isRequired);
+    final TextStyle fieldLabelStyle =
+        inputTheme.labelStyle ??
+        theme.textTheme.labelLarge ??
+        const TextStyle(fontWeight: FontWeight.w600);
     final Widget field = TextFormField(
       key: widget.controller == null
           ? ValueKey<String?>(widget.initialValue)
@@ -179,13 +191,12 @@ class _AppTextFieldState extends State<AppTextField> {
             ? theme.colorScheme.onSurface
             : theme.colorScheme.onSurface.withValues(alpha: 0.62),
         fontWeight: FontWeight.w500,
+        fontSize: 16,
+        height: 1.5,
       ),
       decoration: InputDecoration(
-        label: appFieldLabelWidget(
-          context,
-          widget.labelText,
-          isRequired: widget.isRequired,
-        ),
+        isDense: false,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
         hintText: widget.hintText,
         helperText: widget.helperText,
         prefixIcon: widget.prefixIcon,
@@ -193,15 +204,48 @@ class _AppTextFieldState extends State<AppTextField> {
       ),
     );
 
-    if (widget.semanticLabel == null) {
-      return field;
+    Widget result = field;
+    if (widget.semanticLabel != null) {
+      result = Semantics(
+        textField: true,
+        enabled: canEdit,
+        label: widget.semanticLabel,
+        child: field,
+      );
     }
 
-    return Semantics(
-      textField: true,
-      enabled: canEdit,
-      label: widget.semanticLabel,
-      child: field,
+    final Widget? externalLabel = useRichLabel
+        ? appFieldLabelWidget(
+            context,
+            widget.labelText,
+            isRequired: widget.isRequired,
+            style: fieldLabelStyle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        : resolvedLabelText == null
+        ? null
+        : Text(
+            resolvedLabelText,
+            style: fieldLabelStyle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              height: 1.2,
+            ),
+          );
+
+    if (externalLabel == null) {
+      return result;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        externalLabel,
+        SizedBox(height: theme.spacing.xs),
+        result,
+      ],
     );
   }
 
