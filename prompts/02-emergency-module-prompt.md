@@ -6,9 +6,9 @@ Complete the **Emergency and Ambulance Module** for HOSSPI HMS so emergency clin
 
 **Source of truth:** implement emergency workflow in alignment with:
 
-- [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — §2.1 emergency admission (deferred registration, deferred billing, priority bed allocation), steps 1–8 admission intake, §4 billing gates (`Billing Deferred`), §16 IPD encounter as hub after IPD/ICU handoff
-- [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — §2 emergency-to-OPD handoff entry path, §3 stage contract (`WAITING_VITALS` entry), §7 OPD-to-IPD handoff when emergency routes through OPD first, §6 UI rules (summary cards filter worklist)
-- [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Emergency and ambulance module boundaries vs OPD triage, Clinical, IPD, ICU, Theater, Billing, and Patient registry
+- [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §2.1 emergency admission (deferred registration, deferred billing, priority bed allocation), steps 1–8 admission intake, §4 billing gates (`Billing Deferred`), §16 IPD encounter as hub after IPD/ICU handoff
+- [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §2 emergency-to-OPD handoff entry path, §3 stage contract (`WAITING_VITALS` entry), §7 OPD-to-IPD handoff when emergency routes through OPD first, §6 UI rules (summary cards filter worklist)
+- [app-write-up.mdc](../.cursor/app-write-up.mdc) — Emergency and ambulance module boundaries vs OPD triage, Clinical, IPD, ICU, Theater, Billing, and Patient registry
 
 **Central encounter rule:** the **emergency case** is the hub while the patient is in the emergency department. Handoff creates or reuses the receiving workflow (OPD flow, IPD admission, ICU stay overlay, or theater flow) and links `emergency_case_id` upstream. Emergency does not own inpatient bed management, OPD consultation queues, or cashier workflows after handoff — it preserves source context and navigates staff to the receiving module.
 
@@ -18,9 +18,9 @@ Deliver a **urgent-but-controlled emergency workspace** optimized for triage und
 
 ## Mandatory Reading (before any Emergency change)
 
-1. Re-read [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — especially §2.1 emergency admission, §4 billing/deferred rules, §3 bed management, §16 encounter hub rule.
-2. Re-read [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — §2 entry paths (emergency-to-OPD), §3 stage contract, §6 UI rules, §7 OPD-to-IPD handoff.
-3. Re-read [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Emergency vs OPD triage vs IPD vs ICU vs Theater boundaries.
+1. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — especially §2.1 emergency admission, §4 billing/deferred rules, §3 bed management, §16 encounter hub rule.
+2. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §2 entry paths (emergency-to-OPD), §3 stage contract, §6 UI rules, §7 OPD-to-IPD handoff.
+3. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Emergency vs OPD triage vs IPD vs ICU vs Theater boundaries.
 
 ---
 
@@ -65,9 +65,9 @@ flowchart LR
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Product scope | `.cursor/app-write-up.mdc` | Emergency cases, triage, response, ambulances, dispatch, trips, handoff to OPD/IPD/ICU/theater |
-| IPD emergency path | `.cursor/flows/ipd-flow.mdc` §2.1 | Deferred registration/billing, priority allocation |
-| OPD emergency path | `.cursor/flows/opd-flow.mdc` §2 | Emergency-to-OPD with context preservation |
+| Product scope | `../.cursor/app-write-up.mdc` | Emergency cases, triage, response, ambulances, dispatch, trips, handoff to OPD/IPD/ICU/theater |
+| IPD emergency path | `../.cursor/flows/ipd-flow.mdc` §2.1 | Deferred registration/billing, priority allocation |
+| OPD emergency path | `../.cursor/flows/opd-flow.mdc` §2 | Emergency-to-OPD with context preservation |
 | Frontend scaffold | `frontend/lib/features/emergency/` | `data/`, `domain/`, `presentation/` layers exist |
 | Workspace UI | `emergency_workspace_page.dart` | Board, scopes, summary cards, detail, triage/response/ambulance/handoff dialogs (~2k lines) |
 | Controller | `emergency_workspace_controller.dart` | Realtime + periodic sync, pagination, scope/search, case selection, mutations |
@@ -231,7 +231,7 @@ Implement or finish the following, in priority order. Each item maps to IPD §2.
 
 ## Module Boundaries (do not violate)
 
-From `.cursor/app-write-up.mdc`:
+From `../.cursor/app-write-up.mdc`:
 
 | Own in Emergency | Do not duplicate — use other module |
 | ---------------- | ----------------------------------- |
@@ -279,7 +279,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules.
 
 | Rule | Requirement |
 |------|-------------|

@@ -6,9 +6,9 @@ Complete the **Operations (Facilities Maintenance) Module** for HOSSPI HMS so op
 
 **Source of truth:** implement operations workflow in alignment with:
 
-- [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — §3 bed statuses (`Maintenance`, `Blocked`), §14.2 bed board, steps 6/14/18 (bed allocation, transfer, release/cleaning), §17 turnaround (live bed board with maintenance visibility)
-- [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — §5 role rules (operations is not an OPD clinical actor; facility issues may be reported upstream from reception/ward staff)
-- [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Operations vs Housekeeping vs Biomedical module boundaries
+- [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §3 bed statuses (`Maintenance`, `Blocked`), §14.2 bed board, steps 6/14/18 (bed allocation, transfer, release/cleaning), §17 turnaround (live bed board with maintenance visibility)
+- [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §5 role rules (operations is not an OPD clinical actor; facility issues may be reported upstream from reception/ward staff)
+- [app-write-up.mdc](../.cursor/app-write-up.mdc) — Operations vs Housekeeping vs Biomedical module boundaries
 
 **Central facility rule:** every maintenance request, asset service log, and operational readiness action attaches to **facility structure** (facility, ward, room, bed, non-clinical asset) — not to a patient encounter. When a request originates from an IPD admission or OPD visit context, preserve **source location and optional encounter reference** for traceability; do not create parallel admission or outpatient records in Operations.
 
@@ -22,8 +22,8 @@ Deliver a **professional, calm, engineering-grade workspace** optimized for tria
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Product scope | `.cursor/app-write-up.mdc` | Operations owns electrical, plumbing, water, power, HVAC, safety, maintenance requests, operational readiness |
-| IPD bed context | `.cursor/flows/ipd-flow.mdc` §3, §14.2 | Recommended bed statuses include `Maintenance`, `Blocked`; operations should unblock beds after repair |
+| Product scope | `../.cursor/app-write-up.mdc` | Operations owns electrical, plumbing, water, power, HVAC, safety, maintenance requests, operational readiness |
+| IPD bed context | `../.cursor/flows/ipd-flow.mdc` §3, §14.2 | Recommended bed statuses include `Maintenance`, `Blocked`; operations should unblock beds after repair |
 | Frontend scaffold | `frontend/lib/features/operations/` | `data/`, `domain/`, `presentation/` layers exist |
 | Workspace UI | `operations_workspace_page.dart` | Request queue, summary cards, filters, detail dialog, triage/assign/status/service-log/note actions, report dialog |
 | Controller | `operations_workspace_controller.dart` | Realtime + periodic sync, pagination, status/priority/facility/asset/date filters, mutations |
@@ -59,7 +59,7 @@ Deliver a **professional, calm, engineering-grade workspace** optimized for tria
 
 ## Flow Integration Requirements
 
-### IPD flow (`.cursor/flows/ipd-flow.mdc`)
+### IPD flow (`../.cursor/flows/ipd-flow.mdc`)
 
 | IPD concept | Operations module responsibility |
 | ----------- | -------------------------------- |
@@ -71,7 +71,7 @@ Deliver a **professional, calm, engineering-grade workspace** optimized for tria
 | §13 Role: Housekeeping vs operations | IPD `operations` role may view bed board; engineering actions live in Operations workspace. |
 | §16 Encounter hub | Operations does not attach clinical artifacts to IPD encounter; optional `source_admission_id` / `source_encounter_id` metadata for audit only. |
 
-### OPD flow (`.cursor/flows/opd-flow.mdc`)
+### OPD flow (`../.cursor/flows/opd-flow.mdc`)
 
 | OPD concept | Operations module responsibility |
 | ----------- | -------------------------------- |
@@ -80,7 +80,7 @@ Deliver a **professional, calm, engineering-grade workspace** optimized for tria
 | §7 `ADMITTED` handoff | Not an Operations stage change; if facility issue blocks ward readiness, show request status to admission desk via IPD bed/ward context. |
 | No duplicate encounters | Reporting from OPD context must not create OPD encounters or alter OPD stage. |
 
-### Module boundaries (`.cursor/app-write-up.mdc`)
+### Module boundaries (`../.cursor/app-write-up.mdc`)
 
 | Module | Owns | Operations must not duplicate |
 | ------ | ---- | ----------------------------- |
@@ -272,7 +272,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules. **Re-read `.cursor/flows/ipd-flow.mdc`, `.cursor/flows/opd-flow.mdc`, and `.cursor/app-write-up.mdc` before any operations flow change.**
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules. **Re-read `../.cursor/flows/ipd-flow.mdc`, `../.cursor/flows/opd-flow.mdc`, and `../.cursor/app-write-up.mdc` before any operations flow change.**
 
 | Rule | Requirement |
 |------|-------------|

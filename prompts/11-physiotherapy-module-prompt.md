@@ -8,7 +8,7 @@ Deliver a **professional, calm, therapy-grade workspace** that is easy to scan d
 
 **Central encounter rule:** every therapy episode attaches to an existing **clinical encounter** (OPD visit or IPD admission). Physiotherapy does not create parallel patient records. Outpatient therapy uses the OPD encounter; inpatient therapy uses the IPD admission encounter.
 
-**Flow alignment:** every physiotherapy workflow step must map to `.cursor/flows/opd-flow.mdc` (referral/disposition, follow-up visits) and `.cursor/flows/ipd-flow.mdc` (inpatient orders, daily review loop, discharge planning). Module boundaries follow `.cursor/app-write-up.mdc` — Physiotherapy owns assessment, plans, sessions, attendance, progress, and outcome review; OPD/IPD own admission and discharge orchestration.
+**Flow alignment:** every physiotherapy workflow step must map to `../.cursor/flows/opd-flow.mdc` (referral/disposition, follow-up visits) and `../.cursor/flows/ipd-flow.mdc` (inpatient orders, daily review loop, discharge planning). Module boundaries follow `../.cursor/app-write-up.mdc` — Physiotherapy owns assessment, plans, sessions, attendance, progress, and outcome review; OPD/IPD own admission and discharge orchestration.
 
 ---
 
@@ -51,7 +51,7 @@ Deliver a **professional, calm, therapy-grade workspace** that is easy to scan d
 
 ## Flow Integration Requirements
 
-### OPD flow (`.cursor/flows/opd-flow.mdc`)
+### OPD flow (`../.cursor/flows/opd-flow.mdc`)
 
 | OPD concept | Physiotherapy module responsibility |
 | ----------- | ----------------------------------- |
@@ -62,7 +62,7 @@ Deliver a **professional, calm, therapy-grade workspace** that is easy to scan d
 | No duplicate encounters | Therapy board lists encounters with therapy content or active referrals — never create duplicate outpatient encounters from the physiotherapy module. |
 | Role rules | Therapy actions for physiotherapists (`clinicalWrite`), doctors referring, reception scheduling — hide actions the backend would reject. |
 
-### IPD flow (`.cursor/flows/ipd-flow.mdc`)
+### IPD flow (`../.cursor/flows/ipd-flow.mdc`)
 
 | IPD step / concept | Physiotherapy module responsibility |
 | ------------------ | ----------------------------------- |
@@ -130,7 +130,7 @@ Implement or finish the following, in priority order.
 
 ### 3. Assessment, plan, and exercise instructions
 
-**Goal:** Structured initial assessment and ongoing plan per `.cursor/app-write-up.mdc`.
+**Goal:** Structured initial assessment and ongoing plan per `../.cursor/app-write-up.mdc`.
 
 **Actions:**
 
@@ -242,7 +242,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules.
 
 | Rule | Requirement |
 |------|-------------|

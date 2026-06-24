@@ -4,7 +4,9 @@
 
 Complete the **Inpatient (IPD) Module** for Hosspi HMS so admission desk, bed managers, ward nurses, doctors, and discharge coordinators can run the full inpatient lifecycle end-to-end: admission intake, bed allocation, ward handover, clinical care and orders, transfers, configurable billing gates, multi-step discharge clearance, bed release, and encounter closure.
 
-**Source of truth:** implement the workflow defined in [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc). UI labels, queue scopes, stage chips, summary cards, role visibility, and available actions must stay aligned with that document and with the **backend IPD stage contract** (`ADMITTED_PENDING_BED`, `ADMITTED_IN_BED`, `TRANSFER_REQUESTED`, `TRANSFER_IN_PROGRESS`, `DISCHARGE_PLANNED`, `DISCHARGED`, `CANCELLED`).
+**Source of truth:** implement the workflow defined in [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc). UI labels, queue scopes, stage chips, summary cards, role visibility, and available actions must stay aligned with that document and with the **backend IPD stage contract** (`ADMITTED_PENDING_BED`, `ADMITTED_IN_BED`, `TRANSFER_REQUESTED`, `TRANSFER_IN_PROGRESS`, `DISCHARGE_PLANNED`, `DISCHARGED`, `CANCELLED`).
+
+**OPD and emergency upstream:** align admission intake with [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) §7 (`ADMITTED` handoff) and emergency paths in ipd-flow §2.1. Product scope: [app-write-up.mdc](../.cursor/app-write-up.mdc).
 
 **Central encounter rule:** the IPD encounter/admission is the single anchor record. Admission requests, source OPD/emergency encounters, bed history, nursing assessment, vitals, doctor notes, orders, results, billing, insurance, and discharge artifacts must attach to it — never duplicate parallel admission records.
 
@@ -18,7 +20,7 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan unde
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Flow specification | `.cursor/flows/ipd-flow.mdc` | Full 19-step workflow, admission paths, bed/billing/nursing/doctor/order/discharge design |
+| Flow specification | `../.cursor/flows/ipd-flow.mdc` | Full 19-step workflow, admission paths, bed/billing/nursing/doctor/order/discharge design |
 | Frontend scaffold | `frontend/lib/features/ipd/` | `data/`, `domain/`, `presentation/` layers exist |
 | Workspace UI | `ipd_workspace_page.dart` | Patient board, scope/ward filters, summary cards, admission detail dialog, bed/transfer/discharge/clinical action panels |
 | Controller | `ipd_workspace_controller.dart` | Realtime + periodic sync, pagination, scope/search/ward filters, admission mutations |
@@ -57,7 +59,7 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan unde
 
 ## Scope — Core Capabilities
 
-Implement or finish the following, in priority order. Each item maps to sections in `.cursor/flows/ipd-flow.mdc`.
+Implement or finish the following, in priority order. Each item maps to sections in `../.cursor/flows/ipd-flow.mdc`.
 
 ### 1. Patient board and role-focused queues
 
@@ -120,7 +122,7 @@ Implement or finish the following, in priority order. Each item maps to sections
 - On admission detail, show billing state: deposit required/paid, insurance pre-auth status, `Billing Deferred` flag, running account balance when API provides encounter billing summary.
 - Gate high-cost actions (optional procedures, elective admission) on clearance when policy requires; emergency path allows proceed-first-bill-later.
 - During stay: surface link to billing workspace for interim bills and deposits (`clinical_request_billing_panel` patterns where orders originate from IPD).
-- At discharge: block **Ready for exit** until billing clearance per flow §10 step 6; coordinate with `billing-mudule-prompt.md` encounter closeout.
+- At discharge: block **Ready for exit** until billing clearance per flow §10 step 6; coordinate with [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) encounter closeout.
 - Auto-posted charges from orders must not be manually re-entered in IPD UI.
 
 **Reference:** `frontend/lib/features/billing/`, `shared/clinical_actions/clinical_request_billing_panel.dart`, `backend/src/lib/billing/clinical-request-billing.js`.
@@ -246,7 +248,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules. **Re-read `.cursor/flows/ipd-flow.mdc` before any IPD flow change.**
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules. **Re-read `../.cursor/flows/ipd-flow.mdc` before any IPD flow change.**
 
 | Rule | Requirement |
 |------|-------------|
@@ -287,7 +289,7 @@ Work in small, reviewable increments. One clear responsibility per new file.
 ## Acceptance Criteria
 
 - [ ] Staff can open IPD workspace, filter by scope and ward, and open admission detail with live sync.
-- [ ] Queue scopes and stage chips match backend contract and `.cursor/flows/ipd-flow.mdc` §11.
+- [ ] Queue scopes and stage chips match backend contract and `../.cursor/flows/ipd-flow.mdc` §11.
 - [ ] Admission desk can **start admission** and bed manager can **assign**, **transfer**, and **release** beds end-to-end.
 - [ ] **Bed board** shows ward/bed status and supports allocate, reserve, and post-discharge release workflow.
 - [ ] Doctors can place **lab, radiology, and medication orders** from IPD detail with pay-now/bill-later billing choice.

@@ -40,6 +40,10 @@ When rules disagree, apply this order:
 | [`flows/ipd-flow.mdc`](./flows/ipd-flow.mdc) | IPD module, flow, or action changes |
 | [`flows/icu-flow.mdc`](./flows/icu-flow.mdc) | ICU module, flow, or action changes |
 
+## Module implementation prompts
+
+Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01-opd` through `19-radiology`). Use them with the flow files and `app-write-up.mdc` when implementing or completing a product module.
+
 ## Cross-stack invariants
 
 - API JSON, query params, and documented payload fields use lowercase `snake_case` (backend owns; frontend DTOs map explicitly).

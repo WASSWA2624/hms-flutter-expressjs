@@ -6,9 +6,9 @@ Complete the **Housekeeping Module** for HOSSPI HMS so housekeeping staff, super
 
 **Source of truth:** implement housekeeping workflow in alignment with:
 
-- [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — step 18 (bed release after patient exit), discharge step 9 (housekeeping role), §3 bed statuses (`Cleaning`, release workflow), §13 housekeeping role, §14.2 bed board next actions, §17 turnaround (auto-notify housekeeping on bed release)
-- [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — §5 role boundary (housekeeping has no OPD clinical actions); facility room readiness for outpatient areas when applicable
-- [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Housekeeping module boundaries vs IPD, Operations, Rooms/wards/beds, and Nursing
+- [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — step 18 (bed release after patient exit), discharge step 9 (housekeeping role), §3 bed statuses (`Cleaning`, release workflow), §13 housekeeping role, §14.2 bed board next actions, §17 turnaround (auto-notify housekeeping on bed release)
+- [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §5 role boundary (housekeeping has no OPD clinical actions); facility room readiness for outpatient areas when applicable
+- [app-write-up.mdc](../.cursor/app-write-up.mdc) — Housekeeping module boundaries vs IPD, Operations, Rooms/wards/beds, and Nursing
 
 **Central location rule:** cleaning tasks attach to **facility rooms and/or beds** (physical care spaces). When turnover is triggered by IPD discharge, the task must retain a link to the **IPD admission / bed assignment** for audit and bed-board sync — Housekeeping does not own clinical discharge or encounter closure. IPD and Discharge modules release beds; Housekeeping owns cleaning execution and readiness confirmation.
 
@@ -22,8 +22,8 @@ Deliver a **professional, calm, operations workspace** optimized for shift triag
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Product scope | `.cursor/app-write-up.mdc` | Housekeeping owns cleaning, schedules, turnover, sanitation readiness, laundry coordination |
-| IPD flow spec | `.cursor/flows/ipd-flow.mdc` | Bed release step 18; `Cleaning` bed status; housekeeping role in discharge |
+| Product scope | `../.cursor/app-write-up.mdc` | Housekeeping owns cleaning, schedules, turnover, sanitation readiness, laundry coordination |
+| IPD flow spec | `../.cursor/flows/ipd-flow.mdc` | Bed release step 18; `Cleaning` bed status; housekeeping role in discharge |
 | Frontend scaffold | `frontend/lib/features/housekeeping/` | `data/`, `domain/`, `presentation/` layers exist |
 | Workspace UI | `housekeeping_workspace_page.dart` | Summary cards, worklist table, task/schedule/maintenance dialogs, detail panel, report preview (~1.9k lines) |
 | Controller | `housekeeping_workspace_controller.dart` | Realtime + refresh, search, resource/queue/status filters, task/schedule/maintenance mutations |
@@ -63,7 +63,7 @@ Deliver a **professional, calm, operations workspace** optimized for shift triag
 
 ## Flow Integration Requirements
 
-### IPD flow (`.cursor/flows/ipd-flow.mdc`)
+### IPD flow (`../.cursor/flows/ipd-flow.mdc`)
 
 | IPD step / concept | Housekeeping module responsibility |
 | ------------------ | -------------------------------- |
@@ -76,7 +76,7 @@ Deliver a **professional, calm, operations workspace** optimized for shift triag
 | §17 Turnaround | Auto-notify housekeeping on bed release; focused turnover queue |
 | §16 Encounter hub | Turnover tasks link to `admission_id` / `bed_assignment_id` when triggered by IPD — clinical record stays in IPD |
 
-### OPD flow (`.cursor/flows/opd-flow.mdc`)
+### OPD flow (`../.cursor/flows/opd-flow.mdc`)
 
 | OPD concept | Housekeeping module responsibility |
 | ----------- | ---------------------------------- |
@@ -269,7 +269,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules. **Re-read `.cursor/flows/ipd-flow.mdc` and `.cursor/app-write-up.mdc` before any housekeeping flow change.**
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules. **Re-read `../.cursor/flows/ipd-flow.mdc` and `../.cursor/app-write-up.mdc` before any housekeeping flow change.**
 
 | Rule | Requirement |
 |------|-------------|

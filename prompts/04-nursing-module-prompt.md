@@ -8,9 +8,9 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan duri
 
 **Central encounter rule:** the **IPD admission** (and its encounter) remains the parent record for ward nursing. Nursing notes, vitals, medication administration, care plans, and handovers attach to that admission — Nursing does not create parallel inpatient records.
 
-**Module boundary (per `.cursor/app-write-up.mdc`):** Nursing owns nursing observations, medication administration, care tasks, ward activity, and handover. Inpatient owns admission and bed assignment; ICU owns intensive-care stays and critical-alert workflows; Clinical/Doctor owns orders; Discharge owns final episode closure. Nursing executes nursing-facing work and clearance steps — it does not finalize IPD discharge or own ICU stay lifecycle.
+**Module boundary (per `../.cursor/app-write-up.mdc`):** Nursing owns nursing observations, medication administration, care tasks, ward activity, and handover. Inpatient owns admission and bed assignment; ICU owns intensive-care stays and critical-alert workflows; Clinical/Doctor owns orders; Discharge owns final episode closure. Nursing executes nursing-facing work and clearance steps — it does not finalize IPD discharge or own ICU stay lifecycle.
 
-**Flow alignment:** every nursing workflow step must map to `.cursor/flows/ipd-flow.mdc` (steps 5–9, 11–13, 16) and respect `.cursor/flows/opd-flow.mdc` (nurse vitals and queue support during outpatient stages; terminal `ADMITTED` handoff to IPD).
+**Flow alignment:** every nursing workflow step must map to `../.cursor/flows/ipd-flow.mdc` (steps 5–9, 11–13, 16) and respect `../.cursor/flows/opd-flow.mdc` (nurse vitals and queue support during outpatient stages; terminal `ADMITTED` handoff to IPD).
 
 ---
 
@@ -55,7 +55,7 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan duri
 
 ## Flow Integration Requirements
 
-### IPD flow (`.cursor/flows/ipd-flow.mdc`)
+### IPD flow (`../.cursor/flows/ipd-flow.mdc`)
 
 | IPD step / concept | Nursing module responsibility |
 | ------------------ | ----------------------------- |
@@ -71,7 +71,7 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan duri
 | Encounter status `In ICU` | Show on board with ICU badge; link to ICU workspace for critical-care actions |
 | Backend stages | Row badges and next-action labels use backend `stage`, `next_step`, `transfer_status`, `discharge_status` |
 
-### OPD flow (`.cursor/flows/opd-flow.mdc`)
+### OPD flow (`../.cursor/flows/opd-flow.mdc`)
 
 | OPD concept | Nursing module responsibility |
 | ----------- | ----------------------------- |
@@ -256,7 +256,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules.
 
 | Rule | Requirement |
 |------|-------------|

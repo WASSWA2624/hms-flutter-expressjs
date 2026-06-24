@@ -6,9 +6,9 @@ Complete the **Mortuary Module** for HOSSPI HMS so mortuary staff, mortuary mana
 
 **Source of truth:** implement mortuary workflow in alignment with:
 
-- [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — death during admission as an alternate exit path (vs normal discharge §10–§12); bed release §18; encounter closure §19; billing gates §4; encounter hub §16
-- [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — terminal disposition when outpatient death occurs before `ADMITTED`; source encounter preservation; §6 UI rules (summary cards filter worklist)
-- [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Mortuary module boundaries vs IPD, Discharge, Billing, Emergency, Housekeeping, and Patient registry
+- [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — death during admission as an alternate exit path (vs normal discharge §10–§12); bed release §18; encounter closure §19; billing gates §4; encounter hub §16
+- [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — terminal disposition when outpatient death occurs before `ADMITTED`; source encounter preservation; §6 UI rules (summary cards filter worklist)
+- [app-write-up.mdc](../.cursor/app-write-up.mdc) — Mortuary module boundaries vs IPD, Discharge, Billing, Emergency, Housekeeping, and Patient registry
 
 **Central linkage rule:** every mortuary case attaches to a **deceased profile** and optionally to a **source workflow reference** (`source_workflow`, `source_reference_id`, linked `patient_id`, IPD admission, emergency case, or OPD encounter). Mortuary owns custody, storage, release, and mortuary-specific billing — it does not recreate clinical admission records or perform clinical death certification beyond what the source module provides.
 
@@ -18,9 +18,9 @@ Deliver a **dignified, audit-ready, chain-of-custody workspace** optimized for l
 
 ## Mandatory Reading (before any Mortuary change)
 
-1. Re-read [`.cursor/flows/ipd-flow.mdc`](.cursor/flows/ipd-flow.mdc) — especially §3 bed management, §4 billing gates, §10–§12 discharge (contrast with death pathway), §16 encounter hub rule, §18 bed release after exit.
-2. Re-read [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) — §3 stage contract, §7 OPD-to-IPD handoff (mortuary is a separate terminal path when death occurs in OPD), §6 UI rules.
-3. Re-read [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — Mortuary vs Discharge vs Billing vs Housekeeping boundaries; online-only release expectation.
+1. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — especially §3 bed management, §4 billing gates, §10–§12 discharge (contrast with death pathway), §16 encounter hub rule, §18 bed release after exit.
+2. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §3 stage contract, §7 OPD-to-IPD handoff (mortuary is a separate terminal path when death occurs in OPD), §6 UI rules.
+3. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Mortuary vs Discharge vs Billing vs Housekeeping boundaries; online-only release expectation.
 4. Re-read `backend/.cursor/compliance.mdc` and `backend/.cursor/offline-support.mdc` — mortuary release and custody actions require full audit evidence and are **online-only**.
 
 ---
@@ -66,7 +66,7 @@ flowchart LR
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Product scope | `.cursor/app-write-up.mdc` | Mortuary owns custody, storage, viewing, post-mortem, release, mortuary billing events |
+| Product scope | `../.cursor/app-write-up.mdc` | Mortuary owns custody, storage, viewing, post-mortem, release, mortuary billing events |
 | Frontend scaffold | `frontend/lib/features/mortuary/` | `data/`, `domain/`, `presentation/` layers exist |
 | Workspace UI | `mortuary_workspace_page.dart` | Six panels (overview, intake, storage, custody, release, reporting), summary cards, queues, detail sections, print — **mutations disabled** via `_ActionGapPanel` |
 | Controller | `mortuary_workspace_controller.dart` | Realtime + periodic sync, panel/queue/resource switching, search, pagination, item selection |
@@ -244,7 +244,7 @@ Implement or finish the following, in priority order. Each item maps to IPD/OPD 
 
 ## Module Boundaries (do not violate)
 
-From `.cursor/app-write-up.mdc`:
+From `../.cursor/app-write-up.mdc`:
 
 | Own in Mortuary | Do not duplicate — use other module |
 | --------------- | ----------------------------------- |
@@ -290,7 +290,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules.
 
 | Rule | Requirement |
 |------|-------------|

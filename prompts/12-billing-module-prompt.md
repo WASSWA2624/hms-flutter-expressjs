@@ -8,6 +8,42 @@ Deliver a **professional, calm, cashier-grade workspace** that is easy to scan u
 
 **Central payment rule:** clinical and departmental modules may collect payment at the point of care (pay now) or defer to the billing desk (bill later). The billing workspace must reflect both paths as a **single source of truth** for invoice and payment status — no duplicate charges, no ambiguous clearance.
 
+**Source of truth (read in this order):**
+
+1. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Billing and cashier module boundaries
+2. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §4 billing/deposit/insurance gates, §10 discharge financial clearance, §13 cashier role
+3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — `WAITING_CONSULTATION_PAYMENT`, payer on worklist, pay-consultation gate
+
+---
+
+## Flow Integration Requirements
+
+### IPD flow (`../.cursor/flows/ipd-flow.mdc`)
+
+| IPD concept | Billing module responsibility |
+| ----------- | ----------------------------- |
+| §4 Payment timing | Deposits before admission, interim bills during stay, pre-procedure auth, discharge settlement |
+| §4 `Billing Deferred` | Emergency admits — show deferred flag; do not block urgent care in UI |
+| §10 step 6 | Final bill, insurance claim, deposit adjustment before patient exit |
+| §11 `Awaiting Billing Clearance` | Work items for discharge-linked invoices |
+| §13 Cashier / Insurance desk | Collect deposit, payments, refunds; pre-auth and claims (with Claims module) |
+| §16 Encounter hub | Invoices and payments link to IPD encounter — ledger per admission |
+
+### OPD flow (`../.cursor/flows/opd-flow.mdc`)
+
+| OPD concept | Billing module responsibility |
+| ----------- | ----------------------------- |
+| `WAITING_CONSULTATION_PAYMENT` | Consultation invoice/payment via `pay-consultation` integration |
+| Worklist billing state | Show payment relevance without replacing OPD stage ownership |
+| Insured outpatient | Coverage and claims per [prompts/13-claims-module-prompt.md](./13-claims-module-prompt.md) |
+
+### App write-up (`../.cursor/app-write-up.mdc`)
+
+| Product rule | Billing implementation |
+| ------------ | ---------------------- |
+| Billing row | Invoices, payments, receipts, refunds, adjustments, cashier, shift close |
+| Clinical/department modules | Intake charges via orders — billing reflects status, does not re-enter orders |
+
 ---
 
 ## Current State (read before changing code)
@@ -207,7 +243,7 @@ Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`
 
 ## Architecture and Conventions
 
-Follow `frontend/docs/workflows/feature-workflow.md` and `.cursor/` rules.
+Follow `frontend/docs/workflows/feature-workflow.md` and `../.cursor/` rules.
 
 | Rule | Requirement |
 |------|-------------|
