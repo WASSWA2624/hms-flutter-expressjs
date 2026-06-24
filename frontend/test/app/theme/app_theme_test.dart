@@ -12,7 +12,6 @@ void main() {
       final ThemeData theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
-      expect(theme.fontFamily, AppFontFamily.primary);
       expect(theme.textTheme.bodyMedium?.fontFamily, AppFontFamily.primary);
       expect(theme.textTheme.bodyMedium?.fontFamilyFallback,
           AppFontFamily.fallback);

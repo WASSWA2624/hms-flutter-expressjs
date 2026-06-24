@@ -55,7 +55,7 @@ abstract final class AppTheme {
       bodyColor: palette.bodyTextColor,
       displayColor: palette.displayTextColor,
     );
-    final TextStyle inputTextStyle = TextStyle(
+    const TextStyle inputTextStyle = TextStyle(
       fontFamily: AppFontFamily.primary,
       fontFamilyFallback: AppFontFamily.fallback,
     );
