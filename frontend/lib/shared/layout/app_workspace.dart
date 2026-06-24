@@ -1063,16 +1063,21 @@ List<BoxShadow> _summaryCardShadow({
   ];
 }
 
+/// Matches compact, metric-style values such as `14`, `1.2K`, `99+` or `100%`.
+///
+/// The corner value badge is sized for short numeric counts. Word or
+/// multi-word values (for example `1 record`, `Advanced`, `Facility`) are
+/// excluded so they render on the full-width value line under the label
+/// instead of being clipped inside the small badge.
+final RegExp _summaryBadgeValuePattern = RegExp(r'^[0-9][0-9.,]*[KMBkmb]?[+%]?$');
+
 bool _shouldOverlaySummaryValue(String value) {
   final String text = value.trim();
-  if (text.isEmpty || text.contains('\n') || text.length > 8) {
+  if (text.isEmpty || text.length > 6 || text.contains(RegExp(r'\s'))) {
     return false;
   }
 
-  final Iterable<String> words = text
-      .split(RegExp(r'\s+'))
-      .where((String word) => word.isNotEmpty);
-  return words.length <= 2;
+  return _summaryBadgeValuePattern.hasMatch(text);
 }
 
 String _joinSummarySemantics(String label, String value) {
