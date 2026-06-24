@@ -103,138 +103,129 @@ final class PatientRepositoryImpl implements PatientRepository {
 
   @override
   Future<Result<PatientDetail>> loadPatientDetail(String patientId) async {
-    final Patient? patient = await _resultValue(
-      _apiClient.get<Patient>(
-        ApiEndpoints.byId(HmsApiResource.patients, patientId),
-        decoder: (Object? data) => PatientDto(decodeDataMap(data)).toEntity(),
-      ),
+    final Result<Patient> patientResult = await _apiClient.get<Patient>(
+      ApiEndpoints.byId(HmsApiResource.patients, patientId),
+      decoder: (Object? data) => PatientDto(decodeDataMap(data)).toEntity(),
     );
+    final Patient? patient = _valueOrNull(patientResult);
     if (patient == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
+      return Result<PatientDetail>.failure(_failureOf(patientResult)!);
     }
 
-    final PatientWorkspaceSnapshot? workspace = await _resultValue(
-      _apiClient.get<PatientWorkspaceSnapshot>(
-        ApiEndpoints.apiV1(<String>[
-          HmsApiResource.patients.path,
+    // Fan out the per-patient workspace reads concurrently. Building the
+    // futures before awaiting starts them in parallel, replacing the previous
+    // sequential round-trips (workspace + timeline + seven related lists) with
+    // a single concurrent batch. Any failure short-circuits to that failure.
+    final Future<Result<PatientWorkspaceSnapshot>> workspaceFuture = _apiClient
+        .get<PatientWorkspaceSnapshot>(
+          ApiEndpoints.apiV1(<String>[
+            HmsApiResource.patients.path,
+            patient.id,
+            'workspace',
+          ]),
+          decoder: (Object? data) =>
+              PatientWorkspaceDto(decodeDataMap(data)).toSnapshot(),
+        );
+    final Future<Result<List<PatientTimelineItem>>> timelineFuture = _apiClient
+        .get<List<PatientTimelineItem>>(
+          ApiEndpoints.apiV1(<String>[
+            HmsApiResource.patients.path,
+            patient.id,
+            'timeline',
+          ]),
+          queryParameters: const <String, Object?>{'page': 1, 'limit': 12},
+          decoder: (Object? data) => decodeDataList(data)
+              .map(PatientTimelineItemDto.new)
+              .map((PatientTimelineItemDto dto) => dto.toEntity())
+              .toList(growable: false),
+        );
+    final Future<Result<List<PatientIdentifier>>> identifiersFuture =
+        _fetchRelatedList<PatientIdentifier>(
+          HmsApiResource.patientIdentifiers,
           patient.id,
-          'workspace',
-        ]),
-        decoder: (Object? data) =>
-            PatientWorkspaceDto(decodeDataMap(data)).toSnapshot(),
-      ),
-    );
-    if (workspace == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientTimelineItem>? timeline = await _resultValue(
-      _apiClient.get<List<PatientTimelineItem>>(
-        ApiEndpoints.apiV1(<String>[
-          HmsApiResource.patients.path,
+          decodeIdentifierList,
+        );
+    final Future<Result<List<PatientContact>>> contactsFuture =
+        _fetchRelatedList<PatientContact>(
+          HmsApiResource.patientContacts,
           patient.id,
-          'timeline',
-        ]),
-        queryParameters: const <String, Object?>{'page': 1, 'limit': 12},
-        decoder: (Object? data) => decodeDataList(data)
-            .map(PatientTimelineItemDto.new)
-            .map((PatientTimelineItemDto dto) => dto.toEntity())
-            .toList(growable: false),
-      ),
-    );
-    if (timeline == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
+          decodeContactList,
+        );
+    final Future<Result<List<PatientGuardian>>> guardiansFuture =
+        _fetchRelatedList<PatientGuardian>(
+          HmsApiResource.patientGuardians,
+          patient.id,
+          decodeGuardianList,
+        );
+    final Future<Result<List<PatientAllergy>>> allergiesFuture =
+        _fetchRelatedList<PatientAllergy>(
+          HmsApiResource.patientAllergies,
+          patient.id,
+          decodeAllergyList,
+        );
+    final Future<Result<List<PatientMedicalHistory>>> medicalHistoriesFuture =
+        _fetchRelatedList<PatientMedicalHistory>(
+          HmsApiResource.patientMedicalHistories,
+          patient.id,
+          decodeMedicalHistoryList,
+        );
+    final Future<Result<List<PatientDocument>>> documentsFuture =
+        _fetchRelatedList<PatientDocument>(
+          HmsApiResource.patientDocuments,
+          patient.id,
+          decodeDocumentList,
+        );
+    final Future<Result<List<PatientConsent>>> consentsFuture =
+        _fetchRelatedList<PatientConsent>(
+          HmsApiResource.consents,
+          patient.id,
+          decodeConsentList,
+        );
+
+    final Result<PatientWorkspaceSnapshot> workspaceResult =
+        await workspaceFuture;
+    final Result<List<PatientTimelineItem>> timelineResult =
+        await timelineFuture;
+    final Result<List<PatientIdentifier>> identifiersResult =
+        await identifiersFuture;
+    final Result<List<PatientContact>> contactsResult = await contactsFuture;
+    final Result<List<PatientGuardian>> guardiansResult = await guardiansFuture;
+    final Result<List<PatientAllergy>> allergiesResult = await allergiesFuture;
+    final Result<List<PatientMedicalHistory>> medicalHistoriesResult =
+        await medicalHistoriesFuture;
+    final Result<List<PatientDocument>> documentsResult = await documentsFuture;
+    final Result<List<PatientConsent>> consentsResult = await consentsFuture;
+
+    final AppFailure? failure = <AppFailure?>[
+      _failureOf(workspaceResult),
+      _failureOf(timelineResult),
+      _failureOf(identifiersResult),
+      _failureOf(contactsResult),
+      _failureOf(guardiansResult),
+      _failureOf(allergiesResult),
+      _failureOf(medicalHistoriesResult),
+      _failureOf(documentsResult),
+      _failureOf(consentsResult),
+    ].firstWhere((AppFailure? value) => value != null, orElse: () => null);
+    if (failure != null) {
+      return Result<PatientDetail>.failure(failure);
     }
 
-    final List<PatientIdentifier>? identifiers = await _resultValue(
-      _fetchRelatedList<PatientIdentifier>(
-        HmsApiResource.patientIdentifiers,
-        patient.id,
-        decodeIdentifierList,
-      ),
-    );
-    if (identifiers == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientContact>? contacts = await _resultValue(
-      _fetchRelatedList<PatientContact>(
-        HmsApiResource.patientContacts,
-        patient.id,
-        decodeContactList,
-      ),
-    );
-    if (contacts == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientGuardian>? guardians = await _resultValue(
-      _fetchRelatedList<PatientGuardian>(
-        HmsApiResource.patientGuardians,
-        patient.id,
-        decodeGuardianList,
-      ),
-    );
-    if (guardians == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientAllergy>? allergies = await _resultValue(
-      _fetchRelatedList<PatientAllergy>(
-        HmsApiResource.patientAllergies,
-        patient.id,
-        decodeAllergyList,
-      ),
-    );
-    if (allergies == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientMedicalHistory>? medicalHistories = await _resultValue(
-      _fetchRelatedList<PatientMedicalHistory>(
-        HmsApiResource.patientMedicalHistories,
-        patient.id,
-        decodeMedicalHistoryList,
-      ),
-    );
-    if (medicalHistories == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientDocument>? documents = await _resultValue(
-      _fetchRelatedList<PatientDocument>(
-        HmsApiResource.patientDocuments,
-        patient.id,
-        decodeDocumentList,
-      ),
-    );
-    if (documents == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
-
-    final List<PatientConsent>? consents = await _resultValue(
-      _fetchRelatedList<PatientConsent>(
-        HmsApiResource.consents,
-        patient.id,
-        decodeConsentList,
-      ),
-    );
-    if (consents == null) {
-      return Result<PatientDetail>.failure(_lastFailure!);
-    }
+    final List<PatientIdentifier> identifiers = _valueOrNull(identifiersResult)!;
+    final List<PatientContact> contacts = _valueOrNull(contactsResult)!;
 
     return Result<PatientDetail>.success(
       PatientDetail(
         patient: _hydratePatient(patient, identifiers, contacts),
-        workspace: workspace,
+        workspace: _valueOrNull(workspaceResult)!,
         identifiers: identifiers,
         contacts: contacts,
-        guardians: guardians,
-        allergies: allergies,
-        medicalHistories: medicalHistories,
-        documents: documents,
-        consents: consents,
-        timeline: timeline,
+        guardians: _valueOrNull(guardiansResult)!,
+        allergies: _valueOrNull(allergiesResult)!,
+        medicalHistories: _valueOrNull(medicalHistoriesResult)!,
+        documents: _valueOrNull(documentsResult)!,
+        consents: _valueOrNull(consentsResult)!,
+        timeline: _valueOrNull(timelineResult)!,
       ),
     );
   }
@@ -472,19 +463,14 @@ final class PatientRepositoryImpl implements PatientRepository {
     };
   }
 
-  AppFailure? _lastFailure;
+  T? _valueOrNull<T>(Result<T> result) {
+    return result.when(success: (T value) => value, failure: (_) => null);
+  }
 
-  Future<T?> _resultValue<T>(Future<Result<T>> future) async {
-    final Result<T> result = await future;
+  AppFailure? _failureOf<T>(Result<T> result) {
     return result.when(
-      success: (T value) {
-        _lastFailure = null;
-        return value;
-      },
-      failure: (AppFailure failure) {
-        _lastFailure = failure;
-        return null;
-      },
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
     );
   }
 

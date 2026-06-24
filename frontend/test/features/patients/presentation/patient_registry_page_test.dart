@@ -220,7 +220,7 @@ void main() {
     expect(find.text('Alerts'), findsOneWidget);
     expect(find.text('Visit'), findsNothing);
     expect(find.text('Next action'), findsNothing);
-    expect(find.text('PAT-1001'), findsOneWidget);
+    expect(find.text('MRN MRN-10024'), findsWidgets);
     expect(find.textContaining('Female'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
     expect(find.text('OPD - In Progress'), findsNothing);
@@ -557,12 +557,20 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Complete discharge'), findsOneWidget);
+    // For an admitted IPD patient the disposition action resolves to the
+    // shared "Discharge" label; before the dialog opens it is the only match.
+    expect(find.text('Discharge'), findsOneWidget);
 
-    await tester.tap(find.text('Complete discharge'));
+    await tester.tap(find.text('Discharge'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Discharge'), findsOneWidget);
+    expect(
+      find.text(
+        'Confirm the patient exit only after required clinical, nursing, '
+        'pharmacy, billing, and document checks are complete.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.byWidgetPredicate(
         (Widget widget) =>
@@ -586,7 +594,8 @@ void main() {
         'I confirm the patient has exited and documents were handed over.',
       ),
     );
-    await tester.tap(find.text('Finalize discharge'));
+    // The discharge dialog's primary submit button is the last "Discharge".
+    await tester.tap(find.text('Discharge').last);
     await tester.pumpAndSettle();
 
     final captured =
