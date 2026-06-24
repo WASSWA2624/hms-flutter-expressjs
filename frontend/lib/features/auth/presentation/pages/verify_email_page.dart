@@ -106,7 +106,15 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                       SizedBox(height: theme.spacing.md),
                       AuthFailureText(failure: _failure!),
                     ],
-                    if (!_isVerified) ...<Widget>[
+                    if (_isVerified) ...<Widget>[
+                      SizedBox(height: theme.spacing.lg),
+                      AppButton.primary(
+                        label: l10n.authLoginActionLabel,
+                        leadingIcon: Icons.login,
+                        fullWidth: true,
+                        onPressed: () => context.go(AppRoutes.login.location()),
+                      ),
+                    ] else ...<Widget>[
                       SizedBox(height: theme.spacing.lg),
                       AppTextField(
                         controller: _codeController,

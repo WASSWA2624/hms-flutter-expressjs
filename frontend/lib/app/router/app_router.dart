@@ -12,8 +12,10 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -303,6 +305,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             email: state.uri.queryParameters['email'],
             reason: state.uri.queryParameters['reason'],
           );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword.path,
+        name: AppRoutes.forgotPassword.name,
+        builder: (_, _) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword.path,
+        name: AppRoutes.resetPassword.name,
+        builder: (_, GoRouterState state) {
+          return ResetPasswordPage(token: state.uri.queryParameters['token']);
         },
       ),
       GoRoute(

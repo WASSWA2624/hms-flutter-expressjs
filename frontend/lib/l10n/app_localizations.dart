@@ -6706,6 +6706,90 @@ abstract class AppLocalizations {
   /// **'Passwords do not match.'**
   String get authPasswordMismatchMessage;
 
+  /// Forgot password page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get authForgotPasswordTitle;
+
+  /// Forgot password page body.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email on your facility account. If it matches an account, we will send reset instructions.'**
+  String get authForgotPasswordBody;
+
+  /// Link and action label to start password reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get authForgotPasswordActionLabel;
+
+  /// Submit action on forgot password form.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset link'**
+  String get authForgotPasswordSubmitLabel;
+
+  /// Prompt when multiple tenants match the email.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the workspace for this account.'**
+  String get authForgotPasswordTenantPrompt;
+
+  /// Title after forgot password request succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get authForgotPasswordSubmittedTitle;
+
+  /// Body after forgot password request succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for that email, password reset instructions have been sent.'**
+  String get authForgotPasswordSubmittedBody;
+
+  /// Reset password page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password'**
+  String get authResetPasswordTitle;
+
+  /// Reset password page body.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a new password for your account.'**
+  String get authResetPasswordBody;
+
+  /// Reset password submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get authResetPasswordActionLabel;
+
+  /// Shown when reset password page has no token.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset link is missing or invalid. Request a new password reset from the sign-in page.'**
+  String get authResetPasswordMissingTokenMessage;
+
+  /// Title after password reset succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated'**
+  String get authResetPasswordCompletedTitle;
+
+  /// Body after password reset succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been changed. Sign in with the new password.'**
+  String get authResetPasswordCompletedBody;
+
+  /// Reset password failure for invalid or expired token.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset link has expired or is invalid. Request a new password reset.'**
+  String get authResetPasswordInvalidTokenMessage;
+
   /// OPD form field label pattern for required fields.
   ///
   /// In en, this message translates to:

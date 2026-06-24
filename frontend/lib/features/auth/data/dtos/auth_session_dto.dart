@@ -110,6 +110,22 @@ final class AuthSessionDto {
     return List<AppPermission>.unmodifiable(permissions.toSet());
   }
 
+  static AuthUserProfile? userProfileFromResponseData(Object? data) {
+    if (data is! Map<String, Object?>) {
+      return null;
+    }
+
+    return _userProfileFromUser(data);
+  }
+
+  static List<AppPermission> permissionsFromResponseData(Object? data) {
+    if (data is! Map<String, Object?>) {
+      return const <AppPermission>[];
+    }
+
+    return _permissionsFromUser(data);
+  }
+
   static AuthUserProfile? _userProfileFromUser(Map<String, Object?> user) {
     final profile = _map(user['profile']);
     final tenant = _map(user['tenant']);

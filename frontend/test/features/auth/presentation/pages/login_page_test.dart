@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 import '../../../../helpers/test_harness.dart';
@@ -133,5 +134,32 @@ final class _FailingLoginRepository implements AuthRepository {
   @override
   Future<Result<void>> verifyEmail({required String token, String? email}) {
     throw UnsupportedError('verifyEmail is not used by this test.');
+  }
+
+  @override
+  Future<Result<AuthIdentifyResult>> identify({required String identifier}) {
+    throw UnsupportedError('identify is not used by this test.');
+  }
+
+  @override
+  Future<Result<void>> forgotPassword({
+    required String email,
+    required String tenantId,
+  }) {
+    throw UnsupportedError('forgotPassword is not used by this test.');
+  }
+
+  @override
+  Future<Result<void>> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    throw UnsupportedError('resetPassword is not used by this test.');
+  }
+
+  @override
+  Future<Result<AuthSession>> fetchCurrentUser(AuthSession session) {
+    throw UnsupportedError('fetchCurrentUser is not used by this test.');
   }
 }

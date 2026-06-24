@@ -3557,6 +3557,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPasswordMismatchMessage => 'Passwords do not match.';
 
   @override
+  String get authForgotPasswordTitle => 'Reset your password';
+
+  @override
+  String get authForgotPasswordBody =>
+      'Enter the email on your facility account. If it matches an account, we will send reset instructions.';
+
+  @override
+  String get authForgotPasswordActionLabel => 'Forgot password?';
+
+  @override
+  String get authForgotPasswordSubmitLabel => 'Send reset link';
+
+  @override
+  String get authForgotPasswordTenantPrompt =>
+      'Choose the workspace for this account.';
+
+  @override
+  String get authForgotPasswordSubmittedTitle => 'Check your email';
+
+  @override
+  String get authForgotPasswordSubmittedBody =>
+      'If an account exists for that email, password reset instructions have been sent.';
+
+  @override
+  String get authResetPasswordTitle => 'Choose a new password';
+
+  @override
+  String get authResetPasswordBody => 'Enter a new password for your account.';
+
+  @override
+  String get authResetPasswordActionLabel => 'Reset password';
+
+  @override
+  String get authResetPasswordMissingTokenMessage =>
+      'This reset link is missing or invalid. Request a new password reset from the sign-in page.';
+
+  @override
+  String get authResetPasswordCompletedTitle => 'Password updated';
+
+  @override
+  String get authResetPasswordCompletedBody =>
+      'Your password has been changed. Sign in with the new password.';
+
+  @override
+  String get authResetPasswordInvalidTokenMessage =>
+      'This reset link has expired or is invalid. Request a new password reset.';
+
+  @override
   String opdFieldRequiredLabel(String label) {
     return '$label (required)';
   }

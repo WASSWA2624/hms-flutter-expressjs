@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 
 abstract interface class AuthRepository {
   Future<Result<AuthSession?>> restoreSession();
@@ -27,7 +28,22 @@ abstract interface class AuthRepository {
 
   Future<Result<void>> resendEmailVerification({required String email});
 
+  Future<Result<AuthIdentifyResult>> identify({required String identifier});
+
+  Future<Result<void>> forgotPassword({
+    required String email,
+    required String tenantId,
+  });
+
+  Future<Result<void>> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens);
+
+  Future<Result<AuthSession>> fetchCurrentUser(AuthSession session);
 
   Future<Result<void>> changePassword({
     required String currentPassword,

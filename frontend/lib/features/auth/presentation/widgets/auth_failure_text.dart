@@ -32,6 +32,11 @@ class AuthFailureText extends StatelessWidget {
       return l10n.authRateLimitedMessage;
     }
 
+    if (failure.code == 'auth.reset_password.invalid_token' ||
+        failure.code == 'auth.token_invalid') {
+      return l10n.authResetPasswordInvalidTokenMessage;
+    }
+
     return switch (failure.category) {
       AppFailureCategory.unauthorized => l10n.authInvalidCredentialsMessage,
       AppFailureCategory.forbidden => l10n.authForbiddenMessage,

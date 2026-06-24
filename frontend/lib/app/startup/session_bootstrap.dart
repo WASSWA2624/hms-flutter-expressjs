@@ -35,10 +35,13 @@ class _SessionBootstrapState extends ConsumerState<SessionBootstrap> {
       return;
     }
 
+    final tokenProvider = ref.read(sessionTokenProvider);
     if (tokens.isAccessTokenExpired(DateTime.now().toUtc()) &&
         tokens.hasRefreshToken) {
-      await ref.read(sessionTokenProvider).refreshStoredSession();
+      await tokenProvider.refreshStoredSession();
     }
+
+    await tokenProvider.enrichAuthenticatedSession();
   }
 
   @override

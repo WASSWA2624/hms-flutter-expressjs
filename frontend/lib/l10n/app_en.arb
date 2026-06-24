@@ -4583,6 +4583,62 @@
   "@authPasswordMismatchMessage": {
     "description": "Password confirmation mismatch validation message."
   },
+  "authForgotPasswordTitle": "Reset your password",
+  "@authForgotPasswordTitle": {
+    "description": "Forgot password page title."
+  },
+  "authForgotPasswordBody": "Enter the email on your facility account. If it matches an account, we will send reset instructions.",
+  "@authForgotPasswordBody": {
+    "description": "Forgot password page body."
+  },
+  "authForgotPasswordActionLabel": "Forgot password?",
+  "@authForgotPasswordActionLabel": {
+    "description": "Link and action label to start password reset."
+  },
+  "authForgotPasswordSubmitLabel": "Send reset link",
+  "@authForgotPasswordSubmitLabel": {
+    "description": "Submit action on forgot password form."
+  },
+  "authForgotPasswordTenantPrompt": "Choose the workspace for this account.",
+  "@authForgotPasswordTenantPrompt": {
+    "description": "Prompt when multiple tenants match the email."
+  },
+  "authForgotPasswordSubmittedTitle": "Check your email",
+  "@authForgotPasswordSubmittedTitle": {
+    "description": "Title after forgot password request succeeds."
+  },
+  "authForgotPasswordSubmittedBody": "If an account exists for that email, password reset instructions have been sent.",
+  "@authForgotPasswordSubmittedBody": {
+    "description": "Body after forgot password request succeeds."
+  },
+  "authResetPasswordTitle": "Choose a new password",
+  "@authResetPasswordTitle": {
+    "description": "Reset password page title."
+  },
+  "authResetPasswordBody": "Enter a new password for your account.",
+  "@authResetPasswordBody": {
+    "description": "Reset password page body."
+  },
+  "authResetPasswordActionLabel": "Reset password",
+  "@authResetPasswordActionLabel": {
+    "description": "Reset password submit action label."
+  },
+  "authResetPasswordMissingTokenMessage": "This reset link is missing or invalid. Request a new password reset from the sign-in page.",
+  "@authResetPasswordMissingTokenMessage": {
+    "description": "Shown when reset password page has no token."
+  },
+  "authResetPasswordCompletedTitle": "Password updated",
+  "@authResetPasswordCompletedTitle": {
+    "description": "Title after password reset succeeds."
+  },
+  "authResetPasswordCompletedBody": "Your password has been changed. Sign in with the new password.",
+  "@authResetPasswordCompletedBody": {
+    "description": "Body after password reset succeeds."
+  },
+  "authResetPasswordInvalidTokenMessage": "This reset link has expired or is invalid. Request a new password reset.",
+  "@authResetPasswordInvalidTokenMessage": {
+    "description": "Reset password failure for invalid or expired token."
+  },
   "opdFieldRequiredLabel": "{label} (required)",
   "@opdFieldRequiredLabel": {
     "description": "OPD form field label pattern for required fields.",

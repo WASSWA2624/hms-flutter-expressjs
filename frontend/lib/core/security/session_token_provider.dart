@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
 import 'package:hosspi_hms/core/security/session_refresh_service.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 
 final sessionTokenProvider = Provider<SessionTokenProvider>((ref) {
   return SessionTokenProvider(ref);
@@ -48,7 +49,9 @@ final class SessionTokenProvider {
     return result.when(
       success: (AuthSession? session) async {
         if (session != null) {
-          await _ref.read(sessionStateProvider.notifier).persistSession(session);
+          final enriched = await _enrichSession(session);
+          await _ref.read(sessionStateProvider.notifier).persistSession(enriched);
+          return enriched;
         }
         return session;
       },
@@ -57,6 +60,18 @@ final class SessionTokenProvider {
         return null;
       },
     );
+  }
+
+  Future<void> enrichAuthenticatedSession() async {
+    final AuthSession? session = _ref.read(sessionStateProvider).session;
+    if (session == null) {
+      return;
+    }
+
+    final enriched = await _enrichSession(session);
+    if (!identical(enriched, session)) {
+      await _ref.read(sessionStateProvider.notifier).persistSession(enriched);
+    }
   }
 
   Future<AuthSession?> _refreshStoredSession() async {
@@ -68,9 +83,10 @@ final class SessionTokenProvider {
     final refreshResult = await _refreshService.refreshSession(tokens);
     return refreshResult.when(
       success: (AuthSession session) async {
-        await _sessionManager.persistSession(session);
-        await _ref.read(sessionStateProvider.notifier).persistSession(session);
-        return session;
+        final enriched = await _enrichSession(session);
+        await _sessionManager.persistSession(enriched);
+        await _ref.read(sessionStateProvider.notifier).persistSession(enriched);
+        return enriched;
       },
       failure: (_) async {
         await _ref.read(sessionStateProvider.notifier).handleUnauthorizedResponse();
@@ -81,5 +97,13 @@ final class SessionTokenProvider {
 
   bool _needsRefresh(SessionTokens tokens) {
     return tokens.isAccessTokenExpired(_now().toUtc());
+  }
+
+  Future<AuthSession> _enrichSession(AuthSession session) async {
+    final result = await _ref.read(authRepositoryProvider).fetchCurrentUser(session);
+    return result.when(
+      success: (AuthSession enriched) => enriched,
+      failure: (_) => session,
+    );
   }
 }

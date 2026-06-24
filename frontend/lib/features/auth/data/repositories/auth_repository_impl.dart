@@ -9,7 +9,9 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
 import 'package:hosspi_hms/core/security/session_refresh_service.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/auth/data/dtos/auth_identify_dto.dart';
 import 'package:hosspi_hms/features/auth/data/dtos/auth_session_dto.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -167,6 +169,116 @@ final class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens) {
     return _sessionRefreshService.refreshSession(tokens);
+  }
+
+  @override
+  Future<Result<AuthIdentifyResult>> identify({required String identifier}) {
+    final normalizedIdentifier = identifier.trim();
+    if (normalizedIdentifier.isEmpty) {
+      return Future.value(
+        Result<AuthIdentifyResult>.failure(
+          AppFailure.validation(
+            code: 'auth.identify.invalid_input',
+            validationFields: const <String>{'identifier'},
+          ),
+        ),
+      );
+    }
+
+    return _publicApiClient.post<AuthIdentifyResult>(
+      ApiEndpoints.auth(AuthEndpoint.identify),
+      data: <String, Object?>{
+        if (_looksLikeEmail(normalizedIdentifier))
+          'identifier': normalizedIdentifier.toLowerCase()
+        else
+          'identifier': normalizedIdentifier.replaceAll(RegExp(r'\D'), ''),
+      },
+      decoder: (data) => ApiResponseEnvelope.decodeData<AuthIdentifyResult>(
+        data,
+        decoder: (payload) =>
+            AuthIdentifyDto.fromResponseData(payload).toEntity(),
+      ),
+    );
+  }
+
+  @override
+  Future<Result<void>> forgotPassword({
+    required String email,
+    required String tenantId,
+  }) {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || tenantId.trim().isEmpty) {
+      return Future.value(
+        Result<void>.failure(
+          AppFailure.validation(
+            code: 'auth.forgot_password.invalid_input',
+            validationFields: const <String>{'email', 'tenant_id'},
+          ),
+        ),
+      );
+    }
+
+    return _publicApiClient.post<void>(
+      ApiEndpoints.auth(AuthEndpoint.forgotPassword),
+      data: <String, Object?>{
+        'email': normalizedEmail,
+        'tenant_id': tenantId.trim(),
+      },
+      decoder: (data) =>
+          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+    );
+  }
+
+  @override
+  Future<Result<void>> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    final normalizedToken = token.trim();
+    if (normalizedToken.isEmpty) {
+      return Future.value(
+        Result<void>.failure(
+          AppFailure.validation(
+            code: 'auth.reset_password.invalid_token',
+            validationFields: const <String>{'token'},
+          ),
+        ),
+      );
+    }
+
+    return _publicApiClient.post<void>(
+      ApiEndpoints.auth(AuthEndpoint.resetPassword),
+      data: <String, Object?>{
+        'token': normalizedToken,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
+      },
+      decoder: (data) =>
+          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+    );
+  }
+
+  @override
+  Future<Result<AuthSession>> fetchCurrentUser(AuthSession session) async {
+    return _apiClient.get<AuthSession>(
+      ApiEndpoints.auth(AuthEndpoint.me),
+      decoder: (data) => ApiResponseEnvelope.decodeData<AuthSession>(
+        data,
+        decoder: (payload) {
+          final profile = AuthSessionDto.userProfileFromResponseData(payload);
+          final permissions = AuthSessionDto.permissionsFromResponseData(payload);
+          var enriched = session;
+          if (profile != null) {
+            enriched = enriched.enrichFromUserProfile(profile);
+          }
+          if (permissions.isNotEmpty) {
+            enriched = enriched.copyWith(permissions: permissions);
+          }
+          return enriched;
+        },
+      ),
+    );
   }
 
   @override

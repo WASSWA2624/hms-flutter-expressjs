@@ -44,7 +44,10 @@ final class AppRouteData {
   }
 
   bool get isAuthEntryRoute {
-    return path == AppRoutes.login.path || path == AppRoutes.register.path;
+    return path == AppRoutes.login.path ||
+        path == AppRoutes.register.path ||
+        path == AppRoutes.forgotPassword.path ||
+        path == AppRoutes.resetPassword.path;
   }
 
   bool matchesPath(String locationPath) {
@@ -448,6 +451,16 @@ abstract final class AppRoutes {
     path: '/verify-email',
   );
 
+  static const AppRouteData forgotPassword = AppRouteData(
+    name: 'forgotPassword',
+    path: '/forgot-password',
+  );
+
+  static const AppRouteData resetPassword = AppRouteData(
+    name: 'resetPassword',
+    path: '/reset-password',
+  );
+
   static const AppRouteData sessionRestoring = AppRouteData(
     name: 'sessionRestoring',
     path: '/session-restoring',
@@ -496,6 +509,8 @@ abstract final class AppRoutes {
     login,
     register,
     verifyEmail,
+    forgotPassword,
+    resetPassword,
     sessionRestoring,
     authRequired,
     forbidden,

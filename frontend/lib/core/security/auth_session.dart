@@ -50,6 +50,29 @@ final class AuthSession {
     return permissions.grantsAll(requiredPermissions);
   }
 
+  AuthSession copyWith({
+    SessionTokens? tokens,
+    String? subject,
+    AuthUserProfile? user,
+    Iterable<AppPermission>? permissions,
+    Iterable<AppModuleEntitlement>? moduleEntitlements,
+  }) {
+    return AuthSession(
+      tokens: tokens ?? this.tokens,
+      subject: subject ?? this.subject,
+      user: user ?? this.user,
+      permissions: permissions ?? this.permissions,
+      moduleEntitlements: moduleEntitlements ?? this.moduleEntitlements.values,
+    );
+  }
+
+  AuthSession enrichFromUserProfile(AuthUserProfile profile) {
+    return copyWith(
+      subject: profile.email ?? profile.id ?? subject,
+      user: profile,
+    );
+  }
+
   @override
   String toString() {
     return 'AuthSession('

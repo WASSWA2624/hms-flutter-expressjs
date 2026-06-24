@@ -126,6 +126,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                       SizedBox(height: theme.spacing.sm),
                       AppButton.tertiary(
+                        label: l10n.authForgotPasswordActionLabel,
+                        onPressed: state.isSubmitting
+                            ? null
+                            : () =>
+                                context.go(AppRoutes.forgotPassword.location()),
+                      ),
+                      SizedBox(height: theme.spacing.sm),
+                      AppButton.tertiary(
                         label: l10n.authCreateAccountActionLabel,
                         onPressed: state.isSubmitting
                             ? null
