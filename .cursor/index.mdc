@@ -42,7 +42,13 @@ When rules disagree, apply this order:
 
 ## Module implementation prompts
 
-Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01-opd` through `19-radiology`). Use them with the flow files and `app-write-up.mdc` when implementing or completing a product module.
+Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01`–`33`). Use them with the flow files and `app-write-up.mdc` when implementing or completing a product module.
+
+| Range | Modules |
+|-------|---------|
+| 01–11 | Clinical path: OPD, Emergency, Clinical, Nursing, IPD, ICU, Theater, Discharge, Lab, Pharmacy, Physiotherapy |
+| 12–19 | Financial & diagnostics: Billing, Claims, HR, Biomedical, Operations, Housekeeping, Mortuary, Radiology |
+| 20–33 | Platform & admin: Patients, Triage, Rooms/Beds, Tenant/Facility, Access admin, Auth, Subscriptions, Settings/Profile, Home/Dashboard, Communications, Reports/Audit, Integrations, Dental (planned), Demo seed |
 
 ## Cross-stack invariants
 

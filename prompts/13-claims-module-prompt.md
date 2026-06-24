@@ -62,14 +62,15 @@ Deliver an **audit-ready insurance workspace** (standalone or integrated with Bi
 
 | Area | Location / API | Notes |
 |------|----------------|-------|
-| Backend APIs | `/api/v1/insurance-claims`, `/pre-authorizations`, `/coverage-plans` | CRUD, submit, reconcile |
-| Billing workspace | `CLAIMS_PENDING` queue, claim work items | Partial — invoice-centric detail |
-| Billing repository gaps | No full claim/pre-auth mutation UI | See billing prompt §3 |
+| Frontend workspace | `frontend/lib/features/claims/` | `claims_workspace_page`, controller, repository |
+| Backend APIs | `/api/v1/insurance-claims`, `/pre-authorizations`, `/coverage-plans` | CRUD, submit, reconcile — **no** `claims-workspace` aggregator |
+| Billing workspace | `CLAIMS_PENDING` queue, claim work items | Overlaps — invoice-centric detail in billing |
+| Billing repository gaps | Partial claim/pre-auth mutations | See [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) §3 |
 | IPD references | Insurance desk role in ipd-flow §13 | Authorization gates not fully wired in IPD UI |
 
 ### Known gaps to close
 
-- **Dedicated claims workspace** — may extend Billing workspace or add `features/claims/` with tailored layouts.
+- **Workspace orchestration** — frontend merges pre-auth + claim APIs client-side; no backend `claims-workspace` module.
 - **Pre-auth lifecycle UI** — create, submit, approve/deny, link to encounter/admission.
 - **Claim submission and tracking** — submit, record insurer response, resubmit, settlement.
 - **IPD authorization panel** — approved amount, pending, consumed on admission detail.

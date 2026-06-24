@@ -122,7 +122,9 @@ Implement or finish the following, in priority order. Each item maps to sections
 - On admission detail, show billing state: deposit required/paid, insurance pre-auth status, `Billing Deferred` flag, running account balance when API provides encounter billing summary.
 - Gate high-cost actions (optional procedures, elective admission) on clearance when policy requires; emergency path allows proceed-first-bill-later.
 - During stay: surface link to billing workspace for interim bills and deposits (`clinical_request_billing_panel` patterns where orders originate from IPD).
-- At discharge: block **Ready for exit** until billing clearance per flow §10 step 6; coordinate with [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md) encounter closeout.
+- Link to billing workspace for deposits and interim bills (see [prompts/12-billing-module-prompt.md](./12-billing-module-prompt.md)).
+- Link to patient registry for demographics ([prompts/20-patients-module-prompt.md](./20-patients-module-prompt.md)).
+- At discharge: block **Ready for exit** until billing clearance per flow §10 step 6; coordinate with billing encounter closeout.
 - Auto-posted charges from orders must not be manually re-entered in IPD UI.
 
 **Reference:** `frontend/lib/features/billing/`, `shared/clinical_actions/clinical_request_billing_panel.dart`, `backend/src/lib/billing/clinical-request-billing.js`.
