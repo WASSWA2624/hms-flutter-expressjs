@@ -12,6 +12,20 @@ import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  group('AppTextScaleLevel', () {
+    test('maps each level to its percentage-based scale factor', () {
+      // Guards against an off-by-100 regression that scaled all app text to
+      // 1% of its size and left the entire UI without visible text.
+      expect(AppTextScaleLevel.normal.factor, 1.0);
+      expect(AppTextScaleLevel.large.factor, 1.15);
+      expect(AppTextScaleLevel.extraLarge.factor, 1.30);
+    });
+
+    test('defaults to a readable scale factor', () {
+      expect(const AppAccessibilityPreferences().textScaleFactor, 1.0);
+    });
+  });
+
   group('AppAccessibilityController', () {
     setUp(() {
       SharedPreferences.setMockInitialValues(<String, Object>{});

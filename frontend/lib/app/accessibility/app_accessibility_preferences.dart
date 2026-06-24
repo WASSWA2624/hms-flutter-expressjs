@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 enum AppTextScaleLevel {
-  normal(1),
+  normal(100),
   large(115),
   extraLarge(130);
 
