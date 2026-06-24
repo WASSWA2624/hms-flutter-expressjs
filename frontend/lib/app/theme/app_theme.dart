@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_dark_theme_palette.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
@@ -48,16 +49,21 @@ abstract final class AppTheme {
       ),
     );
 
+    final TextTheme textTheme = baseTextTheme.apply(
+      fontFamily: AppFontFamily.primary,
+      fontFamilyFallback: AppFontFamily.fallback,
+      bodyColor: palette.bodyTextColor,
+      displayColor: palette.displayTextColor,
+    );
+    final TextStyle inputTextStyle = TextStyle(
+      fontFamily: AppFontFamily.primary,
+      fontFamilyFallback: AppFontFamily.fallback,
+    );
+
     return ThemeData(
       useMaterial3: true,
-      // Bundle Roboto locally so web renders text without CDN font downloads.
-      fontFamily: 'Roboto',
-      fontFamilyFallback: const <String>[
-        'Segoe UI',
-        'Arial',
-        'Helvetica Neue',
-        'sans-serif',
-      ],
+      fontFamily: AppFontFamily.primary,
+      fontFamilyFallback: AppFontFamily.fallback,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: palette.scaffoldBackgroundColor,
       canvasColor: palette.canvasColor,
@@ -66,10 +72,7 @@ abstract final class AppTheme {
       highlightColor: palette.highlightColor,
       visualDensity: VisualDensity.standard,
       materialTapTargetSize: MaterialTapTargetSize.padded,
-      textTheme: baseTextTheme.apply(
-        bodyColor: palette.bodyTextColor,
-        displayColor: palette.displayTextColor,
-      ),
+      textTheme: textTheme,
       extensions: <ThemeExtension<dynamic>>[
         spacing,
         AppRadiusTokens.standard,
@@ -168,15 +171,15 @@ abstract final class AppTheme {
         focusedErrorBorder: errorInputBorder.copyWith(
           borderSide: BorderSide(color: statusColors.error, width: 1.4),
         ),
-        labelStyle: TextStyle(
+        labelStyle: inputTextStyle.copyWith(
           color: palette.inputLabelColor,
           fontWeight: FontWeight.w500,
         ),
-        floatingLabelStyle: TextStyle(
+        floatingLabelStyle: inputTextStyle.copyWith(
           color: palette.inputFloatingLabelColor,
           fontWeight: FontWeight.w700,
         ),
-        hintStyle: TextStyle(
+        hintStyle: inputTextStyle.copyWith(
           color: palette.inputHintColor,
           fontWeight: FontWeight.w400,
         ),

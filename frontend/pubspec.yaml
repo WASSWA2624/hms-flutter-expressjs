@@ -48,7 +48,7 @@ flutter:
     - assets/logos/favicon.png
     - assets/logos/splash.png
   fonts:
-    - family: Roboto
+    - family: HosspiSans
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf
         - asset: assets/fonts/Roboto-Medium.ttf

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_dark_theme_palette.dart';
+import 'package:hosspi_hms/app/theme/app_font_family.dart';
 import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -11,8 +12,10 @@ void main() {
       final ThemeData theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
-      expect(theme.textTheme.bodyMedium?.fontFamily, 'Roboto');
-      expect(theme.textTheme.bodyMedium?.fontFamilyFallback, isNotEmpty);
+      expect(theme.fontFamily, AppFontFamily.primary);
+      expect(theme.textTheme.bodyMedium?.fontFamily, AppFontFamily.primary);
+      expect(theme.textTheme.bodyMedium?.fontFamilyFallback,
+          AppFontFamily.fallback);
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.blue700);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.blue50);
