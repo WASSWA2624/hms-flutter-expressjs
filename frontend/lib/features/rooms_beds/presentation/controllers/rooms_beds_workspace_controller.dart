@@ -550,7 +550,7 @@ final class RoomsBedsWorkspaceController
     final AppPage<BedBoardItem> page = _pageFromSnapshot(query, snapshot);
     final AppPage<BedBoardItem> pageWithAssignments =
         await _attachAssignmentsToPage(page);
-    BedBoardItem? selectedBed = selectedBedId == null
+    final BedBoardItem? selectedBed = selectedBedId == null
         ? null
         : await _selectedBedFromSnapshot(
             selectedBedId,

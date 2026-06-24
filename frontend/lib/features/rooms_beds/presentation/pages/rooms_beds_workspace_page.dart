@@ -166,7 +166,6 @@ class _RoomsBedsWorkspaceContentState
             : AppWorkspaceStatusTone.success,
         icon: state.isSaving ? Icons.sync_outlined : Icons.sensors_outlined,
       ),
-      primaryAction: null,
       secondaryActions: <Widget>[
         AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
