@@ -11,6 +11,8 @@ void main() {
       final ThemeData theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
+      expect(theme.textTheme.bodyMedium?.fontFamily, 'Roboto');
+      expect(theme.textTheme.bodyMedium?.fontFamilyFallback, isNotEmpty);
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.blue700);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.blue50);

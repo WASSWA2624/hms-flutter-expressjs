@@ -50,6 +50,14 @@ abstract final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      // Bundle Roboto locally so web renders text without CDN font downloads.
+      fontFamily: 'Roboto',
+      fontFamilyFallback: const <String>[
+        'Segoe UI',
+        'Arial',
+        'Helvetica Neue',
+        'sans-serif',
+      ],
       colorScheme: colorScheme,
       scaffoldBackgroundColor: palette.scaffoldBackgroundColor,
       canvasColor: palette.canvasColor,
