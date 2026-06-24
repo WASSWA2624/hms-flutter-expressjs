@@ -156,7 +156,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.subscriptions.path,
             name: AppRoutes.subscriptions.name,
-            builder: (_, _) => const SubscriptionsWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return SubscriptionsWorkspacePage(
+                initialQuery: SubscriptionsWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.opd.path,

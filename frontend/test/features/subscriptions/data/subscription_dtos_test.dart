@@ -142,5 +142,60 @@ void main() {
         'SUB-001',
       );
     });
+
+    test('parses reference-data lookups and legacy route resolution', () {
+      final SubscriptionLookups lookups = SubscriptionLookupsDto.fromResponse(
+        <String, Object?>{
+          'data': <String, Object?>{
+            'tenants': <Object?>[
+              <String, Object?>{'id': 'tenant-2', 'label': 'Demo Hospital'},
+            ],
+            'modules': <Object?>[
+              <String, Object?>{
+                'id': 'mod-1',
+                'label': 'Scheduling and Queue',
+                'subtitle': 'scheduling-queue',
+              },
+            ],
+          },
+        },
+      ).toEntity();
+
+      expect(lookups.tenants.single.label, 'Demo Hospital');
+      expect(lookups.modules.single.subtitle, 'scheduling-queue');
+
+      final SubscriptionLegacyRouteResolution resolution =
+          SubscriptionLegacyRouteResolutionDto.fromResponse(<String, Object?>{
+            'data': <String, Object?>{
+              'panel': 'operations',
+              'resource': 'subscriptions',
+              'id': 'SUB-001',
+              'action': 'view',
+              'tenantId': 'tenant-2',
+            },
+          }).toEntity();
+
+      expect(resolution.panel, SubscriptionPanel.operations);
+      expect(resolution.resource, SubscriptionResource.subscriptions);
+      expect(resolution.id, 'SUB-001');
+      expect(resolution.action, 'view');
+      expect(resolution.tenantId, 'tenant-2');
+    });
+
+    test('builds workspace queries from route URIs', () {
+      final SubscriptionsWorkspaceQuery query =
+          SubscriptionsWorkspaceQuery.fromUri(
+            Uri.parse(
+              '/subscriptions?panel=billing&resource=subscription-invoices&id=SINV-001&action=view&queue=PAST_DUE',
+            ),
+          );
+
+      expect(query.panel, SubscriptionPanel.billing);
+      expect(query.resource, SubscriptionResource.subscriptionInvoices);
+      expect(query.recordId, 'SINV-001');
+      expect(query.action, 'view');
+      expect(query.queue, 'PAST_DUE');
+      expect(query.hasRouteTargeting, isTrue);
+    });
   });
 }

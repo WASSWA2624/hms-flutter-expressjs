@@ -108,6 +108,10 @@ final class SubscriptionLookupsDto {
 
   final SubscriptionJsonMap json;
 
+  factory SubscriptionLookupsDto.fromResponse(Object? responseData) {
+    return SubscriptionLookupsDto(_dataMap(responseData));
+  }
+
   SubscriptionLookups toEntity() {
     return SubscriptionLookups(
       tenants: _lookupList(json['tenants']),
@@ -363,6 +367,26 @@ List<SubscriptionLookupItem> _lookupList(Object? value) {
       })
       .where((SubscriptionLookupItem item) => item.id.isNotEmpty)
       .toList(growable: false);
+}
+
+final class SubscriptionLegacyRouteResolutionDto {
+  const SubscriptionLegacyRouteResolutionDto(this.json);
+
+  final SubscriptionJsonMap json;
+
+  factory SubscriptionLegacyRouteResolutionDto.fromResponse(Object? responseData) {
+    return SubscriptionLegacyRouteResolutionDto(_dataMap(responseData));
+  }
+
+  SubscriptionLegacyRouteResolution toEntity() {
+    return SubscriptionLegacyRouteResolution(
+      panel: SubscriptionPanel.fromServer(_string(json['panel'])),
+      resource: SubscriptionResource.fromServer(_string(json['resource'])),
+      id: _string(json['id']),
+      action: _string(json['action']),
+      tenantId: _string(json['tenantId']) ?? _string(json['tenant_id']),
+    );
+  }
 }
 
 SubscriptionJsonMap _dataMap(Object? responseData) {

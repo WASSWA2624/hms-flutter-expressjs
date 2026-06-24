@@ -70,6 +70,23 @@ enum SubscriptionDatePreset {
 }
 
 @immutable
+final class SubscriptionLegacyRouteResolution {
+  const SubscriptionLegacyRouteResolution({
+    required this.panel,
+    required this.resource,
+    this.id,
+    this.action,
+    this.tenantId,
+  });
+
+  final SubscriptionPanel panel;
+  final SubscriptionResource resource;
+  final String? id;
+  final String? action;
+  final String? tenantId;
+}
+
+@immutable
 final class SubscriptionsWorkspaceQuery {
   const SubscriptionsWorkspaceQuery({
     this.search = '',
@@ -77,6 +94,8 @@ final class SubscriptionsWorkspaceQuery {
     this.resource = SubscriptionResource.subscriptions,
     this.queue,
     this.tenantId,
+    this.recordId,
+    this.action,
     this.status,
     this.tierCode,
     this.billingCycle,
@@ -91,11 +110,41 @@ final class SubscriptionsWorkspaceQuery {
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
+  factory SubscriptionsWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    return SubscriptionsWorkspaceQuery(
+      search: params['search'] ?? '',
+      panel: SubscriptionPanel.fromServer(params['panel']),
+      resource: SubscriptionResource.fromServer(params['resource']),
+      queue: _nonEmpty(params['queue']),
+      tenantId: _nonEmpty(params['tenantId'] ?? params['tenant_id']),
+      recordId: _nonEmpty(params['id'] ?? params['recordId']),
+      action: _nonEmpty(params['action']),
+      status: _nonEmpty(params['status']),
+      tierCode: _nonEmpty(params['tierCode'] ?? params['tier_code']),
+      billingCycle: _nonEmpty(params['billingCycle'] ?? params['billing_cycle']),
+      planId: _nonEmpty(params['planId'] ?? params['plan_id']),
+      moduleId: _nonEmpty(params['moduleId'] ?? params['module_id']),
+      fitStatus: _nonEmpty(params['fitStatus'] ?? params['fit_status']),
+      changeStatus: _nonEmpty(params['changeStatus'] ?? params['change_status']),
+      invoiceStatus: _nonEmpty(params['invoiceStatus'] ?? params['invoice_status']),
+      licenseType: _nonEmpty(params['licenseType'] ?? params['license_type']),
+      eligibilityState: _nonEmpty(
+        params['eligibilityState'] ?? params['eligibility_state'],
+      ),
+      datePreset: SubscriptionDatePreset.fromServer(
+        params['datePreset'] ?? params['date_preset'],
+      ),
+    );
+  }
+
   final String search;
   final SubscriptionPanel panel;
   final SubscriptionResource resource;
   final String? queue;
   final String? tenantId;
+  final String? recordId;
+  final String? action;
   final String? status;
   final String? tierCode;
   final String? billingCycle;
@@ -109,10 +158,20 @@ final class SubscriptionsWorkspaceQuery {
   final SubscriptionDatePreset datePreset;
   final AppPageRequest pageRequest;
 
+  bool get hasRouteTargeting {
+    return recordId != null ||
+        action != null ||
+        panel != SubscriptionPanel.overview ||
+        resource != SubscriptionResource.subscriptions ||
+        queue != null;
+  }
+
   bool get hasActiveFilters {
     return search.trim().isNotEmpty ||
         queue != null ||
         tenantId != null ||
+        recordId != null ||
+        action != null ||
         status != null ||
         tierCode != null ||
         billingCycle != null ||
@@ -132,6 +191,8 @@ final class SubscriptionsWorkspaceQuery {
     SubscriptionResource? resource,
     Object? queue = _unset,
     Object? tenantId = _unset,
+    Object? recordId = _unset,
+    Object? action = _unset,
     Object? status = _unset,
     Object? tierCode = _unset,
     Object? billingCycle = _unset,
@@ -151,6 +212,8 @@ final class SubscriptionsWorkspaceQuery {
       resource: resource ?? this.resource,
       queue: queue == _unset ? this.queue : queue as String?,
       tenantId: tenantId == _unset ? this.tenantId : tenantId as String?,
+      recordId: recordId == _unset ? this.recordId : recordId as String?,
+      action: action == _unset ? this.action : action as String?,
       status: status == _unset ? this.status : status as String?,
       tierCode: tierCode == _unset ? this.tierCode : tierCode as String?,
       billingCycle: billingCycle == _unset
@@ -181,6 +244,8 @@ final class SubscriptionsWorkspaceQuery {
       search: '',
       queue: null,
       tenantId: null,
+      recordId: null,
+      action: null,
       status: null,
       tierCode: null,
       billingCycle: null,
@@ -770,6 +835,11 @@ const Object _unset = Object();
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
+}
+
+String? _nonEmpty(String? value) {
+  final String? normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
 String _firstText(Iterable<String?> values) {

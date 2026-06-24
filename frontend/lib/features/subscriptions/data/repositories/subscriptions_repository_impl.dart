@@ -39,6 +39,8 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
         'queue': query.queue,
         'search': query.search,
         'tenantId': query.tenantId,
+        'id': query.recordId,
+        'action': query.action,
         'status': query.status,
         'tierCode': query.tierCode,
         'billingCycle': query.billingCycle,
@@ -55,6 +57,38 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
       }),
       decoder: (Object? data) {
         return SubscriptionsWorkspaceDto.fromResponse(data, query).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<SubscriptionLookups>> getReferenceData({String? tenantId}) {
+    return _apiClient.get<SubscriptionLookups>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'reference-data',
+        const <String>[],
+      ),
+      queryParameters: _withoutEmpty(<String, Object?>{'tenantId': tenantId}),
+      decoder: (Object? data) {
+        return SubscriptionLookupsDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<SubscriptionLegacyRouteResolution>> resolveLegacyRoute(
+    SubscriptionResource resource,
+    String identifier,
+  ) {
+    return _apiClient.get<SubscriptionLegacyRouteResolution>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'resolve-legacy',
+        <String>[resource.serverValue, identifier],
+      ),
+      decoder: (Object? data) {
+        return SubscriptionLegacyRouteResolutionDto.fromResponse(data).toEntity();
       },
     );
   }

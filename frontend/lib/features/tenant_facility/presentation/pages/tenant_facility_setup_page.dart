@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -108,7 +112,19 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
             },
           ),
       ],
-      summaryCards: _setupSummaryCards(context, l10n, snapshot),
+      summaryCards: _setupSummaryCards(
+        context,
+        l10n,
+        snapshot,
+        canViewSubscriptions: accessPolicy.grantsAny(
+          const <AppPermission>[
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.tenantAdmin,
+            AppPermissions.systemAdmin,
+          ],
+        ),
+      ),
       body: _SetupBody(
         snapshot: snapshot,
         canManageTenant: canManageTenant,
@@ -121,8 +137,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
 List<Widget> _setupSummaryCards(
   BuildContext context,
   AppLocalizations l10n,
-  FacilitySetupSnapshot snapshot,
-) {
+  FacilitySetupSnapshot snapshot, {
+  required bool canViewSubscriptions,
+}) {
   return <Widget>[
     AppWorkspaceSummaryCard(
       icon: Icons.apartment_outlined,
@@ -205,6 +222,21 @@ List<Widget> _setupSummaryCards(
         status: _setupSummaryStatus(l10n, true),
         compact: true,
         onPressed: () => _openFacilityCatalogModal(context, snapshot),
+      ),
+    if (canViewSubscriptions)
+      AppWorkspaceSummaryCard(
+        icon: Icons.workspace_premium_outlined,
+        label: l10n.navigationSubscriptionsLabel,
+        value: 'Plans, modules, invoices',
+        description:
+            'Review subscription status, module entitlements, and renewal health.',
+        status: const AppWorkspaceStatus(
+          label: 'Commercial',
+          tone: AppWorkspaceStatusTone.info,
+          icon: Icons.insights_outlined,
+        ),
+        compact: true,
+        onPressed: () => context.go(AppRoutes.subscriptions.location()),
       ),
   ];
 }

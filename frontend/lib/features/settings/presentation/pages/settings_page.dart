@@ -235,6 +235,14 @@ List<_SettingsAction> _adminActions(
       onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
     ),
     _SettingsAction(
+      icon: Icons.workspace_premium_outlined,
+      title: l10n.navigationSubscriptionsLabel,
+      body:
+          'Review plans, module entitlements, invoices, licenses, and renewal state.',
+      requirement: _subscriptionsRequirement,
+      onTap: () => context.go(AppRoutes.subscriptions.location()),
+    ),
+    _SettingsAction(
       icon: Icons.admin_panel_settings_outlined,
       title: l10n.settingsSecurityBoundaryLabel,
       body: l10n.settingsSecurityBoundaryBody,
@@ -255,6 +263,16 @@ const AccessRequirement _tenantFacilitySetupRequirement = AccessRequirement(
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
   ],
+);
+
+const AccessRequirement _subscriptionsRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.subscriptionsRead,
+    AppPermissions.subscriptionsWrite,
+    AppPermissions.tenantAdmin,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
 );
 
 class _SettingsActionList extends StatelessWidget {

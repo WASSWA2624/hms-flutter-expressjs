@@ -6,6 +6,13 @@ abstract interface class SubscriptionsRepository {
     SubscriptionsWorkspaceQuery query,
   );
 
+  Future<Result<SubscriptionLookups>> getReferenceData({String? tenantId});
+
+  Future<Result<SubscriptionLegacyRouteResolution>> resolveLegacyRoute(
+    SubscriptionResource resource,
+    String identifier,
+  );
+
   Future<Result<void>> createPlan(SubscriptionPlanDraft draft);
 
   Future<Result<void>> updatePlan(String planId, SubscriptionPlanDraft draft);

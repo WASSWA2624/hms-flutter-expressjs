@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
@@ -27,9 +29,22 @@ final class SubscriptionsWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.subscriptions,
-      onRefresh: (_) => refresh(),
+      onRefresh: (RealtimeMessage message) async {
+        if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
+          await _refreshSession();
+        }
+        await refresh();
+      },
     );
     return _loadInitialState();
+  }
+
+  Future<AppFailure?> applyRouteQuery(SubscriptionsWorkspaceQuery query) async {
+    final SubscriptionsWorkspaceQuery resolved = await _resolveRouteQuery(query);
+    return _loadQuery(
+      resolved.copyWith(pageRequest: resolved.pageRequest.first()),
+      preserveSelectedId: resolved.recordId,
+    );
   }
 
   Future<AppFailure?> refresh() async {
@@ -299,11 +314,22 @@ final class SubscriptionsWorkspaceController
     const SubscriptionsWorkspaceQuery query = SubscriptionsWorkspaceQuery();
     final Result<SubscriptionsWorkspaceData> dataResult = await _repository
         .getWorkspace(query);
-    return dataResult.map(
-      (SubscriptionsWorkspaceData data) => SubscriptionsWorkspaceState(
-        data: data,
+    if (dataResult case ResultFailure<SubscriptionsWorkspaceData>(
+      failure: final AppFailure failure,
+    )) {
+      return Result<SubscriptionsWorkspaceState>.failure(failure);
+    }
+    final SubscriptionsWorkspaceData data =
+        (dataResult as ResultSuccess<SubscriptionsWorkspaceData>).value;
+    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(
+      data,
+    );
+    return Result<SubscriptionsWorkspaceState>.success(
+      SubscriptionsWorkspaceState(
+        data: enriched,
         selectedItem:
-            data.overview.currentSubscription ?? data.items.items.firstOrNull,
+            enriched.overview.currentSubscription ??
+            enriched.items.items.firstOrNull,
       ),
     );
   }
@@ -311,6 +337,7 @@ final class SubscriptionsWorkspaceController
   Future<AppFailure?> _loadQuery(
     SubscriptionsWorkspaceQuery query, {
     bool clearSelectedItem = false,
+    String? preserveSelectedId,
   }) async {
     final SubscriptionsWorkspaceState? current = _currentState;
     if (current == null) {
@@ -325,30 +352,37 @@ final class SubscriptionsWorkspaceController
     );
     final Result<SubscriptionsWorkspaceData> result = await _repository
         .getWorkspace(query);
-    return result.when(
-      success: (SubscriptionsWorkspaceData data) {
-        _emit(
-          _currentState!.copyWith(
-            data: data,
-            selectedItem: _selectAfterRefresh(data.items.items, null),
-            isRefreshing: false,
-            isSaving: false,
-            clearLastFailure: true,
-          ),
-        );
-        return null;
-      },
-      failure: (AppFailure failure) {
-        _emit(
-          _currentState!.copyWith(
-            isRefreshing: false,
-            isSaving: false,
-            lastFailure: failure,
-          ),
-        );
-        return failure;
-      },
+    if (result case ResultFailure<SubscriptionsWorkspaceData>(
+      failure: final AppFailure failure,
+    )) {
+      _emit(
+        _currentState!.copyWith(
+          isRefreshing: false,
+          isSaving: false,
+          lastFailure: failure,
+        ),
+      );
+      return failure;
+    }
+    final SubscriptionsWorkspaceData data =
+        (result as ResultSuccess<SubscriptionsWorkspaceData>).value;
+    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(data);
+    _emit(
+      _currentState!.copyWith(
+        data: enriched,
+        selectedItem: clearSelectedItem
+            ? null
+            : _selectAfterRefresh(
+                enriched.items.items,
+                preserveSelectedId ?? _currentState?.selectedItem?.id,
+                recordId: query.recordId,
+              ),
+        isRefreshing: false,
+        isSaving: false,
+        clearLastFailure: true,
+      ),
     );
+    return null;
   }
 
   Future<AppFailure?> _submitAction(
@@ -380,33 +414,35 @@ final class SubscriptionsWorkspaceController
     final SubscriptionsWorkspaceState current = _currentState!;
     final Result<SubscriptionsWorkspaceData> result = await _repository
         .getWorkspace(current.query);
-    return result.when(
-      success: (SubscriptionsWorkspaceData data) {
-        _emit(
-          _currentState!.copyWith(
-            data: data,
-            selectedItem: _selectAfterRefresh(
-              data.items.items,
-              preferredSelectedId,
-            ),
-            isRefreshing: false,
-            isSaving: false,
-            clearLastFailure: true,
-          ),
-        );
-        return null;
-      },
-      failure: (AppFailure failure) {
-        _emit(
-          _currentState!.copyWith(
-            isRefreshing: false,
-            isSaving: false,
-            lastFailure: failure,
-          ),
-        );
-        return failure;
-      },
+    if (result case ResultFailure<SubscriptionsWorkspaceData>(
+      failure: final AppFailure failure,
+    )) {
+      _emit(
+        _currentState!.copyWith(
+          isRefreshing: false,
+          isSaving: false,
+          lastFailure: failure,
+        ),
+      );
+      return failure;
+    }
+    final SubscriptionsWorkspaceData data =
+        (result as ResultSuccess<SubscriptionsWorkspaceData>).value;
+    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(data);
+    _emit(
+      _currentState!.copyWith(
+        data: enriched,
+        selectedItem: _selectAfterRefresh(
+          enriched.items.items,
+          preferredSelectedId,
+          recordId: current.query.recordId,
+        ),
+        isRefreshing: false,
+        isSaving: false,
+        clearLastFailure: true,
+      ),
     );
+    return null;
   }
 
   Future<void> _refreshSession() async {
@@ -427,8 +463,17 @@ final class SubscriptionsWorkspaceController
 
   SubscriptionItem? _selectAfterRefresh(
     List<SubscriptionItem> items,
-    String? preferredSelectedId,
-  ) {
+    String? preferredSelectedId, {
+    String? recordId,
+  }) {
+    final String? targetId = recordId ?? preferredSelectedId;
+    if (targetId != null) {
+      for (final SubscriptionItem item in items) {
+        if (item.id == targetId || item.effectiveDisplayId == targetId) {
+          return item;
+        }
+      }
+    }
     if (preferredSelectedId != null) {
       for (final SubscriptionItem item in items) {
         if (item.id == preferredSelectedId) {
@@ -437,6 +482,96 @@ final class SubscriptionsWorkspaceController
       }
     }
     return items.firstOrNull;
+  }
+
+  Future<SubscriptionsWorkspaceQuery> _resolveRouteQuery(
+    SubscriptionsWorkspaceQuery query,
+  ) async {
+    final String? recordId = query.recordId;
+    if (recordId == null || recordId.isEmpty) {
+      return query;
+    }
+
+    final Result<SubscriptionLegacyRouteResolution> result = await _repository
+        .resolveLegacyRoute(query.resource, recordId);
+    return result.when(
+      success: (SubscriptionLegacyRouteResolution resolution) {
+        return query.copyWith(
+          panel: resolution.panel,
+          resource: resolution.resource,
+          recordId: resolution.id ?? recordId,
+          action: resolution.action ?? query.action,
+          tenantId: resolution.tenantId ?? query.tenantId,
+        );
+      },
+      failure: (_) => query,
+    );
+  }
+
+  Future<SubscriptionsWorkspaceData> _enrichWorkspaceData(
+    SubscriptionsWorkspaceData data,
+  ) async {
+    final SubscriptionLookups lookups = data.lookups;
+    if (_lookupsAreComplete(lookups)) {
+      return data;
+    }
+
+    final Result<SubscriptionLookups> referenceResult = await _repository
+        .getReferenceData(tenantId: data.query.tenantId);
+    return referenceResult.when(
+      success: (SubscriptionLookups reference) {
+        return SubscriptionsWorkspaceData(
+          query: data.query,
+          summary: data.summary,
+          queueSummaries: data.queueSummaries,
+          panelSummaries: data.panelSummaries,
+          lookups: _mergeLookups(lookups, reference),
+          items: data.items,
+          overview: data.overview,
+          timeline: data.timeline,
+        );
+      },
+      failure: (_) => data,
+    );
+  }
+
+  bool _lookupsAreComplete(SubscriptionLookups lookups) {
+    return lookups.tenants.isNotEmpty &&
+        lookups.plans.isNotEmpty &&
+        lookups.modules.isNotEmpty;
+  }
+
+  SubscriptionLookups _mergeLookups(
+    SubscriptionLookups primary,
+    SubscriptionLookups fallback,
+  ) {
+    return SubscriptionLookups(
+      tenants: primary.tenants.isNotEmpty ? primary.tenants : fallback.tenants,
+      plans: primary.plans.isNotEmpty ? primary.plans : fallback.plans,
+      modules: primary.modules.isNotEmpty ? primary.modules : fallback.modules,
+      statuses: primary.statuses.isNotEmpty
+          ? primary.statuses
+          : fallback.statuses,
+      changeStatuses: primary.changeStatuses.isNotEmpty
+          ? primary.changeStatuses
+          : fallback.changeStatuses,
+      fitStatuses: primary.fitStatuses.isNotEmpty
+          ? primary.fitStatuses
+          : fallback.fitStatuses,
+      billingCycles: primary.billingCycles.isNotEmpty
+          ? primary.billingCycles
+          : fallback.billingCycles,
+      tiers: primary.tiers.isNotEmpty ? primary.tiers : fallback.tiers,
+      licenseTypes: primary.licenseTypes.isNotEmpty
+          ? primary.licenseTypes
+          : fallback.licenseTypes,
+      invoiceStatuses: primary.invoiceStatuses.isNotEmpty
+          ? primary.invoiceStatuses
+          : fallback.invoiceStatuses,
+      eligibilityStates: primary.eligibilityStates.isNotEmpty
+          ? primary.eligibilityStates
+          : fallback.eligibilityStates,
+    );
   }
 
   SubscriptionItem? _requireSelected(SubscriptionResource resource) {

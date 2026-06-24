@@ -17,13 +17,103 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class SubscriptionsWorkspacePage extends ConsumerWidget {
-  const SubscriptionsWorkspacePage({super.key});
+class SubscriptionsWorkspacePage extends ConsumerStatefulWidget {
+  const SubscriptionsWorkspacePage({this.initialQuery, super.key});
+
+  final SubscriptionsWorkspaceQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubscriptionsWorkspacePage> createState() {
+    return _SubscriptionsWorkspacePageState();
+  }
+}
+
+class _SubscriptionsWorkspacePageState
+    extends ConsumerState<SubscriptionsWorkspacePage> {
+  String? _appliedRouteSignature;
+  String? _openedRouteDetailSignature;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant SubscriptionsWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_querySignature(oldWidget.initialQuery) !=
+        _querySignature(widget.initialQuery)) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(SubscriptionsWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    final String? signature = _querySignature(query);
+    if (signature == null || _appliedRouteSignature == signature) {
+      return;
+    }
+    _appliedRouteSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(subscriptionsWorkspaceControllerProvider.notifier)
+          .applyRouteQuery(query);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<Result<SubscriptionsWorkspaceState>> workspace = ref.watch(
       subscriptionsWorkspaceControllerProvider,
+    );
+
+    ref.listen<AsyncValue<Result<SubscriptionsWorkspaceState>>>(
+      subscriptionsWorkspaceControllerProvider,
+      (
+        AsyncValue<Result<SubscriptionsWorkspaceState>>? previous,
+        AsyncValue<Result<SubscriptionsWorkspaceState>> next,
+      ) {
+        final SubscriptionsWorkspaceQuery? query = widget.initialQuery;
+        if (query == null || query.recordId == null) {
+          return;
+        }
+        final SubscriptionsWorkspaceState? state = _subscriptionsStateFromAsync(
+          next,
+        );
+        if (state == null || state.isRefreshing) {
+          return;
+        }
+        final String? signature = _querySignature(query);
+        if (signature == null || _openedRouteDetailSignature == signature) {
+          return;
+        }
+        final SubscriptionItem? item = state.selectedItem;
+        if (item == null) {
+          return;
+        }
+        final String recordId = query.recordId!;
+        if (item.id != recordId && item.effectiveDisplayId != recordId) {
+          return;
+        }
+        _openedRouteDetailSignature = signature;
+        final bool canWrite = ref.read(appAccessPolicyProvider).grants(
+          AppPermissions.subscriptionsWrite,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          unawaited(
+            _openSubscriptionDetailDialog(context, ref, item, canWrite),
+          );
+        });
+      },
     );
 
     return AsyncStateScaffold<SubscriptionsWorkspaceState>(
@@ -139,47 +229,10 @@ class _SubscriptionsWorkspaceContentState
             searchController: _searchController,
             columnVisibilityController: _tableColumnController,
             onItemSelected: (SubscriptionItem item) {
-              unawaited(_openSubscriptionDetailDialog(context, item, canWrite));
+              unawaited(
+                _openSubscriptionDetailDialog(context, ref, item, canWrite),
+              );
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openSubscriptionDetailDialog(
-    BuildContext context,
-    SubscriptionItem item,
-    bool canWrite,
-  ) async {
-    ref
-        .read(subscriptionsWorkspaceControllerProvider.notifier)
-        .selectItem(item);
-    final l10n = context.l10n;
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: const Text(_SubscriptionsText.detailTitle),
-        icon: Icon(_resourceIcon(item.resource)),
-        scrollable: true,
-        maxWidth: 980,
-        content: Consumer(
-          builder: (BuildContext context, WidgetRef dialogRef, _) {
-            final SubscriptionsWorkspaceState dialogState =
-                _subscriptionsStateFromAsync(
-                  dialogRef.watch(subscriptionsWorkspaceControllerProvider),
-                ) ??
-                widget.state;
-            return _SubscriptionDetailPanel(
-              state: dialogState,
-              canWrite: canWrite,
-            );
-          },
-        ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).maybePop(),
           ),
         ],
       ),
@@ -507,7 +560,12 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: _resourceLabel(state.query.resource),
       description: _SubscriptionsText.worklistDescription,
-      child: AppListTable<SubscriptionItem>(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _SubscriptionPanelSelector(state: state),
+          SizedBox(height: Theme.of(context).spacing.sm),
+          AppListTable<SubscriptionItem>(
         page: state.items,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -663,6 +721,39 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
           );
         },
       ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionPanelSelector extends ConsumerWidget {
+  const _SubscriptionPanelSelector({required this.state});
+
+  final SubscriptionsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final SubscriptionsWorkspaceController controller = ref.read(
+      subscriptionsWorkspaceControllerProvider.notifier,
+    );
+
+    return Wrap(
+      spacing: Theme.of(context).spacing.xs,
+      runSpacing: Theme.of(context).spacing.xs,
+      children: <Widget>[
+        for (final SubscriptionPanel panel in SubscriptionPanel.values)
+          AppButton(
+            label: _panelLabel(panel),
+            leadingIcon: _panelIcon(panel),
+            variant: state.query.panel == panel
+                ? AppButtonVariant.primary
+                : AppButtonVariant.secondary,
+            onPressed: state.query.panel == panel
+                ? null
+                : () => controller.applyPanel(panel),
+          ),
+      ],
     );
   }
 }
@@ -1220,18 +1311,11 @@ class _SubscriptionForm extends StatefulWidget {
 
 class _SubscriptionFormState extends State<_SubscriptionForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _startController = TextEditingController();
-  final TextEditingController _endController = TextEditingController();
+  DateTime? _startDate;
+  DateTime? _endDate;
   String? _tenantId;
   String? _planId;
   String _status = _SubscriptionStatuses.active;
-
-  @override
-  void dispose() {
-    _startController.dispose();
-    _endController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1269,15 +1353,17 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
             }
           },
         ),
-        AppTextField(
-          controller: _startController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.startDate,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _startDate,
+          onChanged: (DateTime? value) => setState(() => _startDate = value),
         ),
-        AppTextField(
-          controller: _endController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.endDate,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _endDate,
+          onChanged: (DateTime? value) => setState(() => _endDate = value),
         ),
         AppFormActions(
           cancelLabel: context.l10n.commonCancelActionLabel,
@@ -1293,8 +1379,8 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
                 tenantId: _tenantId!,
                 planId: _planId!,
                 status: _status,
-                startDate: _emptyToNull(_startController.text),
-                endDate: _emptyToNull(_endController.text),
+                startDate: _datePayload(_startDate),
+                endDate: _datePayload(_endDate),
               ),
             );
           },
@@ -1315,14 +1401,13 @@ class _PlanChangeForm extends StatefulWidget {
 
 class _PlanChangeFormState extends State<_PlanChangeForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _effectiveAtController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  DateTime? _effectiveAt;
   String? _targetPlanId;
   String _changeType = _SubscriptionChangeTypes.upgrade;
 
   @override
   void dispose() {
-    _effectiveAtController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -1362,10 +1447,11 @@ class _PlanChangeFormState extends State<_PlanChangeForm> {
             }
           },
         ),
-        AppTextField(
-          controller: _effectiveAtController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.effectiveAt,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _effectiveAt,
+          onChanged: (DateTime? value) => setState(() => _effectiveAt = value),
         ),
         AppTextField(
           controller: _reasonController,
@@ -1385,7 +1471,7 @@ class _PlanChangeFormState extends State<_PlanChangeForm> {
               SubscriptionPlanChangeDraft(
                 targetPlanId: _targetPlanId!,
                 changeType: _changeType,
-                effectiveAt: _emptyToNull(_effectiveAtController.text),
+                effectiveAt: _datePayload(_effectiveAt),
                 reason: _emptyToNull(_reasonController.text),
               ),
             );
@@ -1405,12 +1491,11 @@ class _RenewalForm extends StatefulWidget {
 
 class _RenewalFormState extends State<_RenewalForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _endController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
+  DateTime? _endDate;
 
   @override
   void dispose() {
-    _endController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -1420,10 +1505,11 @@ class _RenewalFormState extends State<_RenewalForm> {
     return AppFormShell(
       formKey: _formKey,
       children: <Widget>[
-        AppTextField(
-          controller: _endController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.newEndDate,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _endDate,
+          onChanged: (DateTime? value) => setState(() => _endDate = value),
         ),
         AppTextField(
           controller: _reasonController,
@@ -1441,7 +1527,7 @@ class _RenewalFormState extends State<_RenewalForm> {
             }
             Navigator.of(context).pop(
               SubscriptionRenewalDraft(
-                endDate: _emptyToNull(_endController.text),
+                endDate: _datePayload(_endDate),
                 reason: _emptyToNull(_reasonController.text),
               ),
             );
@@ -1557,8 +1643,8 @@ class _LicenseForm extends StatefulWidget {
 
 class _LicenseFormState extends State<_LicenseForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _issuedController = TextEditingController();
-  final TextEditingController _expiresController = TextEditingController();
+  DateTime? _issuedAt;
+  DateTime? _expiresAt;
   String? _tenantId;
   String _licenseType = _LicenseTypes.enterprise;
   String _status = _SubscriptionStatuses.active;
@@ -1570,15 +1656,8 @@ class _LicenseFormState extends State<_LicenseForm> {
     _tenantId = initial?.tenantId;
     _licenseType = initial?.licenseType ?? _LicenseTypes.enterprise;
     _status = initial?.status ?? _SubscriptionStatuses.active;
-    _issuedController.text = _isoText(initial?.issuedAt);
-    _expiresController.text = _isoText(initial?.expiresAt);
-  }
-
-  @override
-  void dispose() {
-    _issuedController.dispose();
-    _expiresController.dispose();
-    super.dispose();
+    _issuedAt = _dateOnly(initial?.issuedAt);
+    _expiresAt = _dateOnly(initial?.expiresAt);
   }
 
   @override
@@ -1618,15 +1697,17 @@ class _LicenseFormState extends State<_LicenseForm> {
             }
           },
         ),
-        AppTextField(
-          controller: _issuedController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.issuedAt,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _issuedAt,
+          onChanged: (DateTime? value) => setState(() => _issuedAt = value),
         ),
-        AppTextField(
-          controller: _expiresController,
+        _subscriptionDateField(
+          context: context,
           labelText: _SubscriptionsText.expiresAt,
-          hintText: _SubscriptionsText.dateTimeHint,
+          value: _expiresAt,
+          onChanged: (DateTime? value) => setState(() => _expiresAt = value),
         ),
         AppFormActions(
           cancelLabel: context.l10n.commonCancelActionLabel,
@@ -1644,8 +1725,8 @@ class _LicenseFormState extends State<_LicenseForm> {
                 tenantId: _tenantId!,
                 licenseType: _licenseType,
                 status: _status,
-                issuedAt: _emptyToNull(_issuedController.text),
-                expiresAt: _emptyToNull(_expiresController.text),
+                issuedAt: _datePayload(_issuedAt),
+                expiresAt: _datePayload(_expiresAt),
               ),
             );
           },
@@ -1766,6 +1847,50 @@ class _InvoiceCollectFormState extends State<_InvoiceCollectForm> {
       ],
     );
   }
+}
+
+Future<void> _openSubscriptionDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  SubscriptionItem item,
+  bool canWrite,
+) async {
+  ref.read(subscriptionsWorkspaceControllerProvider.notifier).selectItem(item);
+  final l10n = context.l10n;
+  await showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppDialog(
+      title: const Text(_SubscriptionsText.detailTitle),
+      icon: Icon(_resourceIcon(item.resource)),
+      scrollable: true,
+      maxWidth: 980,
+      content: Consumer(
+        builder: (BuildContext context, WidgetRef dialogRef, _) {
+          final SubscriptionsWorkspaceState? dialogState =
+              _subscriptionsStateFromAsync(
+                dialogRef.watch(subscriptionsWorkspaceControllerProvider),
+              );
+          if (dialogState == null) {
+            return const AppStateView(
+              title: _SubscriptionsText.loadingTitle,
+              body: _SubscriptionsText.loadingBody,
+              variant: AppStateViewVariant.loading,
+            );
+          }
+          return _SubscriptionDetailPanel(
+            state: dialogState,
+            canWrite: canWrite,
+          );
+        },
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(dialogContext).maybePop(),
+        ),
+      ],
+    ),
+  );
 }
 
 Future<void> _showPlanDialog(
@@ -2394,6 +2519,52 @@ IconData _resourceIcon(SubscriptionResource resource) {
   };
 }
 
+String _panelLabel(SubscriptionPanel panel) {
+  return switch (panel) {
+    SubscriptionPanel.overview => _SubscriptionsText.overview,
+    SubscriptionPanel.catalog => _SubscriptionsText.plans,
+    SubscriptionPanel.operations => _SubscriptionsText.subscriptions,
+    SubscriptionPanel.billing => _SubscriptionsText.invoices,
+    SubscriptionPanel.governance => _SubscriptionsText.licenses,
+  };
+}
+
+IconData _panelIcon(SubscriptionPanel panel) {
+  return switch (panel) {
+    SubscriptionPanel.overview => Icons.dashboard_customize_outlined,
+    SubscriptionPanel.catalog => Icons.workspace_premium_outlined,
+    SubscriptionPanel.operations => Icons.verified_user_outlined,
+    SubscriptionPanel.billing => Icons.receipt_long_outlined,
+    SubscriptionPanel.governance => Icons.key_outlined,
+  };
+}
+
+String? _querySignature(SubscriptionsWorkspaceQuery? query) {
+  if (query == null) {
+    return null;
+  }
+  return <Object?>[
+    query.panel.serverValue,
+    query.resource.serverValue,
+    query.queue,
+    query.search,
+    query.tenantId,
+    query.recordId,
+    query.action,
+    query.status,
+    query.tierCode,
+    query.billingCycle,
+    query.planId,
+    query.moduleId,
+    query.fitStatus,
+    query.changeStatus,
+    query.invoiceStatus,
+    query.licenseType,
+    query.eligibilityState,
+    query.datePreset.serverValue,
+  ].join('::');
+}
+
 String _planModuleText(SubscriptionItem item) {
   return _joinDisplay(<String?>[
     item.planLabel ?? item.name,
@@ -2546,6 +2717,43 @@ bool _hasText(String? value) {
 
 String _isoText(DateTime? value) {
   return value?.toUtc().toIso8601String() ?? '';
+}
+
+final DateTime _subscriptionFirstDate = DateTime(2000, 1, 1);
+final DateTime _subscriptionLastDate = DateTime(2100, 12, 31);
+
+DateTime? _dateOnly(DateTime? value) {
+  if (value == null) {
+    return null;
+  }
+  return DateTime(value.year, value.month, value.day);
+}
+
+String? _datePayload(DateTime? value) {
+  final DateTime? normalized = _dateOnly(value);
+  if (normalized == null) {
+    return null;
+  }
+  return normalized.toUtc().toIso8601String();
+}
+
+Widget _subscriptionDateField({
+  required BuildContext context,
+  required String labelText,
+  required DateTime? value,
+  required ValueChanged<DateTime?> onChanged,
+}) {
+  return AppDateField(
+    value: value,
+    labelText: labelText,
+    hintText: _SubscriptionsText.dateHint,
+    firstDate: _subscriptionFirstDate,
+    lastDate: _subscriptionLastDate,
+    currentDate: DateTime.now(),
+    pickerButtonLabel: _SubscriptionsText.pickDate,
+    invalidDateMessage: context.l10n.appDateInvalidMessage,
+    onChanged: onChanged,
+  );
 }
 
 final class _LimitRow {
@@ -2739,7 +2947,8 @@ abstract final class _SubscriptionsText {
   static const String planRequired = 'Select a plan.';
   static const String subscriptionRequired = 'Select a subscription.';
   static const String moduleRequired = 'Select a module.';
-  static const String dateTimeHint = 'YYYY-MM-DDTHH:MM:SS';
+  static const String dateHint = 'DD / MM / YYYY';
+  static const String pickDate = 'Pick date';
   static const String targetPlan = 'Target plan';
   static const String changeType = 'Change type';
   static const String upgrade = 'Upgrade';
