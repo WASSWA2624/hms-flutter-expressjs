@@ -1,0 +1,814 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+
+class AccessAdminWorkspacePage extends ConsumerStatefulWidget {
+  const AccessAdminWorkspacePage({this.initialQuery, super.key});
+
+  final AccessAdminWorkspaceQuery? initialQuery;
+
+  @override
+  ConsumerState<AccessAdminWorkspacePage> createState() {
+    return _AccessAdminWorkspacePageState();
+  }
+}
+
+class _AccessAdminWorkspacePageState extends ConsumerState<AccessAdminWorkspacePage> {
+  String? _appliedRouteSignature;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant AccessAdminWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_querySignature(oldWidget.initialQuery) !=
+        _querySignature(widget.initialQuery)) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(AccessAdminWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    final String? signature = _querySignature(query);
+    if (signature == null || _appliedRouteSignature == signature) return;
+    _appliedRouteSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .applyRouteQuery(query);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AsyncValue<Result<AccessAdminWorkspaceState>> workspace = ref.watch(
+      accessAdminWorkspaceControllerProvider,
+    );
+
+    return AsyncStateScaffold<AccessAdminWorkspaceState>(
+      value: workspace,
+      appBarTitle: context.l10n.accessAdminTitle,
+      loadingTitle: context.l10n.accessAdminLoadingTitle,
+      loadingBody: context.l10n.accessAdminLoadingBody,
+      maxWidth: PageMaxWidth.dataHeavy,
+      centerVertically: false,
+      onRetry: () {
+        ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
+      },
+      dataBuilder: (BuildContext context, AccessAdminWorkspaceState state) {
+        return _AccessAdminWorkspaceContent(state: state);
+      },
+    );
+  }
+
+  String? _querySignature(AccessAdminWorkspaceQuery? query) {
+    if (query == null) return null;
+    return '${query.panel.serverValue}|${query.resource.serverValue}|${query.recordId}|${query.tenantId}|${query.facilityId}';
+  }
+}
+
+class _AccessAdminWorkspaceContent extends ConsumerStatefulWidget {
+  const _AccessAdminWorkspaceContent({required this.state});
+
+  final AccessAdminWorkspaceState state;
+
+  @override
+  ConsumerState<_AccessAdminWorkspaceContent> createState() {
+    return _AccessAdminWorkspaceContentState();
+  }
+}
+
+class _AccessAdminWorkspaceContentState
+    extends ConsumerState<_AccessAdminWorkspaceContent> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.state.query.search);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AccessAdminWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.query.search != widget.state.query.search &&
+        _searchController.text != widget.state.query.search) {
+      _searchController.text = widget.state.query.search;
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AccessAdminWorkspaceState state = widget.state;
+    final AccessAdminWorkspaceController controller = ref.read(
+      accessAdminWorkspaceControllerProvider.notifier,
+    );
+    final bool canWrite = state.data.permissions.canWrite;
+    final AppFailure? lastFailure = state.lastFailure is AppFailure
+        ? state.lastFailure! as AppFailure
+        : null;
+
+    return AppWorkspace(
+      title: context.l10n.accessAdminTitle,
+      leadingIcon: Icons.manage_accounts_outlined,
+      status: AppWorkspaceStatus(
+        label: state.isSaving
+            ? context.l10n.accessAdminSavingStatus
+            : context.l10n.accessAdminLiveStatus,
+        tone: state.isSaving
+            ? AppWorkspaceStatusTone.warning
+            : AppWorkspaceStatusTone.success,
+        icon: state.isSaving ? Icons.sync_outlined : Icons.admin_panel_settings_outlined,
+      ),
+      primaryAction: _primaryAction(context, state, canWrite, controller),
+      secondaryActions: <Widget>[
+        AppButton.secondary(
+          label: context.l10n.commonRefreshActionLabel,
+          leadingIcon: Icons.refresh,
+          isLoading: state.isRefreshing,
+          onPressed: state.isRefreshing ? null : controller.refresh,
+        ),
+      ],
+      summaryCards: _summaryCards(context, state),
+      compactSummaryCards: true,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (lastFailure != null) ...<Widget>[
+            AppFailureStateView(
+              failure: lastFailure,
+              onRetry: controller.refresh,
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+          ],
+          if (state.isTenantContextRequired)
+            AppStateView(
+              title: context.l10n.accessAdminTenantContextRequiredTitle,
+              body: context.l10n.accessAdminTenantContextRequiredBody,
+              variant: AppStateViewVariant.empty,
+            )
+          else ...<Widget>[
+            _PanelSelector(state: state, controller: controller),
+            SizedBox(height: Theme.of(context).spacing.md),
+            _FiltersBar(
+              state: state,
+              searchController: _searchController,
+              controller: controller,
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+            _WorklistPanel(
+              state: state,
+              controller: controller,
+              canWrite: canWrite,
+              onItemSelected: (AccessAdminItem item) {
+                unawaited(_openDetailDialog(context, item, canWrite));
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget? _primaryAction(
+    BuildContext context,
+    AccessAdminWorkspaceState state,
+    bool canWrite,
+    AccessAdminWorkspaceController controller,
+  ) {
+    if (!canWrite || state.isTenantContextRequired) return null;
+
+    return switch (state.query.resource) {
+      AccessAdminResource.users ||
+      AccessAdminResource.demoUsers => AppButton.primary(
+        label: context.l10n.accessAdminCreateUserAction,
+        leadingIcon: Icons.person_add_alt_1_outlined,
+        onPressed: state.isSaving
+            ? null
+            : () => unawaited(_showCreateUserDialog(context, state)),
+      ),
+      AccessAdminResource.roles => AppButton.primary(
+        label: context.l10n.accessAdminCreateRoleAction,
+        leadingIcon: Icons.badge_outlined,
+        onPressed: state.isSaving
+            ? null
+            : () => unawaited(_showCreateRoleDialog(context, state)),
+      ),
+      _ => null,
+    };
+  }
+
+  List<Widget> _summaryCards(
+    BuildContext context,
+    AccessAdminWorkspaceState state,
+  ) {
+    final AccessAdminOverview overview = state.data.overview;
+    return <Widget>[
+      AppWorkspaceSummaryCard(
+        label: context.l10n.accessAdminActiveUsersLabel,
+        value: '${overview.activeUsers}',
+        icon: Icons.people_outline,
+      ),
+      AppWorkspaceSummaryCard(
+        label: context.l10n.accessAdminRolesLabel,
+        value: '${overview.totalRoles}',
+        icon: Icons.badge_outlined,
+      ),
+      AppWorkspaceSummaryCard(
+        label: context.l10n.accessAdminPermissionsLabel,
+        value: '${overview.totalPermissions}',
+        icon: Icons.key_outlined,
+      ),
+      AppWorkspaceSummaryCard(
+        label: context.l10n.accessAdminModulesLabel,
+        value: '${overview.activeModulesCount}',
+        icon: Icons.extension_outlined,
+      ),
+    ];
+  }
+
+  Future<void> _openDetailDialog(
+    BuildContext context,
+    AccessAdminItem item,
+    bool canWrite,
+  ) async {
+    final AccessAdminWorkspaceController controller = ref.read(
+      accessAdminWorkspaceControllerProvider.notifier,
+    );
+    controller.selectItem(item);
+
+    if (item.resource == AccessAdminResource.users ||
+        item.resource == AccessAdminResource.demoUsers) {
+      final AppFailure? failure = await controller.loadUserDetail(item);
+      if (failure != null && context.mounted) {
+        _showSnack(context, context.l10n.failureMessage(failure));
+      }
+    }
+
+    if (!context.mounted) return;
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => Consumer(
+        builder: (BuildContext context, WidgetRef ref, _) {
+          final AsyncValue<Result<AccessAdminWorkspaceState>> workspace = ref.watch(
+            accessAdminWorkspaceControllerProvider,
+          );
+          final AccessAdminWorkspaceState? current = workspace.maybeWhen(
+            data: (Result<AccessAdminWorkspaceState> result) =>
+                result.when(
+                  success: (AccessAdminWorkspaceState value) => value,
+                  failure: (_) => null,
+                ),
+            orElse: () => null,
+          );
+          final AccessAdminItem selected = current?.selectedItem ?? item;
+          final AccessAdminUserDetail? detail = current?.selectedUserDetail;
+
+          return AppDialog(
+            title: Text(selected.title),
+            icon: const Icon(Icons.manage_accounts_outlined),
+            scrollable: true,
+            maxWidth: 920,
+            content: _DetailContent(
+              item: selected,
+              detail: detail,
+              state: current ?? widget.state,
+              canWrite: canWrite,
+            ),
+            actions: <Widget>[
+              AppButton.secondary(
+                label: context.l10n.commonCloseActionLabel,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showCreateUserDialog(
+    BuildContext context,
+    AccessAdminWorkspaceState state,
+  ) async {
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController phoneController = TextEditingController();
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    String status = 'ACTIVE';
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(context.l10n.accessAdminCreateUserAction),
+        icon: const Icon(Icons.person_add_alt_1_outlined),
+        content: Form(
+          key: formKey,
+          child: Column(
+            children: <Widget>[
+              AppTextField(
+                controller: emailController,
+                labelText: context.l10n.accessAdminEmailLabel,
+                validator: (String? value) =>
+                    (value ?? '').contains('@') ? null : context.l10n.validationRequired,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
+              AppTextField(
+                controller: titleController,
+                labelText: context.l10n.accessAdminPositionLabel,
+                validator: (String? value) =>
+                    (value ?? '').trim().isEmpty ? context.l10n.validationRequired : null,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
+              AppTextField(
+                controller: passwordController,
+                labelText: context.l10n.accessAdminPasswordLabel,
+                obscureText: true,
+                validator: (String? value) =>
+                    (value ?? '').length >= 8 ? null : context.l10n.accessAdminPasswordHint,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
+              AppSelectField<String>(
+                labelText: context.l10n.accessAdminStatusLabel,
+                value: status,
+                options: state.data.lookups.userStatuses
+                    .map(
+                      (String value) => AppSelectOption<String>(
+                        value: value,
+                        label: value,
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (String? value) {
+                  if (value != null) status = value;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: context.l10n.commonCancelActionLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          AppButton.primary(
+            label: context.l10n.commonSaveActionLabel,
+            onPressed: () async {
+              if (formKey.currentState?.validate() != true) return;
+              final String? tenantId =
+                  state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
+              if (tenantId == null) {
+                _showSnack(context, context.l10n.accessAdminTenantContextRequiredBody);
+                return;
+              }
+              final AppFailure? failure = await ref
+                  .read(accessAdminWorkspaceControllerProvider.notifier)
+                  .createUser(
+                    AccessAdminUserDraft(
+                      tenantId: tenantId,
+                      facilityId: state.query.facilityId,
+                      email: emailController.text.trim(),
+                      phone: phoneController.text.trim(),
+                      positionTitle: titleController.text.trim(),
+                      password: passwordController.text,
+                      status: status,
+                    ),
+                  );
+              if (!dialogContext.mounted) return;
+              if (failure == null) {
+                Navigator.of(dialogContext).pop();
+              } else {
+                _showSnack(dialogContext, context.l10n.failureMessage(failure));
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    emailController.dispose();
+    phoneController.dispose();
+    titleController.dispose();
+    passwordController.dispose();
+  }
+
+  Future<void> _showCreateRoleDialog(
+    BuildContext context,
+    AccessAdminWorkspaceState state,
+  ) async {
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(context.l10n.accessAdminCreateRoleAction),
+        icon: const Icon(Icons.badge_outlined),
+        content: Form(
+          key: formKey,
+          child: Column(
+            children: <Widget>[
+              AppTextField(
+                controller: nameController,
+                labelText: context.l10n.accessAdminRoleNameLabel,
+                validator: (String? value) =>
+                    (value ?? '').trim().isEmpty ? context.l10n.validationRequired : null,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
+              AppTextField(
+                controller: descriptionController,
+                labelText: context.l10n.accessAdminRoleDescriptionLabel,
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: context.l10n.commonCancelActionLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          AppButton.primary(
+            label: context.l10n.commonSaveActionLabel,
+            onPressed: () async {
+              if (formKey.currentState?.validate() != true) return;
+              final String? tenantId =
+                  state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
+              if (tenantId == null) return;
+              final AppFailure? failure = await ref
+                  .read(accessAdminWorkspaceControllerProvider.notifier)
+                  .createRole(
+                    AccessAdminRoleDraft(
+                      tenantId: tenantId,
+                      facilityId: state.query.facilityId,
+                      name: nameController.text.trim().toUpperCase(),
+                      description: descriptionController.text.trim(),
+                    ),
+                  );
+              if (!dialogContext.mounted) return;
+              if (failure == null) {
+                Navigator.of(dialogContext).pop();
+              } else {
+                _showSnack(dialogContext, context.l10n.failureMessage(failure));
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    nameController.dispose();
+    descriptionController.dispose();
+  }
+
+  void _showSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _PanelSelector extends StatelessWidget {
+  const _PanelSelector({required this.state, required this.controller});
+
+  final AccessAdminWorkspaceState state;
+  final AccessAdminWorkspaceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    const List<AccessAdminPanel> panels = AccessAdminPanel.values;
+    return Wrap(
+      spacing: Theme.of(context).spacing.sm,
+      runSpacing: Theme.of(context).spacing.sm,
+      children: panels.map((AccessAdminPanel panel) {
+        final bool selected = state.query.panel == panel;
+        return FilterChip(
+          label: Text(_panelLabel(context, panel)),
+          selected: selected,
+          onSelected: state.isSaving
+              ? null
+              : (_) => unawaited(controller.applyPanel(panel)),
+        );
+      }).toList(growable: false),
+    );
+  }
+
+  String _panelLabel(BuildContext context, AccessAdminPanel panel) {
+    return switch (panel) {
+      AccessAdminPanel.overview => context.l10n.accessAdminPanelOverview,
+      AccessAdminPanel.directory => context.l10n.accessAdminPanelDirectory,
+      AccessAdminPanel.roles => context.l10n.accessAdminPanelRoles,
+      AccessAdminPanel.permissions => context.l10n.accessAdminPanelPermissions,
+      AccessAdminPanel.entitlements => context.l10n.accessAdminPanelEntitlements,
+      AccessAdminPanel.demo => context.l10n.accessAdminPanelDemo,
+    };
+  }
+}
+
+class _FiltersBar extends StatelessWidget {
+  const _FiltersBar({
+    required this.state,
+    required this.searchController,
+    required this.controller,
+  });
+
+  final AccessAdminWorkspaceState state;
+  final TextEditingController searchController;
+  final AccessAdminWorkspaceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTextField(
+            controller: searchController,
+            labelText: context.l10n.accessAdminSearchLabel,
+            hintText: context.l10n.accessAdminSearchHint,
+            textInputAction: TextInputAction.search,
+            onFieldSubmitted: controller.applySearch,
+          ),
+          if (state.query.resource == AccessAdminResource.users) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.md),
+            AppSelectField<String?>(
+              labelText: context.l10n.accessAdminStatusLabel,
+              value: state.query.status,
+              options: <AppSelectOption<String?>>[
+                AppSelectOption<String?>(
+                  value: null,
+                  label: context.l10n.accessAdminAllStatusesLabel,
+                ),
+                ...state.data.lookups.userStatuses.map(
+                  (String value) => AppSelectOption<String?>(
+                    value: value,
+                    label: value,
+                  ),
+                ),
+              ],
+              onChanged: (String? value) {
+                unawaited(controller.applyStatusFilter(value));
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WorklistPanel extends StatelessWidget {
+  const _WorklistPanel({
+    required this.state,
+    required this.controller,
+    required this.canWrite,
+    required this.onItemSelected,
+  });
+
+  final AccessAdminWorkspaceState state;
+  final AccessAdminWorkspaceController controller;
+  final bool canWrite;
+  final ValueChanged<AccessAdminItem> onItemSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppPage<AccessAdminItem> page = state.data.page;
+    if (page.items.isEmpty) {
+      return AppStateView(
+        title: context.l10n.accessAdminEmptyTitle,
+        body: context.l10n.accessAdminEmptyBody,
+        variant: AppStateViewVariant.empty,
+      );
+    }
+
+    return AppContentPanel(
+      child: AppListTable<AccessAdminItem>(
+        page: page,
+        isLoading: state.isRefreshing,
+        onRowSelected: onItemSelected,
+        onPageChanged: controller.changePage,
+        mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
+          return ListTile(
+            title: Text(item.title),
+            subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
+            trailing: Text(item.status ?? ''),
+            onTap: () => onItemSelected(item),
+          );
+        },
+        columns: <AppListTableColumn<AccessAdminItem>>[
+          AppListTableColumn<AccessAdminItem>(
+            label: context.l10n.accessAdminColumnId,
+            cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                Text(item.effectiveDisplayId),
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            label: context.l10n.accessAdminColumnName,
+            cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                Text(item.title),
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            label: context.l10n.accessAdminColumnDetails,
+            cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                Text(item.subtitle ?? '—'),
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            label: context.l10n.accessAdminColumnStatus,
+            cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                Text(item.status ?? '—'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailContent extends ConsumerWidget {
+  const _DetailContent({
+    required this.item,
+    required this.detail,
+    required this.state,
+    required this.canWrite,
+  });
+
+  final AccessAdminItem item;
+  final AccessAdminUserDetail? detail;
+  final AccessAdminWorkspaceState state;
+  final bool canWrite;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AccessAdminWorkspaceController controller = ref.read(
+      accessAdminWorkspaceControllerProvider.notifier,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _DetailRow(label: context.l10n.accessAdminColumnId, value: item.effectiveDisplayId),
+        if (item.email != null)
+          _DetailRow(label: context.l10n.accessAdminEmailLabel, value: item.email!),
+        if (item.positionTitle != null)
+          _DetailRow(label: context.l10n.accessAdminPositionLabel, value: item.positionTitle!),
+        if (item.status != null)
+          _DetailRow(label: context.l10n.accessAdminStatusLabel, value: item.status!),
+        if (item.roles.isNotEmpty) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          Text(context.l10n.accessAdminAssignedRolesLabel, style: Theme.of(context).textTheme.titleSmall),
+          Wrap(
+            spacing: Theme.of(context).spacing.xs,
+            children: item.roles
+                .map((AccessAdminRoleRef role) => Chip(label: Text(role.name)))
+                .toList(growable: false),
+          ),
+        ],
+        if (detail != null && detail!.effectivePermissions.isNotEmpty) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          Text(
+            context.l10n.accessAdminEffectivePermissionsLabel,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          Text('${detail!.effectivePermissions.length} ${context.l10n.accessAdminPermissionsLabel}'),
+          SizedBox(height: Theme.of(context).spacing.sm),
+          Wrap(
+            spacing: Theme.of(context).spacing.xs,
+            runSpacing: Theme.of(context).spacing.xs,
+            children: detail!.effectivePermissions
+                .take(24)
+                .map((String permission) => Chip(label: Text(permission)))
+                .toList(growable: false),
+          ),
+        ],
+        if (item.staffProfileId != null) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppButton.secondary(
+            label: context.l10n.accessAdminOpenHrProfileAction,
+            leadingIcon: AppRouteIcons.hr,
+            onPressed: () => context.go(AppRoutes.hr.location()),
+          ),
+        ],
+        if (item.isClinicalFlowRole)
+          Padding(
+            padding: EdgeInsets.only(top: Theme.of(context).spacing.sm),
+            child: Text(
+              context.l10n.accessAdminClinicalRoleHint,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        if (canWrite) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.lg),
+          Wrap(
+            spacing: Theme.of(context).spacing.sm,
+            runSpacing: Theme.of(context).spacing.sm,
+            children: _actions(context, controller),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _actions(
+    BuildContext context,
+    AccessAdminWorkspaceController controller,
+  ) {
+    final List<Widget> actions = <Widget>[];
+
+    if (item.resource == AccessAdminResource.users ||
+        item.resource == AccessAdminResource.demoUsers) {
+      if (item.status == 'ACTIVE') {
+        actions.add(
+          AppButton.secondary(
+            label: context.l10n.accessAdminDeactivateAction,
+            onPressed: () => unawaited(
+              controller.setUserStatus(item, 'INACTIVE').then((AppFailure? failure) {
+                if (failure != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.failureMessage(failure))),
+                  );
+                }
+              }),
+            ),
+          ),
+        );
+      } else {
+        actions.add(
+          AppButton.secondary(
+            label: context.l10n.accessAdminActivateAction,
+            onPressed: () => unawaited(controller.setUserStatus(item, 'ACTIVE')),
+          ),
+        );
+      }
+    }
+
+    if (item.isDemo && state.data.permissions.canResetDemoPasswords) {
+      actions.add(
+        AppButton.secondary(
+          label: context.l10n.accessAdminResetDemoPasswordAction,
+          leadingIcon: Icons.lock_reset_outlined,
+          onPressed: () => unawaited(controller.resetDemoPassword(item)),
+        ),
+      );
+    }
+
+    if (item.resource == AccessAdminResource.roles && !item.isSystemCritical) {
+      actions.add(
+        AppButton.secondary(
+          label: context.l10n.accessAdminDeleteRoleAction,
+          onPressed: () => unawaited(controller.deleteRole(item)),
+        ),
+      );
+    }
+
+    return actions;
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: Theme.of(context).spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 160,
+            child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}

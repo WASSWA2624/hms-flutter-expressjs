@@ -243,11 +243,18 @@ List<_SettingsAction> _adminActions(
       onTap: () => context.go(AppRoutes.subscriptions.location()),
     ),
     _SettingsAction(
+      icon: Icons.manage_accounts_outlined,
+      title: l10n.settingsAccessAdminActionTitle,
+      body: l10n.settingsAccessAdminActionBody,
+      requirement: _accessAdminRequirement,
+      onTap: () => context.go(AppRoutes.accessAdmin.location()),
+    ),
+    _SettingsAction(
       icon: Icons.admin_panel_settings_outlined,
       title: l10n.settingsSecurityBoundaryLabel,
       body: l10n.settingsSecurityBoundaryBody,
-      requirement: _tenantFacilitySetupRequirement,
-      onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+      requirement: _accessAdminRequirement,
+      onTap: () => context.go(AppRoutes.accessAdmin.location()),
     ),
   ];
 }
@@ -273,6 +280,23 @@ const AccessRequirement _subscriptionsRequirement = AccessRequirement(
     AppPermissions.systemAdmin,
   ],
   anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+);
+
+const AccessRequirement _accessAdminRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.facilityAdmin,
+    AppPermissions.hrWrite,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.hr,
+    AppRole.operations,
+  ],
+  requiresTenantContext: true,
 );
 
 class _SettingsActionList extends StatelessWidget {

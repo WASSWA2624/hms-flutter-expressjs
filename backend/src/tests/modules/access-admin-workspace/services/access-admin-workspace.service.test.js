@@ -1,0 +1,146 @@
+jest.mock('@repositories/access-admin-workspace/access-admin-workspace.repository');
+
+const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
+const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
+
+describe('access-admin-workspace service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NODE_ENV = 'test';
+
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'ready',
+      scope: { tenant_id: 'tenant-uuid', facility_id: 'facility-uuid' },
+    });
+    repository.findSummary.mockResolvedValue({
+      total_users: 12,
+      active_users: 10,
+      inactive_users: 2,
+      total_roles: 8,
+      total_permissions: 40,
+      total_assignments: 15,
+      demo_users: 3,
+    });
+    repository.findLookups.mockResolvedValue({
+      tenants: [
+        {
+          id: 'tenant-uuid',
+          human_friendly_id: 'TEN0001',
+          name: 'DemoCare General Hospital',
+        },
+      ],
+      facilities: [
+        {
+          id: 'facility-uuid',
+          human_friendly_id: 'FAC0001',
+          name: 'Main Campus',
+          facility_type: 'HOSPITAL',
+        },
+      ],
+      roles: [
+        {
+          id: 'role-uuid',
+          human_friendly_id: 'ROL0001',
+          name: 'DOCTOR',
+          facility_id: 'facility-uuid',
+        },
+      ],
+      permissions: [
+        {
+          id: 'perm-uuid',
+          human_friendly_id: 'PRM0001',
+          name: 'clinical:read',
+        },
+      ],
+    });
+    repository.findUsers.mockResolvedValue({
+      items: [
+        {
+          id: 'user-uuid',
+          human_friendly_id: 'USR0001',
+          email: 'doctor@hosspi.com',
+          position_title: 'Consultant Physician',
+          status: 'ACTIVE',
+          tenant_id: 'tenant-uuid',
+          facility_id: 'facility-uuid',
+          roles: [
+            {
+              role: {
+                id: 'role-uuid',
+                human_friendly_id: 'ROL0001',
+                name: 'DOCTOR',
+              },
+            },
+          ],
+          profile: {
+            first_name: 'Jordan',
+            last_name: 'Demo',
+          },
+          staff_profile: null,
+        },
+      ],
+      total: 1,
+    });
+    repository.findModuleEntitlements.mockResolvedValue({
+      items: [],
+      total: 0,
+      subscription: null,
+    });
+    repository.isDemoUser.mockImplementation((user) =>
+      String(user.email || '').endsWith('@hosspi.com')
+    );
+  });
+
+  it('returns workspace payload for users resource', async () => {
+    const data = await service.getWorkspace(
+      { panel: 'directory', resource: 'users' },
+      1,
+      20,
+      { roles: ['TENANT_ADMIN'], tenant_id: 'tenant-uuid' }
+    );
+
+    expect(data.state).toBe('ready');
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0].email).toBe('doctor@hosspi.com');
+    expect(data.items[0].is_demo).toBe(true);
+    expect(data.permissions.can_write).toBe(true);
+    expect(repository.findUsers).toHaveBeenCalled();
+  });
+
+  it('returns tenant context required state without scope', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'tenant_context_required',
+      scope: null,
+    });
+
+    const data = await service.getWorkspace({}, 1, 20, { roles: ['SUPER_ADMIN'] });
+
+    expect(data.state).toBe('tenant_context_required');
+    expect(data.items).toEqual([]);
+  });
+
+  it('resets demo user password outside production', async () => {
+    repository.findUserByIdentifier.mockResolvedValue({
+      id: 'user-uuid',
+      human_friendly_id: 'USR0001',
+      email: 'doctor@hosspi.com',
+    });
+    repository.resetDemoUserPassword.mockResolvedValue({});
+
+    const data = await service.resetDemoUserPassword('USR0001', {
+      roles: ['TENANT_ADMIN'],
+      tenant_id: 'tenant-uuid',
+    });
+
+    expect(data.user_id).toBe('USR0001');
+    expect(repository.resetDemoUserPassword).toHaveBeenCalled();
+  });
+
+  it('rejects demo reset in production', async () => {
+    process.env.NODE_ENV = 'production';
+
+    await expect(
+      service.resetDemoUserPassword('USR0001', { roles: ['TENANT_ADMIN'] })
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
+});

@@ -17125,5 +17125,189 @@
   "radiologyPrescriptionPayAtPrescribeLabel": "Pay at prescribe",
   "@radiologyPrescriptionPayAtPrescribeLabel": {
     "description": "Pharmacy pay at prescribe mode."
+  },
+  "accessAdminTitle": "Users and access",
+  "@accessAdminTitle": {
+    "description": "Access admin workspace title."
+  },
+  "accessAdminLoadingTitle": "Loading access workspace",
+  "@accessAdminLoadingTitle": {
+    "description": "Access admin loading title."
+  },
+  "accessAdminLoadingBody": "Fetching users, roles, permissions, and entitlements.",
+  "@accessAdminLoadingBody": {
+    "description": "Access admin loading body."
+  },
+  "accessAdminSavingStatus": "Saving access changes",
+  "@accessAdminSavingStatus": {
+    "description": "Access admin saving status."
+  },
+  "accessAdminLiveStatus": "Access workspace live",
+  "@accessAdminLiveStatus": {
+    "description": "Access admin live status."
+  },
+  "accessAdminPanelOverview": "Overview",
+  "@accessAdminPanelOverview": {
+    "description": "Access admin overview panel label."
+  },
+  "accessAdminPanelDirectory": "User directory",
+  "@accessAdminPanelDirectory": {
+    "description": "Access admin user directory panel label."
+  },
+  "accessAdminPanelRoles": "Roles",
+  "@accessAdminPanelRoles": {
+    "description": "Access admin roles panel label."
+  },
+  "accessAdminPanelPermissions": "Permissions",
+  "@accessAdminPanelPermissions": {
+    "description": "Access admin permissions panel label."
+  },
+  "accessAdminPanelEntitlements": "Module entitlements",
+  "@accessAdminPanelEntitlements": {
+    "description": "Access admin module entitlements panel label."
+  },
+  "accessAdminPanelDemo": "Demo accounts",
+  "@accessAdminPanelDemo": {
+    "description": "Access admin demo accounts panel label."
+  },
+  "accessAdminActiveUsersLabel": "Active users",
+  "@accessAdminActiveUsersLabel": {
+    "description": "Access admin active users summary label."
+  },
+  "accessAdminRolesLabel": "Roles",
+  "@accessAdminRolesLabel": {
+    "description": "Access admin roles summary label."
+  },
+  "accessAdminPermissionsLabel": "Permissions",
+  "@accessAdminPermissionsLabel": {
+    "description": "Access admin permissions summary label."
+  },
+  "accessAdminModulesLabel": "Active modules",
+  "@accessAdminModulesLabel": {
+    "description": "Access admin active modules summary label."
+  },
+  "accessAdminSearchLabel": "Search access records",
+  "@accessAdminSearchLabel": {
+    "description": "Access admin search field label."
+  },
+  "accessAdminSearchHint": "Search by name, email, role, or permission",
+  "@accessAdminSearchHint": {
+    "description": "Access admin search field hint."
+  },
+  "accessAdminStatusLabel": "Status",
+  "@accessAdminStatusLabel": {
+    "description": "Access admin status label."
+  },
+  "accessAdminAllStatusesLabel": "All statuses",
+  "@accessAdminAllStatusesLabel": {
+    "description": "Access admin all statuses filter label."
+  },
+  "accessAdminEmptyTitle": "No access records found",
+  "@accessAdminEmptyTitle": {
+    "description": "Access admin empty state title."
+  },
+  "accessAdminEmptyBody": "Adjust filters or create users and roles to populate this workspace.",
+  "@accessAdminEmptyBody": {
+    "description": "Access admin empty state body."
+  },
+  "accessAdminColumnId": "ID",
+  "@accessAdminColumnId": {
+    "description": "Access admin table ID column."
+  },
+  "accessAdminColumnName": "Name",
+  "@accessAdminColumnName": {
+    "description": "Access admin table name column."
+  },
+  "accessAdminColumnDetails": "Details",
+  "@accessAdminColumnDetails": {
+    "description": "Access admin table details column."
+  },
+  "accessAdminColumnStatus": "Status",
+  "@accessAdminColumnStatus": {
+    "description": "Access admin table status column."
+  },
+  "accessAdminDetailTitle": "Access record",
+  "@accessAdminDetailTitle": {
+    "description": "Access admin detail dialog title."
+  },
+  "accessAdminCreateUserAction": "Create user",
+  "@accessAdminCreateUserAction": {
+    "description": "Access admin create user action."
+  },
+  "accessAdminCreateRoleAction": "Create role",
+  "@accessAdminCreateRoleAction": {
+    "description": "Access admin create role action."
+  },
+  "accessAdminEmailLabel": "Email",
+  "@accessAdminEmailLabel": {
+    "description": "Access admin email field label."
+  },
+  "accessAdminPositionLabel": "Position title",
+  "@accessAdminPositionLabel": {
+    "description": "Access admin position field label."
+  },
+  "accessAdminPasswordLabel": "Password",
+  "@accessAdminPasswordLabel": {
+    "description": "Access admin password field label."
+  },
+  "accessAdminPasswordHint": "Password must be at least 8 characters.",
+  "@accessAdminPasswordHint": {
+    "description": "Access admin password validation hint."
+  },
+  "accessAdminRoleNameLabel": "Role name",
+  "@accessAdminRoleNameLabel": {
+    "description": "Access admin role name field label."
+  },
+  "accessAdminRoleDescriptionLabel": "Description",
+  "@accessAdminRoleDescriptionLabel": {
+    "description": "Access admin role description field label."
+  },
+  "accessAdminAssignedRolesLabel": "Assigned roles",
+  "@accessAdminAssignedRolesLabel": {
+    "description": "Access admin assigned roles label."
+  },
+  "accessAdminEffectivePermissionsLabel": "Effective permissions",
+  "@accessAdminEffectivePermissionsLabel": {
+    "description": "Access admin effective permissions label."
+  },
+  "accessAdminOpenHrProfileAction": "Open HR profile",
+  "@accessAdminOpenHrProfileAction": {
+    "description": "Access admin link to HR profile."
+  },
+  "accessAdminClinicalRoleHint": "This role unlocks OPD/IPD clinical workflow actions.",
+  "@accessAdminClinicalRoleHint": {
+    "description": "Access admin clinical role hint."
+  },
+  "accessAdminDeactivateAction": "Deactivate user",
+  "@accessAdminDeactivateAction": {
+    "description": "Access admin deactivate user action."
+  },
+  "accessAdminActivateAction": "Activate user",
+  "@accessAdminActivateAction": {
+    "description": "Access admin activate user action."
+  },
+  "accessAdminResetDemoPasswordAction": "Reset demo password",
+  "@accessAdminResetDemoPasswordAction": {
+    "description": "Access admin reset demo password action."
+  },
+  "accessAdminDeleteRoleAction": "Delete role",
+  "@accessAdminDeleteRoleAction": {
+    "description": "Access admin delete role action."
+  },
+  "accessAdminTenantContextRequiredTitle": "Tenant context required",
+  "@accessAdminTenantContextRequiredTitle": {
+    "description": "Access admin tenant context required title."
+  },
+  "accessAdminTenantContextRequiredBody": "Select a tenant and facility before managing users and roles.",
+  "@accessAdminTenantContextRequiredBody": {
+    "description": "Access admin tenant context required body."
+  },
+  "settingsAccessAdminActionTitle": "Users and access",
+  "@settingsAccessAdminActionTitle": {
+    "description": "Settings link to access admin workspace."
+  },
+  "settingsAccessAdminActionBody": "Manage staff accounts, role assignments, permissions, and demo users.",
+  "@settingsAccessAdminActionBody": {
+    "description": "Settings link body for access admin."
   }
 }

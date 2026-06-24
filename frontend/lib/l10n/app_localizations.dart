@@ -24842,6 +24842,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pay at prescribe'**
   String get radiologyPrescriptionPayAtPrescribeLabel;
+
+  /// Access admin workspace title.
+  ///
+  /// In en, this message translates to:
+  /// **'Users and access'**
+  String get accessAdminTitle;
+
+  /// Access admin loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading access workspace'**
+  String get accessAdminLoadingTitle;
+
+  /// Access admin loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching users, roles, permissions, and entitlements.'**
+  String get accessAdminLoadingBody;
+
+  /// Access admin saving status.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving access changes'**
+  String get accessAdminSavingStatus;
+
+  /// Access admin live status.
+  ///
+  /// In en, this message translates to:
+  /// **'Access workspace live'**
+  String get accessAdminLiveStatus;
+
+  /// Access admin overview panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get accessAdminPanelOverview;
+
+  /// Access admin user directory panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'User directory'**
+  String get accessAdminPanelDirectory;
+
+  /// Access admin roles panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get accessAdminPanelRoles;
+
+  /// Access admin permissions panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get accessAdminPanelPermissions;
+
+  /// Access admin module entitlements panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Module entitlements'**
+  String get accessAdminPanelEntitlements;
+
+  /// Access admin demo accounts panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo accounts'**
+  String get accessAdminPanelDemo;
+
+  /// Access admin active users summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active users'**
+  String get accessAdminActiveUsersLabel;
+
+  /// Access admin roles summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get accessAdminRolesLabel;
+
+  /// Access admin permissions summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get accessAdminPermissionsLabel;
+
+  /// Access admin active modules summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active modules'**
+  String get accessAdminModulesLabel;
+
+  /// Access admin search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search access records'**
+  String get accessAdminSearchLabel;
+
+  /// Access admin search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, email, role, or permission'**
+  String get accessAdminSearchHint;
+
+  /// Access admin status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accessAdminStatusLabel;
+
+  /// Access admin all statuses filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get accessAdminAllStatusesLabel;
+
+  /// Access admin empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No access records found'**
+  String get accessAdminEmptyTitle;
+
+  /// Access admin empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust filters or create users and roles to populate this workspace.'**
+  String get accessAdminEmptyBody;
+
+  /// Access admin table ID column.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get accessAdminColumnId;
+
+  /// Access admin table name column.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get accessAdminColumnName;
+
+  /// Access admin table details column.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get accessAdminColumnDetails;
+
+  /// Access admin table status column.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accessAdminColumnStatus;
+
+  /// Access admin detail dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Access record'**
+  String get accessAdminDetailTitle;
+
+  /// Access admin create user action.
+  ///
+  /// In en, this message translates to:
+  /// **'Create user'**
+  String get accessAdminCreateUserAction;
+
+  /// Access admin create role action.
+  ///
+  /// In en, this message translates to:
+  /// **'Create role'**
+  String get accessAdminCreateRoleAction;
+
+  /// Access admin email field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get accessAdminEmailLabel;
+
+  /// Access admin position field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Position title'**
+  String get accessAdminPositionLabel;
+
+  /// Access admin password field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get accessAdminPasswordLabel;
+
+  /// Access admin password validation hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters.'**
+  String get accessAdminPasswordHint;
+
+  /// Access admin role name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Role name'**
+  String get accessAdminRoleNameLabel;
+
+  /// Access admin role description field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get accessAdminRoleDescriptionLabel;
+
+  /// Access admin assigned roles label.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned roles'**
+  String get accessAdminAssignedRolesLabel;
+
+  /// Access admin effective permissions label.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective permissions'**
+  String get accessAdminEffectivePermissionsLabel;
+
+  /// Access admin link to HR profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open HR profile'**
+  String get accessAdminOpenHrProfileAction;
+
+  /// Access admin clinical role hint.
+  ///
+  /// In en, this message translates to:
+  /// **'This role unlocks OPD/IPD clinical workflow actions.'**
+  String get accessAdminClinicalRoleHint;
+
+  /// Access admin deactivate user action.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate user'**
+  String get accessAdminDeactivateAction;
+
+  /// Access admin activate user action.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate user'**
+  String get accessAdminActivateAction;
+
+  /// Access admin reset demo password action.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset demo password'**
+  String get accessAdminResetDemoPasswordAction;
+
+  /// Access admin delete role action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete role'**
+  String get accessAdminDeleteRoleAction;
+
+  /// Access admin tenant context required title.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant context required'**
+  String get accessAdminTenantContextRequiredTitle;
+
+  /// Access admin tenant context required body.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant and facility before managing users and roles.'**
+  String get accessAdminTenantContextRequiredBody;
+
+  /// Settings link to access admin workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Users and access'**
+  String get settingsAccessAdminActionTitle;
+
+  /// Settings link body for access admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage staff accounts, role assignments, permissions, and demo users.'**
+  String get settingsAccessAdminActionBody;
 }
 
 class _AppLocalizationsDelegate

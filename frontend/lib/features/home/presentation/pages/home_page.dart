@@ -1974,7 +1974,7 @@ _actionLibrary = <String, _HomeActionDefinition>{
     id: 'manage_users_roles',
     label: 'Manage users and roles',
     icon: Icons.manage_accounts_outlined,
-    route: AppRoutes.settings,
+    route: AppRoutes.accessAdmin,
     allowedRoles: <AppRole>[
       AppRole.superAdmin,
       AppRole.tenantAdmin,

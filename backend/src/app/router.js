@@ -263,6 +263,7 @@ apiV1Router.use('/dashboard-widgets', require('../modules/dashboard-widget/route
 apiV1Router.use('/dashboard-workspace', require('../modules/dashboard-workspace/routes/dashboard-workspace.routes'));
 apiV1Router.use('/settings-workspace', require('../modules/settings-workspace/routes/settings-workspace.routes'));
 apiV1Router.use('/tenant-facility-workspace', require('../modules/tenant-facility-workspace/routes/tenant-facility-workspace.routes'));
+apiV1Router.use('/access-admin-workspace', require('../modules/access-admin-workspace/routes/access-admin-workspace.routes'));
 apiV1Router.use('/kpi-snapshots', require('../modules/kpi-snapshot/routes/kpi-snapshot.routes'));
 apiV1Router.use('/analytics-events', require('../modules/analytics-event/routes/analytics-event.routes'));
 apiV1Router.use('/reports-workspace', require('../modules/reports-workspace/routes/reports-workspace.routes'));

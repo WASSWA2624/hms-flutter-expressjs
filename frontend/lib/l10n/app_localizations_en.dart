@@ -13234,4 +13234,149 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyPrescriptionPayAtPrescribeLabel => 'Pay at prescribe';
+
+  @override
+  String get accessAdminTitle => 'Users and access';
+
+  @override
+  String get accessAdminLoadingTitle => 'Loading access workspace';
+
+  @override
+  String get accessAdminLoadingBody =>
+      'Fetching users, roles, permissions, and entitlements.';
+
+  @override
+  String get accessAdminSavingStatus => 'Saving access changes';
+
+  @override
+  String get accessAdminLiveStatus => 'Access workspace live';
+
+  @override
+  String get accessAdminPanelOverview => 'Overview';
+
+  @override
+  String get accessAdminPanelDirectory => 'User directory';
+
+  @override
+  String get accessAdminPanelRoles => 'Roles';
+
+  @override
+  String get accessAdminPanelPermissions => 'Permissions';
+
+  @override
+  String get accessAdminPanelEntitlements => 'Module entitlements';
+
+  @override
+  String get accessAdminPanelDemo => 'Demo accounts';
+
+  @override
+  String get accessAdminActiveUsersLabel => 'Active users';
+
+  @override
+  String get accessAdminRolesLabel => 'Roles';
+
+  @override
+  String get accessAdminPermissionsLabel => 'Permissions';
+
+  @override
+  String get accessAdminModulesLabel => 'Active modules';
+
+  @override
+  String get accessAdminSearchLabel => 'Search access records';
+
+  @override
+  String get accessAdminSearchHint =>
+      'Search by name, email, role, or permission';
+
+  @override
+  String get accessAdminStatusLabel => 'Status';
+
+  @override
+  String get accessAdminAllStatusesLabel => 'All statuses';
+
+  @override
+  String get accessAdminEmptyTitle => 'No access records found';
+
+  @override
+  String get accessAdminEmptyBody =>
+      'Adjust filters or create users and roles to populate this workspace.';
+
+  @override
+  String get accessAdminColumnId => 'ID';
+
+  @override
+  String get accessAdminColumnName => 'Name';
+
+  @override
+  String get accessAdminColumnDetails => 'Details';
+
+  @override
+  String get accessAdminColumnStatus => 'Status';
+
+  @override
+  String get accessAdminDetailTitle => 'Access record';
+
+  @override
+  String get accessAdminCreateUserAction => 'Create user';
+
+  @override
+  String get accessAdminCreateRoleAction => 'Create role';
+
+  @override
+  String get accessAdminEmailLabel => 'Email';
+
+  @override
+  String get accessAdminPositionLabel => 'Position title';
+
+  @override
+  String get accessAdminPasswordLabel => 'Password';
+
+  @override
+  String get accessAdminPasswordHint =>
+      'Password must be at least 8 characters.';
+
+  @override
+  String get accessAdminRoleNameLabel => 'Role name';
+
+  @override
+  String get accessAdminRoleDescriptionLabel => 'Description';
+
+  @override
+  String get accessAdminAssignedRolesLabel => 'Assigned roles';
+
+  @override
+  String get accessAdminEffectivePermissionsLabel => 'Effective permissions';
+
+  @override
+  String get accessAdminOpenHrProfileAction => 'Open HR profile';
+
+  @override
+  String get accessAdminClinicalRoleHint =>
+      'This role unlocks OPD/IPD clinical workflow actions.';
+
+  @override
+  String get accessAdminDeactivateAction => 'Deactivate user';
+
+  @override
+  String get accessAdminActivateAction => 'Activate user';
+
+  @override
+  String get accessAdminResetDemoPasswordAction => 'Reset demo password';
+
+  @override
+  String get accessAdminDeleteRoleAction => 'Delete role';
+
+  @override
+  String get accessAdminTenantContextRequiredTitle => 'Tenant context required';
+
+  @override
+  String get accessAdminTenantContextRequiredBody =>
+      'Select a tenant and facility before managing users and roles.';
+
+  @override
+  String get settingsAccessAdminActionTitle => 'Users and access';
+
+  @override
+  String get settingsAccessAdminActionBody =>
+      'Manage staff accounts, role assignments, permissions, and demo users.';
 }

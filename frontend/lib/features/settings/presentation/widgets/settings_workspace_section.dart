@@ -768,6 +768,9 @@ String? _mappedSettingsRoute(String? backendRoute) {
   }
 
   final String route = backendRoute.trim();
+  if (_accessAdminRoutes.contains(route)) {
+    return AppRoutes.accessAdmin.location();
+  }
   if (_tenantFacilityRoutes.contains(route)) {
     return AppRoutes.tenantFacilitySetup.location();
   }
@@ -776,6 +779,21 @@ String? _mappedSettingsRoute(String? backendRoute) {
   // Keep their actions disabled instead of pretending navigation exists.
   return null;
 }
+
+const Set<String> _accessAdminRoutes = <String>{
+  '/settings/users',
+  '/settings/users/create',
+  '/settings/roles',
+  '/settings/roles/create',
+  '/settings/permissions',
+  '/settings/permissions/create',
+  '/settings/role-permissions',
+  '/settings/role-permissions/create',
+  '/settings/user-roles',
+  '/settings/user-roles/create',
+  '/settings/user-profiles',
+  '/settings/user-profiles/create',
+};
 
 const Set<String> _tenantFacilityRoutes = <String>{
   '/settings/tenants',
@@ -798,16 +816,4 @@ const Set<String> _tenantFacilityRoutes = <String>{
   '/settings/addresses/create',
   '/settings/contacts',
   '/settings/contacts/create',
-  '/settings/users',
-  '/settings/users/create',
-  '/settings/roles',
-  '/settings/roles/create',
-  '/settings/permissions',
-  '/settings/permissions/create',
-  '/settings/role-permissions',
-  '/settings/role-permissions/create',
-  '/settings/user-roles',
-  '/settings/user-roles/create',
-  '/settings/user-profiles',
-  '/settings/user-profiles/create',
 };

@@ -87,6 +87,8 @@ const FREE_CORE_MODULES = new Set([
   'dashboard-workspace',
   'dashboard-widget',
   'settings-workspace',
+  'access-admin-workspace',
+  'tenant-facility-workspace',
   'kpi-snapshot',
   'module',
   'module-subscription',

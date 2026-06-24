@@ -30,7 +30,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       return Result<FacilitySetupSnapshot>.success(value);
     }
     if (workspaceResult case ResultFailure<FacilitySetupSnapshot>(:final failure)) {
-      if (failure.category != AppFailureCategory.notFound) {
+      if (failure.category != AppFailureCategory.notFound &&
+          failure.category != AppFailureCategory.forbidden) {
         return Result<FacilitySetupSnapshot>.failure(failure);
       }
     }

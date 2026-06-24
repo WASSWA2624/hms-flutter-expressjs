@@ -433,6 +433,25 @@ abstract final class AppRoutes {
       AppRole.facilityAdmin,
     ],
   );
+  static const AppRouteData accessAdmin = AppRouteData(
+    name: 'accessAdmin',
+    path: '/admin/access',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+      AppPermissions.systemAdmin,
+    ],
+    requiredAnyRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+      AppRole.hr,
+      AppRole.operations,
+    ],
+    requiresTenantContext: true,
+  );
   static const AppRouteData profile = AppRouteData(
     name: 'profile',
     path: '/profile',
@@ -505,6 +524,7 @@ abstract final class AppRoutes {
     reports,
     settings,
     tenantFacilitySetup,
+    accessAdmin,
     profile,
     login,
     register,
@@ -545,6 +565,7 @@ abstract final class AppRoutes {
     reports,
     settings,
     tenantFacilitySetup,
+    accessAdmin,
     profile,
   ];
 

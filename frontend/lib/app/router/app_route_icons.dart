@@ -57,4 +57,6 @@ abstract final class AppRouteIcons {
   static const IconData settingsSelected = Icons.settings;
   static const IconData setup = Icons.domain_add_outlined;
   static const IconData setupSelected = Icons.domain;
+  static const IconData accessAdmin = Icons.manage_accounts_outlined;
+  static const IconData accessAdminSelected = Icons.manage_accounts;
 }

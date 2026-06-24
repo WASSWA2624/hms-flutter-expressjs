@@ -11,6 +11,8 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -280,6 +282,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.tenantFacilitySetup.path,
             name: AppRoutes.tenantFacilitySetup.name,
             builder: (_, _) => const TenantFacilitySetupPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.accessAdmin.path,
+            name: AppRoutes.accessAdmin.name,
+            builder: (_, GoRouterState state) {
+              return AccessAdminWorkspacePage(
+                initialQuery: AccessAdminWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.profile.path,

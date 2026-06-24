@@ -28,6 +28,10 @@ enum HmsApiResource {
     'tenant-facility-workspace',
     HmsApiEndpointGroup.tenantFacility,
   ),
+  accessAdminWorkspace(
+    'access-admin-workspace',
+    HmsApiEndpointGroup.accessControl,
+  ),
   users('users', HmsApiEndpointGroup.accessControl),
   userProfiles('user-profiles', HmsApiEndpointGroup.accessControl),
   roles('roles', HmsApiEndpointGroup.accessControl),
