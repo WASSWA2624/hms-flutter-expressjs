@@ -24,6 +24,54 @@ enum HrQueue {
   }
 }
 
+/// Deep-link targeting parsed from the `/hr` route query string.
+///
+/// Supports pre-selecting a staff profile (`?id=` / `?staff=`), opening a
+/// management queue (`?queue=`), or seeding the directory search (`?search=`).
+@immutable
+final class HrWorkspaceQuery {
+  const HrWorkspaceQuery({this.focusStaffId, this.queue, this.search = ''});
+
+  /// Pre-select this staff profile (display id or uuid).
+  final String? focusStaffId;
+
+  /// Open this management queue when no staff target is provided.
+  final HrQueue? queue;
+
+  /// Seed the staff directory search when no staff target is provided.
+  final String search;
+
+  factory HrWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String? pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final String? staffId = pick(<String>[
+      'id',
+      'staff',
+      'staffId',
+      'staff_id',
+      'staff_profile_id',
+    ]);
+    return HrWorkspaceQuery(
+      focusStaffId: staffId,
+      queue: HrQueue.fromValue(pick(<String>['queue'])),
+      search: staffId ?? pick(<String>['search', 'q']) ?? '',
+    );
+  }
+
+  bool get hasRouteTargeting {
+    return focusStaffId != null || queue != null || search.trim().isNotEmpty;
+  }
+}
+
 @immutable
 final class HrStaffQuery {
   const HrStaffQuery({

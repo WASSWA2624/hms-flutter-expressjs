@@ -156,6 +156,40 @@ final class HrWorkspaceController
     );
   }
 
+  /// Resolve a staff profile by its display id (or uuid) and load its detail.
+  ///
+  /// Used by `/hr?id=` deep links where only an identifier is known. Reuses an
+  /// already-loaded row when possible, otherwise loads detail directly.
+  Future<AppFailure?> selectStaffByDisplayId(String identifier) async {
+    final String target = identifier.trim();
+    if (target.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return failure;
+      }
+    }
+
+    final HrWorkspaceState? state = _currentState;
+    if (state == null) {
+      return AppFailure.validation();
+    }
+
+    for (final HrStaffProfile profile in state.staff.items) {
+      if (profile.id == target ||
+          profile.displayId == target ||
+          profile.staffNumber == target) {
+        return selectStaff(profile);
+      }
+    }
+
+    return selectStaff(HrStaffProfile(id: target, displayId: target));
+  }
+
   Future<AppFailure?> applyQueue(HrQueue queue) async {
     final HrWorkspaceState? current = _currentState;
     if (current == null) {

@@ -260,7 +260,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.hr.path,
             name: AppRoutes.hr.name,
-            builder: (_, _) => const HrWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return HrWorkspacePage(
+                initialQuery: HrWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.biomedical.path,

@@ -23,7 +23,10 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class HrWorkspacePage extends ConsumerWidget {
-  const HrWorkspacePage({super.key});
+  const HrWorkspacePage({super.key, this.initialQuery});
+
+  /// Deep-link targeting parsed from the `/hr` route query string.
+  final HrWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,16 +46,17 @@ class HrWorkspacePage extends ConsumerWidget {
         ref.read(hrWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, HrWorkspaceState state) {
-        return _HrWorkspaceContent(state: state);
+        return _HrWorkspaceContent(state: state, initialQuery: initialQuery);
       },
     );
   }
 }
 
 class _HrWorkspaceContent extends ConsumerStatefulWidget {
-  const _HrWorkspaceContent({required this.state});
+  const _HrWorkspaceContent({required this.state, this.initialQuery});
 
   final HrWorkspaceState state;
+  final HrWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_HrWorkspaceContent> createState() =>
@@ -66,6 +70,8 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   late final AppListTableColumnVisibilityController<HrWorkItem>
   _queueColumnController;
 
+  bool _deepLinkHandled = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +82,57 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         AppListTableColumnVisibilityController<HrStaffProfile>();
     _queueColumnController =
         AppListTableColumnVisibilityController<HrWorkItem>();
+    _scheduleDeepLink();
+  }
+
+  void _scheduleDeepLink() {
+    final HrWorkspaceQuery? query = widget.initialQuery;
+    if (query == null || !query.hasRouteTargeting || _deepLinkHandled) {
+      return;
+    }
+    _deepLinkHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleDeepLink(query));
+    });
+  }
+
+  Future<void> _handleDeepLink(HrWorkspaceQuery query) async {
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+
+    final String? focusStaffId = query.focusStaffId?.trim();
+    if (focusStaffId != null && focusStaffId.isNotEmpty) {
+      final AppFailure? failure = await controller.selectStaffByDisplayId(
+        focusStaffId,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (failure != null) {
+        _showMutationResult(context, failure);
+        return;
+      }
+      final HrWorkspaceState? state = _hrStateFromAsync(
+        ref.read(hrWorkspaceControllerProvider),
+      );
+      if (state?.selectedStaff == null) {
+        return;
+      }
+      await _openSelectedStaffDialog(context);
+      return;
+    }
+
+    final HrQueue? queue = query.queue;
+    if (queue != null) {
+      await _applyQueueAndShow(context, controller, queue);
+      return;
+    }
+
+    final String search = query.search.trim();
+    if (search.isNotEmpty) {
+      await controller.applyStaffSearch(search);
+    }
   }
 
   @override
@@ -189,6 +246,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       return;
     }
 
+    await _openSelectedStaffDialog(context);
+  }
+
+  Future<void> _openSelectedStaffDialog(BuildContext context) async {
     final AppLocalizations l10n = context.l10n;
     await showAppDialog<void>(
       context: context,
