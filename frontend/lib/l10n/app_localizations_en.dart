@@ -7033,7 +7033,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyFilterUrgent => 'Urgent';
 
   @override
-  String get pharmacyFilterDischarge => 'Discharge';
+  String get pharmacyFilterDischarge => 'Discharge meds';
+
+  @override
+  String get pharmacyFilterOutpatient => 'Outpatient';
+
+  @override
+  String get pharmacyFilterWard => 'Ward';
+
+  @override
+  String get pharmacyLocationFieldLabel => 'Care location';
 
   @override
   String get pharmacyStockInStock => 'In stock';

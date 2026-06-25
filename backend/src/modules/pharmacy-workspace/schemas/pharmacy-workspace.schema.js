@@ -17,9 +17,12 @@ const orderWorkflowParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
 });
 
+const orderLocationSchema = z.enum(['OUTPATIENT', 'INPATIENT', 'DISCHARGE']);
+
 const getPharmacyWorkbenchQuerySchema = listQuerySchema.extend({
   panel: panelSchema.optional(),
   status: pharmacyOrderStatusSchema.optional(),
+  location: orderLocationSchema.optional(),
   pending_payment: z.coerce.boolean().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
@@ -113,6 +116,7 @@ const resolveLegacyRouteParamsSchema = z.object({
 
 module.exports = {
   pharmacyOrderStatusSchema,
+  orderLocationSchema,
   orderWorkflowParamsSchema,
   getPharmacyWorkbenchQuerySchema,
   searchDrugsQuerySchema,

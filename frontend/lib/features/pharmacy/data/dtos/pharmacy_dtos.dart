@@ -45,6 +45,7 @@ final class PharmacyWorkbenchSummaryDto {
       partiallyDispensedQueue: _int(json['partially_dispensed_queue']) ?? 0,
       dispensedOrders: _int(json['dispensed_orders']) ?? 0,
       cancelledOrders: _int(json['cancelled_orders']) ?? 0,
+      dischargePendingQueue: _int(json['discharge_pending_queue']) ?? 0,
       pendingAttestations: _int(json['pending_attestations']) ?? 0,
     );
   }
@@ -138,6 +139,8 @@ final class PharmacyOrderDto {
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
       displayId: _string(json['display_id']),
       encounterId: _string(json['encounter_id']),
+      encounterType: _string(json['encounter_type']),
+      location: _string(json['location']),
       patientId: _string(json['patient_id']),
       patientDisplayName: _string(json['patient_display_name']),
       orderSource: _string(json['order_source']),

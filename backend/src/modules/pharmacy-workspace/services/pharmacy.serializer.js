@@ -3,6 +3,7 @@ const {
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,
 } = require('@lib/billing/clinical-request-billing');
+const { resolveOrderLocation } = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -358,6 +359,8 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
     id: publicId,
     display_id: publicId,
     encounter_id: toPublicIdentifier(record.encounter?.human_friendly_id, record.encounter_id),
+    encounter_type: toText(record.encounter?.encounter_type).toUpperCase() || null,
+    location: resolveOrderLocation(record.encounter?.encounter_type),
     patient_id: toPublicIdentifier(record.patient?.human_friendly_id, record.patient_id),
     patient_display_name: toDisplayName(record.patient?.first_name, record.patient?.last_name),
     order_source: record.encounter_id ? 'CLINICAL' : 'PHARMACY',

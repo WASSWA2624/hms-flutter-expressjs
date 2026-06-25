@@ -49,6 +49,59 @@ void main() {
       expect(order.isPaymentSatisfied, isTrue);
       expect(order.requiresPaymentBeforeDispense, isFalse);
     });
+
+    test('maps care location and flags discharge-pending inpatient orders', () {
+      final PharmacyOrder order = const PharmacyOrderDto(<String, Object?>{
+        'id': 'PO-102',
+        'display_id': 'PO-102',
+        'status': 'PARTIALLY_DISPENSED',
+        'encounter_id': 'ENC-1',
+        'encounter_type': 'IPD',
+        'location': 'INPATIENT',
+      }).toEntity();
+
+      expect(order.location, 'INPATIENT');
+      expect(order.encounterType, 'IPD');
+      expect(order.isInpatientOrder, isTrue);
+      expect(order.isDischargePending, isTrue);
+    });
+
+    test('treats outpatient orders as not discharge-pending', () {
+      final PharmacyOrder order = const PharmacyOrderDto(<String, Object?>{
+        'id': 'PO-103',
+        'display_id': 'PO-103',
+        'status': 'ORDERED',
+        'location': 'OUTPATIENT',
+      }).toEntity();
+
+      expect(order.isInpatientOrder, isFalse);
+      expect(order.isDischargePending, isFalse);
+    });
+  });
+
+  group('PharmacyOrderFilter', () {
+    test('maps location filters to backend location values', () {
+      expect(PharmacyOrderFilter.outpatient.backendLocation, 'OUTPATIENT');
+      expect(PharmacyOrderFilter.ward.backendLocation, 'INPATIENT');
+      expect(PharmacyOrderFilter.discharge.backendLocation, 'DISCHARGE');
+      expect(PharmacyOrderFilter.ready.backendLocation, isNull);
+      expect(PharmacyOrderFilter.discharge.isBackendBacked, isTrue);
+      expect(PharmacyOrderFilter.ward.isBackendBacked, isTrue);
+      expect(PharmacyOrderFilter.outpatient.isBackendBacked, isTrue);
+    });
+  });
+
+  group('PharmacyWorkbenchSummaryDto', () {
+    test('parses discharge pending queue count', () {
+      final PharmacyWorkbenchSummary summary =
+          const PharmacyWorkbenchSummaryDto(<String, Object?>{
+            'total_orders': 5,
+            'discharge_pending_queue': 2,
+          }).toEntity();
+
+      expect(summary.totalOrders, 5);
+      expect(summary.dischargePendingQueue, 2);
+    });
   });
 
   group('PharmacyInventoryWorkbenchDto', () {

@@ -7,6 +7,7 @@ const getPharmacyWorkbench = asyncHandler(async (req, res) => {
   const {
     panel,
     status,
+    location,
     pending_payment,
     from,
     to,
@@ -23,6 +24,7 @@ const getPharmacyWorkbench = asyncHandler(async (req, res) => {
     {
       panel,
       status,
+      location,
       pending_payment,
       from,
       to,

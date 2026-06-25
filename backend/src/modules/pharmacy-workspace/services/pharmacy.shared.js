@@ -19,6 +19,57 @@ const PATIENT_PUBLIC_SELECT = {
 const ENCOUNTER_PUBLIC_SELECT = {
   id: true,
   human_friendly_id: true,
+  encounter_type: true,
+};
+
+const INPATIENT_ENCOUNTER_TYPES = Object.freeze([
+  'IPD',
+  'ICU',
+  'THEATRE',
+  'EMERGENCY',
+]);
+
+const OUTPATIENT_ENCOUNTER_TYPES = Object.freeze(['OPD', 'TELEMEDICINE']);
+
+const PHARMACY_OPEN_ORDER_STATUSES = Object.freeze([
+  'ORDERED',
+  'PARTIALLY_DISPENSED',
+]);
+
+const resolveOrderLocation = (encounterType) => {
+  const normalized = String(encounterType || '').trim().toUpperCase();
+  if (INPATIENT_ENCOUNTER_TYPES.includes(normalized)) return 'INPATIENT';
+  return 'OUTPATIENT';
+};
+
+const buildOrderLocationWhere = (location) => {
+  const normalized = String(location || '').trim().toUpperCase();
+  switch (normalized) {
+    case 'INPATIENT':
+    case 'WARD':
+      return {
+        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
+      };
+    case 'OUTPATIENT':
+    case 'OPD':
+      return {
+        OR: [
+          { encounter_id: null },
+          {
+            encounter: {
+              is: { encounter_type: { in: OUTPATIENT_ENCOUNTER_TYPES } },
+            },
+          },
+        ],
+      };
+    case 'DISCHARGE':
+      return {
+        status: { in: PHARMACY_OPEN_ORDER_STATUSES },
+        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
+      };
+    default:
+      return null;
+  }
 };
 
 const DRUG_PUBLIC_SELECT = {
@@ -304,6 +355,11 @@ module.exports = {
   ENCOUNTER_PUBLIC_SELECT,
   DRUG_PUBLIC_SELECT,
   INVENTORY_ITEM_PUBLIC_SELECT,
+  INPATIENT_ENCOUNTER_TYPES,
+  OUTPATIENT_ENCOUNTER_TYPES,
+  PHARMACY_OPEN_ORDER_STATUSES,
+  resolveOrderLocation,
+  buildOrderLocationWhere,
   PHARMACY_ORDER_WITH_RELATIONS_INCLUDE,
   INVENTORY_STOCK_WITH_RELATIONS_INCLUDE,
   buildPagination,

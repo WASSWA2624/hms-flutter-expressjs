@@ -185,6 +185,19 @@ class _PharmacyWorkspaceContentState
             onPressed: () =>
                 controller.applyFilter(PharmacyOrderFilter.completed),
           ),
+        if (state.workbench.summary.dischargePendingQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacyFilterDischarge,
+            value: _countLabel(
+              context,
+              state.workbench.summary.dischargePendingQueue,
+            ),
+            icon: Icons.local_hospital_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.discharge),
+          ),
       ],
       body: _PharmacyQueuePanel(
         state: state,
@@ -527,6 +540,16 @@ class _PharmacyDetailPanel extends ConsumerWidget {
               value: _apiLabel(order.orderSource ?? ''),
               icon: Icons.account_tree_outlined,
             ),
+            if ((order.location ?? '').isNotEmpty)
+              AppWorkspacePatientContextField(
+                label: l10n.pharmacyLocationFieldLabel,
+                value: order.isInpatientOrder
+                    ? l10n.pharmacyFilterWard
+                    : l10n.pharmacyFilterOutpatient,
+                icon: order.isInpatientOrder
+                    ? Icons.local_hospital_outlined
+                    : Icons.medical_services_outlined,
+              ),
             if ((order.priority ?? '').isNotEmpty)
               AppWorkspacePatientContextField(
                 label: l10n.pharmacyPriorityFieldLabel,
@@ -1951,6 +1974,18 @@ List<AppSelectOption<PharmacyOrderFilter>> _orderFilterOptions(
       label: l10n.pharmacyFilterPendingPayment,
     ),
     AppSelectOption<PharmacyOrderFilter>(
+      value: PharmacyOrderFilter.outpatient,
+      label: l10n.pharmacyFilterOutpatient,
+    ),
+    AppSelectOption<PharmacyOrderFilter>(
+      value: PharmacyOrderFilter.ward,
+      label: l10n.pharmacyFilterWard,
+    ),
+    AppSelectOption<PharmacyOrderFilter>(
+      value: PharmacyOrderFilter.discharge,
+      label: l10n.pharmacyFilterDischarge,
+    ),
+    AppSelectOption<PharmacyOrderFilter>(
       value: PharmacyOrderFilter.partialStock,
       label: l10n.pharmacyFilterPartialStock,
       enabled: false,
@@ -1958,11 +1993,6 @@ List<AppSelectOption<PharmacyOrderFilter>> _orderFilterOptions(
     AppSelectOption<PharmacyOrderFilter>(
       value: PharmacyOrderFilter.urgent,
       label: l10n.pharmacyFilterUrgent,
-      enabled: false,
-    ),
-    AppSelectOption<PharmacyOrderFilter>(
-      value: PharmacyOrderFilter.discharge,
-      label: l10n.pharmacyFilterDischarge,
       enabled: false,
     ),
   ];

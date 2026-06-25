@@ -9023,9 +9023,21 @@
   "@pharmacyFilterUrgent": {
     "description": "Pharmacy unsupported urgent filter label."
   },
-  "pharmacyFilterDischarge": "Discharge",
+  "pharmacyFilterDischarge": "Discharge meds",
   "@pharmacyFilterDischarge": {
-    "description": "Pharmacy unsupported discharge filter label."
+    "description": "Pharmacy discharge take-home medication queue filter label."
+  },
+  "pharmacyFilterOutpatient": "Outpatient",
+  "@pharmacyFilterOutpatient": {
+    "description": "Pharmacy outpatient (OPD) order queue filter label."
+  },
+  "pharmacyFilterWard": "Ward",
+  "@pharmacyFilterWard": {
+    "description": "Pharmacy inpatient/ward order queue filter label."
+  },
+  "pharmacyLocationFieldLabel": "Care location",
+  "@pharmacyLocationFieldLabel": {
+    "description": "Pharmacy order care location (outpatient vs ward) context field label."
   },
   "pharmacyStockInStock": "In stock",
   "@pharmacyStockInStock": {

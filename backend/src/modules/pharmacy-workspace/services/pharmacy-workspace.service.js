@@ -30,6 +30,9 @@ const {
   buildInventoryStockScopeWhere,
   matchesOrderScope,
   matchesInventoryStockScope,
+  buildOrderLocationWhere,
+  INPATIENT_ENCOUNTER_TYPES,
+  PHARMACY_OPEN_ORDER_STATUSES,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
   toPublicIdentifier,
@@ -556,6 +559,11 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
     where.status = filters.status;
   }
 
+  const locationWhere = buildOrderLocationWhere(filters.location);
+  if (locationWhere) {
+    appendAnd(where, locationWhere);
+  }
+
   if (filters.pending_payment === true) {
     appendAnd(where, {
       OR: [
@@ -652,6 +660,15 @@ const buildDrugWhere = (filters = {}, scope, options = {}) => {
   return where;
 };
 
+const buildDischargeSummaryWhere = (summaryWhere) => {
+  const where = { ...summaryWhere };
+  appendAnd(where, {
+    status: { in: PHARMACY_OPEN_ORDER_STATUSES },
+    encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
+  });
+  return where;
+};
+
 const buildWorkbenchSummary = async (summaryWhere) => {
   const [
     totalOrders,
@@ -659,6 +676,7 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     partiallyDispensedQueue,
     dispensedOrders,
     cancelledOrders,
+    dischargePendingQueue,
     preparedAttestations,
     completedAttestations,
   ] = await Promise.all([
@@ -667,6 +685,7 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'PARTIALLY_DISPENSED' }),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'DISPENSED' }),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'CANCELLED' }),
+    pharmacyWorkspaceRepository.countOrders(buildDischargeSummaryWhere(summaryWhere)),
     pharmacyWorkspaceRepository.countDispenseAttestations({
       phase: 'PREPARE',
       pharmacy_order: {
@@ -689,6 +708,7 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     partially_dispensed_queue: partiallyDispensedQueue,
     dispensed_orders: dispensedOrders,
     cancelled_orders: cancelledOrders,
+    discharge_pending_queue: dischargePendingQueue,
     pending_attestations: Math.max(0, preparedAttestations - completedAttestations),
   };
 };

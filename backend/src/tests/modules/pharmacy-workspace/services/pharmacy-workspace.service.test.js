@@ -272,6 +272,58 @@ describe('pharmacy-workspace.service', () => {
     expect(pharmacyWorkspaceRepository.txCreateDispenseAttestation).not.toHaveBeenCalled();
   });
 
+  it('getPharmacyWorkbench applies inpatient location filter and serializes order location', async () => {
+    const inpatientOrder = buildOrder({
+      encounter: {
+        id: 'encounter-internal-1',
+        human_friendly_id: 'ENC0000001',
+        encounter_type: 'IPD',
+      },
+    });
+
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([inpatientOrder]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    const result = await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { location: 'INPATIENT' },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    expect(result.worklist).toHaveLength(1);
+    expect(result.worklist[0].location).toBe('INPATIENT');
+    expect(result.worklist[0].encounter_type).toBe('IPD');
+    expect(result.summary).toHaveProperty('discharge_pending_queue');
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    expect(JSON.stringify(whereArg)).toContain('encounter_type');
+    expect(JSON.stringify(whereArg)).toContain('IPD');
+  });
+
+  it('getPharmacyWorkbench discharge filter scopes to open inpatient orders', async () => {
+    pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    await pharmacyWorkspaceService.getPharmacyWorkbench(
+      { location: 'DISCHARGE' },
+      1,
+      20,
+      null,
+      'desc',
+      mockUser
+    );
+
+    const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
+    const serialized = JSON.stringify(whereArg);
+    expect(serialized).toContain('PARTIALLY_DISPENSED');
+    expect(serialized).toContain('encounter_type');
+  });
+
   it('attestDispense rejects same-user second attestation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
     pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));

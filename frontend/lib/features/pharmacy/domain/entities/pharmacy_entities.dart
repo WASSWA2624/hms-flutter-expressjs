@@ -8,9 +8,11 @@ enum PharmacyOrderFilter {
   completed,
   cancelled,
   pendingPayment,
+  outpatient,
+  ward,
+  discharge,
   partialStock,
   urgent,
-  discharge,
 }
 
 extension PharmacyOrderFilterX on PharmacyOrderFilter {
@@ -22,9 +24,11 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
       PharmacyOrderFilter.cancelled => 'CANCELLED',
       PharmacyOrderFilter.all ||
       PharmacyOrderFilter.pendingPayment ||
+      PharmacyOrderFilter.outpatient ||
+      PharmacyOrderFilter.ward ||
+      PharmacyOrderFilter.discharge ||
       PharmacyOrderFilter.partialStock ||
-      PharmacyOrderFilter.urgent ||
-      PharmacyOrderFilter.discharge => null,
+      PharmacyOrderFilter.urgent => null,
     };
   }
 
@@ -35,6 +39,15 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
     return null;
   }
 
+  String? get backendLocation {
+    return switch (this) {
+      PharmacyOrderFilter.outpatient => 'OUTPATIENT',
+      PharmacyOrderFilter.ward => 'INPATIENT',
+      PharmacyOrderFilter.discharge => 'DISCHARGE',
+      _ => null,
+    };
+  }
+
   bool get isBackendBacked {
     return switch (this) {
       PharmacyOrderFilter.all ||
@@ -42,10 +55,12 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
       PharmacyOrderFilter.partial ||
       PharmacyOrderFilter.completed ||
       PharmacyOrderFilter.cancelled ||
-      PharmacyOrderFilter.pendingPayment => true,
+      PharmacyOrderFilter.pendingPayment ||
+      PharmacyOrderFilter.outpatient ||
+      PharmacyOrderFilter.ward ||
+      PharmacyOrderFilter.discharge => true,
       PharmacyOrderFilter.partialStock ||
-      PharmacyOrderFilter.urgent ||
-      PharmacyOrderFilter.discharge => false,
+      PharmacyOrderFilter.urgent => false,
     };
   }
 }
@@ -319,6 +334,7 @@ final class PharmacyWorkbenchSummary {
     this.partiallyDispensedQueue = 0,
     this.dispensedOrders = 0,
     this.cancelledOrders = 0,
+    this.dischargePendingQueue = 0,
     this.pendingAttestations = 0,
   });
 
@@ -327,6 +343,7 @@ final class PharmacyWorkbenchSummary {
   final int partiallyDispensedQueue;
   final int dispensedOrders;
   final int cancelledOrders;
+  final int dischargePendingQueue;
   final int pendingAttestations;
 }
 
@@ -354,6 +371,8 @@ final class PharmacyOrder {
     required this.id,
     this.displayId,
     this.encounterId,
+    this.encounterType,
+    this.location,
     this.patientId,
     this.patientDisplayName,
     this.orderSource,
@@ -380,6 +399,8 @@ final class PharmacyOrder {
   final String id;
   final String? displayId;
   final String? encounterId;
+  final String? encounterType;
+  final String? location;
   final String? patientId;
   final String? patientDisplayName;
   final String? orderSource;
@@ -404,6 +425,18 @@ final class PharmacyOrder {
 
   String get displayTitle {
     return _firstNonEmpty(<String?>[patientDisplayName, displayId]) ?? '';
+  }
+
+  bool get isInpatientOrder {
+    return (location ?? '').toUpperCase() == 'INPATIENT';
+  }
+
+  bool get isDischargePending {
+    return isInpatientOrder &&
+        <String>[
+          'ORDERED',
+          'PARTIALLY_DISPENSED',
+        ].contains((status ?? '').toUpperCase());
   }
 
   bool get hasPendingAttestation {
@@ -519,6 +552,8 @@ final class PharmacyOrder {
       id: id,
       displayId: displayId,
       encounterId: encounterId,
+      encounterType: encounterType,
+      location: location,
       patientId: patientId,
       patientDisplayName: patientDisplayName,
       orderSource: orderSource,

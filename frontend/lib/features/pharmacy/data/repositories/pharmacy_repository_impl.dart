@@ -31,6 +31,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'limit': request.pageSize,
         'search': query.search,
         'status': query.filter.backendStatus,
+        'location': query.filter.backendLocation,
         'pending_payment': query.filter.backendPendingPayment,
         'sort_by': 'ordered_at',
         'order': 'desc',

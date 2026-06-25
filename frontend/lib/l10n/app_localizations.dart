@@ -13156,11 +13156,29 @@ abstract class AppLocalizations {
   /// **'Urgent'**
   String get pharmacyFilterUrgent;
 
-  /// Pharmacy unsupported discharge filter label.
+  /// Pharmacy discharge take-home medication queue filter label.
   ///
   /// In en, this message translates to:
-  /// **'Discharge'**
+  /// **'Discharge meds'**
   String get pharmacyFilterDischarge;
+
+  /// Pharmacy outpatient (OPD) order queue filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Outpatient'**
+  String get pharmacyFilterOutpatient;
+
+  /// Pharmacy inpatient/ward order queue filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get pharmacyFilterWard;
+
+  /// Pharmacy order care location (outpatient vs ward) context field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Care location'**
+  String get pharmacyLocationFieldLabel;
 
   /// Pharmacy in stock label.
   ///
