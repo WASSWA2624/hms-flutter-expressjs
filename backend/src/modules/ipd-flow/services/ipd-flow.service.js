@@ -1658,7 +1658,8 @@ const toPublicIpdSnapshot = (snapshot) => {
     encounter_display_id: encounterPublicId,
     encounter_type:
       sanitizeIdentifier(snapshot?.encounter?.encounter_type) || null,
-    source_context: snapshot?.source_context || null,
+    source_context:
+      snapshot?.source_context || resolveSourceContext(snapshot?.encounter),
     pending_discharge_orders: Array.isArray(snapshot?.pending_discharge_orders)
       ? snapshot.pending_discharge_orders
       : [],
@@ -1711,6 +1712,15 @@ const toQueueCardDto = (snapshot) => {
     has_critical_alert: Boolean(publicSnapshot?.has_critical_alert),
     critical_severity: publicSnapshot?.critical_severity || null,
     active_icu_stay_id: publicSnapshot?.active_icu_stay_id || null,
+    encounter_type: publicSnapshot?.encounter_type || null,
+    source_kind:
+      sanitizeIdentifier(publicSnapshot?.source_context?.kind) ||
+      sanitizeIdentifier(publicSnapshot?.encounter_type) ||
+      null,
+    icu_stay_started_at:
+      publicSnapshot?.icu?.active_stay?.started_at ||
+      publicSnapshot?.icu?.latest_stay?.started_at ||
+      null,
   };
 };
 

@@ -205,6 +205,31 @@ final class IcuBedBoard {
 }
 
 @immutable
+final class IcuSourceContext {
+  const IcuSourceContext({
+    this.kind,
+    this.encounterType,
+    this.encounterStatus,
+    this.startedAt,
+  });
+
+  final String? kind;
+  final String? encounterType;
+  final String? encounterStatus;
+  final DateTime? startedAt;
+
+  String get displayLabel {
+    final String normalizedKind = (kind ?? '').trim();
+    if (normalizedKind.isNotEmpty) {
+      return normalizedKind;
+    }
+    return (encounterType ?? '').trim();
+  }
+
+  bool get isEmergencySource => (kind ?? '').toUpperCase() == 'EMERGENCY';
+}
+
+@immutable
 final class IcuPatientSummary {
   const IcuPatientSummary({
     required this.id,
@@ -228,6 +253,9 @@ final class IcuPatientSummary {
     this.hasActiveBed = false,
     this.admittedAt,
     this.dischargedAt,
+    this.sourceKind,
+    this.encounterType,
+    this.icuStayStartedAt,
   });
 
   final String id;
@@ -251,6 +279,9 @@ final class IcuPatientSummary {
   final bool hasActiveBed;
   final DateTime? admittedAt;
   final DateTime? dischargedAt;
+  final String? sourceKind;
+  final String? encounterType;
+  final DateTime? icuStayStartedAt;
 
   String get apiAdmissionId => admissionId;
 
@@ -267,6 +298,13 @@ final class IcuPatientSummary {
   String get locationLabel {
     return _joinDisplay(<String?>[wardName, bedLabel]) ?? 'No bed';
   }
+
+  String get sourceLabel => (sourceKind ?? encounterType ?? '').trim();
+
+  bool get showsBillingDeferredBadge =>
+      sourceLabel.toUpperCase().contains('EMERGENCY');
+
+  DateTime? get boardIcuStartAt => icuStayStartedAt ?? admittedAt;
 
   bool get isActiveIcu {
     return (icuStatus ?? '').toUpperCase() == 'ACTIVE';
@@ -312,6 +350,8 @@ final class IcuPatientSummary {
       criticalSeverity,
       activeIcuStayId,
       latestIcuStayId,
+      sourceKind,
+      encounterType,
     ].whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
     );
@@ -636,6 +676,7 @@ final class IcuPatientDetail {
     this.medicationTasks = const <IcuMedicationTask>[],
     this.medicationAdministrations = const <IcuMedicationAdministration>[],
     this.timeline = const <IcuTimelineItem>[],
+    this.sourceContext,
   });
 
   final IcuPatientSummary summary;
@@ -657,6 +698,7 @@ final class IcuPatientDetail {
   final List<IcuMedicationTask> medicationTasks;
   final List<IcuMedicationAdministration> medicationAdministrations;
   final List<IcuTimelineItem> timeline;
+  final IcuSourceContext? sourceContext;
 
   IcuCriticalAlert? get latestAlert {
     if (alerts.isNotEmpty) {
@@ -684,10 +726,7 @@ final class IcuPatientDetail {
   }
 
   /// Origin of the encounter (OPD, EMERGENCY, THEATRE, etc.) when known.
-  String? get sourceContext {
-    final String value = (encounterType ?? '').trim().toUpperCase();
-    return value.isEmpty ? null : value;
-  }
+  String? get sourceContextLabel => sourceContext?.displayLabel;
 
   DateTime? get icuStayStartedAt =>
       activeStay?.startedAt ?? latestStay?.startedAt;
@@ -716,6 +755,7 @@ final class IcuPatientDetail {
       medicationTasks: medicationTasks,
       medicationAdministrations: medicationAdministrations,
       timeline: timeline,
+      sourceContext: sourceContext,
     );
   }
 }

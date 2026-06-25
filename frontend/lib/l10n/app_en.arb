@@ -360,6 +360,18 @@
   "@icuActionOpenIpd": {
     "description": "Action label to open the IPD workspace."
   },
+  "icuActionOpenDischargeClearance": "Open discharge clearance",
+  "@icuActionOpenDischargeClearance": {
+    "description": "ICU action that deep links to IPD discharge clearance for the admission."
+  },
+  "icuActionOpenBilling": "Open billing",
+  "@icuActionOpenBilling": {
+    "description": "ICU action that deep links to the billing workspace for clearance tasks."
+  },
+  "icuBillingDeferredLabel": "Billing deferred",
+  "@icuBillingDeferredLabel": {
+    "description": "Badge shown when the patient entered ICU from an emergency path with deferred billing."
+  },
   "icuActionEndStay": "End ICU stay",
   "@icuActionEndStay": {
     "description": "Action label to end an ICU stay."

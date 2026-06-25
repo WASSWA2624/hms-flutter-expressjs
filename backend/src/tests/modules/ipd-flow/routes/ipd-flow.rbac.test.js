@@ -56,8 +56,8 @@ describe('ipd-flow.routes RBAC wiring', () => {
     const { subject, authorize } = loadSubject();
 
     expect(subject).toBeDefined();
-    // 3 read routes + 6 operational-write routes + 10 clinical-write routes.
-    expect(authorize).toHaveBeenCalledTimes(19);
+    // 3 read routes + 6 operational-write routes + 11 clinical-write routes.
+    expect(authorize).toHaveBeenCalledTimes(20);
 
     const readCalls = authorize.mock.calls.slice(0, 3);
     readCalls.forEach((call) => {

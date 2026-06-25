@@ -969,7 +969,7 @@ class _IpdDetailActions extends ConsumerWidget {
         if (canClinical && activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdOrderRadiologyAction,
-            leadingIcon: Icons.radiology_outlined,
+            leadingIcon: Icons.medical_services_outlined,
             enabled: canClinical && actionsEnabled,
             onPressed: () => _openClinicalOrder(
               context,
@@ -1455,9 +1455,10 @@ class _IpdDischargeSection extends StatelessWidget {
                     order.id,
                     order.status == null
                         ? null
-                        : _pharmacyOrderStatusLabel(context, order.status),
+                        : _statusLikeLabel(context, order.status),
                     _dateTimeLabel(context, order.orderedAt),
-                  ]),
+                  ]) ??
+                      '',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),

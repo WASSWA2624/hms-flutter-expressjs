@@ -616,6 +616,24 @@ abstract class AppLocalizations {
   /// **'Open in IPD'**
   String get icuActionOpenIpd;
 
+  /// ICU action that deep links to IPD discharge clearance for the admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Open discharge clearance'**
+  String get icuActionOpenDischargeClearance;
+
+  /// ICU action that deep links to the billing workspace for clearance tasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Open billing'**
+  String get icuActionOpenBilling;
+
+  /// Badge shown when the patient entered ICU from an emergency path with deferred billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing deferred'**
+  String get icuBillingDeferredLabel;
+
   /// Action label to end an ICU stay.
   ///
   /// In en, this message translates to:

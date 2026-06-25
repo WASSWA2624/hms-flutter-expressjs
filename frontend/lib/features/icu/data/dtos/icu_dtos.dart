@@ -109,6 +109,9 @@ final class IcuPatientDetailDto {
           .map((IcuTimelineItemDto dto) => dto.toEntity())
           .where((IcuTimelineItem item) => item.label.isNotEmpty)
           .toList(growable: false),
+      sourceContext: IcuSourceContextDto.nullable(
+        _nullableMap(json['source_context']),
+      )?.toEntity(),
     );
   }
 }
@@ -134,6 +137,8 @@ final class IcuPatientSummaryDto {
     final IcuJsonMap flow = _map(json['flow']);
     final IcuJsonMap flowSummary = _map(json['flow_summary']);
     final IcuJsonMap discharge = _map(json['latest_discharge_summary']);
+    final IcuJsonMap icu = _map(json['icu']);
+    final IcuJsonMap sourceContext = _map(json['source_context']);
 
     final String admissionId =
         _string(json['admission_id']) ??
@@ -187,6 +192,15 @@ final class IcuPatientSummaryDto {
       admittedAt: _date(json['admitted_at']) ?? _date(admission['admitted_at']),
       dischargedAt:
           _date(json['discharged_at']) ?? _date(admission['discharged_at']),
+      sourceKind:
+          _string(json['source_kind']) ?? _string(sourceContext['kind']),
+      encounterType:
+          _string(json['encounter_type']) ??
+          _string(_map(json['encounter'])['encounter_type']),
+      icuStayStartedAt:
+          _date(json['icu_stay_started_at']) ??
+          _date(_map(icu['active_stay'])['started_at']) ??
+          _date(_map(icu['latest_stay'])['started_at']),
     );
   }
 }
@@ -265,6 +279,28 @@ final class IcuCriticalAlertSummaryDto {
           .map((IcuCriticalAlertDto dto) => dto.toEntity())
           .where((IcuCriticalAlert item) => item.id.isNotEmpty)
           .toList(growable: false),
+    );
+  }
+}
+
+final class IcuSourceContextDto {
+  const IcuSourceContextDto(this.json);
+
+  final IcuJsonMap json;
+
+  static IcuSourceContextDto? nullable(IcuJsonMap? json) {
+    if (json == null || json.isEmpty) {
+      return null;
+    }
+    return IcuSourceContextDto(json);
+  }
+
+  IcuSourceContext toEntity() {
+    return IcuSourceContext(
+      kind: _string(json['kind']),
+      encounterType: _string(json['encounter_type']),
+      encounterStatus: _string(json['encounter_status']),
+      startedAt: _date(json['started_at']),
     );
   }
 }
@@ -506,6 +542,13 @@ IcuJsonMap _expectMap(Object? value) {
 
 IcuJsonMap _map(Object? value) {
   return value is IcuJsonMap ? value : <String, Object?>{};
+}
+
+IcuJsonMap? _nullableMap(Object? value) {
+  if (value is! IcuJsonMap || value.isEmpty) {
+    return null;
+  }
+  return value;
 }
 
 List<IcuJsonMap> _list(Object? value) {

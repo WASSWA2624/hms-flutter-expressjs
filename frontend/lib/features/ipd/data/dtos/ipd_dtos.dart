@@ -458,7 +458,7 @@ final class IpdPharmacyClearanceDto {
   IpdPharmacyClearance toEntity() {
     return IpdPharmacyClearance(
       hasClearance: _bool(json['has_clearance'], fallback: true),
-      openOrderCount: _int(json['open_order_count']) ?? 0,
+      openOrderCount: _int(json['open_order_count']),
       orders: _list(json['orders'])
           .map(IpdPharmacyOrderSummaryDto.new)
           .map((IpdPharmacyOrderSummaryDto dto) => dto.toEntity())
@@ -478,7 +478,7 @@ final class IpdPharmacyOrderSummaryDto {
       id: _string(json['id']) ?? '',
       status: _string(json['status']),
       orderedAt: _date(json['ordered_at']),
-      itemCount: _int(json['item_count']) ?? 0,
+      itemCount: _int(json['item_count']),
     );
   }
 }

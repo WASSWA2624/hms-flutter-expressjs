@@ -391,6 +391,18 @@ class _IcuBoardPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
+            label: l10n.icuColumnSourceLabel,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(left.sourceLabel, right.sourceLabel),
+            cellBuilder: (BuildContext context, IcuPatientSummary item) {
+              final String label = item.sourceLabel;
+              if (label.isEmpty) {
+                return Text(l10n.profileUnknownValue);
+              }
+              return Text(apiLabel(label));
+            },
+          ),
+          AppListTableColumn<IcuPatientSummary>(
             label: l10n.icuColumnAlertLabel,
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
                 appListTableCompareText(
@@ -412,9 +424,12 @@ class _IcuBoardPanel extends ConsumerWidget {
           AppListTableColumn<IcuPatientSummary>(
             label: l10n.icuColumnStartLabel,
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
-                appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+                appListTableCompareDateTime(
+                  left.boardIcuStartAt,
+                  right.boardIcuStartAt,
+                ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
-              return Text(dateTimeLabel(context, item.admittedAt));
+              return Text(dateTimeLabel(context, item.boardIcuStartAt));
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
@@ -546,6 +561,11 @@ class _IcuDetailPanel extends ConsumerWidget {
           status: icuStatus(summary),
           alerts: <AppWorkspaceStatus>[
             if (summary.hasCriticalAlert) alertStatus(l10n, summary),
+            if (summary.showsBillingDeferredBadge)
+              AppWorkspaceStatus(
+                label: l10n.icuBillingDeferredLabel,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
             if (summary.hasOpenTransfer)
               AppWorkspaceStatus(
                 label: l10n.icuTransferPendingLabel,
@@ -571,10 +591,10 @@ class _IcuDetailPanel extends ConsumerWidget {
               value: summary.locationLabel,
               icon: Icons.bed_outlined,
             ),
-            if (detail.sourceContext != null)
+            if (detail.sourceContextLabel != null)
               AppWorkspacePatientContextField(
                 label: l10n.icuSourceLabel,
-                value: apiLabel(detail.sourceContext!),
+                value: apiLabel(detail.sourceContextLabel!),
                 icon: Icons.alt_route_outlined,
               ),
             AppWorkspacePatientContextField(
@@ -815,6 +835,19 @@ class _IcuActionPanel extends ConsumerWidget {
             leadingIcon: Icons.fact_check_outlined,
             enabled: isAllowed,
             onPressed: () => _openReadinessDialog(context),
+          ),
+          if (detail.summary.isDischargePlanned)
+            AppActionItem(
+              label: l10n.icuActionOpenDischargeClearance,
+              leadingIcon: Icons.assignment_turned_in_outlined,
+              enabled: detail.summary.displayId != null,
+              onPressed: () =>
+                  _openIpdDischargeClearance(context, detail.summary),
+            ),
+          AppActionItem(
+            label: l10n.icuActionOpenBilling,
+            leadingIcon: Icons.receipt_long_outlined,
+            onPressed: () => context.go(AppRoutes.billing.path),
           ),
           AppActionItem(
             label: l10n.icuActionOpenIpd,
@@ -2252,6 +2285,22 @@ void _openIpdWorkspace(BuildContext context, IcuPatientSummary summary) {
           queryParameters: <String, String>{'id': displayId},
         );
   context.go(location);
+}
+
+void _openIpdDischargeClearance(
+  BuildContext context,
+  IcuPatientSummary summary,
+) {
+  final String? displayId = summary.displayId?.trim();
+  if (displayId == null || displayId.isEmpty) {
+    context.go(AppRoutes.ipd.path);
+    return;
+  }
+  context.go(
+    AppRoutes.ipd.location(
+      queryParameters: <String, String>{'id': displayId, 'panel': 'discharge'},
+    ),
+  );
 }
 
 Future<void> _promptEndStayAfterStepDown(BuildContext context) {

@@ -283,6 +283,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuActionOpenIpd => 'Open in IPD';
 
   @override
+  String get icuActionOpenDischargeClearance => 'Open discharge clearance';
+
+  @override
+  String get icuActionOpenBilling => 'Open billing';
+
+  @override
+  String get icuBillingDeferredLabel => 'Billing deferred';
+
+  @override
   String get icuActionEndStay => 'End ICU stay';
 
   @override

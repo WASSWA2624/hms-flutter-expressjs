@@ -57,4 +57,30 @@ void main() {
       expect(IpdDetailPanelX.fromToken('rounds'), IpdDetailPanel.rounds);
     });
   });
+
+  group('IpdDischargeClearance', () {
+    test('isComplete requires all steps unless override is set', () {
+      const IpdDischargeClearance partial = IpdDischargeClearance(
+        summaryReady: true,
+        billingCleared: true,
+      );
+      expect(partial.isComplete, isFalse);
+
+      const IpdDischargeClearance complete = IpdDischargeClearance(
+        summaryReady: true,
+        pendingOrdersReviewed: true,
+        pharmacyCleared: true,
+        billingCleared: true,
+        nursingCleared: true,
+        documentsReady: true,
+        patientExited: true,
+      );
+      expect(complete.isComplete, isTrue);
+
+      const IpdDischargeClearance override = IpdDischargeClearance(
+        overrideReason: 'Clinical emergency',
+      );
+      expect(override.isComplete, isTrue);
+    });
+  });
 }
