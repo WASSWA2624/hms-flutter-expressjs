@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -12,8 +14,11 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -25,19 +30,75 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
-class IcuWorkspacePage extends ConsumerWidget {
-  const IcuWorkspacePage({super.key});
+class IcuWorkspacePage extends ConsumerStatefulWidget {
+  const IcuWorkspacePage({super.key, this.initialQuery});
+
+  final IcuBoardQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<IcuWorkspacePage> createState() => _IcuWorkspacePageState();
+}
+
+class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
+  bool _deepLinkHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleDeepLink();
+  }
+
+  void _scheduleDeepLink() {
+    final IcuBoardQuery? query = widget.initialQuery;
+    if (query == null || !query.hasRouteTargeting || _deepLinkHandled) {
+      return;
+    }
+    _deepLinkHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleDeepLink(query));
+    });
+  }
+
+  Future<void> _handleDeepLink(IcuBoardQuery query) async {
+    final IcuWorkspaceController controller = ref.read(
+      icuWorkspaceControllerProvider.notifier,
+    );
+    final String? focusId = query.focusAdmissionId?.trim();
+    if (focusId == null || focusId.isEmpty) {
+      return;
+    }
+
+    final AppFailure? failure = await controller.selectPatientByDisplayId(
+      focusId,
+    );
+    if (!mounted || failure != null) {
+      return;
+    }
+    final IcuWorkspaceState? state = _readIcuState(ref);
+    if (state?.selectedDetail == null) {
+      return;
+    }
+    await _openIcuDetailDialog(
+      context,
+      ref,
+      state!,
+      state.selectedDetail!.summary,
+      _IcuWorkspaceContent.writeRequirement,
+      focusPanel: query.focusPanel,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<Result<IcuWorkspaceState>> state = ref.watch(
       icuWorkspaceControllerProvider,
     );
+    final AppLocalizations l10n = context.l10n;
 
     return AsyncStateScaffold<IcuWorkspaceState>(
       value: state,
-      loadingTitle: 'Loading ICU board',
-      loadingBody: 'Loading intensive care patients and alert state.',
+      loadingTitle: l10n.icuLoadingBoardTitle,
+      loadingBody: l10n.icuLoadingBoardBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
       onRetry: () {
@@ -55,13 +116,7 @@ class _IcuWorkspaceContent extends ConsumerStatefulWidget {
 
   final IcuWorkspaceState state;
 
-  @override
-  ConsumerState<_IcuWorkspaceContent> createState() =>
-      _IcuWorkspaceContentState();
-}
-
-class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
+  static const AccessRequirement writeRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[
       AppPermissions.clinicalWrite,
       AppPermissions.emergencyWrite,
@@ -69,6 +124,12 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     activeModules: <String>['icu-critical-care'],
   );
 
+  @override
+  ConsumerState<_IcuWorkspaceContent> createState() =>
+      _IcuWorkspaceContentState();
+}
+
+class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
   late final TextEditingController _searchController;
 
   @override
@@ -99,82 +160,131 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     final IcuWorkspaceController controller = ref.read(
       icuWorkspaceControllerProvider.notifier,
     );
+    final bool isBedView = state.view == IcuBoardView.bedBoard;
 
     return AppWorkspace(
-      title: 'ICU',
+      title: l10n.navigationIcuLabel,
       leadingIcon: AppRouteIcons.icu,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
-        label: state.isSaving ? 'Saving' : 'Live sync',
+        label: state.isSaving ? l10n.icuSavingLabel : l10n.icuLiveSyncLabel,
         tone: state.isSaving
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.success,
       ),
       secondaryActions: <Widget>[
+        _IcuViewToggle(view: state.view),
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
           tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshingBoard,
+          isLoading: state.isRefreshingBoard || state.isRefreshingBeds,
           onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
+            final AppFailure? failure = isBedView
+                ? await controller.loadBedBoard()
+                : await controller.refresh();
             if (context.mounted) {
               _showFailureIfNeeded(context, failure);
             }
           },
         ),
       ],
-      summaryCards: <Widget>[
-        if (_pageTotal(state.board) > 0)
-          AppWorkspaceSummaryCard(
-            label: _IcuText.allIcu,
-            value: _countLabel(context, _pageTotal(state.board)),
-            icon: Icons.inventory_2_outlined,
-            compact: true,
-            onPressed: () => controller.applyScope(IcuBoardScope.all),
-          ),
-        if (state.activeCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _IcuText.activeIcu,
-            value: _countLabel(context, state.activeCount),
-            icon: Icons.bed_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            compact: true,
-            onPressed: () => controller.applyScope(IcuBoardScope.active),
-          ),
-        if (state.criticalCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _IcuText.criticalAlerts,
-            value: _countLabel(context, state.criticalCount),
-            icon: Icons.priority_high_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            compact: true,
-            onPressed: () => controller.applyScope(IcuBoardScope.critical),
-          ),
-        if (state.transferCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _IcuText.transfers,
-            value: _countLabel(context, state.transferCount),
-            icon: Icons.compare_arrows_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            compact: true,
-            onPressed: () => controller.applyScope(IcuBoardScope.transfer),
-          ),
-        if (state.dischargeReadyCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _IcuText.dischargeReady,
-            value: _countLabel(context, state.dischargeReadyCount),
-            icon: Icons.fact_check_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            compact: true,
-            onPressed: () => controller.applyScope(IcuBoardScope.discharge),
-          ),
+      summaryCards: isBedView
+          ? const <Widget>[]
+          : <Widget>[
+              if (_pageTotal(state.board) > 0)
+                AppWorkspaceSummaryCard(
+                  label: l10n.icuAllIcuLabel,
+                  value: _countLabel(context, _pageTotal(state.board)),
+                  icon: Icons.inventory_2_outlined,
+                  compact: true,
+                  onPressed: () => controller.applyScope(IcuBoardScope.all),
+                ),
+              if (state.activeCount > 0)
+                AppWorkspaceSummaryCard(
+                  label: l10n.icuActiveIcuLabel,
+                  value: _countLabel(context, state.activeCount),
+                  icon: Icons.bed_outlined,
+                  tone: AppWorkspaceStatusTone.info,
+                  compact: true,
+                  onPressed: () => controller.applyScope(IcuBoardScope.active),
+                ),
+              if (state.criticalCount > 0)
+                AppWorkspaceSummaryCard(
+                  label: l10n.icuCriticalAlertsLabel,
+                  value: _countLabel(context, state.criticalCount),
+                  icon: Icons.priority_high_outlined,
+                  tone: AppWorkspaceStatusTone.error,
+                  compact: true,
+                  onPressed: () =>
+                      controller.applyScope(IcuBoardScope.critical),
+                ),
+              if (state.transferCount > 0)
+                AppWorkspaceSummaryCard(
+                  label: l10n.icuTransfersLabel,
+                  value: _countLabel(context, state.transferCount),
+                  icon: Icons.compare_arrows_outlined,
+                  tone: AppWorkspaceStatusTone.warning,
+                  compact: true,
+                  onPressed: () =>
+                      controller.applyScope(IcuBoardScope.transfer),
+                ),
+              if (state.dischargeReadyCount > 0)
+                AppWorkspaceSummaryCard(
+                  label: l10n.icuDischargeReadyLabel,
+                  value: _countLabel(context, state.dischargeReadyCount),
+                  icon: Icons.fact_check_outlined,
+                  tone: AppWorkspaceStatusTone.success,
+                  compact: true,
+                  onPressed: () =>
+                      controller.applyScope(IcuBoardScope.discharge),
+                ),
+            ],
+      body: isBedView
+          ? IcuBedBoardPanel(
+              state: state,
+              writeRequirement: _IcuWorkspaceContent.writeRequirement,
+            )
+          : _IcuBoardPanel(
+              state: state,
+              writeRequirement: _IcuWorkspaceContent.writeRequirement,
+              searchController: _searchController,
+            ),
+    );
+  }
+}
+
+class _IcuViewToggle extends ConsumerWidget {
+  const _IcuViewToggle({required this.view});
+
+  final IcuBoardView view;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    return SegmentedButton<IcuBoardView>(
+      showSelectedIcon: false,
+      segments: <ButtonSegment<IcuBoardView>>[
+        ButtonSegment<IcuBoardView>(
+          value: IcuBoardView.patientBoard,
+          label: Text(l10n.icuViewPatientBoard),
+          icon: const Icon(Icons.monitor_heart_outlined),
+        ),
+        ButtonSegment<IcuBoardView>(
+          value: IcuBoardView.bedBoard,
+          label: Text(l10n.icuViewBedBoard),
+          icon: const Icon(Icons.bed_outlined),
+        ),
       ],
-      body: _IcuBoardPanel(
-        state: state,
-        writeRequirement: _writeRequirement,
-        searchController: _searchController,
-      ),
+      selected: <IcuBoardView>{view},
+      onSelectionChanged: (Set<IcuBoardView> selection) {
+        if (selection.isEmpty) {
+          return;
+        }
+        ref
+            .read(icuWorkspaceControllerProvider.notifier)
+            .setView(selection.first);
+      },
     );
   }
 }
@@ -198,32 +308,32 @@ class _IcuBoardPanel extends ConsumerWidget {
     );
 
     return AppWorkspaceDetailPanel(
-      title: 'ICU board',
-      description: 'Grouped by bed state and alert level.',
+      title: l10n.icuBoardTitle,
+      description: l10n.icuBoardDescription,
       child: AppListTable<IcuPatientSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         search: AppListTableSearch<IcuPatientSummary>(
           controller: searchController,
-          semanticLabel: 'Search ICU',
-          hintText: _IcuText.searchHint,
+          semanticLabel: l10n.icuSearchHint,
+          hintText: l10n.icuSearchHint,
           matcher: (_, _) => true,
           onSubmitted: controller.applySearch,
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: _IcuText.boardScope,
-          advancedFilterTitle: 'ICU board filters',
+          advancedFilterButtonLabel: l10n.icuBoardScopeLabel,
+          advancedFilterTitle: l10n.icuBoardFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
           advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
-          allFieldsLabel: _IcuText.activeIcu,
+          allFieldsLabel: l10n.icuActiveIcuLabel,
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _icuScopeFilterKey,
-              label: _IcuText.boardScope,
-              allLabel: _IcuText.activeIcu,
-              choices: _icuScopeFilterChoices(),
+              label: l10n.icuBoardScopeLabel,
+              allLabel: l10n.icuActiveIcuLabel,
+              choices: _icuScopeFilterChoices(l10n),
             ),
           ],
           filterValue: _icuFilterValue(state.query),
@@ -254,11 +364,10 @@ class _IcuBoardPanel extends ConsumerWidget {
           );
         },
         rowColorBuilder: _rowColor,
-        emptyBuilder: (_) => const AppWorkspaceStatePanel.state(
+        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
-          title: 'No ICU patients',
-          body:
-              'Active ICU admissions will appear here after IPD admission and ICU transfer.',
+          title: l10n.icuNoPatientsTitle,
+          body: l10n.icuNoPatientsBody,
           icon: Icons.bed_outlined,
         ),
         columns: <AppListTableColumn<IcuPatientSummary>>[
@@ -271,7 +380,7 @@ class _IcuBoardPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: _IcuText.bed,
+            label: l10n.icuColumnBedLabel,
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
                 appListTableCompareText(
                   left.locationLabel,
@@ -282,14 +391,14 @@ class _IcuBoardPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: _IcuText.alert,
+            label: l10n.icuColumnAlertLabel,
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
                 appListTableCompareText(
                   left.criticalSeverity,
                   right.criticalSeverity,
                 ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
-              return AppWorkspaceStatusBadge(status: _alertStatus(item));
+              return AppWorkspaceStatusBadge(status: alertStatus(l10n, item));
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
@@ -297,20 +406,26 @@ class _IcuBoardPanel extends ConsumerWidget {
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
                 appListTableCompareText(left.icuStatus, right.icuStatus),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
-              return AppWorkspaceStatusBadge(status: _icuStatus(item));
+              return AppWorkspaceStatusBadge(status: icuStatus(item));
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: _IcuText.transfer,
+            label: l10n.icuColumnStartLabel,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+            cellBuilder: (BuildContext context, IcuPatientSummary item) {
+              return Text(dateTimeLabel(context, item.admittedAt));
+            },
+          ),
+          AppListTableColumn<IcuPatientSummary>(
+            label: l10n.icuColumnTransferLabel,
             sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
                 appListTableCompareText(
                   left.transferStatus ?? left.nextStep,
                   right.transferStatus ?? right.nextStep,
                 ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
-              return Text(
-                _apiLabel(item.transferStatus ?? item.nextStep ?? ''),
-              );
+              return Text(apiLabel(item.transferStatus ?? item.nextStep ?? ''));
             },
           ),
         ],
@@ -330,12 +445,12 @@ class _IcuBoardPanel extends ConsumerWidget {
                   spacing: theme.spacing.xs,
                   runSpacing: theme.spacing.xs,
                   children: <Widget>[
-                    AppWorkspaceStatusBadge(status: _alertStatus(item)),
-                    AppWorkspaceStatusBadge(status: _icuStatus(item)),
+                    AppWorkspaceStatusBadge(status: alertStatus(l10n, item)),
+                    AppWorkspaceStatusBadge(status: icuStatus(item)),
                     Text(
-                      _joinDisplay(<String?>[
+                      joinDisplay(<String?>[
                         item.locationLabel,
-                        _dateTimeLabel(context, item.admittedAt),
+                        dateTimeLabel(context, item.admittedAt),
                       ]),
                       style: theme.textTheme.bodySmall,
                     ),
@@ -379,9 +494,7 @@ class _IcuPatientCell extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.xs),
         Text(
-          _joinDisplay(<String?>[
-            item.displayId,
-          ]),
+          joinDisplay(<String?>[item.displayId]),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -401,25 +514,24 @@ class _IcuDetailPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
     final IcuPatientDetail? detail = state.selectedDetail;
     if (state.isRefreshingDetail && detail == null) {
-      return const AppWorkspaceStatePanel.loading(
-        title: 'Loading ICU stay',
-        body: 'Loading observations, alerts, and transfer state.',
+      return AppWorkspaceStatePanel.loading(
+        title: l10n.icuDetailLoadingTitle,
+        body: l10n.icuDetailLoadingBody,
       );
     }
     if (detail == null) {
-      return const AppWorkspaceStatePanel.state(
+      return AppWorkspaceStatePanel.state(
         variant: AppStateViewVariant.empty,
-        title: 'No ICU stay selected',
-        body:
-            'Select an ICU patient to review observations, orders, alerts, and transfer readiness.',
+        title: l10n.icuDetailEmptyTitle,
+        body: l10n.icuDetailEmptyBody,
         icon: Icons.monitor_heart_outlined,
       );
     }
 
     final IcuPatientSummary summary = detail.summary;
-    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -427,27 +539,27 @@ class _IcuDetailPanel extends ConsumerWidget {
         AppWorkspacePatientContextHeader(
           patientName: summary.displayTitle,
           patientNumber: summary.displayId ?? '',
-          demographics: _joinDisplay(<String?>[
-            _apiLabel(detail.patientGender ?? ''),
-            _dateLabel(context, detail.patientDateOfBirth),
+          demographics: joinDisplay(<String?>[
+            apiLabel(detail.patientGender ?? ''),
+            dateLabel(context, detail.patientDateOfBirth),
           ]),
-          status: _icuStatus(summary),
+          status: icuStatus(summary),
           alerts: <AppWorkspaceStatus>[
-            if (summary.hasCriticalAlert) _alertStatus(summary),
+            if (summary.hasCriticalAlert) alertStatus(l10n, summary),
             if (summary.hasOpenTransfer)
-              const AppWorkspaceStatus(
-                label: _IcuText.transferPending,
+              AppWorkspaceStatus(
+                label: l10n.icuTransferPendingLabel,
                 tone: AppWorkspaceStatusTone.warning,
               ),
             if (summary.isDischargePlanned)
-              const AppWorkspaceStatus(
-                label: _IcuText.dischargeReady,
+              AppWorkspaceStatus(
+                label: l10n.icuDischargeReadyLabel,
                 tone: AppWorkspaceStatusTone.success,
               ),
           ],
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
-              label: _IcuText.admission,
+              label: l10n.icuAdmissionLabel,
               value: summary.displayId ?? '',
               icon: Icons.tag_outlined,
               copyable: true,
@@ -455,26 +567,38 @@ class _IcuDetailPanel extends ConsumerWidget {
               copiedMessage: l10n.admissionIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
-              label: _IcuText.location,
+              label: l10n.icuLocationLabel,
               value: summary.locationLabel,
               icon: Icons.bed_outlined,
             ),
+            if (detail.sourceContext != null)
+              AppWorkspacePatientContextField(
+                label: l10n.icuSourceLabel,
+                value: apiLabel(detail.sourceContext!),
+                icon: Icons.alt_route_outlined,
+              ),
             AppWorkspacePatientContextField(
-              label: _IcuText.facility,
+              label: l10n.icuFacilityLabel,
               value: detail.facilityName ?? '',
               icon: Icons.domain_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: _IcuText.admitted,
-              value: _dateTimeLabel(context, summary.admittedAt),
+              label: l10n.icuAdmittedLabel,
+              value: dateTimeLabel(context, summary.admittedAt),
               icon: Icons.event_available_outlined,
             ),
+            if (detail.icuStayStartedAt != null)
+              AppWorkspacePatientContextField(
+                label: l10n.icuStayStartedLabel,
+                value: dateTimeLabel(context, detail.icuStayStartedAt),
+                icon: Icons.timer_outlined,
+              ),
           ],
         ),
         SizedBox(height: theme.spacing.md),
         _IcuActionPanel(
           detail: detail,
-          referenceData: state.referenceData,
+          state: state,
           writeRequirement: writeRequirement,
         ),
         SizedBox(height: theme.spacing.md),
@@ -497,8 +621,9 @@ Future<void> _openIcuDetailDialog(
   WidgetRef ref,
   IcuWorkspaceState fallbackState,
   IcuPatientSummary summary,
-  AccessRequirement writeRequirement,
-) async {
+  AccessRequirement writeRequirement, {
+  IcuDetailPanel? focusPanel,
+}) async {
   final IcuWorkspaceController controller = ref.read(
     icuWorkspaceControllerProvider.notifier,
   );
@@ -515,19 +640,51 @@ Future<void> _openIcuDetailDialog(
     return;
   }
 
-  await showAppDialog<void>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.icuStayDialogTitle),
-      icon: const Icon(Icons.monitor_heart_outlined),
-      scrollable: true,
-      maxWidth: 980,
-      content: _IcuDetailPanel(
-        state: state,
-        writeRequirement: writeRequirement,
+  unawaited(
+    showAppDialog<void>(
+      context: context,
+      builder: (_) => AppDialog(
+        title: Text(context.l10n.icuStayDialogTitle),
+        icon: const Icon(Icons.monitor_heart_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef ref, _) {
+            final IcuWorkspaceState current = _readIcuState(ref) ?? state;
+            return _IcuDetailPanel(
+              state: current,
+              writeRequirement: writeRequirement,
+            );
+          },
+        ),
       ),
     ),
   );
+
+  if (focusPanel != null && context.mounted) {
+    await _openFocusPanel(context, focusPanel, state.referenceData);
+  }
+}
+
+Future<void> _openFocusPanel(
+  BuildContext context,
+  IcuDetailPanel panel,
+  IcuReferenceData referenceData,
+) async {
+  switch (panel) {
+    case IcuDetailPanel.vitals:
+      await _openVitalsDialog(context);
+    case IcuDetailPanel.alerts:
+      await _openAlertDialog(context);
+    case IcuDetailPanel.observations:
+      await _openObservationDialog(context);
+    case IcuDetailPanel.orders:
+      await _openLabOrderDialog(context);
+    case IcuDetailPanel.transfer:
+      await _openTransferDialog(context, referenceData);
+    case IcuDetailPanel.discharge:
+      await _openReadinessDialog(context);
+  }
 }
 
 IcuWorkspaceState? _readIcuState(WidgetRef ref) {
@@ -541,107 +698,161 @@ IcuWorkspaceState? _readIcuState(WidgetRef ref) {
 class _IcuActionPanel extends ConsumerWidget {
   const _IcuActionPanel({
     required this.detail,
-    required this.referenceData,
+    required this.state,
     required this.writeRequirement,
   });
 
   final IcuPatientDetail detail;
-  final IcuReferenceData referenceData;
+  final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
     final IcuWorkspaceController controller = ref.read(
       icuWorkspaceControllerProvider.notifier,
     );
     final bool hasActiveStay = detail.canRecordIcuAction;
     final bool hasAlert = detail.latestAlert != null;
+    final bool canStartStay = detail.isEligibleToStartStay;
+    final bool hasEncounter = detail.summary.encounterId != null;
+    final bool hasOpenTransfer = detail.summary.hasOpenTransfer;
 
     return AppAccessActionGate(
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) => AppActionPanel(
-        title: 'Actions',
+        title: l10n.icuActionsTitle,
         actions: <AppActionItem>[
+          if (canStartStay)
+            AppActionItem(
+              label: l10n.icuActionStartStay,
+              leadingIcon: Icons.play_circle_outline,
+              enabled: isAllowed,
+              onPressed: () => _confirmAction(
+                context: context,
+                title: l10n.icuStartStayTitle,
+                body: l10n.icuStartStayBody,
+                actionLabel: l10n.icuStartStayActionLabel,
+                onConfirmed: () => controller.startIcuStay(),
+              ),
+            ),
           AppActionItem(
-            label: _IcuText.observation,
+            label: l10n.icuActionRecordObservation,
             leadingIcon: Icons.note_add_outlined,
             enabled: isAllowed && hasActiveStay,
             onPressed: () => _openObservationDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.vitals,
+            label: l10n.icuActionRecordVitals,
             leadingIcon: Icons.monitor_heart_outlined,
-            enabled: isAllowed && detail.summary.encounterId != null,
+            enabled: isAllowed && hasEncounter,
             onPressed: () => _openVitalsDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.alert,
+            label: l10n.icuActionRaiseAlert,
             leadingIcon: Icons.notification_important_outlined,
             enabled: isAllowed && hasActiveStay,
             onPressed: () => _openAlertDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.acknowledge,
+            label: l10n.icuActionAcknowledgeAlert,
             leadingIcon: Icons.done_all_outlined,
             enabled: isAllowed && hasAlert,
             onPressed: () => _confirmAction(
               context: context,
-              title: 'Acknowledge alert',
-              body:
-                  'This clears the selected critical alert from the active ICU board.',
-              actionLabel: _IcuText.acknowledge,
+              title: l10n.icuAcknowledgeTitle,
+              body: l10n.icuAcknowledgeBody,
+              actionLabel: l10n.icuActionAcknowledgeAlert,
               onConfirmed: controller.acknowledgeLatestAlert,
             ),
           ),
           AppActionItem(
-            label: _IcuText.round,
+            label: l10n.icuActionRound,
             leadingIcon: Icons.rate_review_outlined,
             enabled: isAllowed,
             onPressed: () => _openRoundDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.transfer,
-            leadingIcon: Icons.compare_arrows_outlined,
-            enabled: isAllowed,
-            onPressed: () => _openTransferDialog(context, referenceData),
+            label: l10n.icuActionOrderLab,
+            leadingIcon: Icons.science_outlined,
+            enabled: isAllowed && hasEncounter,
+            onPressed: () => _openLabOrderDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.readiness,
+            label: l10n.icuActionOrderImaging,
+            leadingIcon: Icons.radio_outlined,
+            enabled: isAllowed && hasEncounter,
+            onPressed: () => _openRadiologyOrderDialog(context),
+          ),
+          AppActionItem(
+            label: l10n.icuActionPrescribe,
+            leadingIcon: Icons.medication_outlined,
+            enabled: isAllowed && hasEncounter,
+            onPressed: () => _openPrescriptionDialog(context),
+          ),
+          if (!detail.summary.hasActiveBed)
+            AppActionItem(
+              label: l10n.icuActionAssignBed,
+              leadingIcon: Icons.bed_outlined,
+              enabled: isAllowed,
+              onPressed: () => _openAssignBedDialog(context),
+            ),
+          AppActionItem(
+            label: l10n.icuActionRequestTransfer,
+            leadingIcon: Icons.compare_arrows_outlined,
+            enabled: isAllowed && !hasOpenTransfer,
+            onPressed: () => _openTransferDialog(context, state.referenceData),
+          ),
+          if (hasOpenTransfer)
+            AppActionItem(
+              label: l10n.icuActionManageTransfer,
+              leadingIcon: Icons.published_with_changes_outlined,
+              enabled: isAllowed,
+              onPressed: () => _openManageTransferDialog(context),
+            ),
+          AppActionItem(
+            label: l10n.icuActionMarkReadiness,
             leadingIcon: Icons.fact_check_outlined,
             enabled: isAllowed,
             onPressed: () => _openReadinessDialog(context),
           ),
           AppActionItem(
-            label: _IcuText.transferOut,
+            label: l10n.icuActionOpenIpd,
+            leadingIcon: Icons.open_in_new_outlined,
+            enabled: detail.summary.displayId != null,
+            onPressed: () => _openIpdWorkspace(context, detail.summary),
+          ),
+          AppActionItem(
+            label: l10n.icuActionEndStay,
             leadingIcon: Icons.output_outlined,
             enabled: isAllowed && hasActiveStay,
             onPressed: () => _confirmAction(
               context: context,
-              title: 'Transfer out of ICU',
-              body:
-                  'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.',
-              actionLabel: _IcuText.transferOut,
+              title: l10n.icuEndStayTitle,
+              body: l10n.icuEndStayBody,
+              actionLabel: l10n.icuActionEndStay,
               onConfirmed: controller.transferOut,
             ),
           ),
         ],
         extraActions: <Widget>[
           AppReportActionButton.print(
-            label: _IcuText.printSummary,
+            label: l10n.icuPrintSummaryLabel,
             onPressed: () async {
               await printFormTemplateDocument(
                 ref: ref,
                 context: context,
-                title: 'ICU stay summary',
+                title: l10n.icuStayDialogTitle,
                 subtitle: detail.summary.displayTitle,
                 metadata: <PrintFormMetadataItem>[
                   PrintFormMetadataItem(
-                    label: _IcuText.admission,
+                    label: l10n.icuAdmissionLabel,
                     value:
-                        detail.summary.displayId ?? context.l10n.profileUnknownValue,
+                        detail.summary.displayId ??
+                        context.l10n.profileUnknownValue,
                   ),
                   PrintFormMetadataItem(
-                    label: _IcuText.location,
+                    label: l10n.icuLocationLabel,
                     value: detail.summary.locationLabel,
                   ),
                 ],
@@ -662,25 +873,26 @@ class _IcuAlertPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final IcuCriticalAlertSummary summary = detail.alertSummary;
     return AppWorkspaceDetailPanel(
-      title: 'Critical alerts',
+      title: l10n.icuCriticalAlertsPanelTitle,
       description: summary.total == 0
-          ? 'No active ICU critical alerts.'
-          : 'Highest severity: ${_apiLabel(summary.highestSeverity ?? '')}',
+          ? l10n.icuNoActiveAlertsLabel
+          : l10n.icuHighestSeverityLabel(
+              apiLabel(summary.highestSeverity ?? ''),
+            ),
       child: _RecordList<IcuCriticalAlert>(
         items: detail.alerts,
-        emptyLabel: 'No active alerts',
+        emptyLabel: l10n.icuNoActiveAlertsListLabel,
         icon: Icons.notification_important_outlined,
-        titleBuilder: (IcuCriticalAlert item) => _joinDisplay(<String?>[
-          _apiLabel(item.severity ?? ''),
-          item.message,
-        ]),
+        titleBuilder: (IcuCriticalAlert item) =>
+            joinDisplay(<String?>[apiLabel(item.severity ?? ''), item.message]),
         subtitleBuilder: (BuildContext context, IcuCriticalAlert item) =>
-            _dateTimeLabel(context, item.createdAt),
+            dateTimeLabel(context, item.createdAt),
         statusBuilder: (IcuCriticalAlert item) => AppWorkspaceStatus(
-          label: _apiLabel(item.severity ?? 'Alert'),
-          tone: _severityTone(item.severity),
+          label: apiLabel(item.severity ?? l10n.icuColumnAlertLabel),
+          tone: severityTone(item.severity),
         ),
       ),
     );
@@ -694,16 +906,17 @@ class _IcuObservationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppWorkspaceDetailPanel(
-      title: 'Observations',
-      description: 'Recent intensive observations for this ICU stay.',
+      title: l10n.icuObservationsPanelTitle,
+      description: l10n.icuObservationsPanelDescription,
       child: _RecordList<IcuObservation>(
         items: detail.observations,
-        emptyLabel: 'No ICU observations recorded',
+        emptyLabel: l10n.icuNoObservationsLabel,
         icon: Icons.edit_note_outlined,
         titleBuilder: (IcuObservation item) => item.observation ?? '',
         subtitleBuilder: (BuildContext context, IcuObservation item) =>
-            _dateTimeLabel(context, item.observedAt ?? item.createdAt),
+            dateTimeLabel(context, item.observedAt ?? item.createdAt),
       ),
     );
   }
@@ -716,22 +929,21 @@ class _IcuVitalTrendPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppWorkspaceDetailPanel(
-      title: 'Vitals trend',
-      description: 'Latest recorded vital values for the admission encounter.',
+      title: l10n.icuVitalsTrendTitle,
+      description: l10n.icuVitalsTrendDescription,
       child: _RecordList<IcuVitalSign>(
         items: detail.vitalSigns,
-        emptyLabel: 'No vitals recorded',
+        emptyLabel: l10n.icuNoVitalsLabel,
         icon: Icons.monitor_heart_outlined,
-        titleBuilder: (IcuVitalSign item) => _joinDisplay(<String?>[
-          _apiLabel(item.vitalType),
-          item.displayValue,
-        ]),
+        titleBuilder: (IcuVitalSign item) =>
+            joinDisplay(<String?>[apiLabel(item.vitalType), item.displayValue]),
         subtitleBuilder: (BuildContext context, IcuVitalSign item) =>
-            _dateTimeLabel(context, item.recordedAt),
+            dateTimeLabel(context, item.recordedAt),
         statusBuilder: (IcuVitalSign item) => AppWorkspaceStatus(
-          label: _apiLabel(item.vitalType),
-          tone: _vitalTone(item),
+          label: apiLabel(item.vitalType),
+          tone: vitalTone(item),
         ),
       ),
     );
@@ -745,53 +957,61 @@ class _IcuCarePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final List<_CareItem> items = <_CareItem>[
       for (final IcuRoundNote item in detail.roundNotes)
         _CareItem(
-          title: item.notes ?? 'Round note',
-          subtitle: _dateTimeLabel(context, item.roundAt ?? item.createdAt),
+          title: item.notes ?? l10n.icuRoundNoteFallback,
+          subtitle: dateTimeLabel(context, item.roundAt ?? item.createdAt),
           icon: Icons.rate_review_outlined,
         ),
       for (final IcuNursingNote item in detail.nursingNotes)
         _CareItem(
-          title: item.note ?? 'Nursing note',
-          subtitle: _joinDisplay(<String?>[
+          title: item.note ?? l10n.icuNursingNoteFallback,
+          subtitle: joinDisplay(<String?>[
             item.nurseName,
-            _dateTimeLabel(context, item.createdAt),
+            dateTimeLabel(context, item.createdAt),
           ]),
           icon: Icons.assignment_outlined,
         ),
       for (final IcuMedicationTask item in detail.medicationTasks)
         _CareItem(
-          title: item.medicationLabel ?? item.note ?? 'Medication task',
-          subtitle: _joinDisplay(<String?>[
-            _apiLabel(item.status ?? ''),
+          title:
+              item.medicationLabel ??
+              item.note ??
+              l10n.icuMedicationTaskFallback,
+          subtitle: joinDisplay(<String?>[
+            apiLabel(item.status ?? ''),
             item.dose,
             item.unit,
             item.route,
             item.frequency,
-            _dateTimeLabel(context, item.scheduledAt),
+            dateTimeLabel(context, item.scheduledAt),
           ]),
           icon: Icons.medication_outlined,
         ),
       for (final IcuMedicationAdministration item
           in detail.medicationAdministrations)
         _CareItem(
-          title: _joinDisplay(<String?>['Dose', item.dose, item.unit]),
-          subtitle: _joinDisplay(<String?>[
-            _apiLabel(item.route ?? ''),
-            _dateTimeLabel(context, item.administeredAt),
+          title: joinDisplay(<String?>[
+            l10n.icuDoseLabel,
+            item.dose,
+            item.unit,
+          ]),
+          subtitle: joinDisplay(<String?>[
+            apiLabel(item.route ?? ''),
+            dateTimeLabel(context, item.administeredAt),
           ]),
           icon: Icons.medication_liquid_outlined,
         ),
     ];
 
     return AppWorkspaceDetailPanel(
-      title: 'Rounds, nursing, and orders',
-      description: 'Recent care notes and medication tasks linked to IPD.',
+      title: l10n.icuCarePanelTitle,
+      description: l10n.icuCarePanelDescription,
       child: _RecordList<_CareItem>(
         items: items,
-        emptyLabel: 'No care tasks recorded',
+        emptyLabel: l10n.icuNoCareTasksLabel,
         icon: Icons.playlist_add_check_outlined,
         titleBuilder: (_CareItem item) => item.title,
         subtitleBuilder: (_, _CareItem item) => item.subtitle,
@@ -808,52 +1028,55 @@ class _IcuTransferPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final List<_CareItem> items = <_CareItem>[
       for (final IcuTransferRequest item in detail.transferRequests)
         _CareItem(
-          title: _joinDisplay(<String?>[
-            'Transfer',
-            _apiLabel(item.status ?? ''),
+          title: joinDisplay(<String?>[
+            l10n.icuTransferRecordLabel,
+            apiLabel(item.status ?? ''),
           ]),
-          subtitle: _joinDisplay(<String?>[
+          subtitle: joinDisplay(<String?>[
             item.fromWardName,
             item.toWardName,
-            _dateTimeLabel(context, item.requestedAt),
+            dateTimeLabel(context, item.requestedAt),
           ]),
           icon: Icons.compare_arrows_outlined,
         ),
       for (final IcuDischargeSummary item in detail.dischargeSummaries)
         _CareItem(
-          title: _joinDisplay(<String?>[
-            'Discharge',
-            _apiLabel(item.status ?? ''),
+          title: joinDisplay(<String?>[
+            l10n.icuDischargeRecordLabel,
+            apiLabel(item.status ?? ''),
           ]),
-          subtitle: _joinDisplay(<String?>[
+          subtitle: joinDisplay(<String?>[
             item.summary,
-            _dateTimeLabel(context, item.dischargedAt ?? item.updatedAt),
+            dateTimeLabel(context, item.dischargedAt ?? item.updatedAt),
           ]),
           icon: Icons.fact_check_outlined,
         ),
       for (final IcuStaySummary item in detail.recentStays)
         _CareItem(
-          title: item.isActive ? 'Active ICU stay' : 'Previous ICU stay',
-          subtitle: _joinDisplay(<String?>[
+          title: item.isActive
+              ? l10n.icuActiveStayLabel
+              : l10n.icuPreviousStayLabel,
+          subtitle: joinDisplay(<String?>[
             item.displayId,
-            _dateTimeLabel(context, item.startedAt),
+            dateTimeLabel(context, item.startedAt),
             item.endedAt == null
                 ? null
-                : 'Ended ${_dateTimeLabel(context, item.endedAt)}',
+                : l10n.icuEndedAtLabel(dateTimeLabel(context, item.endedAt)),
           ]),
           icon: Icons.bed_outlined,
         ),
     ];
 
     return AppWorkspaceDetailPanel(
-      title: 'Transfer and readiness',
-      description: 'ICU stay movement, planned discharge, and handoff state.',
+      title: l10n.icuTransferPanelTitle,
+      description: l10n.icuTransferPanelDescription,
       child: _RecordList<_CareItem>(
         items: items,
-        emptyLabel: 'No transfer or discharge readiness records',
+        emptyLabel: l10n.icuNoTransferRecordsLabel,
         icon: Icons.compare_arrows_outlined,
         titleBuilder: (_CareItem item) => item.title,
         subtitleBuilder: (_, _CareItem item) => item.subtitle,
@@ -1015,8 +1238,9 @@ class _ObservationDialogState extends ConsumerState<_ObservationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(_IcuText.recordIcuObservation),
+      title: Text(l10n.icuObservationDialogTitle),
       icon: const Icon(Icons.note_add_outlined),
       scrollable: true,
       content: Form(
@@ -1026,18 +1250,21 @@ class _ObservationDialogState extends ConsumerState<_ObservationDialog> {
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _observationController,
-              labelText: _IcuText.observation,
+              labelText: l10n.icuObservationFieldLabel,
               enabled: !_isSaving,
               maxLines: 5,
               isRequired: true,
-              validator: AppValidators.requiredText(
-                context.l10n.validationRequired,
-              ),
+              validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
         ),
       ),
-      actions: _dialogActions(context, 'Record', _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.icuRecordActionLabel,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1111,8 +1338,9 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(_IcuText.updateVitals),
+      title: Text(l10n.icuVitalsDialogTitle),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -1122,7 +1350,7 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppFormSection(
-            title: context.l10n.patientsVitalsSectionTitle,
+            title: l10n.patientsVitalsSectionTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
               AppVitalsForm(
@@ -1132,22 +1360,26 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
                 heartRateController: _heartRateController,
                 respiratoryRateController: _respiratoryRateController,
                 oxygenSaturationController: _oxygenController,
-                temperatureLabel: context.l10n.patientsTemperatureLabel,
-                systolicLabel: context.l10n.patientsSystolicLabel,
-                diastolicLabel: context.l10n.patientsDiastolicLabel,
-                heartRateLabel: context.l10n.patientsHeartRateLabel,
-                respiratoryRateLabel: context.l10n.patientsRespiratoryRateLabel,
-                oxygenSaturationLabel:
-                    context.l10n.patientsOxygenSaturationLabel,
-                bloodPressureLabel: context.l10n.patientsBloodPressureLabel,
-                unitLabel: context.l10n.patientsVitalUnitLabel,
+                temperatureLabel: l10n.patientsTemperatureLabel,
+                systolicLabel: l10n.patientsSystolicLabel,
+                diastolicLabel: l10n.patientsDiastolicLabel,
+                heartRateLabel: l10n.patientsHeartRateLabel,
+                respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
+                oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
+                bloodPressureLabel: l10n.patientsBloodPressureLabel,
+                unitLabel: l10n.patientsVitalUnitLabel,
                 enabled: !_isSaving,
               ),
             ],
           ),
         ],
       ),
-      actions: _dialogActions(context, 'Update', _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.icuVitalsUpdateActionLabel,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1219,8 +1451,9 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(_IcuText.addCriticalAlert),
+      title: Text(l10n.icuAlertDialogTitle),
       icon: const Icon(Icons.notification_important_outlined),
       content: Form(
         key: _formKey,
@@ -1229,7 +1462,7 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppSelectField<String>(
               value: _severity,
-              labelText: 'Severity',
+              labelText: l10n.icuAlertSeverityLabel,
               enabled: !_isSaving,
               options: _statusOptions(<String>[
                 'LOW',
@@ -1243,18 +1476,21 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
             ),
             AppTextField(
               controller: _messageController,
-              labelText: 'Alert message',
+              labelText: l10n.icuAlertMessageLabel,
               enabled: !_isSaving,
               maxLines: 3,
               isRequired: true,
-              validator: AppValidators.requiredText(
-                context.l10n.validationRequired,
-              ),
+              validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
         ),
       ),
-      actions: _dialogActions(context, 'Add alert', _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.icuAlertAddActionLabel,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1322,9 +1558,10 @@ class _TransferRequestDialogState
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final List<IcuWardOption> wards = widget.referenceData.wards;
     return AppDialog(
-      title: const Text(_IcuText.requestTransfer),
+      title: Text(l10n.icuTransferDialogTitle),
       icon: const Icon(Icons.compare_arrows_outlined),
       content: Form(
         key: _formKey,
@@ -1334,32 +1571,30 @@ class _TransferRequestDialogState
             if (wards.isEmpty)
               AppTextField(
                 controller: _wardController,
-                labelText: 'Target ward ID',
+                labelText: l10n.icuTransferTargetWardIdLabel,
                 enabled: !_isSaving,
                 isRequired: true,
-                validator: AppValidators.requiredText(
-                  context.l10n.validationRequired,
-                ),
+                validator: AppValidators.requiredText(l10n.validationRequired),
               )
             else
               AppSelectField<String>.searchable(
                 value: _wardId,
-                labelText: 'Target ward',
+                labelText: l10n.icuTransferTargetWardLabel,
                 enabled: !_isSaving,
                 options: <AppSelectOption<String>>[
                   for (final IcuWardOption ward in wards)
                     AppSelectOption<String>(
                       value: ward.id,
-                      label: _joinDisplay(<String?>[
+                      label: joinDisplay(<String?>[
                         ward.displayTitle,
-                        _apiLabel(ward.wardType ?? ''),
+                        apiLabel(ward.wardType ?? ''),
                       ]),
                     ),
                 ],
                 onChanged: (String? value) => setState(() => _wardId = value),
                 validator: (String? value) {
                   if ((value ?? '').trim().isEmpty) {
-                    return context.l10n.validationRequired;
+                    return l10n.validationRequired;
                   }
                   return null;
                 },
@@ -1367,7 +1602,12 @@ class _TransferRequestDialogState
           ],
         ),
       ),
-      actions: _dialogActions(context, 'Request', _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.icuTransferRequestActionLabel,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1401,6 +1641,183 @@ class _TransferRequestDialogState
   }
 }
 
+class _ManageTransferDialog extends ConsumerStatefulWidget {
+  const _ManageTransferDialog();
+
+  @override
+  ConsumerState<_ManageTransferDialog> createState() =>
+      _ManageTransferDialogState();
+}
+
+class _ManageTransferDialogState extends ConsumerState<_ManageTransferDialog> {
+  String? _bedId;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    final IcuWorkspaceState? state = ref
+        .read(icuWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
+    if (state != null && state.bedBoard.beds.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(icuWorkspaceControllerProvider.notifier).loadBedBoard();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final IcuWorkspaceState? state = ref
+        .watch(icuWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
+    final IcuPatientDetail? detail = state?.selectedDetail;
+    final IcuTransferRequest? open = detail?.transferRequests
+        .where((IcuTransferRequest item) => _isOpenTransfer(item.status))
+        .firstOrNull;
+
+    if (open == null) {
+      return AppDialog(
+        title: Text(l10n.icuManageTransferDialogTitle),
+        icon: const Icon(Icons.published_with_changes_outlined),
+        content: Text(l10n.icuTransferNoOpenLabel),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+        ],
+      );
+    }
+
+    final List<IcuBed> availableBeds =
+        (state?.bedBoard.beds ?? const <IcuBed>[])
+            .where((IcuBed bed) => bed.isAvailable)
+            .toList(growable: false);
+    final String status = (open.status ?? '').toUpperCase();
+    final List<IcuTransferAction> actions = _availableActions(status);
+
+    return AppDialog(
+      title: Text(l10n.icuManageTransferDialogTitle),
+      icon: const Icon(Icons.published_with_changes_outlined),
+      scrollable: true,
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          Text(
+            joinDisplay(<String?>[
+              apiLabel(open.status ?? ''),
+              open.fromWardName,
+              open.toWardName,
+            ]),
+          ),
+          if (actions.contains(IcuTransferAction.complete))
+            AppSelectField<String>.searchable(
+              value: _bedId,
+              labelText: l10n.icuTransferSelectBedLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                for (final IcuBed bed in availableBeds)
+                  AppSelectOption<String>(
+                    value: bed.id,
+                    label: bed.locationLabel,
+                  ),
+              ],
+              onChanged: (String? value) => setState(() => _bedId = value),
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        for (final IcuTransferAction action in actions)
+          AppButton.primary(
+            label: _actionLabel(l10n, action),
+            isLoading: _isSaving,
+            onPressed: () => _submit(open, action),
+          ),
+      ],
+    );
+  }
+
+  List<IcuTransferAction> _availableActions(String status) {
+    return switch (status) {
+      'REQUESTED' => <IcuTransferAction>[
+        IcuTransferAction.approve,
+        IcuTransferAction.cancel,
+      ],
+      'APPROVED' => <IcuTransferAction>[
+        IcuTransferAction.start,
+        IcuTransferAction.cancel,
+      ],
+      'IN_PROGRESS' => <IcuTransferAction>[
+        IcuTransferAction.complete,
+        IcuTransferAction.cancel,
+      ],
+      _ => <IcuTransferAction>[IcuTransferAction.cancel],
+    };
+  }
+
+  String _actionLabel(AppLocalizations l10n, IcuTransferAction action) {
+    return switch (action) {
+      IcuTransferAction.approve => l10n.icuTransferActionApprove,
+      IcuTransferAction.start => l10n.icuTransferActionStart,
+      IcuTransferAction.complete => l10n.icuTransferActionComplete,
+      IcuTransferAction.cancel => l10n.icuTransferActionCancel,
+    };
+  }
+
+  Future<void> _submit(
+    IcuTransferRequest open,
+    IcuTransferAction action,
+  ) async {
+    if (action.requiresBed && (_bedId == null || _bedId!.isEmpty)) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final IcuWorkspaceController controller = ref.read(
+      icuWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.updateTransfer(
+      transferRequestId: open.id,
+      action: action,
+      toBedId: action.requiresBed ? _bedId : null,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      setState(() {
+        _failure = failure;
+        _isSaving = false;
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
+    // After a completed step-down, prompt to end the ICU stay if still active.
+    if (action == IcuTransferAction.complete) {
+      final IcuWorkspaceState? latest = _readIcuState(ref);
+      final bool stillActive = latest?.selectedDetail?.activeStay != null;
+      if (stillActive && context.mounted) {
+        unawaited(_promptEndStayAfterStepDown(context));
+      }
+    }
+  }
+}
+
 class _ReadinessDialog extends ConsumerStatefulWidget {
   const _ReadinessDialog();
 
@@ -1428,31 +1845,34 @@ class _ReadinessDialogState extends ConsumerState<_ReadinessDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(_IcuText.markDischargeReadiness),
+      title: Text(l10n.icuReadinessDialogTitle),
       icon: const Icon(Icons.fact_check_outlined),
       scrollable: true,
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          description:
-              'This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.',
+          description: l10n.icuReadinessDescription,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _summaryController,
-              labelText: 'Readiness note',
+              labelText: l10n.icuReadinessNoteLabel,
               enabled: !_isSaving,
               maxLines: 5,
               isRequired: true,
-              validator: AppValidators.requiredText(
-                context.l10n.validationRequired,
-              ),
+              validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
         ),
       ),
-      actions: _dialogActions(context, 'Mark ready', _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.icuReadinessMarkActionLabel,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1471,6 +1891,114 @@ class _ReadinessDialogState extends ConsumerState<_ReadinessDialog> {
   }
 
   void _finishSubmit(AppFailure? failure) {
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
+class _AssignBedDialog extends ConsumerStatefulWidget {
+  const _AssignBedDialog();
+
+  @override
+  ConsumerState<_AssignBedDialog> createState() => _AssignBedDialogState();
+}
+
+class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
+  late final TextEditingController _bedController;
+  String? _bedId;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _bedController = TextEditingController();
+    final IcuWorkspaceState? state = _readIcuState(ref);
+    if (state != null && state.bedBoard.beds.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(icuWorkspaceControllerProvider.notifier).loadBedBoard();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _bedController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final IcuWorkspaceState? state = ref
+        .watch(icuWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
+    final List<IcuBed> beds = (state?.bedBoard.beds ?? const <IcuBed>[])
+        .where((IcuBed bed) => bed.isAvailable)
+        .toList(growable: false);
+
+    return AppDialog(
+      title: Text(l10n.icuAssignBedDialogTitle),
+      icon: const Icon(Icons.bed_outlined),
+      scrollable: true,
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (beds.isEmpty)
+            AppTextField(
+              controller: _bedController,
+              labelText: l10n.icuTransferSelectBedLabel,
+              enabled: !_isSaving,
+            )
+          else
+            AppSelectField<String>.searchable(
+              value: _bedId,
+              labelText: l10n.icuTransferSelectBedLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                for (final IcuBed bed in beds)
+                  AppSelectOption<String>(
+                    value: bed.id,
+                    label: bed.locationLabel,
+                  ),
+              ],
+              onChanged: (String? value) => setState(() => _bedId = value),
+            ),
+        ],
+      ),
+      actions: _dialogActions(
+        context,
+        l10n.icuActionAssignBed,
+        _isSaving,
+        _submit,
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    final String bedId = _bedId ?? _bedController.text.trim();
+    if (bedId.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(icuWorkspaceControllerProvider.notifier)
+        .assignBed(bedId);
     if (!mounted) {
       return;
     }
@@ -1540,15 +2068,16 @@ Future<void> _openAlertDialog(BuildContext context) {
 }
 
 Future<void> _openRoundDialog(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
   return _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ClinicalFreeTextActionDialog(
-        title: 'Add ICU round note',
-        label: _IcuText.roundNote,
-        submitLabel: 'Add note',
+        title: l10n.icuRoundDialogTitle,
+        label: l10n.icuRoundNoteLabel,
+        submitLabel: l10n.icuRoundAddActionLabel,
         icon: const Icon(Icons.rate_review_outlined),
         maxLines: 4,
         onSubmit: (String note) {
@@ -1575,6 +2104,17 @@ Future<void> _openTransferDialog(
   );
 }
 
+Future<void> _openManageTransferDialog(BuildContext context) {
+  return _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _ManageTransferDialog(),
+    ),
+  );
+}
+
 Future<void> _openReadinessDialog(BuildContext context) {
   return _showActionResult(
     context,
@@ -1583,6 +2123,148 @@ Future<void> _openReadinessDialog(BuildContext context) {
       barrierDismissible: false,
       builder: (_) => const _ReadinessDialog(),
     ),
+  );
+}
+
+Future<void> _openAssignBedDialog(BuildContext context) {
+  return _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _AssignBedDialog(),
+    ),
+  );
+}
+
+Future<void> _openLabOrderDialog(BuildContext context) async {
+  final IcuWorkspaceController controller = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(icuWorkspaceControllerProvider.notifier);
+  final ClinicalReferenceData referenceData = await controller
+      .clinicalReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalLabOrderActionDialog(
+        referenceData: referenceData,
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return controller.orderLab(
+                labTestIds: labTestIds,
+                labPanelIds: labPanelIds,
+                billing: billing,
+              );
+            },
+        onUpdate:
+            ({
+              required String labOrderId,
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return controller.orderLab(
+                labTestIds: labTestIds,
+                labPanelIds: labPanelIds,
+                billing: billing,
+              );
+            },
+      ),
+    ),
+  );
+}
+
+Future<void> _openRadiologyOrderDialog(BuildContext context) async {
+  final IcuWorkspaceController controller = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(icuWorkspaceControllerProvider.notifier);
+  final ClinicalReferenceData referenceData = await controller
+      .clinicalReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalRadiologyOrderActionDialog(
+        referenceData: referenceData,
+        onSubmit: controller.orderRadiology,
+      ),
+    ),
+  );
+}
+
+Future<void> _openPrescriptionDialog(BuildContext context) async {
+  final IcuWorkspaceController controller = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(icuWorkspaceControllerProvider.notifier);
+  final ClinicalReferenceData referenceData = await controller
+      .clinicalReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalPrescriptionActionDialog(
+        referenceData: referenceData,
+        onSubmit: controller.prescribeMedication,
+      ),
+    ),
+  );
+}
+
+void _openIpdWorkspace(BuildContext context, IcuPatientSummary summary) {
+  final String? displayId = summary.displayId?.trim();
+  final String location = displayId == null || displayId.isEmpty
+      ? AppRoutes.ipd.path
+      : AppRoutes.ipd.location(
+          queryParameters: <String, String>{'id': displayId},
+        );
+  context.go(location);
+}
+
+Future<void> _promptEndStayAfterStepDown(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return _confirmAction(
+    context: context,
+    title: l10n.icuStepDownPromptTitle,
+    body: l10n.icuStepDownPromptBody,
+    actionLabel: l10n.icuActionEndStay,
+    onConfirmed: () => ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(icuWorkspaceControllerProvider.notifier).transferOut(),
   );
 }
 
@@ -1615,37 +2297,37 @@ Future<void> _showActionResult(
 ) async {
   final bool? saved = await future;
   if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text(_IcuText.changesSaved)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.icuChangesSavedMessage)),
+    );
   }
 }
 
-List<AppSelectOption<IcuBoardScope>> _scopeOptions() {
-  return const <AppSelectOption<IcuBoardScope>>[
+List<AppSelectOption<IcuBoardScope>> _scopeOptions(AppLocalizations l10n) {
+  return <AppSelectOption<IcuBoardScope>>[
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.active,
-      label: _IcuText.activeIcu,
+      label: l10n.icuActiveIcuLabel,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.critical,
-      label: _IcuText.criticalAlerts,
+      label: l10n.icuCriticalAlertsLabel,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.transfer,
-      label: _IcuText.transferPending,
+      label: l10n.icuTransferPendingLabel,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.discharge,
-      label: _IcuText.dischargeReady,
+      label: l10n.icuDischargeReadyLabel,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.ended,
-      label: _IcuText.endedStays,
+      label: l10n.icuEndedStaysLabel,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.all,
-      label: _IcuText.allIcu,
+      label: l10n.icuAllIcuLabel,
     ),
   ];
 }
@@ -1670,9 +2352,9 @@ IcuBoardScope _icuScopeFromFilter(String? value) {
   return IcuBoardScope.active;
 }
 
-List<AppSearchBarFilterChoice> _icuScopeFilterChoices() {
+List<AppSearchBarFilterChoice> _icuScopeFilterChoices(AppLocalizations l10n) {
   return <AppSearchBarFilterChoice>[
-    for (final AppSelectOption<IcuBoardScope> option in _scopeOptions())
+    for (final AppSelectOption<IcuBoardScope> option in _scopeOptions(l10n))
       if (option.value != IcuBoardScope.active)
         AppSearchBarFilterChoice(
           value: option.value.name,
@@ -1682,103 +2364,17 @@ List<AppSearchBarFilterChoice> _icuScopeFilterChoices() {
   ];
 }
 
-abstract final class _IcuText {
-  static const String acknowledge = 'Acknowledge';
-  static const String activeIcu = 'Active ICU';
-  static const String addCriticalAlert = 'Add critical alert';
-  static const String admitted = 'Admitted';
-  static const String admission = 'Admission';
-  static const String alert = 'Alert';
-  static const String allIcu = 'All ICU';
-  static const String bed = 'Bed';
-  static const String boardScope = 'Board scope';
-  static const String changesSaved = 'ICU changes saved.';
-  static const String criticalAlerts = 'Critical alerts';
-  static const String dischargeReady = 'Discharge ready';
-  static const String endedStays = 'Ended stays';
-  static const String facility = 'Facility';
-  static const String location = 'Location';
-  static const String markDischargeReadiness = 'Mark discharge readiness';
-  static const String observation = 'Observation';
-  static const String printSummary = 'Print summary';
-  static const String readiness = 'Readiness';
-  static const String recordIcuObservation = 'Record ICU observation';
-  static const String requestTransfer = 'Request transfer';
-  static const String round = 'Round';
-  static const String roundNote = 'Round note';
-  static const String searchHint = 'Search patient, admission, bed, or alert';
-  static const String transfer = 'Transfer';
-  static const String transferOut = 'Transfer out';
-  static const String transferPending = 'Transfer pending';
-  static const String transfers = 'Transfers';
-  static const String updateVitals = 'Update vitals';
-  static const String vitals = 'Vitals';
-}
-
 List<AppSelectOption<String>> _statusOptions(List<String> values) {
   return <AppSelectOption<String>>[
     for (final String value in values)
-      AppSelectOption<String>(value: value, label: _apiLabel(value)),
+      AppSelectOption<String>(value: value, label: apiLabel(value)),
   ];
 }
 
-AppWorkspaceStatus _icuStatus(IcuPatientSummary item) {
-  final String value =
-      item.icuStatus ?? item.stage ?? item.admissionStatus ?? '';
-  return AppWorkspaceStatus(label: _apiLabel(value), tone: _statusTone(value));
-}
-
-AppWorkspaceStatus _alertStatus(IcuPatientSummary item) {
-  final String severity = item.criticalSeverity ?? 'Stable';
-  return AppWorkspaceStatus(
-    label: item.hasCriticalAlert ? _apiLabel(severity) : 'No alert',
-    tone: item.hasCriticalAlert
-        ? _severityTone(severity)
-        : AppWorkspaceStatusTone.success,
-  );
-}
-
-AppWorkspaceStatusTone _statusTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'ACTIVE' ||
-    'ADMITTED_IN_BED' ||
-    'IN_PROGRESS' => AppWorkspaceStatusTone.info,
-    'DISCHARGE_PLANNED' ||
-    'TRANSFER_REQUESTED' ||
-    'TRANSFER_IN_PROGRESS' ||
-    'REQUESTED' ||
-    'APPROVED' => AppWorkspaceStatusTone.warning,
-    'ENDED' || 'DISCHARGED' || 'COMPLETED' => AppWorkspaceStatusTone.success,
-    'CANCELLED' => AppWorkspaceStatusTone.error,
-    _ => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-AppWorkspaceStatusTone _severityTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'CRITICAL' || 'HIGH' => AppWorkspaceStatusTone.error,
-    'MEDIUM' => AppWorkspaceStatusTone.warning,
-    'LOW' => AppWorkspaceStatusTone.info,
-    _ => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-AppWorkspaceStatusTone _vitalTone(IcuVitalSign item) {
-  final num? numericValue = num.tryParse(item.value ?? '');
-  return switch (item.vitalType) {
-    'OXYGEN_SATURATION' when numericValue != null && numericValue < 92 =>
-      AppWorkspaceStatusTone.error,
-    'HEART_RATE'
-        when numericValue != null &&
-            (numericValue < 50 || numericValue > 120) =>
-      AppWorkspaceStatusTone.warning,
-    'RESPIRATORY_RATE'
-        when numericValue != null && (numericValue < 10 || numericValue > 28) =>
-      AppWorkspaceStatusTone.warning,
-    'TEMPERATURE'
-        when numericValue != null && (numericValue < 35 || numericValue > 39) =>
-      AppWorkspaceStatusTone.warning,
-    _ => AppWorkspaceStatusTone.info,
+bool _isOpenTransfer(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'REQUESTED' || 'APPROVED' || 'IN_PROGRESS' => true,
+    _ => false,
   };
 }
 
@@ -1798,114 +2394,81 @@ String _pageLabel(BuildContext context, AppPage<IcuPatientSummary> page) {
   return context.l10n.opdPageLabel(from, to, total);
 }
 
-String _dateLabel(BuildContext context, DateTime? value) {
-  if (value == null) {
-    return '';
-  }
-  return AppFormatters.mediumDate(value, Localizations.localeOf(context));
-}
-
-String _dateTimeLabel(BuildContext context, DateTime? value) {
-  if (value == null) {
-    return '';
-  }
-  return AppFormatters.dateTime(value, Localizations.localeOf(context));
-}
-
-String _apiLabel(String value) {
-  final String normalized = value.trim();
-  if (normalized.isEmpty) {
-    return '';
-  }
-  return normalized
-      .split('_')
-      .where((String part) => part.isNotEmpty)
-      .map((String part) {
-        final String lower = part.toLowerCase();
-        return lower.substring(0, 1).toUpperCase() + lower.substring(1);
-      })
-      .join(' ');
-}
-
-String _joinDisplay(Iterable<String?> values) {
-  return values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' | ');
-}
-
 String _icuSummaryHtml(BuildContext context, IcuPatientDetail detail) {
+  final AppLocalizations l10n = context.l10n;
   final StringBuffer buffer = StringBuffer()
     ..write(
       PrintFormTemplate.section(
-        title: 'Alerts',
-        bodyHtml: _alertHtml(detail.alerts),
+        title: l10n.icuPrintAlertsSection,
+        bodyHtml: _alertHtml(l10n, detail.alerts),
       ),
     )
     ..write(
       PrintFormTemplate.section(
-        title: 'Observations',
-        bodyHtml: _observationHtml(detail.observations),
+        title: l10n.icuPrintObservationsSection,
+        bodyHtml: _observationHtml(l10n, detail.observations),
       ),
     )
     ..write(
       PrintFormTemplate.section(
-        title: 'Vitals',
-        bodyHtml: _vitalsHtml(detail.vitalSigns),
+        title: l10n.icuPrintVitalsSection,
+        bodyHtml: _vitalsHtml(l10n, detail.vitalSigns),
       ),
     )
     ..write(
       PrintFormTemplate.section(
-        title: 'Transfer and readiness',
-        bodyHtml: _readinessHtml(detail),
+        title: l10n.icuPrintTransferSection,
+        bodyHtml: _readinessHtml(l10n, detail),
       ),
     );
   return buffer.toString();
 }
 
-String _alertHtml(List<IcuCriticalAlert> alerts) {
+String _alertHtml(AppLocalizations l10n, List<IcuCriticalAlert> alerts) {
   return PrintFormTemplate.unorderedList(<String>[
     for (final IcuCriticalAlert alert in alerts)
-      _joinDisplay(<String?>[_apiLabel(alert.severity ?? ''), alert.message]),
-  ], emptyText: 'No active alerts.');
+      joinDisplay(<String?>[apiLabel(alert.severity ?? ''), alert.message]),
+  ], emptyText: l10n.icuNoActiveAlertsListLabel);
 }
 
-String _observationHtml(List<IcuObservation> observations) {
+String _observationHtml(
+  AppLocalizations l10n,
+  List<IcuObservation> observations,
+) {
   return PrintFormTemplate.unorderedList(<String>[
     for (final IcuObservation observation in observations)
       observation.observation ?? '',
-  ], emptyText: 'No observations recorded.');
+  ], emptyText: l10n.icuNoObservationsLabel);
 }
 
-String _vitalsHtml(List<IcuVitalSign> vitals) {
+String _vitalsHtml(AppLocalizations l10n, List<IcuVitalSign> vitals) {
   return PrintFormTemplate.unorderedList(<String>[
     for (final IcuVitalSign vital in vitals)
-      _joinDisplay(<String?>[_apiLabel(vital.vitalType), vital.displayValue]),
-  ], emptyText: 'No vitals recorded.');
+      joinDisplay(<String?>[apiLabel(vital.vitalType), vital.displayValue]),
+  ], emptyText: l10n.icuNoVitalsLabel);
 }
 
-String _readinessHtml(IcuPatientDetail detail) {
+String _readinessHtml(AppLocalizations l10n, IcuPatientDetail detail) {
   return PrintFormTemplate.unorderedList(<String>[
     for (final IcuTransferRequest transfer in detail.transferRequests)
-      _joinDisplay(<String?>[
-        'Transfer',
-        _apiLabel(transfer.status ?? ''),
+      joinDisplay(<String?>[
+        l10n.icuTransferRecordLabel,
+        apiLabel(transfer.status ?? ''),
         transfer.toWardName,
       ]),
     for (final IcuDischargeSummary discharge in detail.dischargeSummaries)
-      _joinDisplay(<String?>[
-        'Discharge',
-        _apiLabel(discharge.status ?? ''),
+      joinDisplay(<String?>[
+        l10n.icuDischargeRecordLabel,
+        apiLabel(discharge.status ?? ''),
         discharge.summary,
       ]),
-  ], emptyText: 'No transfer or discharge readiness records.');
+  ], emptyText: l10n.icuNoTransferRecordsLabel);
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null) {
     return;
   }
-
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));

@@ -1,0 +1,199 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
+import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
+import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
+import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockIcuRepository extends Mock implements IcuRepository {}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(const IcuBoardQuery());
+    registerFallbackValue(
+      const IcuPatientSummary(id: 'ADM-1', admissionId: 'ADM-1'),
+    );
+    registerFallbackValue(
+      const IcuPatientDetail(
+        summary: IcuPatientSummary(id: 'ADM-1', admissionId: 'ADM-1'),
+      ),
+    );
+  });
+
+  group('IcuBoardQuery.fromUri', () {
+    test('parses focus admission id and panel', () {
+      final IcuBoardQuery query = IcuBoardQuery.fromUri(
+        Uri.parse('/icu?id=ADM0001&panel=vitals'),
+      );
+      expect(query.focusAdmissionId, 'ADM0001');
+      expect(query.focusPanel, IcuDetailPanel.vitals);
+      expect(query.search, 'ADM0001');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('returns empty targeting when no params', () {
+      final IcuBoardQuery query = IcuBoardQuery.fromUri(Uri.parse('/icu'));
+      expect(query.focusAdmissionId, isNull);
+      expect(query.focusPanel, isNull);
+      expect(query.hasRouteTargeting, isFalse);
+    });
+  });
+
+  group('Transfer + panel enums', () {
+    test('transfer action tokens map to backend values', () {
+      expect(IcuTransferAction.approve.apiToken, 'APPROVE');
+      expect(IcuTransferAction.start.apiToken, 'START');
+      expect(IcuTransferAction.complete.apiToken, 'COMPLETE');
+      expect(IcuTransferAction.cancel.apiToken, 'CANCEL');
+      expect(IcuTransferAction.complete.requiresBed, isTrue);
+      expect(IcuTransferAction.approve.requiresBed, isFalse);
+    });
+
+    test('detail panel parsing is case-insensitive', () {
+      expect(IcuDetailPanelX.fromValue('ALERTS'), IcuDetailPanel.alerts);
+      expect(IcuDetailPanelX.fromValue('orders'), IcuDetailPanel.orders);
+      expect(IcuDetailPanelX.fromValue('nope'), isNull);
+      expect(IcuDetailPanelX.fromValue(null), isNull);
+    });
+  });
+
+  group('IcuWorkspaceController', () {
+    test('loads the active board on build', () async {
+      final _MockIcuRepository repository = _MockIcuRepository();
+      _stubInitialLoad(
+        repository,
+        board: const <IcuPatientSummary>[
+          IcuPatientSummary(
+            id: 'ADM-1',
+            admissionId: 'ADM-1',
+            displayId: 'ADM0001',
+            icuStatus: 'ACTIVE',
+            hasCriticalAlert: true,
+            criticalSeverity: 'HIGH',
+          ),
+        ],
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final Result<IcuWorkspaceState> result = await container.read(
+        icuWorkspaceControllerProvider.future,
+      );
+      final IcuWorkspaceState state = result.when(
+        success: (IcuWorkspaceState value) => value,
+        failure: (AppFailure failure) => fail(failure.code),
+      );
+
+      expect(state.query.scope, IcuBoardScope.active);
+      expect(state.board.items.single.displayId, 'ADM0001');
+      expect(state.criticalCount, 1);
+      verify(() => repository.listIcuBoard(any())).called(1);
+    });
+
+    test('startIcuStay delegates to the repository', () async {
+      final _MockIcuRepository repository = _MockIcuRepository();
+      const IcuPatientSummary summary = IcuPatientSummary(
+        id: 'ADM-1',
+        admissionId: 'ADM-1',
+        displayId: 'ADM0001',
+      );
+      const IcuPatientDetail detail = IcuPatientDetail(summary: summary);
+      const IcuPatientDetail started = IcuPatientDetail(
+        summary: IcuPatientSummary(
+          id: 'ADM-1',
+          admissionId: 'ADM-1',
+          displayId: 'ADM0001',
+          icuStatus: 'ACTIVE',
+        ),
+        activeStay: IcuStaySummary(id: 'ICU-1'),
+      );
+
+      _stubInitialLoad(repository, board: const <IcuPatientSummary>[summary]);
+      when(
+        () => repository.loadIcuDetail(any()),
+      ).thenAnswer((_) async => const Result<IcuPatientDetail>.success(detail));
+      when(
+        () => repository.startIcuStay(
+          detail: any(named: 'detail'),
+          startedAt: any(named: 'startedAt'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<IcuPatientDetail>.success(started),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(icuWorkspaceControllerProvider.future);
+
+      final IcuWorkspaceController controller = container.read(
+        icuWorkspaceControllerProvider.notifier,
+      );
+      await controller.selectPatient(summary);
+      final AppFailure? failure = await controller.startIcuStay();
+
+      expect(failure, isNull);
+      verify(
+        () => repository.startIcuStay(
+          detail: any(named: 'detail'),
+          startedAt: any(named: 'startedAt'),
+        ),
+      ).called(1);
+    });
+
+    test('selectPatientByDisplayId selects a matching board row', () async {
+      final _MockIcuRepository repository = _MockIcuRepository();
+      const IcuPatientSummary summary = IcuPatientSummary(
+        id: 'ADM-1',
+        admissionId: 'ADM-1',
+        displayId: 'ADM0001',
+      );
+      _stubInitialLoad(repository, board: const <IcuPatientSummary>[summary]);
+      when(() => repository.loadIcuDetail(any())).thenAnswer(
+        (_) async => const Result<IcuPatientDetail>.success(
+          IcuPatientDetail(summary: summary),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(icuWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(icuWorkspaceControllerProvider.notifier)
+          .selectPatientByDisplayId('ADM0001');
+
+      expect(failure, isNull);
+      verify(() => repository.loadIcuDetail(any())).called(1);
+    });
+  });
+}
+
+void _stubInitialLoad(
+  _MockIcuRepository repository, {
+  List<IcuPatientSummary> board = const <IcuPatientSummary>[],
+}) {
+  when(() => repository.listIcuBoard(any())).thenAnswer(
+    (invocation) async => Result<AppPage<IcuPatientSummary>>.success(
+      AppPage<IcuPatientSummary>(
+        items: board,
+        request: (invocation.positionalArguments.single as IcuBoardQuery)
+            .pageRequest,
+        totalItemCount: board.length,
+      ),
+    ),
+  );
+  when(() => repository.loadReferenceData()).thenAnswer(
+    (_) async => const Result<IcuReferenceData>.success(IcuReferenceData()),
+  );
+}

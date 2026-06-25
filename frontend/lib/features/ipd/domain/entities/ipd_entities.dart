@@ -11,6 +11,8 @@ enum IpdQueueScope {
   all,
 }
 
+enum IpdBoardMode { patientBoard, bedBoard }
+
 @immutable
 final class IpdAdmissionQuery {
   const IpdAdmissionQuery({
@@ -18,6 +20,8 @@ final class IpdAdmissionQuery {
     this.scope = IpdQueueScope.admissionQueue,
     this.wardId,
     this.pageRequest = const AppPageRequest(),
+    this.focusAdmissionId,
+    this.focusPanel,
   });
 
   final String search;
@@ -25,21 +29,32 @@ final class IpdAdmissionQuery {
   final String? wardId;
   final AppPageRequest pageRequest;
 
+  /// Deep-link target: pre-select this admission (display id or uuid).
+  final String? focusAdmissionId;
+
+  /// Deep-link target panel to scroll/focus once the admission opens.
+  final IpdDetailPanel? focusPanel;
+
   factory IpdAdmissionQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
-    return IpdAdmissionQuery(
-      search:
-          params['search'] ??
+    final String? admissionId = _nonEmpty(
+      params['id'] ??
           params['admission'] ??
           params['admissionId'] ??
-          params['admission_id'] ??
-          '',
+          params['admission_id'],
+    );
+    return IpdAdmissionQuery(
+      search: admissionId ?? params['search'] ?? '',
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
+      focusAdmissionId: admissionId,
+      focusPanel: IpdDetailPanelX.fromToken(params['panel']),
     );
   }
 
   bool get hasRouteTargeting {
-    return search.trim().isNotEmpty || wardId != null;
+    return search.trim().isNotEmpty ||
+        wardId != null ||
+        focusAdmissionId != null;
   }
 
   IpdAdmissionQuery copyWith({
@@ -47,14 +62,49 @@ final class IpdAdmissionQuery {
     IpdQueueScope? scope,
     String? wardId,
     AppPageRequest? pageRequest,
+    String? focusAdmissionId,
+    IpdDetailPanel? focusPanel,
     bool clearWard = false,
+    bool clearFocus = false,
   }) {
     return IpdAdmissionQuery(
       search: search ?? this.search,
       scope: scope ?? this.scope,
       wardId: clearWard ? null : wardId ?? this.wardId,
       pageRequest: pageRequest ?? this.pageRequest,
+      focusAdmissionId: clearFocus
+          ? null
+          : focusAdmissionId ?? this.focusAdmissionId,
+      focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
     );
+  }
+}
+
+enum IpdDetailPanel { beds, nursing, medication, discharge, transfer, rounds }
+
+extension IpdDetailPanelX on IpdDetailPanel {
+  static IpdDetailPanel? fromToken(String? value) {
+    switch ((value ?? '').trim().toLowerCase()) {
+      case 'beds':
+      case 'bed':
+        return IpdDetailPanel.beds;
+      case 'nursing':
+        return IpdDetailPanel.nursing;
+      case 'medication':
+      case 'mar':
+        return IpdDetailPanel.medication;
+      case 'discharge':
+        return IpdDetailPanel.discharge;
+      case 'transfer':
+      case 'transfers':
+        return IpdDetailPanel.transfer;
+      case 'rounds':
+      case 'ward_round':
+      case 'wardrounds':
+        return IpdDetailPanel.rounds;
+      default:
+        return null;
+    }
   }
 }
 
@@ -101,6 +151,71 @@ final class IpdBedOption {
 
   String? get displaySubtitle {
     return _joinDisplay(<String?>[wardName, roomName, status]);
+  }
+}
+
+@immutable
+final class IpdBedBoardEntry {
+  const IpdBedBoardEntry({
+    required this.id,
+    this.displayId,
+    this.label,
+    this.status,
+    this.wardId,
+    this.wardName,
+    this.wardType,
+    this.roomName,
+    this.floor,
+    this.occupantPatientName,
+    this.occupantPatientDisplayId,
+    this.occupantAdmissionId,
+    this.occupantAdmissionDisplayId,
+    this.occupantAdmittedAt,
+  });
+
+  /// Raw bed UUID (required for status mutations).
+  final String id;
+  final String? displayId;
+  final String? label;
+  final String? status;
+  final String? wardId;
+  final String? wardName;
+  final String? wardType;
+  final String? roomName;
+  final String? floor;
+  final String? occupantPatientName;
+  final String? occupantPatientDisplayId;
+  final String? occupantAdmissionId;
+  final String? occupantAdmissionDisplayId;
+  final DateTime? occupantAdmittedAt;
+
+  bool get isOccupied {
+    return (status ?? '').toUpperCase() == 'OCCUPIED' ||
+        occupantAdmissionId != null;
+  }
+
+  String get bedLabel => _firstNonEmpty(<String?>[label, displayId, id]) ?? id;
+
+  String? get wardDisplayName => _firstNonEmpty(<String?>[wardName, wardId]);
+
+  String? get roomDisplayName => _joinDisplay(<String?>[roomName, floor]);
+
+  bool matchesSearch(String search) {
+    final String needle = search.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[
+      label,
+      displayId,
+      wardName,
+      roomName,
+      status,
+      occupantPatientName,
+      occupantAdmissionDisplayId,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
   }
 }
 
@@ -448,6 +563,11 @@ final class IpdWorkspaceState {
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
     this.isSaving = false,
+    this.bedBoard = const <IpdBedBoardEntry>[],
+    this.bedBoardWardId,
+    this.bedBoardStatus,
+    this.isLoadingBedBoard = false,
+    this.bedBoardLoaded = false,
   });
 
   final IpdAdmissionQuery query;
@@ -458,6 +578,11 @@ final class IpdWorkspaceState {
   final bool isRefreshing;
   final bool isRefreshingDetail;
   final bool isSaving;
+  final List<IpdBedBoardEntry> bedBoard;
+  final String? bedBoardWardId;
+  final String? bedBoardStatus;
+  final bool isLoadingBedBoard;
+  final bool bedBoardLoaded;
 
   int get admissionQueueCount => admissions.items
       .where((IpdAdmissionSummary item) => item.stage == 'ADMITTED_PENDING_BED')
@@ -498,8 +623,15 @@ final class IpdWorkspaceState {
     bool? isRefreshing,
     bool? isRefreshingDetail,
     bool? isSaving,
+    List<IpdBedBoardEntry>? bedBoard,
+    String? bedBoardWardId,
+    String? bedBoardStatus,
+    bool? isLoadingBedBoard,
+    bool? bedBoardLoaded,
     bool clearSelectedAdmission = false,
     bool clearLastFailure = false,
+    bool clearBedBoardWard = false,
+    bool clearBedBoardStatus = false,
   }) {
     return IpdWorkspaceState(
       query: query ?? this.query,
@@ -512,6 +644,15 @@ final class IpdWorkspaceState {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isSaving: isSaving ?? this.isSaving,
+      bedBoard: bedBoard ?? this.bedBoard,
+      bedBoardWardId: clearBedBoardWard
+          ? null
+          : bedBoardWardId ?? this.bedBoardWardId,
+      bedBoardStatus: clearBedBoardStatus
+          ? null
+          : bedBoardStatus ?? this.bedBoardStatus,
+      isLoadingBedBoard: isLoadingBedBoard ?? this.isLoadingBedBoard,
+      bedBoardLoaded: bedBoardLoaded ?? this.bedBoardLoaded,
     );
   }
 }

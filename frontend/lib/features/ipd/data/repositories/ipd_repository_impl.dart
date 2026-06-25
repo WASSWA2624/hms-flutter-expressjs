@@ -93,6 +93,41 @@ final class IpdRepositoryImpl implements IpdRepository {
   }
 
   @override
+  Future<Result<List<IpdBedBoardEntry>>> listBedBoard({
+    String? wardId,
+    String? status,
+    String? statusAny,
+    int limit = 200,
+  }) {
+    return _apiClient.get<List<IpdBedBoardEntry>>(
+      ApiEndpoints.collection(HmsApiResource.beds),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': limit,
+        'ward_id': wardId,
+        'status': status,
+        'status_any': statusAny,
+        'include_occupancy': 'true',
+        'sort_by': 'label',
+        'order': 'asc',
+      }),
+      decoder: decodeIpdBedBoard,
+    );
+  }
+
+  @override
+  Future<Result<void>> updateBedStatus({
+    required String bedId,
+    required String status,
+  }) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.beds, bedId),
+      data: <String, Object?>{'status': status},
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<IpdAdmissionDetail>> startAdmission(
     Map<String, Object?> payload,
   ) {
@@ -111,6 +146,14 @@ final class IpdRepositoryImpl implements IpdRepository {
     Map<String, Object?> payload,
   ) {
     return _postAction(admissionId, <String>['assign-bed'], payload);
+  }
+
+  @override
+  Future<Result<IpdAdmissionDetail>> startIcuStay(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _postAction(admissionId, <String>['start-icu-stay'], payload);
   }
 
   @override
@@ -222,8 +265,7 @@ String? _stageFor(IpdQueueScope scope) {
 
 String? _stageAnyFor(IpdQueueScope scope) {
   return switch (scope) {
-    IpdQueueScope.transferPending =>
-      'TRANSFER_REQUESTED,TRANSFER_IN_PROGRESS',
+    IpdQueueScope.transferPending => 'TRANSFER_REQUESTED,TRANSFER_IN_PROGRESS',
     _ => null,
   };
 }

@@ -3,27 +3,203 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 enum IcuBoardScope { active, critical, transfer, discharge, ended, all }
 
+/// Primary workspace views per icu-flow §15.
+enum IcuBoardView { patientBoard, bedBoard }
+
+/// Detail panels that can be focused via deep link (`/icu?id=&panel=`).
+enum IcuDetailPanel {
+  vitals,
+  alerts,
+  observations,
+  orders,
+  transfer,
+  discharge,
+}
+
+/// Lifecycle actions for an open transfer request (icu-flow §11).
+enum IcuTransferAction { approve, start, complete, cancel }
+
+extension IcuDetailPanelX on IcuDetailPanel {
+  String get token => name;
+
+  static IcuDetailPanel? fromValue(String? value) {
+    final String normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    for (final IcuDetailPanel panel in IcuDetailPanel.values) {
+      if (panel.name.toLowerCase() == normalized) {
+        return panel;
+      }
+    }
+    return null;
+  }
+}
+
+extension IcuTransferActionX on IcuTransferAction {
+  /// Backend `update-transfer` action token (APPROVE/START/COMPLETE/CANCEL).
+  String get apiToken => switch (this) {
+    IcuTransferAction.approve => 'APPROVE',
+    IcuTransferAction.start => 'START',
+    IcuTransferAction.complete => 'COMPLETE',
+    IcuTransferAction.cancel => 'CANCEL',
+  };
+
+  bool get requiresBed => this == IcuTransferAction.complete;
+}
+
 @immutable
 final class IcuBoardQuery {
   const IcuBoardQuery({
     this.search = '',
     this.scope = IcuBoardScope.active,
     this.pageRequest = const AppPageRequest(),
+    this.focusAdmissionId,
+    this.focusPanel,
   });
 
   final String search;
   final IcuBoardScope scope;
   final AppPageRequest pageRequest;
+  final String? focusAdmissionId;
+  final IcuDetailPanel? focusPanel;
+
+  bool get hasRouteTargeting =>
+      (focusAdmissionId ?? '').trim().isNotEmpty || focusPanel != null;
+
+  factory IcuBoardQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String? pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final String? focusId = pick(<String>[
+      'id',
+      'admission',
+      'admissionId',
+      'admission_id',
+    ]);
+    return IcuBoardQuery(
+      search: focusId ?? pick(<String>['search', 'q']) ?? '',
+      focusAdmissionId: focusId,
+      focusPanel: IcuDetailPanelX.fromValue(params['panel']),
+    );
+  }
 
   IcuBoardQuery copyWith({
     String? search,
     IcuBoardScope? scope,
     AppPageRequest? pageRequest,
+    String? focusAdmissionId,
+    IcuDetailPanel? focusPanel,
+    bool clearFocus = false,
   }) {
     return IcuBoardQuery(
       search: search ?? this.search,
       scope: scope ?? this.scope,
       pageRequest: pageRequest ?? this.pageRequest,
+      focusAdmissionId: clearFocus
+          ? null
+          : focusAdmissionId ?? this.focusAdmissionId,
+      focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+    );
+  }
+}
+
+@immutable
+final class IcuBedWard {
+  const IcuBedWard({required this.id, this.name, this.wardType});
+
+  final String id;
+  final String? name;
+  final String? wardType;
+
+  String get displayTitle => _joinDisplay(<String?>[name, id]) ?? id;
+}
+
+@immutable
+final class IcuBed {
+  const IcuBed({
+    required this.id,
+    this.label,
+    this.status,
+    this.wardId,
+    this.wardName,
+    this.wardType,
+    this.roomName,
+    this.floor,
+    this.occupantAdmissionId,
+    this.occupantDisplayId,
+    this.occupantName,
+    this.occupantHasCriticalAlert = false,
+  });
+
+  final String id;
+  final String? label;
+  final String? status;
+  final String? wardId;
+  final String? wardName;
+  final String? wardType;
+  final String? roomName;
+  final String? floor;
+  final String? occupantAdmissionId;
+  final String? occupantDisplayId;
+  final String? occupantName;
+  final bool occupantHasCriticalAlert;
+
+  bool get isOccupied => occupantAdmissionId != null;
+
+  bool get isAvailable => (status ?? '').toUpperCase() == 'AVAILABLE';
+
+  String get locationLabel =>
+      _joinDisplay(<String?>[wardName, roomName, label]) ?? (label ?? id);
+}
+
+@immutable
+final class IcuBedBoard {
+  const IcuBedBoard({
+    this.wards = const <IcuBedWard>[],
+    this.beds = const <IcuBed>[],
+    this.selectedWardId,
+  });
+
+  final List<IcuBedWard> wards;
+  final List<IcuBed> beds;
+  final String? selectedWardId;
+
+  List<IcuBed> get visibleBeds {
+    if (selectedWardId == null || selectedWardId!.isEmpty) {
+      return beds;
+    }
+    return beds
+        .where((IcuBed bed) => bed.wardId == selectedWardId)
+        .toList(growable: false);
+  }
+
+  int get availableCount =>
+      visibleBeds.where((IcuBed bed) => bed.isAvailable).length;
+
+  int get occupiedCount =>
+      visibleBeds.where((IcuBed bed) => bed.isOccupied).length;
+
+  IcuBedBoard copyWith({
+    List<IcuBedWard>? wards,
+    List<IcuBed>? beds,
+    String? selectedWardId,
+    bool clearSelectedWard = false,
+  }) {
+    return IcuBedBoard(
+      wards: wards ?? this.wards,
+      beds: beds ?? this.beds,
+      selectedWardId: clearSelectedWard
+          ? null
+          : selectedWardId ?? this.selectedWardId,
     );
   }
 }
@@ -445,6 +621,7 @@ final class IcuPatientDetail {
     this.facilityName,
     this.patientGender,
     this.patientDateOfBirth,
+    this.encounterType,
     this.activeStay,
     this.latestStay,
     this.recentStays = const <IcuStaySummary>[],
@@ -465,6 +642,7 @@ final class IcuPatientDetail {
   final String? facilityName;
   final String? patientGender;
   final DateTime? patientDateOfBirth;
+  final String? encounterType;
   final IcuStaySummary? activeStay;
   final IcuStaySummary? latestStay;
   final List<IcuStaySummary> recentStays;
@@ -492,6 +670,28 @@ final class IcuPatientDetail {
 
   bool get canRecordIcuAction => activeStay != null;
 
+  bool get isEligibleToStartStay {
+    if (activeStay != null) {
+      return false;
+    }
+    final String status = (summary.icuStatus ?? '').toUpperCase();
+    final String admissionStatus = (summary.admissionStatus ?? '')
+        .toUpperCase();
+    if (admissionStatus == 'DISCHARGED' || admissionStatus == 'CANCELLED') {
+      return false;
+    }
+    return status != 'ACTIVE';
+  }
+
+  /// Origin of the encounter (OPD, EMERGENCY, THEATRE, etc.) when known.
+  String? get sourceContext {
+    final String value = (encounterType ?? '').trim().toUpperCase();
+    return value.isEmpty ? null : value;
+  }
+
+  DateTime? get icuStayStartedAt =>
+      activeStay?.startedAt ?? latestStay?.startedAt;
+
   IcuPatientDetail copyWith({
     IcuPatientSummary? summary,
     List<IcuVitalSign>? vitalSigns,
@@ -501,6 +701,7 @@ final class IcuPatientDetail {
       facilityName: facilityName,
       patientGender: patientGender,
       patientDateOfBirth: patientDateOfBirth,
+      encounterType: encounterType,
       activeStay: activeStay,
       latestStay: latestStay,
       recentStays: recentStays,
@@ -557,20 +758,26 @@ final class IcuWorkspaceState {
     required this.query,
     required this.board,
     this.referenceData = const IcuReferenceData(),
+    this.bedBoard = const IcuBedBoard(),
+    this.view = IcuBoardView.patientBoard,
     this.selectedDetail,
     this.lastFailure,
     this.isRefreshingBoard = false,
     this.isRefreshingDetail = false,
+    this.isRefreshingBeds = false,
     this.isSaving = false,
   });
 
   final IcuBoardQuery query;
   final AppPage<IcuPatientSummary> board;
   final IcuReferenceData referenceData;
+  final IcuBedBoard bedBoard;
+  final IcuBoardView view;
   final IcuPatientDetail? selectedDetail;
   final Object? lastFailure;
   final bool isRefreshingBoard;
   final bool isRefreshingDetail;
+  final bool isRefreshingBeds;
   final bool isSaving;
 
   int get activeCount {
@@ -601,10 +808,13 @@ final class IcuWorkspaceState {
     IcuBoardQuery? query,
     AppPage<IcuPatientSummary>? board,
     IcuReferenceData? referenceData,
+    IcuBedBoard? bedBoard,
+    IcuBoardView? view,
     IcuPatientDetail? selectedDetail,
     Object? lastFailure,
     bool? isRefreshingBoard,
     bool? isRefreshingDetail,
+    bool? isRefreshingBeds,
     bool? isSaving,
     bool clearSelectedDetail = false,
     bool clearLastFailure = false,
@@ -613,12 +823,15 @@ final class IcuWorkspaceState {
       query: query ?? this.query,
       board: board ?? this.board,
       referenceData: referenceData ?? this.referenceData,
+      bedBoard: bedBoard ?? this.bedBoard,
+      view: view ?? this.view,
       selectedDetail: clearSelectedDetail
           ? null
           : selectedDetail ?? this.selectedDetail,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshingBoard: isRefreshingBoard ?? this.isRefreshingBoard,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
+      isRefreshingBeds: isRefreshingBeds ?? this.isRefreshingBeds,
       isSaving: isSaving ?? this.isSaving,
     );
   }

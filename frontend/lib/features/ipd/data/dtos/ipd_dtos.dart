@@ -234,6 +234,39 @@ final class IpdBedOptionDto {
   }
 }
 
+final class IpdBedBoardEntryDto {
+  const IpdBedBoardEntryDto(this.json);
+
+  final IpdJsonMap json;
+
+  IpdBedBoardEntry toEntity() {
+    final IpdJsonMap ward = _map(json['ward']);
+    final IpdJsonMap room = _map(json['room']);
+    final IpdJsonMap occupant = _map(json['current_admission']);
+    return IpdBedBoardEntry(
+      id: _string(json['id']) ?? _string(json['human_friendly_id']) ?? '',
+      displayId: _string(json['human_friendly_id']),
+      label: _string(json['label']),
+      status: _string(json['status']),
+      wardId:
+          _string(json['ward_human_friendly_id']) ??
+          _string(json['ward_id']) ??
+          _string(ward['human_friendly_id']) ??
+          _string(ward['id']),
+      wardName: _string(json['ward_name']) ?? _string(ward['name']),
+      wardType: _string(json['ward_type']) ?? _string(ward['ward_type']),
+      roomName: _string(json['room_name']) ?? _string(room['name']),
+      floor: _string(json['floor']) ?? _string(room['floor']),
+      occupantPatientName: _string(occupant['patient_display_name']),
+      occupantPatientDisplayId: _string(occupant['patient_display_id']),
+      occupantAdmissionId: _string(occupant['admission_id']),
+      occupantAdmissionDisplayId: _string(occupant['admission_display_id']),
+      occupantAdmittedAt:
+          _date(occupant['admitted_at']) ?? _date(occupant['assigned_at']),
+    );
+  }
+}
+
 final class IpdBedAssignmentDto {
   const IpdBedAssignmentDto(this.json);
 
@@ -423,6 +456,15 @@ List<IpdBedOption> decodeIpdBeds(Object? responseData) {
       .map(IpdBedOptionDto.new)
       .map((IpdBedOptionDto dto) => dto.toEntity())
       .where((IpdBedOption item) => item.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<IpdBedBoardEntry> decodeIpdBedBoard(Object? responseData) {
+  final IpdJsonMap response = _expectMap(responseData);
+  return _list(response['data'])
+      .map(IpdBedBoardEntryDto.new)
+      .map((IpdBedBoardEntryDto dto) => dto.toEntity())
+      .where((IpdBedBoardEntry item) => item.id.isNotEmpty)
       .toList(growable: false);
 }
 

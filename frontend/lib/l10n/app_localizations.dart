@@ -160,6 +160,816 @@ abstract class AppLocalizations {
   /// **'ICU stay'**
   String get icuStayDialogTitle;
 
+  /// Loading title for the ICU workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading ICU board'**
+  String get icuLoadingBoardTitle;
+
+  /// Loading body for the ICU workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading intensive care patients and alert state.'**
+  String get icuLoadingBoardBody;
+
+  /// Status label when the ICU workspace is live syncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get icuLiveSyncLabel;
+
+  /// Status label when an ICU action is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get icuSavingLabel;
+
+  /// Label for the ICU patient board view toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient board'**
+  String get icuViewPatientBoard;
+
+  /// Label for the ICU bed board view toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed board'**
+  String get icuViewBedBoard;
+
+  /// ICU board scope: all ICU admissions.
+  ///
+  /// In en, this message translates to:
+  /// **'All ICU'**
+  String get icuAllIcuLabel;
+
+  /// ICU board scope: patients with active ICU stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Active ICU'**
+  String get icuActiveIcuLabel;
+
+  /// ICU board scope: open critical alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alerts'**
+  String get icuCriticalAlertsLabel;
+
+  /// ICU board scope: pending transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get icuTransfersLabel;
+
+  /// ICU board scope: discharge readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge ready'**
+  String get icuDischargeReadyLabel;
+
+  /// ICU board scope: ended ICU stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended stays'**
+  String get icuEndedStaysLabel;
+
+  /// Badge label when a transfer is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer pending'**
+  String get icuTransferPendingLabel;
+
+  /// Title for the ICU patient board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU board'**
+  String get icuBoardTitle;
+
+  /// Description for the ICU patient board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped by bed state and alert level.'**
+  String get icuBoardDescription;
+
+  /// Search hint for the ICU board.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, admission, bed, or alert'**
+  String get icuSearchHint;
+
+  /// Label for the ICU board scope filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Board scope'**
+  String get icuBoardScopeLabel;
+
+  /// Title for the ICU board filters dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU board filters'**
+  String get icuBoardFiltersTitle;
+
+  /// ICU board column: bed / location.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get icuColumnBedLabel;
+
+  /// ICU board column: alert severity.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert'**
+  String get icuColumnAlertLabel;
+
+  /// ICU board column: transfer state.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get icuColumnTransferLabel;
+
+  /// ICU board column: ICU stay start / length of stay.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU start'**
+  String get icuColumnStartLabel;
+
+  /// ICU board column: source of admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get icuColumnSourceLabel;
+
+  /// Empty state title for the ICU board.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU patients'**
+  String get icuNoPatientsTitle;
+
+  /// Empty state body for the ICU board.
+  ///
+  /// In en, this message translates to:
+  /// **'Active ICU admissions will appear here after IPD admission and ICU transfer.'**
+  String get icuNoPatientsBody;
+
+  /// Status when a patient has no critical alert.
+  ///
+  /// In en, this message translates to:
+  /// **'No alert'**
+  String get icuNoAlertLabel;
+
+  /// Empty state title for the ICU detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU stay selected'**
+  String get icuDetailEmptyTitle;
+
+  /// Empty state body for the ICU detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an ICU patient to review observations, orders, alerts, and transfer readiness.'**
+  String get icuDetailEmptyBody;
+
+  /// Loading title for the ICU detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading ICU stay'**
+  String get icuDetailLoadingTitle;
+
+  /// Loading body for the ICU detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading observations, alerts, and transfer state.'**
+  String get icuDetailLoadingBody;
+
+  /// Field label for the IPD admission number.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get icuAdmissionLabel;
+
+  /// Field label for the ICU ward and bed location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get icuLocationLabel;
+
+  /// Field label for the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get icuFacilityLabel;
+
+  /// Field label for the admitted time.
+  ///
+  /// In en, this message translates to:
+  /// **'Admitted'**
+  String get icuAdmittedLabel;
+
+  /// Field label for the admission source context.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get icuSourceLabel;
+
+  /// Field label for the ICU stay start time.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU stay started'**
+  String get icuStayStartedLabel;
+
+  /// Title for the ICU actions panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get icuActionsTitle;
+
+  /// Title for the ICU critical alerts panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alerts'**
+  String get icuCriticalAlertsPanelTitle;
+
+  /// Description when there are no active ICU alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No active ICU critical alerts.'**
+  String get icuNoActiveAlertsLabel;
+
+  /// Description showing the highest ICU alert severity.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest severity: {severity}'**
+  String icuHighestSeverityLabel(String severity);
+
+  /// Empty label for the ICU alerts list.
+  ///
+  /// In en, this message translates to:
+  /// **'No active alerts'**
+  String get icuNoActiveAlertsListLabel;
+
+  /// Title for the ICU observations panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Observations'**
+  String get icuObservationsPanelTitle;
+
+  /// Description for the ICU observations panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent intensive observations for this ICU stay.'**
+  String get icuObservationsPanelDescription;
+
+  /// Empty label for the ICU observations list.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU observations recorded'**
+  String get icuNoObservationsLabel;
+
+  /// Title for the ICU vitals trend panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals trend'**
+  String get icuVitalsTrendTitle;
+
+  /// Description for the ICU vitals trend panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest recorded vital values for the admission encounter.'**
+  String get icuVitalsTrendDescription;
+
+  /// Empty label for the ICU vitals list.
+  ///
+  /// In en, this message translates to:
+  /// **'No vitals recorded'**
+  String get icuNoVitalsLabel;
+
+  /// Title for the ICU care panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounds, nursing, and orders'**
+  String get icuCarePanelTitle;
+
+  /// Description for the ICU care panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent care notes and medication tasks linked to IPD.'**
+  String get icuCarePanelDescription;
+
+  /// Empty label for the ICU care list.
+  ///
+  /// In en, this message translates to:
+  /// **'No care tasks recorded'**
+  String get icuNoCareTasksLabel;
+
+  /// Title for the ICU transfer and readiness panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer and readiness'**
+  String get icuTransferPanelTitle;
+
+  /// Description for the ICU transfer panel.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU stay movement, planned discharge, and handoff state.'**
+  String get icuTransferPanelDescription;
+
+  /// Empty label for the ICU transfer list.
+  ///
+  /// In en, this message translates to:
+  /// **'No transfer or discharge readiness records'**
+  String get icuNoTransferRecordsLabel;
+
+  /// Fallback title for an ICU round note.
+  ///
+  /// In en, this message translates to:
+  /// **'Round note'**
+  String get icuRoundNoteFallback;
+
+  /// Fallback title for an ICU nursing note.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing note'**
+  String get icuNursingNoteFallback;
+
+  /// Fallback title for an ICU medication task.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication task'**
+  String get icuMedicationTaskFallback;
+
+  /// Label for a medication dose entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get icuDoseLabel;
+
+  /// Title for an active ICU stay record.
+  ///
+  /// In en, this message translates to:
+  /// **'Active ICU stay'**
+  String get icuActiveStayLabel;
+
+  /// Title for a previous ICU stay record.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous ICU stay'**
+  String get icuPreviousStayLabel;
+
+  /// Subtitle showing when an ICU stay ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended {time}'**
+  String icuEndedAtLabel(String time);
+
+  /// Title prefix for a transfer record.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get icuTransferRecordLabel;
+
+  /// Title prefix for a discharge record.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get icuDischargeRecordLabel;
+
+  /// Action label to start an ICU stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Start ICU stay'**
+  String get icuActionStartStay;
+
+  /// Action label to record an ICU observation.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get icuActionRecordObservation;
+
+  /// Action label to record vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get icuActionRecordVitals;
+
+  /// Action label to raise a critical alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alert'**
+  String get icuActionRaiseAlert;
+
+  /// Action label to acknowledge an alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge alert'**
+  String get icuActionAcknowledgeAlert;
+
+  /// Action label to add an ICU round note.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU round'**
+  String get icuActionRound;
+
+  /// Action label to order a lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Order lab'**
+  String get icuActionOrderLab;
+
+  /// Action label to order radiology imaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Order imaging'**
+  String get icuActionOrderImaging;
+
+  /// Action label to prescribe medication.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescribe'**
+  String get icuActionPrescribe;
+
+  /// Action label to request a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request transfer'**
+  String get icuActionRequestTransfer;
+
+  /// Action label to manage an open transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage transfer'**
+  String get icuActionManageTransfer;
+
+  /// Action label to assign an ICU bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign ICU bed'**
+  String get icuActionAssignBed;
+
+  /// Action label to mark discharge readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge readiness'**
+  String get icuActionMarkReadiness;
+
+  /// Action label to open the IPD workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in IPD'**
+  String get icuActionOpenIpd;
+
+  /// Action label to end an ICU stay.
+  ///
+  /// In en, this message translates to:
+  /// **'End ICU stay'**
+  String get icuActionEndStay;
+
+  /// Action label to print the ICU summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Print summary'**
+  String get icuPrintSummaryLabel;
+
+  /// Title for the ICU observation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Record ICU observation'**
+  String get icuObservationDialogTitle;
+
+  /// Field label for an ICU observation.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get icuObservationFieldLabel;
+
+  /// Submit label for recording an ICU observation.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get icuRecordActionLabel;
+
+  /// Title for the ICU vitals dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Update vitals'**
+  String get icuVitalsDialogTitle;
+
+  /// Submit label for updating vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get icuVitalsUpdateActionLabel;
+
+  /// Title for the ICU critical alert dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add critical alert'**
+  String get icuAlertDialogTitle;
+
+  /// Field label for alert severity.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity'**
+  String get icuAlertSeverityLabel;
+
+  /// Field label for the alert message.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert message'**
+  String get icuAlertMessageLabel;
+
+  /// Submit label for adding an alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Add alert'**
+  String get icuAlertAddActionLabel;
+
+  /// Title for the ICU round dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ICU round note'**
+  String get icuRoundDialogTitle;
+
+  /// Field label for the ICU round note.
+  ///
+  /// In en, this message translates to:
+  /// **'Round note'**
+  String get icuRoundNoteLabel;
+
+  /// Submit label for adding a round note.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get icuRoundAddActionLabel;
+
+  /// Title for the ICU transfer request dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Request transfer'**
+  String get icuTransferDialogTitle;
+
+  /// Field label for the transfer target ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Target ward'**
+  String get icuTransferTargetWardLabel;
+
+  /// Field label for the transfer target ward id.
+  ///
+  /// In en, this message translates to:
+  /// **'Target ward ID'**
+  String get icuTransferTargetWardIdLabel;
+
+  /// Submit label for requesting a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get icuTransferRequestActionLabel;
+
+  /// Title for the ICU discharge readiness dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark discharge readiness'**
+  String get icuReadinessDialogTitle;
+
+  /// Field label for the discharge readiness note.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness note'**
+  String get icuReadinessNoteLabel;
+
+  /// Description for the ICU discharge readiness dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.'**
+  String get icuReadinessDescription;
+
+  /// Submit label for marking discharge readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark ready'**
+  String get icuReadinessMarkActionLabel;
+
+  /// Title for the start ICU stay confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start ICU stay'**
+  String get icuStartStayTitle;
+
+  /// Body for the start ICU stay confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This opens an active ICU stay on the IPD admission so critical-care documentation can begin.'**
+  String get icuStartStayBody;
+
+  /// Confirm label to start an ICU stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Start stay'**
+  String get icuStartStayActionLabel;
+
+  /// Title for the acknowledge alert confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge alert'**
+  String get icuAcknowledgeTitle;
+
+  /// Body for the acknowledge alert confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This clears the selected critical alert from the active ICU board.'**
+  String get icuAcknowledgeBody;
+
+  /// Title for the end ICU stay confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'End ICU stay'**
+  String get icuEndStayTitle;
+
+  /// Body for the end ICU stay confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.'**
+  String get icuEndStayBody;
+
+  /// Title for the assign ICU bed dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign ICU bed'**
+  String get icuAssignBedDialogTitle;
+
+  /// Title for the manage transfer dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage transfer'**
+  String get icuManageTransferDialogTitle;
+
+  /// Transfer action: approve.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get icuTransferActionApprove;
+
+  /// Transfer action: start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get icuTransferActionStart;
+
+  /// Transfer action: complete with bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete with bed'**
+  String get icuTransferActionComplete;
+
+  /// Transfer action: cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel transfer'**
+  String get icuTransferActionCancel;
+
+  /// Field label for the transfer target bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Target bed'**
+  String get icuTransferSelectBedLabel;
+
+  /// Message when there is no open transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'No open transfer to manage.'**
+  String get icuTransferNoOpenLabel;
+
+  /// Title prompting to end the ICU stay after a step-down.
+  ///
+  /// In en, this message translates to:
+  /// **'End ICU stay?'**
+  String get icuStepDownPromptTitle;
+
+  /// Body prompting to end the ICU stay after a step-down.
+  ///
+  /// In en, this message translates to:
+  /// **'The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.'**
+  String get icuStepDownPromptBody;
+
+  /// Snackbar message after a successful ICU action.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU changes saved.'**
+  String get icuChangesSavedMessage;
+
+  /// Title for the ICU bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU bed board'**
+  String get icuBedBoardTitle;
+
+  /// Description for the ICU bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU ward bed occupancy and bed operations.'**
+  String get icuBedBoardDescription;
+
+  /// Bed board filter: all ICU wards.
+  ///
+  /// In en, this message translates to:
+  /// **'All ICU wards'**
+  String get icuBedBoardAllWards;
+
+  /// Bed board summary of available beds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} available'**
+  String icuBedAvailableLabel(int count);
+
+  /// Bed board summary of occupied beds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} occupied'**
+  String icuBedOccupiedLabel(int count);
+
+  /// Bed board column: ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get icuBedColumnWard;
+
+  /// Bed board column: room and bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Room / bed'**
+  String get icuBedColumnBed;
+
+  /// Bed board column: bed status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get icuBedColumnStatus;
+
+  /// Bed board column: current patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get icuBedColumnPatient;
+
+  /// Empty state title for the ICU bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU beds'**
+  String get icuBedNoBedsTitle;
+
+  /// Empty state body for the ICU bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU beds are configured for this facility.'**
+  String get icuBedNoBedsBody;
+
+  /// Label for a vacant ICU bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacant'**
+  String get icuBedVacantLabel;
+
+  /// Print section title for alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get icuPrintAlertsSection;
+
+  /// Print section title for observations.
+  ///
+  /// In en, this message translates to:
+  /// **'Observations'**
+  String get icuPrintObservationsSection;
+
+  /// Print section title for vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get icuPrintVitalsSection;
+
+  /// Print section title for transfer and readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer and readiness'**
+  String get icuPrintTransferSection;
+
+  /// IPD action to open the ICU workspace for this admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in ICU'**
+  String get ipdOpenIcuAction;
+
+  /// IPD action to start an ICU stay on this admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Start ICU stay'**
+  String get ipdStartIcuStayAction;
+
+  /// Confirmation body for starting an ICU stay from IPD.
+  ///
+  /// In en, this message translates to:
+  /// **'This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.'**
+  String get ipdStartIcuStayBody;
+
   /// Label for actions that navigate back to the dashboard route.
   ///
   /// In en, this message translates to:
@@ -8578,7 +9388,7 @@ abstract class AppLocalizations {
   /// **'Discharge planned'**
   String get ipdDischargePlannedSummaryLabel;
 
-  /// IPD summary label for active critical alerts.
+  /// Summary card label for critical alerts.
   ///
   /// In en, this message translates to:
   /// **'Critical alerts'**
@@ -9147,6 +9957,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Out of service'**
   String get ipdBedStatusOutOfService;
+
+  /// IPD bed status label for cleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get ipdBedStatusCleaning;
+
+  /// IPD bed status label for maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get ipdBedStatusMaintenance;
+
+  /// IPD bed status label for blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get ipdBedStatusBlocked;
+
+  /// Tab label for the IPD active patient board.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient board'**
+  String get ipdPatientBoardTab;
+
+  /// Tab label for the IPD bed occupancy board.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed board'**
+  String get ipdBedBoardTab;
+
+  /// Title of the IPD bed board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed board'**
+  String get ipdBedBoardTitle;
+
+  /// Description of the IPD bed board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Live ward bed occupancy and bed operations.'**
+  String get ipdBedBoardDescription;
+
+  /// Accessible label for the bed board search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search beds'**
+  String get ipdBedBoardSearchLabel;
+
+  /// Hint for the bed board search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by bed, ward, room, or patient'**
+  String get ipdBedBoardSearchHint;
+
+  /// Empty state title for the bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'No beds match'**
+  String get ipdBedBoardEmptyTitle;
+
+  /// Empty state body for the bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the ward or status filter to see more beds.'**
+  String get ipdBedBoardEmptyBody;
+
+  /// Bed board column header for the bed label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get ipdBedColumnLabel;
+
+  /// Bed board column header for the ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get ipdWardColumnLabel;
+
+  /// Bed board column header for the room.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get ipdRoomColumnLabel;
+
+  /// Bed board column header for the current patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Current patient'**
+  String get ipdCurrentPatientColumnLabel;
+
+  /// Bed board column header for the suggested next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get ipdNextActionColumnLabel;
+
+  /// Filter label for bed status on the bed board.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed status'**
+  String get ipdBedStatusFilterLabel;
+
+  /// Action to open the rooms and beds admin workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage beds'**
+  String get ipdBedBoardManageBedsAction;
+
+  /// Bed board action to reserve an available bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve bed'**
+  String get ipdBedActionReserve;
+
+  /// Bed board action to mark a bed available.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark available'**
+  String get ipdBedActionMarkAvailable;
+
+  /// Bed board action to mark a bed for cleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Send for cleaning'**
+  String get ipdBedActionMarkCleaning;
+
+  /// Bed board action to block a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Block bed'**
+  String get ipdBedActionBlock;
+
+  /// Bed board action to mark a bed for maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark maintenance'**
+  String get ipdBedActionMaintenance;
+
+  /// Bed board action to return a bed to service.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to service'**
+  String get ipdBedActionReturnToService;
+
+  /// Bed board action to open the occupant's admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Open admission'**
+  String get ipdBedActionOpenAdmission;
+
+  /// Bed board next action placeholder when no action is available.
+  ///
+  /// In en, this message translates to:
+  /// **'No action'**
+  String get ipdBedNoActionLabel;
+
+  /// Action to start a new IPD admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Start admission'**
+  String get ipdStartAdmissionAction;
+
+  /// Title of the start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Start admission'**
+  String get ipdStartAdmissionTitle;
+
+  /// Patient field label in the start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get ipdStartAdmissionPatientLabel;
+
+  /// Patient search hint in the start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient by name or ID'**
+  String get ipdStartAdmissionPatientHint;
+
+  /// Empty patient search result in start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching patients'**
+  String get ipdStartAdmissionNoPatients;
+
+  /// Ward field label in the start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended ward (optional)'**
+  String get ipdStartAdmissionWardLabel;
+
+  /// Bed field label in the start admission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed (optional)'**
+  String get ipdStartAdmissionBedLabel;
+
+  /// Patient board column header for length of stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Length of stay'**
+  String get ipdLengthOfStayColumnLabel;
+
+  /// Length of stay in days.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String ipdLengthOfStayDays(int count);
+
+  /// Length of stay in hours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String ipdLengthOfStayHours(int count);
 
   /// IPD discharge status label for planned.
   ///
@@ -25532,6 +26558,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some items have no price set'**
   String get clinicalRequestPriceWarningLabel;
+
+  /// Editable unit price field label in billing panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get clinicalRequestUnitPriceLabel;
+
+  /// Editable quantity field label in billing panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get clinicalRequestQuantityLabel;
+
+  /// Hint shown above editable billing line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Set or adjust prices per item, or charge a single amount.'**
+  String get clinicalRequestEditPricesHint;
+
+  /// Default billing line label for an IPD ward round / doctor review.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor review fee'**
+  String get ipdWardRoundFeeLabel;
+
+  /// Default billing line label for a theatre case / operation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation / procedure fee'**
+  String get theaterCaseFeeLabel;
+
+  /// Default billing line label for a clinical procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure fee'**
+  String get clinicalProcedureFeeLabel;
 
   /// Defer payment at request time.
   ///

@@ -42,6 +42,7 @@ final class IcuPatientDetailDto {
   IcuPatientDetail toEntity() {
     final IcuJsonMap patient = _map(json['patient']);
     final IcuJsonMap facility = _map(json['facility']);
+    final IcuJsonMap encounter = _map(json['encounter']);
     final IcuJsonMap icu = _map(json['icu']);
     final IcuPatientSummary summary = IcuPatientSummaryDto.fromDetail(
       json,
@@ -52,6 +53,7 @@ final class IcuPatientDetailDto {
       facilityName: _string(facility['name']),
       patientGender: _string(patient['gender']),
       patientDateOfBirth: _date(patient['date_of_birth']),
+      encounterType: _string(encounter['encounter_type']),
       activeStay: IcuStaySummaryDto(_map(icu['active_stay'])).toEntityOrNull(),
       latestStay: IcuStaySummaryDto(_map(icu['latest_stay'])).toEntityOrNull(),
       recentStays: _list(icu['recent_stays'])
@@ -411,6 +413,64 @@ final class IcuWardOptionDto {
       wardType: _string(json['ward_type']),
     );
   }
+}
+
+final class IcuBedWardDto {
+  const IcuBedWardDto(this.json);
+
+  final IcuJsonMap json;
+
+  IcuBedWard toEntity() {
+    return IcuBedWard(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      name: _string(json['name']),
+      wardType: _string(json['ward_type']),
+    );
+  }
+}
+
+final class IcuBedDto {
+  const IcuBedDto(this.json);
+
+  final IcuJsonMap json;
+
+  IcuBed toEntity() {
+    final IcuJsonMap admission = _map(json['current_admission']);
+    return IcuBed(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      label: _string(json['label']),
+      status: _string(json['status']),
+      wardId:
+          _string(json['ward_human_friendly_id']) ?? _string(json['ward_id']),
+      wardName: _string(json['ward_name']),
+      wardType: _string(json['ward_type']),
+      roomName: _string(json['room_name']),
+      floor: _string(json['floor']),
+      occupantAdmissionId:
+          _string(admission['admission_display_id']) ??
+          _string(admission['admission_id']),
+      occupantDisplayId: _string(admission['patient_display_id']),
+      occupantName: _string(admission['patient_display_name']),
+    );
+  }
+}
+
+List<IcuBedWard> decodeIcuBedWards(Object? responseData) {
+  final IcuJsonMap response = _expectMap(responseData);
+  return _list(response['data'])
+      .map(IcuBedWardDto.new)
+      .map((IcuBedWardDto dto) => dto.toEntity())
+      .where((IcuBedWard ward) => ward.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<IcuBed> decodeIcuBeds(Object? responseData) {
+  final IcuJsonMap response = _expectMap(responseData);
+  return _list(response['data'])
+      .map(IcuBedDto.new)
+      .map((IcuBedDto dto) => dto.toEntity())
+      .where((IcuBed bed) => bed.id.isNotEmpty)
+      .toList(growable: false);
 }
 
 List<IcuVitalSign> decodeIcuVitalSigns(Object? responseData) {

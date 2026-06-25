@@ -79,6 +79,100 @@ final class IcuRepositoryImpl implements IcuRepository {
   }
 
   @override
+  Future<Result<IcuBedBoard>> loadBedBoard() async {
+    final Result<List<IcuBedWard>> wardsResult = await _apiClient
+        .get<List<IcuBedWard>>(
+          ApiEndpoints.collection(HmsApiResource.wards),
+          queryParameters: const <String, Object?>{
+            'page': 1,
+            'limit': 100,
+            'ward_type': 'ICU',
+            'is_active': 'true',
+            'sort_by': 'name',
+            'order': 'asc',
+          },
+          decoder: decodeIcuBedWards,
+        );
+
+    final Result<List<IcuBed>> bedsResult = await _apiClient.get<List<IcuBed>>(
+      ApiEndpoints.collection(HmsApiResource.beds),
+      queryParameters: const <String, Object?>{
+        'page': 1,
+        'limit': 200,
+        'include_occupancy': 'true',
+        'sort_by': 'label',
+        'order': 'asc',
+      },
+      decoder: decodeIcuBeds,
+    );
+
+    final List<IcuBedWard> wards = wardsResult.when(
+      success: (List<IcuBedWard> value) => value,
+      failure: (_) => const <IcuBedWard>[],
+    );
+    final Set<String> icuWardIds = wards
+        .map((IcuBedWard ward) => ward.id)
+        .toSet();
+    final List<IcuBed> beds = bedsResult.when(
+      success: (List<IcuBed> value) => value
+          .where(
+            (IcuBed bed) =>
+                (bed.wardType ?? '').toUpperCase() == 'ICU' ||
+                (bed.wardId != null && icuWardIds.contains(bed.wardId)),
+          )
+          .toList(growable: false),
+      failure: (_) => const <IcuBed>[],
+    );
+
+    return Result<IcuBedBoard>.success(IcuBedBoard(wards: wards, beds: beds));
+  }
+
+  @override
+  Future<Result<IcuPatientDetail>> startIcuStay({
+    required IcuPatientDetail detail,
+    DateTime? startedAt,
+  }) {
+    return _postIpdAction(
+      detail.summary,
+      <String>['start-icu-stay'],
+      <String, Object?>{'started_at': startedAt?.toUtc().toIso8601String()},
+    );
+  }
+
+  @override
+  Future<Result<IcuPatientDetail>> assignBed({
+    required IcuPatientDetail detail,
+    required String bedId,
+  }) {
+    return _postIpdAction(
+      detail.summary,
+      <String>['assign-bed'],
+      <String, Object?>{
+        'bed_id': bedId,
+        'assigned_at': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  @override
+  Future<Result<IcuPatientDetail>> updateTransfer({
+    required IcuPatientDetail detail,
+    required String transferRequestId,
+    required IcuTransferAction action,
+    String? toBedId,
+  }) {
+    return _postIpdAction(
+      detail.summary,
+      <String>['update-transfer'],
+      <String, Object?>{
+        'transfer_request_id': transferRequestId,
+        'action': action.apiToken,
+        'to_bed_id': toBedId,
+      },
+    );
+  }
+
+  @override
   Future<Result<IcuPatientDetail>> recordObservation({
     required IcuPatientDetail detail,
     required String observation,

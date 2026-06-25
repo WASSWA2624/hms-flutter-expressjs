@@ -8,6 +8,10 @@ const prisma = require('@prisma/client');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 const pharmacyOrderService = require('@services/pharmacy-order/pharmacy-order.service');
 const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websocket');
+const {
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 const { ROLES } = require('@config/roles');
 const {
   PHARMACY_ORDER_WITH_RELATIONS_INCLUDE,
@@ -1311,6 +1315,15 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
       await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
         status: 'CANCELLED',
       });
+
+      const existingSnapshot = extractStoredClinicalBilling(order);
+      if (existingSnapshot?.invoice_id) {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.pharmacy_order.update({
+          where: { id: order.id },
+          data: { billing_snapshot: null },
+        });
+      }
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
         tx,

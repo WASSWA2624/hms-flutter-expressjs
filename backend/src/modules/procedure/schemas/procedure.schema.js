@@ -13,6 +13,9 @@ const {
   listQuerySchema,
   isoDateSchema
 } = require('@lib/validation/zod');
+const {
+  clinicalRequestBillingSchema,
+} = require('@lib/billing/clinical-request-billing.schema');
 
 // ==================== Body Schemas ====================
 
@@ -24,7 +27,8 @@ const createProcedureSchema = z.object({
   encounter_id: uuidSchema,
   code: z.string().trim().max(80).optional().nullable(),
   description: z.string().trim().min(1).max(65535),
-  performed_at: isoDateSchema.optional().nullable()
+  performed_at: isoDateSchema.optional().nullable(),
+  billing: clinicalRequestBillingSchema.optional().nullable()
 });
 
 /**

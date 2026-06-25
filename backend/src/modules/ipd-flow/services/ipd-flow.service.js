@@ -20,6 +20,10 @@ const {
   parseIpdMedicationReminderNote,
   resolveMedicationFrequencyIntervalHours,
 } = require("@lib/clinical/ipdMedicationReminder");
+const {
+  persistWardRoundBilling,
+  mapClinicalOrderBillingFields,
+} = require("@lib/billing/clinical-request-billing");
 
 const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1016,6 +1020,7 @@ const mapPublicWardRound = (round) => {
     round_at: round.round_at || null,
     notes: round.notes || null,
     created_at: round.created_at || null,
+    ...mapClinicalOrderBillingFields(round),
   };
 };
 
@@ -3003,13 +3008,24 @@ const addWardRound = async (id, data, context = {}) => {
       latestDischargeSummary: getLatestDischargeSummary(admission),
     });
 
-    await tx.ward_round.create({
+    const wardRound = await tx.ward_round.create({
       data: {
         admission_id: admission.id,
         round_at: roundAt,
         notes: data?.notes || null,
       },
     });
+
+    if (data?.billing) {
+      await persistWardRoundBilling(tx, {
+        wardRoundId: wardRound.id,
+        billing: data.billing,
+        tenantId: admission.tenant_id,
+        facilityId: admission.facility_id || null,
+        patientId: admission.patient_id,
+        description: "Doctor review (ward round)",
+      });
+    }
 
     return {
       admission_id: admission.id,

@@ -8,6 +8,12 @@ const { HttpError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { normalizeRoleName, ROLES } = require('@config/roles');
+const {
+  persistTheatreCaseBilling,
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+  mapClinicalOrderBillingFields,
+} = require('@lib/billing/clinical-request-billing');
 
 const QUEUE_SCOPES = Object.freeze({
   ACTIVE: 'ACTIVE',
@@ -670,6 +676,7 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
     status: toUpper(snapshot?.status) || null,
     workflow_stage: toUpper(snapshot?.workflow_stage) || null,
     stage_notes: sanitize(snapshot?.stage_notes) || null,
+    ...mapClinicalOrderBillingFields(snapshot),
     encounter_display_id: encounterDisplayId,
     patient_display_id: patientDisplayId,
     patient_display_name: resolvePatientDisplayName(patient),
@@ -1176,6 +1183,17 @@ const startTheatreFlow = async (data, context = {}) => {
       select: { id: true },
     });
 
+    if (data?.billing) {
+      await persistTheatreCaseBilling(tx, {
+        theatreCaseId: theatreCase.id,
+        billing: data.billing,
+        tenantId: encounter.tenant_id,
+        facilityId: encounter.facility_id || null,
+        patientId: encounter.patient_id,
+        description: 'Theatre / operation',
+      });
+    }
+
     return theatreCase.id;
   });
 
@@ -1228,6 +1246,21 @@ const updateStage = async (id, data, context = {}) => {
       data: payload,
       select: { id: true },
     });
+
+    if (payload.status === 'CANCELLED') {
+      const billed = await tx.theatre_case.findFirst({
+        where: { id: theatreCase.id },
+        select: { billing_snapshot: true },
+      });
+      const existingSnapshot = extractStoredClinicalBilling(billed || {});
+      if (existingSnapshot?.invoice_id) {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.theatre_case.update({
+          where: { id: theatreCase.id },
+          data: { billing_snapshot: null },
+        });
+      }
+    }
 
     return theatreCase.id;
   });

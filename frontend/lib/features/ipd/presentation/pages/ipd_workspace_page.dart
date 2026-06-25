@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -14,6 +16,8 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_authorization_panel.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -41,6 +45,16 @@ const AccessRequirement _ipdOperationalWriteRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.clinicalWrite,
     AppPermissions.operationsWrite,
+  ],
+  activeModules: <String>['inpatient-bed-management'],
+);
+
+const AccessRequirement _ipdBedManageRequirement = AccessRequirement(
+  anyRoles: _ipdAdminActionRoles,
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.facilityAdmin,
+    AppPermissions.systemAdmin,
   ],
   activeModules: <String>['inpatient-bed-management'],
 );
@@ -96,15 +110,27 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
       if (!mounted) {
         return;
       }
-      ref.read(ipdWorkspaceControllerProvider.notifier).applyRouteQuery(query);
+      unawaited(_applyRouteQuery(query));
     });
+  }
+
+  Future<void> _applyRouteQuery(IpdAdmissionQuery query) async {
+    final IpdWorkspaceController controller = ref.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+    await controller.applyRouteQuery(query);
+    if (!mounted || query.focusAdmissionId == null) {
+      return;
+    }
+    await _openIpdDetailDialogById(context, ref, query.focusAdmissionId!);
   }
 
   String? _querySignature(IpdAdmissionQuery? query) {
     if (query == null) {
       return null;
     }
-    return '${query.search}|${query.wardId}|${query.scope.name}';
+    return '${query.search}|${query.wardId}|${query.scope.name}'
+        '|${query.focusAdmissionId}|${query.focusPanel?.name}';
   }
 
   @override
@@ -144,6 +170,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _tableColumnController;
+  IpdBoardMode _boardMode = IpdBoardMode.patientBoard;
 
   @override
   void initState() {
@@ -151,6 +178,18 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<IpdAdmissionSummary>();
+  }
+
+  void _selectBoardMode(IpdBoardMode mode) {
+    if (_boardMode == mode) {
+      return;
+    }
+    setState(() => _boardMode = mode);
+    if (mode == IpdBoardMode.bedBoard) {
+      unawaited(
+        ref.read(ipdWorkspaceControllerProvider.notifier).loadBedBoard(),
+      );
+    }
   }
 
   @override
@@ -176,6 +215,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canOperate = _ipdOperationalWriteRequirement.isAllowed(policy);
+    final bool canManageBeds = _ipdBedManageRequirement.isAllowed(policy);
 
     return AppWorkspace(
       title: l10n.ipdTitle,
@@ -188,6 +230,14 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
             : AppWorkspaceStatusTone.success,
       ),
       secondaryActions: <Widget>[
+        _IpdBoardModeToggle(mode: _boardMode, onChanged: _selectBoardMode),
+        if (canOperate)
+          AppButton.primary(
+            label: l10n.ipdStartAdmissionAction,
+            leadingIcon: Icons.person_add_alt_1_outlined,
+            enabled: !state.isSaving,
+            onPressed: () => unawaited(_openStartAdmissionDialog(context)),
+          ),
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
@@ -195,6 +245,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           isLoading: state.isRefreshing,
           onPressed: () async {
             final AppFailure? failure = await controller.refresh();
+            if (_boardMode == IpdBoardMode.bedBoard) {
+              await controller.loadBedBoard(force: true);
+            }
             if (context.mounted) {
               _showFailureIfNeeded(context, failure);
             }
@@ -250,12 +303,83 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
             onPressed: () =>
                 controller.applyScope(IpdQueueScope.dischargePlanned),
           ),
+        if (state.criticalAlertCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdCriticalAlertsSummaryLabel,
+            value: _countLabel(context, state.criticalAlertCount),
+            icon: Icons.notification_important_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(IpdQueueScope.activePatients),
+          ),
       ],
-      body: _IpdBoardPanel(
-        state: state,
-        searchController: _searchController,
-        columnVisibilityController: _tableColumnController,
-      ),
+      body: _boardMode == IpdBoardMode.bedBoard
+          ? IpdBedBoardPanel(
+              state: state,
+              canManageBeds: canManageBeds,
+              onManageBeds: () => context.go(AppRoutes.roomsBeds.path),
+              onOpenAdmission: (IpdBedBoardEntry bed) {
+                final String? admissionId =
+                    bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
+                if (admissionId != null) {
+                  unawaited(
+                    _openIpdDetailDialogById(context, ref, admissionId),
+                  );
+                }
+              },
+            )
+          : _IpdBoardPanel(
+              state: state,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+            ),
+    );
+  }
+
+  Future<void> _openStartAdmissionDialog(BuildContext context) async {
+    final IpdWorkspaceState state = widget.state;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          IpdStartAdmissionDialog(referenceData: state.referenceData),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+}
+
+class _IpdBoardModeToggle extends StatelessWidget {
+  const _IpdBoardModeToggle({required this.mode, required this.onChanged});
+
+  final IpdBoardMode mode;
+  final ValueChanged<IpdBoardMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return SegmentedButton<IpdBoardMode>(
+      showSelectedIcon: false,
+      segments: <ButtonSegment<IpdBoardMode>>[
+        ButtonSegment<IpdBoardMode>(
+          value: IpdBoardMode.patientBoard,
+          label: Text(l10n.ipdPatientBoardTab),
+          icon: const Icon(Icons.people_alt_outlined),
+        ),
+        ButtonSegment<IpdBoardMode>(
+          value: IpdBoardMode.bedBoard,
+          label: Text(l10n.ipdBedBoardTab),
+          icon: const Icon(Icons.bed_outlined),
+        ),
+      ],
+      selected: <IpdBoardMode>{mode},
+      onSelectionChanged: (Set<IpdBoardMode> selection) {
+        if (selection.isNotEmpty) {
+          onChanged(selection.first);
+        }
+      },
     );
   }
 }
@@ -415,6 +539,18 @@ class _IpdBoardPanel extends ConsumerWidget {
                     ),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_dateTimeLabel(context, item.admittedAt));
+            },
+          ),
+          AppListTableColumn<IpdAdmissionSummary>(
+            label: l10n.ipdLengthOfStayColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareDateTime(
+                      left.admittedAt,
+                      right.admittedAt,
+                    ),
+            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+              return Text(_lengthOfStayLabel(context, item));
             },
           ),
         ],
@@ -703,6 +839,37 @@ Future<void> _openIpdDetailDialog(
   );
 }
 
+Future<void> _openIpdDetailDialogById(
+  BuildContext context,
+  WidgetRef ref,
+  String admissionId,
+) async {
+  final IpdWorkspaceController controller = ref.read(
+    ipdWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectAdmissionById(admissionId);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+  final IpdWorkspaceState? state = _readIpdState(ref);
+  if (state == null || state.selectedAdmission == null) {
+    return;
+  }
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.ipdAdmissionDetailTitle),
+      icon: const Icon(Icons.bed_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _IpdDetailPanel(state: state),
+    ),
+  );
+}
+
 IpdWorkspaceState? _readIpdState(WidgetRef ref) {
   return ref
       .read(ipdWorkspaceControllerProvider)
@@ -734,9 +901,25 @@ class _IpdDetailActions extends ConsumerWidget {
     final bool activeBed = summary.hasActiveBed;
     final bool dischargePlanned = summary.stage == _stageDischargePlanned;
     final bool hasOpenTransfer = admission.openTransferRequest != null;
+    final String icuStatus = (admission.icu.status ?? '').toUpperCase();
+    final bool icuActive = icuStatus == 'ACTIVE';
+    final bool icuEligible = activeBed && !terminal && !icuActive;
 
     return AppActionList(
       actions: <AppActionItem>[
+        if (icuActive || admission.icu.hasCriticalAlert)
+          AppActionItem(
+            label: l10n.ipdOpenIcuAction,
+            leadingIcon: Icons.monitor_heart_outlined,
+            onPressed: () => _openIcuWorkspace(context, summary),
+          ),
+        if (canClinical && icuEligible)
+          AppActionItem(
+            label: l10n.ipdStartIcuStayAction,
+            leadingIcon: Icons.play_circle_outline,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () => _confirmStartIcuStay(context, ref, summary),
+          ),
         if (canOperate && !activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdAssignBedAction,
@@ -774,17 +957,7 @@ class _IpdDetailActions extends ConsumerWidget {
             label: l10n.ipdAddWardRoundAction,
             leadingIcon: Icons.fact_check_outlined,
             enabled: canClinical && actionsEnabled,
-            onPressed: () => _openTextActionDialog(
-              context,
-              ref,
-              title: l10n.ipdAddWardRoundAction,
-              icon: Icons.fact_check_outlined,
-              fieldLabel: l10n.ipdNotesFieldLabel,
-              submitLabel: l10n.ipdAddWardRoundAction,
-              onSubmit: (String value) => ref
-                  .read(ipdWorkspaceControllerProvider.notifier)
-                  .addWardRound(summary, value),
-            ),
+            onPressed: () => _openWardRoundDialog(context, ref, summary),
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
@@ -866,6 +1039,40 @@ class _IpdDetailActions extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  void _openIcuWorkspace(BuildContext context, IpdAdmissionSummary summary) {
+    final String? displayId = summary.displayId?.trim();
+    final String location = displayId == null || displayId.isEmpty
+        ? AppRoutes.icu.path
+        : AppRoutes.icu.location(
+            queryParameters: <String, String>{'id': displayId},
+          );
+    context.go(location);
+  }
+
+  Future<void> _confirmStartIcuStay(
+    BuildContext context,
+    WidgetRef ref,
+    IpdAdmissionSummary summary,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.ipdStartIcuStayAction,
+        body: l10n.ipdStartIcuStayBody,
+        submitLabel: l10n.ipdStartIcuStayAction,
+        icon: const Icon(Icons.play_circle_outline),
+        onConfirm: () => ref
+            .read(ipdWorkspaceControllerProvider.notifier)
+            .startIcuStay(summary),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
   }
 
   Future<void> _openAssignBedDialog(BuildContext context, WidgetRef ref) async {
@@ -978,6 +1185,124 @@ class _IpdDetailActions extends ConsumerWidget {
     if (saved == true && context.mounted) {
       _showSaved(context);
     }
+  }
+
+  Future<void> _openWardRoundDialog(
+    BuildContext context,
+    WidgetRef ref,
+    IpdAdmissionSummary summary,
+  ) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _WardRoundActionDialog(summary: summary),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+}
+
+class _WardRoundActionDialog extends ConsumerStatefulWidget {
+  const _WardRoundActionDialog({required this.summary});
+
+  final IpdAdmissionSummary summary;
+
+  @override
+  ConsumerState<_WardRoundActionDialog> createState() =>
+      _WardRoundActionDialogState();
+}
+
+class _WardRoundActionDialogState
+    extends ConsumerState<_WardRoundActionDialog> {
+  final TextEditingController _notesController = TextEditingController();
+  ClinicalRequestBillingSubmit? _billing;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) {
+      return;
+    }
+    setState(() => _submitting = true);
+    final ClinicalRequestBillingSubmit? billing = _billing;
+    final bool charge =
+        billing != null &&
+        billing.paymentStatus != ClinicalRequestPaymentStatus.notBilled &&
+        billing.totalAmount > 0;
+    final AppFailure? failure = await ref
+        .read(ipdWorkspaceControllerProvider.notifier)
+        .addWardRound(
+          widget.summary,
+          _notesController.text.trim(),
+          billing: charge ? billing.toPayloadMap() : null,
+        );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _submitting = false);
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      _showFailureIfNeeded(context, failure);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'WARD_ROUND_FEE',
+            label: l10n.ipdWardRoundFeeLabel,
+          ),
+        ];
+
+    return AppDialog(
+      title: Text(l10n.ipdAddWardRoundAction),
+      icon: const Icon(Icons.fact_check_outlined),
+      maxWidth: 560,
+      scrollable: true,
+      closeEnabled: !_submitting,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.ipdNotesFieldLabel,
+            minLines: 3,
+            maxLines: 8,
+            enabled: !_submitting,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          ClinicalRequestBillingPanel(
+            lineItems: lineItems,
+            enabled: !_submitting,
+            onChanged: (ClinicalRequestBillingSubmit value) {
+              _billing = value;
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_submitting,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.ipdAddWardRoundAction,
+          isLoading: _submitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
   }
 }
 
@@ -2151,6 +2476,22 @@ String _dateTimeLabel(BuildContext context, DateTime? value) {
   return value == null
       ? context.l10n.profileUnknownValue
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
+}
+
+String _lengthOfStayLabel(BuildContext context, IpdAdmissionSummary item) {
+  final DateTime? admittedAt = item.admittedAt;
+  if (admittedAt == null) {
+    return context.l10n.profileUnknownValue;
+  }
+  final DateTime end = item.dischargedAt ?? DateTime.now();
+  final Duration stay = end.difference(admittedAt);
+  if (stay.isNegative) {
+    return context.l10n.profileUnknownValue;
+  }
+  if (stay.inHours < 24) {
+    return context.l10n.ipdLengthOfStayHours(stay.inHours);
+  }
+  return context.l10n.ipdLengthOfStayDays(stay.inDays);
 }
 
 ClinicalActionReferenceData _ipdAdmissionReferenceData(

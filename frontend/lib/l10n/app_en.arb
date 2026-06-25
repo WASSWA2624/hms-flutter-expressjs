@@ -44,6 +44,570 @@
   "@icuStayDialogTitle": {
     "description": "Title for the ICU stay detail dialog."
   },
+  "icuLoadingBoardTitle": "Loading ICU board",
+  "@icuLoadingBoardTitle": {
+    "description": "Loading title for the ICU workspace."
+  },
+  "icuLoadingBoardBody": "Loading intensive care patients and alert state.",
+  "@icuLoadingBoardBody": {
+    "description": "Loading body for the ICU workspace."
+  },
+  "icuLiveSyncLabel": "Live sync",
+  "@icuLiveSyncLabel": {
+    "description": "Status label when the ICU workspace is live syncing."
+  },
+  "icuSavingLabel": "Saving",
+  "@icuSavingLabel": {
+    "description": "Status label when an ICU action is saving."
+  },
+  "icuViewPatientBoard": "Patient board",
+  "@icuViewPatientBoard": {
+    "description": "Label for the ICU patient board view toggle."
+  },
+  "icuViewBedBoard": "Bed board",
+  "@icuViewBedBoard": {
+    "description": "Label for the ICU bed board view toggle."
+  },
+  "icuAllIcuLabel": "All ICU",
+  "@icuAllIcuLabel": {
+    "description": "ICU board scope: all ICU admissions."
+  },
+  "icuActiveIcuLabel": "Active ICU",
+  "@icuActiveIcuLabel": {
+    "description": "ICU board scope: patients with active ICU stays."
+  },
+  "icuCriticalAlertsLabel": "Critical alerts",
+  "@icuCriticalAlertsLabel": {
+    "description": "ICU board scope: open critical alerts."
+  },
+  "icuTransfersLabel": "Transfers",
+  "@icuTransfersLabel": {
+    "description": "ICU board scope: pending transfers."
+  },
+  "icuDischargeReadyLabel": "Discharge ready",
+  "@icuDischargeReadyLabel": {
+    "description": "ICU board scope: discharge readiness."
+  },
+  "icuEndedStaysLabel": "Ended stays",
+  "@icuEndedStaysLabel": {
+    "description": "ICU board scope: ended ICU stays."
+  },
+  "icuTransferPendingLabel": "Transfer pending",
+  "@icuTransferPendingLabel": {
+    "description": "Badge label when a transfer is pending."
+  },
+  "icuBoardTitle": "ICU board",
+  "@icuBoardTitle": {
+    "description": "Title for the ICU patient board panel."
+  },
+  "icuBoardDescription": "Grouped by bed state and alert level.",
+  "@icuBoardDescription": {
+    "description": "Description for the ICU patient board panel."
+  },
+  "icuSearchHint": "Search patient, admission, bed, or alert",
+  "@icuSearchHint": {
+    "description": "Search hint for the ICU board."
+  },
+  "icuBoardScopeLabel": "Board scope",
+  "@icuBoardScopeLabel": {
+    "description": "Label for the ICU board scope filter."
+  },
+  "icuBoardFiltersTitle": "ICU board filters",
+  "@icuBoardFiltersTitle": {
+    "description": "Title for the ICU board filters dialog."
+  },
+  "icuColumnBedLabel": "Bed",
+  "@icuColumnBedLabel": {
+    "description": "ICU board column: bed / location."
+  },
+  "icuColumnAlertLabel": "Alert",
+  "@icuColumnAlertLabel": {
+    "description": "ICU board column: alert severity."
+  },
+  "icuColumnTransferLabel": "Transfer",
+  "@icuColumnTransferLabel": {
+    "description": "ICU board column: transfer state."
+  },
+  "icuColumnStartLabel": "ICU start",
+  "@icuColumnStartLabel": {
+    "description": "ICU board column: ICU stay start / length of stay."
+  },
+  "icuColumnSourceLabel": "Source",
+  "@icuColumnSourceLabel": {
+    "description": "ICU board column: source of admission."
+  },
+  "icuNoPatientsTitle": "No ICU patients",
+  "@icuNoPatientsTitle": {
+    "description": "Empty state title for the ICU board."
+  },
+  "icuNoPatientsBody": "Active ICU admissions will appear here after IPD admission and ICU transfer.",
+  "@icuNoPatientsBody": {
+    "description": "Empty state body for the ICU board."
+  },
+  "icuNoAlertLabel": "No alert",
+  "@icuNoAlertLabel": {
+    "description": "Status when a patient has no critical alert."
+  },
+  "icuDetailEmptyTitle": "No ICU stay selected",
+  "@icuDetailEmptyTitle": {
+    "description": "Empty state title for the ICU detail panel."
+  },
+  "icuDetailEmptyBody": "Select an ICU patient to review observations, orders, alerts, and transfer readiness.",
+  "@icuDetailEmptyBody": {
+    "description": "Empty state body for the ICU detail panel."
+  },
+  "icuDetailLoadingTitle": "Loading ICU stay",
+  "@icuDetailLoadingTitle": {
+    "description": "Loading title for the ICU detail panel."
+  },
+  "icuDetailLoadingBody": "Loading observations, alerts, and transfer state.",
+  "@icuDetailLoadingBody": {
+    "description": "Loading body for the ICU detail panel."
+  },
+  "icuAdmissionLabel": "Admission",
+  "@icuAdmissionLabel": {
+    "description": "Field label for the IPD admission number."
+  },
+  "icuLocationLabel": "Location",
+  "@icuLocationLabel": {
+    "description": "Field label for the ICU ward and bed location."
+  },
+  "icuFacilityLabel": "Facility",
+  "@icuFacilityLabel": {
+    "description": "Field label for the facility."
+  },
+  "icuAdmittedLabel": "Admitted",
+  "@icuAdmittedLabel": {
+    "description": "Field label for the admitted time."
+  },
+  "icuSourceLabel": "Source",
+  "@icuSourceLabel": {
+    "description": "Field label for the admission source context."
+  },
+  "icuStayStartedLabel": "ICU stay started",
+  "@icuStayStartedLabel": {
+    "description": "Field label for the ICU stay start time."
+  },
+  "icuActionsTitle": "Actions",
+  "@icuActionsTitle": {
+    "description": "Title for the ICU actions panel."
+  },
+  "icuCriticalAlertsPanelTitle": "Critical alerts",
+  "@icuCriticalAlertsPanelTitle": {
+    "description": "Title for the ICU critical alerts panel."
+  },
+  "icuNoActiveAlertsLabel": "No active ICU critical alerts.",
+  "@icuNoActiveAlertsLabel": {
+    "description": "Description when there are no active ICU alerts."
+  },
+  "icuHighestSeverityLabel": "Highest severity: {severity}",
+  "@icuHighestSeverityLabel": {
+    "description": "Description showing the highest ICU alert severity.",
+    "placeholders": {
+      "severity": {
+        "type": "String",
+        "description": "Highest severity label."
+      }
+    }
+  },
+  "icuNoActiveAlertsListLabel": "No active alerts",
+  "@icuNoActiveAlertsListLabel": {
+    "description": "Empty label for the ICU alerts list."
+  },
+  "icuObservationsPanelTitle": "Observations",
+  "@icuObservationsPanelTitle": {
+    "description": "Title for the ICU observations panel."
+  },
+  "icuObservationsPanelDescription": "Recent intensive observations for this ICU stay.",
+  "@icuObservationsPanelDescription": {
+    "description": "Description for the ICU observations panel."
+  },
+  "icuNoObservationsLabel": "No ICU observations recorded",
+  "@icuNoObservationsLabel": {
+    "description": "Empty label for the ICU observations list."
+  },
+  "icuVitalsTrendTitle": "Vitals trend",
+  "@icuVitalsTrendTitle": {
+    "description": "Title for the ICU vitals trend panel."
+  },
+  "icuVitalsTrendDescription": "Latest recorded vital values for the admission encounter.",
+  "@icuVitalsTrendDescription": {
+    "description": "Description for the ICU vitals trend panel."
+  },
+  "icuNoVitalsLabel": "No vitals recorded",
+  "@icuNoVitalsLabel": {
+    "description": "Empty label for the ICU vitals list."
+  },
+  "icuCarePanelTitle": "Rounds, nursing, and orders",
+  "@icuCarePanelTitle": {
+    "description": "Title for the ICU care panel."
+  },
+  "icuCarePanelDescription": "Recent care notes and medication tasks linked to IPD.",
+  "@icuCarePanelDescription": {
+    "description": "Description for the ICU care panel."
+  },
+  "icuNoCareTasksLabel": "No care tasks recorded",
+  "@icuNoCareTasksLabel": {
+    "description": "Empty label for the ICU care list."
+  },
+  "icuTransferPanelTitle": "Transfer and readiness",
+  "@icuTransferPanelTitle": {
+    "description": "Title for the ICU transfer and readiness panel."
+  },
+  "icuTransferPanelDescription": "ICU stay movement, planned discharge, and handoff state.",
+  "@icuTransferPanelDescription": {
+    "description": "Description for the ICU transfer panel."
+  },
+  "icuNoTransferRecordsLabel": "No transfer or discharge readiness records",
+  "@icuNoTransferRecordsLabel": {
+    "description": "Empty label for the ICU transfer list."
+  },
+  "icuRoundNoteFallback": "Round note",
+  "@icuRoundNoteFallback": {
+    "description": "Fallback title for an ICU round note."
+  },
+  "icuNursingNoteFallback": "Nursing note",
+  "@icuNursingNoteFallback": {
+    "description": "Fallback title for an ICU nursing note."
+  },
+  "icuMedicationTaskFallback": "Medication task",
+  "@icuMedicationTaskFallback": {
+    "description": "Fallback title for an ICU medication task."
+  },
+  "icuDoseLabel": "Dose",
+  "@icuDoseLabel": {
+    "description": "Label for a medication dose entry."
+  },
+  "icuActiveStayLabel": "Active ICU stay",
+  "@icuActiveStayLabel": {
+    "description": "Title for an active ICU stay record."
+  },
+  "icuPreviousStayLabel": "Previous ICU stay",
+  "@icuPreviousStayLabel": {
+    "description": "Title for a previous ICU stay record."
+  },
+  "icuEndedAtLabel": "Ended {time}",
+  "@icuEndedAtLabel": {
+    "description": "Subtitle showing when an ICU stay ended.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "description": "Formatted end time."
+      }
+    }
+  },
+  "icuTransferRecordLabel": "Transfer",
+  "@icuTransferRecordLabel": {
+    "description": "Title prefix for a transfer record."
+  },
+  "icuDischargeRecordLabel": "Discharge",
+  "@icuDischargeRecordLabel": {
+    "description": "Title prefix for a discharge record."
+  },
+  "icuActionStartStay": "Start ICU stay",
+  "@icuActionStartStay": {
+    "description": "Action label to start an ICU stay."
+  },
+  "icuActionRecordObservation": "Observation",
+  "@icuActionRecordObservation": {
+    "description": "Action label to record an ICU observation."
+  },
+  "icuActionRecordVitals": "Vitals",
+  "@icuActionRecordVitals": {
+    "description": "Action label to record vitals."
+  },
+  "icuActionRaiseAlert": "Critical alert",
+  "@icuActionRaiseAlert": {
+    "description": "Action label to raise a critical alert."
+  },
+  "icuActionAcknowledgeAlert": "Acknowledge alert",
+  "@icuActionAcknowledgeAlert": {
+    "description": "Action label to acknowledge an alert."
+  },
+  "icuActionRound": "ICU round",
+  "@icuActionRound": {
+    "description": "Action label to add an ICU round note."
+  },
+  "icuActionOrderLab": "Order lab",
+  "@icuActionOrderLab": {
+    "description": "Action label to order a lab test."
+  },
+  "icuActionOrderImaging": "Order imaging",
+  "@icuActionOrderImaging": {
+    "description": "Action label to order radiology imaging."
+  },
+  "icuActionPrescribe": "Prescribe",
+  "@icuActionPrescribe": {
+    "description": "Action label to prescribe medication."
+  },
+  "icuActionRequestTransfer": "Request transfer",
+  "@icuActionRequestTransfer": {
+    "description": "Action label to request a transfer."
+  },
+  "icuActionManageTransfer": "Manage transfer",
+  "@icuActionManageTransfer": {
+    "description": "Action label to manage an open transfer."
+  },
+  "icuActionAssignBed": "Assign ICU bed",
+  "@icuActionAssignBed": {
+    "description": "Action label to assign an ICU bed."
+  },
+  "icuActionMarkReadiness": "Discharge readiness",
+  "@icuActionMarkReadiness": {
+    "description": "Action label to mark discharge readiness."
+  },
+  "icuActionOpenIpd": "Open in IPD",
+  "@icuActionOpenIpd": {
+    "description": "Action label to open the IPD workspace."
+  },
+  "icuActionEndStay": "End ICU stay",
+  "@icuActionEndStay": {
+    "description": "Action label to end an ICU stay."
+  },
+  "icuPrintSummaryLabel": "Print summary",
+  "@icuPrintSummaryLabel": {
+    "description": "Action label to print the ICU summary."
+  },
+  "icuObservationDialogTitle": "Record ICU observation",
+  "@icuObservationDialogTitle": {
+    "description": "Title for the ICU observation dialog."
+  },
+  "icuObservationFieldLabel": "Observation",
+  "@icuObservationFieldLabel": {
+    "description": "Field label for an ICU observation."
+  },
+  "icuRecordActionLabel": "Record",
+  "@icuRecordActionLabel": {
+    "description": "Submit label for recording an ICU observation."
+  },
+  "icuVitalsDialogTitle": "Update vitals",
+  "@icuVitalsDialogTitle": {
+    "description": "Title for the ICU vitals dialog."
+  },
+  "icuVitalsUpdateActionLabel": "Update",
+  "@icuVitalsUpdateActionLabel": {
+    "description": "Submit label for updating vitals."
+  },
+  "icuAlertDialogTitle": "Add critical alert",
+  "@icuAlertDialogTitle": {
+    "description": "Title for the ICU critical alert dialog."
+  },
+  "icuAlertSeverityLabel": "Severity",
+  "@icuAlertSeverityLabel": {
+    "description": "Field label for alert severity."
+  },
+  "icuAlertMessageLabel": "Alert message",
+  "@icuAlertMessageLabel": {
+    "description": "Field label for the alert message."
+  },
+  "icuAlertAddActionLabel": "Add alert",
+  "@icuAlertAddActionLabel": {
+    "description": "Submit label for adding an alert."
+  },
+  "icuRoundDialogTitle": "Add ICU round note",
+  "@icuRoundDialogTitle": {
+    "description": "Title for the ICU round dialog."
+  },
+  "icuRoundNoteLabel": "Round note",
+  "@icuRoundNoteLabel": {
+    "description": "Field label for the ICU round note."
+  },
+  "icuRoundAddActionLabel": "Add note",
+  "@icuRoundAddActionLabel": {
+    "description": "Submit label for adding a round note."
+  },
+  "icuTransferDialogTitle": "Request transfer",
+  "@icuTransferDialogTitle": {
+    "description": "Title for the ICU transfer request dialog."
+  },
+  "icuTransferTargetWardLabel": "Target ward",
+  "@icuTransferTargetWardLabel": {
+    "description": "Field label for the transfer target ward."
+  },
+  "icuTransferTargetWardIdLabel": "Target ward ID",
+  "@icuTransferTargetWardIdLabel": {
+    "description": "Field label for the transfer target ward id."
+  },
+  "icuTransferRequestActionLabel": "Request",
+  "@icuTransferRequestActionLabel": {
+    "description": "Submit label for requesting a transfer."
+  },
+  "icuReadinessDialogTitle": "Mark discharge readiness",
+  "@icuReadinessDialogTitle": {
+    "description": "Title for the ICU discharge readiness dialog."
+  },
+  "icuReadinessNoteLabel": "Readiness note",
+  "@icuReadinessNoteLabel": {
+    "description": "Field label for the discharge readiness note."
+  },
+  "icuReadinessDescription": "This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.",
+  "@icuReadinessDescription": {
+    "description": "Description for the ICU discharge readiness dialog."
+  },
+  "icuReadinessMarkActionLabel": "Mark ready",
+  "@icuReadinessMarkActionLabel": {
+    "description": "Submit label for marking discharge readiness."
+  },
+  "icuStartStayTitle": "Start ICU stay",
+  "@icuStartStayTitle": {
+    "description": "Title for the start ICU stay confirmation."
+  },
+  "icuStartStayBody": "This opens an active ICU stay on the IPD admission so critical-care documentation can begin.",
+  "@icuStartStayBody": {
+    "description": "Body for the start ICU stay confirmation."
+  },
+  "icuStartStayActionLabel": "Start stay",
+  "@icuStartStayActionLabel": {
+    "description": "Confirm label to start an ICU stay."
+  },
+  "icuAcknowledgeTitle": "Acknowledge alert",
+  "@icuAcknowledgeTitle": {
+    "description": "Title for the acknowledge alert confirmation."
+  },
+  "icuAcknowledgeBody": "This clears the selected critical alert from the active ICU board.",
+  "@icuAcknowledgeBody": {
+    "description": "Body for the acknowledge alert confirmation."
+  },
+  "icuEndStayTitle": "End ICU stay",
+  "@icuEndStayTitle": {
+    "description": "Title for the end ICU stay confirmation."
+  },
+  "icuEndStayBody": "This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.",
+  "@icuEndStayBody": {
+    "description": "Body for the end ICU stay confirmation."
+  },
+  "icuAssignBedDialogTitle": "Assign ICU bed",
+  "@icuAssignBedDialogTitle": {
+    "description": "Title for the assign ICU bed dialog."
+  },
+  "icuManageTransferDialogTitle": "Manage transfer",
+  "@icuManageTransferDialogTitle": {
+    "description": "Title for the manage transfer dialog."
+  },
+  "icuTransferActionApprove": "Approve",
+  "@icuTransferActionApprove": {
+    "description": "Transfer action: approve."
+  },
+  "icuTransferActionStart": "Start",
+  "@icuTransferActionStart": {
+    "description": "Transfer action: start."
+  },
+  "icuTransferActionComplete": "Complete with bed",
+  "@icuTransferActionComplete": {
+    "description": "Transfer action: complete with bed."
+  },
+  "icuTransferActionCancel": "Cancel transfer",
+  "@icuTransferActionCancel": {
+    "description": "Transfer action: cancel."
+  },
+  "icuTransferSelectBedLabel": "Target bed",
+  "@icuTransferSelectBedLabel": {
+    "description": "Field label for the transfer target bed."
+  },
+  "icuTransferNoOpenLabel": "No open transfer to manage.",
+  "@icuTransferNoOpenLabel": {
+    "description": "Message when there is no open transfer."
+  },
+  "icuStepDownPromptTitle": "End ICU stay?",
+  "@icuStepDownPromptTitle": {
+    "description": "Title prompting to end the ICU stay after a step-down."
+  },
+  "icuStepDownPromptBody": "The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.",
+  "@icuStepDownPromptBody": {
+    "description": "Body prompting to end the ICU stay after a step-down."
+  },
+  "icuChangesSavedMessage": "ICU changes saved.",
+  "@icuChangesSavedMessage": {
+    "description": "Snackbar message after a successful ICU action."
+  },
+  "icuBedBoardTitle": "ICU bed board",
+  "@icuBedBoardTitle": {
+    "description": "Title for the ICU bed board."
+  },
+  "icuBedBoardDescription": "ICU ward bed occupancy and bed operations.",
+  "@icuBedBoardDescription": {
+    "description": "Description for the ICU bed board."
+  },
+  "icuBedBoardAllWards": "All ICU wards",
+  "@icuBedBoardAllWards": {
+    "description": "Bed board filter: all ICU wards."
+  },
+  "icuBedAvailableLabel": "{count} available",
+  "@icuBedAvailableLabel": {
+    "description": "Bed board summary of available beds.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of available beds."
+      }
+    }
+  },
+  "icuBedOccupiedLabel": "{count} occupied",
+  "@icuBedOccupiedLabel": {
+    "description": "Bed board summary of occupied beds.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of occupied beds."
+      }
+    }
+  },
+  "icuBedColumnWard": "Ward",
+  "@icuBedColumnWard": {
+    "description": "Bed board column: ward."
+  },
+  "icuBedColumnBed": "Room / bed",
+  "@icuBedColumnBed": {
+    "description": "Bed board column: room and bed."
+  },
+  "icuBedColumnStatus": "Status",
+  "@icuBedColumnStatus": {
+    "description": "Bed board column: bed status."
+  },
+  "icuBedColumnPatient": "Patient",
+  "@icuBedColumnPatient": {
+    "description": "Bed board column: current patient."
+  },
+  "icuBedNoBedsTitle": "No ICU beds",
+  "@icuBedNoBedsTitle": {
+    "description": "Empty state title for the ICU bed board."
+  },
+  "icuBedNoBedsBody": "No ICU beds are configured for this facility.",
+  "@icuBedNoBedsBody": {
+    "description": "Empty state body for the ICU bed board."
+  },
+  "icuBedVacantLabel": "Vacant",
+  "@icuBedVacantLabel": {
+    "description": "Label for a vacant ICU bed."
+  },
+  "icuPrintAlertsSection": "Alerts",
+  "@icuPrintAlertsSection": {
+    "description": "Print section title for alerts."
+  },
+  "icuPrintObservationsSection": "Observations",
+  "@icuPrintObservationsSection": {
+    "description": "Print section title for observations."
+  },
+  "icuPrintVitalsSection": "Vitals",
+  "@icuPrintVitalsSection": {
+    "description": "Print section title for vitals."
+  },
+  "icuPrintTransferSection": "Transfer and readiness",
+  "@icuPrintTransferSection": {
+    "description": "Print section title for transfer and readiness."
+  },
+  "ipdOpenIcuAction": "Open in ICU",
+  "@ipdOpenIcuAction": {
+    "description": "IPD action to open the ICU workspace for this admission."
+  },
+  "ipdStartIcuStayAction": "Start ICU stay",
+  "@ipdStartIcuStayAction": {
+    "description": "IPD action to start an ICU stay on this admission."
+  },
+  "ipdStartIcuStayBody": "This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.",
+  "@ipdStartIcuStayBody": {
+    "description": "Confirmation body for starting an ICU stay from IPD."
+  },
   "commonGoHomeActionLabel": "Go to dashboard",
   "@commonGoHomeActionLabel": {
     "description": "Label for actions that navigate back to the dashboard route."
@@ -6301,6 +6865,164 @@
   "ipdBedStatusOutOfService": "Out of service",
   "@ipdBedStatusOutOfService": {
     "description": "IPD bed status label for out of service."
+  },
+  "ipdBedStatusCleaning": "Cleaning",
+  "@ipdBedStatusCleaning": {
+    "description": "IPD bed status label for cleaning."
+  },
+  "ipdBedStatusMaintenance": "Maintenance",
+  "@ipdBedStatusMaintenance": {
+    "description": "IPD bed status label for maintenance."
+  },
+  "ipdBedStatusBlocked": "Blocked",
+  "@ipdBedStatusBlocked": {
+    "description": "IPD bed status label for blocked."
+  },
+  "ipdPatientBoardTab": "Patient board",
+  "@ipdPatientBoardTab": {
+    "description": "Tab label for the IPD active patient board."
+  },
+  "ipdBedBoardTab": "Bed board",
+  "@ipdBedBoardTab": {
+    "description": "Tab label for the IPD bed occupancy board."
+  },
+  "ipdBedBoardTitle": "Bed board",
+  "@ipdBedBoardTitle": {
+    "description": "Title of the IPD bed board panel."
+  },
+  "ipdBedBoardDescription": "Live ward bed occupancy and bed operations.",
+  "@ipdBedBoardDescription": {
+    "description": "Description of the IPD bed board panel."
+  },
+  "ipdBedBoardSearchLabel": "Search beds",
+  "@ipdBedBoardSearchLabel": {
+    "description": "Accessible label for the bed board search field."
+  },
+  "ipdBedBoardSearchHint": "Search by bed, ward, room, or patient",
+  "@ipdBedBoardSearchHint": {
+    "description": "Hint for the bed board search field."
+  },
+  "ipdBedBoardEmptyTitle": "No beds match",
+  "@ipdBedBoardEmptyTitle": {
+    "description": "Empty state title for the bed board."
+  },
+  "ipdBedBoardEmptyBody": "Adjust the ward or status filter to see more beds.",
+  "@ipdBedBoardEmptyBody": {
+    "description": "Empty state body for the bed board."
+  },
+  "ipdBedColumnLabel": "Bed",
+  "@ipdBedColumnLabel": {
+    "description": "Bed board column header for the bed label."
+  },
+  "ipdWardColumnLabel": "Ward",
+  "@ipdWardColumnLabel": {
+    "description": "Bed board column header for the ward."
+  },
+  "ipdRoomColumnLabel": "Room",
+  "@ipdRoomColumnLabel": {
+    "description": "Bed board column header for the room."
+  },
+  "ipdCurrentPatientColumnLabel": "Current patient",
+  "@ipdCurrentPatientColumnLabel": {
+    "description": "Bed board column header for the current patient."
+  },
+  "ipdNextActionColumnLabel": "Next action",
+  "@ipdNextActionColumnLabel": {
+    "description": "Bed board column header for the suggested next action."
+  },
+  "ipdBedStatusFilterLabel": "Bed status",
+  "@ipdBedStatusFilterLabel": {
+    "description": "Filter label for bed status on the bed board."
+  },
+  "ipdBedBoardManageBedsAction": "Manage beds",
+  "@ipdBedBoardManageBedsAction": {
+    "description": "Action to open the rooms and beds admin workspace."
+  },
+  "ipdBedActionReserve": "Reserve bed",
+  "@ipdBedActionReserve": {
+    "description": "Bed board action to reserve an available bed."
+  },
+  "ipdBedActionMarkAvailable": "Mark available",
+  "@ipdBedActionMarkAvailable": {
+    "description": "Bed board action to mark a bed available."
+  },
+  "ipdBedActionMarkCleaning": "Send for cleaning",
+  "@ipdBedActionMarkCleaning": {
+    "description": "Bed board action to mark a bed for cleaning."
+  },
+  "ipdBedActionBlock": "Block bed",
+  "@ipdBedActionBlock": {
+    "description": "Bed board action to block a bed."
+  },
+  "ipdBedActionMaintenance": "Mark maintenance",
+  "@ipdBedActionMaintenance": {
+    "description": "Bed board action to mark a bed for maintenance."
+  },
+  "ipdBedActionReturnToService": "Return to service",
+  "@ipdBedActionReturnToService": {
+    "description": "Bed board action to return a bed to service."
+  },
+  "ipdBedActionOpenAdmission": "Open admission",
+  "@ipdBedActionOpenAdmission": {
+    "description": "Bed board action to open the occupant's admission."
+  },
+  "ipdBedNoActionLabel": "No action",
+  "@ipdBedNoActionLabel": {
+    "description": "Bed board next action placeholder when no action is available."
+  },
+  "ipdStartAdmissionAction": "Start admission",
+  "@ipdStartAdmissionAction": {
+    "description": "Action to start a new IPD admission."
+  },
+  "ipdStartAdmissionTitle": "Start admission",
+  "@ipdStartAdmissionTitle": {
+    "description": "Title of the start admission dialog."
+  },
+  "ipdStartAdmissionPatientLabel": "Patient",
+  "@ipdStartAdmissionPatientLabel": {
+    "description": "Patient field label in the start admission dialog."
+  },
+  "ipdStartAdmissionPatientHint": "Search patient by name or ID",
+  "@ipdStartAdmissionPatientHint": {
+    "description": "Patient search hint in the start admission dialog."
+  },
+  "ipdStartAdmissionNoPatients": "No matching patients",
+  "@ipdStartAdmissionNoPatients": {
+    "description": "Empty patient search result in start admission dialog."
+  },
+  "ipdStartAdmissionWardLabel": "Recommended ward (optional)",
+  "@ipdStartAdmissionWardLabel": {
+    "description": "Ward field label in the start admission dialog."
+  },
+  "ipdStartAdmissionBedLabel": "Bed (optional)",
+  "@ipdStartAdmissionBedLabel": {
+    "description": "Bed field label in the start admission dialog."
+  },
+  "ipdCriticalAlertsSummaryLabel": "Critical alerts",
+  "@ipdCriticalAlertsSummaryLabel": {
+    "description": "Summary card label for critical alerts."
+  },
+  "ipdLengthOfStayColumnLabel": "Length of stay",
+  "@ipdLengthOfStayColumnLabel": {
+    "description": "Patient board column header for length of stay."
+  },
+  "ipdLengthOfStayDays": "{count}d",
+  "@ipdLengthOfStayDays": {
+    "description": "Length of stay in days.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ipdLengthOfStayHours": "{count}h",
+  "@ipdLengthOfStayHours": {
+    "description": "Length of stay in hours.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "ipdDischargeStatusPlanned": "Planned",
   "@ipdDischargeStatusPlanned": {
@@ -17620,6 +18342,30 @@
   "clinicalRequestPriceWarningLabel": "Some items have no price set",
   "@clinicalRequestPriceWarningLabel": {
     "description": "Warning when billing line items lack prices."
+  },
+  "clinicalRequestUnitPriceLabel": "Unit price",
+  "@clinicalRequestUnitPriceLabel": {
+    "description": "Editable unit price field label in billing panel."
+  },
+  "clinicalRequestQuantityLabel": "Qty",
+  "@clinicalRequestQuantityLabel": {
+    "description": "Editable quantity field label in billing panel."
+  },
+  "clinicalRequestEditPricesHint": "Set or adjust prices per item, or charge a single amount.",
+  "@clinicalRequestEditPricesHint": {
+    "description": "Hint shown above editable billing line items."
+  },
+  "ipdWardRoundFeeLabel": "Doctor review fee",
+  "@ipdWardRoundFeeLabel": {
+    "description": "Default billing line label for an IPD ward round / doctor review."
+  },
+  "theaterCaseFeeLabel": "Operation / procedure fee",
+  "@theaterCaseFeeLabel": {
+    "description": "Default billing line label for a theatre case / operation."
+  },
+  "clinicalProcedureFeeLabel": "Procedure fee",
+  "@clinicalProcedureFeeLabel": {
+    "description": "Default billing line label for a clinical procedure."
   },
   "clinicalRequestBillLaterAction": "Bill later",
   "@clinicalRequestBillLaterAction": {

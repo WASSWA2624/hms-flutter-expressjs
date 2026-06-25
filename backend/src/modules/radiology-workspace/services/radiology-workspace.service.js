@@ -11,6 +11,10 @@ const { ROLES } = require('@config/roles');
 const { STORAGE_PROVIDER, RADIOLOGY_ATTESTATION_V2 } = require('@config/env');
 const dicomWebClient = require('@lib/dicomweb/client');
 const {
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
+const {
   RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE,
   RADIOLOGY_STUDY_WITH_RELATIONS_INCLUDE,
   RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE,
@@ -1290,6 +1294,20 @@ const cancelRadiologyOrder = async (identifier, payload = {}, userId, ipAddress)
       await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
         status: 'CANCELLED',
       });
+
+      const existingSnapshot = extractStoredClinicalBilling(order);
+      if (existingSnapshot?.invoice_id) {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        const currentDetails =
+          order.request_details && typeof order.request_details === 'object'
+            ? { ...order.request_details }
+            : {};
+        delete currentDetails.billing;
+        await tx.radiology_order.update({
+          where: { id: order.id },
+          data: { request_details: currentDetails },
+        });
+      }
 
       const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
         tx,

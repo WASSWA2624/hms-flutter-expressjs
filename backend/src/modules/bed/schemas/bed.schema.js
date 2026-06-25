@@ -89,6 +89,14 @@ const listBedsQuerySchema = listQuerySchema.extend({
     'BLOCKED',
     'OUT_OF_SERVICE',
   ]).optional(),
+  status_any: z
+    .string()
+    .trim()
+    .regex(
+      /^(AVAILABLE|OCCUPIED|RESERVED|CLEANING|MAINTENANCE|BLOCKED|OUT_OF_SERVICE)(,(AVAILABLE|OCCUPIED|RESERVED|CLEANING|MAINTENANCE|BLOCKED|OUT_OF_SERVICE))*$/,
+    )
+    .optional(),
+  include_occupancy: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional()
 });
 

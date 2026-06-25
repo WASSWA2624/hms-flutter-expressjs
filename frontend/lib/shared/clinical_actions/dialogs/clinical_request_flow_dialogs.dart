@@ -276,9 +276,40 @@ class _ClinicalRequestBillingDialogState
     extends State<_ClinicalRequestBillingDialog> {
   ClinicalRequestBillingSubmit? _billing;
 
+  /// Pre-fill catalog line items with any prices/quantities the user previously
+  /// entered (carried on [initialBilling]) so editing a request keeps prior input.
+  List<ClinicalRequestBillingLineItem> _mergeInitialBilling(
+    List<ClinicalRequestBillingLineItem> items,
+    ClinicalRequestBillingSubmit? billing,
+  ) {
+    if (billing == null || billing.lineItems.isEmpty) {
+      return items;
+    }
+    final Map<String, ClinicalRequestBillingLineItem> priorById =
+        <String, ClinicalRequestBillingLineItem>{
+          for (final ClinicalRequestBillingLineItem line in billing.lineItems)
+            line.id: line,
+        };
+    return <ClinicalRequestBillingLineItem>[
+      for (final ClinicalRequestBillingLineItem item in items)
+        if (priorById[item.id] case final ClinicalRequestBillingLineItem prior)
+          ClinicalRequestBillingLineItem(
+            id: item.id,
+            label: item.label,
+            quantity: prior.quantity,
+            unitPrice: prior.unitPrice ?? item.unitPrice,
+            currency: prior.currency ?? item.currency,
+          )
+        else
+          item,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<ClinicalRequestBillingLineItem> effectiveLineItems =
+        _mergeInitialBilling(widget.lineItems, widget.initialBilling);
 
     return AppDialog(
       title: Text(l10n.clinicalRequestBillingSectionTitle),
@@ -287,10 +318,13 @@ class _ClinicalRequestBillingDialogState
       scrollable: true,
       closeEnabled: widget.enabled,
       content: ClinicalRequestBillingPanel(
-        lineItems: widget.lineItems,
-        initialPaymentStatus: widget.initialPaymentStatus,
-        initialPaidAmount: widget.initialPaidAmount,
-        initialCurrency: widget.initialCurrency,
+        lineItems: effectiveLineItems,
+        initialPaymentStatus:
+            widget.initialPaymentStatus ?? widget.initialBilling?.paymentStatus,
+        initialPaidAmount:
+            widget.initialPaidAmount ?? widget.initialBilling?.paidAmount,
+        initialCurrency:
+            widget.initialCurrency ?? widget.initialBilling?.currency,
         enabled: widget.enabled,
         onChanged: (ClinicalRequestBillingSubmit value) {
           _billing = value;

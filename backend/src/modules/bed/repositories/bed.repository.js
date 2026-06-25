@@ -38,7 +38,13 @@ const findById = async (id) => {
  * @param {Object} orderBy - Sort order
  * @returns {Promise<Array>} Array of beds
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  include = undefined
+) => {
   try {
     // Build where clause
     const where = {
@@ -50,7 +56,8 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       where,
       skip,
       take,
-      orderBy
+      orderBy,
+      ...(include ? { include } : {})
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);

@@ -42,6 +42,436 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuStayDialogTitle => 'ICU stay';
 
   @override
+  String get icuLoadingBoardTitle => 'Loading ICU board';
+
+  @override
+  String get icuLoadingBoardBody =>
+      'Loading intensive care patients and alert state.';
+
+  @override
+  String get icuLiveSyncLabel => 'Live sync';
+
+  @override
+  String get icuSavingLabel => 'Saving';
+
+  @override
+  String get icuViewPatientBoard => 'Patient board';
+
+  @override
+  String get icuViewBedBoard => 'Bed board';
+
+  @override
+  String get icuAllIcuLabel => 'All ICU';
+
+  @override
+  String get icuActiveIcuLabel => 'Active ICU';
+
+  @override
+  String get icuCriticalAlertsLabel => 'Critical alerts';
+
+  @override
+  String get icuTransfersLabel => 'Transfers';
+
+  @override
+  String get icuDischargeReadyLabel => 'Discharge ready';
+
+  @override
+  String get icuEndedStaysLabel => 'Ended stays';
+
+  @override
+  String get icuTransferPendingLabel => 'Transfer pending';
+
+  @override
+  String get icuBoardTitle => 'ICU board';
+
+  @override
+  String get icuBoardDescription => 'Grouped by bed state and alert level.';
+
+  @override
+  String get icuSearchHint => 'Search patient, admission, bed, or alert';
+
+  @override
+  String get icuBoardScopeLabel => 'Board scope';
+
+  @override
+  String get icuBoardFiltersTitle => 'ICU board filters';
+
+  @override
+  String get icuColumnBedLabel => 'Bed';
+
+  @override
+  String get icuColumnAlertLabel => 'Alert';
+
+  @override
+  String get icuColumnTransferLabel => 'Transfer';
+
+  @override
+  String get icuColumnStartLabel => 'ICU start';
+
+  @override
+  String get icuColumnSourceLabel => 'Source';
+
+  @override
+  String get icuNoPatientsTitle => 'No ICU patients';
+
+  @override
+  String get icuNoPatientsBody =>
+      'Active ICU admissions will appear here after IPD admission and ICU transfer.';
+
+  @override
+  String get icuNoAlertLabel => 'No alert';
+
+  @override
+  String get icuDetailEmptyTitle => 'No ICU stay selected';
+
+  @override
+  String get icuDetailEmptyBody =>
+      'Select an ICU patient to review observations, orders, alerts, and transfer readiness.';
+
+  @override
+  String get icuDetailLoadingTitle => 'Loading ICU stay';
+
+  @override
+  String get icuDetailLoadingBody =>
+      'Loading observations, alerts, and transfer state.';
+
+  @override
+  String get icuAdmissionLabel => 'Admission';
+
+  @override
+  String get icuLocationLabel => 'Location';
+
+  @override
+  String get icuFacilityLabel => 'Facility';
+
+  @override
+  String get icuAdmittedLabel => 'Admitted';
+
+  @override
+  String get icuSourceLabel => 'Source';
+
+  @override
+  String get icuStayStartedLabel => 'ICU stay started';
+
+  @override
+  String get icuActionsTitle => 'Actions';
+
+  @override
+  String get icuCriticalAlertsPanelTitle => 'Critical alerts';
+
+  @override
+  String get icuNoActiveAlertsLabel => 'No active ICU critical alerts.';
+
+  @override
+  String icuHighestSeverityLabel(String severity) {
+    return 'Highest severity: $severity';
+  }
+
+  @override
+  String get icuNoActiveAlertsListLabel => 'No active alerts';
+
+  @override
+  String get icuObservationsPanelTitle => 'Observations';
+
+  @override
+  String get icuObservationsPanelDescription =>
+      'Recent intensive observations for this ICU stay.';
+
+  @override
+  String get icuNoObservationsLabel => 'No ICU observations recorded';
+
+  @override
+  String get icuVitalsTrendTitle => 'Vitals trend';
+
+  @override
+  String get icuVitalsTrendDescription =>
+      'Latest recorded vital values for the admission encounter.';
+
+  @override
+  String get icuNoVitalsLabel => 'No vitals recorded';
+
+  @override
+  String get icuCarePanelTitle => 'Rounds, nursing, and orders';
+
+  @override
+  String get icuCarePanelDescription =>
+      'Recent care notes and medication tasks linked to IPD.';
+
+  @override
+  String get icuNoCareTasksLabel => 'No care tasks recorded';
+
+  @override
+  String get icuTransferPanelTitle => 'Transfer and readiness';
+
+  @override
+  String get icuTransferPanelDescription =>
+      'ICU stay movement, planned discharge, and handoff state.';
+
+  @override
+  String get icuNoTransferRecordsLabel =>
+      'No transfer or discharge readiness records';
+
+  @override
+  String get icuRoundNoteFallback => 'Round note';
+
+  @override
+  String get icuNursingNoteFallback => 'Nursing note';
+
+  @override
+  String get icuMedicationTaskFallback => 'Medication task';
+
+  @override
+  String get icuDoseLabel => 'Dose';
+
+  @override
+  String get icuActiveStayLabel => 'Active ICU stay';
+
+  @override
+  String get icuPreviousStayLabel => 'Previous ICU stay';
+
+  @override
+  String icuEndedAtLabel(String time) {
+    return 'Ended $time';
+  }
+
+  @override
+  String get icuTransferRecordLabel => 'Transfer';
+
+  @override
+  String get icuDischargeRecordLabel => 'Discharge';
+
+  @override
+  String get icuActionStartStay => 'Start ICU stay';
+
+  @override
+  String get icuActionRecordObservation => 'Observation';
+
+  @override
+  String get icuActionRecordVitals => 'Vitals';
+
+  @override
+  String get icuActionRaiseAlert => 'Critical alert';
+
+  @override
+  String get icuActionAcknowledgeAlert => 'Acknowledge alert';
+
+  @override
+  String get icuActionRound => 'ICU round';
+
+  @override
+  String get icuActionOrderLab => 'Order lab';
+
+  @override
+  String get icuActionOrderImaging => 'Order imaging';
+
+  @override
+  String get icuActionPrescribe => 'Prescribe';
+
+  @override
+  String get icuActionRequestTransfer => 'Request transfer';
+
+  @override
+  String get icuActionManageTransfer => 'Manage transfer';
+
+  @override
+  String get icuActionAssignBed => 'Assign ICU bed';
+
+  @override
+  String get icuActionMarkReadiness => 'Discharge readiness';
+
+  @override
+  String get icuActionOpenIpd => 'Open in IPD';
+
+  @override
+  String get icuActionEndStay => 'End ICU stay';
+
+  @override
+  String get icuPrintSummaryLabel => 'Print summary';
+
+  @override
+  String get icuObservationDialogTitle => 'Record ICU observation';
+
+  @override
+  String get icuObservationFieldLabel => 'Observation';
+
+  @override
+  String get icuRecordActionLabel => 'Record';
+
+  @override
+  String get icuVitalsDialogTitle => 'Update vitals';
+
+  @override
+  String get icuVitalsUpdateActionLabel => 'Update';
+
+  @override
+  String get icuAlertDialogTitle => 'Add critical alert';
+
+  @override
+  String get icuAlertSeverityLabel => 'Severity';
+
+  @override
+  String get icuAlertMessageLabel => 'Alert message';
+
+  @override
+  String get icuAlertAddActionLabel => 'Add alert';
+
+  @override
+  String get icuRoundDialogTitle => 'Add ICU round note';
+
+  @override
+  String get icuRoundNoteLabel => 'Round note';
+
+  @override
+  String get icuRoundAddActionLabel => 'Add note';
+
+  @override
+  String get icuTransferDialogTitle => 'Request transfer';
+
+  @override
+  String get icuTransferTargetWardLabel => 'Target ward';
+
+  @override
+  String get icuTransferTargetWardIdLabel => 'Target ward ID';
+
+  @override
+  String get icuTransferRequestActionLabel => 'Request';
+
+  @override
+  String get icuReadinessDialogTitle => 'Mark discharge readiness';
+
+  @override
+  String get icuReadinessNoteLabel => 'Readiness note';
+
+  @override
+  String get icuReadinessDescription =>
+      'This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.';
+
+  @override
+  String get icuReadinessMarkActionLabel => 'Mark ready';
+
+  @override
+  String get icuStartStayTitle => 'Start ICU stay';
+
+  @override
+  String get icuStartStayBody =>
+      'This opens an active ICU stay on the IPD admission so critical-care documentation can begin.';
+
+  @override
+  String get icuStartStayActionLabel => 'Start stay';
+
+  @override
+  String get icuAcknowledgeTitle => 'Acknowledge alert';
+
+  @override
+  String get icuAcknowledgeBody =>
+      'This clears the selected critical alert from the active ICU board.';
+
+  @override
+  String get icuEndStayTitle => 'End ICU stay';
+
+  @override
+  String get icuEndStayBody =>
+      'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.';
+
+  @override
+  String get icuAssignBedDialogTitle => 'Assign ICU bed';
+
+  @override
+  String get icuManageTransferDialogTitle => 'Manage transfer';
+
+  @override
+  String get icuTransferActionApprove => 'Approve';
+
+  @override
+  String get icuTransferActionStart => 'Start';
+
+  @override
+  String get icuTransferActionComplete => 'Complete with bed';
+
+  @override
+  String get icuTransferActionCancel => 'Cancel transfer';
+
+  @override
+  String get icuTransferSelectBedLabel => 'Target bed';
+
+  @override
+  String get icuTransferNoOpenLabel => 'No open transfer to manage.';
+
+  @override
+  String get icuStepDownPromptTitle => 'End ICU stay?';
+
+  @override
+  String get icuStepDownPromptBody =>
+      'The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.';
+
+  @override
+  String get icuChangesSavedMessage => 'ICU changes saved.';
+
+  @override
+  String get icuBedBoardTitle => 'ICU bed board';
+
+  @override
+  String get icuBedBoardDescription =>
+      'ICU ward bed occupancy and bed operations.';
+
+  @override
+  String get icuBedBoardAllWards => 'All ICU wards';
+
+  @override
+  String icuBedAvailableLabel(int count) {
+    return '$count available';
+  }
+
+  @override
+  String icuBedOccupiedLabel(int count) {
+    return '$count occupied';
+  }
+
+  @override
+  String get icuBedColumnWard => 'Ward';
+
+  @override
+  String get icuBedColumnBed => 'Room / bed';
+
+  @override
+  String get icuBedColumnStatus => 'Status';
+
+  @override
+  String get icuBedColumnPatient => 'Patient';
+
+  @override
+  String get icuBedNoBedsTitle => 'No ICU beds';
+
+  @override
+  String get icuBedNoBedsBody =>
+      'No ICU beds are configured for this facility.';
+
+  @override
+  String get icuBedVacantLabel => 'Vacant';
+
+  @override
+  String get icuPrintAlertsSection => 'Alerts';
+
+  @override
+  String get icuPrintObservationsSection => 'Observations';
+
+  @override
+  String get icuPrintVitalsSection => 'Vitals';
+
+  @override
+  String get icuPrintTransferSection => 'Transfer and readiness';
+
+  @override
+  String get ipdOpenIcuAction => 'Open in ICU';
+
+  @override
+  String get ipdStartIcuStayAction => 'Start ICU stay';
+
+  @override
+  String get ipdStartIcuStayBody =>
+      'This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.';
+
+  @override
   String get commonGoHomeActionLabel => 'Go to dashboard';
 
   @override
@@ -4893,6 +5323,120 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdBedStatusOutOfService => 'Out of service';
+
+  @override
+  String get ipdBedStatusCleaning => 'Cleaning';
+
+  @override
+  String get ipdBedStatusMaintenance => 'Maintenance';
+
+  @override
+  String get ipdBedStatusBlocked => 'Blocked';
+
+  @override
+  String get ipdPatientBoardTab => 'Patient board';
+
+  @override
+  String get ipdBedBoardTab => 'Bed board';
+
+  @override
+  String get ipdBedBoardTitle => 'Bed board';
+
+  @override
+  String get ipdBedBoardDescription =>
+      'Live ward bed occupancy and bed operations.';
+
+  @override
+  String get ipdBedBoardSearchLabel => 'Search beds';
+
+  @override
+  String get ipdBedBoardSearchHint => 'Search by bed, ward, room, or patient';
+
+  @override
+  String get ipdBedBoardEmptyTitle => 'No beds match';
+
+  @override
+  String get ipdBedBoardEmptyBody =>
+      'Adjust the ward or status filter to see more beds.';
+
+  @override
+  String get ipdBedColumnLabel => 'Bed';
+
+  @override
+  String get ipdWardColumnLabel => 'Ward';
+
+  @override
+  String get ipdRoomColumnLabel => 'Room';
+
+  @override
+  String get ipdCurrentPatientColumnLabel => 'Current patient';
+
+  @override
+  String get ipdNextActionColumnLabel => 'Next action';
+
+  @override
+  String get ipdBedStatusFilterLabel => 'Bed status';
+
+  @override
+  String get ipdBedBoardManageBedsAction => 'Manage beds';
+
+  @override
+  String get ipdBedActionReserve => 'Reserve bed';
+
+  @override
+  String get ipdBedActionMarkAvailable => 'Mark available';
+
+  @override
+  String get ipdBedActionMarkCleaning => 'Send for cleaning';
+
+  @override
+  String get ipdBedActionBlock => 'Block bed';
+
+  @override
+  String get ipdBedActionMaintenance => 'Mark maintenance';
+
+  @override
+  String get ipdBedActionReturnToService => 'Return to service';
+
+  @override
+  String get ipdBedActionOpenAdmission => 'Open admission';
+
+  @override
+  String get ipdBedNoActionLabel => 'No action';
+
+  @override
+  String get ipdStartAdmissionAction => 'Start admission';
+
+  @override
+  String get ipdStartAdmissionTitle => 'Start admission';
+
+  @override
+  String get ipdStartAdmissionPatientLabel => 'Patient';
+
+  @override
+  String get ipdStartAdmissionPatientHint => 'Search patient by name or ID';
+
+  @override
+  String get ipdStartAdmissionNoPatients => 'No matching patients';
+
+  @override
+  String get ipdStartAdmissionWardLabel => 'Recommended ward (optional)';
+
+  @override
+  String get ipdStartAdmissionBedLabel => 'Bed (optional)';
+
+  @override
+  String get ipdLengthOfStayColumnLabel => 'Length of stay';
+
+  @override
+  String ipdLengthOfStayDays(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String ipdLengthOfStayHours(int count) {
+    return '${count}h';
+  }
 
   @override
   String get ipdDischargeStatusPlanned => 'Planned';
@@ -13611,6 +14155,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalRequestPriceWarningLabel => 'Some items have no price set';
+
+  @override
+  String get clinicalRequestUnitPriceLabel => 'Unit price';
+
+  @override
+  String get clinicalRequestQuantityLabel => 'Qty';
+
+  @override
+  String get clinicalRequestEditPricesHint =>
+      'Set or adjust prices per item, or charge a single amount.';
+
+  @override
+  String get ipdWardRoundFeeLabel => 'Doctor review fee';
+
+  @override
+  String get theaterCaseFeeLabel => 'Operation / procedure fee';
+
+  @override
+  String get clinicalProcedureFeeLabel => 'Procedure fee';
 
   @override
   String get clinicalRequestBillLaterAction => 'Bill later';

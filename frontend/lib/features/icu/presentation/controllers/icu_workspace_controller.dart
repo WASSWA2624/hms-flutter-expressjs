@@ -5,9 +5,13 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final icuWorkspaceControllerProvider =
@@ -20,6 +24,9 @@ final class IcuWorkspaceController
   static const Duration _syncInterval = Duration(seconds: 8);
 
   IcuRepository get _repository => ref.read(icuRepositoryProvider);
+
+  ClinicalRepository get _clinicalRepository =>
+      ref.read(clinicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -133,6 +140,267 @@ final class IcuWorkspaceController
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> selectPatientByDisplayId(String displayId) async {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    final String needle = displayId.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    IcuPatientSummary? match;
+    for (final IcuPatientSummary item in current.board.items) {
+      if (<String?>[item.displayId, item.admissionId, item.patientId, item.id]
+          .whereType<String>()
+          .any((String value) => value.toLowerCase() == needle)) {
+        match = item;
+        break;
+      }
+    }
+
+    if (match == null) {
+      // Patient not on the current page — search the board for them.
+      _emit(
+        current.copyWith(
+          query: current.query.copyWith(
+            search: displayId.trim(),
+            pageRequest: current.query.pageRequest.first(),
+          ),
+          isRefreshingBoard: true,
+        ),
+      );
+      await _refreshBoard(showLoading: true);
+      final IcuWorkspaceState? latest = _currentState;
+      for (final IcuPatientSummary item
+          in latest?.board.items ?? const <IcuPatientSummary>[]) {
+        if (<String?>[item.displayId, item.admissionId, item.patientId, item.id]
+            .whereType<String>()
+            .any((String value) => value.toLowerCase() == needle)) {
+          match = item;
+          break;
+        }
+      }
+    }
+
+    if (match == null) {
+      return const AppFailure.notFound();
+    }
+    return selectPatient(match);
+  }
+
+  void setView(IcuBoardView view) {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null || current.view == view) {
+      return;
+    }
+    _emit(current.copyWith(view: view));
+    if (view == IcuBoardView.bedBoard && current.bedBoard.beds.isEmpty) {
+      unawaited(loadBedBoard());
+    }
+  }
+
+  void selectBedWard(String? wardId) {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(
+      current.copyWith(
+        bedBoard: current.bedBoard.copyWith(
+          selectedWardId: wardId,
+          clearSelectedWard: wardId == null,
+        ),
+      ),
+    );
+  }
+
+  Future<AppFailure?> loadBedBoard() async {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+    _emit(current.copyWith(isRefreshingBeds: true, clearLastFailure: true));
+    final Result<IcuBedBoard> result = await _repository.loadBedBoard();
+    return result.when(
+      success: (IcuBedBoard board) {
+        final IcuWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              bedBoard: board.copyWith(
+                selectedWardId: latest.bedBoard.selectedWardId,
+              ),
+              isRefreshingBeds: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final IcuWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isRefreshingBeds: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> startIcuStay({DateTime? startedAt}) {
+    return _mutateSelected(
+      (IcuPatientDetail detail) =>
+          _repository.startIcuStay(detail: detail, startedAt: startedAt),
+      refreshBoardAfter: true,
+    );
+  }
+
+  Future<AppFailure?> assignBed(String bedId) {
+    return _mutateSelected(
+      (IcuPatientDetail detail) =>
+          _repository.assignBed(detail: detail, bedId: bedId),
+      refreshBoardAfter: true,
+    );
+  }
+
+  Future<AppFailure?> updateTransfer({
+    required String transferRequestId,
+    required IcuTransferAction action,
+    String? toBedId,
+  }) {
+    return _mutateSelected(
+      (IcuPatientDetail detail) => _repository.updateTransfer(
+        detail: detail,
+        transferRequestId: transferRequestId,
+        action: action,
+        toBedId: toBedId,
+      ),
+      refreshBoardAfter: true,
+    );
+  }
+
+  Future<ClinicalReferenceData> clinicalReferenceData() async {
+    final Result<ClinicalReferenceData> result = await _clinicalRepository
+        .loadReferenceData();
+    return result.when(
+      success: (ClinicalReferenceData value) => value,
+      failure: (_) => const ClinicalReferenceData(),
+    );
+  }
+
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
+  }) {
+    return _clinicalRepository.searchClinicalTerms(
+      termType: termType,
+      query: query,
+      limit: limit,
+      source: source,
+    );
+  }
+
+  Future<AppFailure?> orderLab({
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IcuPatientDetail detail) {
+      return _clinicalRepository.createLabOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          ..._clinicalAnchor(detail),
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        }, billing),
+      );
+    }, isValid: (_) => labTestIds.isNotEmpty || labPanelIds.isNotEmpty);
+  }
+
+  Future<AppFailure?> orderRadiology({
+    required List<ClinicalRadiologyRequest> requests,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IcuPatientDetail detail) {
+      return _clinicalRepository.createRadiologyOrder(<String, Object?>{
+        ..._clinicalAnchor(detail),
+        'requested_tests': <Map<String, Object?>>[
+          for (final ClinicalRadiologyRequest request in requests)
+            <String, Object?>{
+              'radiology_test_id': request.radiologyTestId,
+              'clinical_note': request.clinicalNote,
+              'request_details': mergeClinicalRequestBillingIntoRequestDetails(
+                <String, Object?>{
+                  'modality': request.modality,
+                  'body_region': request.bodyRegion,
+                  'laterality': request.laterality,
+                  'priority': request.priority,
+                },
+                billing,
+                lineAmount: clinicalRequestBillingLineAmount(
+                  billing,
+                  request.radiologyTestId,
+                ),
+              ),
+            },
+        ],
+      });
+    }, isValid: (_) => requests.isNotEmpty);
+  }
+
+  Future<AppFailure?> prescribeMedication({
+    required List<Map<String, Object?>> items,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IcuPatientDetail detail) {
+      return _clinicalRepository.createPharmacyOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          ..._clinicalAnchor(detail),
+          'items': items,
+        }, billing),
+      );
+    }, isValid: (_) => items.isNotEmpty);
+  }
+
+  Map<String, Object?> _clinicalAnchor(IcuPatientDetail detail) {
+    return <String, Object?>{
+      'encounter_id': detail.summary.encounterId,
+      'patient_id': detail.summary.patientId,
+      'ordered_at': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
+  Future<AppFailure?> _mutateClinical(
+    Future<Result<void>> Function(IcuPatientDetail detail) action, {
+    required bool Function(IcuPatientDetail detail) isValid,
+  }) {
+    return _mutateSelected((IcuPatientDetail detail) async {
+      final String? encounterId = detail.summary.encounterId?.trim();
+      final String? patientId = detail.summary.patientId?.trim();
+      if (encounterId == null ||
+          encounterId.isEmpty ||
+          patientId == null ||
+          patientId.isEmpty ||
+          !isValid(detail)) {
+        return Result<IcuPatientDetail>.failure(AppFailure.validation());
+      }
+      final Result<void> result = await action(detail);
+      return result.when<Future<Result<IcuPatientDetail>>>(
+        success: (_) => _repository.loadIcuDetail(detail.summary),
+        failure: (AppFailure failure) async =>
+            Result<IcuPatientDetail>.failure(failure),
+      );
+    });
   }
 
   Future<AppFailure?> recordObservation({

@@ -9,6 +9,25 @@ abstract interface class IcuRepository {
 
   Future<Result<IcuReferenceData>> loadReferenceData();
 
+  Future<Result<IcuBedBoard>> loadBedBoard();
+
+  Future<Result<IcuPatientDetail>> startIcuStay({
+    required IcuPatientDetail detail,
+    DateTime? startedAt,
+  });
+
+  Future<Result<IcuPatientDetail>> assignBed({
+    required IcuPatientDetail detail,
+    required String bedId,
+  });
+
+  Future<Result<IcuPatientDetail>> updateTransfer({
+    required IcuPatientDetail detail,
+    required String transferRequestId,
+    required IcuTransferAction action,
+    String? toBedId,
+  });
+
   Future<Result<IcuPatientDetail>> recordObservation({
     required IcuPatientDetail detail,
     required String observation,

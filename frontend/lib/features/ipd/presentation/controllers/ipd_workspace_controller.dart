@@ -175,10 +175,202 @@ final class IpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> selectAdmissionById(String admissionId) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    final Result<IpdAdmissionDetail> result = await _repository.getAdmission(
+      admissionId,
+    );
+    return result.when(
+      success: (IpdAdmissionDetail detail) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedAdmission: detail,
+              admissions: _replaceAdmission(latest.admissions, detail.summary),
+              isRefreshingDetail: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
   void clearSelection() {
     final IpdWorkspaceState? current = _currentState;
     if (current != null) {
       _emit(current.copyWith(clearSelectedAdmission: true));
+    }
+  }
+
+  Future<AppFailure?> startAdmission(Map<String, Object?> payload) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<IpdAdmissionDetail> result = await _repository.startAdmission(
+      payload,
+    );
+    return result.when(
+      success: (IpdAdmissionDetail detail) async {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedAdmission: detail,
+              admissions: _replaceAdmission(latest.admissions, detail.summary),
+              isSaving: false,
+            ),
+          );
+        }
+        final IpdReferenceData referenceData = await _referenceData();
+        final IpdWorkspaceState? refreshed = _currentState;
+        if (refreshed != null) {
+          _emit(refreshed.copyWith(referenceData: referenceData));
+        }
+        unawaited(_refreshWorklist(showLoading: false));
+        unawaited(_loadBedBoardIfActive());
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> loadBedBoard({bool force = false}) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    if (current.isLoadingBedBoard) {
+      return null;
+    }
+    if (current.bedBoardLoaded && !force) {
+      return null;
+    }
+
+    _emit(current.copyWith(isLoadingBedBoard: true, clearLastFailure: true));
+    final Result<List<IpdBedBoardEntry>> result = await _repository
+        .listBedBoard(
+          wardId: current.bedBoardWardId,
+          status: current.bedBoardStatus,
+        );
+    return result.when(
+      success: (List<IpdBedBoardEntry> beds) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              bedBoard: beds,
+              isLoadingBedBoard: false,
+              bedBoardLoaded: true,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(isLoadingBedBoard: false, lastFailure: failure),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> applyBedBoardWard(String? wardId) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(
+      current.copyWith(
+        bedBoardWardId: wardId,
+        clearBedBoardWard: wardId == null,
+        bedBoardLoaded: false,
+      ),
+    );
+    return loadBedBoard(force: true);
+  }
+
+  Future<AppFailure?> applyBedBoardStatus(String? status) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(
+      current.copyWith(
+        bedBoardStatus: status,
+        clearBedBoardStatus: status == null,
+        bedBoardLoaded: false,
+      ),
+    );
+    return loadBedBoard(force: true);
+  }
+
+  Future<AppFailure?> updateBedStatus(
+    IpdBedBoardEntry entry,
+    String status,
+  ) async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await _repository.updateBedStatus(
+      bedId: entry.id,
+      status: status,
+    );
+    return result.when(
+      success: (_) async {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false));
+        }
+        await loadBedBoard(force: true);
+        unawaited(_refreshWorklist(showLoading: false));
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<void> _loadBedBoardIfActive() async {
+    final IpdWorkspaceState? current = _currentState;
+    if (current != null && current.bedBoardLoaded) {
+      await loadBedBoard(force: true);
     }
   }
 
@@ -188,6 +380,16 @@ final class IpdWorkspaceController
       () => _repository.assignBed(admission.apiId, <String, Object?>{
         'bed_id': bedId,
         'assigned_at': DateTime.now().toUtc().toIso8601String(),
+      }),
+      refreshReferenceData: true,
+    );
+  }
+
+  Future<AppFailure?> startIcuStay(IpdAdmissionSummary admission) {
+    return _mutateAdmission(
+      admission,
+      () => _repository.startIcuStay(admission.apiId, <String, Object?>{
+        'started_at': DateTime.now().toUtc().toIso8601String(),
       }),
       refreshReferenceData: true,
     );
@@ -249,13 +451,15 @@ final class IpdWorkspaceController
 
   Future<AppFailure?> addWardRound(
     IpdAdmissionSummary admission,
-    String notes,
-  ) {
+    String notes, {
+    Map<String, Object?>? billing,
+  }) {
     return _mutateAdmission(
       admission,
       () => _repository.addWardRound(admission.apiId, <String, Object?>{
         'round_at': DateTime.now().toUtc().toIso8601String(),
         'notes': notes,
+        'billing': ?billing,
       }),
     );
   }
@@ -475,6 +679,7 @@ final class IpdWorkspaceController
           if (refreshed != null) {
             _emit(refreshed.copyWith(referenceData: referenceData));
           }
+          unawaited(_loadBedBoardIfActive());
         }
         unawaited(_refreshWorklist(showLoading: false));
         return null;

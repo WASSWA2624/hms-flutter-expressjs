@@ -203,7 +203,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.icu.path,
             name: AppRoutes.icu.name,
-            builder: (_, _) => const IcuWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return IcuWorkspacePage(
+                initialQuery: IcuBoardQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.nursing.path,

@@ -17,11 +17,28 @@ abstract interface class IpdRepository {
     String? wardId,
   });
 
+  Future<Result<List<IpdBedBoardEntry>>> listBedBoard({
+    String? wardId,
+    String? status,
+    String? statusAny,
+    int limit,
+  });
+
+  Future<Result<void>> updateBedStatus({
+    required String bedId,
+    required String status,
+  });
+
   Future<Result<IpdAdmissionDetail>> startAdmission(
     Map<String, Object?> payload,
   );
 
   Future<Result<IpdAdmissionDetail>> assignBed(
+    String admissionId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<IpdAdmissionDetail>> startIcuStay(
     String admissionId,
     Map<String, Object?> payload,
   );

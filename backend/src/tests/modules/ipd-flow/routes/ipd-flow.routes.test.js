@@ -30,6 +30,7 @@ describe('ipd-flow.routes contract', () => {
       'POST /:id/end-icu-stay',
       'POST /:id/finalize-discharge',
       'POST /:id/plan-discharge',
+      'POST /:id/reject-admission',
       'POST /:id/release-bed',
       'POST /:id/request-transfer',
       'POST /:id/resolve-critical-alert',

@@ -15,7 +15,11 @@ const {
 } = require('@services/lab-workspace/lab.shared');
 const { mapLabOrderRecord } = require('@services/lab-workspace/lab.serializer');
 const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
-const { persistLabOrderBilling } = require('@lib/billing/clinical-request-billing');
+const {
+  persistLabOrderBilling,
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -46399,6 +46403,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     }
 
     const updated = await labOrderRepository.update(before.id, payload);
+    const existingSnapshot = extractStoredClinicalBilling(before);
     if (billing) {
       const patientId = payload.patient_id || before.patient_id;
       const patientRecord = await prisma.patient.findFirst({
@@ -46410,6 +46415,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
           await persistLabOrderBilling(tx, {
             orderId: updated.id,
             billing,
+            existingSnapshot,
             tenantId: patientRecord.tenant_id,
             facilityId: patientRecord.facility_id || null,
             patientId: patientRecord.id,
@@ -46417,6 +46423,14 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
           });
         });
       }
+    } else if (payload.status === 'CANCELLED' && existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.lab_order.update({
+          where: { id: updated.id },
+          data: { billing_snapshot: null },
+        });
+      });
     }
     const labOrder = await labOrderRepository.findById(updated.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
 
@@ -46457,6 +46471,17 @@ const deleteLabOrder = async (id, data = {}, userId, ipAddress) => {
       include: LAB_ORDER_WITH_RELATIONS_INCLUDE,
       errorKey: 'errors.lab_order.not_found'
     });
+
+    const existingSnapshot = extractStoredClinicalBilling(before);
+    if (existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.lab_order.update({
+          where: { id: before.id },
+          data: { billing_snapshot: null },
+        });
+      });
+    }
 
     const labOrder = await labOrderRepository.softDelete(before.id);
 

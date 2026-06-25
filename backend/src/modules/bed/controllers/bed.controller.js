@@ -19,7 +19,7 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listBeds = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, room_id, status, search } = req.query;
+  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, room_id, status, status_any, include_occupancy, search } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -27,6 +27,8 @@ const listBeds = asyncHandler(async (req, res) => {
   if (ward_id) filters.ward_id = ward_id;
   if (room_id) filters.room_id = room_id;
   if (status) filters.status = status;
+  if (status_any) filters.status_any = status_any;
+  if (include_occupancy) filters.include_occupancy = include_occupancy;
   if (search) filters.search = search;
 
   const result = await bedService.listBeds(

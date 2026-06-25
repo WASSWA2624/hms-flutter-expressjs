@@ -79,6 +79,82 @@ const resolveBedFilterId = async (filters, field, model) => {
   });
 };
 
+const ACTIVE_ASSIGNMENT_ADMISSION_STATUSES = Object.freeze([
+  'ADMITTED',
+  'TRANSFER_REQUESTED',
+  'TRANSFER_IN_PROGRESS',
+  'DISCHARGE_PLANNED',
+]);
+
+const OCCUPANCY_INCLUDE = Object.freeze({
+  ward: { select: { id: true, human_friendly_id: true, name: true, ward_type: true } },
+  room: { select: { id: true, human_friendly_id: true, name: true, floor: true } },
+  bed_assignments: {
+    where: { released_at: null, deleted_at: null },
+    orderBy: { assigned_at: 'desc' },
+    take: 1,
+    include: {
+      admission: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          status: true,
+          admitted_at: true,
+          patient: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              first_name: true,
+              middle_name: true,
+              last_name: true,
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+const buildPatientDisplayName = (patient) => {
+  if (!patient) return null;
+  const name = [patient.first_name, patient.middle_name, patient.last_name]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return name || null;
+};
+
+const mapOccupancyBed = (bed) => {
+  const activeAssignment = Array.isArray(bed.bed_assignments)
+    ? bed.bed_assignments.find((assignment) => !assignment.released_at) || null
+    : null;
+  const admission = activeAssignment?.admission || null;
+  const isActiveAdmission =
+    admission && ACTIVE_ASSIGNMENT_ADMISSION_STATUSES.includes(admission.status);
+
+  const { bed_assignments, ward, room, ...rest } = bed;
+  return {
+    ...rest,
+    ward_name: ward?.name || null,
+    ward_human_friendly_id: ward?.human_friendly_id || null,
+    ward_type: ward?.ward_type || null,
+    room_name: room?.name || null,
+    room_human_friendly_id: room?.human_friendly_id || null,
+    floor: room?.floor || null,
+    current_admission: isActiveAdmission
+      ? {
+          admission_id: admission.id,
+          admission_display_id: admission.human_friendly_id || null,
+          admission_status: admission.status,
+          admitted_at: admission.admitted_at || null,
+          patient_display_id: admission.patient?.human_friendly_id || null,
+          patient_display_name: buildPatientDisplayName(admission.patient),
+          assigned_at: activeAssignment.assigned_at || null,
+        }
+      : null,
+  };
+};
+
 const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
   const repoFilters = {};
 
@@ -98,7 +174,15 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
   if (roomId === null) return buildBedListResult([], page, limit, 0);
   if (roomId !== undefined) repoFilters.room_id = roomId;
 
-  if (filters.status) {
+  const statusList = Array.isArray(filters.status_any)
+    ? filters.status_any
+    : String(filters.status_any || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+  if (statusList.length > 0) {
+    repoFilters.status = { in: statusList };
+  } else if (filters.status) {
     repoFilters.status = filters.status;
   }
 
@@ -109,16 +193,24 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
     };
   }
 
+  const includeOccupancy = filters.include_occupancy === true || filters.include_occupancy === 'true';
   const skip = (page - 1) * limit;
   const orderBy = {};
   orderBy[sort_by] = order;
 
+  const findManyArgs = [repoFilters, skip, limit, orderBy];
+  if (includeOccupancy) {
+    findManyArgs.push(OCCUPANCY_INCLUDE);
+  }
+
   const [beds, total] = await Promise.all([
-    bedRepository.findMany(repoFilters, skip, limit, orderBy),
+    bedRepository.findMany(...findManyArgs),
     bedRepository.count(repoFilters),
   ]);
 
-  return buildBedListResult(beds, page, limit, total);
+  const mappedBeds = includeOccupancy ? beds.map(mapOccupancyBed) : beds;
+
+  return buildBedListResult(mappedBeds, page, limit, total);
 };
 
 /**

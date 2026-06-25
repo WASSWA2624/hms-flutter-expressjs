@@ -25,7 +25,11 @@ const {
 const {
   mapPharmacyOrderRecord,
 } = require('@services/pharmacy-workspace/pharmacy.serializer');
-const { persistPharmacyOrderBilling } = require('@lib/billing/clinical-request-billing');
+const {
+  persistPharmacyOrderBilling,
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 
 const ORDER_SCOPE_INCLUDE = PHARMACY_ORDER_WITH_RELATIONS_INCLUDE;
 
@@ -452,6 +456,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
     }
 
     const pharmacyOrder = await pharmacyOrderRepository.update(before.id, payload, ORDER_SCOPE_INCLUDE);
+    const existingSnapshot = extractStoredClinicalBilling(before);
 
     if (billing) {
       const patientId = pharmacyOrder.patient_id || before.patient_id;
@@ -464,6 +469,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
           await persistPharmacyOrderBilling(tx, {
             orderId: pharmacyOrder.id,
             billing,
+            existingSnapshot,
             tenantId: patientRecord.tenant_id,
             facilityId: patientRecord.facility_id || null,
             patientId: patientRecord.id,
@@ -471,6 +477,14 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
           });
         });
       }
+    } else if (payload.status === 'CANCELLED' && existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.pharmacy_order.update({
+          where: { id: pharmacyOrder.id },
+          data: { billing_snapshot: null },
+        });
+      });
     }
 
     const refreshedOrder = await pharmacyOrderRepository.findById(
@@ -510,6 +524,17 @@ const deletePharmacyOrder = async (id, userId, ipAddress, user = {}) => {
   try {
     // Get current state for audit
     const { scope, pharmacyOrder: before } = await findScopedOrderOrThrow(id, user);
+
+    const existingSnapshot = extractStoredClinicalBilling(before);
+    if (existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+        await tx.pharmacy_order.update({
+          where: { id: before.id },
+          data: { billing_snapshot: null },
+        });
+      });
+    }
 
     await pharmacyOrderRepository.softDelete(before.id);
 

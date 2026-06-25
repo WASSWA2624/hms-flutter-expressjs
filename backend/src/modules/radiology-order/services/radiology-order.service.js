@@ -15,7 +15,11 @@ const {
 const {
   mapRadiologyOrderRecord,
 } = require('@services/radiology-workspace/radiology.serializer');
-const { persistRadiologyOrderBilling } = require('@lib/billing/clinical-request-billing');
+const {
+  persistRadiologyOrderBilling,
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
@@ -512,6 +516,27 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
     }
 
     const radiologyOrder = await radiologyOrderRepository.update(resolvedId, normalizedData);
+
+    if (
+      String(normalizedData.status || '').toUpperCase() === 'CANCELLED'
+    ) {
+      const existingSnapshot = extractStoredClinicalBilling(before);
+      if (existingSnapshot?.invoice_id) {
+        await prisma.$transaction(async (tx) => {
+          await reverseClinicalRequestBilling(tx, { existingSnapshot });
+          const currentDetails =
+            before.request_details && typeof before.request_details === 'object'
+              ? { ...before.request_details }
+              : {};
+          delete currentDetails.billing;
+          await tx.radiology_order.update({
+            where: { id: radiologyOrder.id },
+            data: { request_details: currentDetails },
+          });
+        });
+      }
+    }
+
     const serializedRadiologyOrder = await fetchSerializedRadiologyOrderById(
       radiologyOrder.id
     );
@@ -551,6 +576,13 @@ const deleteRadiologyOrder = async (id, userId, ipAddress) => {
 
     if (!before) {
       throw new HttpError('errors.radiology_order.not_found', 404);
+    }
+
+    const existingSnapshot = extractStoredClinicalBilling(before);
+    if (existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+      });
     }
 
     await radiologyOrderRepository.softDelete(resolvedId);

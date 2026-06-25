@@ -201,6 +201,100 @@ describe('Bed Service', () => {
       expect(result.beds).toEqual([]);
       expect(result.pagination.total).toBe(0);
     });
+
+    it('should filter by status_any (multiple statuses)', async () => {
+      bedRepository.findMany.mockResolvedValue([]);
+      bedRepository.count.mockResolvedValue(0);
+
+      await listBeds({ status_any: 'AVAILABLE,CLEANING' }, 1, 20);
+
+      expect(bedRepository.findMany).toHaveBeenCalledWith(
+        { status: { in: ['AVAILABLE', 'CLEANING'] } },
+        0,
+        20,
+        { created_at: 'desc' }
+      );
+    });
+
+    it('should enrich beds with ward, room, and occupant when include_occupancy is true', async () => {
+      const mockBeds = [
+        {
+          id: 'bed-1',
+          label: 'Bed 101',
+          status: 'OCCUPIED',
+          ward: { id: 'ward-1', human_friendly_id: 'WRD-1', name: 'Medical Ward', ward_type: 'MEDICAL' },
+          room: { id: 'room-1', human_friendly_id: 'RM-1', name: 'Room A', floor: '1' },
+          bed_assignments: [
+            {
+              released_at: null,
+              assigned_at: new Date('2026-06-20T08:00:00Z'),
+              admission: {
+                id: 'adm-1',
+                human_friendly_id: 'ADM-1',
+                status: 'ADMITTED',
+                admitted_at: new Date('2026-06-20T07:00:00Z'),
+                patient: {
+                  id: 'pat-1',
+                  human_friendly_id: 'PAT-1',
+                  first_name: 'Jane',
+                  middle_name: null,
+                  last_name: 'Doe',
+                },
+              },
+            },
+          ],
+        },
+      ];
+      bedRepository.findMany.mockResolvedValue(mockBeds);
+      bedRepository.count.mockResolvedValue(1);
+
+      const result = await listBeds({ include_occupancy: 'true' }, 1, 20);
+
+      expect(bedRepository.findMany).toHaveBeenCalledWith(
+        {},
+        0,
+        20,
+        { created_at: 'desc' },
+        expect.objectContaining({ ward: expect.any(Object), bed_assignments: expect.any(Object) })
+      );
+      expect(result.beds[0]).toMatchObject({
+        id: 'bed-1',
+        ward_name: 'Medical Ward',
+        room_name: 'Room A',
+        floor: '1',
+        current_admission: {
+          admission_id: 'adm-1',
+          admission_display_id: 'ADM-1',
+          patient_display_name: 'Jane Doe',
+        },
+      });
+      expect(result.beds[0].bed_assignments).toBeUndefined();
+    });
+
+    it('should not surface occupant for discharged admissions', async () => {
+      const mockBeds = [
+        {
+          id: 'bed-2',
+          label: 'Bed 102',
+          status: 'AVAILABLE',
+          ward: { id: 'ward-1', name: 'Medical Ward' },
+          room: null,
+          bed_assignments: [
+            {
+              released_at: null,
+              assigned_at: new Date('2026-06-20T08:00:00Z'),
+              admission: { id: 'adm-2', status: 'DISCHARGED', patient: { first_name: 'John', last_name: 'Roe' } },
+            },
+          ],
+        },
+      ];
+      bedRepository.findMany.mockResolvedValue(mockBeds);
+      bedRepository.count.mockResolvedValue(1);
+
+      const result = await listBeds({ include_occupancy: 'true' }, 1, 20);
+
+      expect(result.beds[0].current_admission).toBeNull();
+    });
   });
 
   describe('getBedById', () => {

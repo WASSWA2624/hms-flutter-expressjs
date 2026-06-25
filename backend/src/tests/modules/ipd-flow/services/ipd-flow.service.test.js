@@ -816,6 +816,7 @@ describe("ipd-flow.service", () => {
         findFirst: jest.fn().mockResolvedValue(null),
       },
       admission: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: "adm-1" }),
       },
       bed: {

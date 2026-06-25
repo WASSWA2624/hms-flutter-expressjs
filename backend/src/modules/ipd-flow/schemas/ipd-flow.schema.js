@@ -7,6 +7,9 @@
 
 const { z } = require("zod");
 const { listQuerySchema } = require("@lib/validation/zod");
+const {
+  clinicalRequestBillingSchema,
+} = require("@lib/billing/clinical-request-billing.schema");
 
 const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -197,6 +200,7 @@ const updateTransferSchema = z
 const addWardRoundSchema = z.object({
   round_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable(),
+  billing: clinicalRequestBillingSchema.optional().nullable(),
 });
 
 const addNursingNoteSchema = z.object({

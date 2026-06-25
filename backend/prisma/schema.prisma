@@ -2242,6 +2242,7 @@ model procedure {
   code              String?   @db.VarChar(80)
   description       String    @db.Text
   performed_at      DateTime?
+  billing_snapshot  Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -2588,6 +2589,7 @@ model ward_round {
   admission_id      String    @db.VarChar(36)
   round_at          DateTime  @default(now())
   notes             String?   @db.Text
+  billing_snapshot  Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -2761,6 +2763,7 @@ model theatre_case {
   cancelled_at        DateTime?
   workflow_stage      String?           @db.VarChar(80)
   stage_notes         String?           @db.Text
+  billing_snapshot    Json?
   created_at          DateTime          @default(now())
   updated_at          DateTime          @updatedAt
   deleted_at          DateTime?

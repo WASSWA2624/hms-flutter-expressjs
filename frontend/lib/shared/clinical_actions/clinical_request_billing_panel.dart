@@ -41,7 +41,9 @@ class _ClinicalRequestBillingPanelState
   late String _paymentMethod;
   late final TextEditingController _amountController;
   late final TextEditingController _referenceController;
+  final List<_EditableBillingLine> _lines = <_EditableBillingLine>[];
   bool _initialized = false;
+  bool _amountTouched = false;
 
   @override
   void initState() {
@@ -55,9 +57,10 @@ class _ClinicalRequestBillingPanelState
     _mode = initialStatus == ClinicalRequestPaymentStatus.paid
         ? ClinicalRequestPaymentMode.payNow
         : ClinicalRequestPaymentMode.billLater;
+    _syncLines();
     _amountController = TextEditingController(
       text: opdCurrencyAmountInput(
-        widget.initialPaidAmount ?? clinicalRequestBillingTotal(widget.lineItems),
+        widget.initialPaidAmount ?? _currentTotal(),
       ),
     );
     _referenceController = TextEditingController();
@@ -75,8 +78,74 @@ class _ClinicalRequestBillingPanelState
     }
     if (_lineItemsChanged(oldWidget.lineItems, widget.lineItems) ||
         oldWidget.initialCurrency != widget.initialCurrency) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyChanged());
+      setState(_syncLines);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _maybeSyncAmountToTotal();
+        _notifyChanged();
+      });
     }
+  }
+
+  /// Reconcile internal editable rows with the catalog-provided [lineItems],
+  /// preserving any prices/quantities the user has manually overridden.
+  void _syncLines() {
+    final Map<String, _EditableBillingLine> existingById =
+        <String, _EditableBillingLine>{
+          for (final _EditableBillingLine line in _lines) line.id: line,
+        };
+    final List<_EditableBillingLine> next = <_EditableBillingLine>[];
+    for (final ClinicalRequestBillingLineItem item in widget.lineItems) {
+      final _EditableBillingLine? existing = existingById.remove(item.id);
+      if (existing != null) {
+        existing.reconcileWithCatalog(item);
+        next.add(existing);
+      } else {
+        next.add(_EditableBillingLine.fromCatalog(item, onChanged: _onLineChanged));
+      }
+    }
+    for (final _EditableBillingLine leftover in existingById.values) {
+      leftover.dispose();
+    }
+    _lines
+      ..clear()
+      ..addAll(next);
+  }
+
+  void _onLineChanged() {
+    setState(() {});
+    _maybeSyncAmountToTotal();
+    _notifyChanged();
+  }
+
+  num _currentTotal() {
+    var total = 0.0;
+    for (final _EditableBillingLine line in _lines) {
+      total += (line.lineTotal ?? 0).toDouble();
+    }
+    return total;
+  }
+
+  bool _hasMissingPrices() =>
+      _lines.any((_EditableBillingLine line) => !line.hasPrice);
+
+  List<ClinicalRequestBillingLineItem> _submitLineItems() {
+    return <ClinicalRequestBillingLineItem>[
+      for (final _EditableBillingLine line in _lines)
+        ClinicalRequestBillingLineItem(
+          id: line.id,
+          label: line.label,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          currency: line.currency ?? _currency,
+        ),
+    ];
+  }
+
+  void _maybeSyncAmountToTotal() {
+    if (_amountTouched || _mode != ClinicalRequestPaymentMode.payNow) {
+      return;
+    }
+    _amountController.text = opdCurrencyAmountInput(_currentTotal());
   }
 
   bool _lineItemsChanged(
@@ -102,6 +171,9 @@ class _ClinicalRequestBillingPanelState
 
   @override
   void dispose() {
+    for (final _EditableBillingLine line in _lines) {
+      line.dispose();
+    }
     _amountController.dispose();
     _referenceController.dispose();
     super.dispose();
@@ -115,11 +187,9 @@ class _ClinicalRequestBillingPanelState
     final bool canRecordPayment = ref
         .watch(appAccessPolicyProvider)
         .grants(AppPermissions.billingWrite);
-    final List<ClinicalRequestBillingLineItem> lineItems = widget.lineItems;
-    final num total = clinicalRequestBillingTotal(lineItems);
-    final bool hasMissingPrices = clinicalRequestBillingHasMissingPrices(
-      lineItems,
-    );
+    final bool canEditPrices = canRecordPayment && widget.enabled;
+    final num total = _currentTotal();
+    final bool hasMissingPrices = _hasMissingPrices();
     final ClinicalRequestPaymentStatus paymentStatus = _resolvePaymentStatus(
       total: total,
     );
@@ -175,18 +245,40 @@ class _ClinicalRequestBillingPanelState
               ),
             ],
             SizedBox(height: theme.spacing.sm),
-            if (lineItems.isEmpty)
+            if (_lines.isEmpty)
               Text(
                 l10n.clinicalRequestBillingNoItemsLabel,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               )
-            else
+            else if (canEditPrices) ...<Widget>[
+              Text(
+                l10n.clinicalRequestEditPricesHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: theme.spacing.sm),
               Column(
                 children: <Widget>[
-                  for (final ClinicalRequestBillingLineItem item in lineItems)
-                    _BillingLineRow(item: item, currency: _currency),
+                  for (final _EditableBillingLine line in _lines)
+                    _EditableBillingLineRow(
+                      key: ValueKey<String>('billing-line-${line.id}'),
+                      line: line,
+                      currency: _currency,
+                      enabled: widget.enabled,
+                    ),
+                ],
+              ),
+            ] else
+              Column(
+                children: <Widget>[
+                  for (final _EditableBillingLine line in _lines)
+                    _BillingLineRow(
+                      item: line.toLineItem(_currency),
+                      currency: _currency,
+                    ),
                 ],
               ),
             Divider(height: theme.spacing.lg, color: colorScheme.outlineVariant),
@@ -237,6 +329,7 @@ class _ClinicalRequestBillingPanelState
                 onSelectionChanged: widget.enabled
                     ? (Set<ClinicalRequestPaymentMode> values) {
                         setState(() => _mode = values.first);
+                        _maybeSyncAmountToTotal();
                         _notifyChanged();
                       }
                     : null,
@@ -249,7 +342,10 @@ class _ClinicalRequestBillingPanelState
                   amountLabelText: l10n.opdAmountLabel,
                   currencyLabelText: l10n.opdCurrencyLabel,
                   enabled: widget.enabled,
-                  onAmountChanged: (_) => _notifyChanged(),
+                  onAmountChanged: (_) {
+                    _amountTouched = true;
+                    _notifyChanged();
+                  },
                   onCurrencyChanged: (String? value) {
                     setState(() {
                       _currency = value ?? appDefaultCurrencyCode;
@@ -310,7 +406,7 @@ class _ClinicalRequestBillingPanelState
     if (!_initialized || widget.onChanged == null) {
       return;
     }
-    final num total = clinicalRequestBillingTotal(widget.lineItems);
+    final num total = _currentTotal();
     final ClinicalRequestPaymentStatus paymentStatus = _resolvePaymentStatus(
       total: total,
     );
@@ -330,7 +426,246 @@ class _ClinicalRequestBillingPanelState
             _mode == ClinicalRequestPaymentMode.payNow
                 ? _referenceController.text.trim()
                 : null,
-        lineItems: widget.lineItems,
+        lineItems: _submitLineItems(),
+      ),
+    );
+  }
+}
+
+/// Mutable, editable representation of a single billing line within the panel.
+class _EditableBillingLine {
+  _EditableBillingLine({
+    required this.id,
+    required this.label,
+    required this.currency,
+    required num quantity,
+    required num? unitPrice,
+    required VoidCallback onChanged,
+  })  : _quantity = quantity < 1 ? 1 : quantity,
+        _baseQuantity = quantity,
+        _baseUnitPrice = unitPrice,
+        priceController = TextEditingController(
+          text: unitPrice == null ? '' : opdCurrencyAmountInput(unitPrice),
+        ) {
+    priceController.addListener(onChanged);
+    _onChanged = onChanged;
+  }
+
+  factory _EditableBillingLine.fromCatalog(
+    ClinicalRequestBillingLineItem item, {
+    required VoidCallback onChanged,
+  }) {
+    return _EditableBillingLine(
+      id: item.id,
+      label: item.label,
+      currency: item.currency,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      onChanged: onChanged,
+    );
+  }
+
+  final String id;
+  String label;
+  String? currency;
+  final TextEditingController priceController;
+  late final VoidCallback _onChanged;
+
+  num _quantity;
+  num _baseQuantity;
+  num? _baseUnitPrice;
+
+  num get quantity => _quantity;
+
+  num? get unitPrice {
+    final String text = priceController.text.trim();
+    if (text.isEmpty) {
+      return null;
+    }
+    return num.tryParse(text);
+  }
+
+  bool get hasPrice {
+    final num? price = unitPrice;
+    return price != null && price > 0;
+  }
+
+  num? get lineTotal {
+    final num? price = unitPrice;
+    if (price == null || price <= 0) {
+      return null;
+    }
+    return price * _quantity;
+  }
+
+  bool get _priceOverridden {
+    final num? current = unitPrice;
+    if (current == null && _baseUnitPrice == null) {
+      return false;
+    }
+    return current != _baseUnitPrice;
+  }
+
+  void setQuantity(num value) {
+    _quantity = value < 1 ? 1 : value;
+    _onChanged();
+  }
+
+  /// Adopt fresh catalog values when the parent re-supplies this line, unless the
+  /// user has manually overridden the price/quantity.
+  void reconcileWithCatalog(ClinicalRequestBillingLineItem item) {
+    label = item.label;
+    currency = item.currency;
+    if (_quantity == _baseQuantity) {
+      _quantity = item.quantity < 1 ? 1 : item.quantity;
+    }
+    _baseQuantity = item.quantity;
+    if (!_priceOverridden && item.unitPrice != _baseUnitPrice) {
+      priceController.text =
+          item.unitPrice == null ? '' : opdCurrencyAmountInput(item.unitPrice);
+    }
+    _baseUnitPrice = item.unitPrice;
+  }
+
+  ClinicalRequestBillingLineItem toLineItem(String fallbackCurrency) {
+    return ClinicalRequestBillingLineItem(
+      id: id,
+      label: label,
+      quantity: _quantity,
+      unitPrice: unitPrice,
+      currency: currency ?? fallbackCurrency,
+    );
+  }
+
+  void dispose() {
+    priceController.removeListener(_onChanged);
+    priceController.dispose();
+  }
+}
+
+class _EditableBillingLineRow extends StatelessWidget {
+  const _EditableBillingLineRow({
+    required this.line,
+    required this.currency,
+    required this.enabled,
+    super.key,
+  });
+
+  final _EditableBillingLine line;
+  final String currency;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? lineTotalLabel = line.lineTotal == null
+        ? null
+        : clinicalRequestPriceLabel(
+            context,
+            line.lineTotal,
+            line.currency ?? currency,
+          );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            line.label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Row(
+            children: <Widget>[
+              _QuantityStepper(
+                quantity: line.quantity,
+                enabled: enabled,
+                onChanged: line.setQuantity,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: AppTextField(
+                  controller: line.priceController,
+                  labelText: l10n.clinicalRequestUnitPriceLabel,
+                  enabled: enabled,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              SizedBox(
+                width: 84,
+                child: Text(
+                  lineTotalLabel ?? l10n.clinicalRequestPriceNotSetLabel,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: lineTotalLabel == null
+                        ? colorScheme.onSurfaceVariant
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantityStepper extends StatelessWidget {
+  const _QuantityStepper({
+    required this.quantity,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final num quantity;
+  final bool enabled;
+  final ValueChanged<num> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(theme.spacing.xs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: theme.appTokens.listIconSize,
+            onPressed: enabled && quantity > 1
+                ? () => onChanged(quantity - 1)
+                : null,
+            icon: const Icon(Icons.remove),
+          ),
+          Text(
+            '${quantity % 1 == 0 ? quantity.toInt() : quantity}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: theme.appTokens.listIconSize,
+            onPressed: enabled ? () => onChanged(quantity + 1) : null,
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }

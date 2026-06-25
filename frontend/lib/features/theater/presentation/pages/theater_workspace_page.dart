@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/theater/presentation/controllers/theater_wor
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1339,6 +1340,7 @@ class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
   late final TextEditingController _surgeonController;
   late final TextEditingController _anesthetistController;
   late final TextEditingController _notesController;
+  ClinicalRequestBillingSubmit? _billing;
 
   @override
   void initState() {
@@ -1414,6 +1416,18 @@ class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
           labelText: l10n.theaterStageNotesLabel,
           maxLines: 3,
         ),
+        if (!widget.rescheduleOnly)
+          ClinicalRequestBillingPanel(
+            lineItems: <ClinicalRequestBillingLineItem>[
+              ClinicalRequestBillingLineItem(
+                id: 'THEATRE_CASE_FEE',
+                label: l10n.theaterCaseFeeLabel,
+              ),
+            ],
+            onChanged: (ClinicalRequestBillingSubmit value) {
+              _billing = value;
+            },
+          ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
           submitLabel: widget.rescheduleOnly
@@ -1425,6 +1439,12 @@ class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
             if (!validateAndSaveAppForm(_formKey)) {
               return;
             }
+            final ClinicalRequestBillingSubmit? billing = _billing;
+            final bool charge = !widget.rescheduleOnly &&
+                billing != null &&
+                billing.paymentStatus !=
+                    ClinicalRequestPaymentStatus.notBilled &&
+                billing.totalAmount > 0;
             Navigator.of(context).pop(<String, Object?>{
               if (!widget.rescheduleOnly)
                 'encounter_id': _encounterController.text.trim(),
@@ -1434,6 +1454,7 @@ class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
               'anesthetist_user_id': _anesthetistController.text.trim(),
               'workflow_stage': widget.rescheduleOnly ? null : 'PRE_OP',
               'stage_notes': _notesController.text.trim(),
+              if (charge) 'billing': billing.toPayloadMap(),
             });
           },
         ),

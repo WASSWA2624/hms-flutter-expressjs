@@ -7,9 +7,15 @@
  * Per prisma.mdc: All mutations call createAuditLog.
  */
 
+const prisma = require('@prisma/client');
 const procedureRepository = require('@repositories/procedure/procedure.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  persistProcedureBilling,
+  reverseClinicalRequestBilling,
+  extractStoredClinicalBilling,
+} = require('@lib/billing/clinical-request-billing');
 
 /**
  * List procedures with pagination and filtering
@@ -90,7 +96,27 @@ const getProcedureById = async (id, userId, ipAddress) => {
  */
 const createProcedure = async (data, userId, ipAddress) => {
   try {
-    const procedure = await procedureRepository.create(data);
+    const { billing, ...procedureData } = data;
+    const procedure = await procedureRepository.create(procedureData);
+
+    if (billing) {
+      const encounter = await prisma.encounter.findFirst({
+        where: { id: procedureData.encounter_id, deleted_at: null },
+        select: { id: true, tenant_id: true, facility_id: true, patient_id: true },
+      });
+      if (encounter) {
+        await prisma.$transaction(async (tx) => {
+          await persistProcedureBilling(tx, {
+            procedureId: procedure.id,
+            billing,
+            tenantId: encounter.tenant_id,
+            facilityId: encounter.facility_id || null,
+            patientId: encounter.patient_id,
+            description: `Procedure: ${procedureData.description || ''}`.trim(),
+          });
+        });
+      }
+    }
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -163,6 +189,13 @@ const deleteProcedure = async (id, userId, ipAddress) => {
 
     if (!before) {
       throw new HttpError('errors.procedure.not_found', 404);
+    }
+
+    const existingSnapshot = extractStoredClinicalBilling(before);
+    if (existingSnapshot?.invoice_id) {
+      await prisma.$transaction(async (tx) => {
+        await reverseClinicalRequestBilling(tx, { existingSnapshot });
+      });
     }
 
     await procedureRepository.softDelete(id);
