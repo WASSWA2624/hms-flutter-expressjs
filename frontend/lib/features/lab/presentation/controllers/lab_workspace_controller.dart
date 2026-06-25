@@ -617,6 +617,24 @@ final class LabWorkspaceController
     );
   }
 
+  Future<AppFailure?> restoreOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateWorkflow(
+      () => _repository.restoreOrderItem(itemId, payload),
+    );
+  }
+
+  Future<AppFailure?> deleteOrderItems(
+    String orderId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateWorkflow(
+      () => _repository.deleteOrderItems(orderId, payload),
+    );
+  }
+
   Future<LabBatchPersistOutcome> _persistOrderItemResultEntries(
     List<_LabOrderItemResultEntry> entries,
     _LabOrderItemResultPersister persist,

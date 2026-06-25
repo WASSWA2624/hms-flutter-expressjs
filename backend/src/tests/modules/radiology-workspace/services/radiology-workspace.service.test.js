@@ -25,6 +25,9 @@ jest.mock('@lib/dicomweb/client', () => ({
 jest.mock('@services/radiology-order/radiology-order.service', () => ({
   createRadiologyOrder: jest.fn(),
 }));
+jest.mock('@services/opd-flow/opd-flow.service', () => ({
+  syncDiagnosticsStage: jest.fn().mockResolvedValue(null),
+}));
 jest.mock('@services/radiology-workspace/radiology.shared', () => {
   const actual = jest.requireActual('@services/radiology-workspace/radiology.shared');
   return {
@@ -36,6 +39,7 @@ jest.mock('@services/radiology-workspace/radiology.shared', () => {
 
 const radiologyWorkspaceRepository = require('@repositories/radiology-workspace/radiology-workspace.repository');
 const radiologyOrderService = require('@services/radiology-order/radiology-order.service');
+const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const { createAuditLog } = require('@lib/audit');
 const { emitToUsers } = require('@lib/websocket');
 const prisma = require('@prisma/client');
@@ -86,7 +90,12 @@ const flushAsync = () => new Promise((resolve) => setImmediate(resolve));
 describe('radiology-workspace.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // clearAllMocks() does not drop queued mockResolvedValueOnce implementations,
+    // so reset the shared id resolvers to keep each test fully isolated.
+    resolveModelIdOrThrow.mockReset();
+    resolveModelRecordOrThrow.mockReset();
     createAuditLog.mockResolvedValue({});
+    opdFlowService.syncDiagnosticsStage.mockResolvedValue(null);
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'user-1' },
       { user_id: 'actor-1' },
@@ -611,6 +620,185 @@ describe('radiology-workspace.service', () => {
         '127.0.0.1'
       )
     ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('startRadiologyOrder transitions ORDERED to IN_PROCESS', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(buildOrder({ status: 'ORDERED' }))
+      .mockResolvedValueOnce(buildOrder({ status: 'IN_PROCESS' }));
+
+    const response = await radiologyWorkspaceService.startRadiologyOrder(
+      'RAD0000001',
+      {},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyWorkspaceRepository.txUpdateOrder).toHaveBeenCalledWith(
+      {},
+      'order-internal-1',
+      { status: 'IN_PROCESS' }
+    );
+    expect(response.workflow.order.status).toBe('IN_PROCESS');
+  });
+
+  it('completeRadiologyOrder requires a FINAL result before completion', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(
+      buildOrder({ status: 'IN_PROCESS', results: [] })
+    );
+
+    await expect(
+      radiologyWorkspaceService.completeRadiologyOrder(
+        'RAD0000001',
+        {},
+        'actor-1',
+        '127.0.0.1'
+      )
+    ).rejects.toBeInstanceOf(HttpError);
+    expect(opdFlowService.syncDiagnosticsStage).not.toHaveBeenCalled();
+  });
+
+  it('completeRadiologyOrder syncs the OPD diagnostics stage on completion', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    const finalResult = {
+      id: 'result-internal-1',
+      human_friendly_id: 'RADRES0001',
+      radiology_order_id: 'order-internal-1',
+      status: 'FINAL',
+      report_text: 'Final report',
+      reported_at: now,
+      created_at: now,
+      updated_at: now,
+      attestations: [],
+    };
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(
+        buildOrder({ status: 'IN_PROCESS', results: [finalResult] })
+      )
+      .mockResolvedValueOnce(
+        buildOrder({ status: 'COMPLETED', results: [finalResult] })
+      );
+
+    const response = await radiologyWorkspaceService.completeRadiologyOrder(
+      'RAD0000001',
+      {},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(response.workflow.order.status).toBe('COMPLETED');
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'RADIOLOGY_ORDER_COMPLETED' })
+    );
+  });
+
+  it('cancelRadiologyOrder syncs the OPD diagnostics stage on cancellation', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(buildOrder({ status: 'ORDERED' }))
+      .mockResolvedValueOnce(buildOrder({ status: 'CANCELLED' }));
+
+    await radiologyWorkspaceService.cancelRadiologyOrder(
+      'RAD0000001',
+      { reason: 'Duplicate order' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'RADIOLOGY_ORDER_CANCELLED' })
+    );
+  });
+
+  it('finalizeRadiologyResult finalizes a draft and syncs the OPD diagnostics stage', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('result-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    const draftResult = {
+      id: 'result-internal-1',
+      human_friendly_id: 'RADRES0001',
+      radiology_order_id: 'order-internal-1',
+      status: 'DRAFT',
+      report_text: 'Draft report',
+      reported_at: now,
+      created_at: now,
+      updated_at: now,
+      attestations: [],
+    };
+    const finalResult = { ...draftResult, status: 'FINAL' };
+    radiologyWorkspaceRepository.txFindResultById.mockResolvedValue(draftResult);
+    radiologyWorkspaceRepository.txUpdateResult.mockResolvedValue(finalResult);
+    radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(
+      buildOrder({ status: 'IN_PROCESS', results: [finalResult] })
+    );
+
+    const response = await radiologyWorkspaceService.finalizeRadiologyResult(
+      'RADRES0001',
+      {},
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyWorkspaceRepository.txUpdateResult).toHaveBeenCalledWith(
+      {},
+      'result-internal-1',
+      expect.objectContaining({ status: 'FINAL' })
+    );
+    expect(response.result.status).toBe('FINAL');
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'RADIOLOGY_RESULT_FINALIZED' })
+    );
+  });
+
+  it('does not sync the OPD diagnostics stage for orders without an encounter', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(
+        buildOrder({ status: 'ORDERED', encounter_id: null, encounter: null })
+      )
+      .mockResolvedValueOnce(
+        buildOrder({ status: 'CANCELLED', encounter_id: null, encounter: null })
+      );
+
+    await radiologyWorkspaceService.cancelRadiologyOrder(
+      'RAD0000001',
+      { reason: 'Walk-in cancelled' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).not.toHaveBeenCalled();
   });
 
   it('throws not found when legacy resource identifier is missing', async () => {

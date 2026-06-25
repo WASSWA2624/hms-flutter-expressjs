@@ -151,6 +151,18 @@ const txUpdateOrderItem = async (tx, id, data) =>
     data,
   });
 
+const txUpdateResultsMany = async (tx, where, data) =>
+  tx.lab_result.updateMany({
+    where: { deleted_at: null, ...(where || {}) },
+    data,
+  });
+
+const txFindManyOrderItems = async (tx, where, select) =>
+  tx.lab_order_item.findMany({
+    where: { deleted_at: null, ...(where || {}) },
+    ...(select ? { select } : {}),
+  });
+
 const txCountOrderItems = async (tx, where) =>
   tx.lab_order_item.count({
     where: { deleted_at: null, ...(where || {}) },
@@ -199,6 +211,8 @@ module.exports = {
   txUpdateOrder,
   txUpdateOrderItemsMany,
   txUpdateOrderItem,
+  txUpdateResultsMany,
+  txFindManyOrderItems,
   txCountOrderItems,
   txCountSamples,
   txFindFirstResult,

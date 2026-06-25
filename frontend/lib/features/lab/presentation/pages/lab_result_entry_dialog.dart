@@ -1942,7 +1942,16 @@ class _LabResultEntryTable extends StatelessWidget {
       children: <Widget>[
         for (final _LabPanelDraftGroup group in groups) ...<Widget>[
           if (group.panelTitle != null) ...<Widget>[
-            _PanelGroupHeader(title: group.panelTitle!),
+            _PanelGroupHeader(
+              title: group.panelTitle!,
+              canDelete: canMutate,
+              orderId: group.drafts.isNotEmpty
+                  ? group.drafts.first.item.labOrderId
+                  : null,
+              itemIds: group.drafts
+                  .map((_ResultDraft draft) => draft.item.apiId)
+                  .toList(growable: false),
+            ),
             SizedBox(height: theme.spacing.xs),
           ],
           _ResponsiveLabResultEntry(
@@ -2340,7 +2349,7 @@ class _LabResultFlagCell extends StatelessWidget {
   }
 }
 
-class _LabResultActionsCell extends StatelessWidget {
+class _LabResultActionsCell extends ConsumerWidget {
   const _LabResultActionsCell({
     required this.draft,
     required this.canMutate,
@@ -2362,11 +2371,16 @@ class _LabResultActionsCell extends StatelessWidget {
   final VoidCallback onRemove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final LabOrderItem item = draft.item;
     final bool canRemove = canMutate && _canRemoveResult(item, draft);
+    final bool isCancelled =
+        (item.status ?? '').trim().toUpperCase() == 'CANCELLED';
+    final bool canDelete = canMutate &&
+        item.labOrderId != null &&
+        item.labOrderId!.trim().isNotEmpty;
     final String resultStatus = (item.effectiveResultStatus ?? '')
         .trim()
         .toUpperCase();
@@ -2375,6 +2389,12 @@ class _LabResultActionsCell extends StatelessWidget {
         resultStatus.isEmpty ||
         resultStatus == 'PENDING';
     final List<Widget> actions = <Widget>[
+      if (canMutate && isCancelled)
+        AppButton.secondary(
+          label: l10n.labRestoreOrderItemAction,
+          leadingIcon: Icons.restore_outlined,
+          onPressed: () => _restore(context, ref),
+        ),
       if (canMutate && item.canReopenResult)
         AppButton.tertiary(
           label: l10n.labEditVerifiedResultAction,
@@ -2413,6 +2433,12 @@ class _LabResultActionsCell extends StatelessWidget {
           leadingIcon: Icons.block_outlined,
           onPressed: onReject,
         ),
+      if (canDelete)
+        AppButton.tertiary(
+          label: l10n.labDeleteOrderItemAction,
+          leadingIcon: Icons.delete_outline,
+          onPressed: () => _delete(context, ref),
+        ),
     ];
 
     if (actions.isEmpty) {
@@ -2425,16 +2451,69 @@ class _LabResultActionsCell extends StatelessWidget {
       children: actions,
     );
   }
+
+  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderItem item = draft.item;
+    await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.labRestoreOrderItemDialogTitle,
+        body: l10n.labRestoreOrderItemDialogBody(item.displayTitle),
+        submitLabel: l10n.labRestoreOrderItemAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () => ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .restoreOrderItem(item.apiId, const <String, Object?>{}),
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderItem item = draft.item;
+    final String? orderId = item.labOrderId;
+    if (orderId == null || orderId.trim().isEmpty) {
+      return;
+    }
+    await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.labDeleteOrderItemDialogTitle,
+        body: l10n.labDeleteOrderItemDialogBody(item.displayTitle),
+        submitLabel: l10n.labDeleteOrderItemAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () => ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .deleteOrderItems(orderId, <String, Object?>{
+              'order_item_ids': <String>[item.apiId],
+            }),
+      ),
+    );
+  }
 }
 
-class _PanelGroupHeader extends StatelessWidget {
-  const _PanelGroupHeader({required this.title});
+class _PanelGroupHeader extends ConsumerWidget {
+  const _PanelGroupHeader({
+    required this.title,
+    this.orderId,
+    this.itemIds = const <String>[],
+    this.canDelete = false,
+  });
 
   final String title;
+  final String? orderId;
+  final List<String> itemIds;
+  final bool canDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final bool showDelete = canDelete &&
+        itemIds.isNotEmpty &&
+        orderId != null &&
+        orderId!.trim().isNotEmpty;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.32),
@@ -2460,8 +2539,37 @@ class _PanelGroupHeader extends StatelessWidget {
                 ),
               ),
             ),
+            if (showDelete)
+              AppIconButton(
+                icon: Icons.delete_outline,
+                semanticLabel: l10n.labDeletePanelAction,
+                tooltip: l10n.labDeletePanelAction,
+                onPressed: () => _deletePanel(context, ref),
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _deletePanel(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final String? targetOrderId = orderId;
+    if (targetOrderId == null || itemIds.isEmpty) {
+      return;
+    }
+    await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.labDeletePanelDialogTitle,
+        body: l10n.labDeletePanelDialogBody(title),
+        submitLabel: l10n.labDeletePanelAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () => ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .deleteOrderItems(targetOrderId, <String, Object?>{
+              'order_item_ids': itemIds,
+            }),
       ),
     );
   }

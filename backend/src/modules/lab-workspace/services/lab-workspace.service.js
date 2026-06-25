@@ -2179,6 +2179,224 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
   }
 };
 
+const restoreLabOrderItem = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const orderItemId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'lab_order_item',
+      where: { deleted_at: null },
+      errorKey: 'errors.lab_order_item.not_found',
+    });
+
+    const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
+      const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
+        lab_order: { select: { id: true, status: true } },
+      });
+      if (!item) {
+        throw new HttpError('errors.lab_order_item.not_found', 404);
+      }
+
+      assertTransition(normalizeStatus(item.status) === 'CANCELLED', {
+        from: item.status,
+        to: 'ORDERED',
+      });
+
+      await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
+        status: 'ORDERED',
+        rejection_reason: null,
+        rejection_notes: null,
+        rejected_at: null,
+      });
+
+      const progress = await syncLabOrderProgress(tx, item.lab_order_id);
+      const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        item.lab_order_id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeItemStatus: item.status,
+        beforeOrderStatus: item.lab_order?.status || null,
+        order: refreshedOrder,
+        progress,
+      };
+    });
+
+    createAuditLog({
+      tenant_id: resolveAuditTenantId(mutation.order),
+      user_id: userId,
+      action: 'RESTORE_ORDER_ITEM',
+      entity: 'lab_order_item',
+      entity_id: orderItemId,
+      diff: {
+        metadata: {
+          before_item_status: mutation.beforeItemStatus,
+          before_order_status: mutation.beforeOrderStatus,
+          after_order_status: mutation.order?.status || null,
+          reason: payload.reason || null,
+          notes: payload.notes || null,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapLabOrderWorkflowRecord(mutation.order);
+    publishLabRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'RESTORE_ORDER_ITEM',
+      resourceType: 'order-item',
+      resourceId: identifier,
+    }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_ORDER_ITEM_RESTORED',
+    });
+
+    return { workflow };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const orderId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'lab_order',
+      where: { deleted_at: null },
+      errorKey: 'errors.lab_order.not_found',
+    });
+
+    const panelId = String(payload?.panel_id || '').trim();
+    const requestedItemIds = Array.isArray(payload?.order_item_ids)
+      ? payload.order_item_ids
+      : [];
+
+    if (!panelId && requestedItemIds.length === 0) {
+      throw new HttpError('errors.validation.field.required', 400, [
+        { field: 'order_item_ids' },
+      ]);
+    }
+
+    const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
+      const order = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        orderId,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.lab_order.not_found', 404);
+      }
+
+      let targetIds = [];
+      if (panelId) {
+        const panelItems = await labWorkspaceRepository.txFindManyOrderItems(
+          tx,
+          { lab_order_id: order.id, panel_id: panelId },
+          { id: true }
+        );
+        targetIds = panelItems.map((row) => row.id);
+      } else {
+        for (const rawId of requestedItemIds) {
+          const itemId = await resolveModelIdOrThrow({
+            identifier: rawId,
+            model: 'lab_order_item',
+            where: { deleted_at: null, lab_order_id: order.id },
+            errorKey: 'errors.lab_order_item.not_found',
+          });
+          targetIds.push(itemId);
+        }
+        targetIds = [...new Set(targetIds)];
+      }
+
+      if (!targetIds.length) {
+        throw new HttpError('errors.lab_order_item.not_found', 404);
+      }
+
+      const totalActiveItems = await labWorkspaceRepository.txCountOrderItems(tx, {
+        lab_order_id: order.id,
+      });
+      if (targetIds.length >= totalActiveItems) {
+        throw new HttpError('errors.lab_order.at_least_one_active_test_required', 409, [
+          { field: 'order_item_ids' },
+        ]);
+      }
+
+      const deletedAt = new Date();
+      await labWorkspaceRepository.txUpdateResultsMany(
+        tx,
+        { lab_order_item_id: { in: targetIds } },
+        { deleted_at: deletedAt }
+      );
+      await labWorkspaceRepository.txUpdateOrderItemsMany(
+        tx,
+        { id: { in: targetIds } },
+        { deleted_at: deletedAt }
+      );
+
+      const progress = await syncLabOrderProgress(tx, order.id);
+      const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeOrderStatus: order.status,
+        order: refreshedOrder,
+        deletedItemIds: targetIds,
+        panelId: panelId || null,
+        progress,
+      };
+    });
+
+    createAuditLog({
+      tenant_id: resolveAuditTenantId(mutation.order),
+      user_id: userId,
+      action: 'DELETE_ORDER_ITEMS',
+      entity: 'lab_order',
+      entity_id: orderId,
+      diff: {
+        metadata: {
+          before_order_status: mutation.beforeOrderStatus,
+          after_order_status: mutation.order?.status || null,
+          panel_id: mutation.panelId,
+          deleted_item_count: mutation.deletedItemIds.length,
+          reason: payload.reason || null,
+          notes: payload.notes || null,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapLabOrderWorkflowRecord(mutation.order);
+    publishLabRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'DELETE_ORDER_ITEMS',
+      resourceType: 'order',
+      resourceId: workflow?.order?.id || null,
+    }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_ORDER_ITEMS_DELETED',
+    });
+
+    return {
+      workflow,
+      deleted_item_count: mutation.deletedItemIds.length,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const resolveLegacyRouteIdentifier = async (resource, identifier) => {
   try {
     const normalizedResource = String(resource || '').trim().toLowerCase();
@@ -2245,5 +2463,7 @@ module.exports = {
   rejectLabOrderItem,
   reopenLabOrderItemResult,
   reverseLabOrderWorkflow,
+  restoreLabOrderItem,
+  deleteLabOrderItems,
   resolveLegacyRouteIdentifier,
 };

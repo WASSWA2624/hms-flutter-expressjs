@@ -581,6 +581,36 @@ const publishRadiologyRealtimeUpdates = async ({
   }
 };
 
+/**
+ * Hand off to the OPD orchestrator after a radiology workflow mutation so the
+ * encounter can advance out of `RADIOLOGY_REQUESTED` / `LAB_AND_RADIOLOGY_REQUESTED`
+ * once imaging work is done. Radiology never mutates OPD stages itself — it only
+ * signals completion. The call is fire-and-forget, forward-only, and a safe no-op
+ * for IPD orders (no OPD flow resolves on the encounter).
+ */
+const syncOpdFlowForOrder = (
+  orderRecord,
+  { userId = null, trigger = 'RADIOLOGY_WORKFLOW_UPDATED' } = {}
+) => {
+  const encounterId = String(
+    orderRecord?.encounter_id || orderRecord?.encounter?.id || ''
+  ).trim();
+  if (!encounterId) return;
+
+  try {
+    const opdFlowService = require('@services/opd-flow/opd-flow.service');
+    if (typeof opdFlowService.syncDiagnosticsStage !== 'function') return;
+    Promise.resolve(
+      opdFlowService.syncDiagnosticsStage(encounterId, {
+        user_id: userId || null,
+        trigger,
+      })
+    ).catch(() => {});
+  } catch (_error) {
+    // OPD orchestration must never block radiology workflow updates.
+  }
+};
+
 const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
   try {
     const view = normalizeWorkbenchView(filters?.view);
@@ -1214,6 +1244,11 @@ const completeRadiologyOrder = async (identifier, payload = {}, userId, ipAddres
       resourceId: workflow?.order?.id || null,
     }).catch(() => {});
 
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'RADIOLOGY_ORDER_COMPLETED',
+    });
+
     return { workflow };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -1294,6 +1329,11 @@ const cancelRadiologyOrder = async (identifier, payload = {}, userId, ipAddress)
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
     }).catch(() => {});
+
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'RADIOLOGY_ORDER_CANCELLED',
+    });
 
     return { workflow };
   } catch (error) {
@@ -1845,6 +1885,11 @@ const finalizeRadiologyResult = async (identifier, payload = {}, userId, ipAddre
       resultRecord: result,
     }).catch(() => {});
 
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'RADIOLOGY_RESULT_FINALIZED',
+    });
+
     return {
       workflow,
       result,
@@ -2084,6 +2129,11 @@ const attestRadiologyResultFinalization = async (
       resultRecord: result,
     }).catch(() => {});
 
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'RADIOLOGY_RESULT_ATTESTED',
+    });
+
     return {
       workflow,
       result,
@@ -2166,6 +2216,11 @@ const addendumRadiologyResult = async (identifier, payload = {}, userId, ipAddre
       resourceId: result?.id || null,
       resultRecord: result,
     }).catch(() => {});
+
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'RADIOLOGY_RESULT_AMENDED',
+    });
 
     return {
       workflow,

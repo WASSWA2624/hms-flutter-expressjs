@@ -143,6 +143,26 @@ const reopenLabOrderItemResult = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.lab_workspace.reopen_result.success', data);
 });
 
+const restoreLabOrderItem = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.restoreLabOrderItem(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.restore_item.success', data);
+});
+
+const deleteLabOrderItems = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.deleteLabOrderItems(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.delete_items.success', data);
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await labWorkspaceService.resolveLegacyRouteIdentifier(
     req.params.resource,
@@ -164,5 +184,7 @@ module.exports = {
   rejectLabOrderItem,
   reopenLabOrderItemResult,
   reverseLabOrderWorkflow,
+  restoreLabOrderItem,
+  deleteLabOrderItems,
   resolveLegacyRoute,
 };

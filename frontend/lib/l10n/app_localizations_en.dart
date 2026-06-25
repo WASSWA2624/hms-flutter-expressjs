@@ -12753,6 +12753,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labVerifiedResultReopenedMessage => 'Result reopened for editing.';
 
   @override
+  String get labRestoreOrderItemAction => 'Restore test';
+
+  @override
+  String get labRestoreOrderItemDialogTitle => 'Restore cancelled test';
+
+  @override
+  String labRestoreOrderItemDialogBody(String testName) {
+    return 'Restore \"$testName\"? It was cancelled and will return to the active worklist for processing.';
+  }
+
+  @override
+  String get labDeleteOrderItemAction => 'Delete request';
+
+  @override
+  String get labDeleteOrderItemDialogTitle => 'Delete test request';
+
+  @override
+  String labDeleteOrderItemDialogBody(String testName) {
+    return 'Delete \"$testName\" from this order? This removes the requested test entirely and cannot be undone.';
+  }
+
+  @override
+  String get labDeletePanelAction => 'Delete panel';
+
+  @override
+  String get labDeletePanelDialogTitle => 'Delete lab panel';
+
+  @override
+  String labDeletePanelDialogBody(String panelName) {
+    return 'This will remove $panelName from the configurable lab catalog. A reason is required for the audit trail.';
+  }
+
+  @override
   String get labRejectOrderItemAction => 'Reject test';
 
   @override
@@ -12987,9 +13020,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDeleteTestAction => 'Delete test';
 
   @override
-  String get labDeletePanelAction => 'Delete panel';
-
-  @override
   String get labDeleteReasonLabel => 'Deletion reason';
 
   @override
@@ -13013,14 +13043,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String labDeleteTestDialogBody(String testName) {
     return 'This will remove $testName from the configurable lab catalog. A reason is required for the audit trail.';
-  }
-
-  @override
-  String get labDeletePanelDialogTitle => 'Delete lab panel';
-
-  @override
-  String labDeletePanelDialogBody(String panelName) {
-    return 'This will remove $panelName from the configurable lab catalog. A reason is required for the audit trail.';
   }
 
   @override

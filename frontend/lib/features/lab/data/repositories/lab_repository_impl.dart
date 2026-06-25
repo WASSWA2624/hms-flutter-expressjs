@@ -311,6 +311,32 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<LabOrderWorkflow>> restoreOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'order-items',
+      itemId,
+      'restore',
+    ], payload);
+  }
+
+  @override
+  Future<Result<LabOrderWorkflow>> deleteOrderItems(
+    String orderId,
+    Map<String, Object?> payload,
+  ) {
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'orders',
+      orderId,
+      'delete-items',
+    ], payload);
+  }
+
+  @override
   Future<Result<LabCatalogItem>> updateLabTest(
     String testId,
     Map<String, Object?> payload,

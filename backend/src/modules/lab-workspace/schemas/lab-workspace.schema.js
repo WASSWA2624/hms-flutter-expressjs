@@ -95,6 +95,32 @@ const reopenLabOrderItemResultSchema = z.object({
   notes: z.string().trim().max(65535).optional().nullable(),
 });
 
+const restoreLabOrderItemSchema = z.object({
+  reason: z.string().trim().max(65535).optional().nullable(),
+  notes: z.string().trim().max(65535).optional().nullable(),
+});
+
+const deleteLabOrderItemsSchema = z
+  .object({
+    panel_id: z.string().trim().min(1).max(64).optional().nullable(),
+    order_item_ids: z
+      .array(uuidOrFriendlyIdentifierSchema)
+      .min(1)
+      .max(100)
+      .optional(),
+    reason: z.string().trim().max(65535).optional().nullable(),
+    notes: z.string().trim().max(65535).optional().nullable(),
+  })
+  .refine(
+    (value) =>
+      Boolean(value.panel_id) ||
+      (Array.isArray(value.order_item_ids) && value.order_item_ids.length > 0),
+    {
+      message: 'Either panel_id or order_item_ids must be provided.',
+      path: ['order_item_ids'],
+    }
+  );
+
 module.exports = {
   getLabWorkbenchQuerySchema,
   searchLabOrderContextPatientsQuerySchema,
@@ -110,4 +136,6 @@ module.exports = {
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   reopenLabOrderItemResultSchema,
+  restoreLabOrderItemSchema,
+  deleteLabOrderItemsSchema,
 };

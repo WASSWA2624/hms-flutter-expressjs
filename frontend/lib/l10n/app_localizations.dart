@@ -23985,6 +23985,60 @@ abstract class AppLocalizations {
   /// **'Result reopened for editing.'**
   String get labVerifiedResultReopenedMessage;
 
+  /// Action label to restore a cancelled lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore test'**
+  String get labRestoreOrderItemAction;
+
+  /// Title for the dialog confirming restoration of a cancelled lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore cancelled test'**
+  String get labRestoreOrderItemDialogTitle;
+
+  /// Body confirming restoration of a cancelled lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore \"{testName}\"? It was cancelled and will return to the active worklist for processing.'**
+  String labRestoreOrderItemDialogBody(String testName);
+
+  /// Action label to delete an individual lab test request from an order.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete request'**
+  String get labDeleteOrderItemAction;
+
+  /// Title for the dialog confirming deletion of a lab test request.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete test request'**
+  String get labDeleteOrderItemDialogTitle;
+
+  /// Body confirming deletion of an individual lab test request.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{testName}\" from this order? This removes the requested test entirely and cannot be undone.'**
+  String labDeleteOrderItemDialogBody(String testName);
+
+  /// Action label for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete panel'**
+  String get labDeletePanelAction;
+
+  /// Dialog title for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete lab panel'**
+  String get labDeletePanelDialogTitle;
+
+  /// Confirmation body for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.'**
+  String labDeletePanelDialogBody(String panelName);
+
   /// Localized text for labRejectOrderItemAction.
   ///
   /// In en, this message translates to:
@@ -24441,12 +24495,6 @@ abstract class AppLocalizations {
   /// **'Delete test'**
   String get labDeleteTestAction;
 
-  /// Action label for deleting a lab panel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete panel'**
-  String get labDeletePanelAction;
-
   /// Field label for the required reason when deleting a lab record.
   ///
   /// In en, this message translates to:
@@ -24488,18 +24536,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will remove {testName} from the configurable lab catalog. A reason is required for the audit trail.'**
   String labDeleteTestDialogBody(String testName);
-
-  /// Dialog title for deleting a lab panel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete lab panel'**
-  String get labDeletePanelDialogTitle;
-
-  /// Confirmation body for deleting a lab panel.
-  ///
-  /// In en, this message translates to:
-  /// **'This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.'**
-  String labDeletePanelDialogBody(String panelName);
 
   /// Snackbar shown after a lab record is deleted.
   ///

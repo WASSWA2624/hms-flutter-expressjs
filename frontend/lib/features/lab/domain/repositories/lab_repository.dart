@@ -84,6 +84,16 @@ abstract interface class LabRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<LabOrderWorkflow>> restoreOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<LabOrderWorkflow>> deleteOrderItems(
+    String orderId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<LabCatalogItem>> updateLabTest(
     String testId,
     Map<String, Object?> payload,

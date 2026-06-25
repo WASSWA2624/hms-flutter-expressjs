@@ -1039,6 +1039,147 @@ describe('lab-workspace.service', () => {
     ).rejects.toBeInstanceOf(HttpError);
   });
 
+  it('restoreLabOrderItem un-cancels a cancelled test and reactivates the order', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'order-item-internal-1',
+      lab_order_id: 'order-internal-1',
+      status: 'CANCELLED',
+      lab_order: { id: 'order-internal-1', status: 'CANCELLED' },
+    });
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'order-item-internal-1',
+    });
+    labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+    labWorkspaceRepository.txCountOrderItems.mockResolvedValue(1);
+    labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });
+    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(
+      buildBaseOrder({ status: 'ORDERED', encounter_id: 'encounter-internal-1' })
+    );
+
+    const result = await labWorkspaceService.restoreLabOrderItem(
+      'LIT0000001',
+      { reason: 'Cancelled in error' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result?.workflow?.order?.id).toBe('LAB0000001');
+    expect(labWorkspaceRepository.txUpdateOrderItem).toHaveBeenCalledWith(
+      {},
+      'order-item-internal-1',
+      expect.objectContaining({
+        status: 'ORDERED',
+        rejection_reason: null,
+        rejection_notes: null,
+        rejected_at: null,
+      })
+    );
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'LAB_ORDER_ITEM_RESTORED' })
+    );
+  });
+
+  it('restoreLabOrderItem rejects items that are not cancelled', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'order-item-internal-1',
+      lab_order_id: 'order-internal-1',
+      status: 'IN_PROCESS',
+      lab_order: { id: 'order-internal-1', status: 'IN_PROCESS' },
+    });
+
+    await expect(
+      labWorkspaceService.restoreLabOrderItem('LIT0000001', {}, 'actor-1', '127.0.0.1')
+    ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('deleteLabOrderItems soft-deletes all tests within a panel', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(buildBaseOrder({ status: 'ORDERED' }))
+      .mockResolvedValueOnce(
+        buildBaseOrder({ status: 'ORDERED', encounter_id: 'encounter-internal-1' })
+      );
+    labWorkspaceRepository.txFindManyOrderItems.mockResolvedValue([
+      { id: 'order-item-internal-1' },
+      { id: 'order-item-internal-2' },
+    ]);
+    labWorkspaceRepository.txCountOrderItems.mockResolvedValue(3);
+    labWorkspaceRepository.txCountSamples.mockResolvedValue(0);
+    labWorkspaceRepository.txUpdateResultsMany.mockResolvedValue({ count: 2 });
+    labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 2 });
+    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
+
+    const result = await labWorkspaceService.deleteLabOrderItems(
+      'LAB0000001',
+      { panel_id: 'FBC', reason: 'Ordered by mistake' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(result?.deleted_item_count).toBe(2);
+    expect(labWorkspaceRepository.txUpdateOrderItemsMany).toHaveBeenCalledWith(
+      {},
+      { id: { in: ['order-item-internal-1', 'order-item-internal-2'] } },
+      expect.objectContaining({ deleted_at: expect.any(Date) })
+    );
+    expect(labWorkspaceRepository.txUpdateResultsMany).toHaveBeenCalledWith(
+      {},
+      { lab_order_item_id: { in: ['order-item-internal-1', 'order-item-internal-2'] } },
+      expect.objectContaining({ deleted_at: expect.any(Date) })
+    );
+
+    await flushAsync();
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'LAB_ORDER_ITEMS_DELETED' })
+    );
+  });
+
+  it('deleteLabOrderItems refuses to remove the last active test', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(
+      buildBaseOrder({ status: 'ORDERED' })
+    );
+    labWorkspaceRepository.txFindManyOrderItems.mockResolvedValue([
+      { id: 'order-item-internal-1' },
+      { id: 'order-item-internal-2' },
+    ]);
+    labWorkspaceRepository.txCountOrderItems.mockResolvedValue(2);
+
+    await expect(
+      labWorkspaceService.deleteLabOrderItems(
+        'LAB0000001',
+        { panel_id: 'FBC' },
+        'actor-1',
+        '127.0.0.1'
+      )
+    ).rejects.toBeInstanceOf(HttpError);
+    expect(labWorkspaceRepository.txUpdateOrderItemsMany).not.toHaveBeenCalled();
+  });
+
   it('throws not found when legacy resource identifier is missing', async () => {
     await expect(
       labWorkspaceService.resolveLegacyRouteIdentifier('lab-results', '')

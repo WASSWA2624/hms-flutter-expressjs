@@ -1021,6 +1021,8 @@
   "messages.lab_workspace.reject_item.success": "Lab order item rejected successfully",
   "messages.lab_workspace.reverse.success": "Lab workflow step reversed successfully",
   "messages.lab_workspace.reopen_result.success": "Verified lab result reopened for editing",
+  "messages.lab_workspace.restore_item.success": "Cancelled lab test restored successfully",
+  "messages.lab_workspace.delete_items.success": "Lab test request(s) deleted successfully",
   "messages.lab_workspace.resolve_legacy.success": "Legacy lab route resolved successfully",
   "messages.maintenance_request.triage.success": "Maintenance request triaged successfully",
   "messages.housekeeping_workspace.workspace.success": "Housekeeping workspace retrieved successfully",

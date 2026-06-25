@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/radiology/data/dtos/radiology_dtos.dart';
+import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
@@ -157,6 +158,122 @@ void main() {
       expect(workflow.nextActions.canAssign, isTrue);
       expect(workflow.nextActions.canStart, isTrue);
       expect(workflow.nextActions.canCancel, isTrue);
+    });
+  });
+
+  group('RadiologyCatalogTestDto', () {
+    test('decodes a paginated radiology catalog response', () {
+      final List<RadiologyCatalogTest> tests =
+          RadiologyCatalogTestDto.listFromResponse(<String, Object?>{
+            'success': true,
+            'data': <String, Object?>{
+              'items': <Object?>[
+                <String, Object?>{
+                  'id': 'RT-001',
+                  'display_id': 'RDT0000001',
+                  'name': 'Chest X-ray',
+                  'code': 'CXR',
+                  'modality': 'XRAY',
+                  'unit_price': 45000,
+                  'currency': 'UGX',
+                  'source': 'STANDARD',
+                },
+              ],
+            },
+          });
+
+      expect(tests, hasLength(1));
+      final RadiologyCatalogTest test = tests.single;
+      expect(test.id, 'RT-001');
+      expect(test.effectiveId, 'RDT0000001');
+      expect(test.modality, 'XRAY');
+      expect(test.unitPrice, 45000);
+      expect(test.currency, 'UGX');
+      expect(test.isStandard, isTrue);
+    });
+
+    test('decodes a single catalog test envelope', () {
+      final RadiologyCatalogTest test = radiologyCatalogTestFromResponse(
+        <String, Object?>{
+          'success': true,
+          'data': <String, Object?>{
+            'id': 'RT-002',
+            'name': 'Brain CT',
+            'modality': 'CT',
+            'body_region': 'Head',
+          },
+        },
+      );
+
+      expect(test.id, 'RT-002');
+      expect(test.name, 'Brain CT');
+      expect(test.bodyRegion, 'Head');
+      expect(test.isStandard, isFalse);
+    });
+  });
+
+  group('RadiologyEquipmentRecordDto', () {
+    test('decodes equipment registry rows under equipment_registries', () {
+      final List<RadiologyEquipmentRecord> records =
+          RadiologyEquipmentRecordDto.listFromResponse(<String, Object?>{
+            'success': true,
+            'data': <String, Object?>{
+              'equipment_registries': <Object?>[
+                <String, Object?>{
+                  'id': 'EQ-001',
+                  'display_id': 'EQP0000001',
+                  'equipment_name': 'GE CT Scanner',
+                  'equipment_code': 'CT-01',
+                  'status': 'ACTIVE',
+                  'equipment_category': <String, Object?>{'name': 'CT'},
+                },
+              ],
+            },
+          });
+
+      expect(records, hasLength(1));
+      final RadiologyEquipmentRecord record = records.single;
+      expect(record.id, 'EQ-001');
+      expect(record.effectiveId, 'EQP0000001');
+      expect(record.equipmentName, 'GE CT Scanner');
+      expect(record.categoryName, 'CT');
+      expect(record.matchesSearch('ct scanner'), isTrue);
+    });
+  });
+
+  group('RadiologyReferenceDataDto', () {
+    test('decodes scoped reference options', () {
+      final RadiologyReferenceData data =
+          RadiologyReferenceDataDto.fromResponse(<String, Object?>{
+            'success': true,
+            'data': <String, Object?>{
+              'patients': <Object?>[
+                <String, Object?>{
+                  'value': 'PAT0000001',
+                  'label': 'Jane Doe',
+                  'subtitle': 'PAT0000001 | +256700000001',
+                },
+              ],
+              'encounters': <Object?>[
+                <String, Object?>{
+                  'value': 'ENC0000001',
+                  'label': 'ENC0000001 | Jane Doe',
+                  'patient_id': 'PAT0000001',
+                },
+              ],
+              'radiology_tests': <Object?>[
+                <String, Object?>{'value': 'RDT0000001', 'label': 'Chest X-ray'},
+              ],
+              'assignees': <Object?>[
+                <String, Object?>{'value': 'USR0000001', 'label': 'Imani Tech'},
+              ],
+            },
+          }).toEntity();
+
+      expect(data.patients.single.value, 'PAT0000001');
+      expect(data.encounters.single.patientId, 'PAT0000001');
+      expect(data.radiologyTests.single.label, 'Chest X-ray');
+      expect(data.assignees.single.value, 'USR0000001');
     });
   });
 }
