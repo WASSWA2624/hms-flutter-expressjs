@@ -75,9 +75,7 @@ void main() {
       await container
           .read(appAccessibilityProvider.notifier)
           .setReduceMotion(true);
-      await container
-          .read(appAccessibilityProvider.notifier)
-          .setBoldText(true);
+      await container.read(appAccessibilityProvider.notifier).setBoldText(true);
       await container
           .read(appAccessibilityProvider.notifier)
           .setTextScaleLevel(AppTextScaleLevel.extraLarge);

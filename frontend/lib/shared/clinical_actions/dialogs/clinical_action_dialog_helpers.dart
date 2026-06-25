@@ -91,10 +91,10 @@ String? clinicalActionCatalogDisplayLabelById(
   if (option == null) {
     return null;
   }
-  return clinicalActionJoinDisplay(
-    <String?>[option.displayTitle, option.displaySubtitle],
-    separator: separator,
-  );
+  return clinicalActionJoinDisplay(<String?>[
+    option.displayTitle,
+    option.displaySubtitle,
+  ], separator: separator);
 }
 
 List<ClinicalActionCatalogOption> clinicalActionMergeCatalogOption(

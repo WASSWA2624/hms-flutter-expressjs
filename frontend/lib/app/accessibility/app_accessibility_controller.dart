@@ -45,10 +45,7 @@ final class AppAccessibilityController
     try {
       final store = ref.read(appPreferencesStoreProvider);
       final bool saved = await Future.wait<bool>(<Future<bool>>[
-        store.setBool(
-          AppPreferenceKeys.reduceMotion,
-          value: next.reduceMotion,
-        ),
+        store.setBool(AppPreferenceKeys.reduceMotion, value: next.reduceMotion),
         store.setBool(AppPreferenceKeys.boldText, value: next.boldText),
         store.setInt(
           AppPreferenceKeys.textScaleLevel,

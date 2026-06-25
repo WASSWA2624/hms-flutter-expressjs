@@ -99,9 +99,8 @@ void main() {
       (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
         AppPage<OpdFlowSummary>(
           items: const <OpdFlowSummary>[],
-          request:
-              (invocation.positionalArguments.single as OpdFlowQuery)
-                  .pageRequest,
+          request: (invocation.positionalArguments.single as OpdFlowQuery)
+              .pageRequest,
           totalItemCount: 0,
         ),
       ),
@@ -122,9 +121,8 @@ void main() {
       (invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
         AppPage<IpdAdmissionSummary>(
           items: ipdAdmissions,
-          request:
-              (invocation.positionalArguments.single as IpdAdmissionQuery)
-                  .pageRequest,
+          request: (invocation.positionalArguments.single as IpdAdmissionQuery)
+              .pageRequest,
           totalItemCount: ipdAdmissions.length,
         ),
       ),
@@ -146,7 +144,10 @@ void main() {
         .read(clinicalWorkspaceControllerProvider)
         .asData
         ?.value
-        .when(success: (ClinicalWorkspaceState value) => value, failure: (_) => null);
+        .when(
+          success: (ClinicalWorkspaceState value) => value,
+          failure: (_) => null,
+        );
   }
 
   test('maps ipd-flows admissions into the clinical worklist', () async {
@@ -217,50 +218,58 @@ void main() {
     final List<Object?> captured = verify(
       () => ipd.planDischarge('ADM000001', captureAny()),
     ).captured;
-    expect((captured.single as Map<String, Object?>)['summary'], contains('Recovered'));
+    expect(
+      (captured.single as Map<String, Object?>)['summary'],
+      contains('Recovered'),
+    );
     verifyNever(() => ipd.finalizeDischarge(any(), any()));
   });
 
-  test('discharge-planned inpatient finalizes discharge via ipd-flows', () async {
-    final _MockClinicalRepository clinical = _MockClinicalRepository();
-    final _MockOpdRepository opd = _MockOpdRepository();
-    final _MockIpdRepository ipd = _MockIpdRepository();
-    final ProviderContainer container = buildContainer(
-      clinical: clinical,
-      opd: opd,
-      ipd: ipd,
-    );
-    when(() => ipd.finalizeDischarge(any(), any())).thenAnswer(
-      (_) async => Result<IpdAdmissionDetail>.success(
-        _detail(_ipdSummary(stage: 'DISCHARGED', admissionStatus: 'DISCHARGED')),
-      ),
-    );
+  test(
+    'discharge-planned inpatient finalizes discharge via ipd-flows',
+    () async {
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      final _MockOpdRepository opd = _MockOpdRepository();
+      final _MockIpdRepository ipd = _MockIpdRepository();
+      final ProviderContainer container = buildContainer(
+        clinical: clinical,
+        opd: opd,
+        ipd: ipd,
+      );
+      when(() => ipd.finalizeDischarge(any(), any())).thenAnswer(
+        (_) async => Result<IpdAdmissionDetail>.success(
+          _detail(
+            _ipdSummary(stage: 'DISCHARGED', admissionStatus: 'DISCHARGED'),
+          ),
+        ),
+      );
 
-    await container.read(clinicalWorkspaceControllerProvider.future);
-    final ClinicalWorkspaceController controller = container.read(
-      clinicalWorkspaceControllerProvider.notifier,
-    );
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
 
-    const ClinicalWorklistEntry entry = ClinicalWorklistEntry(
-      id: 'IPD_adm-uuid-1',
-      sourceQueue: 'IPD',
-      encounterId: 'enc-ipd-1',
-      patientId: 'pat-ipd-1',
-      status: 'ADMITTED',
-      stage: 'DISCHARGE_PLANNED',
-      admissionId: 'adm-uuid-1',
-      admissionPublicId: 'ADM000001',
-    );
-    await controller.selectEntry(entry);
+      const ClinicalWorklistEntry entry = ClinicalWorklistEntry(
+        id: 'IPD_adm-uuid-1',
+        sourceQueue: 'IPD',
+        encounterId: 'enc-ipd-1',
+        patientId: 'pat-ipd-1',
+        status: 'ADMITTED',
+        stage: 'DISCHARGE_PLANNED',
+        admissionId: 'adm-uuid-1',
+        admissionPublicId: 'ADM000001',
+      );
+      await controller.selectEntry(entry);
 
-    final AppFailure? failure = await controller.completeDisposition(
-      reason: 'Clearance complete',
-    );
-    expect(failure, isNull);
+      final AppFailure? failure = await controller.completeDisposition(
+        reason: 'Clearance complete',
+      );
+      expect(failure, isNull);
 
-    verify(() => ipd.finalizeDischarge('ADM000001', any())).called(1);
-    verifyNever(() => ipd.planDischarge(any(), any()));
-  });
+      verify(() => ipd.finalizeDischarge('ADM000001', any())).called(1);
+      verifyNever(() => ipd.planDischarge(any(), any()));
+    },
+  );
 
   test('requestAdmission routes through ipd-flows start endpoint', () async {
     final _MockClinicalRepository clinical = _MockClinicalRepository();

@@ -14,7 +14,8 @@ final settingsWorkspaceRepositoryProvider =
       );
     });
 
-final class SettingsWorkspaceRepositoryImpl implements SettingsWorkspaceRepository {
+final class SettingsWorkspaceRepositoryImpl
+    implements SettingsWorkspaceRepository {
   const SettingsWorkspaceRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 

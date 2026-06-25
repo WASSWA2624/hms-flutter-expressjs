@@ -113,7 +113,8 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
       }
     });
 
-    final String message = widget.copiedMessage ?? context.l10n.identifierCopiedMessage;
+    final String message =
+        widget.copiedMessage ?? context.l10n.identifierCopiedMessage;
     ScaffoldMessenger.maybeOf(context)
       ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
@@ -124,7 +125,8 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String visibleValue = (widget.value ?? '').trim();
-    final TextStyle? effectiveTextStyle = widget.textStyle ??
+    final TextStyle? effectiveTextStyle =
+        widget.textStyle ??
         theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700);
 
     if (!_canCopy) {
@@ -137,9 +139,12 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
     }
 
     final String tooltip = _copied
-        ? widget.copiedTooltip ?? widget.copiedMessage ?? context.l10n.identifierCopiedMessage
+        ? widget.copiedTooltip ??
+              widget.copiedMessage ??
+              context.l10n.identifierCopiedMessage
         : widget.tooltip ?? context.l10n.copyIdentifierAction;
-    final String semanticLabel = widget.semanticLabel ?? '$tooltip: $visibleValue';
+    final String semanticLabel =
+        widget.semanticLabel ?? '$tooltip: $visibleValue';
     final Color borderColor = _copied
         ? theme.statusColors.success.withValues(alpha: 0.46)
         : colorScheme.outlineVariant;
@@ -168,7 +173,9 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
                   start: theme.spacing.sm,
                   top: theme.spacing.xs,
                   bottom: theme.spacing.xs,
-                  end: widget.showCopyIcon ? theme.spacing.xs : theme.spacing.sm,
+                  end: widget.showCopyIcon
+                      ? theme.spacing.xs
+                      : theme.spacing.sm,
                 ),
                 decoration: BoxDecoration(
                   color: Color.alphaBlend(

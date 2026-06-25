@@ -242,7 +242,6 @@ final class RadiologyWorkspaceController
     );
   }
 
-
   Future<AppFailure?> refreshConfigurations({String? search}) async {
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -445,17 +444,15 @@ final class RadiologyWorkspaceController
       }
 
       final AppFailure? commitFailure = await _mutate(
-        () => _repository.commitStudyAssetUpload(
-          study.effectiveDisplayId,
-          <String, Object?>{
-            'storage_key': session.storageKey,
-            'file_name': upload.caption?.trim().isNotEmpty == true
-                ? upload.caption!.trim()
-                : upload.fileName,
-            'content_type': upload.contentType,
-            'upload_token': session.uploadToken,
-          },
-        ),
+        () => _repository
+            .commitStudyAssetUpload(study.effectiveDisplayId, <String, Object?>{
+              'storage_key': session.storageKey,
+              'file_name': upload.caption?.trim().isNotEmpty == true
+                  ? upload.caption!.trim()
+                  : upload.fileName,
+              'content_type': upload.contentType,
+              'upload_token': session.uploadToken,
+            }),
       );
       if (commitFailure != null) {
         return commitFailure;
@@ -476,7 +473,8 @@ final class RadiologyWorkspaceController
     );
     return result.when(
       success: (_) async {
-        final String? orderId = current.selectedWorkflow?.order.effectiveDisplayId;
+        final String? orderId =
+            current.selectedWorkflow?.order.effectiveDisplayId;
         if (orderId != null) {
           final Result<RadiologyWorkflow> workflowResult = await _repository
               .getWorkflow(orderId);
@@ -671,7 +669,6 @@ final class RadiologyWorkspaceController
     );
   }
 
-
   Future<AppFailure?> _refreshConfigurations({String? search}) async {
     final Result<List<RadiologyCatalogTest>> testsResult = await _repository
         .listRadiologyCatalogTests(search: search);
@@ -719,12 +716,7 @@ final class RadiologyWorkspaceController
         await _refreshConfigurations();
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(
-              isMutating: false,
-              clearLastFailure: true,
-            ),
-          );
+          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
         }
         await searchReferences();
         return null;

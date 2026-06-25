@@ -114,11 +114,15 @@ final class AccessAdminWorkspaceQuery {
       search: search ?? this.search,
       panel: panel ?? this.panel,
       resource: resource ?? this.resource,
-      tenantId: identical(tenantId, _unset) ? this.tenantId : tenantId as String?,
-      facilityId:
-          identical(facilityId, _unset) ? this.facilityId : facilityId as String?,
-      recordId:
-          identical(recordId, _unset) ? this.recordId : recordId as String?,
+      tenantId: identical(tenantId, _unset)
+          ? this.tenantId
+          : tenantId as String?,
+      facilityId: identical(facilityId, _unset)
+          ? this.facilityId
+          : facilityId as String?,
+      recordId: identical(recordId, _unset)
+          ? this.recordId
+          : recordId as String?,
       status: identical(status, _unset) ? this.status : status as String?,
       userId: identical(userId, _unset) ? this.userId : userId as String?,
       roleId: identical(roleId, _unset) ? this.roleId : roleId as String?,
@@ -151,7 +155,11 @@ final class AccessAdminLegacyRouteResolution {
 
 @immutable
 final class AccessAdminLookupOption {
-  const AccessAdminLookupOption({required this.id, required this.label, this.meta});
+  const AccessAdminLookupOption({
+    required this.id,
+    required this.label,
+    this.meta,
+  });
 
   final String id;
   final String label;
@@ -477,8 +485,9 @@ final class AccessAdminWorkspaceState {
     return AccessAdminWorkspaceState(
       data: data ?? this.data,
       query: query ?? this.query,
-      selectedItem:
-          identical(selectedItem, _unset) ? this.selectedItem : selectedItem as AccessAdminItem?,
+      selectedItem: identical(selectedItem, _unset)
+          ? this.selectedItem
+          : selectedItem as AccessAdminItem?,
       selectedUserDetail: identical(selectedUserDetail, _unset)
           ? this.selectedUserDetail
           : selectedUserDetail as AccessAdminUserDetail?,

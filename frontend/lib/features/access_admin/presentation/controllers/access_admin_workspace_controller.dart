@@ -22,7 +22,8 @@ final accessAdminWorkspaceControllerProvider =
 
 final class AccessAdminWorkspaceController
     extends AsyncNotifier<Result<AccessAdminWorkspaceState>> {
-  AccessAdminRepository get _repository => ref.read(accessAdminRepositoryProvider);
+  AccessAdminRepository get _repository =>
+      ref.read(accessAdminRepositoryProvider);
 
   @override
   Future<Result<AccessAdminWorkspaceState>> build() {
@@ -51,7 +52,8 @@ final class AccessAdminWorkspaceController
     final AccessAdminWorkspaceState? current = _currentState;
     if (current == null) {
       state = const AsyncLoading<Result<AccessAdminWorkspaceState>>();
-      final Result<AccessAdminWorkspaceState> result = await _loadInitialState();
+      final Result<AccessAdminWorkspaceState> result =
+          await _loadInitialState();
       state = AsyncData<Result<AccessAdminWorkspaceState>>(result);
       return _failureOrNull(result);
     }
@@ -103,10 +105,7 @@ final class AccessAdminWorkspaceController
     );
   }
 
-  Future<AppFailure?> applyContext({
-    String? tenantId,
-    String? facilityId,
-  }) {
+  Future<AppFailure?> applyContext({String? tenantId, String? facilityId}) {
     final AccessAdminWorkspaceState? current = _currentState;
     if (current == null) return refresh();
     return _loadQuery(
@@ -150,22 +149,18 @@ final class AccessAdminWorkspaceController
       ),
     );
 
-    final Result<AccessAdminUserDetail> result = await _repository.getUserDetail(
-      item.effectiveDisplayId,
-      tenantId: current.query.tenantId,
-      facilityId: current.query.facilityId,
-    );
+    final Result<AccessAdminUserDetail> result = await _repository
+        .getUserDetail(
+          item.effectiveDisplayId,
+          tenantId: current.query.tenantId,
+          facilityId: current.query.facilityId,
+        );
 
     return result.when(
       success: (AccessAdminUserDetail detail) {
         final AccessAdminWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(
-              selectedUserDetail: detail,
-              isSaving: false,
-            ),
-          );
+          _emit(latest.copyWith(selectedUserDetail: detail, isSaving: false));
         }
         return null;
       },
@@ -208,7 +203,9 @@ final class AccessAdminWorkspaceController
     );
   }
 
-  Future<AppFailure?> assignRolePermission(AccessAdminRolePermissionDraft draft) {
+  Future<AppFailure?> assignRolePermission(
+    AccessAdminRolePermissionDraft draft,
+  ) {
     return _submitAction(() => _repository.assignRolePermission(draft));
   }
 
@@ -220,11 +217,14 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> resetDemoPassword(AccessAdminItem item) {
-    return _submitAction(() => _repository.resetDemoUserPassword(item.effectiveDisplayId));
+    return _submitAction(
+      () => _repository.resetDemoUserPassword(item.effectiveDisplayId),
+    );
   }
 
   AccessAdminWorkspaceState? get _currentState {
-    final Result<AccessAdminWorkspaceState>? currentResult = state.asData?.value;
+    final Result<AccessAdminWorkspaceState>? currentResult =
+        state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<AccessAdminWorkspaceState>(value: final value) => value,
       _ => null,
@@ -252,13 +252,13 @@ final class AccessAdminWorkspaceController
     String? preserveSelectedId,
   }) async {
     _emitSaving(clearSelectedItem: clearSelectedItem);
-    final Result<AccessAdminWorkspaceData> result = await _repository.getWorkspace(
-      query,
-    );
+    final Result<AccessAdminWorkspaceData> result = await _repository
+        .getWorkspace(query);
     return result.when(
       success: (AccessAdminWorkspaceData data) {
-        AccessAdminItem? selected =
-            clearSelectedItem ? null : _currentState?.selectedItem;
+        AccessAdminItem? selected = clearSelectedItem
+            ? null
+            : _currentState?.selectedItem;
         if (preserveSelectedId != null) {
           for (final AccessAdminItem item in data.items) {
             if (item.id == preserveSelectedId ||
@@ -272,7 +272,7 @@ final class AccessAdminWorkspaceController
           AccessAdminWorkspaceState(
             data: data,
             query: data.query,
-            selectedItem: selected
+            selectedItem: selected,
           ),
         );
         if (selected != null &&
@@ -365,7 +365,9 @@ final class AccessAdminWorkspaceController
         isSaving: true,
         clearLastFailure: true,
         selectedItem: clearSelectedItem ? null : current.selectedItem,
-        selectedUserDetail: clearSelectedItem ? null : current.selectedUserDetail,
+        selectedUserDetail: clearSelectedItem
+            ? null
+            : current.selectedUserDetail,
       ),
     );
   }

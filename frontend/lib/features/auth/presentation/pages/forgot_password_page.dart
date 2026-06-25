@@ -96,7 +96,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                         style: theme.textTheme.titleSmall,
                       ),
                       SizedBox(height: theme.spacing.sm),
-                      for (final AuthTenantOption tenant in state.identifyTenants)
+                      for (final AuthTenantOption tenant
+                          in state.identifyTenants)
                         Padding(
                           padding: EdgeInsets.only(bottom: theme.spacing.sm),
                           child: AppButton.secondary(
@@ -146,10 +147,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).requestPasswordReset(
-          email: _emailController.text,
-          tenantId: tenantId,
-        );
+    await ref
+        .read(authControllerProvider.notifier)
+        .requestPasswordReset(email: _emailController.text, tenantId: tenantId);
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {

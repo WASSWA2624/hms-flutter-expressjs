@@ -16,7 +16,8 @@ final userProfileControllerProvider =
 
 final class UserProfileController
     extends AsyncNotifier<Result<UserProfileState>> {
-  UserProfileRepository get _repository => ref.read(userProfileRepositoryProvider);
+  UserProfileRepository get _repository =>
+      ref.read(userProfileRepositoryProvider);
 
   @override
   Future<Result<UserProfileState>> build() {
@@ -76,7 +77,8 @@ final class UserProfileController
       return Result<UserProfileState>.failure(failure);
     }
 
-    final UserProfileView view = (loaded as ResultSuccess<UserProfileView>).value;
+    final UserProfileView view =
+        (loaded as ResultSuccess<UserProfileView>).value;
     await ref.read(sessionStateProvider.notifier).persistSession(view.session);
     return Result<UserProfileState>.success(UserProfileState(view: view));
   }

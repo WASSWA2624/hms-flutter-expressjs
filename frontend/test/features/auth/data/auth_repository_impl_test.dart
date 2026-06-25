@@ -55,7 +55,10 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(apiClient.lastPostUri, ApiEndpoints.auth(AuthEndpoint.forgotPassword));
+      expect(
+        apiClient.lastPostUri,
+        ApiEndpoints.auth(AuthEndpoint.forgotPassword),
+      );
       expect(apiClient.lastPostData, <String, Object?>{
         'email': 'admin@example.com',
         'tenant_id': '11111111-1111-1111-1111-111111111111',
@@ -70,7 +73,10 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(apiClient.lastPostUri, ApiEndpoints.auth(AuthEndpoint.resetPassword));
+      expect(
+        apiClient.lastPostUri,
+        ApiEndpoints.auth(AuthEndpoint.resetPassword),
+      );
       expect(apiClient.lastPostData?['token'], 'reset-token');
     });
 

@@ -717,7 +717,8 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
       if (!mounted) {
         return;
       }
-      final RadiologyDetailViewMode inferred = widget.canRequest && !widget.canWork
+      final RadiologyDetailViewMode inferred =
+          widget.canRequest && !widget.canWork
           ? RadiologyDetailViewMode.reporting
           : RadiologyDetailViewMode.imagingFloor;
       ref
@@ -779,8 +780,7 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
               ),
             AppWorkspacePatientContextField(
               label: l10n.radiologyPriorityLabel,
-              value:
-                  _radiologyPriorityDisplayLabel(l10n, order.priority) ?? '',
+              value: _radiologyPriorityDisplayLabel(l10n, order.priority) ?? '',
             ),
             if (order.hasBillingGate)
               AppWorkspacePatientContextField(
@@ -921,10 +921,7 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
         doctorReview,
       ]);
     }
-    sections.addAll(<Widget>[
-      SizedBox(height: theme.spacing.lg),
-      timeline,
-    ]);
+    sections.addAll(<Widget>[SizedBox(height: theme.spacing.lg), timeline]);
     return sections;
   }
 
@@ -1077,7 +1074,11 @@ class _WorkflowSummarySection extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      for (int column = 0; column < columnCount; column++) ...<Widget>[
+                      for (
+                        int column = 0;
+                        column < columnCount;
+                        column++
+                      ) ...<Widget>[
                         if (row * columnCount + column < lines.length)
                           Expanded(child: lines[row * columnCount + column]),
                       ],
@@ -1303,11 +1304,7 @@ class _WorkflowStepTile extends StatelessWidget {
         ? tile
         : Material(
             color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: radius,
-              child: tile,
-            ),
+            child: InkWell(onTap: onTap, borderRadius: radius, child: tile),
           );
 
     return Padding(
@@ -1371,8 +1368,9 @@ Future<void> _showEditRequestDetailsDialog(
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
-  final List<ClinicalActionCatalogOption> catalog =
-      _radiologyCatalogOptions(_watchState(ref));
+  final List<ClinicalActionCatalogOption> catalog = _radiologyCatalogOptions(
+    _watchState(ref),
+  );
   final bool? saved = await showAppDialog<bool>(
     context: context,
     builder: (_) => _RequestDetailsEditDialog(
@@ -1484,7 +1482,9 @@ class _RequestDetailsEditDialogState extends State<_RequestDetailsEditDialog> {
           AppSelectField<String>(
             value: _priority,
             labelText: l10n.radiologyPriorityLabel,
-            helperText: _priority == 'STAT' ? l10n.radiologyPriorityStatHint : null,
+            helperText: _priority == 'STAT'
+                ? l10n.radiologyPriorityStatHint
+                : null,
             options: _radiologyPriorityOptions(l10n),
             onChanged: (String? value) => setState(() => _priority = value),
           ),
@@ -1606,7 +1606,8 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
     final ThemeData theme = Theme.of(context);
     final RadiologyResult? latest = widget.workflow.order.latestResult;
     final RadiologyResult? draft = widget.workflow.order.latestDraftResult;
-    final RadiologyResult? released = widget.workflow.order.latestReleasedResult;
+    final RadiologyResult? released =
+        widget.workflow.order.latestReleasedResult;
     final bool canDraft =
         widget.canWork && widget.workflow.nextActions.canCreateDraftResult;
     final bool canFinalize =
@@ -1753,7 +1754,9 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
                       label: l10n.radiologyDraftReportAction,
                       leadingIcon: Icons.save_outlined,
                       isLoading: _isInlineSaving,
-                      onPressed: widget.state.isMutating ? null : _saveInlineDraft,
+                      onPressed: widget.state.isMutating
+                          ? null
+                          : _saveInlineDraft,
                     ),
                   ),
                   SizedBox(height: theme.spacing.md),
@@ -1970,7 +1973,9 @@ class _StudyBlockState extends ConsumerState<_StudyBlock> {
                   asset: asset,
                   canEdit: widget.canWork && !_isUploading,
                   onRemove: () async {
-                    final AppFailure? failure = await widget.onRemoveAsset(asset);
+                    final AppFailure? failure = await widget.onRemoveAsset(
+                      asset,
+                    );
                     if (context.mounted && failure != null) {
                       _showMutationResult(context, failure);
                     }
@@ -2038,11 +2043,7 @@ class _StudyBlockState extends ConsumerState<_StudyBlock> {
           XTypeGroup(
             label: context.l10n.radiologyAttachImagesTitle,
             extensions: const <String>['jpg', 'jpeg', 'png', 'webp'],
-            mimeTypes: const <String>[
-              'image/jpeg',
-              'image/png',
-              'image/webp',
-            ],
+            mimeTypes: const <String>['image/jpeg', 'image/png', 'image/webp'],
           ),
         ],
       );
@@ -2169,7 +2170,8 @@ class _StudyAssetTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _StudyAssetPlaceholder(
-            label: asset.fileName ?? asset.displayId ?? l10n.profileUnknownValue,
+            label:
+                asset.fileName ?? asset.displayId ?? l10n.profileUnknownValue,
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
@@ -2217,7 +2219,9 @@ class _StudyImagePreview extends StatelessWidget {
         if (!snapshot.hasData) {
           return SizedBox.square(
             dimension: size,
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           );
         }
         return ClipRRect(
@@ -2608,19 +2612,20 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
                     'clinical_note': (request.clinicalNote ?? '').trim().isEmpty
                         ? sharedNote
                         : request.clinicalNote,
-                    'request_details': mergeClinicalRequestBillingIntoRequestDetails(
-                      <String, Object?>{
-                        'modality': request.modality,
-                        'body_region': request.bodyRegion,
-                        'laterality': request.laterality,
-                        'priority': request.priority,
-                      },
-                      _billingSubmit,
-                      lineAmount: clinicalRequestBillingLineAmount(
-                        _billingSubmit,
-                        request.radiologyTestId,
-                      ),
-                    ),
+                    'request_details':
+                        mergeClinicalRequestBillingIntoRequestDetails(
+                          <String, Object?>{
+                            'modality': request.modality,
+                            'body_region': request.bodyRegion,
+                            'laterality': request.laterality,
+                            'priority': request.priority,
+                          },
+                          _billingSubmit,
+                          lineAmount: clinicalRequestBillingLineAmount(
+                            _billingSubmit,
+                            request.radiologyTestId,
+                          ),
+                        ),
                   },
               ],
             });
@@ -2744,7 +2749,6 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
     );
   }
 }
-
 
 Future<void> _showRadiologyConfigurationsDialog(
   BuildContext context,
@@ -2959,10 +2963,7 @@ Future<void> _showReportDialog(
 }
 
 class _ReportEditDialog extends StatefulWidget {
-  const _ReportEditDialog({
-    required this.order,
-    required this.onSubmit,
-  });
+  const _ReportEditDialog({required this.order, required this.onSubmit});
 
   final RadiologyOrder order;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
@@ -3115,7 +3116,8 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
                   spacing: Theme.of(context).spacing.xs,
                   runSpacing: Theme.of(context).spacing.xs,
                   children: <Widget>[
-                    for (final _RadiologyReportReference reference in references)
+                    for (final _RadiologyReportReference reference
+                        in references)
                       AppButton.tertiary(
                         label: reference.label,
                         leadingIcon: reference.icon,
@@ -3158,10 +3160,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
 }
 
 class _FinalizeReportDialog extends StatefulWidget {
-  const _FinalizeReportDialog({
-    required this.result,
-    required this.onSubmit,
-  });
+  const _FinalizeReportDialog({required this.result, required this.onSubmit});
 
   final RadiologyResult result;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
@@ -3672,9 +3671,7 @@ class _NotesOnlyFormState extends State<_NotesOnlyForm> {
   }
 }
 
-List<AppSelectOption<String>> _radiologyPriorityOptions(
-  AppLocalizations l10n,
-) {
+List<AppSelectOption<String>> _radiologyPriorityOptions(AppLocalizations l10n) {
   return <AppSelectOption<String>>[
     AppSelectOption<String>(
       value: 'ROUTINE',
@@ -3692,7 +3689,10 @@ List<AppSelectOption<String>> _radiologyPriorityOptions(
   ];
 }
 
-String? _radiologyPriorityDisplayLabel(AppLocalizations l10n, String? priority) {
+String? _radiologyPriorityDisplayLabel(
+  AppLocalizations l10n,
+  String? priority,
+) {
   final String? normalized = priority?.trim().toUpperCase();
   return switch (normalized) {
     'ROUTINE' => l10n.radiologyPriorityRoutineLabel,
@@ -3754,7 +3754,10 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientColumn(
     id: 'patient',
     label: l10n.radiologyPatientColumnLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-        appListTableCompareText(left.patientDisplayName, right.patientDisplayName),
+        appListTableCompareText(
+          left.patientDisplayName,
+          right.patientDisplayName,
+        ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _TwoLineCell(
         title: item.patientDisplayName ?? l10n.profileUnknownValue,
@@ -3780,7 +3783,10 @@ AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
         ? l10n.radiologyOrdersColumnLabel
         : l10n.radiologyOrderColumnLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-        appListTableCompareText(left.effectiveDisplayId, right.effectiveDisplayId),
+        appListTableCompareText(
+          left.effectiveDisplayId,
+          right.effectiveDisplayId,
+        ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       if (item.isPatientGroup) {
         final int activeOrders = item.activeOrderCount > 0

@@ -6,54 +6,71 @@ import 'package:hosspi_hms/features/settings/data/repositories/settings_workspac
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 
 void main() {
-  test('fetches workspace using the settings-workspace endpoint and query', () async {
-    final apiClient = _FakeApiClient(_workspacePayload());
-    final repository = SettingsWorkspaceRepositoryImpl(apiClient: apiClient);
+  test(
+    'fetches workspace using the settings-workspace endpoint and query',
+    () async {
+      final apiClient = _FakeApiClient(_workspacePayload());
+      final repository = SettingsWorkspaceRepositoryImpl(apiClient: apiClient);
 
-    final result = await repository.getWorkspace(
-      const SettingsWorkspaceQuery(
-        tenantId: 'TEN-1',
-        facilityId: 'FAC-1',
-        search: 'role',
-        actionableOnly: true,
-      ),
-    );
+      final result = await repository.getWorkspace(
+        const SettingsWorkspaceQuery(
+          tenantId: 'TEN-1',
+          facilityId: 'FAC-1',
+          search: 'role',
+          actionableOnly: true,
+        ),
+      );
 
-    result.when(
-      success: (workspace) {
-        expect(workspace.context.tenantName, 'Acme Health');
-      },
-      failure: (_) => fail('Expected workspace success.'),
-    );
-    expect(apiClient.lastEndpoint?.path, '/api/v1/settings-workspace/workspace');
-    expect(apiClient.lastQueryParameters, <String, Object?>{
-      'tenant_id': 'TEN-1',
-      'facility_id': 'FAC-1',
-      'search': 'role',
-      'actionable_only': true,
-    });
-  });
+      result.when(
+        success: (workspace) {
+          expect(workspace.context.tenantName, 'Acme Health');
+        },
+        failure: (_) => fail('Expected workspace success.'),
+      );
+      expect(
+        apiClient.lastEndpoint?.path,
+        '/api/v1/settings-workspace/workspace',
+      );
+      expect(apiClient.lastQueryParameters, <String, Object?>{
+        'tenant_id': 'TEN-1',
+        'facility_id': 'FAC-1',
+        'search': 'role',
+        'actionable_only': true,
+      });
+    },
+  );
 
-  test('fetches reference data from settings-workspace reference endpoint', () async {
-    final apiClient = _FakeApiClient(<String, Object?>{
-      'state': 'tenant_context_required',
-      'tenants': <Map<String, Object?>>[
-        <String, Object?>{'id': 'TEN-1', 'label': 'Acme Health'},
-      ],
-    });
-    final repository = SettingsWorkspaceRepositoryImpl(apiClient: apiClient);
+  test(
+    'fetches reference data from settings-workspace reference endpoint',
+    () async {
+      final apiClient = _FakeApiClient(<String, Object?>{
+        'state': 'tenant_context_required',
+        'tenants': <Map<String, Object?>>[
+          <String, Object?>{'id': 'TEN-1', 'label': 'Acme Health'},
+        ],
+      });
+      final repository = SettingsWorkspaceRepositoryImpl(apiClient: apiClient);
 
-    final result = await repository.getReferenceData(const SettingsWorkspaceQuery());
+      final result = await repository.getReferenceData(
+        const SettingsWorkspaceQuery(),
+      );
 
-    result.when(
-      success: (referenceData) {
-        expect(referenceData.state, SettingsWorkspaceStatus.tenantContextRequired);
-        expect(referenceData.tenants.single.id, 'TEN-1');
-      },
-      failure: (_) => fail('Expected reference-data success.'),
-    );
-    expect(apiClient.lastEndpoint?.path, '/api/v1/settings-workspace/reference-data');
-  });
+      result.when(
+        success: (referenceData) {
+          expect(
+            referenceData.state,
+            SettingsWorkspaceStatus.tenantContextRequired,
+          );
+          expect(referenceData.tenants.single.id, 'TEN-1');
+        },
+        failure: (_) => fail('Expected reference-data success.'),
+      );
+      expect(
+        apiClient.lastEndpoint?.path,
+        '/api/v1/settings-workspace/reference-data',
+      );
+    },
+  );
 }
 
 final class _FakeApiClient implements ApiClient {

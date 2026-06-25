@@ -253,7 +253,8 @@ final class ClinicalRelatedRecordDto {
         _string(json['lab_test_display_name']) ??
         _string(labTest['name']) ??
         _string(labTest['description']);
-    final String? testCode = _string(json['test_code']) ?? _string(labTest['code']);
+    final String? testCode =
+        _string(json['test_code']) ?? _string(labTest['code']);
     return ClinicalLabOrderItem(
       id:
           _string(json['human_friendly_id']) ??
@@ -288,9 +289,7 @@ final class ClinicalRelatedRecordDto {
         .where((ClinicalRadiologyOrderItem item) => item.id.isNotEmpty)
         .toList(growable: false);
     final String? requestedTitle = _joinDisplay(
-      items
-          .take(3)
-          .map((ClinicalRadiologyOrderItem item) => item.displayTitle),
+      items.take(3).map((ClinicalRadiologyOrderItem item) => item.displayTitle),
     );
     final ClinicalJsonMap requestDetails = _map(json['request_details']);
 
@@ -320,9 +319,7 @@ final class ClinicalRelatedRecordDto {
     );
   }
 
-  ClinicalRadiologyOrderItem _radiologyOrderItemFromJson(
-    ClinicalJsonMap item,
-  ) {
+  ClinicalRadiologyOrderItem _radiologyOrderItemFromJson(ClinicalJsonMap item) {
     final ClinicalJsonMap parentRequestDetails = _map(json['request_details']);
     final ClinicalJsonMap itemRequestDetails = _map(item['request_details']);
     final ClinicalJsonMap radiologyTest = _map(item['radiology_test']);
@@ -575,7 +572,6 @@ final class ClinicalTermOptionDto {
     );
   }
 }
-
 
 ClinicalJsonMap _withoutNullValues(Map<String, Object?> json) {
   return <String, Object?>{

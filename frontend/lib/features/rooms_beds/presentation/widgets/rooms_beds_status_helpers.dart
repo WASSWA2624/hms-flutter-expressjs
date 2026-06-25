@@ -55,9 +55,10 @@ AppWorkspaceStatus roomsBedsStatusBadge(
 String roomsBedsNextActionLabel(AppLocalizations l10n, BedBoardItem item) {
   return switch (item.status) {
     BedSetupStatus.available => l10n.roomsBedsNextActionAssign,
-    BedSetupStatus.occupied => item.hasOpenTransfer
-        ? l10n.roomsBedsNextActionCompleteTransfer
-        : l10n.roomsBedsNextActionReleaseOrTransfer,
+    BedSetupStatus.occupied =>
+      item.hasOpenTransfer
+          ? l10n.roomsBedsNextActionCompleteTransfer
+          : l10n.roomsBedsNextActionReleaseOrTransfer,
     BedSetupStatus.reserved => l10n.roomsBedsNextActionAssignOrReleaseHold,
     BedSetupStatus.cleaning => l10n.roomsBedsNextActionMarkAvailable,
     BedSetupStatus.maintenance => l10n.roomsBedsNextActionResolveMaintenance,

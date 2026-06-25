@@ -100,7 +100,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                         showObscuredTextLabel: l10n.authShowPasswordLabel,
                         hideObscuredTextLabel: l10n.authHidePasswordLabel,
                         textInputAction: TextInputAction.next,
-                        autofillHints: const <String>[AutofillHints.newPassword],
+                        autofillHints: const <String>[
+                          AutofillHints.newPassword,
+                        ],
                         validator: AppValidators.minLength(
                           8,
                           l10n.authPasswordMinLengthMessage,
@@ -173,7 +175,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).resetPassword(
+    await ref
+        .read(authControllerProvider.notifier)
+        .resetPassword(
           token: token,
           newPassword: _passwordController.text,
           confirmPassword: _confirmPasswordController.text,

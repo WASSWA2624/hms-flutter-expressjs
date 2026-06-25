@@ -34,7 +34,10 @@ void main() {
 
       expect(lookups.tenants.single.label, 'Demo tenant');
       expect(lookups.facilities.single.metaFacilityType, 'hospital');
-      expect(lookups.branchesForFacility('FAC-1').single.label, 'Outpatient wing');
+      expect(
+        lookups.branchesForFacility('FAC-1').single.label,
+        'Outpatient wing',
+      );
       expect(lookups.queueTypes.single.id, 'appointments');
       expect(lookups.datePresets.single.id, 'today');
     });

@@ -221,10 +221,10 @@ class _HomeStatusStrip extends StatelessWidget {
             final int columns = constraints.maxWidth >= 1180
                 ? math.min(visibleCards.length, 6)
                 : constraints.maxWidth >= 760
-                    ? 3
-                    : constraints.maxWidth >= 340
-                        ? 2
-                        : 1;
+                ? 3
+                : constraints.maxWidth >= 340
+                ? 2
+                : 1;
             final double width =
                 (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
@@ -587,7 +587,6 @@ class _ShortcutsSection extends StatelessWidget {
   }
 }
 
-
 class _HomeTrendPanel extends StatelessWidget {
   const _HomeTrendPanel({required this.role, required this.trend});
 
@@ -713,7 +712,8 @@ class _HomeDistributionChart extends StatelessWidget {
           });
 
     return Semantics(
-      label: 'Distribution chart with total ${NumberFormat.compact().format(total)}',
+      label:
+          'Distribution chart with total ${NumberFormat.compact().format(total)}',
       child: Column(
         children: <Widget>[
           SizedBox(
@@ -850,7 +850,9 @@ class _TrendChartPainter extends CustomPainter {
     final double chartHeight = math.max(0, size.height - 26);
     final double maxValue = math.max(
       1,
-      points.map((HomeTrendPoint point) => point.value.toDouble()).reduce(math.max),
+      points
+          .map((HomeTrendPoint point) => point.value.toDouble())
+          .reduce(math.max),
     );
     final Paint gridPaint = Paint()
       ..color = gridColor.withValues(alpha: 0.7)
@@ -899,7 +901,8 @@ class _TrendChartPainter extends CustomPainter {
         final TextPainter painter = TextPainter(
           text: TextSpan(
             text: _trendPointLabel(point, compact: true),
-            style: textStyle?.copyWith(color: labelColor) ??
+            style:
+                textStyle?.copyWith(color: labelColor) ??
                 TextStyle(color: labelColor, fontSize: 10),
           ),
           textDirection: TextDirection.ltr,
@@ -958,7 +961,8 @@ class _DonutChartPainter extends CustomPainter {
     for (int index = 0; index < segments.length; index += 1) {
       final HomeDistributionSegment segment = segments[index];
       final double sweep = (segment.value / total) * math.pi * 2;
-      paint.color = _segmentColorFromHex(segment.color) ??
+      paint.color =
+          _segmentColorFromHex(segment.color) ??
           _fallbackSegmentColor(fallbackColor, index);
       canvas.drawArc(rect, start, math.max(0.02, sweep), false, paint);
       start += sweep;
@@ -973,7 +977,6 @@ class _DonutChartPainter extends CustomPainter {
         oldDelegate.trackColor != trackColor;
   }
 }
-
 
 class _QueueRow extends StatelessWidget {
   const _QueueRow({required this.item});
@@ -2399,11 +2402,12 @@ String _trendTitle(AppRole role, String fallback) {
     AppRole.operations => 'Facility readiness trend',
     AppRole.hr => 'Staffing coverage trend',
     AppRole.biomed || AppRole.biomedManager => 'Equipment service trend',
-    AppRole.houseKeeper || AppRole.housekeepingManager =>
-      'Cleaning throughput trend',
+    AppRole.houseKeeper ||
+    AppRole.housekeepingManager => 'Cleaning throughput trend',
     AppRole.ambulanceOperator => 'Dispatch response trend',
     AppRole.patient => 'Care activity trend',
-    AppRole.mortuaryStaff || AppRole.mortuaryManager => 'Mortuary activity trend',
+    AppRole.mortuaryStaff ||
+    AppRole.mortuaryManager => 'Mortuary activity trend',
     _ => fallback,
   };
   return title.trim().isEmpty ? 'Dashboard trend' : title;
@@ -2448,8 +2452,8 @@ String _queueTitle(AppRole role) {
     AppRole.operations => 'Operations action queue',
     AppRole.hr => 'Workforce action queue',
     AppRole.biomed || AppRole.biomedManager => 'Biomedical service queue',
-    AppRole.houseKeeper || AppRole.housekeepingManager =>
-      'Housekeeping action queue',
+    AppRole.houseKeeper ||
+    AppRole.housekeepingManager => 'Housekeeping action queue',
     AppRole.ambulanceOperator => 'Ambulance action queue',
     AppRole.patient => 'My care updates',
     _ => 'Primary queue',
@@ -2525,7 +2529,10 @@ Color? _segmentColorFromHex(String? value) {
 Color _fallbackSegmentColor(Color seed, int index) {
   final HSLColor hsl = HSLColor.fromColor(seed);
   final double hue = (hsl.hue + (index * 42)) % 360;
-  return hsl.withHue(hue).withSaturation(math.min(0.86, hsl.saturation + 0.18)).toColor();
+  return hsl
+      .withHue(hue)
+      .withSaturation(math.min(0.86, hsl.saturation + 0.18))
+      .toColor();
 }
 
 String _formatMetricValue(HomeStatusCard card) {

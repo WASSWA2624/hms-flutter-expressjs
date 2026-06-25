@@ -211,7 +211,9 @@ final class PatientRepositoryImpl implements PatientRepository {
       return Result<PatientDetail>.failure(failure);
     }
 
-    final List<PatientIdentifier> identifiers = _valueOrNull(identifiersResult)!;
+    final List<PatientIdentifier> identifiers = _valueOrNull(
+      identifiersResult,
+    )!;
     final List<PatientContact> contacts = _valueOrNull(contactsResult)!;
 
     return Result<PatientDetail>.success(

@@ -103,7 +103,6 @@ final class RadiologyWorkflowDto {
   }
 }
 
-
 final class RadiologyCatalogTestDto {
   const RadiologyCatalogTestDto(this.json);
 
@@ -117,7 +116,8 @@ final class RadiologyCatalogTestDto {
         '';
     return RadiologyCatalogTest(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       name: _string(json['name']) ?? _string(json['code']) ?? id,
       code: _string(json['code']),
       modality: _string(json['modality']),
@@ -158,7 +158,8 @@ final class RadiologyEquipmentRecordDto {
         '';
     return RadiologyEquipmentRecord(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       equipmentName:
           _string(json['equipment_name']) ??
           _string(json['name']) ??
@@ -171,7 +172,8 @@ final class RadiologyEquipmentRecordDto {
       status: _string(json['status']),
       facilityId: _string(json['facility_id']),
       categoryId: _string(json['equipment_category_id']),
-      categoryName: _string(category['name']) ?? _string(category['category_name']),
+      categoryName:
+          _string(category['name']) ?? _string(category['category_name']),
     );
   }
 
@@ -244,7 +246,9 @@ final class RadiologyOrderDto {
       paymentStatus:
           _string(json['payment_status']) ??
           _string(_map(json['billing'])['payment_status']) ??
-          _string(_map(_map(json['request_details'])['billing'])['payment_status']),
+          _string(
+            _map(_map(json['request_details'])['billing'])['payment_status'],
+          ),
       authorizationStatus:
           _string(json['authorization_status']) ??
           _string(_map(json['billing'])['authorization_status']),
@@ -516,7 +520,6 @@ final class RadiologyReferenceOptionDto {
     );
   }
 }
-
 
 List<RadiologyJsonMap> _entityRows(Object? responseData) {
   final RadiologyJsonMap response = _expectMap(responseData);

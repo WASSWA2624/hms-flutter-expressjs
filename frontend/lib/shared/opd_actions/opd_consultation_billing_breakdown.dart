@@ -27,17 +27,17 @@ OpdConsultationBillingBreakdown opdConsultationBillingBreakdown(
 }) {
   final OpdFlowSummary source = detail?.summary ?? flow;
   final num? requiredAmount = source.consultationFee;
-  final num paidAmount = detail?.consultationPaidAmount ??
-      source.consultationPaidAmount ??
-      0;
+  final num paidAmount =
+      detail?.consultationPaidAmount ?? source.consultationPaidAmount ?? 0;
   final num? remainingBalance = requiredAmount == null
       ? null
       : (requiredAmount - paidAmount).clamp(0, double.infinity);
   return OpdConsultationBillingBreakdown(
     requiredAmount: requiredAmount,
     paidAmount: paidAmount > 0 ? paidAmount : null,
-    remainingBalance:
-        remainingBalance != null && remainingBalance > 0 ? remainingBalance : 0,
+    remainingBalance: remainingBalance != null && remainingBalance > 0
+        ? remainingBalance
+        : 0,
     currency: source.consultationCurrency,
   );
 }

@@ -14,7 +14,9 @@ void main() {
       SystemChannels.platform,
       (MethodCall methodCall) async {
         if (methodCall.method == 'Clipboard.setData') {
-          final arguments = Map<Object?, Object?>.from(methodCall.arguments as Map);
+          final arguments = Map<Object?, Object?>.from(
+            methodCall.arguments as Map,
+          );
           copiedValues.add(arguments['text']! as String);
         }
         return null;
@@ -54,7 +56,11 @@ void main() {
       const AppInfoTileGrid(
         items: <AppInfoTileData>[
           AppInfoTileData(label: 'Ward', value: 'Ward A'),
-          AppInfoTileData(label: 'Admission ID', value: 'ADM-100', copyable: true),
+          AppInfoTileData(
+            label: 'Admission ID',
+            value: 'ADM-100',
+            copyable: true,
+          ),
         ],
       ),
     );

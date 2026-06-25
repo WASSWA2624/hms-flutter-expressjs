@@ -6646,6 +6646,23 @@
   "@ipdDischargeSectionTitle": {
     "description": "IPD discharge section title."
   },
+  "ipdPharmacyClearanceLabel": "Pharmacy clearance",
+  "@ipdPharmacyClearanceLabel": {
+    "description": "IPD discharge pharmacy clearance field label."
+  },
+  "ipdPharmacyClearanceCleared": "Cleared",
+  "@ipdPharmacyClearanceCleared": {
+    "description": "IPD pharmacy clearance cleared status."
+  },
+  "ipdPharmacyClearancePending": "{count, plural, =1{1 open order} other{{count} open orders}}",
+  "@ipdPharmacyClearancePending": {
+    "description": "IPD pharmacy clearance pending status with open order count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ipdTimelineSectionTitle": "Timeline",
   "@ipdTimelineSectionTitle": {
     "description": "IPD timeline section title."
@@ -7031,6 +7048,134 @@
   "ipdDischargeStatusCompleted": "Completed",
   "@ipdDischargeStatusCompleted": {
     "description": "IPD discharge status label for completed."
+  },
+  "ipdManageDischargeTitle": "Manage discharge",
+  "@ipdManageDischargeTitle": {
+    "description": "Title for multi-step discharge clearance dialog."
+  },
+  "ipdDischargeClearanceTitle": "Discharge clearance",
+  "@ipdDischargeClearanceTitle": {
+    "description": "Section title for discharge clearance checklist."
+  },
+  "ipdDischargeClearancePhaseLabel": "Clearance phase",
+  "@ipdDischargeClearancePhaseLabel": {
+    "description": "Label for current discharge clearance phase."
+  },
+  "ipdPendingOrdersTitle": "Pending orders",
+  "@ipdPendingOrdersTitle": {
+    "description": "Title for pending clinical orders during discharge."
+  },
+  "ipdClearancePendingOrders": "Pending orders reviewed",
+  "@ipdClearancePendingOrders": {
+    "description": "Discharge clearance step for pending orders."
+  },
+  "ipdClearancePharmacy": "Pharmacy clearance",
+  "@ipdClearancePharmacy": {
+    "description": "Discharge clearance step for pharmacy."
+  },
+  "ipdClearanceBilling": "Billing clearance",
+  "@ipdClearanceBilling": {
+    "description": "Discharge clearance step for billing."
+  },
+  "ipdClearanceNursing": "Nursing clearance",
+  "@ipdClearanceNursing": {
+    "description": "Discharge clearance step for nursing."
+  },
+  "ipdClearanceDocuments": "Documents ready",
+  "@ipdClearanceDocuments": {
+    "description": "Discharge clearance step for documents."
+  },
+  "ipdClearancePatientExit": "Patient exited",
+  "@ipdClearancePatientExit": {
+    "description": "Discharge clearance step for patient exit."
+  },
+  "ipdDischargeOverrideLabel": "Authorized override reason",
+  "@ipdDischargeOverrideLabel": {
+    "description": "Label for discharge clearance override reason."
+  },
+  "ipdDischargeOverrideHint": "Required only when clearing with incomplete steps",
+  "@ipdDischargeOverrideHint": {
+    "description": "Hint for discharge override reason field."
+  },
+  "ipdSaveClearanceAction": "Save clearance",
+  "@ipdSaveClearanceAction": {
+    "description": "Action to save discharge clearance progress."
+  },
+  "ipdClearancePhaseSummaryPending": "Summary pending",
+  "@ipdClearancePhaseSummaryPending": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhasePendingOrders": "Pending orders review",
+  "@ipdClearancePhasePendingOrders": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhaseMedication": "Medication pending",
+  "@ipdClearancePhaseMedication": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhaseBilling": "Billing pending",
+  "@ipdClearancePhaseBilling": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhaseNursing": "Nursing clearance pending",
+  "@ipdClearancePhaseNursing": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhaseDocuments": "Documents pending",
+  "@ipdClearancePhaseDocuments": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhasePatientExit": "Patient exit pending",
+  "@ipdClearancePhasePatientExit": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdClearancePhaseReadyForExit": "Ready for exit",
+  "@ipdClearancePhaseReadyForExit": {
+    "description": "Discharge clearance phase label."
+  },
+  "ipdOrderLabAction": "Order lab",
+  "@ipdOrderLabAction": {
+    "description": "IPD action to place a lab order."
+  },
+  "ipdOrderRadiologyAction": "Order radiology",
+  "@ipdOrderRadiologyAction": {
+    "description": "IPD action to place a radiology order."
+  },
+  "ipdOrderPrescriptionAction": "Prescribe medication",
+  "@ipdOrderPrescriptionAction": {
+    "description": "IPD action to prescribe medication."
+  },
+  "ipdOpenNursingAction": "Open nursing workspace",
+  "@ipdOpenNursingAction": {
+    "description": "IPD action to open nursing workspace for admission checklist."
+  },
+  "ipdSourceContextTitle": "Admission source",
+  "@ipdSourceContextTitle": {
+    "description": "Section title for admission source context."
+  },
+  "ipdSourceKindLabel": "Source",
+  "@ipdSourceKindLabel": {
+    "description": "Label for admission source kind."
+  },
+  "ipdEncounterTypeLabel": "Encounter type",
+  "@ipdEncounterTypeLabel": {
+    "description": "Label for linked encounter type."
+  },
+  "ipdSourceKindOpd": "OPD handoff",
+  "@ipdSourceKindOpd": {
+    "description": "Admission source label for OPD."
+  },
+  "ipdSourceKindEmergency": "Emergency admission",
+  "@ipdSourceKindEmergency": {
+    "description": "Admission source label for emergency."
+  },
+  "ipdSourceKindReferral": "Referral",
+  "@ipdSourceKindReferral": {
+    "description": "Admission source label for referral."
+  },
+  "ipdSourceKindDirect": "Direct admission",
+  "@ipdSourceKindDirect": {
+    "description": "Admission source label for direct admission."
   },
   "ipdIcuStatusActive": "Active",
   "@ipdIcuStatusActive": {

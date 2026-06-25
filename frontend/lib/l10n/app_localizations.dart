@@ -9628,6 +9628,24 @@ abstract class AppLocalizations {
   /// **'Discharge'**
   String get ipdDischargeSectionTitle;
 
+  /// IPD discharge pharmacy clearance field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy clearance'**
+  String get ipdPharmacyClearanceLabel;
+
+  /// IPD pharmacy clearance cleared status.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared'**
+  String get ipdPharmacyClearanceCleared;
+
+  /// IPD pharmacy clearance pending status with open order count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 open order} other{{count} open orders}}'**
+  String ipdPharmacyClearancePending(int count);
+
   /// IPD timeline section title.
   ///
   /// In en, this message translates to:
@@ -10185,6 +10203,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get ipdDischargeStatusCompleted;
+
+  /// Title for multi-step discharge clearance dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage discharge'**
+  String get ipdManageDischargeTitle;
+
+  /// Section title for discharge clearance checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge clearance'**
+  String get ipdDischargeClearanceTitle;
+
+  /// Label for current discharge clearance phase.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance phase'**
+  String get ipdDischargeClearancePhaseLabel;
+
+  /// Title for pending clinical orders during discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending orders'**
+  String get ipdPendingOrdersTitle;
+
+  /// Discharge clearance step for pending orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending orders reviewed'**
+  String get ipdClearancePendingOrders;
+
+  /// Discharge clearance step for pharmacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy clearance'**
+  String get ipdClearancePharmacy;
+
+  /// Discharge clearance step for billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing clearance'**
+  String get ipdClearanceBilling;
+
+  /// Discharge clearance step for nursing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing clearance'**
+  String get ipdClearanceNursing;
+
+  /// Discharge clearance step for documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents ready'**
+  String get ipdClearanceDocuments;
+
+  /// Discharge clearance step for patient exit.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient exited'**
+  String get ipdClearancePatientExit;
+
+  /// Label for discharge clearance override reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized override reason'**
+  String get ipdDischargeOverrideLabel;
+
+  /// Hint for discharge override reason field.
+  ///
+  /// In en, this message translates to:
+  /// **'Required only when clearing with incomplete steps'**
+  String get ipdDischargeOverrideHint;
+
+  /// Action to save discharge clearance progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Save clearance'**
+  String get ipdSaveClearanceAction;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary pending'**
+  String get ipdClearancePhaseSummaryPending;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending orders review'**
+  String get ipdClearancePhasePendingOrders;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication pending'**
+  String get ipdClearancePhaseMedication;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing pending'**
+  String get ipdClearancePhaseBilling;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing clearance pending'**
+  String get ipdClearancePhaseNursing;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents pending'**
+  String get ipdClearancePhaseDocuments;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient exit pending'**
+  String get ipdClearancePhasePatientExit;
+
+  /// Discharge clearance phase label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for exit'**
+  String get ipdClearancePhaseReadyForExit;
+
+  /// IPD action to place a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Order lab'**
+  String get ipdOrderLabAction;
+
+  /// IPD action to place a radiology order.
+  ///
+  /// In en, this message translates to:
+  /// **'Order radiology'**
+  String get ipdOrderRadiologyAction;
+
+  /// IPD action to prescribe medication.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescribe medication'**
+  String get ipdOrderPrescriptionAction;
+
+  /// IPD action to open nursing workspace for admission checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Open nursing workspace'**
+  String get ipdOpenNursingAction;
+
+  /// Section title for admission source context.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission source'**
+  String get ipdSourceContextTitle;
+
+  /// Label for admission source kind.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get ipdSourceKindLabel;
+
+  /// Label for linked encounter type.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter type'**
+  String get ipdEncounterTypeLabel;
+
+  /// Admission source label for OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD handoff'**
+  String get ipdSourceKindOpd;
+
+  /// Admission source label for emergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency admission'**
+  String get ipdSourceKindEmergency;
+
+  /// Admission source label for referral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get ipdSourceKindReferral;
+
+  /// Admission source label for direct admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct admission'**
+  String get ipdSourceKindDirect;
 
   /// IPD ICU status label for active.
   ///

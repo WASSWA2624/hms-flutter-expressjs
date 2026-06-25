@@ -160,10 +160,9 @@ final class ClaimsWorkItemsPageDto {
     AppPageRequest request,
   ) {
     final ClaimsJsonMap response = _expectMap(responseData);
-    final List<ClaimsQueueItem> items = _list(response['data'])
-        .map(_itemFromJson)
-        .whereType<ClaimsQueueItem>()
-        .toList(growable: false);
+    final List<ClaimsQueueItem> items = _list(
+      response['data'],
+    ).map(_itemFromJson).whereType<ClaimsQueueItem>().toList(growable: false);
 
     return ClaimsWorkItemsPageDto(
       page: AppPage<ClaimsQueueItem>(
@@ -202,8 +201,7 @@ final class ClaimsWorkspaceSummaryDto {
 
     return ClaimsWorkspaceSummaryDto(
       summary: ClaimsWorkspaceSummary(
-        authorizationPendingCount:
-            _int(summary['authorization_pending']) ?? 0,
+        authorizationPendingCount: _int(summary['authorization_pending']) ?? 0,
         authorizationApprovedCount:
             _int(summary['authorization_approved']) ?? 0,
         submittedClaimsCount: _int(summary['claims_submitted']) ?? 0,

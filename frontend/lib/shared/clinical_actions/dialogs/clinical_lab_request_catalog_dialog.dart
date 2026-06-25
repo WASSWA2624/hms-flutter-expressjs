@@ -29,9 +29,13 @@ Future<void> showClinicalLabRequestCatalogDialog({
     ClinicalLabRequestCatalogKind kind,
   )
   onAdd,
-  required bool Function(ClinicalActionCatalogOption option, ClinicalLabRequestCatalogKind kind)
+  required bool Function(
+    ClinicalActionCatalogOption option,
+    ClinicalLabRequestCatalogKind kind,
+  )
   isDuplicate,
-  ClinicalLabRequestCatalogKind initialKind = ClinicalLabRequestCatalogKind.tests,
+  ClinicalLabRequestCatalogKind initialKind =
+      ClinicalLabRequestCatalogKind.tests,
   ClinicalActionCatalogOption? editingOption,
   ClinicalLabRequestCatalogKind? editingKind,
 }) {
@@ -132,11 +136,10 @@ class _ClinicalLabRequestCatalogDialogState
     final List<ClinicalActionCatalogOption> visibleOptions = _searchCatalog(
       catalog,
     );
-    final ClinicalActionCatalogOption? selectedOption = clinicalActionCatalogOptionById(
-      visibleOptions,
-      _selectedCatalogId,
-    );
-    final bool selectedIsDuplicate = selectedOption != null &&
+    final ClinicalActionCatalogOption? selectedOption =
+        clinicalActionCatalogOptionById(visibleOptions, _selectedCatalogId);
+    final bool selectedIsDuplicate =
+        selectedOption != null &&
         widget.isDuplicate(selectedOption, _selectionKind);
     final List<AppSelectOption<String>> selectOptions =
         clinicalCatalogSelectOptions(
@@ -189,7 +192,8 @@ class _ClinicalLabRequestCatalogDialogState
               }
             },
           ),
-          if (_selectionKind == ClinicalLabRequestCatalogKind.tests) ...<Widget>[
+          if (_selectionKind ==
+              ClinicalLabRequestCatalogKind.tests) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             ClinicalCatalogLayerSelector(
               value: _catalogSource,
@@ -241,7 +245,8 @@ class _ClinicalLabRequestCatalogDialogState
             hintText: l10n.clinicalLabRequestSearchHint,
             options: selectOptions,
             value: _selectedCatalogId,
-            isLoading: _isSearching &&
+            isLoading:
+                _isSearching &&
                 _selectionKind == ClinicalLabRequestCatalogKind.tests,
             isEditing: _isEditing,
             selectedIsDuplicate: selectedIsDuplicate,
@@ -286,13 +291,13 @@ class _ClinicalLabRequestCatalogDialogState
 
   Future<void> _loadTestCatalog(String query, int requestId) async {
     setState(() => _isSearching = true);
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await widget.onSearchLabTests(
-      termType: ClinicalCatalogTermType.labTest.apiValue,
-      query: query.trim().isEmpty ? null : query.trim(),
-      limit: _maxVisibleCatalogOptions,
-      source: _catalogSource.apiValue,
-    );
+    final Result<List<ClinicalActionCatalogOption>> result = await widget
+        .onSearchLabTests(
+          termType: ClinicalCatalogTermType.labTest.apiValue,
+          query: query.trim().isEmpty ? null : query.trim(),
+          limit: _maxVisibleCatalogOptions,
+          source: _catalogSource.apiValue,
+        );
     if (!mounted || requestId != _searchRequest) {
       return;
     }
@@ -306,12 +311,12 @@ class _ClinicalLabRequestCatalogDialogState
   }
 
   Future<void> _loadFavoriteTests() async {
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await widget.onSearchLabTests(
-      termType: ClinicalCatalogTermType.labTest.apiValue,
-      limit: 12,
-      source: ClinicalCatalogSource.favorites.apiValue,
-    );
+    final Result<List<ClinicalActionCatalogOption>> result = await widget
+        .onSearchLabTests(
+          termType: ClinicalCatalogTermType.labTest.apiValue,
+          limit: 12,
+          source: ClinicalCatalogSource.favorites.apiValue,
+        );
     if (!mounted) {
       return;
     }

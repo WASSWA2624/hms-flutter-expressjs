@@ -87,4 +87,9 @@ abstract interface class IpdRepository {
     String admissionId,
     Map<String, Object?> payload,
   );
+
+  Future<Result<IpdAdmissionDetail>> updateDischargeClearance(
+    String admissionId,
+    Map<String, Object?> payload,
+  );
 }

@@ -96,8 +96,8 @@ class _ClinicalProcedureCatalogDialogState
     final String? activeProcedureKey = activeProcedure == null
         ? null
         : _procedureDedupKey(activeProcedure);
-    final bool activeAlreadySelected = activeProcedureKey != null &&
-        widget.isDuplicate(activeProcedure!);
+    final bool activeAlreadySelected =
+        activeProcedureKey != null && widget.isDuplicate(activeProcedure!);
 
     return AppDialog(
       title: Text(l10n.clinicalProcedureCatalogPickerTitle),
@@ -205,13 +205,13 @@ class _ClinicalProcedureCatalogDialogState
       return;
     }
     setState(() => _isSearching = true);
-    final Result<List<ClinicalActionCatalogOption>> result =
-        await widget.onSearchClinicalTerms(
-      termType: 'PROCEDURE',
-      query: query,
-      limit: _searchLimit,
-      source: _catalogSource.apiValue,
-    );
+    final Result<List<ClinicalActionCatalogOption>> result = await widget
+        .onSearchClinicalTerms(
+          termType: 'PROCEDURE',
+          query: query,
+          limit: _searchLimit,
+          source: _catalogSource.apiValue,
+        );
     if (!mounted || requestId != _searchRequest) {
       return;
     }

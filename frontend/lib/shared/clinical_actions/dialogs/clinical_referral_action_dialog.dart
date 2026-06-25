@@ -80,7 +80,9 @@ class _ClinicalReferralActionDialogState
                   isRequired: true,
                   textCapitalization: TextCapitalization.words,
                   prefixIcon: const Icon(Icons.local_hospital_outlined),
-                  validator: AppValidators.requiredText(l10n.validationRequired),
+                  validator: AppValidators.requiredText(
+                    l10n.validationRequired,
+                  ),
                 ),
                 AppTextField(
                   controller: _reasonController,
@@ -90,7 +92,9 @@ class _ClinicalReferralActionDialogState
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
                   prefixIcon: const Icon(Icons.notes_outlined),
-                  validator: AppValidators.requiredText(l10n.validationRequired),
+                  validator: AppValidators.requiredText(
+                    l10n.validationRequired,
+                  ),
                 ),
               ],
             ),

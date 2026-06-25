@@ -261,17 +261,21 @@ final class LabOrderSummaryDto {
       status: _string(json['status']),
       statusRank: _int(json['status_rank']),
       encounterId: _string(json['encounter_id']),
-      encounterType: _string(json['encounter_type']) ??
+      encounterType:
+          _string(json['encounter_type']) ??
           _string(_encounterField(json, 'type')),
-      encounterSource: _string(json['encounter_source']) ??
+      encounterSource:
+          _string(json['encounter_source']) ??
           _string(_encounterField(json, 'source')),
-      isInpatient: _bool(json['is_inpatient']) ||
+      isInpatient:
+          _bool(json['is_inpatient']) ||
           _bool(_encounterField(json, 'is_inpatient')),
-      wardName: _string(json['ward_name']) ??
-          _string(_encounterField(json, 'ward')),
-      bedLabel: _string(json['bed_label']) ??
-          _string(_encounterField(json, 'bed')),
-      locationLabel: _string(json['location_label']) ??
+      wardName:
+          _string(json['ward_name']) ?? _string(_encounterField(json, 'ward')),
+      bedLabel:
+          _string(json['bed_label']) ?? _string(_encounterField(json, 'bed')),
+      locationLabel:
+          _string(json['location_label']) ??
           _string(_encounterField(json, 'location_label')),
       patientId: _string(json['patient_id']),
       patientDisplayName: _string(json['patient_display_name']),

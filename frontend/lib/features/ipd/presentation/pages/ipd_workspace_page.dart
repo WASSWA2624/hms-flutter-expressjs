@@ -17,6 +17,8 @@ import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_author
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -709,9 +711,9 @@ class _IpdDetailPanel extends ConsumerWidget {
               ),
               AppWorkspacePatientContextField(
                 label: l10n.ipdEncounterIdLabel,
-                value: '',
+                value: admission.summary.encounterId ?? '',
                 icon: Icons.assignment_outlined,
-                copyable: true,
+                copyable: (admission.summary.encounterId ?? '').isNotEmpty,
                 copyTooltip: l10n.opdCopyEncounterIdAction,
                 copiedMessage: l10n.opdEncounterIdCopiedMessage,
               ),
@@ -745,6 +747,8 @@ class _IpdDetailPanel extends ConsumerWidget {
             ],
           ),
           SizedBox(height: Theme.of(context).spacing.md),
+          if (admission.sourceContext != null)
+            _IpdSourceContextSection(admission: admission),
           _IpdBedSection(admission: admission),
           InsuranceAuthorizationPanel(
             patientId: admission.summary.patientId,
@@ -954,6 +958,42 @@ class _IpdDetailActions extends ConsumerWidget {
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
+            label: l10n.ipdOrderLabAction,
+            leadingIcon: Icons.biotech_outlined,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () => _openClinicalOrder(
+              context,
+              openIpdLabOrderDialog(context),
+            ),
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
+            label: l10n.ipdOrderRadiologyAction,
+            leadingIcon: Icons.radiology_outlined,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () => _openClinicalOrder(
+              context,
+              openIpdRadiologyOrderDialog(context),
+            ),
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
+            label: l10n.ipdOrderPrescriptionAction,
+            leadingIcon: Icons.medication_outlined,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () => _openClinicalOrder(
+              context,
+              openIpdPrescriptionDialog(context),
+            ),
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
+            label: l10n.ipdOpenNursingAction,
+            leadingIcon: Icons.local_hospital_outlined,
+            onPressed: () => _openNursingWorkspace(context, summary),
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
             label: l10n.ipdAddWardRoundAction,
             leadingIcon: Icons.fact_check_outlined,
             enabled: canClinical && actionsEnabled,
@@ -988,36 +1028,15 @@ class _IpdDetailActions extends ConsumerWidget {
             label: l10n.ipdPlanDischargeAction,
             leadingIcon: Icons.fact_check_outlined,
             enabled: canClinical && actionsEnabled,
-            onPressed: () => _openTextActionDialog(
-              context,
-              ref,
-              title: l10n.ipdPlanDischargeAction,
-              icon: Icons.fact_check_outlined,
-              fieldLabel: l10n.ipdSummaryFieldLabel,
-              submitLabel: l10n.ipdPlanDischargeAction,
-              onSubmit: (String value) => ref
-                  .read(ipdWorkspaceControllerProvider.notifier)
-                  .planDischarge(summary, value),
-            ),
+            onPressed: () => _openDischargeClearanceDialog(context, ref),
           ),
         if (canClinical && dischargePlanned && !terminal)
           AppActionItem(
-            label: l10n.ipdFinalizeDischargeAction,
+            label: l10n.ipdManageDischargeTitle,
             leadingIcon: Icons.logout_outlined,
             enabled: canClinical && actionsEnabled,
             variant: AppActionVariant.primary,
-            onPressed: () => _openTextActionDialog(
-              context,
-              ref,
-              title: l10n.ipdFinalizeDischargeAction,
-              icon: Icons.logout_outlined,
-              fieldLabel: l10n.ipdSummaryFieldLabel,
-              submitLabel: l10n.ipdFinalizeDischargeAction,
-              initialValue: admission.latestDischargeSummary?.summary,
-              onSubmit: (String value) => ref
-                  .read(ipdWorkspaceControllerProvider.notifier)
-                  .finalizeDischarge(summary, value),
-            ),
+            onPressed: () => _openDischargeClearanceDialog(context, ref),
           ),
         if (canOperate && !activeBed && !terminal)
           AppActionItem(
@@ -1049,6 +1068,51 @@ class _IpdDetailActions extends ConsumerWidget {
             queryParameters: <String, String>{'id': displayId},
           );
     context.go(location);
+  }
+
+  void _openNursingWorkspace(
+    BuildContext context,
+    IpdAdmissionSummary summary,
+  ) {
+    final String? displayId = summary.displayId?.trim();
+    final String location = displayId == null || displayId.isEmpty
+        ? AppRoutes.nursing.path
+        : AppRoutes.nursing.location(
+            queryParameters: <String, String>{
+              'id': displayId,
+              'panel': 'nursing',
+            },
+          );
+    context.go(location);
+  }
+
+  Future<void> _openClinicalOrder(
+    BuildContext context,
+    Future<bool?> dialogFuture,
+  ) async {
+    final bool? saved = await dialogFuture;
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+
+  Future<void> _openDischargeClearanceDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final IpdWorkspaceState? state = _readIpdState(ref);
+    final IpdAdmissionDetail? admission = state?.selectedAdmission;
+    if (admission == null) {
+      return;
+    }
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => IpdDischargeClearanceDialog(admission: admission),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
   }
 
   Future<void> _confirmStartIcuStay(
@@ -1346,6 +1410,7 @@ class _IpdDischargeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final IpdDischargeSummary? discharge = admission.latestDischargeSummary;
+    final IpdPharmacyClearance pharmacy = admission.pharmacyClearance;
     return _IpdSection(
       title: l10n.ipdDischargeSectionTitle,
       icon: Icons.logout_outlined,
@@ -1364,12 +1429,87 @@ class _IpdDischargeSection extends StatelessWidget {
                 l10n.ipdDischargedAtLabel,
                 _dateTimeLabel(context, discharge?.dischargedAt),
               ),
+              _IpdKeyValue(
+                l10n.ipdDischargeClearancePhaseLabel,
+                discharge?.clearancePhase == null
+                    ? null
+                    : _clearancePhaseLabel(context, discharge!.clearancePhase),
+              ),
+              _IpdKeyValue(
+                l10n.ipdPharmacyClearanceLabel,
+                pharmacy.hasClearance
+                    ? l10n.ipdPharmacyClearanceCleared
+                    : l10n.ipdPharmacyClearancePending(
+                        pharmacy.openOrderCount,
+                      ),
+              ),
             ],
           ),
+          if (!pharmacy.hasClearance && pharmacy.orders.isNotEmpty) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.sm),
+            ...pharmacy.orders.map(
+              (IpdPharmacyOrderSummary order) => Padding(
+                padding: EdgeInsets.only(bottom: Theme.of(context).spacing.xs),
+                child: Text(
+                  _joinDisplay(<String?>[
+                    order.id,
+                    order.status == null
+                        ? null
+                        : _pharmacyOrderStatusLabel(context, order.status),
+                    _dateTimeLabel(context, order.orderedAt),
+                  ]),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ],
           if ((discharge?.summary ?? '').trim().isNotEmpty) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.sm),
             Text(discharge!.summary!),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _IpdSourceContextSection extends StatelessWidget {
+  const _IpdSourceContextSection({required this.admission});
+
+  final IpdAdmissionDetail admission;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final IpdSourceContext? source = admission.sourceContext;
+    if (source == null) {
+      return const SizedBox.shrink();
+    }
+    return _IpdSection(
+      title: l10n.ipdSourceContextTitle,
+      icon: Icons.input_outlined,
+      child: _IpdKeyValueGrid(
+        values: <_IpdKeyValue>[
+          _IpdKeyValue(
+            l10n.ipdSourceKindLabel,
+            _sourceKindLabel(context, source.kind),
+          ),
+          _IpdKeyValue(
+            l10n.ipdEncounterTypeLabel,
+            source.encounterType == null
+                ? null
+                : _apiLabel(source.encounterType!),
+          ),
+          _IpdKeyValue(
+            l10n.opdStatusColumnLabel,
+            source.encounterStatus == null
+                ? null
+                : _apiLabel(source.encounterStatus!),
+          ),
+          _IpdKeyValue(
+            l10n.ipdAdmittedAtColumnLabel,
+            _dateTimeLabel(context, source.startedAt),
+          ),
         ],
       ),
     );
@@ -2389,6 +2529,33 @@ String _dischargeStatusLabel(BuildContext context, String? status) {
   return switch ((status ?? '').toUpperCase()) {
     'PLANNED' => l10n.ipdDischargeStatusPlanned,
     'COMPLETED' => l10n.ipdDischargeStatusCompleted,
+    _ => context.l10n.profileUnknownValue,
+  };
+}
+
+String _clearancePhaseLabel(BuildContext context, String? phase) {
+  final AppLocalizations l10n = context.l10n;
+  return switch ((phase ?? '').toUpperCase()) {
+    'SUMMARY_PENDING' => l10n.ipdClearancePhaseSummaryPending,
+    'PENDING_ORDERS_REVIEW' => l10n.ipdClearancePhasePendingOrders,
+    'MEDICATION_PENDING' => l10n.ipdClearancePhaseMedication,
+    'BILLING_PENDING' => l10n.ipdClearancePhaseBilling,
+    'NURSING_CLEARANCE_PENDING' => l10n.ipdClearancePhaseNursing,
+    'DOCUMENTS_PENDING' => l10n.ipdClearancePhaseDocuments,
+    'PATIENT_EXIT_PENDING' => l10n.ipdClearancePhasePatientExit,
+    'READY_FOR_EXIT' => l10n.ipdClearancePhaseReadyForExit,
+    'COMPLETED' => l10n.ipdDischargeStatusCompleted,
+    _ => context.l10n.profileUnknownValue,
+  };
+}
+
+String _sourceKindLabel(BuildContext context, String? kind) {
+  final AppLocalizations l10n = context.l10n;
+  return switch ((kind ?? '').toUpperCase()) {
+    'OPD' => l10n.ipdSourceKindOpd,
+    'EMERGENCY' => l10n.ipdSourceKindEmergency,
+    'REFERRAL' => l10n.ipdSourceKindReferral,
+    'DIRECT' => l10n.ipdSourceKindDirect,
     _ => context.l10n.profileUnknownValue,
   };
 }

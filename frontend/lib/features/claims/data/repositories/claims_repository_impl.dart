@@ -28,9 +28,7 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Result<AppPage<ClaimsQueueItem>>> listQueue(
-    ClaimsQueueQuery query,
-  ) {
+  Future<Result<AppPage<ClaimsQueueItem>>> listQueue(ClaimsQueueQuery query) {
     final AppPageRequest request = query.pageRequest;
     return _apiClient.get<AppPage<ClaimsQueueItem>>(
       ApiEndpoints.apiV1(<String>[
@@ -150,7 +148,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   }
 
   @override
-  Future<Result<AppPage<PreAuthorizationRecord>>> listPreAuthorizationsForContext({
+  Future<Result<AppPage<PreAuthorizationRecord>>>
+  listPreAuthorizationsForContext({
     String? patientId,
     String? admissionId,
     String? encounterId,

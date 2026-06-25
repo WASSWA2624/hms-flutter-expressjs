@@ -50,13 +50,17 @@ final class SessionTokenProvider {
       success: (AuthSession? session) async {
         if (session != null) {
           final enriched = await _enrichSession(session);
-          await _ref.read(sessionStateProvider.notifier).persistSession(enriched);
+          await _ref
+              .read(sessionStateProvider.notifier)
+              .persistSession(enriched);
           return enriched;
         }
         return session;
       },
       failure: (_) async {
-        await _ref.read(sessionStateProvider.notifier).handleUnauthorizedResponse();
+        await _ref
+            .read(sessionStateProvider.notifier)
+            .handleUnauthorizedResponse();
         return null;
       },
     );
@@ -89,7 +93,9 @@ final class SessionTokenProvider {
         return enriched;
       },
       failure: (_) async {
-        await _ref.read(sessionStateProvider.notifier).handleUnauthorizedResponse();
+        await _ref
+            .read(sessionStateProvider.notifier)
+            .handleUnauthorizedResponse();
         return null;
       },
     );
@@ -100,7 +106,9 @@ final class SessionTokenProvider {
   }
 
   Future<AuthSession> _enrichSession(AuthSession session) async {
-    final result = await _ref.read(authRepositoryProvider).fetchCurrentUser(session);
+    final result = await _ref
+        .read(authRepositoryProvider)
+        .fetchCurrentUser(session);
     return result.when(
       success: (AuthSession enriched) => enriched,
       failure: (_) => session,

@@ -515,10 +515,7 @@ AppListTableColumn<LabOrderSummary> _patientWorklistColumn(
     id: 'patient',
     label: l10n.labPatientColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-        appListTableCompareText(
-          _patientSortKey(left),
-          _patientSortKey(right),
-        ),
+        appListTableCompareText(_patientSortKey(left), _patientSortKey(right)),
     cellBuilder: (_, LabOrderSummary item) {
       return _LabOrderIdentity(order: item);
     },
@@ -669,7 +666,8 @@ class _LabEncounterContextLine extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final bool isInpatient = order.isInpatient ||
+    final bool isInpatient =
+        order.isInpatient ||
         (source != null && (source == 'IPD' || source == 'INPATIENT'));
     final Color sourceColor = isInpatient
         ? theme.colorScheme.tertiary
@@ -717,10 +715,7 @@ class _LabContextPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.xs,
-        vertical: 2,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(theme.spacing.xs),
@@ -1624,11 +1619,7 @@ Future<void> _openCreateLabOrderDialog(
     return;
   }
 
-  await _openLabOrderActionDialog(
-    context,
-    state,
-    orderContext: orderContext,
-  );
+  await _openLabOrderActionDialog(context, state, orderContext: orderContext);
 }
 
 Future<void> _openAdditionalLabOrderDialog(
@@ -1794,11 +1785,7 @@ Future<void> _openEditLabOrderDialog(
     return;
   }
 
-  await _openLabOrderActionDialog(
-    context,
-    state,
-    orderContext: orderContext,
-  );
+  await _openLabOrderActionDialog(context, state, orderContext: orderContext);
 }
 
 Future<ClinicalActionLabOrderRecord?> _loadExistingLabOrderRecord(

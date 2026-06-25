@@ -66,6 +66,24 @@ const CRITICAL_SEVERITY_ORDER = Object.freeze({
   CRITICAL: 4,
 });
 const TERMINAL_STAGES = new Set([STAGES.DISCHARGED, STAGES.CANCELLED]);
+const DEFAULT_DISCHARGE_CLEARANCE = Object.freeze({
+  summary_ready: false,
+  pending_orders_reviewed: false,
+  pharmacy_cleared: false,
+  billing_cleared: false,
+  nursing_cleared: false,
+  documents_ready: false,
+  patient_exited: false,
+  override_reason: null,
+});
+const DISCHARGE_CLEARANCE_KEYS = Object.freeze(
+  Object.keys(DEFAULT_DISCHARGE_CLEARANCE).filter(
+    (key) => key !== "override_reason",
+  ),
+);
+const PENDING_LAB_ORDER_STATUSES = ["ORDERED", "COLLECTED", "IN_PROCESS"];
+const PENDING_RADIOLOGY_ORDER_STATUSES = ["ORDERED", "IN_PROCESS"];
+const PENDING_PHARMACY_ORDER_STATUSES = ["ORDERED", "PARTIALLY_DISPENSED"];
 const LEGACY_ROUTE_CONFIG = Object.freeze({
   admissions: {
     delegate: "admission",
@@ -292,6 +310,33 @@ const buildMedicationSuggestions = (admission) => {
         ),
     )
     .filter(Boolean);
+};
+
+const OPEN_PHARMACY_ORDER_STATUSES = Object.freeze([
+  "ORDERED",
+  "PARTIALLY_DISPENSED",
+]);
+
+const buildPharmacyClearance = (admission) => {
+  const orders = Array.isArray(admission?.encounter?.pharmacy_orders)
+    ? admission.encounter.pharmacy_orders
+    : [];
+  const openOrders = orders.filter((order) =>
+    OPEN_PHARMACY_ORDER_STATUSES.includes(
+      sanitizeIdentifier(order?.status).toUpperCase(),
+    ),
+  );
+
+  return {
+    has_clearance: openOrders.length === 0,
+    open_order_count: openOrders.length,
+    orders: openOrders.map((order) => ({
+      id: resolvePublicIdentifier(order),
+      status: sanitizeIdentifier(order?.status) || null,
+      ordered_at: order?.ordered_at || null,
+      item_count: Array.isArray(order?.items) ? order.items.length : 0,
+    })),
+  };
 };
 
 const mapMedicationReminder = (entry) => {
@@ -937,6 +982,7 @@ const buildIpdSnapshot = (admission, options = {}) => {
       : [],
     medication_suggestions: medicationSuggestions,
     medication_reminders: medicationReminders,
+    pharmacy_clearance: buildPharmacyClearance(admission),
     flow: {
       stage,
       next_step: deriveNextStep(stage, openTransferRequest),
@@ -1003,6 +1049,7 @@ const mapPublicTransferRequest = (request) => {
 
 const mapPublicDischargeSummary = (summary) => {
   if (!summary) return null;
+  const clearance = normalizeDischargeClearance(summary.clearance_snapshot);
   return {
     id: resolvePublicIdentifier(summary),
     status: sanitizeIdentifier(summary.status) || null,
@@ -1010,6 +1057,178 @@ const mapPublicDischargeSummary = (summary) => {
     discharged_at: summary.discharged_at || null,
     created_at: summary.created_at || null,
     updated_at: summary.updated_at || null,
+    clearance_snapshot: clearance,
+    clearance_phase: deriveClearancePhase(summary.status, clearance),
+  };
+};
+
+const normalizeDischargeClearance = (value) => {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    ...DEFAULT_DISCHARGE_CLEARANCE,
+    ...Object.fromEntries(
+      DISCHARGE_CLEARANCE_KEYS.map((key) => [
+        key,
+        Boolean(source[key]),
+      ]),
+    ),
+    override_reason: sanitizeIdentifier(source.override_reason) || null,
+  };
+};
+
+const deriveClearancePhase = (status, clearance = DEFAULT_DISCHARGE_CLEARANCE) => {
+  const normalizedStatus = String(status || "").toUpperCase();
+  if (normalizedStatus === "COMPLETED") return "COMPLETED";
+  if (normalizedStatus !== "PLANNED") return null;
+  if (clearance.override_reason) return "READY_FOR_EXIT";
+  if (!clearance.summary_ready) return "SUMMARY_PENDING";
+  if (!clearance.pending_orders_reviewed) return "PENDING_ORDERS_REVIEW";
+  if (!clearance.pharmacy_cleared) return "MEDICATION_PENDING";
+  if (!clearance.billing_cleared) return "BILLING_PENDING";
+  if (!clearance.nursing_cleared) return "NURSING_CLEARANCE_PENDING";
+  if (!clearance.documents_ready) return "DOCUMENTS_PENDING";
+  if (!clearance.patient_exited) return "PATIENT_EXIT_PENDING";
+  return "READY_FOR_EXIT";
+};
+
+const isDischargeClearanceComplete = (clearance = DEFAULT_DISCHARGE_CLEARANCE) => {
+  if (sanitizeIdentifier(clearance.override_reason)) return true;
+  return DISCHARGE_CLEARANCE_KEYS.every((key) => Boolean(clearance[key]));
+};
+
+const mergeDischargeClearance = (current, patch = {}) => {
+  const normalized = normalizeDischargeClearance(current);
+  const next = { ...normalized };
+  for (const key of DISCHARGE_CLEARANCE_KEYS) {
+    if (typeof patch[key] === "boolean") {
+      next[key] = patch[key];
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "override_reason")) {
+    next.override_reason =
+      sanitizeIdentifier(patch.override_reason) || null;
+  }
+  return next;
+};
+
+const mapPublicPendingOrder = (entry) => {
+  if (!entry) return null;
+  return {
+    id: resolvePublicIdentifier(entry),
+    kind: sanitizeIdentifier(entry.kind) || null,
+    status: sanitizeIdentifier(entry.status) || null,
+    label: sanitizeIdentifier(entry.label) || null,
+    ordered_at: entry.ordered_at || null,
+  };
+};
+
+const buildPendingDischargeOrders = async (encounterId) => {
+  if (!encounterId || !prisma) return [];
+  const [labOrders, radiologyOrders, pharmacyOrders] = await Promise.all([
+    prisma.lab_order?.findMany
+      ? prisma.lab_order.findMany({
+          where: {
+            encounter_id: encounterId,
+            deleted_at: null,
+            status: { in: PENDING_LAB_ORDER_STATUSES },
+          },
+          select: {
+            id: true,
+            human_friendly_id: true,
+            status: true,
+            ordered_at: true,
+          },
+          orderBy: { ordered_at: "desc" },
+          take: 20,
+        })
+      : [],
+    prisma.radiology_order?.findMany
+      ? prisma.radiology_order.findMany({
+          where: {
+            encounter_id: encounterId,
+            deleted_at: null,
+            status: { in: PENDING_RADIOLOGY_ORDER_STATUSES },
+          },
+          select: {
+            id: true,
+            human_friendly_id: true,
+            status: true,
+            ordered_at: true,
+          },
+          orderBy: { ordered_at: "desc" },
+          take: 20,
+        })
+      : [],
+    prisma.pharmacy_order?.findMany
+      ? prisma.pharmacy_order.findMany({
+          where: {
+            encounter_id: encounterId,
+            deleted_at: null,
+            status: { in: PENDING_PHARMACY_ORDER_STATUSES },
+          },
+          select: {
+            id: true,
+            human_friendly_id: true,
+            status: true,
+            ordered_at: true,
+          },
+          orderBy: { ordered_at: "desc" },
+          take: 20,
+        })
+      : [],
+  ]);
+
+  return [
+    ...labOrders.map((entry) =>
+      mapPublicPendingOrder({
+        ...entry,
+        kind: "lab_order",
+        label: "Lab order",
+      }),
+    ),
+    ...radiologyOrders.map((entry) =>
+      mapPublicPendingOrder({
+        ...entry,
+        kind: "radiology_order",
+        label: "Radiology order",
+      }),
+    ),
+    ...pharmacyOrders.map((entry) =>
+      mapPublicPendingOrder({
+        ...entry,
+        kind: "pharmacy_order",
+        label: "Pharmacy order",
+      }),
+    ),
+  ].filter(Boolean);
+};
+
+const resolveSourceContext = (encounter) => {
+  if (!encounter) return null;
+  const encounterType = String(encounter.encounter_type || "").toUpperCase();
+  const sourceKind = encounterType.includes("EMERGENCY")
+    ? "EMERGENCY"
+    : encounterType.includes("OPD") || encounterType === "OUTPATIENT"
+      ? "OPD"
+      : encounterType.includes("REFERRAL")
+        ? "REFERRAL"
+        : encounterType || "DIRECT";
+  return {
+    kind: sourceKind,
+    encounter_type: sanitizeIdentifier(encounter.encounter_type) || null,
+    encounter_status: sanitizeIdentifier(encounter.status) || null,
+    started_at: encounter.started_at || null,
+  };
+};
+
+const enrichIpdSnapshotForDetail = async (snapshot) => {
+  const encounterId = snapshot?.admission?.encounter_id || null;
+  const pendingOrders = await buildPendingDischargeOrders(encounterId);
+  return {
+    ...snapshot,
+    source_context: resolveSourceContext(snapshot?.encounter),
+    pending_discharge_orders: pendingOrders,
   };
 };
 
@@ -1099,6 +1318,22 @@ const mapPublicMedicationReminder = (entry) => {
     total_occurrences: Number(entry.total_occurrences || 0),
     admission_id: sanitizeIdentifier(entry.admission_id) || null,
     encounter_id: sanitizeIdentifier(entry.encounter_id) || null,
+  };
+};
+
+const mapPublicPharmacyClearance = (clearance) => {
+  if (!clearance) return null;
+  return {
+    has_clearance: Boolean(clearance.has_clearance),
+    open_order_count: Number(clearance.open_order_count || 0),
+    orders: (Array.isArray(clearance.orders) ? clearance.orders : [])
+      .map((order) => ({
+        id: sanitizeIdentifier(order?.id) || null,
+        status: sanitizeIdentifier(order?.status) || null,
+        ordered_at: order?.ordered_at || null,
+        item_count: Number(order?.item_count || 0),
+      }))
+      .filter((order) => Boolean(order.id)),
   };
 };
 
@@ -1395,6 +1630,7 @@ const toPublicIpdSnapshot = (snapshot) => {
     )
       .map(mapPublicMedicationReminder)
       .filter(Boolean),
+    pharmacy_clearance: mapPublicPharmacyClearance(snapshot?.pharmacy_clearance),
     flow: {
       stage: sanitizeIdentifier(snapshot?.flow?.stage) || null,
       next_step: sanitizeIdentifier(snapshot?.flow?.next_step) || null,
@@ -1420,6 +1656,12 @@ const toPublicIpdSnapshot = (snapshot) => {
     patient_display_name: patientName || patientPublicId || null,
     patient_display_id: patientPublicId,
     encounter_display_id: encounterPublicId,
+    encounter_type:
+      sanitizeIdentifier(snapshot?.encounter?.encounter_type) || null,
+    source_context: snapshot?.source_context || null,
+    pending_discharge_orders: Array.isArray(snapshot?.pending_discharge_orders)
+      ? snapshot.pending_discharge_orders
+      : [],
     ward_display_name:
       sanitizeIdentifier(activeBed?.bed?.ward?.name) ||
       sanitizeIdentifier(openTransfer?.to_ward?.name) ||
@@ -1638,9 +1880,11 @@ const getIpdSnapshotByIdInternal = async (id, options = {}) => {
 
 const getIpdFlowById = async (id, options = {}) =>
   toPublicIpdSnapshot(
-    await getIpdSnapshotByIdInternal(id, {
-      include_icu: toBooleanFlag(options?.include_icu, false),
-    }),
+    await enrichIpdSnapshotForDetail(
+      await getIpdSnapshotByIdInternal(id, {
+        include_icu: toBooleanFlag(options?.include_icu, false),
+      }),
+    ),
   );
 
 const listIpdFlows = async (
@@ -3341,6 +3585,12 @@ const planDischarge = async (id, data, context = {}) => {
           summary,
           status: "PLANNED",
           discharged_at: plannedDischargeAt,
+          clearance_snapshot: normalizeDischargeClearance({
+            ...normalizeDischargeClearance(
+              latestDischargeSummary.clearance_snapshot,
+            ),
+            summary_ready: true,
+          }),
         },
       });
     } else {
@@ -3350,6 +3600,9 @@ const planDischarge = async (id, data, context = {}) => {
           summary,
           status: "PLANNED",
           discharged_at: plannedDischargeAt,
+          clearance_snapshot: normalizeDischargeClearance({
+            summary_ready: true,
+          }),
         },
       });
     }
@@ -3371,6 +3624,65 @@ const planDischarge = async (id, data, context = {}) => {
     result,
     context,
     metadata: { operation: "plan_discharge" },
+  });
+};
+
+const updateDischargeClearance = async (id, data, context = {}) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const resolved = await resolveAdmissionByIdentifier(tx, id);
+    if (!resolved) throw new HttpError("errors.ipd_flow.not_found", 404);
+
+    const admission = await fetchAdmissionForMutation(tx, resolved.id);
+    ensureAdmissionIsMutable(admission);
+
+    const latestDischargeSummary = getLatestDischargeSummary(admission);
+    if (!latestDischargeSummary) {
+      throw new HttpError("errors.ipd_flow.discharge_summary_required", 400, [
+        { field: "summary" },
+      ]);
+    }
+
+    const latestStatus = String(
+      latestDischargeSummary?.status || "",
+    ).toUpperCase();
+    if (latestStatus === "COMPLETED") {
+      throw new HttpError("errors.ipd_flow.admission_terminal", 400);
+    }
+
+    const nextClearance = mergeDischargeClearance(
+      latestDischargeSummary.clearance_snapshot,
+      data,
+    );
+
+    await tx.discharge_summary.update({
+      where: { id: latestDischargeSummary.id },
+      data: {
+        clearance_snapshot: nextClearance,
+      },
+    });
+
+    return {
+      admission_id: admission.id,
+      tenant_id: admission.tenant_id,
+      transition: {
+        action: "UPDATE_DISCHARGE_CLEARANCE",
+        stage_from: deriveIpdStage({
+          admission,
+          activeBedAssignment: getActiveBedAssignment(admission),
+          openTransferRequest: getOpenTransferRequest(admission),
+          latestDischargeSummary,
+        }),
+        stage_to: null,
+        occurred_at: new Date().toISOString(),
+      },
+      compatibilitySignals: [],
+    };
+  });
+
+  return finalizeAction({
+    result,
+    context,
+    metadata: { operation: "update_discharge_clearance" },
   });
 };
 
@@ -3410,6 +3722,15 @@ const finalizeDischarge = async (id, data, context = {}) => {
       ]);
     }
 
+    const clearance = normalizeDischargeClearance(
+      latestDischargeSummary?.clearance_snapshot,
+    );
+    const overrideReason =
+      sanitizeIdentifier(data?.override_reason) || clearance.override_reason;
+    if (!isDischargeClearanceComplete({ ...clearance, override_reason: overrideReason })) {
+      throw new HttpError("errors.ipd_flow.discharge_clearance_incomplete", 400);
+    }
+
     if (latestDischargeSummary) {
       await tx.discharge_summary.update({
         where: { id: latestDischargeSummary.id },
@@ -3417,6 +3738,11 @@ const finalizeDischarge = async (id, data, context = {}) => {
           summary,
           status: "COMPLETED",
           discharged_at: dischargedAt,
+          clearance_snapshot: normalizeDischargeClearance({
+            ...clearance,
+            override_reason: overrideReason,
+            patient_exited: true,
+          }),
         },
       });
     } else {
@@ -3426,6 +3752,16 @@ const finalizeDischarge = async (id, data, context = {}) => {
           summary,
           status: "COMPLETED",
           discharged_at: dischargedAt,
+          clearance_snapshot: normalizeDischargeClearance({
+            summary_ready: true,
+            pending_orders_reviewed: true,
+            pharmacy_cleared: true,
+            billing_cleared: true,
+            nursing_cleared: true,
+            documents_ready: true,
+            patient_exited: true,
+            override_reason: overrideReason,
+          }),
         },
       });
     }
@@ -3439,7 +3775,7 @@ const finalizeDischarge = async (id, data, context = {}) => {
       });
       await tx.bed.update({
         where: { id: activeBedAssignment.bed_id },
-        data: { status: "AVAILABLE" },
+        data: { status: "CLEANING" },
       });
       compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
     }
@@ -3782,6 +4118,7 @@ module.exports = {
   addNursingNote,
   addMedicationAdministration,
   planDischarge,
+  updateDischargeClearance,
   finalizeDischarge,
   startIcuStay,
   endIcuStay,

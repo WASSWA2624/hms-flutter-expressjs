@@ -148,8 +148,7 @@ class OpdActionContextPanel extends StatelessWidget {
 
 String opdResponsibleRoleForStage(AppLocalizations l10n, String? stage) {
   return switch ((stage ?? '').trim().toUpperCase()) {
-    'PAYMENT_DUE' ||
-    'WAITING_CONSULTATION_PAYMENT' =>
+    'PAYMENT_DUE' || 'WAITING_CONSULTATION_PAYMENT' =>
       '${l10n.opdWorkflowReceptionTitle} / ${l10n.navigationBillingLabel}',
     'VITALS_NEEDED' || 'WAITING_VITALS' => l10n.navigationNursingLabel,
     'DOCTOR_NEEDED' || 'WAITING_DOCTOR_ASSIGNMENT' =>
@@ -169,9 +168,8 @@ String opdResponsibleRoleForStage(AppLocalizations l10n, String? stage) {
     'REPORT_PENDING' ||
     'RADIOLOGY_REQUESTED' => l10n.navigationRadiologyLabel,
     'LAB_AND_RADIOLOGY_REQUESTED' =>
-        '${l10n.navigationLabLabel} / ${l10n.navigationRadiologyLabel}',
-    'PHARMACY_PENDING' ||
-    'PHARMACY_REQUESTED' => l10n.navigationPharmacyLabel,
+      '${l10n.navigationLabLabel} / ${l10n.navigationRadiologyLabel}',
+    'PHARMACY_PENDING' || 'PHARMACY_REQUESTED' => l10n.navigationPharmacyLabel,
     'ADMISSION_PENDING' || 'ADMITTED' => l10n.navigationIpdLabel,
     'DISCHARGED' => l10n.navigationDischargeLabel,
     _ => l10n.profileUnknownValue,

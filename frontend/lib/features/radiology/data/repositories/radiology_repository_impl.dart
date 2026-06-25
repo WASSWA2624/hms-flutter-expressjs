@@ -67,7 +67,6 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     );
   }
 
-
   @override
   Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
     String? search,
@@ -297,7 +296,12 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.post<RadiologyWorkflow>(
-      _radiologyEndpoint(<String>['studies', studyId, 'assets', 'commit-upload']),
+      _radiologyEndpoint(<String>[
+        'studies',
+        studyId,
+        'assets',
+        'commit-upload',
+      ]),
       data: _withoutEmpty(payload),
       decoder: _decodeWorkflow,
     );

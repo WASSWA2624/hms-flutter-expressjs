@@ -26,8 +26,8 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final num total = clinicalRequestBillingTotal(lineItems);
-    final String currency = billing?.currency ??
-        resolveClinicalRequestBillingCurrency(lineItems);
+    final String currency =
+        billing?.currency ?? resolveClinicalRequestBillingCurrency(lineItems);
 
     return DecoratedBox(
       decoration: BoxDecoration(

@@ -262,7 +262,10 @@ void main() {
                 },
               ],
               'radiology_tests': <Object?>[
-                <String, Object?>{'value': 'RDT0000001', 'label': 'Chest X-ray'},
+                <String, Object?>{
+                  'value': 'RDT0000001',
+                  'label': 'Chest X-ray',
+                },
               ],
               'assignees': <Object?>[
                 <String, Object?>{'value': 'USR0000001', 'label': 'Imani Tech'},

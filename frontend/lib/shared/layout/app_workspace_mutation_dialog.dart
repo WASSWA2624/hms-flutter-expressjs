@@ -39,7 +39,8 @@ Future<bool?> showAppWorkspaceMutationDialog({
   required String cancelLabel,
   required String submitLabel,
   IconData? submitIcon,
-  List<AppWorkspaceMutationAction> extraActions = const <AppWorkspaceMutationAction>[],
+  List<AppWorkspaceMutationAction> extraActions =
+      const <AppWorkspaceMutationAction>[],
   Widget? icon,
   double maxWidth = 600,
   bool barrierDismissible = false,
@@ -94,7 +95,8 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
       _AppWorkspaceMutationDialogState();
 }
 
-class _AppWorkspaceMutationDialogState extends State<_AppWorkspaceMutationDialog> {
+class _AppWorkspaceMutationDialogState
+    extends State<_AppWorkspaceMutationDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
   AppFailure? _failure;

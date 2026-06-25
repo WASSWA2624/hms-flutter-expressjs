@@ -1103,7 +1103,10 @@ class _AgeSexText extends StatelessWidget {
   }
 }
 
-Patient? _cachedPatientFromState(PatientRegistryState? state, String patientId) {
+Patient? _cachedPatientFromState(
+  PatientRegistryState? state,
+  String patientId,
+) {
   if (state == null) {
     return null;
   }
@@ -1443,8 +1446,8 @@ class _PatientDetailDialog extends ConsumerWidget {
         (state?.isRefreshingDetail ?? true) && detail == null;
 
     if (isLoadingDetail) {
-      final String dialogTitle = cachedPatient?.effectiveDisplayName ??
-          l10n.patientsDetailTitle;
+      final String dialogTitle =
+          cachedPatient?.effectiveDisplayName ?? l10n.patientsDetailTitle;
       return AppDialog(
         title: Text(dialogTitle),
         icon: const Icon(Icons.assignment_ind_outlined),
@@ -1546,141 +1549,144 @@ class _PatientDetailDialog extends ConsumerWidget {
             _QuickActions(detail: detail),
             const Divider(),
             AppExpandableRecordSection<PatientIdentifier>(
-            title: l10n.patientsIdentifiersSectionTitle,
-            emptyLabel: l10n.patientsNoIdentifiers,
-            items: detail.identifiers,
-            itemTitle: (PatientIdentifier item) => item.value,
-            itemSubtitle: (PatientIdentifier item) => item.type,
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () =>
-                _openRelatedForm<PatientIdentifier>(context, ref, detail),
-            onEdit: (PatientIdentifier item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientIdentifier item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientContact>(
-            title: l10n.patientsContactsSectionTitle,
-            emptyLabel: l10n.patientsNoContacts,
-            items: detail.contacts,
-            itemTitle: (PatientContact item) => item.value,
-            itemSubtitle: (PatientContact item) => _apiLabel(item.type),
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () => _openRelatedForm<PatientContact>(context, ref, detail),
-            onEdit: (PatientContact item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientContact item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientGuardian>(
-            title: l10n.patientsGuardiansSectionTitle,
-            emptyLabel: l10n.patientsNoGuardians,
-            items: detail.guardians,
-            itemTitle: (PatientGuardian item) => item.name,
-            itemSubtitle: (PatientGuardian item) =>
-                item.relationship ?? l10n.profileUnknownValue,
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () =>
-                _openRelatedForm<PatientGuardian>(context, ref, detail),
-            onEdit: (PatientGuardian item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientGuardian item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientAllergy>(
-            title: l10n.patientsAllergiesSectionTitle,
-            emptyLabel: l10n.patientsNoAllergies,
-            items: detail.allergies,
-            itemTitle: (PatientAllergy item) => item.allergen,
-            itemSubtitle: (PatientAllergy item) => _apiLabel(item.severity),
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () => _openRelatedForm<PatientAllergy>(context, ref, detail),
-            onEdit: (PatientAllergy item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientAllergy item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientMedicalHistory>(
-            title: l10n.patientsMedicalHistorySectionTitle,
-            emptyLabel: l10n.patientsNoMedicalHistory,
-            items: detail.medicalHistories,
-            itemTitle: (PatientMedicalHistory item) => item.condition,
-            itemSubtitle: (PatientMedicalHistory item) =>
-                _formatOptionalDate(context, item.diagnosisDate),
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () =>
-                _openRelatedForm<PatientMedicalHistory>(context, ref, detail),
-            onEdit: (PatientMedicalHistory item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientMedicalHistory item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientDocument>(
-            title: l10n.patientsDocumentsSectionTitle,
-            emptyLabel: l10n.patientsNoDocuments,
-            items: detail.documents,
-            itemTitle: (PatientDocument item) =>
-                item.fileName ?? item.documentType,
-            itemSubtitle: (PatientDocument item) =>
-                _apiLabel(item.documentType),
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () =>
-                _openRelatedForm<PatientDocument>(context, ref, detail),
-            onEdit: (PatientDocument item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientDocument item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          AppExpandableRecordSection<PatientConsent>(
-            title: l10n.patientsConsentsSectionTitle,
-            emptyLabel: l10n.patientsNoConsents,
-            items: detail.consents,
-            itemTitle: (PatientConsent item) => _apiLabel(item.consentType),
-            itemSubtitle: (PatientConsent item) => _apiLabel(item.status),
-            addLabel: l10n.patientsAddRelatedAction,
-            editLabel: l10n.patientsEditAction,
-            deleteLabel: l10n.patientsDeleteAction,
-            addRequirement: _writeRequirement,
-            editRequirement: _writeRequirement,
-            deleteRequirement: _deleteRequirement,
-            onAdd: () => _openRelatedForm<PatientConsent>(context, ref, detail),
-            onEdit: (PatientConsent item) =>
-                _openRelatedForm(context, ref, detail, item: item),
-            onDelete: (PatientConsent item) =>
-                _confirmDeleteRelated(context, ref, detail, item.id),
-          ),
-          PatientTimelineList(items: detail.timeline),
-        ],
+              title: l10n.patientsIdentifiersSectionTitle,
+              emptyLabel: l10n.patientsNoIdentifiers,
+              items: detail.identifiers,
+              itemTitle: (PatientIdentifier item) => item.value,
+              itemSubtitle: (PatientIdentifier item) => item.type,
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientIdentifier>(context, ref, detail),
+              onEdit: (PatientIdentifier item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientIdentifier item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientContact>(
+              title: l10n.patientsContactsSectionTitle,
+              emptyLabel: l10n.patientsNoContacts,
+              items: detail.contacts,
+              itemTitle: (PatientContact item) => item.value,
+              itemSubtitle: (PatientContact item) => _apiLabel(item.type),
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientContact>(context, ref, detail),
+              onEdit: (PatientContact item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientContact item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientGuardian>(
+              title: l10n.patientsGuardiansSectionTitle,
+              emptyLabel: l10n.patientsNoGuardians,
+              items: detail.guardians,
+              itemTitle: (PatientGuardian item) => item.name,
+              itemSubtitle: (PatientGuardian item) =>
+                  item.relationship ?? l10n.profileUnknownValue,
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientGuardian>(context, ref, detail),
+              onEdit: (PatientGuardian item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientGuardian item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientAllergy>(
+              title: l10n.patientsAllergiesSectionTitle,
+              emptyLabel: l10n.patientsNoAllergies,
+              items: detail.allergies,
+              itemTitle: (PatientAllergy item) => item.allergen,
+              itemSubtitle: (PatientAllergy item) => _apiLabel(item.severity),
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientAllergy>(context, ref, detail),
+              onEdit: (PatientAllergy item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientAllergy item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientMedicalHistory>(
+              title: l10n.patientsMedicalHistorySectionTitle,
+              emptyLabel: l10n.patientsNoMedicalHistory,
+              items: detail.medicalHistories,
+              itemTitle: (PatientMedicalHistory item) => item.condition,
+              itemSubtitle: (PatientMedicalHistory item) =>
+                  _formatOptionalDate(context, item.diagnosisDate),
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientMedicalHistory>(context, ref, detail),
+              onEdit: (PatientMedicalHistory item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientMedicalHistory item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientDocument>(
+              title: l10n.patientsDocumentsSectionTitle,
+              emptyLabel: l10n.patientsNoDocuments,
+              items: detail.documents,
+              itemTitle: (PatientDocument item) =>
+                  item.fileName ?? item.documentType,
+              itemSubtitle: (PatientDocument item) =>
+                  _apiLabel(item.documentType),
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientDocument>(context, ref, detail),
+              onEdit: (PatientDocument item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientDocument item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            AppExpandableRecordSection<PatientConsent>(
+              title: l10n.patientsConsentsSectionTitle,
+              emptyLabel: l10n.patientsNoConsents,
+              items: detail.consents,
+              itemTitle: (PatientConsent item) => _apiLabel(item.consentType),
+              itemSubtitle: (PatientConsent item) => _apiLabel(item.status),
+              addLabel: l10n.patientsAddRelatedAction,
+              editLabel: l10n.patientsEditAction,
+              deleteLabel: l10n.patientsDeleteAction,
+              addRequirement: _writeRequirement,
+              editRequirement: _writeRequirement,
+              deleteRequirement: _deleteRequirement,
+              onAdd: () =>
+                  _openRelatedForm<PatientConsent>(context, ref, detail),
+              onEdit: (PatientConsent item) =>
+                  _openRelatedForm(context, ref, detail, item: item),
+              onDelete: (PatientConsent item) =>
+                  _confirmDeleteRelated(context, ref, detail, item.id),
+            ),
+            PatientTimelineList(items: detail.timeline),
+          ],
         ),
       ),
     );
@@ -2814,7 +2820,10 @@ class _PatientAppointmentQuickDialogState
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
-    final DateTime? scheduledStart = _combineDateAndTimeOfDay(_date, _startTime);
+    final DateTime? scheduledStart = _combineDateAndTimeOfDay(
+      _date,
+      _startTime,
+    );
     if (scheduledStart == null) {
       setState(() => _failure = AppFailure.validation());
       return;
@@ -3688,9 +3697,12 @@ class _PatientReportPrintPreviewDialogState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    final PatientDetail? liveDetail = _livePatientDetail(ref, widget.patient.id);
-    final PatientDetail effectiveDetail = liveDetail ??
-        _effectivePatientDetail(widget.patient, widget.detail);
+    final PatientDetail? liveDetail = _livePatientDetail(
+      ref,
+      widget.patient.id,
+    );
+    final PatientDetail effectiveDetail =
+        liveDetail ?? _effectivePatientDetail(widget.patient, widget.detail);
     final _PatientReportSelection selection = _PatientReportSelection(
       periodMode: _periodMode,
       singleDate: _singleDate,
@@ -6918,10 +6930,7 @@ List<AppSelectOption<String>> _providerSelectOptions(
   List<OpdProviderOption> providers, {
   List<OpdProviderSchedule> schedules = const <OpdProviderSchedule>[],
 }) {
-  return opdProviderSelectOptions(
-    providers: providers,
-    schedules: schedules,
-  );
+  return opdProviderSelectOptions(providers: providers, schedules: schedules);
 }
 
 FormFieldValidator<String> _durationValidator(BuildContext context) {

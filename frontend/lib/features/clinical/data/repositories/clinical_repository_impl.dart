@@ -71,32 +71,31 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     ClinicalWorklistEntry entry,
   ) async {
     final String encounterId = entry.encounterId;
-    final List<List<ClinicalRelatedRecord>> results = await Future.wait(
-      <Future<List<ClinicalRelatedRecord>>>[
-        _relatedListOrEmpty(
-          HmsApiResource.clinicalNotes,
-          encounterId,
-          'clinical_note',
-        ),
-        _relatedListOrEmpty(HmsApiResource.diagnoses, encounterId, 'diagnosis'),
-        _relatedListOrEmpty(HmsApiResource.procedures, encounterId, 'procedure'),
-        _relatedListOrEmpty(HmsApiResource.carePlans, encounterId, 'care_plan'),
-        _relatedListOrEmpty(HmsApiResource.labOrders, encounterId, 'lab_order'),
-        _relatedListOrEmpty(
-          HmsApiResource.radiologyOrders,
-          encounterId,
-          'radiology_order',
-        ),
-        _relatedListOrEmpty(
-          HmsApiResource.pharmacyOrders,
-          encounterId,
-          'pharmacy_order',
-        ),
-        _relatedListOrEmpty(HmsApiResource.referrals, encounterId, 'referral'),
-        _relatedListOrEmpty(HmsApiResource.followUps, encounterId, 'follow_up'),
-        _relatedListOrEmpty(HmsApiResource.admissions, encounterId, 'admission'),
-      ],
-    );
+    final List<List<ClinicalRelatedRecord>>
+    results = await Future.wait(<Future<List<ClinicalRelatedRecord>>>[
+      _relatedListOrEmpty(
+        HmsApiResource.clinicalNotes,
+        encounterId,
+        'clinical_note',
+      ),
+      _relatedListOrEmpty(HmsApiResource.diagnoses, encounterId, 'diagnosis'),
+      _relatedListOrEmpty(HmsApiResource.procedures, encounterId, 'procedure'),
+      _relatedListOrEmpty(HmsApiResource.carePlans, encounterId, 'care_plan'),
+      _relatedListOrEmpty(HmsApiResource.labOrders, encounterId, 'lab_order'),
+      _relatedListOrEmpty(
+        HmsApiResource.radiologyOrders,
+        encounterId,
+        'radiology_order',
+      ),
+      _relatedListOrEmpty(
+        HmsApiResource.pharmacyOrders,
+        encounterId,
+        'pharmacy_order',
+      ),
+      _relatedListOrEmpty(HmsApiResource.referrals, encounterId, 'referral'),
+      _relatedListOrEmpty(HmsApiResource.followUps, encounterId, 'follow_up'),
+      _relatedListOrEmpty(HmsApiResource.admissions, encounterId, 'admission'),
+    ]);
 
     final bundle = ClinicalEncounterBundle(
       entry: entry,
@@ -245,9 +244,9 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
         if (payload is! List) {
           return const <Map<String, Object?>>[];
         }
-        return payload
-            .whereType<Map<String, Object?>>()
-            .toList(growable: false);
+        return payload.whereType<Map<String, Object?>>().toList(
+          growable: false,
+        );
       },
     );
   }

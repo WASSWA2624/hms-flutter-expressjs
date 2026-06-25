@@ -102,6 +102,19 @@ void main() {
       expect(summary.totalOrders, 5);
       expect(summary.dischargePendingQueue, 2);
     });
+
+    test('parses location and payment queue counts', () {
+      final PharmacyWorkbenchSummary summary =
+          const PharmacyWorkbenchSummaryDto(<String, Object?>{
+            'outpatient_queue': 4,
+            'ward_queue': 3,
+            'pending_payment_queue': 2,
+          }).toEntity();
+
+      expect(summary.outpatientQueue, 4);
+      expect(summary.wardQueue, 3);
+      expect(summary.pendingPaymentQueue, 2);
+    });
   });
 
   group('PharmacyInventoryWorkbenchDto', () {

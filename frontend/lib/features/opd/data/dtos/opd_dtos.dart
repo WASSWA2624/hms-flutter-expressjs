@@ -210,7 +210,8 @@ final class OpdFlowSummaryDto {
     final OpdJsonMap? assignedStaff = _nullableMap(flow['assigned_staff']);
     final OpdJsonMap consultation = _map(flow['consultation']);
     final String? assignedStaffDisplayName =
-        _string(assignedStaff?['display_name']) ?? _providerDisplayName(provider);
+        _string(assignedStaff?['display_name']) ??
+        _providerDisplayName(provider);
 
     return OpdFlowSummary(
       id: _string(encounter['id']) ?? '',
@@ -236,9 +237,11 @@ final class OpdFlowSummaryDto {
       providerDisplayName: _providerDisplayName(provider),
       assignedStaffDisplayName: assignedStaffDisplayName,
       assignedStaffRole:
-          _string(flow['assigned_staff_role']) ?? _string(assignedStaff?['role']),
+          _string(flow['assigned_staff_role']) ??
+          _string(assignedStaff?['role']),
       assignedStaffType:
-          _string(flow['assigned_staff_type']) ?? _string(assignedStaff?['type']),
+          _string(flow['assigned_staff_type']) ??
+          _string(assignedStaff?['type']),
       assignedStaffLabel:
           _string(flow['assigned_staff_label']) ?? assignedStaffDisplayName,
       appointmentId: _string(flow['appointment_id']),

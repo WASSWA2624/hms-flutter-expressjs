@@ -190,7 +190,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     _tablePageNotifier.value = _tablePageNotifier.value.first();
   }
 
-
   List<Widget> _opdBackendSummaryCards(
     BuildContext context,
     OpdFlowAggregateCounts counts,
@@ -1602,8 +1601,9 @@ String _flowOwnerRole(BuildContext context, OpdFlowSummary flow) {
 String _staffRoleLabel(BuildContext context, String role) {
   final AppLocalizations l10n = context.l10n;
   return switch (role.trim().toUpperCase()) {
-    'SUPER_ADMIN' || 'TENANT_ADMIN' || 'FACILITY_ADMIN' =>
-      l10n.navigationSetupLabel,
+    'SUPER_ADMIN' ||
+    'TENANT_ADMIN' ||
+    'FACILITY_ADMIN' => l10n.navigationSetupLabel,
     'RECEPTIONIST' => l10n.opdWorkflowReceptionTitle,
     'BILLING' => l10n.navigationBillingLabel,
     'NURSE' => l10n.navigationNursingLabel,
@@ -1928,19 +1928,22 @@ _OpdTableFilter _opdFilterForPanel(String panel) {
     return const _OpdTableFilter();
   }
   return switch (key) {
-    'ARRIVALS' || 'ARRIVAL' || 'APPOINTMENTS' => const _OpdTableFilter(
-      category: _opdCategoryArrival,
-    ),
+    'ARRIVALS' ||
+    'ARRIVAL' ||
+    'APPOINTMENTS' => const _OpdTableFilter(category: _opdCategoryArrival),
     'QUEUE' || 'QUEUED' => const _OpdTableFilter(category: _opdCategoryQueue),
     'TRIAGE' => const _OpdTableFilter(category: _opdCategoryTriage),
-    'ACTIVE' || 'ACTIVE_FLOW' || 'OPD' || 'FLOWS' => const _OpdTableFilter(
+    'ACTIVE' ||
+    'ACTIVE_FLOW' ||
+    'OPD' ||
+    'FLOWS' => const _OpdTableFilter(category: _opdCategoryActiveFlow),
+    'PAYMENT' ||
+    'BILLING' ||
+    'PAYMENT_DUE' ||
+    'WAITING_CONSULTATION_PAYMENT' => const _OpdTableFilter(
       category: _opdCategoryActiveFlow,
+      statuses: <String>{'PAYMENT_DUE', 'WAITING_CONSULTATION_PAYMENT'},
     ),
-    'PAYMENT' || 'BILLING' || 'PAYMENT_DUE' || 'WAITING_CONSULTATION_PAYMENT' =>
-      const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'PAYMENT_DUE', 'WAITING_CONSULTATION_PAYMENT'},
-      ),
     'VITALS' || 'VITALS_NEEDED' || 'WAITING_VITALS' => const _OpdTableFilter(
       category: _opdCategoryActiveFlow,
       statuses: <String>{'VITALS_NEEDED', 'WAITING_VITALS'},
@@ -1952,7 +1955,9 @@ _OpdTableFilter _opdFilterForPanel(String panel) {
       category: _opdCategoryActiveFlow,
       statuses: <String>{'DOCTOR_NEEDED', 'WAITING_DOCTOR_ASSIGNMENT'},
     ),
-    'REVIEW' || 'WITH_DOCTOR' || 'WAITING_DOCTOR_REVIEW' => const _OpdTableFilter(
+    'REVIEW' ||
+    'WITH_DOCTOR' ||
+    'WAITING_DOCTOR_REVIEW' => const _OpdTableFilter(
       category: _opdCategoryActiveFlow,
       statuses: <String>{'WITH_DOCTOR', 'WAITING_DOCTOR_REVIEW'},
     ),
@@ -1969,32 +1974,37 @@ _OpdTableFilter _opdFilterForPanel(String panel) {
         'LAB_AND_RADIOLOGY_REQUESTED',
       },
     ),
-    'IMAGING' || 'RADIOLOGY' || 'IMAGING_PENDING' || 'RADIOLOGY_REQUESTED' =>
-      const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{
-          'IMAGING_PENDING',
-          'REPORT_PENDING',
-          'RADIOLOGY_REQUESTED',
-          'LAB_AND_RADIOLOGY_REQUESTED',
-        },
-      ),
-    'PHARMACY' || 'PHARMACY_PENDING' || 'PHARMACY_REQUESTED' =>
-      const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'PHARMACY_PENDING', 'PHARMACY_REQUESTED'},
-      ),
-    'DISPOSITION' || 'DECISION' || 'DECISION_NEEDED' || 'WAITING_DISPOSITION' =>
-      const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{
-          'DECISION_NEEDED',
-          'RESULTS_READY',
-          'REPORT_READY',
-          'MEDICINES_DISPENSED',
-          'WAITING_DISPOSITION',
-        },
-      ),
+    'IMAGING' ||
+    'RADIOLOGY' ||
+    'IMAGING_PENDING' ||
+    'RADIOLOGY_REQUESTED' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{
+        'IMAGING_PENDING',
+        'REPORT_PENDING',
+        'RADIOLOGY_REQUESTED',
+        'LAB_AND_RADIOLOGY_REQUESTED',
+      },
+    ),
+    'PHARMACY' ||
+    'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{'PHARMACY_PENDING', 'PHARMACY_REQUESTED'},
+    ),
+    'DISPOSITION' ||
+    'DECISION' ||
+    'DECISION_NEEDED' ||
+    'WAITING_DISPOSITION' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{
+        'DECISION_NEEDED',
+        'RESULTS_READY',
+        'REPORT_READY',
+        'MEDICINES_DISPENSED',
+        'WAITING_DISPOSITION',
+      },
+    ),
     'ADMISSION' || 'ADMISSION_PENDING' || 'ADMITTED' => const _OpdTableFilter(
       category: _opdCategoryActiveFlow,
       statuses: <String>{'ADMISSION_PENDING'},

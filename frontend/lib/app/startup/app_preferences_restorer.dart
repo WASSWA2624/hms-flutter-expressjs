@@ -64,7 +64,8 @@ abstract final class AppPreferencesRestorer {
     SharedPreferences preferences,
   ) {
     return AppAccessibilityPreferences(
-      reduceMotion: preferences.getBool(AppPreferenceKeys.reduceMotion) ?? false,
+      reduceMotion:
+          preferences.getBool(AppPreferenceKeys.reduceMotion) ?? false,
       boldText: preferences.getBool(AppPreferenceKeys.boldText) ?? false,
       textScaleLevel: AppTextScaleLevel.fromStorage(
         preferences.getInt(AppPreferenceKeys.textScaleLevel),

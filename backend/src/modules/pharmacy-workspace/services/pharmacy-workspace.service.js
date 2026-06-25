@@ -11,6 +11,7 @@ const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websock
 const {
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
+  persistPharmacyOrderBilling,
 } = require('@lib/billing/clinical-request-billing');
 const { ROLES } = require('@config/roles');
 const {
@@ -673,7 +674,27 @@ const buildDischargeSummaryWhere = (summaryWhere) => {
   return where;
 };
 
-const buildWorkbenchSummary = async (summaryWhere) => {
+const buildPendingPaymentWhere = (baseWhere) => {
+  const where = { ...baseWhere };
+  appendAnd(where, {
+    OR: [
+      { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
+      { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } },
+    ],
+  });
+  return where;
+};
+
+const buildLocationScopedWhere = (baseWhere, location) => {
+  const where = { ...baseWhere };
+  const locationWhere = buildOrderLocationWhere(location);
+  if (locationWhere) {
+    appendAnd(where, locationWhere);
+  }
+  return where;
+};
+
+const buildWorkbenchSummary = async (summaryWhere, summaryBaseWhere = summaryWhere) => {
   const [
     totalOrders,
     orderedQueue,
@@ -681,6 +702,9 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     dispensedOrders,
     cancelledOrders,
     dischargePendingQueue,
+    outpatientQueue,
+    wardQueue,
+    pendingPaymentQueue,
     preparedAttestations,
     completedAttestations,
   ] = await Promise.all([
@@ -689,7 +713,14 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'PARTIALLY_DISPENSED' }),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'DISPENSED' }),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'CANCELLED' }),
-    pharmacyWorkspaceRepository.countOrders(buildDischargeSummaryWhere(summaryWhere)),
+    pharmacyWorkspaceRepository.countOrders(buildDischargeSummaryWhere(summaryBaseWhere)),
+    pharmacyWorkspaceRepository.countOrders(
+      buildLocationScopedWhere(summaryBaseWhere, 'OUTPATIENT')
+    ),
+    pharmacyWorkspaceRepository.countOrders(
+      buildLocationScopedWhere(summaryBaseWhere, 'INPATIENT')
+    ),
+    pharmacyWorkspaceRepository.countOrders(buildPendingPaymentWhere(summaryBaseWhere)),
     pharmacyWorkspaceRepository.countDispenseAttestations({
       phase: 'PREPARE',
       pharmacy_order: {
@@ -713,6 +744,9 @@ const buildWorkbenchSummary = async (summaryWhere) => {
     dispensed_orders: dispensedOrders,
     cancelled_orders: cancelledOrders,
     discharge_pending_queue: dischargePendingQueue,
+    outpatient_queue: outpatientQueue,
+    ward_queue: wardQueue,
+    pending_payment_queue: pendingPaymentQueue,
     pending_attestations: Math.max(0, preparedAttestations - completedAttestations),
   };
 };
@@ -723,9 +757,14 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
-    const [where, summaryWhere] = await Promise.all([
+    const [where, summaryWhere, summaryBaseWhere] = await Promise.all([
       buildWorkbenchOrderWhere(filters, scope, { includeSearch: true }),
       buildWorkbenchOrderWhere(filters, scope, { includeSearch: false }),
+      buildWorkbenchOrderWhere(
+        { ...filters, location: undefined, pending_payment: undefined },
+        scope,
+        { includeSearch: false }
+      ),
     ]);
 
     const [worklistRecords, total, summary] = await Promise.all([
@@ -737,7 +776,7 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
         PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
       ),
       pharmacyWorkspaceRepository.countOrders(where),
-      buildWorkbenchSummary(summaryWhere),
+      buildWorkbenchSummary(summaryWhere, summaryBaseWhere),
     ]);
 
     return {
@@ -1700,6 +1739,96 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
   }
 };
 
+const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, ipAddress, user = {}) => {
+  try {
+    const scope = resolveScopedUserContext(user);
+    const orderId = await resolveScopedOrderId(identifier, scope);
+    const billing = payload?.billing;
+    if (!billing) {
+      throw new HttpError('errors.validation.required', 400, [{ field: 'billing' }]);
+    }
+
+    const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+      const order = ensureScopedOrderRecord(
+        await pharmacyWorkspaceRepository.txFindOrderById(
+          tx,
+          orderId,
+          PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+        ),
+        scope
+      );
+
+      const patientId = order.patient_id;
+      const patientRecord = await tx.patient.findFirst({
+        where: { id: patientId, deleted_at: null },
+        select: { id: true, tenant_id: true, facility_id: true },
+      });
+      if (!patientRecord) {
+        throw new HttpError('errors.patient.not_found', 404);
+      }
+
+      const existingSnapshot = extractStoredClinicalBilling(order);
+      await persistPharmacyOrderBilling(tx, {
+        orderId: order.id,
+        billing,
+        existingSnapshot,
+        tenantId: patientRecord.tenant_id,
+        facilityId: patientRecord.facility_id || scope.facility_id || null,
+        patientId: patientRecord.id,
+        description: 'Pharmacy order',
+      });
+
+      const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return { order: refreshedOrder };
+    });
+
+    createAuditLog({
+      tenant_id: mutation.order?.patient?.tenant_id || scope.tenant_id || null,
+      user_id: userId,
+      action: 'UPDATE',
+      entity: 'pharmacy_order',
+      entity_id: mutation.order?.id,
+      diff: {
+        metadata: {
+          billing_recorded: true,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+
+    publishPharmacyRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'RECORD_BILLING',
+      resourceType: 'order',
+      resourceId: workflow?.order?.id || null,
+    }).catch(() => {});
+
+    const summaryBaseWhere = await buildWorkbenchOrderWhere(
+      { location: undefined, pending_payment: undefined },
+      scope,
+      { includeSearch: false }
+    );
+    const orderSummary = await buildWorkbenchSummary(summaryBaseWhere, summaryBaseWhere);
+
+    return {
+      workflow,
+      order_summary: orderSummary,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const resolveLegacyRouteIdentifier = async (resource, identifier, user = {}) => {
   try {
     const scope = resolveScopedUserContext(user);
@@ -1767,5 +1896,6 @@ module.exports = {
   returnDispense,
   getInventoryStock,
   adjustInventoryStock,
+  recordOrderBilling,
   resolveLegacyRouteIdentifier,
 };

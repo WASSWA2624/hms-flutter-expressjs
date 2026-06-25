@@ -243,6 +243,18 @@ const planDischargeSchema = z.object({
 const finalizeDischargeSchema = z.object({
   summary: z.string().trim().max(65535).optional().nullable(),
   discharged_at: z.string().datetime().optional(),
+  override_reason: z.string().trim().max(2000).optional().nullable(),
+});
+
+const updateDischargeClearanceSchema = z.object({
+  summary_ready: z.boolean().optional(),
+  pending_orders_reviewed: z.boolean().optional(),
+  pharmacy_cleared: z.boolean().optional(),
+  billing_cleared: z.boolean().optional(),
+  nursing_cleared: z.boolean().optional(),
+  documents_ready: z.boolean().optional(),
+  patient_exited: z.boolean().optional(),
+  override_reason: z.string().trim().max(2000).optional().nullable(),
 });
 
 const startIcuStaySchema = z.object({
@@ -285,6 +297,7 @@ module.exports = {
   addMedicationAdministrationSchema,
   planDischargeSchema,
   finalizeDischargeSchema,
+  updateDischargeClearanceSchema,
   startIcuStaySchema,
   endIcuStaySchema,
   addIcuObservationSchema,

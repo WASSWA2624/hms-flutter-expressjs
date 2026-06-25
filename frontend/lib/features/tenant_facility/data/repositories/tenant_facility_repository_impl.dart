@@ -25,11 +25,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   @override
   Future<Result<FacilitySetupSnapshot>> loadSetup({String? facilityId}) async {
-    final workspaceResult = await _loadSetupFromWorkspace(facilityId: facilityId);
-    if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
+    final workspaceResult = await _loadSetupFromWorkspace(
+      facilityId: facilityId,
+    );
+    if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(
+      :final value,
+    )) {
       return Result<FacilitySetupSnapshot>.success(value);
     }
-    if (workspaceResult case ResultFailure<FacilitySetupSnapshot>(:final failure)) {
+    if (workspaceResult case ResultFailure<FacilitySetupSnapshot>(
+      :final failure,
+    )) {
       if (failure.category != AppFailureCategory.notFound &&
           failure.category != AppFailureCategory.forbidden) {
         return Result<FacilitySetupSnapshot>.failure(failure);
@@ -49,7 +55,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         const <String>[],
       ),
       queryParameters: _withoutEmpty(<String, String?>{
-        if (_normalizedOptional(facilityId) case final String selectedFacilityId)
+        if (_normalizedOptional(facilityId)
+            case final String selectedFacilityId)
           'facility_id': selectedFacilityId,
       }),
       decoder: (Object? data) {

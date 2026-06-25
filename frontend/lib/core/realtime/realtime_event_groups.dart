@@ -270,7 +270,5 @@ abstract final class RealtimeEventGroups {
     ...integrations,
   };
 
-  static const Set<String> accessAdmin = <String>{
-    ...subscriptions,
-  };
+  static const Set<String> accessAdmin = <String>{...subscriptions};
 }

@@ -142,58 +142,63 @@ void main() {
     ]),
   };
 
-  test('loadPatientDetail composes patient, workspace, and related lists', () async {
-    final _FakeApiClient apiClient = _FakeApiClient(responses: buildResponses());
-    final PatientRepositoryImpl repository = PatientRepositoryImpl(
-      apiClient: apiClient,
-    );
+  test(
+    'loadPatientDetail composes patient, workspace, and related lists',
+    () async {
+      final _FakeApiClient apiClient = _FakeApiClient(
+        responses: buildResponses(),
+      );
+      final PatientRepositoryImpl repository = PatientRepositoryImpl(
+        apiClient: apiClient,
+      );
 
-    final Result<PatientDetail> result = await repository.loadPatientDetail(
-      patientId,
-    );
+      final Result<PatientDetail> result = await repository.loadPatientDetail(
+        patientId,
+      );
 
-    final PatientDetail? detail = result.when(
-      success: (PatientDetail value) => value,
-      failure: (_) => null,
-    );
+      final PatientDetail? detail = result.when(
+        success: (PatientDetail value) => value,
+        failure: (_) => null,
+      );
 
-    expect(detail, isNotNull);
-    expect(detail!.patient.id, patientId);
-    expect(detail.patient.publicId, 'PAT-1001');
-    // Demographics are hydrated from the related contact/identifier lists.
-    expect(detail.patient.primaryPhone, '+256700000000');
-    expect(detail.patient.primaryEmail, 'amina@example.com');
-    expect(detail.patient.primaryIdentifierType, 'MRN');
-    expect(detail.patient.primaryIdentifierValue, 'MRN-10024');
+      expect(detail, isNotNull);
+      expect(detail!.patient.id, patientId);
+      expect(detail.patient.publicId, 'PAT-1001');
+      // Demographics are hydrated from the related contact/identifier lists.
+      expect(detail.patient.primaryPhone, '+256700000000');
+      expect(detail.patient.primaryEmail, 'amina@example.com');
+      expect(detail.patient.primaryIdentifierType, 'MRN');
+      expect(detail.patient.primaryIdentifierValue, 'MRN-10024');
 
-    expect(detail.identifiers, hasLength(1));
-    expect(detail.contacts, hasLength(2));
-    expect(detail.guardians, hasLength(1));
-    expect(detail.allergies, hasLength(1));
-    expect(detail.medicalHistories, hasLength(1));
-    expect(detail.documents, hasLength(1));
-    expect(detail.consents, hasLength(1));
-    expect(detail.timeline, hasLength(2));
-    expect(detail.workspace.appointments, hasLength(1));
-    expect(detail.workspace.summaryCounts['appointments'], 1);
+      expect(detail.identifiers, hasLength(1));
+      expect(detail.contacts, hasLength(2));
+      expect(detail.guardians, hasLength(1));
+      expect(detail.allergies, hasLength(1));
+      expect(detail.medicalHistories, hasLength(1));
+      expect(detail.documents, hasLength(1));
+      expect(detail.consents, hasLength(1));
+      expect(detail.timeline, hasLength(2));
+      expect(detail.workspace.appointments, hasLength(1));
+      expect(detail.workspace.summaryCounts['appointments'], 1);
 
-    // All dependent reads must have been issued (fan-out, not skipped).
-    expect(
-      apiClient.requestedPaths,
-      containsAll(<String>[
-        patientPath,
-        workspacePath,
-        timelinePath,
-        identifiersPath,
-        contactsPath,
-        guardiansPath,
-        allergiesPath,
-        historiesPath,
-        documentsPath,
-        consentsPath,
-      ]),
-    );
-  });
+      // All dependent reads must have been issued (fan-out, not skipped).
+      expect(
+        apiClient.requestedPaths,
+        containsAll(<String>[
+          patientPath,
+          workspacePath,
+          timelinePath,
+          identifiersPath,
+          contactsPath,
+          guardiansPath,
+          allergiesPath,
+          historiesPath,
+          documentsPath,
+          consentsPath,
+        ]),
+      );
+    },
+  );
 
   test('loadPatientDetail propagates a failing dependent request', () async {
     final _FakeApiClient apiClient = _FakeApiClient(
@@ -217,23 +222,26 @@ void main() {
     expect(failure!.category, AppFailureCategory.notFound);
   });
 
-  test('loadPatientDetail short-circuits when the patient lookup fails', () async {
-    final _FakeApiClient apiClient = _FakeApiClient(
-      responses: buildResponses(),
-      failPaths: <String>{patientPath},
-    );
-    final PatientRepositoryImpl repository = PatientRepositoryImpl(
-      apiClient: apiClient,
-    );
+  test(
+    'loadPatientDetail short-circuits when the patient lookup fails',
+    () async {
+      final _FakeApiClient apiClient = _FakeApiClient(
+        responses: buildResponses(),
+        failPaths: <String>{patientPath},
+      );
+      final PatientRepositoryImpl repository = PatientRepositoryImpl(
+        apiClient: apiClient,
+      );
 
-    final Result<PatientDetail> result = await repository.loadPatientDetail(
-      patientId,
-    );
+      final Result<PatientDetail> result = await repository.loadPatientDetail(
+        patientId,
+      );
 
-    expect(result.when(success: (_) => false, failure: (_) => true), isTrue);
-    // Dependent reads are not issued when the patient lookup fails.
-    expect(apiClient.requestedPaths, <String>[patientPath]);
-  });
+      expect(result.when(success: (_) => false, failure: (_) => true), isTrue);
+      // Dependent reads are not issued when the patient lookup fails.
+      expect(apiClient.requestedPaths, <String>[patientPath]);
+    },
+  );
 }
 
 class _FakeApiClient implements ApiClient {

@@ -36,7 +36,8 @@ class InsuranceAuthorizationPanel extends ConsumerStatefulWidget {
 class _InsuranceAuthorizationPanelState
     extends ConsumerState<InsuranceAuthorizationPanel> {
   bool _isLoading = true;
-  List<PreAuthorizationRecord> _authorizations = const <PreAuthorizationRecord>[];
+  List<PreAuthorizationRecord> _authorizations =
+      const <PreAuthorizationRecord>[];
 
   @override
   void initState() {

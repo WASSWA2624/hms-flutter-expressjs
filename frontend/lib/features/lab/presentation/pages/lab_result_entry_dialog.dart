@@ -121,8 +121,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
 
     final Map<String, LabOrderItem> itemsById = <String, LabOrderItem>{
       for (final LabOrderWorkflow workflow in workflows)
-        for (final LabOrderItem item in workflow.order.items)
-          item.apiId: item,
+        for (final LabOrderItem item in workflow.order.items) item.apiId: item,
     };
     final Set<String> nextItemIds = itemsById.keys.toSet();
     final Set<String> existingItemIds = drafts
@@ -166,7 +165,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         .read(labWorkspaceControllerProvider)
         .asData
         ?.value
-        .when(success: (LabWorkspaceState value) => value, failure: (_) => null);
+        .when(
+          success: (LabWorkspaceState value) => value,
+          failure: (_) => null,
+        );
     final List<LabOrderWorkflow> workflows = _selectedWorkflows(state);
     if (workflows.isEmpty) {
       return;
@@ -405,9 +407,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (_batchValidationIssueCount != null) ...<Widget>[
-          _LabBatchValidationBanner(
-            issueCount: _batchValidationIssueCount!,
-          ),
+          _LabBatchValidationBanner(issueCount: _batchValidationIssueCount!),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_labActionFailureMessage != null) ...<Widget>[
@@ -448,7 +448,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_isSaving) ...<Widget>[
-          _LabApplyingChangesBanner(message: l10n.labApplyingResultChangesMessage),
+          _LabApplyingChangesBanner(
+            message: l10n.labApplyingResultChangesMessage,
+          ),
           SizedBox(height: Theme.of(context).spacing.sm),
         ],
         AbsorbPointer(
@@ -463,8 +465,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                   catalogPanels: catalogPanels,
                   canMutate: canMutate,
                   selectedItemIds: _selectedItemIds,
-                  onToggleItemSelection:
-                      canMutate ? _toggleItemSelection : null,
+                  onToggleItemSelection: canMutate
+                      ? _toggleItemSelection
+                      : null,
                   onSaveDraft: _saveDraft,
                   onSubmitItem: _submitDraft,
                   onVerifyItem: _verifyOrderItem,
@@ -584,10 +587,8 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           .submitOrderItemDrafts(
             needsSubmit
                 .map(
-                  (_ResultDraft draft) => (
-                    item: draft.item,
-                    payload: draft.toSubmittedPayload(),
-                  ),
+                  (_ResultDraft draft) =>
+                      (item: draft.item, payload: draft.toSubmittedPayload()),
                 )
                 .toList(growable: false),
           );
@@ -611,10 +612,8 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           .submitOrderItemDrafts(
             needsSubmit
                 .map(
-                  (_ResultDraft draft) => (
-                    item: draft.item,
-                    payload: draft.toSubmittedPayload(),
-                  ),
+                  (_ResultDraft draft) =>
+                      (item: draft.item, payload: draft.toSubmittedPayload()),
                 )
                 .toList(growable: false),
           );
@@ -639,10 +638,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           failedItemIds: <String>[draft.item.apiId],
         );
       }
-      entries.add((
-        item: freshItem,
-        payload: draft.toVerifiedPayload(),
-      ));
+      entries.add((item: freshItem, payload: draft.toVerifiedPayload()));
     }
     return ref
         .read(labWorkspaceControllerProvider.notifier)
@@ -654,7 +650,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         .read(labWorkspaceControllerProvider)
         .asData
         ?.value
-        .when(success: (LabWorkspaceState value) => value, failure: (_) => null);
+        .when(
+          success: (LabWorkspaceState value) => value,
+          failure: (_) => null,
+        );
     if (state == null) {
       return null;
     }
@@ -757,7 +756,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
   }
 
-  void _markFailedDrafts(List<_ResultDraft> drafts, List<String> failedItemIds) {
+  void _markFailedDrafts(
+    List<_ResultDraft> drafts,
+    List<String> failedItemIds,
+  ) {
     if (failedItemIds.isEmpty) {
       return;
     }
@@ -788,8 +790,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         l10n.labBatchInvalidTransitionMessage,
       'lab.result.item_not_found' => l10n.labBatchItemNotFoundMessage,
       'lab.result.order_not_selected' => l10n.labBatchOrderNotSelectedMessage,
-      _ when failure.category == AppFailureCategory.validation &&
-          failure.validationFields.isNotEmpty =>
+      _
+          when failure.category == AppFailureCategory.validation &&
+              failure.validationFields.isNotEmpty =>
         l10n.labBatchActionFailedDetailMessage(
           actionLabel,
           l10n.failureMessage(failure),
@@ -1601,11 +1604,16 @@ class _LabWorkflowProgressIndicator extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final String currentStep = _currentWorkflowStepLabel(context, workflow);
-    final String? nextStep = _nextWorkflowStepLabel(context, workflow.nextActions);
+    final String? nextStep = _nextWorkflowStepLabel(
+      context,
+      workflow.nextActions,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.45,
+        ),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -1849,47 +1857,47 @@ class _LabResultEntryCards extends StatelessWidget {
               child: KeyedSubtree(
                 key: draft.rowKey,
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  _LabResultTestCell(
-                    draft: draft,
-                    showSelection: canMutate && onToggleItemSelection != null,
-                    isSelected: selectedItemIds.contains(draft.item.apiId),
-                    selectionEnabled: _isBulkSelectable(draft),
-                    onSelectionChanged: onToggleItemSelection == null
-                        ? null
-                        : (bool? value) => onToggleItemSelection!(
-                            draft.item.apiId,
-                            selected: value ?? false,
-                          ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  _LabReferenceRangeCell(draft: draft),
-                  SizedBox(height: theme.spacing.sm),
-                  draft.item.canEnterResult
-                      ? _CompactResultInput(
-                          draft: draft,
-                          enabled: canMutate && draft.item.canEnterResult,
-                        )
-                      : _CompletedResultReadout(item: draft.item),
-                  SizedBox(height: theme.spacing.sm),
-                  _LabResultFlagCell(
-                    item: draft.item,
-                    draft: draft,
-                    canMutate: canMutate,
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  _LabResultActionsCell(
-                    draft: draft,
-                    canMutate: canMutate,
-                    onSaveDraft: () => onSaveDraft(draft),
-                    onSubmit: () => onSubmit(draft),
-                    onVerify: () => onVerify(draft),
-                    onEditVerified: () => onEditVerified(draft),
-                    onReject: () => onReject(draft.item),
-                    onRemove: () => onRemove(draft),
-                  ),
-                ],
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _LabResultTestCell(
+                      draft: draft,
+                      showSelection: canMutate && onToggleItemSelection != null,
+                      isSelected: selectedItemIds.contains(draft.item.apiId),
+                      selectionEnabled: _isBulkSelectable(draft),
+                      onSelectionChanged: onToggleItemSelection == null
+                          ? null
+                          : (bool? value) => onToggleItemSelection!(
+                              draft.item.apiId,
+                              selected: value ?? false,
+                            ),
+                    ),
+                    SizedBox(height: theme.spacing.sm),
+                    _LabReferenceRangeCell(draft: draft),
+                    SizedBox(height: theme.spacing.sm),
+                    draft.item.canEnterResult
+                        ? _CompactResultInput(
+                            draft: draft,
+                            enabled: canMutate && draft.item.canEnterResult,
+                          )
+                        : _CompletedResultReadout(item: draft.item),
+                    SizedBox(height: theme.spacing.sm),
+                    _LabResultFlagCell(
+                      item: draft.item,
+                      draft: draft,
+                      canMutate: canMutate,
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    _LabResultActionsCell(
+                      draft: draft,
+                      canMutate: canMutate,
+                      onSaveDraft: () => onSaveDraft(draft),
+                      onSubmit: () => onSubmit(draft),
+                      onVerify: () => onVerify(draft),
+                      onEditVerified: () => onEditVerified(draft),
+                      onReject: () => onReject(draft.item),
+                      onRemove: () => onRemove(draft),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -2314,7 +2322,9 @@ class _LabResultFlagCell extends StatelessWidget {
             tone: abnormal
                 ? AppWorkspaceStatusTone.error
                 : AppWorkspaceStatusTone.neutral,
-            icon: abnormal ? Icons.warning_amber_outlined : Icons.check_outlined,
+            icon: abnormal
+                ? Icons.warning_amber_outlined
+                : Icons.check_outlined,
           ),
         ),
         if (canMutate && draft.enabled) ...<Widget>[
@@ -2378,7 +2388,8 @@ class _LabResultActionsCell extends ConsumerWidget {
     final bool canRemove = canMutate && _canRemoveResult(item, draft);
     final bool isCancelled =
         (item.status ?? '').trim().toUpperCase() == 'CANCELLED';
-    final bool canDelete = canMutate &&
+    final bool canDelete =
+        canMutate &&
         item.labOrderId != null &&
         item.labOrderId!.trim().isNotEmpty;
     final String resultStatus = (item.effectiveResultStatus ?? '')
@@ -2510,7 +2521,8 @@ class _PanelGroupHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final bool showDelete = canDelete &&
+    final bool showDelete =
+        canDelete &&
         itemIds.isNotEmpty &&
         orderId != null &&
         orderId!.trim().isNotEmpty;
@@ -2565,11 +2577,11 @@ class _PanelGroupHeader extends ConsumerWidget {
         body: l10n.labDeletePanelDialogBody(title),
         submitLabel: l10n.labDeletePanelAction,
         icon: const Icon(Icons.delete_outline),
-        onConfirm: () => ref
-            .read(labWorkspaceControllerProvider.notifier)
-            .deleteOrderItems(targetOrderId, <String, Object?>{
-              'order_item_ids': itemIds,
-            }),
+        onConfirm: () =>
+            ref.read(labWorkspaceControllerProvider.notifier).deleteOrderItems(
+              targetOrderId,
+              <String, Object?>{'order_item_ids': itemIds},
+            ),
       ),
     );
   }
@@ -3066,7 +3078,8 @@ class _LabReportPreview extends StatelessWidget {
   final Set<String> selectedItemIds;
   final bool showOrderDetails;
   final bool selectable;
-  final void Function(LabOrderItem item, {required bool selected})? onToggleItem;
+  final void Function(LabOrderItem item, {required bool selected})?
+  onToggleItem;
   final void Function(LabOrderWorkflow workflow, {required bool selected})?
   onToggleOrder;
 
@@ -3116,10 +3129,8 @@ class _LabReportPreview extends StatelessWidget {
               ),
               onToggleOrder: onToggleOrder == null
                   ? null
-                  : (bool? value) => onToggleOrder!(
-                      workflow,
-                      selected: value ?? false,
-                    ),
+                  : (bool? value) =>
+                        onToggleOrder!(workflow, selected: value ?? false),
             ),
             SizedBox(height: theme.spacing.xs),
             _PreviewResultsTable(
@@ -3249,7 +3260,8 @@ class _PreviewResultsTable extends StatelessWidget {
   final List<LabOrderItem> items;
   final bool selectable;
   final Set<String> selectedItemIds;
-  final void Function(LabOrderItem item, {required bool selected})? onToggleItem;
+  final void Function(LabOrderItem item, {required bool selected})?
+  onToggleItem;
 
   @override
   Widget build(BuildContext context) {
@@ -3266,11 +3278,22 @@ class _PreviewResultsTable extends StatelessWidget {
       border: TableBorder.all(color: theme.colorScheme.outlineVariant),
       columnWidths: <int, TableColumnWidth>{
         if (selectable) 0: const FixedColumnWidth(44),
-        if (selectable) 1: const FlexColumnWidth(2)
-        else 0: const FlexColumnWidth(2),
-        if (selectable) 2: const FlexColumnWidth(2) else 1: const FlexColumnWidth(2),
-        if (selectable) 3: const FlexColumnWidth(2) else 2: const FlexColumnWidth(2),
-        if (selectable) 4: const FlexColumnWidth(1.5) else 3: const FlexColumnWidth(1.5),
+        if (selectable)
+          1: const FlexColumnWidth(2)
+        else
+          0: const FlexColumnWidth(2),
+        if (selectable)
+          2: const FlexColumnWidth(2)
+        else
+          1: const FlexColumnWidth(2),
+        if (selectable)
+          3: const FlexColumnWidth(2)
+        else
+          2: const FlexColumnWidth(2),
+        if (selectable)
+          4: const FlexColumnWidth(1.5)
+        else
+          3: const FlexColumnWidth(1.5),
       },
       children: <TableRow>[
         TableRow(
@@ -3292,9 +3315,12 @@ class _PreviewResultsTable extends StatelessWidget {
         for (final LabOrderItem item in items)
           TableRow(
             decoration: BoxDecoration(
-              color: selectable &&
+              color:
+                  selectable &&
                       !selectedItemIds.contains(_itemSelectionKey(item))
-                  ? theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.35)
+                  ? theme.colorScheme.surfaceContainerLow.withValues(
+                      alpha: 0.35,
+                    )
                   : null,
             ),
             children: <Widget>[
@@ -3305,10 +3331,8 @@ class _PreviewResultsTable extends StatelessWidget {
                     value: selectedItemIds.contains(_itemSelectionKey(item)),
                     onChanged: onToggleItem == null
                         ? null
-                        : (bool? value) => onToggleItem!(
-                            item,
-                            selected: value ?? false,
-                          ),
+                        : (bool? value) =>
+                              onToggleItem!(item, selected: value ?? false),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -3595,7 +3619,8 @@ class _ReopenVerifiedResultDialogState
 
   LabOrderItem get _item => widget.item;
 
-  bool get _usesOptions => _item.isQualitative && _item.resultOptions.isNotEmpty;
+  bool get _usesOptions =>
+      _item.isQualitative && _item.resultOptions.isNotEmpty;
 
   @override
   void initState() {
@@ -3831,14 +3856,12 @@ class _ReopenVerifiedResultDialogState
       labWorkspaceControllerProvider.notifier,
     );
 
-    final AppFailure? reopenFailure = await controller.reopenOrderItemResult(
-      _item.apiId,
-      <String, Object?>{
-        'reason': _reasonController.text.trim(),
-        if (_notesController.text.trim().isNotEmpty)
-          'notes': _notesController.text.trim(),
-      },
-    );
+    final AppFailure? reopenFailure = await controller
+        .reopenOrderItemResult(_item.apiId, <String, Object?>{
+          'reason': _reasonController.text.trim(),
+          if (_notesController.text.trim().isNotEmpty)
+            'notes': _notesController.text.trim(),
+        });
     if (!mounted) {
       return;
     }
@@ -4161,8 +4184,7 @@ List<_ResultDraft> _selectedSubmitTargets(List<_ResultDraft> selected) {
 List<_ResultDraft> _selectedVerifyTargets(List<_ResultDraft> selected) {
   return selected
       .where(
-        (_ResultDraft draft) =>
-            draft.item.canVerify && !draft.item.isRejected,
+        (_ResultDraft draft) => draft.item.canVerify && !draft.item.isRejected,
       )
       .toList(growable: false);
 }

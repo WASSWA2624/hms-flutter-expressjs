@@ -64,7 +64,9 @@ List<BedAssignmentRecord> decodeBedAssignmentRecords(Object? responseData) {
 BedAdmissionContext decodeBedAdmissionContext(Object? responseData) {
   final RoomsBedsJsonMap response = _expectMap(responseData);
   final RoomsBedsJsonMap payload = _map(response['data'] ?? response);
-  final BedAdmissionContext context = BedAdmissionContextDto(payload).toEntity();
+  final BedAdmissionContext context = BedAdmissionContextDto(
+    payload,
+  ).toEntity();
   if (context.admissionId.isEmpty) {
     throw const FormatException('Expected admission id in IPD flow response.');
   }

@@ -113,7 +113,13 @@ final class OpdWorkspaceQuery {
     }
 
     return OpdWorkspaceQuery(
-      flowId: pick(<String>['id', 'flow', 'flowId', 'encounter', 'encounterId']),
+      flowId: pick(<String>[
+        'id',
+        'flow',
+        'flowId',
+        'encounter',
+        'encounterId',
+      ]),
       panel: pick(<String>['panel', 'stage', 'filter', 'queue']),
       search: pick(<String>['search', 'q', 'patient']),
     );
@@ -1039,7 +1045,9 @@ final class OpdWorkspaceState {
         activePatientKeys.add(key);
       }
     }
-    return activePatientKeys.isNotEmpty ? activePatientKeys.length : activeFlowCount;
+    return activePatientKeys.isNotEmpty
+        ? activePatientKeys.length
+        : activeFlowCount;
   }
 
   OpdWorkspaceState copyWith({

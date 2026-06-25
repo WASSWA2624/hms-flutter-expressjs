@@ -50,9 +50,7 @@ final class RoomsBedsRepositoryImpl implements RoomsBedsRepository {
   }
 
   @override
-  Future<Result<BedAdmissionContext>> loadAdmissionContext(
-    String admissionId,
-  ) {
+  Future<Result<BedAdmissionContext>> loadAdmissionContext(String admissionId) {
     return _apiClient.get<BedAdmissionContext>(
       ApiEndpoints.byId(HmsApiResource.ipdFlows, admissionId),
       decoder: decodeBedAdmissionContext,

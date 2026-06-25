@@ -671,9 +671,11 @@ final class LabOrderItem {
         apiId;
   }
 
-  String? get panelKey => _firstNonEmpty(<String?>[panelId, panelCode, panelDisplayName]);
+  String? get panelKey =>
+      _firstNonEmpty(<String?>[panelId, panelCode, panelDisplayName]);
 
-  String? get panelTitle => _joinDisplay(<String?>[panelDisplayName, panelCode]) ?? panelKey;
+  String? get panelTitle =>
+      _joinDisplay(<String?>[panelDisplayName, panelCode]) ?? panelKey;
 
   bool get hasPanel => panelKey != null;
 

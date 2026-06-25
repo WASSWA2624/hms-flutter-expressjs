@@ -252,6 +252,88 @@ final class IpdTransferRequest {
 }
 
 @immutable
+final class IpdDischargeClearance {
+  const IpdDischargeClearance({
+    this.summaryReady = false,
+    this.pendingOrdersReviewed = false,
+    this.pharmacyCleared = false,
+    this.billingCleared = false,
+    this.nursingCleared = false,
+    this.documentsReady = false,
+    this.patientExited = false,
+    this.overrideReason,
+  });
+
+  final bool summaryReady;
+  final bool pendingOrdersReviewed;
+  final bool pharmacyCleared;
+  final bool billingCleared;
+  final bool nursingCleared;
+  final bool documentsReady;
+  final bool patientExited;
+  final String? overrideReason;
+
+  bool get isComplete {
+    if ((overrideReason ?? '').trim().isNotEmpty) {
+      return true;
+    }
+    return summaryReady &&
+        pendingOrdersReviewed &&
+        pharmacyCleared &&
+        billingCleared &&
+        nursingCleared &&
+        documentsReady &&
+        patientExited;
+  }
+
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'summary_ready': summaryReady,
+      'pending_orders_reviewed': pendingOrdersReviewed,
+      'pharmacy_cleared': pharmacyCleared,
+      'billing_cleared': billingCleared,
+      'nursing_cleared': nursingCleared,
+      'documents_ready': documentsReady,
+      'patient_exited': patientExited,
+      if ((overrideReason ?? '').trim().isNotEmpty)
+        'override_reason': overrideReason,
+    };
+  }
+}
+
+@immutable
+final class IpdPendingOrder {
+  const IpdPendingOrder({
+    required this.id,
+    this.kind,
+    this.status,
+    this.label,
+    this.orderedAt,
+  });
+
+  final String id;
+  final String? kind;
+  final String? status;
+  final String? label;
+  final DateTime? orderedAt;
+}
+
+@immutable
+final class IpdSourceContext {
+  const IpdSourceContext({
+    this.kind,
+    this.encounterType,
+    this.encounterStatus,
+    this.startedAt,
+  });
+
+  final String? kind;
+  final String? encounterType;
+  final String? encounterStatus;
+  final DateTime? startedAt;
+}
+
+@immutable
 final class IpdDischargeSummary {
   const IpdDischargeSummary({
     required this.id,
@@ -260,6 +342,8 @@ final class IpdDischargeSummary {
     this.dischargedAt,
     this.createdAt,
     this.updatedAt,
+    this.clearance = const IpdDischargeClearance(),
+    this.clearancePhase,
   });
 
   final String id;
@@ -268,6 +352,8 @@ final class IpdDischargeSummary {
   final DateTime? dischargedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final IpdDischargeClearance clearance;
+  final String? clearancePhase;
 }
 
 @immutable
@@ -484,6 +570,34 @@ final class IpdAdmissionSummary {
 }
 
 @immutable
+final class IpdPharmacyOrderSummary {
+  const IpdPharmacyOrderSummary({
+    required this.id,
+    this.status,
+    this.orderedAt,
+    this.itemCount = 0,
+  });
+
+  final String id;
+  final String? status;
+  final DateTime? orderedAt;
+  final int itemCount;
+}
+
+@immutable
+final class IpdPharmacyClearance {
+  const IpdPharmacyClearance({
+    this.hasClearance = true,
+    this.openOrderCount = 0,
+    this.orders = const <IpdPharmacyOrderSummary>[],
+  });
+
+  final bool hasClearance;
+  final int openOrderCount;
+  final List<IpdPharmacyOrderSummary> orders;
+}
+
+@immutable
 final class IpdAdmissionDetail {
   const IpdAdmissionDetail({
     required this.summary,
@@ -502,8 +616,12 @@ final class IpdAdmissionDetail {
     this.medicationAdministrations = const <IpdClinicalRecord>[],
     this.medicationSuggestions = const <IpdMedicationSuggestion>[],
     this.medicationReminders = const <IpdClinicalRecord>[],
+    this.pharmacyClearance = const IpdPharmacyClearance(),
     this.timeline = const <IpdTimelineItem>[],
     this.icu = const IpdIcuOverlay(),
+    this.sourceContext,
+    this.pendingDischargeOrders = const <IpdPendingOrder>[],
+    this.encounterType,
   });
 
   final IpdAdmissionSummary summary;
@@ -522,8 +640,12 @@ final class IpdAdmissionDetail {
   final List<IpdClinicalRecord> medicationAdministrations;
   final List<IpdMedicationSuggestion> medicationSuggestions;
   final List<IpdClinicalRecord> medicationReminders;
+  final IpdPharmacyClearance pharmacyClearance;
   final List<IpdTimelineItem> timeline;
   final IpdIcuOverlay icu;
+  final IpdSourceContext? sourceContext;
+  final List<IpdPendingOrder> pendingDischargeOrders;
+  final String? encounterType;
 
   String get patientDisplayName {
     return _joinDisplay(<String?>[patientFirstName, patientLastName]) ??

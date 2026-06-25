@@ -138,6 +138,18 @@ const returnDispense = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.return.success', data);
 });
 
+const recordOrderBilling = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.recordOrderBilling(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.user?.role,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.record_billing.success', data);
+});
+
 const getInventoryStock = asyncHandler(async (req, res) => {
   const {
     facility_id,
@@ -197,6 +209,7 @@ module.exports = {
   attestDispense,
   cancelPharmacyOrder,
   returnDispense,
+  recordOrderBilling,
   getInventoryStock,
   adjustInventoryStock,
   resolveLegacyRoute,

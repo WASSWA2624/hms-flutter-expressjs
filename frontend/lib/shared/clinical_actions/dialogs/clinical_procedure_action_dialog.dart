@@ -94,8 +94,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
 
   Widget _buildSelectedPanel(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ClinicalActionCatalogOption? focusedProcedure =
-        _focusedProcedure();
+    final ClinicalActionCatalogOption? focusedProcedure = _focusedProcedure();
 
     return ClinicalRequestSelectionManager(
       title: l10n.clinicalProcedureSelectedTitle,

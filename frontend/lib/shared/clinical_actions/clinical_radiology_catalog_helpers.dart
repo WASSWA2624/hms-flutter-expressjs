@@ -70,7 +70,10 @@ IconData clinicalRadiologyModalityIcon(String? value) {
   };
 }
 
-String clinicalRadiologyModalityDisplayLabel(AppLocalizations l10n, String? value) {
+String clinicalRadiologyModalityDisplayLabel(
+  AppLocalizations l10n,
+  String? value,
+) {
   final String normalized = (value ?? '').trim().toUpperCase();
   if (normalized.isEmpty) {
     return '';
@@ -119,7 +122,12 @@ IconData clinicalRadiologyBodyRegionIcon(String value) {
   if (_containsAny(normalized, <String>['BREAST', 'MAMMO'])) {
     return Icons.favorite_border;
   }
-  if (_containsAny(normalized, <String>['ABDOM', 'LIVER', 'SPLEEN', 'KIDNEY'])) {
+  if (_containsAny(normalized, <String>[
+    'ABDOM',
+    'LIVER',
+    'SPLEEN',
+    'KIDNEY',
+  ])) {
     return Icons.circle_outlined;
   }
   if (_containsAny(normalized, <String>['PELV', 'UTER', 'OVAR', 'PROSTAT'])) {
@@ -200,7 +208,9 @@ String? clinicalRadiologyOptionPriority(ClinicalActionCatalogOption option) {
   return clinicalActionTrimmedOrNull(
         clinicalRadiologyMetadataText(option, 'priority'),
       ) ??
-      clinicalActionTrimmedOrNull(clinicalRadiologyMetadataText(option, 'urgency'));
+      clinicalActionTrimmedOrNull(
+        clinicalRadiologyMetadataText(option, 'urgency'),
+      );
 }
 
 String? clinicalRadiologyMetadataText(
@@ -347,8 +357,7 @@ List<AppSelectOption<String>> clinicalRadiologyCatalogSelectOptions(
   return clinicalCatalogSelectOptions(
     options,
     iconBuilder: clinicalRadiologyCatalogIcon,
-    extraSearchValues: (ClinicalActionCatalogOption option) =>
-        <String?>[
+    extraSearchValues: (ClinicalActionCatalogOption option) => <String?>[
       clinicalRadiologyOptionModality(option),
       clinicalRadiologyOptionBodyRegion(option),
       clinicalRadiologyOptionLaterality(option),

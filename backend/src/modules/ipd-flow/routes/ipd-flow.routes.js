@@ -29,6 +29,7 @@ const {
   addMedicationAdministrationSchema,
   planDischargeSchema,
   finalizeDischargeSchema,
+  updateDischargeClearanceSchema,
   startIcuStaySchema,
   endIcuStaySchema,
   addIcuObservationSchema,
@@ -166,6 +167,17 @@ router.post(
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.planDischarge
+);
+
+router.post(
+  '/:id/update-discharge-clearance',
+  validateRequest({
+    params: admissionIdParamsSchema,
+    body: updateDischargeClearanceSchema,
+  }),
+  authenticate(),
+  authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
+  ipdFlowController.updateDischargeClearance
 );
 
 router.post(

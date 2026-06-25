@@ -29,10 +29,11 @@ final class UserProfileRepositoryImpl implements UserProfileRepository {
   final AuthRepository _authRepository;
 
   @override
-  Future<Result<UserProfileView>> loadCurrentProfile(AuthSession session) async {
-    final Result<AuthSession> refreshed = await _authRepository.fetchCurrentUser(
-      session,
-    );
+  Future<Result<UserProfileView>> loadCurrentProfile(
+    AuthSession session,
+  ) async {
+    final Result<AuthSession> refreshed = await _authRepository
+        .fetchCurrentUser(session);
 
     if (refreshed case ResultFailure<AuthSession>(failure: final failure)) {
       return Result<UserProfileView>.failure(failure);
@@ -92,8 +93,9 @@ final class UserProfileRepositoryImpl implements UserProfileRepository {
         'page': 1,
       },
       decoder: (Object? data) {
-        final List<UserProfileRecord> records =
-            UserProfileListDto.fromResponse(data).records;
+        final List<UserProfileRecord> records = UserProfileListDto.fromResponse(
+          data,
+        ).records;
         return records.isEmpty ? null : records.first;
       },
     );

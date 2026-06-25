@@ -374,7 +374,9 @@ final class SubscriptionLegacyRouteResolutionDto {
 
   final SubscriptionJsonMap json;
 
-  factory SubscriptionLegacyRouteResolutionDto.fromResponse(Object? responseData) {
+  factory SubscriptionLegacyRouteResolutionDto.fromResponse(
+    Object? responseData,
+  ) {
     return SubscriptionLegacyRouteResolutionDto(_dataMap(responseData));
   }
 

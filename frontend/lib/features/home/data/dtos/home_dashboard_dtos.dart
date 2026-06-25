@@ -109,7 +109,6 @@ final class HomeDashboardDto {
   }
 }
 
-
 final class HomeTrendDto {
   const HomeTrendDto(this.json);
 
@@ -157,7 +156,8 @@ final class HomeDistributionDto {
         .map((HomeDistributionSegmentDto dto) => dto.toEntity())
         .where((HomeDistributionSegment segment) => segment.id.isNotEmpty)
         .toList(growable: false);
-    final num total = _num(json['total']) ??
+    final num total =
+        _num(json['total']) ??
         segments.fold<num>(0, (num sum, HomeDistributionSegment segment) {
           return sum + segment.value;
         });
@@ -370,7 +370,6 @@ HomeJsonMap _dataMap(Object? responseData) {
   final HomeJsonMap data = _map(response['data']);
   return data.isNotEmpty ? data : response;
 }
-
 
 HomeJsonMap _firstMap(Iterable<Object?> values) {
   for (final Object? value in values) {

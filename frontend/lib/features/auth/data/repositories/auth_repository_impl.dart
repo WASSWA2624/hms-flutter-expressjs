@@ -267,7 +267,9 @@ final class AuthRepositoryImpl implements AuthRepository {
         data,
         decoder: (payload) {
           final profile = AuthSessionDto.userProfileFromResponseData(payload);
-          final permissions = AuthSessionDto.permissionsFromResponseData(payload);
+          final permissions = AuthSessionDto.permissionsFromResponseData(
+            payload,
+          );
           var enriched = session;
           if (profile != null) {
             enriched = enriched.enrichFromUserProfile(profile);

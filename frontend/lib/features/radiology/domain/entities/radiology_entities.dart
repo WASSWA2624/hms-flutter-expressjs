@@ -189,7 +189,6 @@ final class RadiologyWorkspaceState {
   }
 }
 
-
 @immutable
 final class RadiologyCatalogTest {
   const RadiologyCatalogTest({
@@ -362,7 +361,9 @@ final class RadiologySummary {
   final int cancelledPatients;
 
   int totalForView(RadiologyWorkbenchView view) {
-    return view == RadiologyWorkbenchView.patients ? totalPatients : totalOrders;
+    return view == RadiologyWorkbenchView.patients
+        ? totalPatients
+        : totalOrders;
   }
 
   int orderedForView(RadiologyWorkbenchView view) {

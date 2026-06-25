@@ -212,8 +212,7 @@ final class TenantSubscriptionSummary {
   final int activeModulesCount;
   final String? subscriptionId;
 
-  bool get hasActivePlan =>
-      planLabel != null && planLabel!.trim().isNotEmpty;
+  bool get hasActivePlan => planLabel != null && planLabel!.trim().isNotEmpty;
 }
 
 final class FacilitySetupPermissions {
@@ -286,7 +285,8 @@ final class FacilitySetupSnapshot {
       wards: wards ?? this.wards,
       rooms: rooms ?? this.rooms,
       beds: beds ?? this.beds,
-      subscriptionSummary: identical(subscriptionSummary, _facilitySetupSnapshotUnset)
+      subscriptionSummary:
+          identical(subscriptionSummary, _facilitySetupSnapshotUnset)
           ? this.subscriptionSummary
           : subscriptionSummary as TenantSubscriptionSummary?,
       permissions: permissions ?? this.permissions,

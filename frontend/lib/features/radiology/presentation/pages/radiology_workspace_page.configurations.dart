@@ -168,9 +168,8 @@ class _RadiologyConfigurationsDialogState
           sortComparator:
               (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
                   appListTableCompareText(left.modality, right.modality),
-          cellBuilder: (_, RadiologyCatalogTest item) => _ModalityLabel(
-            modality: item.modality,
-          ),
+          cellBuilder: (_, RadiologyCatalogTest item) =>
+              _ModalityLabel(modality: item.modality),
         ),
         _testActionsColumn(context, isBusy),
       ],

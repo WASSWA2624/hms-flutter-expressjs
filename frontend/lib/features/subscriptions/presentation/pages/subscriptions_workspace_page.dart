@@ -102,9 +102,9 @@ class _SubscriptionsWorkspacePageState
           return;
         }
         _openedRouteDetailSignature = signature;
-        final bool canWrite = ref.read(appAccessPolicyProvider).grants(
-          AppPermissions.subscriptionsWrite,
-        );
+        final bool canWrite = ref
+            .read(appAccessPolicyProvider)
+            .grants(AppPermissions.subscriptionsWrite);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -566,161 +566,168 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
           _SubscriptionPanelSelector(state: state),
           SizedBox(height: Theme.of(context).spacing.sm),
           AppListTable<SubscriptionItem>(
-        page: state.items,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<SubscriptionItem>(
-          controller: searchController,
-          semanticLabel: _SubscriptionsText.searchLabel,
-          hintText: _SubscriptionsText.searchHint,
-          clearLabel: _SubscriptionsText.clearSearch,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: _SubscriptionsText.filters,
-          advancedFilterTitle: _SubscriptionsText.filters,
-          advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
-          advancedFilterResetLabel: _SubscriptionsText.clearFilters,
-          advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
-          enableDateFilter: false,
-          allFieldsLabel: _SubscriptionsText.all,
-          filterGroups: _filterGroups(state),
-          filterValue: _filterValue(state.query),
-          hasActiveFilters: state.query.hasActiveFilters,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            final SubscriptionResource resource = _resourceFromFilter(
-              value.option(_FilterKeys.resource),
-              state.query.resource,
-            );
-            if (resource != state.query.resource) {
-              controller.applyResource(resource);
-              return;
-            }
-            controller.applyFilters(
-              status: _emptyOption(value.option(_FilterKeys.status)),
-              tierCode: _emptyOption(value.option(_FilterKeys.tier)),
-              billingCycle: _emptyOption(
-                value.option(_FilterKeys.billingCycle),
-              ),
-              planId: _emptyOption(value.option(_FilterKeys.plan)),
-              moduleId: _emptyOption(value.option(_FilterKeys.module)),
-              fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
-              invoiceStatus: _emptyOption(value.option(_FilterKeys.invoice)),
-              licenseType: _emptyOption(value.option(_FilterKeys.license)),
-              eligibilityState: _emptyOption(
-                value.option(_FilterKeys.eligibility),
-              ),
-              datePreset: _datePresetFromFilter(
-                value.option(_FilterKeys.datePreset),
-              ),
-            );
-          },
-        ),
-        itemKeyBuilder: (SubscriptionItem item) =>
-            ValueKey<String>('${item.resource.serverValue}:${item.id}'),
-        onRowSelected: onItemSelected,
-        previousPageLabel: _SubscriptionsText.previousPage,
-        nextPageLabel: _SubscriptionsText.nextPage,
-        pageLabelBuilder: (AppPage<SubscriptionItem> page) {
-          final int total = page.totalItemCount ?? page.lastItemNumber;
-          return _SubscriptionsText.pageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            total,
-          );
-        },
-        onPageChanged: controller.changePage,
-        emptyBuilder: (BuildContext context) {
-          return const AppStateView(
-            title: _SubscriptionsText.emptyTitle,
-            body: _SubscriptionsText.emptyBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
-        columns: <AppListTableColumn<SubscriptionItem>>[
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.record,
-            sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-              return appListTableCompareText(left.title, right.title);
-            },
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return _CopyableRecordCell(
-                title: item.title,
-                subtitle: item.subtitle,
-                identifier: item.effectiveDisplayId,
-                dense: true,
-              );
-            },
-          ),
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.status,
-            sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-              return appListTableCompareText(
-                left.primaryStatus,
-                right.primaryStatus,
-              );
-            },
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return _StatusBadge(status: item.primaryStatus);
-            },
-          ),
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.planModule,
-            sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-              return appListTableCompareText(
-                _planModuleText(left),
-                _planModuleText(right),
-              );
-            },
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return Text(_planModuleText(item));
-            },
-          ),
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.amountLimit,
-            numeric: true,
-            sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-              return appListTableCompareNumber(
-                left.totalAmount ?? left.price,
-                right.totalAmount ?? right.price,
-              );
-            },
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return Text(_amountOrLimit(context, item));
-            },
-          ),
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.renewalExpiry,
-            sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-              return appListTableCompareDateTime(
-                _timelineDate(left),
-                _timelineDate(right),
-              );
-            },
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return Text(_date(context, _timelineDate(item)));
-            },
-          ),
-          AppListTableColumn<SubscriptionItem>(
-            label: _SubscriptionsText.nextAction,
-            cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return Text(_nextAction(item));
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: Theme.of(context).spacing.sm,
+            page: state.items,
+            isLoading: state.isRefreshing,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            columnVisibilityController: columnVisibilityController,
+            columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
+            search: AppListTableSearch<SubscriptionItem>(
+              controller: searchController,
+              semanticLabel: _SubscriptionsText.searchLabel,
+              hintText: _SubscriptionsText.searchHint,
+              clearLabel: _SubscriptionsText.clearSearch,
+              matcher: (_, _) => true,
+              onSubmitted: controller.applySearch,
+              onClear: () => controller.applySearch(''),
+              showAdvancedFilterButton: true,
+              advancedFilterButtonLabel: _SubscriptionsText.filters,
+              advancedFilterTitle: _SubscriptionsText.filters,
+              advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
+              advancedFilterResetLabel: _SubscriptionsText.clearFilters,
+              advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
+              enableDateFilter: false,
+              allFieldsLabel: _SubscriptionsText.all,
+              filterGroups: _filterGroups(state),
+              filterValue: _filterValue(state.query),
+              hasActiveFilters: state.query.hasActiveFilters,
+              onFilterChanged: (AppSearchBarFilterValue value) {
+                final SubscriptionResource resource = _resourceFromFilter(
+                  value.option(_FilterKeys.resource),
+                  state.query.resource,
+                );
+                if (resource != state.query.resource) {
+                  controller.applyResource(resource);
+                  return;
+                }
+                controller.applyFilters(
+                  status: _emptyOption(value.option(_FilterKeys.status)),
+                  tierCode: _emptyOption(value.option(_FilterKeys.tier)),
+                  billingCycle: _emptyOption(
+                    value.option(_FilterKeys.billingCycle),
+                  ),
+                  planId: _emptyOption(value.option(_FilterKeys.plan)),
+                  moduleId: _emptyOption(value.option(_FilterKeys.module)),
+                  fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
+                  invoiceStatus: _emptyOption(
+                    value.option(_FilterKeys.invoice),
+                  ),
+                  licenseType: _emptyOption(value.option(_FilterKeys.license)),
+                  eligibilityState: _emptyOption(
+                    value.option(_FilterKeys.eligibility),
+                  ),
+                  datePreset: _datePresetFromFilter(
+                    value.option(_FilterKeys.datePreset),
+                  ),
+                );
+              },
             ),
-            child: _SubscriptionMobileTile(item: item),
-          );
-        },
-      ),
+            itemKeyBuilder: (SubscriptionItem item) =>
+                ValueKey<String>('${item.resource.serverValue}:${item.id}'),
+            onRowSelected: onItemSelected,
+            previousPageLabel: _SubscriptionsText.previousPage,
+            nextPageLabel: _SubscriptionsText.nextPage,
+            pageLabelBuilder: (AppPage<SubscriptionItem> page) {
+              final int total = page.totalItemCount ?? page.lastItemNumber;
+              return _SubscriptionsText.pageLabel(
+                page.firstItemNumber,
+                page.lastItemNumber,
+                total,
+              );
+            },
+            onPageChanged: controller.changePage,
+            emptyBuilder: (BuildContext context) {
+              return const AppStateView(
+                title: _SubscriptionsText.emptyTitle,
+                body: _SubscriptionsText.emptyBody,
+                variant: AppStateViewVariant.empty,
+              );
+            },
+            columns: <AppListTableColumn<SubscriptionItem>>[
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.record,
+                sortComparator:
+                    (SubscriptionItem left, SubscriptionItem right) {
+                      return appListTableCompareText(left.title, right.title);
+                    },
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return _CopyableRecordCell(
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    identifier: item.effectiveDisplayId,
+                    dense: true,
+                  );
+                },
+              ),
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.status,
+                sortComparator:
+                    (SubscriptionItem left, SubscriptionItem right) {
+                      return appListTableCompareText(
+                        left.primaryStatus,
+                        right.primaryStatus,
+                      );
+                    },
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return _StatusBadge(status: item.primaryStatus);
+                },
+              ),
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.planModule,
+                sortComparator:
+                    (SubscriptionItem left, SubscriptionItem right) {
+                      return appListTableCompareText(
+                        _planModuleText(left),
+                        _planModuleText(right),
+                      );
+                    },
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return Text(_planModuleText(item));
+                },
+              ),
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.amountLimit,
+                numeric: true,
+                sortComparator:
+                    (SubscriptionItem left, SubscriptionItem right) {
+                      return appListTableCompareNumber(
+                        left.totalAmount ?? left.price,
+                        right.totalAmount ?? right.price,
+                      );
+                    },
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return Text(_amountOrLimit(context, item));
+                },
+              ),
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.renewalExpiry,
+                sortComparator:
+                    (SubscriptionItem left, SubscriptionItem right) {
+                      return appListTableCompareDateTime(
+                        _timelineDate(left),
+                        _timelineDate(right),
+                      );
+                    },
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return Text(_date(context, _timelineDate(item)));
+                },
+              ),
+              AppListTableColumn<SubscriptionItem>(
+                label: _SubscriptionsText.nextAction,
+                cellBuilder: (BuildContext context, SubscriptionItem item) {
+                  return Text(_nextAction(item));
+                },
+              ),
+            ],
+            mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: Theme.of(context).spacing.sm,
+                ),
+                child: _SubscriptionMobileTile(item: item),
+              );
+            },
+          ),
         ],
       ),
     );

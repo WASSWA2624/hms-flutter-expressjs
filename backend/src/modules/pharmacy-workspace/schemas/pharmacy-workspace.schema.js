@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 const { createPharmacyOrderSchema } = require('@validations/pharmacy-order/pharmacy-order.schema');
+const { clinicalRequestBillingSchema } = require('@lib/billing/clinical-request-billing.schema');
 
 const pharmacyOrderStatusSchema = z.enum([
   'ORDERED',
@@ -101,6 +102,10 @@ const adjustInventorySchema = z.object({
   occurred_at: z.string().datetime().optional(),
 });
 
+const recordOrderBillingSchema = z.object({
+  billing: clinicalRequestBillingSchema,
+});
+
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum([
     'pharmacy-orders',
@@ -127,5 +132,6 @@ module.exports = {
   returnPharmacyOrderSchema,
   getInventoryStockQuerySchema,
   adjustInventorySchema,
+  recordOrderBillingSchema,
   resolveLegacyRouteParamsSchema,
 };

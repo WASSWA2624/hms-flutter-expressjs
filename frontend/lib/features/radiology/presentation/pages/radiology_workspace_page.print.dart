@@ -638,10 +638,7 @@ String _radiologyPrintPreviewText(
       ..writeln('\n${l10n.radiologyPrintIncludeMetadataLabel}')
       ..writeln(
         _radiologyPrintMetadata(context, workflow)
-            .map(
-              (PrintFormMetadataItem item) =>
-                  '${item.label}: ${item.value}',
-            )
+            .map((PrintFormMetadataItem item) => '${item.label}: ${item.value}')
             .join('\n'),
       );
   }

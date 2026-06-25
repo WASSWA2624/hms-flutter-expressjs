@@ -60,7 +60,10 @@ final class SettingsWorkspaceController
 
   Future<AppFailure?> applyState(SettingsModuleState? moduleState) {
     return _applyQuery((SettingsWorkspaceQuery query) {
-      return query.copyWith(state: moduleState, clearState: moduleState == null);
+      return query.copyWith(
+        state: moduleState,
+        clearState: moduleState == null,
+      );
     });
   }
 
@@ -82,7 +85,10 @@ final class SettingsWorkspaceController
 
   Future<AppFailure?> selectFacility(String? facilityId) {
     return _applyQuery((SettingsWorkspaceQuery query) {
-      return query.copyWith(facilityId: facilityId, clearFacility: facilityId == null);
+      return query.copyWith(
+        facilityId: facilityId,
+        clearFacility: facilityId == null,
+      );
     });
   }
 
@@ -105,10 +111,11 @@ final class SettingsWorkspaceController
     return _failureOrNull(result);
   }
 
-  Future<Result<SettingsWorkspaceState>> _load(SettingsWorkspaceQuery query) async {
-    final Result<SettingsWorkspace> workspaceResult = await _repository.getWorkspace(
-      query,
-    );
+  Future<Result<SettingsWorkspaceState>> _load(
+    SettingsWorkspaceQuery query,
+  ) async {
+    final Result<SettingsWorkspace> workspaceResult = await _repository
+        .getWorkspace(query);
     return workspaceResult.when(
       success: (SettingsWorkspace workspace) async {
         SettingsReferenceData referenceData = workspace.referenceData;
@@ -116,8 +123,8 @@ final class SettingsWorkspaceController
             referenceData.tenants.isEmpty && referenceData.facilities.isEmpty;
         if (needsReferenceData ||
             workspace.status == SettingsWorkspaceStatus.tenantContextRequired) {
-          final Result<SettingsReferenceData> referenceResult = await _repository
-              .getReferenceData(query);
+          final Result<SettingsReferenceData> referenceResult =
+              await _repository.getReferenceData(query);
           referenceData = referenceResult.when(
             success: (SettingsReferenceData data) => data,
             failure: (_) => referenceData,

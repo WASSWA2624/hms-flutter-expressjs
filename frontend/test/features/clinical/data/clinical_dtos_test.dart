@@ -103,66 +103,72 @@ void main() {
       expect(item.clinicalNote, 'Headache after fall');
     });
 
-    test('maps pharmacy order_items fallback into readable medication items', () {
-      final records = decodeRelatedRecords(<String, Object?>{
-        'data': <Object?>[
-          <String, Object?>{
-            'id': 'PHARM0000001',
-            'status': 'ORDERED',
-            'order_items': <Object?>[
-              <String, Object?>{
-                'id': 'PHARMITEM0001',
-                'drug': <String, Object?>{'name': 'Amoxicillin'},
-                'dosage': '500 mg',
-                'route': 'ORAL',
-                'frequency': 'TID',
-                'duration_value': 5,
-                'duration_unit': 'DAYS',
-                'quantity': 15,
-                'instructions': 'Take after meals',
-              },
-            ],
-          },
-        ],
-      }, 'pharmacy_order');
+    test(
+      'maps pharmacy order_items fallback into readable medication items',
+      () {
+        final records = decodeRelatedRecords(<String, Object?>{
+          'data': <Object?>[
+            <String, Object?>{
+              'id': 'PHARM0000001',
+              'status': 'ORDERED',
+              'order_items': <Object?>[
+                <String, Object?>{
+                  'id': 'PHARMITEM0001',
+                  'drug': <String, Object?>{'name': 'Amoxicillin'},
+                  'dosage': '500 mg',
+                  'route': 'ORAL',
+                  'frequency': 'TID',
+                  'duration_value': 5,
+                  'duration_unit': 'DAYS',
+                  'quantity': 15,
+                  'instructions': 'Take after meals',
+                },
+              ],
+            },
+          ],
+        }, 'pharmacy_order');
 
-      expect(records, hasLength(1));
-      expect(records.single.pharmacyOrderItems, hasLength(1));
-      final item = records.single.pharmacyOrderItems.single;
-      expect(item.displayTitle, 'Amoxicillin');
-      expect(item.dosage, '500 mg');
-      expect(item.route, 'ORAL');
-      expect(item.frequency, 'TID');
-      expect(item.durationValue, '5');
-      expect(item.durationUnit, 'DAYS');
-      expect(item.quantity, '15');
-      expect(item.instructions, 'Take after meals');
-    });
+        expect(records, hasLength(1));
+        expect(records.single.pharmacyOrderItems, hasLength(1));
+        final item = records.single.pharmacyOrderItems.single;
+        expect(item.displayTitle, 'Amoxicillin');
+        expect(item.dosage, '500 mg');
+        expect(item.route, 'ORAL');
+        expect(item.frequency, 'TID');
+        expect(item.durationValue, '5');
+        expect(item.durationUnit, 'DAYS');
+        expect(item.quantity, '15');
+        expect(item.instructions, 'Take after meals');
+      },
+    );
   });
 
   group('decodeClinicalTermOptions', () {
-    test('maps catalog unit price and currency from clinical catalog search', () {
-      final options = decodeClinicalTermOptions(<String, Object?>{
-        'data': <Object?>[
-          <String, Object?>{
-            'id': 'LBT-BMP',
-            'item_id': 'uuid-bmp',
-            'term_type': 'LAB_TEST',
-            'code': 'BMP',
-            'name': 'Basic Metabolic Panel',
-            'description': 'Basic Metabolic Panel',
-            'category': 'CHEMISTRY',
-            'source': 'GLOBAL',
-            'unit_price': 18000,
-            'currency': 'UGX',
-          },
-        ],
-      });
+    test(
+      'maps catalog unit price and currency from clinical catalog search',
+      () {
+        final options = decodeClinicalTermOptions(<String, Object?>{
+          'data': <Object?>[
+            <String, Object?>{
+              'id': 'LBT-BMP',
+              'item_id': 'uuid-bmp',
+              'term_type': 'LAB_TEST',
+              'code': 'BMP',
+              'name': 'Basic Metabolic Panel',
+              'description': 'Basic Metabolic Panel',
+              'category': 'CHEMISTRY',
+              'source': 'GLOBAL',
+              'unit_price': 18000,
+              'currency': 'UGX',
+            },
+          ],
+        });
 
-      expect(options, hasLength(1));
-      expect(options.single.unitPrice, 18000);
-      expect(options.single.currency, 'UGX');
-    });
+        expect(options, hasLength(1));
+        expect(options.single.unitPrice, 18000);
+        expect(options.single.currency, 'UGX');
+      },
+    );
   });
 
   group('decodeCatalogOptions', () {

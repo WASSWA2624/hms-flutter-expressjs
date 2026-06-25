@@ -181,11 +181,23 @@ final class IpdAdmissionDetailDto {
           )
           .map((IpdClinicalRecordDto dto) => dto.toEntity())
           .toList(growable: false),
+      pharmacyClearance: IpdPharmacyClearanceDto(
+        _map(json['pharmacy_clearance']),
+      ).toEntity(),
       timeline: _list(json['timeline'])
           .map(IpdTimelineItemDto.new)
           .map((IpdTimelineItemDto dto) => dto.toEntity())
           .toList(growable: false),
       icu: icu,
+      sourceContext: IpdSourceContextDto.nullable(
+        _nullableMap(json['source_context']),
+      )?.toEntity(),
+      pendingDischargeOrders: _list(json['pending_discharge_orders'])
+          .map(IpdPendingOrderDto.new)
+          .map((IpdPendingOrderDto dto) => dto.toEntity())
+          .where((IpdPendingOrder item) => item.id.isNotEmpty)
+          .toList(growable: false),
+      encounterType: _string(json['encounter_type']),
     );
   }
 }
@@ -332,6 +344,67 @@ final class IpdDischargeSummaryDto {
       dischargedAt: _date(json['discharged_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
+      clearance: IpdDischargeClearanceDto(
+        _map(json['clearance_snapshot']),
+      ).toEntity(),
+      clearancePhase: _string(json['clearance_phase']),
+    );
+  }
+}
+
+final class IpdDischargeClearanceDto {
+  const IpdDischargeClearanceDto(this.json);
+
+  final IpdJsonMap json;
+
+  IpdDischargeClearance toEntity() {
+    return IpdDischargeClearance(
+      summaryReady: _bool(json['summary_ready']),
+      pendingOrdersReviewed: _bool(json['pending_orders_reviewed']),
+      pharmacyCleared: _bool(json['pharmacy_cleared']),
+      billingCleared: _bool(json['billing_cleared']),
+      nursingCleared: _bool(json['nursing_cleared']),
+      documentsReady: _bool(json['documents_ready']),
+      patientExited: _bool(json['patient_exited']),
+      overrideReason: _string(json['override_reason']),
+    );
+  }
+}
+
+final class IpdPendingOrderDto {
+  const IpdPendingOrderDto(this.json);
+
+  final IpdJsonMap json;
+
+  IpdPendingOrder toEntity() {
+    return IpdPendingOrder(
+      id: _string(json['id']) ?? '',
+      kind: _string(json['kind']),
+      status: _string(json['status']),
+      label: _string(json['label']),
+      orderedAt: _date(json['ordered_at']),
+    );
+  }
+}
+
+final class IpdSourceContextDto {
+  const IpdSourceContextDto(this.json);
+
+  final IpdJsonMap json;
+
+  static IpdSourceContextDto? nullable(IpdJsonMap? json) {
+    if (json == null || json.isEmpty) {
+      return null;
+    }
+    return IpdSourceContextDto(json);
+  }
+
+  IpdSourceContext toEntity() {
+    return IpdSourceContext(
+      kind: _string(json['kind']),
+      encounterType: _string(json['encounter_type']),
+      encounterStatus: _string(json['encounter_status']),
+      startedAt: _date(json['started_at']),
     );
   }
 }
@@ -373,6 +446,39 @@ final class IpdClinicalRecordDto {
           _date(json['observed_at']) ??
           _date(json['created_at']) ??
           _date(json['updated_at']),
+    );
+  }
+}
+
+final class IpdPharmacyClearanceDto {
+  const IpdPharmacyClearanceDto(this.json);
+
+  final IpdJsonMap json;
+
+  IpdPharmacyClearance toEntity() {
+    return IpdPharmacyClearance(
+      hasClearance: _bool(json['has_clearance'], fallback: true),
+      openOrderCount: _int(json['open_order_count']) ?? 0,
+      orders: _list(json['orders'])
+          .map(IpdPharmacyOrderSummaryDto.new)
+          .map((IpdPharmacyOrderSummaryDto dto) => dto.toEntity())
+          .where((IpdPharmacyOrderSummary item) => item.id.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
+}
+
+final class IpdPharmacyOrderSummaryDto {
+  const IpdPharmacyOrderSummaryDto(this.json);
+
+  final IpdJsonMap json;
+
+  IpdPharmacyOrderSummary toEntity() {
+    return IpdPharmacyOrderSummary(
+      id: _string(json['id']) ?? '',
+      status: _string(json['status']),
+      orderedAt: _date(json['ordered_at']),
+      itemCount: _int(json['item_count']) ?? 0,
     );
   }
 }

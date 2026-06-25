@@ -8,7 +8,8 @@ import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admi
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAccessAdminRepository extends Mock implements AccessAdminRepository {}
+class _MockAccessAdminRepository extends Mock
+    implements AccessAdminRepository {}
 
 void main() {
   setUpAll(() {
@@ -25,7 +26,8 @@ void main() {
 
   group('AccessAdminWorkspaceController', () {
     test('applyResource switches to roles panel', () async {
-      final _MockAccessAdminRepository repository = _MockAccessAdminRepository();
+      final _MockAccessAdminRepository repository =
+          _MockAccessAdminRepository();
       when(() => repository.getWorkspace(any())).thenAnswer(
         (_) async => const Result<AccessAdminWorkspaceData>.success(
           AccessAdminWorkspaceData(),

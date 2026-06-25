@@ -8,28 +8,28 @@ final class SettingsWorkspaceDto {
   factory SettingsWorkspaceDto.fromResponse(Object? response) {
     final Map<String, Object?> json = _payloadMap(response);
     final Map<String, Object?> lookups = _jsonMap(json['lookups']);
-    final SettingsReferenceData referenceData = SettingsReferenceDataDto.fromJson(
-      lookups.isEmpty ? json : <String, Object?>{
-        'state': json['state'],
-        ...lookups,
-      },
-    ).toEntity();
-    final List<SettingsModuleGroup> moduleGroups = _jsonList(json['module_groups'])
-        .map(_moduleGroupFromJson)
-        .toList(growable: false);
+    final SettingsReferenceData referenceData =
+        SettingsReferenceDataDto.fromJson(
+          lookups.isEmpty
+              ? json
+              : <String, Object?>{'state': json['state'], ...lookups},
+        ).toEntity();
+    final List<SettingsModuleGroup> moduleGroups = _jsonList(
+      json['module_groups'],
+    ).map(_moduleGroupFromJson).toList(growable: false);
 
     return SettingsWorkspaceDto(
       workspace: SettingsWorkspace(
         status: SettingsWorkspaceStatus.fromServer(_string(json['state'])),
         generatedAt: _dateTime(json['generated_at']),
         context: _contextFromJson(_jsonMap(json['context'])),
-        summaryCards: _jsonList(json['summary_cards'])
-            .map(_summaryCardFromJson)
-            .toList(growable: false),
+        summaryCards: _jsonList(
+          json['summary_cards'],
+        ).map(_summaryCardFromJson).toList(growable: false),
         checklist: _checklistFromJson(_jsonMap(json['checklist'])),
-        quickActions: _jsonList(json['quick_actions'])
-            .map(_quickActionFromJson)
-            .toList(growable: false),
+        quickActions: _jsonList(
+          json['quick_actions'],
+        ).map(_quickActionFromJson).toList(growable: false),
         moduleGroups: moduleGroups,
         referenceData: referenceData,
         stats: _statsFromJson(_jsonMap(json['stats']), moduleGroups),
@@ -52,12 +52,12 @@ final class SettingsReferenceDataDto {
     return SettingsReferenceDataDto(
       referenceData: SettingsReferenceData(
         state: SettingsWorkspaceStatus.fromServer(_string(json['state'])),
-        tenants: _jsonList(json['tenants'])
-            .map(_referenceOptionFromJson)
-            .toList(growable: false),
-        facilities: _jsonList(json['facilities'])
-            .map(_referenceOptionFromJson)
-            .toList(growable: false),
+        tenants: _jsonList(
+          json['tenants'],
+        ).map(_referenceOptionFromJson).toList(growable: false),
+        facilities: _jsonList(
+          json['facilities'],
+        ).map(_referenceOptionFromJson).toList(growable: false),
       ),
     );
   }
@@ -93,9 +93,9 @@ SettingsChecklist _checklistFromJson(Map<String, Object?> json) {
   return SettingsChecklist(
     completedCount: _int(json['completed_count']),
     totalCount: _int(json['total_count']),
-    items: _jsonList(json['items'])
-        .map(_checklistItemFromJson)
-        .toList(growable: false),
+    items: _jsonList(
+      json['items'],
+    ).map(_checklistItemFromJson).toList(growable: false),
   );
 }
 
@@ -126,9 +126,9 @@ SettingsModuleGroup _moduleGroupFromJson(Map<String, Object?> json) {
   return SettingsModuleGroup(
     id: _string(json['id']) ?? '',
     labelKey: _string(json['label_key']) ?? '',
-    modules: _jsonList(json['modules'])
-        .map(_moduleItemFromJson)
-        .toList(growable: false),
+    modules: _jsonList(
+      json['modules'],
+    ).map(_moduleItemFromJson).toList(growable: false),
   );
 }
 
@@ -142,9 +142,9 @@ SettingsModuleItem _moduleItemFromJson(Map<String, Object?> json) {
     canRead: _bool(json['can_read'], fallback: true),
     canWrite: _bool(json['can_write']),
     canCreate: _bool(json['can_create']),
-    dependencies: _jsonList(json['dependencies'])
-        .map(_dependencyFromJson)
-        .toList(growable: false),
+    dependencies: _jsonList(
+      json['dependencies'],
+    ).map(_dependencyFromJson).toList(growable: false),
     icon: _string(json['icon']),
     route: _string(json['route']),
     createRoute: _string(json['create_route']),
@@ -224,10 +224,7 @@ String? _string(Object? value) {
 
 List<String> _stringList(Object? value) {
   if (value is Iterable) {
-    return value
-        .map(_string)
-        .whereType<String>()
-        .toList(growable: false);
+    return value.map(_string).whereType<String>().toList(growable: false);
   }
   return const <String>[];
 }

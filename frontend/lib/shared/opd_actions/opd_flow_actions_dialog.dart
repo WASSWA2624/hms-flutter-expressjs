@@ -130,28 +130,28 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     final bool isLoadingDetail = detail == null && !isSaving;
 
     return AppDialog(
-        title: Text(flow.displayTitle),
-        icon: const Icon(Icons.medical_services_outlined),
-        maxWidth: 860,
-        scrollable: true,
-        closeEnabled: !isSaving,
-        content: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            OpdActionContextPanel(flow: flow, detail: detail),
-            if (isSaving || isRefreshingDetail || isLoadingDetail)
-              const LinearProgressIndicator(),
-            if (detail != null && _isClinicalReviewStage(flow.stage))
-              _OpdClinicalServicesPanel(detail: detail),
-            _actionGrid(
-              context,
-              flow,
-              detail,
-              actionsEnabled: !isSaving && !isRefreshingDetail,
-            ),
-          ],
-        ),
-      );
+      title: Text(flow.displayTitle),
+      icon: const Icon(Icons.medical_services_outlined),
+      maxWidth: 860,
+      scrollable: true,
+      closeEnabled: !isSaving,
+      content: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          OpdActionContextPanel(flow: flow, detail: detail),
+          if (isSaving || isRefreshingDetail || isLoadingDetail)
+            const LinearProgressIndicator(),
+          if (detail != null && _isClinicalReviewStage(flow.stage))
+            _OpdClinicalServicesPanel(detail: detail),
+          _actionGrid(
+            context,
+            flow,
+            detail,
+            actionsEnabled: !isSaving && !isRefreshingDetail,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _actionGrid(
@@ -482,9 +482,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           ),
         );
       }
-      addAction('correct_stage', _correctStageAction(context, flow, actionsEnabled: actionsEnabled));
+      addAction(
+        'correct_stage',
+        _correctStageAction(context, flow, actionsEnabled: actionsEnabled),
+      );
     } else {
-      addAction('correct_stage', _correctStageAction(context, flow, actionsEnabled: actionsEnabled));
+      addAction(
+        'correct_stage',
+        _correctStageAction(context, flow, actionsEnabled: actionsEnabled),
+      );
     }
     addAction(
       'print',
@@ -548,9 +554,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     final OpdFlowSummary? updatedFlow = workspaceState?.selectedFlow?.summary;
     final bool isTerminal = updatedFlow?.isTerminal ?? false;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.opdSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
 
     if (closeParentOnChange || isTerminal) {
       Navigator.of(context).pop(true);
@@ -875,31 +881,32 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
-        onSubmit: ({
-          required List<ClinicalActionRadiologyRequest> requests,
-          ClinicalRequestBillingSubmit? billing,
-        }) {
-          return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
-            flow,
-            <String, Object?>{
-              'note': actionLabel,
-              'radiology_requests': <Map<String, Object?>>[
-                for (final ClinicalActionRadiologyRequest request in requests)
-                  <String, Object?>{
-                    'radiology_test_id': request.radiologyTestId,
-                    'clinical_note': request.clinicalNote,
-                    'status': 'ORDERED',
-                    'request_details': <String, Object?>{
-                      'modality': request.modality,
-                      'body_region': request.bodyRegion,
-                      'laterality': request.laterality,
-                      'priority': request.priority,
-                    },
-                  },
-              ],
+        onSubmit:
+            ({
+              required List<ClinicalActionRadiologyRequest> requests,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .doctorReview(flow, <String, Object?>{
+                    'note': actionLabel,
+                    'radiology_requests': <Map<String, Object?>>[
+                      for (final ClinicalActionRadiologyRequest request
+                          in requests)
+                        <String, Object?>{
+                          'radiology_test_id': request.radiologyTestId,
+                          'clinical_note': request.clinicalNote,
+                          'status': 'ORDERED',
+                          'request_details': <String, Object?>{
+                            'modality': request.modality,
+                            'body_region': request.bodyRegion,
+                            'laterality': request.laterality,
+                            'priority': request.priority,
+                          },
+                        },
+                    ],
+                  });
             },
-          );
-        },
       ),
     );
   }
@@ -918,21 +925,21 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
-        onSubmit: ({
-          required List<Map<String, Object?>> items,
-          ClinicalRequestBillingSubmit? billing,
-        }) {
-          return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
-            flow,
-            <String, Object?>{
-              'note': actionLabel,
-              'medications': <Map<String, Object?>>[
-                for (final Map<String, Object?> item in items)
-                  <String, Object?>{...item, 'status': 'ACTIVE'},
-              ],
+        onSubmit:
+            ({
+              required List<Map<String, Object?>> items,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .doctorReview(flow, <String, Object?>{
+                    'note': actionLabel,
+                    'medications': <Map<String, Object?>>[
+                      for (final Map<String, Object?> item in items)
+                        <String, Object?>{...item, 'status': 'ACTIVE'},
+                    ],
+                  });
             },
-          );
-        },
       ),
     );
   }
@@ -1067,12 +1074,13 @@ class _ConsultationPaymentDialogState
                 patientId: flow.patientId,
                 encounterId: flow.apiId,
                 enabled: !_isSaving,
-                onVerifiedChanged: (({bool verified, String? coveragePlanId}) result) {
-                  setState(() {
-                    _coverageVerified = result.verified;
-                    _selectedCoveragePlanId = result.coveragePlanId;
-                  });
-                },
+                onVerifiedChanged:
+                    (({bool verified, String? coveragePlanId}) result) {
+                      setState(() {
+                        _coverageVerified = result.verified;
+                        _selectedCoveragePlanId = result.coveragePlanId;
+                      });
+                    },
               ),
             ],
             AppTextField(
@@ -1109,7 +1117,9 @@ class _ConsultationPaymentDialogState
     }
     if (_method == 'INSURANCE' && !_coverageVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.opdCoverageVerificationRequiredMessage)),
+        SnackBar(
+          content: Text(context.l10n.opdCoverageVerificationRequiredMessage),
+        ),
       );
       return;
     }

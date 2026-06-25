@@ -49,9 +49,8 @@ void main() {
         ),
       );
       when(() => repository.loadReferenceData()).thenAnswer(
-        (_) async => const Result<ClaimsReferenceData>.success(
-          ClaimsReferenceData(),
-        ),
+        (_) async =>
+            const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
       );
       when(() => repository.loadWorkspaceSummary()).thenAnswer(
         (_) async => const Result<ClaimsWorkspaceSummary>.success(
@@ -101,18 +100,15 @@ void main() {
         ),
       );
       when(() => repository.loadReferenceData()).thenAnswer(
-        (_) async => const Result<ClaimsReferenceData>.success(
-          ClaimsReferenceData(),
-        ),
+        (_) async =>
+            const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
       );
       when(() => repository.loadWorkspaceSummary()).thenAnswer(
         (_) async => const Result<ClaimsWorkspaceSummary>.success(
           ClaimsWorkspaceSummary(),
         ),
       );
-      when(
-        () => repository.updatePreAuthorization(any(), any()),
-      ).thenAnswer(
+      when(() => repository.updatePreAuthorization(any(), any())).thenAnswer(
         (_) async => const Result<PreAuthorizationRecord>.success(
           PreAuthorizationRecord(
             id: 'auth-1',
@@ -152,7 +148,9 @@ void main() {
           .updateAuthorizationStatus(status: 'APPROVED');
 
       expect(failure, isNull);
-      verify(() => repository.updatePreAuthorization('AUTH-001', any())).called(1);
+      verify(
+        () => repository.updatePreAuthorization('AUTH-001', any()),
+      ).called(1);
     });
   });
 }

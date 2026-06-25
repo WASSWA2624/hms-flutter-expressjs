@@ -141,43 +141,40 @@ void main() {
       },
     );
 
-    test(
-      'deduplicates clinical workload count across action categories',
-      () {
-        final ClinicalWorkspaceState state = ClinicalWorkspaceState(
-          query: const ClinicalWorklistQuery(),
-          worklist: AppPage<ClinicalWorklistEntry>(
-            request: const AppPageRequest(),
-            items: <ClinicalWorklistEntry>[
-              _entry(
-                encounterId: 'enc-1',
-                stage: 'WAITING_DOCTOR_REVIEW',
-                nextStep: 'REVIEW_RESULTS',
-                isUrgent: true,
-                resultsReady: true,
-              ),
-              _entry(
-                encounterId: 'enc-2',
-                stage: 'WAITING_DISPOSITION',
-                resultsReady: true,
-              ),
-              _entry(
-                encounterId: 'enc-3',
-                status: 'CLOSED',
-                stage: 'WAITING_DOCTOR_REVIEW',
-                isUrgent: true,
-                resultsReady: true,
-              ),
-            ],
-          ),
-        );
+    test('deduplicates clinical workload count across action categories', () {
+      final ClinicalWorkspaceState state = ClinicalWorkspaceState(
+        query: const ClinicalWorklistQuery(),
+        worklist: AppPage<ClinicalWorklistEntry>(
+          request: const AppPageRequest(),
+          items: <ClinicalWorklistEntry>[
+            _entry(
+              encounterId: 'enc-1',
+              stage: 'WAITING_DOCTOR_REVIEW',
+              nextStep: 'REVIEW_RESULTS',
+              isUrgent: true,
+              resultsReady: true,
+            ),
+            _entry(
+              encounterId: 'enc-2',
+              stage: 'WAITING_DISPOSITION',
+              resultsReady: true,
+            ),
+            _entry(
+              encounterId: 'enc-3',
+              status: 'CLOSED',
+              stage: 'WAITING_DOCTOR_REVIEW',
+              isUrgent: true,
+              resultsReady: true,
+            ),
+          ],
+        ),
+      );
 
-        expect(state.waitingReviewCount, 1);
-        expect(state.urgentCount, 1);
-        expect(state.resultsReadyCount, 2);
-        expect(state.workloadCount, 2);
-      },
-    );
+      expect(state.waitingReviewCount, 1);
+      expect(state.urgentCount, 1);
+      expect(state.resultsReadyCount, 2);
+      expect(state.workloadCount, 2);
+    });
   });
 }
 

@@ -12,6 +12,7 @@ const {
   attestDispenseSchema,
   cancelPharmacyOrderSchema,
   returnPharmacyOrderSchema,
+  recordOrderBillingSchema,
   getInventoryStockQuerySchema,
   adjustInventorySchema,
   resolveLegacyRouteParamsSchema,
@@ -93,6 +94,14 @@ router.post(
   authenticate(),
   authorize(PHARMACY_WORKSPACE_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.returnDispense
+);
+
+router.post(
+  '/orders/:id/record-billing',
+  validateRequest({ params: orderWorkflowParamsSchema, body: recordOrderBillingSchema }),
+  authenticate(),
+  authorize(PHARMACY_WORKSPACE_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.recordOrderBilling
 );
 
 router.get(

@@ -82,10 +82,7 @@ final class ClinicalRequestBillingSubmit {
   }
 
   Map<String, Object?> toRequestDetailsBilling({num? lineAmount}) {
-    return <String, Object?>{
-      ...toPayloadMap(),
-      'line_amount': ?lineAmount,
-    };
+    return <String, Object?>{...toPayloadMap(), 'line_amount': ?lineAmount};
   }
 }
 
@@ -160,9 +157,7 @@ bool clinicalRequestBillingHasMissingPrices(
   return lineItems.any((ClinicalRequestBillingLineItem item) => !item.hasPrice);
 }
 
-String clinicalRequestPaymentStatusValue(
-  ClinicalRequestPaymentStatus status,
-) {
+String clinicalRequestPaymentStatusValue(ClinicalRequestPaymentStatus status) {
   return switch (status) {
     ClinicalRequestPaymentStatus.paid => 'PAID',
     ClinicalRequestPaymentStatus.partial => 'PARTIAL',
@@ -182,8 +177,9 @@ ClinicalRequestPaymentStatus clinicalRequestPaymentStatusFromValue(
     'SUCCESSFUL' ||
     'APPROVED' => ClinicalRequestPaymentStatus.paid,
     'PARTIAL' => ClinicalRequestPaymentStatus.partial,
-    'NOT_BILLED' || 'NOT_REQUIRED' || 'NO_CHARGE' =>
-      ClinicalRequestPaymentStatus.notBilled,
+    'NOT_BILLED' ||
+    'NOT_REQUIRED' ||
+    'NO_CHARGE' => ClinicalRequestPaymentStatus.notBilled,
     'PENDING' ||
     'PENDING_PAYMENT' ||
     'ISSUED' ||
@@ -201,7 +197,8 @@ String clinicalRequestPaymentStatusLabel(
     ClinicalRequestPaymentStatus.paid => l10n.clinicalRequestPaymentPaidLabel,
     ClinicalRequestPaymentStatus.partial =>
       l10n.clinicalRequestPaymentPartialLabel,
-    ClinicalRequestPaymentStatus.unpaid => l10n.clinicalRequestPaymentUnpaidLabel,
+    ClinicalRequestPaymentStatus.unpaid =>
+      l10n.clinicalRequestPaymentUnpaidLabel,
     ClinicalRequestPaymentStatus.notBilled =>
       l10n.clinicalRequestPaymentNotBilledLabel,
   };
@@ -233,10 +230,7 @@ Map<String, Object?> mergeClinicalRequestBilling(
   if (billing == null) {
     return payload;
   }
-  return <String, Object?>{
-    ...payload,
-    'billing': billing.toPayloadMap(),
-  };
+  return <String, Object?>{...payload, 'billing': billing.toPayloadMap()};
 }
 
 Map<String, Object?> mergeClinicalRequestBillingIntoRequestDetails(

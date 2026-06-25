@@ -72,9 +72,7 @@ class AppFileUploadPanel extends StatelessWidget {
                 enabled: canInteract,
                 onPressed: canInteract ? onClear : null,
               ),
-            if (fileNames.isNotEmpty &&
-                uploadLabel != null &&
-                onUpload != null)
+            if (fileNames.isNotEmpty && uploadLabel != null && onUpload != null)
               AppButton.primary(
                 label: uploadLabel!,
                 leadingIcon: Icons.cloud_upload_outlined,

@@ -59,8 +59,7 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
       PharmacyOrderFilter.outpatient ||
       PharmacyOrderFilter.ward ||
       PharmacyOrderFilter.discharge => true,
-      PharmacyOrderFilter.partialStock ||
-      PharmacyOrderFilter.urgent => false,
+      PharmacyOrderFilter.partialStock || PharmacyOrderFilter.urgent => false,
     };
   }
 }
@@ -335,6 +334,9 @@ final class PharmacyWorkbenchSummary {
     this.dispensedOrders = 0,
     this.cancelledOrders = 0,
     this.dischargePendingQueue = 0,
+    this.outpatientQueue = 0,
+    this.wardQueue = 0,
+    this.pendingPaymentQueue = 0,
     this.pendingAttestations = 0,
   });
 
@@ -344,6 +346,9 @@ final class PharmacyWorkbenchSummary {
   final int dispensedOrders;
   final int cancelledOrders;
   final int dischargePendingQueue;
+  final int outpatientQueue;
+  final int wardQueue;
+  final int pendingPaymentQueue;
   final int pendingAttestations;
 }
 

@@ -1,5 +1,12 @@
 const { HttpError } = require('@lib/errors');
 
+jest.mock('@lib/billing/clinical-request-billing', () => {
+  const actual = jest.requireActual('@lib/billing/clinical-request-billing');
+  return {
+    ...actual,
+    persistPharmacyOrderBilling: jest.fn(),
+  };
+});
 jest.mock('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(),
@@ -41,6 +48,9 @@ const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
+const {
+  persistPharmacyOrderBilling,
+} = require('@lib/billing/clinical-request-billing');
 const pharmacyWorkspaceService = require('@services/pharmacy-workspace/pharmacy-workspace.service');
 
 const now = new Date('2026-02-27T10:20:00.000Z');
@@ -298,6 +308,9 @@ describe('pharmacy-workspace.service', () => {
     expect(result.worklist[0].location).toBe('INPATIENT');
     expect(result.worklist[0].encounter_type).toBe('IPD');
     expect(result.summary).toHaveProperty('discharge_pending_queue');
+    expect(result.summary).toHaveProperty('outpatient_queue');
+    expect(result.summary).toHaveProperty('ward_queue');
+    expect(result.summary).toHaveProperty('pending_payment_queue');
 
     const [whereArg] = pharmacyWorkspaceRepository.findManyOrders.mock.calls[0];
     expect(JSON.stringify(whereArg)).toContain('encounter_type');
@@ -346,5 +359,40 @@ describe('pharmacy-workspace.service', () => {
         mockUser
       )
     ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('recordOrderBilling persists billing through workspace service', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    const refreshedOrder = buildOrder();
+    pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => {
+      const tx = {
+        patient: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'patient-internal-1',
+            tenant_id: 'tenant-internal-1',
+            facility_id: 'facility-internal-1',
+          }),
+        },
+      };
+      return callback(tx);
+    });
+    pharmacyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(buildOrder())
+      .mockResolvedValueOnce(refreshedOrder);
+    pharmacyWorkspaceRepository.countOrders.mockResolvedValue(1);
+    pharmacyWorkspaceRepository.countDispenseAttestations.mockResolvedValue(0);
+
+    const result = await pharmacyWorkspaceService.recordOrderBilling(
+      'PHO0000001',
+      { billing: { payment_status: 'PAID', total_amount: '10.00' } },
+      'actor-1',
+      'PHARMACIST',
+      '127.0.0.1',
+      mockUser
+    );
+
+    expect(persistPharmacyOrderBilling).toHaveBeenCalled();
+    expect(result.workflow).toBeDefined();
+    expect(result.order_summary).toHaveProperty('pending_payment_queue');
   });
 });

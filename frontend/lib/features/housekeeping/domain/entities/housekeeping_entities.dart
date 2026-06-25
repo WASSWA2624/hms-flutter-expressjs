@@ -311,7 +311,10 @@ final class HousekeepingWorkspaceOverview {
 
 @immutable
 final class HousekeepingUnavailableWorkflow {
-  const HousekeepingUnavailableWorkflow({required this.title, required this.body});
+  const HousekeepingUnavailableWorkflow({
+    required this.title,
+    required this.body,
+  });
 
   final String title;
   final String body;
@@ -468,8 +471,7 @@ housekeepingUnavailableWorkflows = <HousekeepingUnavailableWorkflow>[
   ),
   HousekeepingUnavailableWorkflow(
     title: 'Generated housekeeping reports',
-    body:
-        'Generated turnaround and readiness reports are not available yet.',
+    body: 'Generated turnaround and readiness reports are not available yet.',
   ),
 ];
 

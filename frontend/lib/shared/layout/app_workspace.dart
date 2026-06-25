@@ -124,10 +124,7 @@ class AppWorkspace extends StatelessWidget {
             breakpoint,
             spacing: theme.spacing,
           )
-        : ResponsiveSpacing.contentGapFor(
-            breakpoint,
-            spacing: theme.spacing,
-          );
+        : ResponsiveSpacing.contentGapFor(breakpoint, spacing: theme.spacing);
     final Widget? effectiveLeading =
         leading ??
         (leadingIcon == null
@@ -340,11 +337,7 @@ class AppWorkspaceTitleIcon extends StatelessWidget {
         child: SizedBox.square(
           dimension: dimension,
           child: Center(
-            child: Icon(
-              icon,
-              color: colorScheme.primary,
-              size: iconSize,
-            ),
+            child: Icon(icon, color: colorScheme.primary, size: iconSize),
           ),
         ),
       ),
@@ -554,7 +547,13 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
     final bool selected = widget.selected;
     final Color surfaceColor = navigation
         ? Color.alphaBlend(
-            accentColor.withValues(alpha: selected ? 0.14 : active ? 0.08 : 0.04),
+            accentColor.withValues(
+              alpha: selected
+                  ? 0.14
+                  : active
+                  ? 0.08
+                  : 0.04,
+            ),
             colorScheme.surface,
           )
         : Color.alphaBlend(
@@ -562,7 +561,13 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
             colorScheme.surface,
           );
     final Color borderColor = navigation
-        ? accentColor.withValues(alpha: selected ? 0.42 : active ? 0.28 : 0.12)
+        ? accentColor.withValues(
+            alpha: selected
+                ? 0.42
+                : active
+                ? 0.28
+                : 0.12,
+          )
         : Color.alphaBlend(
             accentColor.withValues(alpha: active ? 0.34 : 0.14),
             colorScheme.outlineVariant,
@@ -597,9 +602,7 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
     );
 
     final Widget interactiveCard = MouseRegion(
-      cursor: interactive
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
+      cursor: interactive ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) {
         _setHovered(true);
       },
@@ -1069,7 +1072,9 @@ List<BoxShadow> _summaryCardShadow({
 /// multi-word values (for example `1 record`, `Advanced`, `Facility`) are
 /// excluded so they render on the full-width value line under the label
 /// instead of being clipped inside the small badge.
-final RegExp _summaryBadgeValuePattern = RegExp(r'^[0-9][0-9.,]*[KMBkmb]?[+%]?$');
+final RegExp _summaryBadgeValuePattern = RegExp(
+  r'^[0-9][0-9.,]*[KMBkmb]?[+%]?$',
+);
 
 bool _shouldOverlaySummaryValue(String value) {
   final String text = value.trim();

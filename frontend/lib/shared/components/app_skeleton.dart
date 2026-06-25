@@ -30,9 +30,10 @@ class _AppSkeletonBoxState extends State<AppSkeletonBox>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.34, end: 0.62).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.34,
+      end: 0.62,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -55,10 +56,7 @@ class _AppSkeletonBoxState extends State<AppSkeletonBox>
           color: colorScheme.onSurface.withValues(alpha: 0.08),
           borderRadius: radius,
         ),
-        child: SizedBox(
-          width: widget.width,
-          height: widget.height,
-        ),
+        child: SizedBox(width: widget.width, height: widget.height),
       ),
     );
   }

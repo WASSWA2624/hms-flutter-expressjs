@@ -88,7 +88,9 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
         <String>[resource.serverValue, identifier],
       ),
       decoder: (Object? data) {
-        return SubscriptionLegacyRouteResolutionDto.fromResponse(data).toEntity();
+        return SubscriptionLegacyRouteResolutionDto.fromResponse(
+          data,
+        ).toEntity();
       },
     );
   }

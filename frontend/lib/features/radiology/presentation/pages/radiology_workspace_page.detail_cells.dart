@@ -56,7 +56,8 @@ class _DetailLine extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String resolvedValue = _valueOrUnknown(context, value);
-    final bool isPlaceholder = resolvedValue == context.l10n.profileUnknownValue;
+    final bool isPlaceholder =
+        resolvedValue == context.l10n.profileUnknownValue;
 
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.xs),
@@ -157,7 +158,9 @@ class _IconTwoLineCell extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
         SizedBox(width: theme.spacing.sm),
-        Expanded(child: _TwoLineCell(title: title, subtitle: subtitle)),
+        Expanded(
+          child: _TwoLineCell(title: title, subtitle: subtitle),
+        ),
       ],
     );
   }
@@ -276,10 +279,10 @@ String _modalityLabel(AppLocalizations l10n, String? modality) {
     'ULTRASOUND' => l10n.radiologyModalityUltrasound,
     'FLUOROSCOPY' => l10n.radiologyModalityFluoroscopy,
     'MAMMOGRAPHY' => l10n.radiologyModalityMammography,
-    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' =>
-      l10n.radiologyModalityNuclearMedicine,
-    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
-      l10n.radiologyModalityInterventionalRadiology,
+    'NUCLEAR_MEDICINE' ||
+    'NUCLEAR MEDICINE' => l10n.radiologyModalityNuclearMedicine,
+    'INTERVENTIONAL_RADIOLOGY' ||
+    'INTERVENTIONAL RADIOLOGY' => l10n.radiologyModalityInterventionalRadiology,
     'PET' => l10n.radiologyModalityPet,
     'ECG' => l10n.radiologyModalityEcg,
     'ECHO' => l10n.radiologyModalityEcho,
@@ -305,8 +308,8 @@ IconData _radiologyModalityIcon(String? modality) {
     'MAMMOGRAPHY' => Icons.image_search_outlined,
     'PET' => Icons.blur_on_outlined,
     'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' => Icons.radio_button_checked,
-    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
-      Icons.medical_services_outlined,
+    'INTERVENTIONAL_RADIOLOGY' ||
+    'INTERVENTIONAL RADIOLOGY' => Icons.medical_services_outlined,
     'ECG' => Icons.monitor_heart_outlined,
     'ECHO' => Icons.favorite_border,
     'ENDO' || 'GASTRO' => Icons.biotech_outlined,

@@ -799,7 +799,10 @@ const Map<String, Map<String, String>> _settingsAccessAdminRouteQueries =
         'resource': 'users',
         'panel': 'directory',
       },
-      '/settings/roles': <String, String>{'resource': 'roles', 'panel': 'roles'},
+      '/settings/roles': <String, String>{
+        'resource': 'roles',
+        'panel': 'roles',
+      },
       '/settings/roles/create': <String, String>{
         'resource': 'roles',
         'panel': 'roles',

@@ -455,22 +455,19 @@ final class ClinicalWorkspaceController
 
     return _mutateSelectedEncounter(() async {
       final Result<void> orderResult = await _repository.createLabOrder(
-        mergeClinicalRequestBilling(
-          <String, Object?>{
-            'encounter_id': entry.encounterId,
-            'patient_id': entry.apiPatientId,
-            'ordered_at': DateTime.now().toUtc().toIso8601String(),
-            'requested_tests': <Map<String, Object?>>[
-              for (final String id in labTestIds)
-                <String, Object?>{'lab_test_id': id},
-            ],
-            'requested_panels': <Map<String, Object?>>[
-              for (final String id in labPanelIds)
-                <String, Object?>{'lab_panel_id': id},
-            ],
-          },
-          billing,
-        ),
+        mergeClinicalRequestBilling(<String, Object?>{
+          'encounter_id': entry.encounterId,
+          'patient_id': entry.apiPatientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        }, billing),
       );
       final AppFailure? failure = _failureOrNull(orderResult);
       if (failure != null) {
@@ -496,19 +493,16 @@ final class ClinicalWorkspaceController
     return _mutateSelectedEncounter(
       () => _repository.updateLabOrder(
         labOrderId,
-        mergeClinicalRequestBilling(
-          <String, Object?>{
-            'requested_tests': <Map<String, Object?>>[
-              for (final String id in labTestIds)
-                <String, Object?>{'lab_test_id': id},
-            ],
-            'requested_panels': <Map<String, Object?>>[
-              for (final String id in labPanelIds)
-                <String, Object?>{'lab_panel_id': id},
-            ],
-          },
-          billing,
-        ),
+        mergeClinicalRequestBilling(<String, Object?>{
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        }, billing),
       ),
     );
   }
@@ -547,19 +541,20 @@ final class ClinicalWorkspaceController
               <String, Object?>{
                 'radiology_test_id': request.radiologyTestId,
                 'clinical_note': request.clinicalNote,
-                'request_details': mergeClinicalRequestBillingIntoRequestDetails(
-                  <String, Object?>{
-                    'modality': request.modality,
-                    'body_region': request.bodyRegion,
-                    'laterality': request.laterality,
-                    'priority': request.priority,
-                  },
-                  billing,
-                  lineAmount: clinicalRequestBillingLineAmount(
-                    billing,
-                    request.radiologyTestId,
-                  ),
-                ),
+                'request_details':
+                    mergeClinicalRequestBillingIntoRequestDetails(
+                      <String, Object?>{
+                        'modality': request.modality,
+                        'body_region': request.bodyRegion,
+                        'laterality': request.laterality,
+                        'priority': request.priority,
+                      },
+                      billing,
+                      lineAmount: clinicalRequestBillingLineAmount(
+                        billing,
+                        request.radiologyTestId,
+                      ),
+                    ),
               },
           ],
         },
@@ -613,15 +608,12 @@ final class ClinicalWorkspaceController
 
     return _mutateSelectedEncounter(() async {
       final Result<void> orderResult = await _repository.createPharmacyOrder(
-        mergeClinicalRequestBilling(
-          <String, Object?>{
-            'encounter_id': entry.encounterId,
-            'patient_id': entry.apiPatientId,
-            'ordered_at': DateTime.now().toUtc().toIso8601String(),
-            'items': items,
-          },
-          billing,
-        ),
+        mergeClinicalRequestBilling(<String, Object?>{
+          'encounter_id': entry.encounterId,
+          'patient_id': entry.apiPatientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'items': items,
+        }, billing),
       );
       final AppFailure? failure = _failureOrNull(orderResult);
       if (failure != null) {
@@ -1218,7 +1210,9 @@ final class ClinicalWorkspaceController
         .listAdmissions(
           IpdAdmissionQuery(
             search: query.databaseSearch,
-            scope: wantsCompleted ? IpdQueueScope.discharged : IpdQueueScope.all,
+            scope: wantsCompleted
+                ? IpdQueueScope.discharged
+                : IpdQueueScope.all,
           ),
         );
 
@@ -1229,7 +1223,9 @@ final class ClinicalWorkspaceController
               (IpdAdmissionSummary item) => wantsCompleted || !item.isTerminal,
             )
             .map(_entryFromIpd)
-            .where((ClinicalWorklistEntry entry) => entry.encounterId.isNotEmpty)
+            .where(
+              (ClinicalWorklistEntry entry) => entry.encounterId.isNotEmpty,
+            )
             .toList(growable: false),
         request: query.pageRequest,
         totalItemCount: page.totalItemCount,

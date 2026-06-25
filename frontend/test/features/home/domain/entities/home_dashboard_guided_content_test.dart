@@ -17,10 +17,7 @@ void main() {
         doctorHints.map((item) => item.moduleSlug),
         containsAll(<String>['clinical', 'scheduling']),
       );
-      expect(
-        nurseHints.map((item) => item.moduleSlug),
-        contains('ipd'),
-      );
+      expect(nurseHints.map((item) => item.moduleSlug), contains('ipd'));
     });
 
     test('includes front desk queue for receptionist', () {

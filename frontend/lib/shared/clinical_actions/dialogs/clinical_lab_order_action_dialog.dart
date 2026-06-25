@@ -225,21 +225,29 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
           : editingRequest.kind == _LabRequestSelectionKind.tests
           ? ClinicalLabRequestCatalogKind.tests
           : ClinicalLabRequestCatalogKind.panels,
-      isDuplicate: (ClinicalActionCatalogOption option, ClinicalLabRequestCatalogKind kind) {
-        final _LabRequestSelectionKind selectionKind =
-            kind == ClinicalLabRequestCatalogKind.tests
-            ? _LabRequestSelectionKind.tests
-            : _LabRequestSelectionKind.panels;
-        return _isDuplicateSelection(option, selectionKind, editingIndex);
-      },
-      onAdd: (ClinicalActionCatalogOption option, ClinicalLabRequestCatalogKind kind) {
-        _addOrUpdateRequest(
-          option,
-          kind == ClinicalLabRequestCatalogKind.tests
-              ? _LabRequestSelectionKind.tests
-              : _LabRequestSelectionKind.panels,
-        );
-      },
+      isDuplicate:
+          (
+            ClinicalActionCatalogOption option,
+            ClinicalLabRequestCatalogKind kind,
+          ) {
+            final _LabRequestSelectionKind selectionKind =
+                kind == ClinicalLabRequestCatalogKind.tests
+                ? _LabRequestSelectionKind.tests
+                : _LabRequestSelectionKind.panels;
+            return _isDuplicateSelection(option, selectionKind, editingIndex);
+          },
+      onAdd:
+          (
+            ClinicalActionCatalogOption option,
+            ClinicalLabRequestCatalogKind kind,
+          ) {
+            _addOrUpdateRequest(
+              option,
+              kind == ClinicalLabRequestCatalogKind.tests
+                  ? _LabRequestSelectionKind.tests
+                  : _LabRequestSelectionKind.panels,
+            );
+          },
     );
   }
 

@@ -312,10 +312,7 @@ final class BiomedicalWorkspaceController
     return result.when(
       success: (BiomedicalWorkbench workbench) {
         return Result<BiomedicalWorkspaceState>.success(
-          BiomedicalWorkspaceState(
-            workbench: workbench,
-            query: query,
-          ),
+          BiomedicalWorkspaceState(workbench: workbench, query: query),
         );
       },
       failure: (AppFailure failure) {

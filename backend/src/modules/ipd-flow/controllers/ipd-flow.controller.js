@@ -146,6 +146,15 @@ const finalizeDischarge = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.ipd_flow.finalize_discharge.success', flow);
 });
 
+const updateDischargeClearance = asyncHandler(async (req, res) => {
+  const flow = await ipdFlowService.updateDischargeClearance(
+    req.params.id,
+    req.body,
+    buildAuditContext(req),
+  );
+  return sendSuccess(res, 200, 'messages.ipd_flow.update_discharge_clearance.success', flow);
+});
+
 const startIcuStay = asyncHandler(async (req, res) => {
   const flow = await ipdFlowService.startIcuStay(req.params.id, req.body, buildAuditContext(req));
   return sendSuccess(res, 200, 'messages.ipd_flow.start_icu_stay.success', flow);
@@ -186,6 +195,7 @@ module.exports = {
   addMedicationAdministration,
   planDischarge,
   finalizeDischarge,
+  updateDischargeClearance,
   startIcuStay,
   endIcuStay,
   addIcuObservation,

@@ -3,22 +3,31 @@ import 'package:hosspi_hms/features/settings/data/dtos/settings_workspace_dtos.d
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 
 void main() {
-  test('parses settings workspace payload without exposing backend label keys', () {
-    final dto = SettingsWorkspaceDto.fromResponse(<String, Object?>{
-      'data': _workspacePayload(),
-    });
+  test(
+    'parses settings workspace payload without exposing backend label keys',
+    () {
+      final dto = SettingsWorkspaceDto.fromResponse(<String, Object?>{
+        'data': _workspacePayload(),
+      });
 
-    final workspace = dto.workspace;
+      final workspace = dto.workspace;
 
-    expect(workspace.status, SettingsWorkspaceStatus.ready);
-    expect(workspace.context.tenantName, 'Acme Health');
-    expect(workspace.summaryCards.single.totalModules, 3);
-    expect(workspace.checklist.items.single.createRoute, '/settings/tenants/create');
-    expect(workspace.quickActions.single.moduleId, 'tenant');
-    expect(workspace.moduleGroups.single.modules.single.state, SettingsModuleState.configured);
-    expect(workspace.referenceData.tenants.single.label, 'Acme Health');
-    expect(workspace.permissions.canWrite, isTrue);
-  });
+      expect(workspace.status, SettingsWorkspaceStatus.ready);
+      expect(workspace.context.tenantName, 'Acme Health');
+      expect(workspace.summaryCards.single.totalModules, 3);
+      expect(
+        workspace.checklist.items.single.createRoute,
+        '/settings/tenants/create',
+      );
+      expect(workspace.quickActions.single.moduleId, 'tenant');
+      expect(
+        workspace.moduleGroups.single.modules.single.state,
+        SettingsModuleState.configured,
+      );
+      expect(workspace.referenceData.tenants.single.label, 'Acme Health');
+      expect(workspace.permissions.canWrite, isTrue);
+    },
+  );
 
   test('parses tenant-context-required reference data', () {
     final dto = SettingsReferenceDataDto.fromResponse(<String, Object?>{
@@ -30,7 +39,10 @@ void main() {
       },
     });
 
-    expect(dto.referenceData.state, SettingsWorkspaceStatus.tenantContextRequired);
+    expect(
+      dto.referenceData.state,
+      SettingsWorkspaceStatus.tenantContextRequired,
+    );
     expect(dto.referenceData.tenants.single.id, 'TEN-1');
   });
 }

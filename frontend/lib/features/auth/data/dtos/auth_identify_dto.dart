@@ -36,7 +36,8 @@ final class AuthIdentifyDto {
 
     return AuthTenantOption(
       tenantId: tenantId,
-      tenantName: _string(json['tenant_name']) ?? _string(json['tenantName']) ?? '',
+      tenantName:
+          _string(json['tenant_name']) ?? _string(json['tenantName']) ?? '',
       tenantSlug: _string(json['tenant_slug']) ?? _string(json['tenantSlug']),
       status: _string(json['status']) ?? 'INACTIVE',
     );

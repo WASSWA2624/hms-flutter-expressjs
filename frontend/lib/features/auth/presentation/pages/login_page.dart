@@ -116,7 +116,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             showObscuredTextLabel: l10n.authShowPasswordLabel,
                             hideObscuredTextLabel: l10n.authHidePasswordLabel,
                             textInputAction: TextInputAction.done,
-                            autofillHints: const <String>[AutofillHints.password],
+                            autofillHints: const <String>[
+                              AutofillHints.password,
+                            ],
                             validator: AppValidators.requiredText(
                               l10n.validationRequired,
                               trim: false,
@@ -149,7 +151,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             label: l10n.authCreateAccountActionLabel,
                             onPressed: state.isSubmitting
                                 ? null
-                                : () => context.go(AppRoutes.register.location()),
+                                : () =>
+                                      context.go(AppRoutes.register.location()),
                           ),
                         ],
                       ),

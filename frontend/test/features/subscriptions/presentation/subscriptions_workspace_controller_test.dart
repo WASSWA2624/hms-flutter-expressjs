@@ -15,78 +15,82 @@ class _MockSubscriptionsRepository extends Mock
 void main() {
   setUpAll(() {
     registerFallbackValue(const SubscriptionsWorkspaceQuery());
-    registerFallbackValue(const SubscriptionPlanDraft(
-      name: 'Starter',
-      price: '0',
-      billingCycle: 'MONTHLY',
-    ));
+    registerFallbackValue(
+      const SubscriptionPlanDraft(
+        name: 'Starter',
+        price: '0',
+        billingCycle: 'MONTHLY',
+      ),
+    );
   });
 
   group('SubscriptionsWorkspaceController', () {
-    test('applyRouteQuery resolves legacy identifiers before loading workspace',
-        () async {
-      final _MockSubscriptionsRepository repository =
-          _MockSubscriptionsRepository();
-      _stubWorkspace(repository);
-      when(
-        () => repository.resolveLegacyRoute(
-          SubscriptionResource.subscriptions,
-          'SUB-001',
-        ),
-      ).thenAnswer(
-        (_) async => const Result<SubscriptionLegacyRouteResolution>.success(
-          SubscriptionLegacyRouteResolution(
-            panel: SubscriptionPanel.operations,
-            resource: SubscriptionResource.subscriptions,
-            id: 'subscription-1',
-            action: 'view',
+    test(
+      'applyRouteQuery resolves legacy identifiers before loading workspace',
+      () async {
+        final _MockSubscriptionsRepository repository =
+            _MockSubscriptionsRepository();
+        _stubWorkspace(repository);
+        when(
+          () => repository.resolveLegacyRoute(
+            SubscriptionResource.subscriptions,
+            'SUB-001',
           ),
-        ),
-      );
-      when(() => repository.getReferenceData(tenantId: any(named: 'tenantId')))
-          .thenAnswer(
-        (_) async => const Result<SubscriptionLookups>.success(
-          SubscriptionLookups(),
-        ),
-      );
-
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          subscriptionsRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
-      addTearDown(container.dispose);
-      await container.read(subscriptionsWorkspaceControllerProvider.future);
-
-      final AppFailure? failure = await container
-          .read(subscriptionsWorkspaceControllerProvider.notifier)
-          .applyRouteQuery(
-            const SubscriptionsWorkspaceQuery(
-              recordId: 'SUB-001',
+        ).thenAnswer(
+          (_) async => const Result<SubscriptionLegacyRouteResolution>.success(
+            SubscriptionLegacyRouteResolution(
+              panel: SubscriptionPanel.operations,
+              resource: SubscriptionResource.subscriptions,
+              id: 'subscription-1',
               action: 'view',
             ),
-          );
+          ),
+        );
+        when(
+          () => repository.getReferenceData(tenantId: any(named: 'tenantId')),
+        ).thenAnswer(
+          (_) async =>
+              const Result<SubscriptionLookups>.success(SubscriptionLookups()),
+        );
 
-      expect(failure, isNull);
-      verify(
-        () => repository.resolveLegacyRoute(
-          SubscriptionResource.subscriptions,
-          'SUB-001',
-        ),
-      ).called(1);
-      verify(
-        () => repository.getWorkspace(
-          any(
-            that: predicate<SubscriptionsWorkspaceQuery>(
-              (SubscriptionsWorkspaceQuery query) =>
-                  query.recordId == 'subscription-1' &&
-                  query.action == 'view' &&
-                  query.panel == SubscriptionPanel.operations,
+        final ProviderContainer container = ProviderContainer(
+          overrides: [
+            subscriptionsRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(subscriptionsWorkspaceControllerProvider.future);
+
+        final AppFailure? failure = await container
+            .read(subscriptionsWorkspaceControllerProvider.notifier)
+            .applyRouteQuery(
+              const SubscriptionsWorkspaceQuery(
+                recordId: 'SUB-001',
+                action: 'view',
+              ),
+            );
+
+        expect(failure, isNull);
+        verify(
+          () => repository.resolveLegacyRoute(
+            SubscriptionResource.subscriptions,
+            'SUB-001',
+          ),
+        ).called(1);
+        verify(
+          () => repository.getWorkspace(
+            any(
+              that: predicate<SubscriptionsWorkspaceQuery>(
+                (SubscriptionsWorkspaceQuery query) =>
+                    query.recordId == 'subscription-1' &&
+                    query.action == 'view' &&
+                    query.panel == SubscriptionPanel.operations,
+              ),
             ),
           ),
-        ),
-      ).called(1);
-    });
+        ).called(1);
+      },
+    );
   });
 }
 
@@ -118,10 +122,10 @@ void _stubWorkspace(_MockSubscriptionsRepository repository) {
       ),
     );
   });
-  when(() => repository.getReferenceData(tenantId: any(named: 'tenantId')))
-      .thenAnswer(
-    (_) async => const Result<SubscriptionLookups>.success(
-      SubscriptionLookups(),
-    ),
+  when(
+    () => repository.getReferenceData(tenantId: any(named: 'tenantId')),
+  ).thenAnswer(
+    (_) async =>
+        const Result<SubscriptionLookups>.success(SubscriptionLookups()),
   );
 }

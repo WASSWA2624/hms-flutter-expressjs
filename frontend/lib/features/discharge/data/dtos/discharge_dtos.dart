@@ -80,6 +80,30 @@ List<DischargeRelatedRecord> decodeDischargePharmacyOrders(
       .toList(growable: false);
 }
 
+List<DischargeRelatedRecord> decodeDischargePharmacyWorkbenchOrders(
+  Object? responseData,
+) {
+  final DischargeJsonMap response = _expectMap(responseData);
+  final DischargeJsonMap data = _map(response['data']);
+  return _list(data['worklist'])
+      .map(
+        (DischargeJsonMap json) => DischargeRelatedRecord(
+          id: _string(json['display_id']) ?? _string(json['id']) ?? '',
+          kind: 'pharmacy_order',
+          status: _string(json['status']),
+          title:
+              _string(json['display_id']) ??
+              _string(json['patient_display_name']) ??
+              _string(json['id']),
+          subtitle: _string(json['location']),
+          createdAt: _date(json['ordered_at']) ?? _date(json['created_at']),
+          updatedAt: _date(json['updated_at']),
+        ),
+      )
+      .where((DischargeRelatedRecord item) => item.id.isNotEmpty)
+      .toList(growable: false);
+}
+
 List<DischargeRelatedRecord> decodeDischargeInvoices(Object? responseData) {
   final DischargeJsonMap response = _expectMap(responseData);
   return _list(response['data'])

@@ -122,12 +122,18 @@ final class SubscriptionsWorkspaceQuery {
       action: _nonEmpty(params['action']),
       status: _nonEmpty(params['status']),
       tierCode: _nonEmpty(params['tierCode'] ?? params['tier_code']),
-      billingCycle: _nonEmpty(params['billingCycle'] ?? params['billing_cycle']),
+      billingCycle: _nonEmpty(
+        params['billingCycle'] ?? params['billing_cycle'],
+      ),
       planId: _nonEmpty(params['planId'] ?? params['plan_id']),
       moduleId: _nonEmpty(params['moduleId'] ?? params['module_id']),
       fitStatus: _nonEmpty(params['fitStatus'] ?? params['fit_status']),
-      changeStatus: _nonEmpty(params['changeStatus'] ?? params['change_status']),
-      invoiceStatus: _nonEmpty(params['invoiceStatus'] ?? params['invoice_status']),
+      changeStatus: _nonEmpty(
+        params['changeStatus'] ?? params['change_status'],
+      ),
+      invoiceStatus: _nonEmpty(
+        params['invoiceStatus'] ?? params['invoice_status'],
+      ),
       licenseType: _nonEmpty(params['licenseType'] ?? params['license_type']),
       eligibilityState: _nonEmpty(
         params['eligibilityState'] ?? params['eligibility_state'],

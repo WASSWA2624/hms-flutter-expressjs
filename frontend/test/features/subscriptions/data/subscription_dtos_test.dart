@@ -183,12 +183,12 @@ void main() {
     });
 
     test('builds workspace queries from route URIs', () {
-      final SubscriptionsWorkspaceQuery query =
-          SubscriptionsWorkspaceQuery.fromUri(
-            Uri.parse(
-              '/subscriptions?panel=billing&resource=subscription-invoices&id=SINV-001&action=view&queue=PAST_DUE',
-            ),
-          );
+      final SubscriptionsWorkspaceQuery
+      query = SubscriptionsWorkspaceQuery.fromUri(
+        Uri.parse(
+          '/subscriptions?panel=billing&resource=subscription-invoices&id=SINV-001&action=view&queue=PAST_DUE',
+        ),
+      );
 
       expect(query.panel, SubscriptionPanel.billing);
       expect(query.resource, SubscriptionResource.subscriptionInvoices);

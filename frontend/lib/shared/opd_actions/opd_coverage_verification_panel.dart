@@ -21,7 +21,8 @@ class OpdCoverageVerificationPanel extends ConsumerStatefulWidget {
   final String? patientId;
   final String? encounterId;
   final bool enabled;
-  final ValueChanged<({bool verified, String? coveragePlanId})> onVerifiedChanged;
+  final ValueChanged<({bool verified, String? coveragePlanId})>
+  onVerifiedChanged;
 
   @override
   ConsumerState<OpdCoverageVerificationPanel> createState() =>

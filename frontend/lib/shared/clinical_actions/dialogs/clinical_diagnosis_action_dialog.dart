@@ -120,9 +120,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
               onChanged: (ClinicalCatalogSource source) {
                 setState(() => _catalogSource = source);
                 _searchRequest += 1;
-                unawaited(
-                  _loadDiagnosisCatalog(_searchQuery, _searchRequest),
-                );
+                unawaited(_loadDiagnosisCatalog(_searchQuery, _searchRequest));
               },
             ),
             SizedBox(height: theme.spacing.md),
@@ -130,10 +128,13 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool twoColumns = constraints.maxWidth >= 760;
-                  final Widget catalogPanel =
-                      _buildCatalogPanel(context, searchResults);
-                  final Widget selectedPanel =
-                      _buildSelectedDiagnosesPanel(context);
+                  final Widget catalogPanel = _buildCatalogPanel(
+                    context,
+                    searchResults,
+                  );
+                  final Widget selectedPanel = _buildSelectedDiagnosesPanel(
+                    context,
+                  );
 
                   if (!twoColumns) {
                     return Column(
@@ -285,20 +286,20 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     final List<ClinicalActionCatalogOption> options = searchResults.options;
     final List<AppSelectOption<String>> selectOptions =
         clinicalCatalogSelectOptions(
-      options,
-      icon: Icons.medical_information_outlined,
-      labelBuilder: (ClinicalActionCatalogOption option) {
-        return ClinicalCatalogOptionLabel(
-          option: option,
-          title: _diagnosisTitle(option),
-          subtitle: _diagnosisSubtitle(option),
+          options,
+          icon: Icons.medical_information_outlined,
+          labelBuilder: (ClinicalActionCatalogOption option) {
+            return ClinicalCatalogOptionLabel(
+              option: option,
+              title: _diagnosisTitle(option),
+              subtitle: _diagnosisSubtitle(option),
+            );
+          },
         );
-      },
-    );
     final ClinicalActionCatalogOption? selectedOption =
         clinicalActionCatalogOptionById(options, _selectedCatalogId);
-    final bool selectedIsDuplicate = selectedOption != null &&
-        _isDuplicateSelection(selectedOption);
+    final bool selectedIsDuplicate =
+        selectedOption != null && _isDuplicateSelection(selectedOption);
 
     return ClinicalCatalogSelectPanel(
       title: l10n.clinicalDiagnosisMatchesLabel(
@@ -463,7 +464,8 @@ String _diagnosisSearchText(ClinicalActionCatalogOption option) {
 }
 
 String _diagnosisDedupKey(ClinicalActionCatalogOption option) {
-  final String code = clinicalActionTrimmedOrNull(option.code)?.toUpperCase() ?? '';
+  final String code =
+      clinicalActionTrimmedOrNull(option.code)?.toUpperCase() ?? '';
   final String title = _diagnosisTitle(option).toUpperCase();
   if (code.isNotEmpty || title.isNotEmpty) {
     return '$code::$title';

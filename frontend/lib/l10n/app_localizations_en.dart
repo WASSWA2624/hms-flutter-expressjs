@@ -5156,6 +5156,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdDischargeSectionTitle => 'Discharge';
 
   @override
+  String get ipdPharmacyClearanceLabel => 'Pharmacy clearance';
+
+  @override
+  String get ipdPharmacyClearanceCleared => 'Cleared';
+
+  @override
+  String ipdPharmacyClearancePending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open orders',
+      one: '1 open order',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ipdTimelineSectionTitle => 'Timeline';
 
   @override
@@ -5443,6 +5460,103 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdDischargeStatusCompleted => 'Completed';
+
+  @override
+  String get ipdManageDischargeTitle => 'Manage discharge';
+
+  @override
+  String get ipdDischargeClearanceTitle => 'Discharge clearance';
+
+  @override
+  String get ipdDischargeClearancePhaseLabel => 'Clearance phase';
+
+  @override
+  String get ipdPendingOrdersTitle => 'Pending orders';
+
+  @override
+  String get ipdClearancePendingOrders => 'Pending orders reviewed';
+
+  @override
+  String get ipdClearancePharmacy => 'Pharmacy clearance';
+
+  @override
+  String get ipdClearanceBilling => 'Billing clearance';
+
+  @override
+  String get ipdClearanceNursing => 'Nursing clearance';
+
+  @override
+  String get ipdClearanceDocuments => 'Documents ready';
+
+  @override
+  String get ipdClearancePatientExit => 'Patient exited';
+
+  @override
+  String get ipdDischargeOverrideLabel => 'Authorized override reason';
+
+  @override
+  String get ipdDischargeOverrideHint =>
+      'Required only when clearing with incomplete steps';
+
+  @override
+  String get ipdSaveClearanceAction => 'Save clearance';
+
+  @override
+  String get ipdClearancePhaseSummaryPending => 'Summary pending';
+
+  @override
+  String get ipdClearancePhasePendingOrders => 'Pending orders review';
+
+  @override
+  String get ipdClearancePhaseMedication => 'Medication pending';
+
+  @override
+  String get ipdClearancePhaseBilling => 'Billing pending';
+
+  @override
+  String get ipdClearancePhaseNursing => 'Nursing clearance pending';
+
+  @override
+  String get ipdClearancePhaseDocuments => 'Documents pending';
+
+  @override
+  String get ipdClearancePhasePatientExit => 'Patient exit pending';
+
+  @override
+  String get ipdClearancePhaseReadyForExit => 'Ready for exit';
+
+  @override
+  String get ipdOrderLabAction => 'Order lab';
+
+  @override
+  String get ipdOrderRadiologyAction => 'Order radiology';
+
+  @override
+  String get ipdOrderPrescriptionAction => 'Prescribe medication';
+
+  @override
+  String get ipdOpenNursingAction => 'Open nursing workspace';
+
+  @override
+  String get ipdSourceContextTitle => 'Admission source';
+
+  @override
+  String get ipdSourceKindLabel => 'Source';
+
+  @override
+  String get ipdEncounterTypeLabel => 'Encounter type';
+
+  @override
+  String get ipdSourceKindOpd => 'OPD handoff';
+
+  @override
+  String get ipdSourceKindEmergency => 'Emergency admission';
+
+  @override
+  String get ipdSourceKindReferral => 'Referral';
+
+  @override
+  String get ipdSourceKindDirect => 'Direct admission';
 
   @override
   String get ipdIcuStatusActive => 'Active';

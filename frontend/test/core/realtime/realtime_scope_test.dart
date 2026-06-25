@@ -46,17 +46,11 @@ void main() {
       );
 
       expect(
-        RealtimeScope.matchesMessage(
-          message: message,
-          tenantId: 'tenant-1',
-        ),
+        RealtimeScope.matchesMessage(message: message, tenantId: 'tenant-1'),
         isTrue,
       );
       expect(
-        RealtimeScope.matchesMessage(
-          message: message,
-          tenantId: 'tenant-2',
-        ),
+        RealtimeScope.matchesMessage(message: message, tenantId: 'tenant-2'),
         isFalse,
       );
     });

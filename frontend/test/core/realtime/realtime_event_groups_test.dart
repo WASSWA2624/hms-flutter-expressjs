@@ -39,24 +39,27 @@ void main() {
       );
     });
 
-    test('routes payment, invoice, and balance events to billing workspace', () {
-      expect(RealtimeEvents.paymentReconciled, 'payment.reconciled');
-      expect(
-        RealtimeEventGroups.billingWorkspace,
-        contains(RealtimeEvents.paymentCreated),
-      );
-      expect(
-        RealtimeEventGroups.billingWorkspace,
-        contains(RealtimeEvents.paymentReconciled),
-      );
-      expect(
-        RealtimeEventGroups.billingWorkspace,
-        contains(RealtimeEvents.invoiceUpdated),
-      );
-      expect(
-        RealtimeEventGroups.billingWorkspace,
-        contains(RealtimeEvents.billingBalanceUpdated),
-      );
-    });
+    test(
+      'routes payment, invoice, and balance events to billing workspace',
+      () {
+        expect(RealtimeEvents.paymentReconciled, 'payment.reconciled');
+        expect(
+          RealtimeEventGroups.billingWorkspace,
+          contains(RealtimeEvents.paymentCreated),
+        );
+        expect(
+          RealtimeEventGroups.billingWorkspace,
+          contains(RealtimeEvents.paymentReconciled),
+        );
+        expect(
+          RealtimeEventGroups.billingWorkspace,
+          contains(RealtimeEvents.invoiceUpdated),
+        );
+        expect(
+          RealtimeEventGroups.billingWorkspace,
+          contains(RealtimeEvents.billingBalanceUpdated),
+        );
+      },
+    );
   });
 }

@@ -42,19 +42,16 @@ final class LabOrderContextInput {
     required List<String> labPanelIds,
     ClinicalRequestBillingSubmit? billing,
   }) {
-    return mergeClinicalRequestBilling(
-      <String, Object?>{
-        'patient_id': patientId.trim(),
-        'encounter_id': encounterId?.trim(),
-        'requested_tests': labTestIds
-            .map((String id) => <String, Object?>{'lab_test_id': id})
-            .toList(growable: false),
-        'requested_panels': labPanelIds
-            .map((String id) => <String, Object?>{'lab_panel_id': id})
-            .toList(growable: false),
-      },
-      billing,
-    );
+    return mergeClinicalRequestBilling(<String, Object?>{
+      'patient_id': patientId.trim(),
+      'encounter_id': encounterId?.trim(),
+      'requested_tests': labTestIds
+          .map((String id) => <String, Object?>{'lab_test_id': id})
+          .toList(growable: false),
+      'requested_panels': labPanelIds
+          .map((String id) => <String, Object?>{'lab_panel_id': id})
+          .toList(growable: false),
+    }, billing);
   }
 }
 

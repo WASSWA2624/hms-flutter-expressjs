@@ -547,7 +547,8 @@ class _TheaterCaseDetailBody extends ConsumerWidget {
         AppWorkspacePatientContextHeader(
           patientName:
               theaterCase.patientDisplayName ?? l10n.profileUnknownValue,
-          patientNumber: theaterCase.patientDisplayId ?? l10n.profileUnknownValue,
+          patientNumber:
+              theaterCase.patientDisplayId ?? l10n.profileUnknownValue,
           status: AppWorkspaceStatus(
             label: _caseStatusLabel(l10n, theaterCase.status),
             tone: _statusTone(theaterCase.status),
@@ -1440,7 +1441,8 @@ class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
               return;
             }
             final ClinicalRequestBillingSubmit? billing = _billing;
-            final bool charge = !widget.rescheduleOnly &&
+            final bool charge =
+                !widget.rescheduleOnly &&
                 billing != null &&
                 billing.paymentStatus !=
                     ClinicalRequestPaymentStatus.notBilled &&

@@ -63,10 +63,7 @@ class _AppDialogState extends State<AppDialog> {
         : _dialogInsetPadding(theme, compact);
     final double maxHeight = _isMaximized
         ? viewport.height
-        : math.max(
-            theme.spacing.none,
-            viewport.height - insetPadding.vertical,
-          );
+        : math.max(theme.spacing.none, viewport.height - insetPadding.vertical);
     final double availableWidth = _isMaximized
         ? viewport.width
         : math.max(
@@ -179,12 +176,7 @@ class _AppDialogState extends State<AppDialog> {
             bottom: 0,
             child: _DialogResizeHandle(
               onDragUpdate: (DragUpdateDetails details) {
-                _handleResize(
-                  details,
-                  viewport,
-                  insetPadding,
-                  defaultWidth,
-                );
+                _handleResize(details, viewport, insetPadding, defaultWidth);
               },
             ),
           ),
@@ -244,8 +236,9 @@ class _AppDialogState extends State<AppDialog> {
   }
 
   EdgeInsets _dialogInsetPadding(ThemeData theme, bool compact) {
-    final double horizontalInset =
-        compact ? theme.spacing.md : theme.spacing.xl;
+    final double horizontalInset = compact
+        ? theme.spacing.md
+        : theme.spacing.xl;
     final double topInset = compact ? theme.spacing.md : theme.spacing.xl;
     return EdgeInsets.only(
       left: horizontalInset,
@@ -282,7 +275,8 @@ class _AppDialogState extends State<AppDialog> {
       return;
     }
 
-    final Size currentSize = _desktopSize ??
+    final Size currentSize =
+        _desktopSize ??
         _measuredShellSize(defaultWidth, availableWidth, availableHeight);
     setState(() {
       _preMaximizeSize = currentSize;
@@ -316,7 +310,8 @@ class _AppDialogState extends State<AppDialog> {
       _desktopMinHeight,
       viewport.height - insetPadding.vertical,
     );
-    final Size current = _desktopSize ??
+    final Size current =
+        _desktopSize ??
         _measuredShellSize(defaultWidth, availableWidth, availableHeight);
     setState(() {
       final double nextWidth = axis == Axis.vertical

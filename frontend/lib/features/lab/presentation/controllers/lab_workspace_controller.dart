@@ -512,19 +512,19 @@ final class LabWorkspaceController
   Future<LabBatchPersistOutcome> submitOrderItemResults(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
-    return _persistOrderItemResultEntries(
-      entries,
-      (LabOrderItem item, Map<String, Object?> payload) async {
-        final Result<LabOrderWorkflow> result = await _repository.verifyOrderItem(
-          item.apiId,
-          payload,
-        );
-        return result.when(
-          success: (_) => const Result<void>.success(null),
-          failure: Result.failure,
-        );
-      },
-    );
+    return _persistOrderItemResultEntries(entries, (
+      LabOrderItem item,
+      Map<String, Object?> payload,
+    ) async {
+      final Result<LabOrderWorkflow> result = await _repository.verifyOrderItem(
+        item.apiId,
+        payload,
+      );
+      return result.when(
+        success: (_) => const Result<void>.success(null),
+        failure: Result.failure,
+      );
+    });
   }
 
   Future<AppFailure?> saveOrderItemDraft(
@@ -621,9 +621,7 @@ final class LabWorkspaceController
     String itemId,
     Map<String, Object?> payload,
   ) {
-    return _mutateWorkflow(
-      () => _repository.restoreOrderItem(itemId, payload),
-    );
+    return _mutateWorkflow(() => _repository.restoreOrderItem(itemId, payload));
   }
 
   Future<AppFailure?> deleteOrderItems(
@@ -666,7 +664,9 @@ final class LabWorkspaceController
     if (entriesByOrder.isEmpty) {
       return LabBatchPersistOutcome(
         skippedCount: unresolvedItemIds.length,
-        lastFailure: AppFailure.validation(code: 'lab.result.order_not_selected'),
+        lastFailure: AppFailure.validation(
+          code: 'lab.result.order_not_selected',
+        ),
         failedItemIds: unresolvedItemIds,
       );
     }
@@ -739,7 +739,9 @@ final class LabWorkspaceController
     );
   }
 
-  Map<String, Object?> _interpretationPayloadFields(Map<String, Object?> payload) {
+  Map<String, Object?> _interpretationPayloadFields(
+    Map<String, Object?> payload,
+  ) {
     return <String, Object?>{
       if (payload.containsKey('interpretation_override'))
         'interpretation_override': payload['interpretation_override'],

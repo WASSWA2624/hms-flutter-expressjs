@@ -215,7 +215,6 @@ final class HomeStatusCard {
   int get numericValue => value.round();
 }
 
-
 final class HomeDashboardTrend {
   const HomeDashboardTrend({
     required this.title,

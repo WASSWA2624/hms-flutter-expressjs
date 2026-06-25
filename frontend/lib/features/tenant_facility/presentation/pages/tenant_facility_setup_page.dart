@@ -120,14 +120,12 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         context,
         l10n,
         snapshot,
-        canViewSubscriptions: accessPolicy.grantsAny(
-          const <AppPermission>[
-            AppPermissions.subscriptionsRead,
-            AppPermissions.subscriptionsWrite,
-            AppPermissions.tenantAdmin,
-            AppPermissions.systemAdmin,
-          ],
-        ),
+        canViewSubscriptions: accessPolicy.grantsAny(const <AppPermission>[
+          AppPermissions.subscriptionsRead,
+          AppPermissions.subscriptionsWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.systemAdmin,
+        ]),
       ),
       body: _SetupBody(
         snapshot: snapshot,
@@ -701,9 +699,7 @@ Future<void> _openFacilityCatalogModal(
       icon: const Icon(Icons.medical_information_outlined),
       scrollable: true,
       maxWidth: 920,
-      content: FacilityCatalogConfigPanel(
-        facilityId: facilityId,
-      ),
+      content: FacilityCatalogConfigPanel(facilityId: facilityId),
     ),
   );
 }
@@ -752,10 +748,7 @@ class _SetupBody extends StatelessWidget {
   }
 }
 
-void _openWizardStep(
-  BuildContext context,
-  TenantFacilitySetupWizardStep step,
-) {
+void _openWizardStep(BuildContext context, TenantFacilitySetupWizardStep step) {
   switch (step) {
     case TenantFacilitySetupWizardStep.tenant:
       unawaited(_openTenantProfileModal(context));

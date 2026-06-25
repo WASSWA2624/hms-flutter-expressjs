@@ -314,9 +314,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
             widget.clearLabel ??
             MaterialLocalizations.of(context).clearButtonTooltip;
         final bool canClear =
-            widget.showClearButton &&
-            value.text.isNotEmpty &&
-            widget.enabled;
+            widget.showClearButton && value.text.isNotEmpty && widget.enabled;
         final bool showFilters = _shouldShowFilterButton;
         final BorderSide borderSide = _borderSide(theme);
         final double minHeight =

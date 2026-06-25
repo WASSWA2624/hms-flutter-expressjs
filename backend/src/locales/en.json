@@ -1191,6 +1191,7 @@
   "messages.pharmacy_workspace.attest_dispense.success": "Dispense attestation completed successfully",
   "messages.pharmacy_workspace.cancel.success": "Pharmacy order cancelled successfully",
   "messages.pharmacy_workspace.return.success": "Dispense return recorded successfully",
+  "messages.pharmacy_workspace.record_billing.success": "Pharmacy order billing recorded successfully",
   "messages.pharmacy_workspace.inventory.stock.success": "Inventory stock loaded successfully",
   "messages.pharmacy_workspace.inventory.adjust.success": "Inventory stock adjusted successfully",
   "messages.pharmacy_workspace.resolve_legacy.success": "Legacy pharmacy route resolved successfully",

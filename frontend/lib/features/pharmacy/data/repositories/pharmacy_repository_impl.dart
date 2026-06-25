@@ -199,9 +199,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }) {
     return _apiClient.put<PharmacyFormularyItem>(
       ApiEndpoints.byId(HmsApiResource.formularyItems, formularyItemId),
-      data: _withoutEmpty(<String, Object?>{
-        'is_active': ?isActive,
-      }),
+      data: _withoutEmpty(<String, Object?>{'is_active': ?isActive}),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyFormularyItemDto(_map(response['data'])).toEntity();
@@ -213,15 +211,12 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   Future<Result<PharmacyOrderWorkflow>> recordOrderBilling(
     String orderId,
     Map<String, Object?> billing,
-  ) async {
-    final Result<void> updateResult = await _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.pharmacyOrders, orderId),
+  ) {
+    return _apiClient.post<PharmacyOrderWorkflow>(
+      _pharmacyOrderEndpoint(orderId, 'record-billing'),
       data: <String, Object?>{'billing': billing},
-      decoder: (_) {},
-    );
-    return updateResult.when(
-      success: (_) => loadOrderWorkflow(orderId),
-      failure: (failure) => Result<PharmacyOrderWorkflow>.failure(failure),
+      decoder: (Object? data) =>
+          PharmacyMutationResultDto.fromResponse(data).toEntity().workflow,
     );
   }
 

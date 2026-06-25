@@ -59,9 +59,7 @@ class _ClinicalRequestBillingPanelState
         : ClinicalRequestPaymentMode.billLater;
     _syncLines();
     _amountController = TextEditingController(
-      text: opdCurrencyAmountInput(
-        widget.initialPaidAmount ?? _currentTotal(),
-      ),
+      text: opdCurrencyAmountInput(widget.initialPaidAmount ?? _currentTotal()),
     );
     _referenceController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,7 +98,9 @@ class _ClinicalRequestBillingPanelState
         existing.reconcileWithCatalog(item);
         next.add(existing);
       } else {
-        next.add(_EditableBillingLine.fromCatalog(item, onChanged: _onLineChanged));
+        next.add(
+          _EditableBillingLine.fromCatalog(item, onChanged: _onLineChanged),
+        );
       }
     }
     for (final _EditableBillingLine leftover in existingById.values) {
@@ -281,7 +281,10 @@ class _ClinicalRequestBillingPanelState
                     ),
                 ],
               ),
-            Divider(height: theme.spacing.lg, color: colorScheme.outlineVariant),
+            Divider(
+              height: theme.spacing.lg,
+              color: colorScheme.outlineVariant,
+            ),
             Row(
               children: <Widget>[
                 Expanded(
@@ -293,7 +296,11 @@ class _ClinicalRequestBillingPanelState
                   ),
                 ),
                 Text(
-                  clinicalRequestPriceLabel(context, total > 0 ? total : null, _currency),
+                  clinicalRequestPriceLabel(
+                    context,
+                    total > 0 ? total : null,
+                    _currency,
+                  ),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: colorScheme.primary,
@@ -420,12 +427,12 @@ class _ClinicalRequestBillingPanelState
         currency: _currency,
         paymentStatus: paymentStatus,
         paidAmount: paidAmount,
-        paymentMethod:
-            _mode == ClinicalRequestPaymentMode.payNow ? _paymentMethod : null,
-        paymentReference:
-            _mode == ClinicalRequestPaymentMode.payNow
-                ? _referenceController.text.trim()
-                : null,
+        paymentMethod: _mode == ClinicalRequestPaymentMode.payNow
+            ? _paymentMethod
+            : null,
+        paymentReference: _mode == ClinicalRequestPaymentMode.payNow
+            ? _referenceController.text.trim()
+            : null,
         lineItems: _submitLineItems(),
       ),
     );
@@ -441,12 +448,12 @@ class _EditableBillingLine {
     required num quantity,
     required num? unitPrice,
     required VoidCallback onChanged,
-  })  : _quantity = quantity < 1 ? 1 : quantity,
-        _baseQuantity = quantity,
-        _baseUnitPrice = unitPrice,
-        priceController = TextEditingController(
-          text: unitPrice == null ? '' : opdCurrencyAmountInput(unitPrice),
-        ) {
+  }) : _quantity = quantity < 1 ? 1 : quantity,
+       _baseQuantity = quantity,
+       _baseUnitPrice = unitPrice,
+       priceController = TextEditingController(
+         text: unitPrice == null ? '' : opdCurrencyAmountInput(unitPrice),
+       ) {
     priceController.addListener(onChanged);
     _onChanged = onChanged;
   }
@@ -521,8 +528,9 @@ class _EditableBillingLine {
     }
     _baseQuantity = item.quantity;
     if (!_priceOverridden && item.unitPrice != _baseUnitPrice) {
-      priceController.text =
-          item.unitPrice == null ? '' : opdCurrencyAmountInput(item.unitPrice);
+      priceController.text = item.unitPrice == null
+          ? ''
+          : opdCurrencyAmountInput(item.unitPrice);
     }
     _baseUnitPrice = item.unitPrice;
   }

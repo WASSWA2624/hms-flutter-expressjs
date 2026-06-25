@@ -1449,9 +1449,7 @@ Future<void> _showPreAuthStatusDialog(
           : l10n.billingPreAuthDenyAction,
     ),
     icon: Icon(
-      status == 'APPROVED'
-          ? Icons.check_circle_outline
-          : Icons.cancel_outlined,
+      status == 'APPROVED' ? Icons.check_circle_outline : Icons.cancel_outlined,
     ),
     content: _NotesForm(
       submitLabel: status == 'APPROVED'

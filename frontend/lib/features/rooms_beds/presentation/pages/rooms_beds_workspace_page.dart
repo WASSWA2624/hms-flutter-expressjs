@@ -34,7 +34,8 @@ class RoomsBedsWorkspacePage extends ConsumerStatefulWidget {
   }
 }
 
-class _RoomsBedsWorkspacePageState extends ConsumerState<RoomsBedsWorkspacePage> {
+class _RoomsBedsWorkspacePageState
+    extends ConsumerState<RoomsBedsWorkspacePage> {
   String? _appliedRouteSignature;
 
   @override
@@ -185,7 +186,8 @@ class _RoomsBedsWorkspaceContentState
             label: l10n.roomsBedsManageCatalogAction,
             leadingIcon: Icons.apartment_outlined,
             enabled: !state.isSaving,
-            onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+            onPressed: () =>
+                context.go(AppRoutes.tenantFacilitySetup.location()),
           ),
         AppButton.tertiary(
           label: l10n.navigationSetupLabel,
@@ -598,9 +600,8 @@ class _BedDetailContent extends ConsumerWidget {
               label: l10n.roomsBedsOpenIpdAdmissionAction,
               leadingIcon: Icons.open_in_new,
               onPressed: () {
-                final String? target = _readableDisplayText(
-                      admissionDisplayId,
-                    ) ??
+                final String? target =
+                    _readableDisplayText(admissionDisplayId) ??
                     _readableDisplayText(admissionId);
                 if (target == null) {
                   return;
@@ -642,7 +643,9 @@ class _BedDetailContent extends ConsumerWidget {
                     BedSetupStatus.available,
                   ),
                 ),
-              if (canAdminBeds && !item.isOccupied && item.status != BedSetupStatus.cleaning)
+              if (canAdminBeds &&
+                  !item.isOccupied &&
+                  item.status != BedSetupStatus.cleaning)
                 AppButton.secondary(
                   label: l10n.roomsBedsMarkCleaningAction,
                   leadingIcon: Icons.cleaning_services_outlined,
@@ -654,7 +657,9 @@ class _BedDetailContent extends ConsumerWidget {
                     BedSetupStatus.cleaning,
                   ),
                 ),
-              if (canAdminBeds && !item.isOccupied && item.status != BedSetupStatus.maintenance)
+              if (canAdminBeds &&
+                  !item.isOccupied &&
+                  item.status != BedSetupStatus.maintenance)
                 AppButton.secondary(
                   label: l10n.roomsBedsMarkMaintenanceAction,
                   leadingIcon: Icons.build_outlined,
@@ -682,7 +687,8 @@ class _BedDetailContent extends ConsumerWidget {
                 AppButton.tertiary(
                   label: l10n.roomsBedsOpenHousekeepingAction,
                   leadingIcon: Icons.cleaning_services_outlined,
-                  onPressed: () => context.go(AppRoutes.housekeeping.location()),
+                  onPressed: () =>
+                      context.go(AppRoutes.housekeeping.location()),
                 ),
               if (canAdminBeds && (item.isMaintenance || item.isBlocked))
                 AppButton.tertiary(
@@ -1230,7 +1236,8 @@ Future<void> _showAssignDialog(
 ) async {
   final AppLocalizations l10n = context.l10n;
   final WardSetupType? wardType = item.ward?.type;
-  final String? suitabilityHint = wardType == null || wardType == WardSetupType.general
+  final String? suitabilityHint =
+      wardType == null || wardType == WardSetupType.general
       ? null
       : switch (wardType) {
           WardSetupType.icu => l10n.tenantFacilityWardTypeIcu,

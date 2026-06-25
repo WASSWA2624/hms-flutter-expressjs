@@ -2646,16 +2646,17 @@ model medication_administration {
 }
 
 model discharge_summary {
-  id                String          @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?         @db.VarChar(32)
-  admission_id      String          @db.VarChar(36)
-  summary           String          @db.Text
-  status            DischargeStatus
-  discharged_at     DateTime?
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
-  deleted_at        DateTime?
-  version           Int             @default(1)
+  id                 String          @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id  String?         @db.VarChar(32)
+  admission_id       String          @db.VarChar(36)
+  summary            String          @db.Text
+  status             DischargeStatus
+  discharged_at      DateTime?
+  clearance_snapshot Json?
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+  deleted_at         DateTime?
+  version            Int             @default(1)
 
   admission admission @relation(fields: [admission_id], references: [id])
 

@@ -263,7 +263,9 @@ final class AuthController extends Notifier<AuthControllerState> {
       passwordResetCompleted: false,
     );
 
-    final result = await ref.read(authRepositoryProvider).resetPassword(
+    final result = await ref
+        .read(authRepositoryProvider)
+        .resetPassword(
           token: token,
           newPassword: newPassword,
           confirmPassword: confirmPassword,

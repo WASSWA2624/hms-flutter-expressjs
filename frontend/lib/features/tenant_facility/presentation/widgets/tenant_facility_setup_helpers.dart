@@ -15,8 +15,9 @@ String? tenantFacilityOptionalSelection(String? value) {
 FormFieldValidator<String> tenantFacilityRequiredSelection(
   AppLocalizations l10n,
 ) {
-  return (String? value) =>
-      tenantFacilityOptionalSelection(value) == null ? l10n.validationRequired : null;
+  return (String? value) => tenantFacilityOptionalSelection(value) == null
+      ? l10n.validationRequired
+      : null;
 }
 
 FormFieldValidator<String> tenantFacilityValidReferenceSelection({
@@ -130,20 +131,14 @@ String? tenantFacilityDepartmentName(
       .firstOrNull;
 }
 
-String? tenantFacilityWardName(
-  FacilitySetupSnapshot snapshot,
-  String? wardId,
-) {
+String? tenantFacilityWardName(FacilitySetupSnapshot snapshot, String? wardId) {
   return snapshot.wards
       .where((WardProfile ward) => ward.id == wardId)
       .map((WardProfile ward) => ward.name)
       .firstOrNull;
 }
 
-String? tenantFacilityRoomName(
-  FacilitySetupSnapshot snapshot,
-  String? roomId,
-) {
+String? tenantFacilityRoomName(FacilitySetupSnapshot snapshot, String? roomId) {
   return snapshot.rooms
       .where((RoomProfile room) => room.id == roomId)
       .map((RoomProfile room) => room.name)
@@ -219,10 +214,11 @@ bool tenantFacilityWizardStepCompleted(
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
     TenantFacilitySetupWizardStep.facility => snapshot.hasFacilityIdentity,
-    TenantFacilitySetupWizardStep.organization => snapshot.hasDepartmentsAndUnits,
+    TenantFacilitySetupWizardStep.organization =>
+      snapshot.hasDepartmentsAndUnits,
     TenantFacilitySetupWizardStep.careSpaces =>
       snapshot.wardsCount > 0 ||
-      snapshot.roomsCount > 0 ||
-      snapshot.bedsCount > 0,
+          snapshot.roomsCount > 0 ||
+          snapshot.bedsCount > 0,
   };
 }

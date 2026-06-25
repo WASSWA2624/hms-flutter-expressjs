@@ -40,7 +40,9 @@ final class SubscriptionsWorkspaceController
   }
 
   Future<AppFailure?> applyRouteQuery(SubscriptionsWorkspaceQuery query) async {
-    final SubscriptionsWorkspaceQuery resolved = await _resolveRouteQuery(query);
+    final SubscriptionsWorkspaceQuery resolved = await _resolveRouteQuery(
+      query,
+    );
     return _loadQuery(
       resolved.copyWith(pageRequest: resolved.pageRequest.first()),
       preserveSelectedId: resolved.recordId,
@@ -366,7 +368,9 @@ final class SubscriptionsWorkspaceController
     }
     final SubscriptionsWorkspaceData data =
         (result as ResultSuccess<SubscriptionsWorkspaceData>).value;
-    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(data);
+    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(
+      data,
+    );
     _emit(
       _currentState!.copyWith(
         data: enriched,
@@ -428,7 +432,9 @@ final class SubscriptionsWorkspaceController
     }
     final SubscriptionsWorkspaceData data =
         (result as ResultSuccess<SubscriptionsWorkspaceData>).value;
-    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(data);
+    final SubscriptionsWorkspaceData enriched = await _enrichWorkspaceData(
+      data,
+    );
     _emit(
       _currentState!.copyWith(
         data: enriched,

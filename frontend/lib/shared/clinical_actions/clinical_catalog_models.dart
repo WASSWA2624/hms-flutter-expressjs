@@ -1,9 +1,4 @@
-enum ClinicalCatalogSource {
-  all,
-  favorites,
-  facility,
-  global,
-}
+enum ClinicalCatalogSource { all, favorites, facility, global }
 
 extension ClinicalCatalogSourceApiX on ClinicalCatalogSource {
   String get apiValue {

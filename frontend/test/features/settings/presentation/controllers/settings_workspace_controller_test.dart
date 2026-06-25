@@ -9,38 +9,46 @@ import 'package:hosspi_hms/features/settings/presentation/controllers/settings_w
 import '../../../../helpers/test_harness.dart';
 
 void main() {
-  test('loads workspace and reference data when tenant context is required', () async {
-    final repository = _FakeSettingsWorkspaceRepository(
-      workspaceResult: Result<SettingsWorkspace>.success(
-        _workspace(SettingsWorkspaceStatus.tenantContextRequired),
-      ),
-      referenceResult: const Result<SettingsReferenceData>.success(
-        SettingsReferenceData(
-          state: SettingsWorkspaceStatus.tenantContextRequired,
-          tenants: <SettingsReferenceOption>[
-            SettingsReferenceOption(id: 'TEN-1', label: 'Acme Health'),
-          ],
+  test(
+    'loads workspace and reference data when tenant context is required',
+    () async {
+      final repository = _FakeSettingsWorkspaceRepository(
+        workspaceResult: Result<SettingsWorkspace>.success(
+          _workspace(SettingsWorkspaceStatus.tenantContextRequired),
         ),
-      ),
-    );
-    final container = createTestContainer(
-      overrides: <Object?>[
-        settingsWorkspaceRepositoryProvider.overrideWithValue(repository),
-      ],
-    );
+        referenceResult: const Result<SettingsReferenceData>.success(
+          SettingsReferenceData(
+            state: SettingsWorkspaceStatus.tenantContextRequired,
+            tenants: <SettingsReferenceOption>[
+              SettingsReferenceOption(id: 'TEN-1', label: 'Acme Health'),
+            ],
+          ),
+        ),
+      );
+      final container = createTestContainer(
+        overrides: <Object?>[
+          settingsWorkspaceRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
 
-    final result = await container.read(settingsWorkspaceControllerProvider.future);
+      final result = await container.read(
+        settingsWorkspaceControllerProvider.future,
+      );
 
-    result.when(
-      success: (state) {
-        expect(state.workspace.status, SettingsWorkspaceStatus.tenantContextRequired);
-        expect(state.referenceData.tenants.single.id, 'TEN-1');
-      },
-      failure: (_) => fail('Expected success.'),
-    );
-    expect(repository.workspaceQueries, hasLength(1));
-    expect(repository.referenceQueries, hasLength(1));
-  });
+      result.when(
+        success: (state) {
+          expect(
+            state.workspace.status,
+            SettingsWorkspaceStatus.tenantContextRequired,
+          );
+          expect(state.referenceData.tenants.single.id, 'TEN-1');
+        },
+        failure: (_) => fail('Expected success.'),
+      );
+      expect(repository.workspaceQueries, hasLength(1));
+      expect(repository.referenceQueries, hasLength(1));
+    },
+  );
 
   test('applies search query and reloads state', () async {
     final repository = _FakeSettingsWorkspaceRepository(
@@ -81,16 +89,20 @@ void main() {
       ],
     );
 
-    final result = await container.read(settingsWorkspaceControllerProvider.future);
+    final result = await container.read(
+      settingsWorkspaceControllerProvider.future,
+    );
 
     result.when(
       success: (_) => fail('Expected failure.'),
-      failure: (failure) => expect(failure.category, AppFailureCategory.forbidden),
+      failure: (failure) =>
+          expect(failure.category, AppFailureCategory.forbidden),
     );
   });
 }
 
-final class _FakeSettingsWorkspaceRepository implements SettingsWorkspaceRepository {
+final class _FakeSettingsWorkspaceRepository
+    implements SettingsWorkspaceRepository {
   _FakeSettingsWorkspaceRepository({
     required this.workspaceResult,
     required this.referenceResult,
@@ -98,17 +110,23 @@ final class _FakeSettingsWorkspaceRepository implements SettingsWorkspaceReposit
 
   final Result<SettingsWorkspace> workspaceResult;
   final Result<SettingsReferenceData> referenceResult;
-  final List<SettingsWorkspaceQuery> workspaceQueries = <SettingsWorkspaceQuery>[];
-  final List<SettingsWorkspaceQuery> referenceQueries = <SettingsWorkspaceQuery>[];
+  final List<SettingsWorkspaceQuery> workspaceQueries =
+      <SettingsWorkspaceQuery>[];
+  final List<SettingsWorkspaceQuery> referenceQueries =
+      <SettingsWorkspaceQuery>[];
 
   @override
-  Future<Result<SettingsWorkspace>> getWorkspace(SettingsWorkspaceQuery query) async {
+  Future<Result<SettingsWorkspace>> getWorkspace(
+    SettingsWorkspaceQuery query,
+  ) async {
     workspaceQueries.add(query);
     return workspaceResult;
   }
 
   @override
-  Future<Result<SettingsReferenceData>> getReferenceData(SettingsWorkspaceQuery query) async {
+  Future<Result<SettingsReferenceData>> getReferenceData(
+    SettingsWorkspaceQuery query,
+  ) async {
     referenceQueries.add(query);
     return referenceResult;
   }
@@ -120,8 +138,12 @@ SettingsWorkspace _workspace(SettingsWorkspaceStatus status) {
     generatedAt: DateTime.utc(2026, 5, 22, 9),
     context: SettingsWorkspaceContext(
       state: status,
-      tenantName: status == SettingsWorkspaceStatus.ready ? 'Acme Health' : null,
-      facilityName: status == SettingsWorkspaceStatus.ready ? 'Central Hospital' : null,
+      tenantName: status == SettingsWorkspaceStatus.ready
+          ? 'Acme Health'
+          : null,
+      facilityName: status == SettingsWorkspaceStatus.ready
+          ? 'Central Hospital'
+          : null,
     ),
     summaryCards: const <SettingsSummaryCard>[],
     checklist: const SettingsChecklist(

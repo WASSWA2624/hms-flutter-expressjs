@@ -259,10 +259,7 @@ class AppButton extends StatelessWidget {
             : hovered
             ? colorScheme.primary.withValues(alpha: 0.56)
             : colorScheme.outline.withValues(alpha: 0.44);
-        return BorderSide(
-          color: borderColor,
-          width: focused ? 1.25 : 1,
-        );
+        return BorderSide(color: borderColor, width: focused ? 1.25 : 1);
       }),
     );
   }

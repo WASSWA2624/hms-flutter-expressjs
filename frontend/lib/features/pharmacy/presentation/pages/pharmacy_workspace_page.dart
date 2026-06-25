@@ -198,6 +198,54 @@ class _PharmacyWorkspaceContentState
             onPressed: () =>
                 controller.applyFilter(PharmacyOrderFilter.discharge),
           ),
+        if (state.workbench.summary.outpatientQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacyFilterOutpatient,
+            value: _countLabel(
+              context,
+              state.workbench.summary.outpatientQueue,
+            ),
+            icon: Icons.person_outline,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.outpatient),
+          ),
+        if (state.workbench.summary.wardQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacyFilterWard,
+            value: _countLabel(context, state.workbench.summary.wardQueue),
+            icon: Icons.bed_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyFilter(PharmacyOrderFilter.ward),
+          ),
+        if (state.workbench.summary.pendingPaymentQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacyFilterPendingPayment,
+            value: _countLabel(
+              context,
+              state.workbench.summary.pendingPaymentQueue,
+            ),
+            icon: Icons.payments_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.pendingPayment),
+          ),
+        if (state.workbench.summary.pendingAttestations > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacySummaryAttestationLabel,
+            value: _countLabel(
+              context,
+              state.workbench.summary.pendingAttestations,
+            ),
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.partial),
+          ),
       ],
       body: _PharmacyQueuePanel(
         state: state,

@@ -122,8 +122,7 @@ List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
 
 List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
   return switch (profile.role) {
-    AppRole.receptionist ||
-    AppRole.facilityAdmin => <HomeQueueItem>[
+    AppRole.receptionist || AppRole.facilityAdmin => <HomeQueueItem>[
       const HomeQueueItem(
         id: 'guided_opd_front_desk',
         label: 'OPD front desk queue',

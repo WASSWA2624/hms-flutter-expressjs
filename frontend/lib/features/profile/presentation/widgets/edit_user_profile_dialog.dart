@@ -5,10 +5,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 class EditUserProfileDialog extends StatefulWidget {
-  const EditUserProfileDialog({
-    required this.record,
-    super.key,
-  });
+  const EditUserProfileDialog({required this.record, super.key});
 
   final UserProfileRecord record;
 

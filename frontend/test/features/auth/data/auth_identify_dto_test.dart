@@ -34,7 +34,9 @@ void main() {
         isEmpty,
       );
       expect(
-        AuthIdentifyDto.fromResponseData(<String, Object?>{}).toEntity().tenants,
+        AuthIdentifyDto.fromResponseData(
+          <String, Object?>{},
+        ).toEntity().tenants,
         isEmpty,
       );
     });

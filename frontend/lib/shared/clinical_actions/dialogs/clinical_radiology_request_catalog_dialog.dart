@@ -111,7 +111,8 @@ class _ClinicalRadiologyRequestCatalogDialogState
         _searchCatalog(widget.referenceData.radiologyTests);
     final ClinicalActionCatalogOption? selectedCatalogOption =
         _catalogOptionForId(_selectedCatalogId, visibleCatalogOptions);
-    final bool selectedIsDuplicate = selectedCatalogOption != null &&
+    final bool selectedIsDuplicate =
+        selectedCatalogOption != null &&
         widget.isDuplicate(selectedCatalogOption);
     final List<AppSelectOption<String>> catalogSelectOptions =
         clinicalRadiologyCatalogSelectOptions(l10n, visibleCatalogOptions);
@@ -210,7 +211,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
                   children: <Widget>[
                     Row(
                       children: <Widget>[
-                        for (var index = 0; index < firstRowFields.length; index += 1) ...<Widget>[
+                        for (
+                          var index = 0;
+                          index < firstRowFields.length;
+                          index += 1
+                        ) ...<Widget>[
                           Expanded(child: firstRowFields[index]),
                           if (index < firstRowFields.length - 1)
                             SizedBox(width: theme.spacing.sm),
@@ -382,7 +387,9 @@ class _ClinicalRadiologyRequestCatalogDialogState
   }
 
   bool _bodyRegionAvailable(String? modality, String? bodyRegion) {
-    final String? normalizedBodyRegion = clinicalActionTrimmedOrNull(bodyRegion);
+    final String? normalizedBodyRegion = clinicalActionTrimmedOrNull(
+      bodyRegion,
+    );
     if (normalizedBodyRegion == null) {
       return true;
     }

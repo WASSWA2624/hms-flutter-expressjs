@@ -230,6 +230,18 @@ final class IpdRepositoryImpl implements IpdRepository {
     return _postAction(admissionId, <String>['finalize-discharge'], payload);
   }
 
+  @override
+  Future<Result<IpdAdmissionDetail>> updateDischargeClearance(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _postAction(
+      admissionId,
+      <String>['update-discharge-clearance'],
+      payload,
+    );
+  }
+
   Future<Result<IpdAdmissionDetail>> _postAction(
     String admissionId,
     List<String> pathSegments,

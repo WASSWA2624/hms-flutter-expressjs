@@ -462,9 +462,7 @@ final class FacilitySetupPermissionsDto {
 }
 
 final class FacilitySetupWorkspaceDto {
-  const FacilitySetupWorkspaceDto({
-    required this.snapshot,
-  });
+  const FacilitySetupWorkspaceDto({required this.snapshot});
 
   factory FacilitySetupWorkspaceDto.fromResponse(Object? data) {
     return ApiResponseEnvelope.decodeData<FacilitySetupWorkspaceDto>(
@@ -489,7 +487,9 @@ final class FacilitySetupWorkspaceDto {
             ? TenantProfileDto.fromJson(json['tenant'] as JsonMap).toEntity()
             : null,
         facility: json['facility'] is JsonMap
-            ? FacilityProfileDto.fromJson(json['facility'] as JsonMap).toEntity()
+            ? FacilityProfileDto.fromJson(
+                json['facility'] as JsonMap,
+              ).toEntity()
             : null,
         facilities: _decodeOptionalList<FacilityProfileDto>(
           json['facilities'],
@@ -527,8 +527,9 @@ final class FacilitySetupWorkspaceDto {
           BedProfileDto.fromJson,
         ).map((dto) => dto.toEntity()).toList(growable: false),
         subscriptionSummary: subscriptionSummaryJson is JsonMap
-            ? TenantSubscriptionSummaryDto.fromJson(subscriptionSummaryJson)
-                .toEntity()
+            ? TenantSubscriptionSummaryDto.fromJson(
+                subscriptionSummaryJson,
+              ).toEntity()
             : null,
         permissions: permissionsJson.isEmpty
             ? const FacilitySetupPermissions()
@@ -563,10 +564,7 @@ int? _optionalInt(JsonMap json, String key) {
   return null;
 }
 
-List<T> _decodeOptionalList<T>(
-  Object? data,
-  T Function(JsonMap json) decoder,
-) {
+List<T> _decodeOptionalList<T>(Object? data, T Function(JsonMap json) decoder) {
   if (data == null) {
     return <T>[];
   }

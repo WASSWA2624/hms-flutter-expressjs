@@ -10,7 +10,8 @@ enum SettingsWorkspaceStatus {
 
   static SettingsWorkspaceStatus fromServer(String? value) {
     return switch ((value ?? '').trim().toLowerCase()) {
-      'tenant_context_required' => SettingsWorkspaceStatus.tenantContextRequired,
+      'tenant_context_required' =>
+        SettingsWorkspaceStatus.tenantContextRequired,
       _ => SettingsWorkspaceStatus.ready,
     };
   }
@@ -233,7 +234,10 @@ final class SettingsModuleItem {
 
 @immutable
 final class SettingsModuleDependency {
-  const SettingsModuleDependency({required this.moduleId, required this.isReady});
+  const SettingsModuleDependency({
+    required this.moduleId,
+    required this.isReady,
+  });
 
   final String moduleId;
   final bool isReady;

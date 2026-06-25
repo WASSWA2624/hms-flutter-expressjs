@@ -126,11 +126,7 @@ void main() {
       const AppDialog(
         maxWidth: 480,
         title: Text('Large form'),
-        content: SizedBox(
-          width: 320,
-          height: 240,
-          child: Text('Dialog body'),
-        ),
+        content: SizedBox(width: 320, height: 240, child: Text('Dialog body')),
       ),
       size: const Size(1000, 700),
     );

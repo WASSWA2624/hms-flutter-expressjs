@@ -118,8 +118,7 @@ String? _opdLabel(AppLocalizations l10n, String code) {
     'RADIOLOGY_REQUESTED' => l10n.opdStatusImagingPendingLabel,
     'REPORT_PENDING' => l10n.opdStatusReportPendingLabel,
     'REPORT_READY' => l10n.opdStatusReportReadyLabel,
-    'LAB_AND_RADIOLOGY_REQUESTED' =>
-      l10n.opdStatusLabAndImagingPendingLabel,
+    'LAB_AND_RADIOLOGY_REQUESTED' => l10n.opdStatusLabAndImagingPendingLabel,
     'PHARMACY_PENDING' ||
     'PHARMACY_REQUESTED' => l10n.opdStatusPharmacyPendingLabel,
     'DISPENSING' => l10n.opdStatusDispensingLabel,
@@ -155,4 +154,3 @@ String? _nextStepLabel(AppLocalizations l10n, String code) {
     _ => null,
   };
 }
-

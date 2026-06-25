@@ -5,9 +5,13 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final ipdWorkspaceControllerProvider =
@@ -20,6 +24,9 @@ final class IpdWorkspaceController
   static const Duration _syncInterval = Duration(seconds: 8);
 
   IpdRepository get _repository => ref.read(ipdRepositoryProvider);
+
+  ClinicalRepository get _clinicalRepository =>
+      ref.read(clinicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -500,15 +507,170 @@ final class IpdWorkspaceController
 
   Future<AppFailure?> finalizeDischarge(
     IpdAdmissionSummary admission,
-    String summary,
-  ) {
+    String summary, {
+    String? overrideReason,
+  }) {
     return _mutateAdmission(
       admission,
       () => _repository.finalizeDischarge(admission.apiId, <String, Object?>{
         'summary': summary,
         'discharged_at': DateTime.now().toUtc().toIso8601String(),
+        if ((overrideReason ?? '').trim().isNotEmpty)
+          'override_reason': overrideReason,
       }),
       refreshReferenceData: true,
+    );
+  }
+
+  Future<AppFailure?> updateDischargeClearance(
+    IpdAdmissionSummary admission,
+    IpdDischargeClearance clearance,
+  ) {
+    return _mutateAdmission(
+      admission,
+      () => _repository.updateDischargeClearance(
+        admission.apiId,
+        clearance.toPayload(),
+      ),
+    );
+  }
+
+  Future<ClinicalReferenceData> clinicalReferenceData() async {
+    final Result<ClinicalReferenceData> result = await _clinicalRepository
+        .loadReferenceData();
+    return result.when(
+      success: (ClinicalReferenceData value) => value,
+      failure: (_) => const ClinicalReferenceData(),
+    );
+  }
+
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
+  }) {
+    return _clinicalRepository.searchClinicalTerms(
+      termType: termType,
+      query: query,
+      limit: limit,
+      source: source,
+    );
+  }
+
+  Future<AppFailure?> orderLab({
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IpdAdmissionDetail detail) {
+      return _clinicalRepository.createLabOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          ..._clinicalAnchor(detail),
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        }, billing),
+      );
+    }, isValid: (_) => labTestIds.isNotEmpty || labPanelIds.isNotEmpty);
+  }
+
+  Future<AppFailure?> orderRadiology({
+    required List<ClinicalRadiologyRequest> requests,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IpdAdmissionDetail detail) {
+      return _clinicalRepository.createRadiologyOrder(<String, Object?>{
+        ..._clinicalAnchor(detail),
+        'requested_tests': <Map<String, Object?>>[
+          for (final ClinicalRadiologyRequest request in requests)
+            <String, Object?>{
+              'radiology_test_id': request.radiologyTestId,
+              'clinical_note': request.clinicalNote,
+              'request_details': mergeClinicalRequestBillingIntoRequestDetails(
+                <String, Object?>{
+                  'modality': request.modality,
+                  'body_region': request.bodyRegion,
+                  'laterality': request.laterality,
+                  'priority': request.priority,
+                },
+                billing,
+                lineAmount: clinicalRequestBillingLineAmount(
+                  billing,
+                  request.radiologyTestId,
+                ),
+              ),
+            },
+        ],
+      });
+    }, isValid: (_) => requests.isNotEmpty);
+  }
+
+  Future<AppFailure?> prescribeMedication({
+    required List<Map<String, Object?>> items,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    return _mutateClinical((IpdAdmissionDetail detail) {
+      return _clinicalRepository.createPharmacyOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          ..._clinicalAnchor(detail),
+          'items': items,
+        }, billing),
+      );
+    }, isValid: (_) => items.isNotEmpty);
+  }
+
+  Map<String, Object?> _clinicalAnchor(IpdAdmissionDetail detail) {
+    return <String, Object?>{
+      'encounter_id': detail.summary.encounterId,
+      'patient_id': detail.summary.patientId,
+      'ordered_at': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
+  Future<AppFailure?> _mutateClinical(
+    Future<Result<void>> Function(IpdAdmissionDetail detail) action, {
+    required bool Function(IpdAdmissionDetail detail) isValid,
+  }) async {
+    final IpdAdmissionDetail? detail = _currentState?.selectedAdmission;
+    if (detail == null) {
+      return AppFailure.validation();
+    }
+    final String? encounterId = detail.summary.encounterId?.trim();
+    final String? patientId = detail.summary.patientId?.trim();
+    if (encounterId == null ||
+        encounterId.isEmpty ||
+        patientId == null ||
+        patientId.isEmpty ||
+        !isValid(detail)) {
+      return AppFailure.validation();
+    }
+
+    _emit(_currentState!.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await action(detail);
+    return result.when(
+      success: (_) async {
+        final AppFailure? refreshFailure = await selectAdmission(
+          detail.summary,
+        );
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false));
+        }
+        return refreshFailure;
+      },
+      failure: (AppFailure failure) {
+        final IpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
     );
   }
 

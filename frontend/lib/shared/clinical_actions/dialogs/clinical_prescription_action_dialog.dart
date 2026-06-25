@@ -117,10 +117,13 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
                         setState(() => _dispenseBillingMode = values.first);
                       },
               ),
-              if (_dispenseBillingMode == ClinicalRequestPaymentMode.payNow) ...<Widget>[
+              if (_dispenseBillingMode ==
+                  ClinicalRequestPaymentMode.payNow) ...<Widget>[
                 SizedBox(height: theme.spacing.md),
                 ClinicalRequestFlowSummaryBar(
-                  itemCount: _lines.where((line) => line.drugId?.isNotEmpty ?? false).length,
+                  itemCount: _lines
+                      .where((line) => line.drugId?.isNotEmpty ?? false)
+                      .length,
                   lineItems: lineItems,
                   billing: _billingSubmit,
                 ),
@@ -155,7 +158,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       for (final _PrescriptionLineFormState line in _lines)
         AppSelectOption<String>(
           value: line.id.toString(),
-          label: clinicalActionCatalogDisplayLabelById(
+          label:
+              clinicalActionCatalogDisplayLabelById(
                 widget.referenceData.drugs,
                 line.drugId,
               ) ??
@@ -212,8 +216,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           ? null
           : () => _openLineDialog(
               editIndex: _lines.indexWhere(
-                (_PrescriptionLineFormState line) =>
-                    line.id == focusedLine.id,
+                (_PrescriptionLineFormState line) => line.id == focusedLine.id,
               ),
             ),
       onDelete: focusedLine == null || _lines.length <= 1
@@ -404,7 +407,8 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
       if (drugId == null || drugId.isEmpty) {
         continue;
       }
-      quantities[drugId] = int.tryParse(line.quantityController.text.trim()) ?? 1;
+      quantities[drugId] =
+          int.tryParse(line.quantityController.text.trim()) ?? 1;
       ClinicalActionCatalogOption? option;
       for (final ClinicalActionCatalogOption drug
           in widget.referenceData.drugs) {

@@ -34,8 +34,10 @@ class ClinicalWorkspacePage extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     ref.listen<AsyncValue<Result<ClinicalWorkspaceState>>>(
       clinicalWorkspaceControllerProvider,
-      (AsyncValue<Result<ClinicalWorkspaceState>>? previous,
-          AsyncValue<Result<ClinicalWorkspaceState>> next) {
+      (
+        AsyncValue<Result<ClinicalWorkspaceState>>? previous,
+        AsyncValue<Result<ClinicalWorkspaceState>> next,
+      ) {
         final String? notice = next.asData?.value.when(
           success: (ClinicalWorkspaceState value) => value.realtimeNotice,
           failure: (_) => null,
@@ -49,8 +51,9 @@ class ClinicalWorkspacePage extends ConsumerWidget {
         }
         final String patientName = parts.sublist(1).join('::');
         final String message = switch (parts.first) {
-          'LAB_RESULT_CRITICAL' =>
-            l10n.clinicalLabResultCriticalNotice(patientName),
+          'LAB_RESULT_CRITICAL' => l10n.clinicalLabResultCriticalNotice(
+            patientName,
+          ),
           'LAB_RESULT_READY' => l10n.clinicalLabResultReadyNotice(patientName),
           _ => l10n.clinicalLabResultUpdatedNotice(patientName),
         };
@@ -2207,7 +2210,9 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String readableSummary = clinicalPrescriptionItemReadableSummary(item);
+    final String readableSummary = clinicalPrescriptionItemReadableSummary(
+      item,
+    );
     final List<AppWorkspacePatientContextField> facts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
@@ -2256,10 +2261,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: theme.spacing.xs),
-                    Text(
-                      readableSummary,
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    Text(readableSummary, style: theme.textTheme.bodyMedium),
                   ],
                 ),
               ),

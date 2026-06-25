@@ -2,7 +2,11 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final class AccessAdminLookupOptionDto {
-  const AccessAdminLookupOptionDto({required this.id, required this.label, this.meta});
+  const AccessAdminLookupOptionDto({
+    required this.id,
+    required this.label,
+    this.meta,
+  });
 
   factory AccessAdminLookupOptionDto.fromJson(Map<String, dynamic> json) {
     return AccessAdminLookupOptionDto(
@@ -53,11 +57,13 @@ final class AccessAdminLookupsDto {
   AccessAdminLookups toEntity() {
     return AccessAdminLookups(
       tenants: tenants.map((entry) => entry.toEntity()).toList(growable: false),
-      facilities:
-          facilities.map((entry) => entry.toEntity()).toList(growable: false),
+      facilities: facilities
+          .map((entry) => entry.toEntity())
+          .toList(growable: false),
       roles: roles.map((entry) => entry.toEntity()).toList(growable: false),
-      permissions:
-          permissions.map((entry) => entry.toEntity()).toList(growable: false),
+      permissions: permissions
+          .map((entry) => entry.toEntity())
+          .toList(growable: false),
       userStatuses: userStatuses,
       clinicalFlowRoles: clinicalFlowRoles,
     );
@@ -211,7 +217,10 @@ final class AccessAdminItemDto {
       staffProfileId: _nullableString(json['staff_profile_id']),
       roles: roles,
       roleCount: _int(json['role_count'], fallback: roles.length),
-      permissionCount: _int(json['permission_count'], fallback: permissions.length),
+      permissionCount: _int(
+        json['permission_count'],
+        fallback: permissions.length,
+      ),
       permissions: permissions,
       userCount: _int(json['user_count']),
       moduleSlug: _nullableString(json['module_slug']),
@@ -225,7 +234,9 @@ final class AccessAdminItemDto {
       roleName: _nullableString(json['role_name']),
       permissionName: _nullableString(json['permission_name']),
       entitlementDenied: json['entitlement_denied'] == true,
-      entitlementDenialReason: _nullableString(json['entitlement_denial_reason']),
+      entitlementDenialReason: _nullableString(
+        json['entitlement_denial_reason'],
+      ),
       updatedAt: _dateTime(json['updated_at']),
     );
   }
@@ -234,8 +245,7 @@ final class AccessAdminItemDto {
     switch (resource) {
       case AccessAdminResource.users:
       case AccessAdminResource.demoUsers:
-        return _nullableString(json['profile_name']) ??
-            _string(json['email']);
+        return _nullableString(json['profile_name']) ?? _string(json['email']);
       case AccessAdminResource.roles:
         return _string(json['name']);
       case AccessAdminResource.permissions:
@@ -316,7 +326,8 @@ final class AccessAdminWorkspaceDto {
     final AccessAdminResource resource = AccessAdminResource.fromServer(
       _nullableString(filters['resource']) ?? query.resource.serverValue,
     );
-    final List<AccessAdminItemDto> itemDtos = (json['items'] as List<Object?>?)
+    final List<AccessAdminItemDto> itemDtos =
+        (json['items'] as List<Object?>?)
             ?.whereType<Map<String, dynamic>>()
             .map((entry) => AccessAdminItemDto.fromJson(entry, resource))
             .toList(growable: false) ??
@@ -329,7 +340,8 @@ final class AccessAdminWorkspaceDto {
       state: _string(json['state'], fallback: 'ready'),
       generatedAt: _dateTime(json['generated_at']),
       overview: AccessAdminOverviewDto.fromJson(_map(json['overview'])),
-      panelSummaries: (json['panel_summaries'] as List<Object?>?)
+      panelSummaries:
+          (json['panel_summaries'] as List<Object?>?)
               ?.whereType<Map<String, dynamic>>()
               .map(AccessAdminPanelSummaryDto.fromJson)
               .toList(growable: false) ??
@@ -337,11 +349,15 @@ final class AccessAdminWorkspaceDto {
       lookups: AccessAdminLookupsDto.fromResponse(json['lookups']),
       items: itemDtos,
       page: AppPage<AccessAdminItem>(
-        items: itemDtos.map((entry) => entry.toEntity()).toList(growable: false),
+        items: itemDtos
+            .map((entry) => entry.toEntity())
+            .toList(growable: false),
         request: request,
         totalItemCount: total,
       ),
-      permissions: AccessAdminPermissionsDto.fromJson(_map(json['permissions'])),
+      permissions: AccessAdminPermissionsDto.fromJson(
+        _map(json['permissions']),
+      ),
       query: query.copyWith(
         panel: AccessAdminPanel.fromServer(
           _nullableString(filters['panel']) ?? query.panel.serverValue,
@@ -373,8 +389,9 @@ final class AccessAdminWorkspaceDto {
       state: state,
       generatedAt: generatedAt,
       overview: overview.toEntity(),
-      panelSummaries:
-          panelSummaries.map((entry) => entry.toEntity()).toList(growable: false),
+      panelSummaries: panelSummaries
+          .map((entry) => entry.toEntity())
+          .toList(growable: false),
       lookups: lookups.toEntity(),
       items: page.items,
       page: page,
@@ -432,21 +449,26 @@ final class AccessAdminUserDetailDto {
   final AccessAdminResource resource;
 
   AccessAdminUserDetail toEntity() {
-    final AccessAdminItem item = AccessAdminItemDto.fromJson(json, resource).toEntity();
+    final AccessAdminItem item = AccessAdminItemDto.fromJson(
+      json,
+      resource,
+    ).toEntity();
     final List<AccessAdminPermissionRef> directPermissions =
         AccessAdminItemDto._permissions(json['direct_permissions']);
-    final List<String> effectivePermissions = _stringList(json['effective_permissions']);
+    final List<String> effectivePermissions = _stringList(
+      json['effective_permissions'],
+    );
     final List<AccessAdminRolePermissionPreview> previews =
         (json['role_permission_preview'] as List<Object?>?)
-                ?.whereType<Map<String, dynamic>>()
-                .map(
-                  (Map<String, dynamic> entry) => AccessAdminRolePermissionPreview(
-                    name: _string(entry['name']),
-                    sourceRole: _string(entry['source_role']),
-                  ),
-                )
-                .toList(growable: false) ??
-            const <AccessAdminRolePermissionPreview>[];
+            ?.whereType<Map<String, dynamic>>()
+            .map(
+              (Map<String, dynamic> entry) => AccessAdminRolePermissionPreview(
+                name: _string(entry['name']),
+                sourceRole: _string(entry['source_role']),
+              ),
+            )
+            .toList(growable: false) ??
+        const <AccessAdminRolePermissionPreview>[];
 
     return AccessAdminUserDetail(
       item: item,

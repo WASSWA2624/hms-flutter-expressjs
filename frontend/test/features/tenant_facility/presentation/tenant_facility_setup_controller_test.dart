@@ -12,52 +12,61 @@ class _MockTenantFacilityRepository extends Mock
 
 void main() {
   group('TenantFacilitySetupController', () {
-    test('refresh keeps selected facility and returns workspace snapshot', () async {
-      final _MockTenantFacilityRepository repository =
-          _MockTenantFacilityRepository();
-      const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
-        tenant: TenantProfile(id: 'TEN0001', name: 'Acme Hospital'),
-        facility: FacilityProfile(
-          id: 'FAC0001',
-          tenantId: 'TEN0001',
-          name: 'Main Campus',
-          type: FacilitySetupType.hospital,
-        ),
-        facilities: <FacilityProfile>[
-          FacilityProfile(
+    test(
+      'refresh keeps selected facility and returns workspace snapshot',
+      () async {
+        final _MockTenantFacilityRepository repository =
+            _MockTenantFacilityRepository();
+        const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+          tenant: TenantProfile(id: 'TEN0001', name: 'Acme Hospital'),
+          facility: FacilityProfile(
             id: 'FAC0001',
             tenantId: 'TEN0001',
             name: 'Main Campus',
             type: FacilitySetupType.hospital,
           ),
-        ],
-      );
+          facilities: <FacilityProfile>[
+            FacilityProfile(
+              id: 'FAC0001',
+              tenantId: 'TEN0001',
+              name: 'Main Campus',
+              type: FacilitySetupType.hospital,
+            ),
+          ],
+        );
 
-      when(
-        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
-      ).thenAnswer(
-        (_) async => const Result<FacilitySetupSnapshot>.success(snapshot),
-      );
+        when(
+          () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+        ).thenAnswer(
+          (_) async => const Result<FacilitySetupSnapshot>.success(snapshot),
+        );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          tenantFacilityRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
-      addTearDown(container.dispose);
+        final ProviderContainer container = ProviderContainer(
+          overrides: [
+            tenantFacilityRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(tenantFacilitySetupControllerProvider.future);
-      await container
-          .read(tenantFacilitySetupControllerProvider.notifier)
-          .selectFacility('FAC0001');
+        await container.read(tenantFacilitySetupControllerProvider.future);
+        await container
+            .read(tenantFacilitySetupControllerProvider.notifier)
+            .selectFacility('FAC0001');
 
-      verify(
-        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
-      ).called(greaterThanOrEqualTo(2));
-      final Result<FacilitySetupSnapshot>? result =
-          container.read(tenantFacilitySetupControllerProvider).value;
-      expect(result?.when(success: (value) => value.facility?.id, failure: (_) => null),
-          'FAC0001');
-    });
+        verify(
+          () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+        ).called(greaterThanOrEqualTo(2));
+        final Result<FacilitySetupSnapshot>? result = container
+            .read(tenantFacilitySetupControllerProvider)
+            .value;
+        expect(
+          result?.when(
+            success: (value) => value.facility?.id,
+            failure: (_) => null,
+          ),
+          'FAC0001',
+        );
+      },
+    );
   });
 }

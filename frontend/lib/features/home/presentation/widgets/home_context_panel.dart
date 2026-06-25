@@ -23,7 +23,8 @@ class HomeTenantContextPanel extends ConsumerStatefulWidget {
       _HomeTenantContextPanelState();
 }
 
-class _HomeTenantContextPanelState extends ConsumerState<HomeTenantContextPanel> {
+class _HomeTenantContextPanelState
+    extends ConsumerState<HomeTenantContextPanel> {
   String? _selectedTenantId;
   String? _selectedFacilityId;
   String? _selectedBranchId;
@@ -58,16 +59,23 @@ class _HomeTenantContextPanelState extends ConsumerState<HomeTenantContextPanel>
         ],
       ),
       error: (_, _) => _ContextPanelShell(
-        children: <Widget>[_TenantButtons(tenantOptions: widget.tenantOptions, request: widget.request)],
+        children: <Widget>[
+          _TenantButtons(
+            tenantOptions: widget.tenantOptions,
+            request: widget.request,
+          ),
+        ],
       ),
       data: (Result<HomeDashboardLookups> result) {
         return result.when(
           success: (HomeDashboardLookups data) {
             final List<HomeLookupOption> tenants = _tenantChoices(data);
-            final List<HomeLookupOption> facilities =
-                data.facilitiesForTenant(_selectedTenantId);
-            final List<HomeLookupOption> branches =
-                data.branchesForFacility(_selectedFacilityId);
+            final List<HomeLookupOption> facilities = data.facilitiesForTenant(
+              _selectedTenantId,
+            );
+            final List<HomeLookupOption> branches = data.branchesForFacility(
+              _selectedFacilityId,
+            );
 
             return _ContextPanelShell(
               children: <Widget>[
@@ -149,10 +157,8 @@ class _HomeTenantContextPanelState extends ConsumerState<HomeTenantContextPanel>
     }
     return widget.tenantOptions
         .map(
-          (HomeTenantOption option) => HomeLookupOption(
-            id: option.id,
-            label: option.label,
-          ),
+          (HomeTenantOption option) =>
+              HomeLookupOption(id: option.id, label: option.label),
         )
         .toList(growable: false);
   }
@@ -188,10 +194,7 @@ class _ContextPanelShell extends StatelessWidget {
 }
 
 class _TenantButtons extends StatelessWidget {
-  const _TenantButtons({
-    required this.tenantOptions,
-    required this.request,
-  });
+  const _TenantButtons({required this.tenantOptions, required this.request});
 
   final List<HomeTenantOption> tenantOptions;
   final HomeDashboardRequest request;
@@ -244,10 +247,8 @@ class _LookupDropdown extends StatelessWidget {
       value: value,
       options: options
           .map(
-            (HomeLookupOption option) => AppSelectOption<String>(
-              value: option.id,
-              label: option.label,
-            ),
+            (HomeLookupOption option) =>
+                AppSelectOption<String>(value: option.id, label: option.label),
           )
           .toList(growable: false),
       onChanged: onChanged,

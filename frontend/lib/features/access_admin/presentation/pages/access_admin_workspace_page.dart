@@ -26,7 +26,8 @@ class AccessAdminWorkspacePage extends ConsumerStatefulWidget {
   }
 }
 
-class _AccessAdminWorkspacePageState extends ConsumerState<AccessAdminWorkspacePage> {
+class _AccessAdminWorkspacePageState
+    extends ConsumerState<AccessAdminWorkspacePage> {
   String? _appliedRouteSignature;
 
   @override
@@ -142,7 +143,9 @@ class _AccessAdminWorkspaceContentState
         tone: state.isSaving
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.admin_panel_settings_outlined,
+        icon: state.isSaving
+            ? Icons.sync_outlined
+            : Icons.admin_panel_settings_outlined,
       ),
       primaryAction: _primaryAction(context, state, canWrite, controller),
       secondaryActions: <Widget>[
@@ -275,15 +278,13 @@ class _AccessAdminWorkspaceContentState
       context: context,
       builder: (BuildContext dialogContext) => Consumer(
         builder: (BuildContext context, WidgetRef ref, _) {
-          final AsyncValue<Result<AccessAdminWorkspaceState>> workspace = ref.watch(
-            accessAdminWorkspaceControllerProvider,
-          );
+          final AsyncValue<Result<AccessAdminWorkspaceState>> workspace = ref
+              .watch(accessAdminWorkspaceControllerProvider);
           final AccessAdminWorkspaceState? current = workspace.maybeWhen(
-            data: (Result<AccessAdminWorkspaceState> result) =>
-                result.when(
-                  success: (AccessAdminWorkspaceState value) => value,
-                  failure: (_) => null,
-                ),
+            data: (Result<AccessAdminWorkspaceState> result) => result.when(
+              success: (AccessAdminWorkspaceState value) => value,
+              failure: (_) => null,
+            ),
             orElse: () => null,
           );
           final AccessAdminItem selected = current?.selectedItem ?? item;
@@ -335,23 +336,26 @@ class _AccessAdminWorkspaceContentState
               AppTextField(
                 controller: emailController,
                 labelText: context.l10n.accessAdminEmailLabel,
-                validator: (String? value) =>
-                    (value ?? '').contains('@') ? null : context.l10n.validationRequired,
+                validator: (String? value) => (value ?? '').contains('@')
+                    ? null
+                    : context.l10n.validationRequired,
               ),
               SizedBox(height: Theme.of(context).spacing.md),
               AppTextField(
                 controller: titleController,
                 labelText: context.l10n.accessAdminPositionLabel,
-                validator: (String? value) =>
-                    (value ?? '').trim().isEmpty ? context.l10n.validationRequired : null,
+                validator: (String? value) => (value ?? '').trim().isEmpty
+                    ? context.l10n.validationRequired
+                    : null,
               ),
               SizedBox(height: Theme.of(context).spacing.md),
               AppTextField(
                 controller: passwordController,
                 labelText: context.l10n.accessAdminPasswordLabel,
                 obscureText: true,
-                validator: (String? value) =>
-                    (value ?? '').length >= 8 ? null : context.l10n.accessAdminPasswordHint,
+                validator: (String? value) => (value ?? '').length >= 8
+                    ? null
+                    : context.l10n.accessAdminPasswordHint,
               ),
               SizedBox(height: Theme.of(context).spacing.md),
               AppSelectField<String>(
@@ -359,10 +363,8 @@ class _AccessAdminWorkspaceContentState
                 value: status,
                 options: state.data.lookups.userStatuses
                     .map(
-                      (String value) => AppSelectOption<String>(
-                        value: value,
-                        label: value,
-                      ),
+                      (String value) =>
+                          AppSelectOption<String>(value: value, label: value),
                     )
                     .toList(growable: false),
                 onChanged: (String? value) {
@@ -382,9 +384,13 @@ class _AccessAdminWorkspaceContentState
             onPressed: () async {
               if (formKey.currentState?.validate() != true) return;
               final String? tenantId =
-                  state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
+                  state.query.tenantId ??
+                  state.data.lookups.tenants.firstOrNull?.id;
               if (tenantId == null) {
-                _showSnack(context, context.l10n.accessAdminTenantContextRequiredBody);
+                _showSnack(
+                  context,
+                  context.l10n.accessAdminTenantContextRequiredBody,
+                );
                 return;
               }
               final AppFailure? failure = await ref
@@ -438,8 +444,9 @@ class _AccessAdminWorkspaceContentState
               AppTextField(
                 controller: nameController,
                 labelText: context.l10n.accessAdminRoleNameLabel,
-                validator: (String? value) =>
-                    (value ?? '').trim().isEmpty ? context.l10n.validationRequired : null,
+                validator: (String? value) => (value ?? '').trim().isEmpty
+                    ? context.l10n.validationRequired
+                    : null,
               ),
               SizedBox(height: Theme.of(context).spacing.md),
               AppTextField(
@@ -460,7 +467,8 @@ class _AccessAdminWorkspaceContentState
             onPressed: () async {
               if (formKey.currentState?.validate() != true) return;
               final String? tenantId =
-                  state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
+                  state.query.tenantId ??
+                  state.data.lookups.tenants.firstOrNull?.id;
               if (tenantId == null) return;
               final AppFailure? failure = await ref
                   .read(accessAdminWorkspaceControllerProvider.notifier)
@@ -507,16 +515,18 @@ class _PanelSelector extends StatelessWidget {
     return Wrap(
       spacing: Theme.of(context).spacing.sm,
       runSpacing: Theme.of(context).spacing.sm,
-      children: panels.map((AccessAdminPanel panel) {
-        final bool selected = state.query.panel == panel;
-        return FilterChip(
-          label: Text(_panelLabel(context, panel)),
-          selected: selected,
-          onSelected: state.isSaving
-              ? null
-              : (_) => unawaited(controller.applyPanel(panel)),
-        );
-      }).toList(growable: false),
+      children: panels
+          .map((AccessAdminPanel panel) {
+            final bool selected = state.query.panel == panel;
+            return FilterChip(
+              label: Text(_panelLabel(context, panel)),
+              selected: selected,
+              onSelected: state.isSaving
+                  ? null
+                  : (_) => unawaited(controller.applyPanel(panel)),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -526,7 +536,8 @@ class _PanelSelector extends StatelessWidget {
       AccessAdminPanel.directory => context.l10n.accessAdminPanelDirectory,
       AccessAdminPanel.roles => context.l10n.accessAdminPanelRoles,
       AccessAdminPanel.permissions => context.l10n.accessAdminPanelPermissions,
-      AccessAdminPanel.entitlements => context.l10n.accessAdminPanelEntitlements,
+      AccessAdminPanel.entitlements =>
+        context.l10n.accessAdminPanelEntitlements,
       AccessAdminPanel.demo => context.l10n.accessAdminPanelDemo,
     };
   }
@@ -567,10 +578,8 @@ class _FiltersBar extends StatelessWidget {
                   label: context.l10n.accessAdminAllStatusesLabel,
                 ),
                 ...state.data.lookups.userStatuses.map(
-                  (String value) => AppSelectOption<String?>(
-                    value: value,
-                    label: value,
-                  ),
+                  (String value) =>
+                      AppSelectOption<String?>(value: value, label: value),
                 ),
               ],
               onChanged: (String? value) {
@@ -671,16 +680,31 @@ class _DetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _DetailRow(label: context.l10n.accessAdminColumnId, value: item.effectiveDisplayId),
+        _DetailRow(
+          label: context.l10n.accessAdminColumnId,
+          value: item.effectiveDisplayId,
+        ),
         if (item.email != null)
-          _DetailRow(label: context.l10n.accessAdminEmailLabel, value: item.email!),
+          _DetailRow(
+            label: context.l10n.accessAdminEmailLabel,
+            value: item.email!,
+          ),
         if (item.positionTitle != null)
-          _DetailRow(label: context.l10n.accessAdminPositionLabel, value: item.positionTitle!),
+          _DetailRow(
+            label: context.l10n.accessAdminPositionLabel,
+            value: item.positionTitle!,
+          ),
         if (item.status != null)
-          _DetailRow(label: context.l10n.accessAdminStatusLabel, value: item.status!),
+          _DetailRow(
+            label: context.l10n.accessAdminStatusLabel,
+            value: item.status!,
+          ),
         if (item.roles.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          Text(context.l10n.accessAdminAssignedRolesLabel, style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            context.l10n.accessAdminAssignedRolesLabel,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           Wrap(
             spacing: Theme.of(context).spacing.xs,
             children: item.roles
@@ -688,13 +712,16 @@ class _DetailContent extends ConsumerWidget {
                 .toList(growable: false),
           ),
         ],
-        if (detail != null && detail!.effectivePermissions.isNotEmpty) ...<Widget>[
+        if (detail != null &&
+            detail!.effectivePermissions.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
           Text(
             context.l10n.accessAdminEffectivePermissionsLabel,
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          Text('${detail!.effectivePermissions.length} ${context.l10n.accessAdminPermissionsLabel}'),
+          Text(
+            '${detail!.effectivePermissions.length} ${context.l10n.accessAdminPermissionsLabel}',
+          ),
           SizedBox(height: Theme.of(context).spacing.sm),
           Wrap(
             spacing: Theme.of(context).spacing.xs,
@@ -746,10 +773,14 @@ class _DetailContent extends ConsumerWidget {
           AppButton.secondary(
             label: context.l10n.accessAdminDeactivateAction,
             onPressed: () => unawaited(
-              controller.setUserStatus(item, 'INACTIVE').then((AppFailure? failure) {
+              controller.setUserStatus(item, 'INACTIVE').then((
+                AppFailure? failure,
+              ) {
                 if (failure != null && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.failureMessage(failure))),
+                    SnackBar(
+                      content: Text(context.l10n.failureMessage(failure)),
+                    ),
                   );
                 }
               }),
@@ -760,7 +791,8 @@ class _DetailContent extends ConsumerWidget {
         actions.add(
           AppButton.secondary(
             label: context.l10n.accessAdminActivateAction,
-            onPressed: () => unawaited(controller.setUserStatus(item, 'ACTIVE')),
+            onPressed: () =>
+                unawaited(controller.setUserStatus(item, 'ACTIVE')),
           ),
         );
       }

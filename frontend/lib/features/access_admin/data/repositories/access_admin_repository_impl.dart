@@ -81,7 +81,9 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         <String>[resource.serverValue, identifier],
       ),
       decoder: (Object? data) {
-        return AccessAdminLegacyRouteResolutionDto.fromResponse(data).toEntity();
+        return AccessAdminLegacyRouteResolutionDto.fromResponse(
+          data,
+        ).toEntity();
       },
     );
   }
@@ -230,7 +232,9 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<AccessAdminDemoResetResult>> resetDemoUserPassword(String userId) {
+  Future<Result<AccessAdminDemoResetResult>> resetDemoUserPassword(
+    String userId,
+  ) {
     return _apiClient.post<AccessAdminDemoResetResult>(
       ApiEndpoints.nested(
         HmsApiResource.accessAdminWorkspace,

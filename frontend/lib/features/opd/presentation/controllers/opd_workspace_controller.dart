@@ -718,8 +718,8 @@ final class OpdWorkspaceController
 
     final Result<OpdFlowAggregateCounts> summaryCountsResult = await _repository
         .getOpdSummaryCounts();
-    final OpdFlowAggregateCounts summaryCounts = _successOrNull(summaryCountsResult) ??
-        OpdFlowAggregateCounts.empty;
+    final OpdFlowAggregateCounts summaryCounts =
+        _successOrNull(summaryCountsResult) ?? OpdFlowAggregateCounts.empty;
 
     final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
         .listTriageQueue(triageQueueQuery);
@@ -729,7 +729,8 @@ final class OpdWorkspaceController
     );
     final AppFailure? triageQueueFailure = _failureOrNull(triageQueueResult);
 
-    final bool hasAnySuccess = appointmentsResult.isSuccess ||
+    final bool hasAnySuccess =
+        appointmentsResult.isSuccess ||
         queueResult.isSuccess ||
         flowsResult.isSuccess ||
         triageQueueResult.isSuccess;

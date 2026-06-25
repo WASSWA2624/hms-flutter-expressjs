@@ -29,7 +29,8 @@ List<AppSelectOption<String>> clinicalCatalogSelectOptions(
   List<ClinicalActionCatalogOption> options, {
   IconData icon = Icons.medical_services_outlined,
   IconData Function(ClinicalActionCatalogOption option)? iconBuilder,
-  Iterable<String?> Function(ClinicalActionCatalogOption option)? extraSearchValues,
+  Iterable<String?> Function(ClinicalActionCatalogOption option)?
+  extraSearchValues,
   Widget Function(ClinicalActionCatalogOption option)? labelBuilder,
 }) {
   return <AppSelectOption<String>>[

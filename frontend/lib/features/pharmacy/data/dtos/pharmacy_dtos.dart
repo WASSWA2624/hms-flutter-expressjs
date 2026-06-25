@@ -46,6 +46,9 @@ final class PharmacyWorkbenchSummaryDto {
       dispensedOrders: _int(json['dispensed_orders']) ?? 0,
       cancelledOrders: _int(json['cancelled_orders']) ?? 0,
       dischargePendingQueue: _int(json['discharge_pending_queue']) ?? 0,
+      outpatientQueue: _int(json['outpatient_queue']) ?? 0,
+      wardQueue: _int(json['ward_queue']) ?? 0,
+      pendingPaymentQueue: _int(json['pending_payment_queue']) ?? 0,
       pendingAttestations: _int(json['pending_attestations']) ?? 0,
     );
   }

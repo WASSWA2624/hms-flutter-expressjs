@@ -74,10 +74,7 @@ final class UserProfileDraft {
 
 @immutable
 final class UserProfileView {
-  const UserProfileView({
-    required this.session,
-    this.record,
-  });
+  const UserProfileView({required this.session, this.record});
 
   final AuthSession session;
   final UserProfileRecord? record;
@@ -88,10 +85,11 @@ final class UserProfileView {
   List<String> get roles => profile.roles;
 
   List<AppPermission> get permissions {
-    final List<AppPermission> sorted = session.permissions.toList(growable: false)
-      ..sort((AppPermission left, AppPermission right) {
-        return left.value.compareTo(right.value);
-      });
+    final List<AppPermission> sorted =
+        session.permissions.toList(growable: false)
+          ..sort((AppPermission left, AppPermission right) {
+            return left.value.compareTo(right.value);
+          });
     return sorted;
   }
 }
