@@ -1000,7 +1000,7 @@ const mapTheatreCaseSummary = (theatreCase) => {
     handover_destination:
       sanitizeIdentifier(theatreCase.handover_destination) || null,
     stage_notes: theatreCase.stage_notes || null,
-    post_op_note: latestPostOp?.notes || null,
+    post_op_note: latestPostOp?.note || null,
     post_op_status: sanitizeIdentifier(latestPostOp?.record_status) || null,
     room_label: sanitizeIdentifier(theatreCase.room?.name) || null,
   };
@@ -1026,7 +1026,7 @@ const buildTheatreOverlay = (admission) => {
         stage_notes: handoverCase.stage_notes || null,
         post_op_note:
           (Array.isArray(handoverCase.post_op_notes)
-            ? handoverCase.post_op_notes[0]?.notes
+            ? handoverCase.post_op_notes[0]?.note
             : null) || null,
         completed_at: handoverCase.completed_at || null,
       }
@@ -1999,7 +1999,6 @@ const DETAILED_SNAPSHOT_INCLUDE = {
           status: true,
           completed_at: true,
           created_at: true,
-          notes: true,
         },
       },
       theatre_cases: {
@@ -2018,16 +2017,9 @@ const DETAILED_SNAPSHOT_INCLUDE = {
             select: {
               id: true,
               human_friendly_id: true,
-              notes: true,
+              note: true,
               record_status: true,
               created_at: true,
-            },
-          },
-          room: {
-            select: {
-              id: true,
-              human_friendly_id: true,
-              name: true,
             },
           },
         },

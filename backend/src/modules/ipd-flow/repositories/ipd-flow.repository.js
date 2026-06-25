@@ -97,15 +97,8 @@ const BASE_INCLUDE = {
             orderBy: { updated_at: 'desc' },
             take: 1,
             select: {
-              notes: true,
+              note: true,
               record_status: true,
-            },
-          },
-          room: {
-            select: {
-              id: true,
-              human_friendly_id: true,
-              name: true,
             },
           },
         },
