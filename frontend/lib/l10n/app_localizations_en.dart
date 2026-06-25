@@ -7302,6 +7302,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsCloseClaimAction => 'Close as paid';
 
   @override
+  String get claimsInsuranceAuthorizationTitle => 'Insurance authorization';
+
+  @override
+  String get claimsInsuranceAuthorizationEmpty =>
+      'No authorization on file. Request pre-authorization before high-cost orders or elective admission.';
+
+  @override
+  String get claimsApprovedAmountLabel => 'Approved';
+
+  @override
+  String get claimsConsumedAmountLabel => 'Consumed';
+
+  @override
+  String get claimsRemainingAmountLabel => 'Remaining';
+
+  @override
+  String get claimsAuthorizationReasonLabel => 'Reason';
+
+  @override
+  String get claimsCoveragePlansUnavailable =>
+      'Coverage plans are unavailable. Verify insurance setup before proceeding.';
+
+  @override
+  String get opdCoverageVerificationTitle => 'Coverage verification';
+
+  @override
+  String get opdCoverageVerificationBody =>
+      'Confirm the patient\'s active coverage plan before recording an insurance consultation payment.';
+
+  @override
+  String get opdCoverageVerifiedLabel => 'Coverage verified for this visit';
+
+  @override
+  String get opdCoverageVerificationRequiredMessage =>
+      'Verify coverage before paying with insurance.';
+
+  @override
+  String get billingPreAuthApproveAction => 'Approve authorization';
+
+  @override
+  String get billingPreAuthDenyAction => 'Deny authorization';
+
+  @override
+  String get billingPreAuthApprovedAmountLabel => 'Approved amount';
+
+  @override
+  String get billingPreAuthConsumedAmountLabel => 'Consumed amount';
+
+  @override
   String get claimsFilterAll => 'All queues';
 
   @override

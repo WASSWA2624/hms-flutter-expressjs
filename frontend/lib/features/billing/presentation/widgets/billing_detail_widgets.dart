@@ -43,6 +43,8 @@ class BillingDetailBody extends ConsumerWidget {
     this.onReject,
     this.onSubmitClaim,
     this.onReconcileClaim,
+    this.onApprovePreAuthorization,
+    this.onDenyPreAuthorization,
     this.onViewLedger,
     this.onFinalizeEncounter,
     super.key,
@@ -61,6 +63,8 @@ class BillingDetailBody extends ConsumerWidget {
   final VoidCallback? onReject;
   final VoidCallback? onSubmitClaim;
   final VoidCallback? onReconcileClaim;
+  final VoidCallback? onApprovePreAuthorization;
+  final VoidCallback? onDenyPreAuthorization;
   final VoidCallback? onViewLedger;
   final VoidCallback? onFinalizeEncounter;
 
@@ -112,6 +116,8 @@ class BillingDetailBody extends ConsumerWidget {
             onReject: onReject,
             onSubmitClaim: onSubmitClaim,
             onReconcileClaim: onReconcileClaim,
+            onApprovePreAuthorization: onApprovePreAuthorization,
+            onDenyPreAuthorization: onDenyPreAuthorization,
             onFinalizeEncounter: onFinalizeEncounter,
           ),
           SizedBox(height: theme.spacing.md),
@@ -231,6 +237,8 @@ class _BillingActionPanel extends StatelessWidget {
     this.onReject,
     this.onSubmitClaim,
     this.onReconcileClaim,
+    this.onApprovePreAuthorization,
+    this.onDenyPreAuthorization,
     this.onFinalizeEncounter,
   });
 
@@ -247,6 +255,8 @@ class _BillingActionPanel extends StatelessWidget {
   final VoidCallback? onReject;
   final VoidCallback? onSubmitClaim;
   final VoidCallback? onReconcileClaim;
+  final VoidCallback? onApprovePreAuthorization;
+  final VoidCallback? onDenyPreAuthorization;
   final VoidCallback? onFinalizeEncounter;
 
   @override
@@ -346,6 +356,30 @@ class _BillingActionPanel extends StatelessWidget {
             enabled: !isSaving,
             variant: AppActionVariant.primary,
             onPressed: onReconcileClaim,
+          ),
+        );
+      }
+    }
+
+    if (item.isPreAuthorization) {
+      if (item.canApprovePreAuthorization) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingPreAuthApproveAction,
+            leadingIcon: Icons.check_circle_outline,
+            enabled: !isSaving,
+            variant: AppActionVariant.primary,
+            onPressed: onApprovePreAuthorization,
+          ),
+        );
+      }
+      if (item.canDenyPreAuthorization) {
+        actions.add(
+          AppActionItem(
+            label: l10n.billingPreAuthDenyAction,
+            leadingIcon: Icons.cancel_outlined,
+            enabled: !isSaving,
+            onPressed: onDenyPreAuthorization,
           ),
         );
       }

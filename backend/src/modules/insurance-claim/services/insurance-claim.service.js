@@ -346,6 +346,10 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
 
     const insuranceClaim = await insuranceClaimRepository.update(before.id, {
       status: data.status || 'PAID',
+      ...(data.settlement_amount !== undefined ? { settlement_amount: data.settlement_amount } : {}),
+      ...(data.payer_reference !== undefined ? { payer_reference: data.payer_reference } : {}),
+      ...(data.notes !== undefined ? { notes: data.notes } : {}),
+      ...(before.status === 'REJECTED' && data.status === 'SUBMITTED' ? { resubmitted_at: new Date() } : {}),
     });
     const updatedRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
 

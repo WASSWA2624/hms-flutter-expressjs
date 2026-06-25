@@ -13648,6 +13648,96 @@ abstract class AppLocalizations {
   /// **'Close as paid'**
   String get claimsCloseClaimAction;
 
+  /// Insurance authorization panel title for IPD and encounter contexts.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance authorization'**
+  String get claimsInsuranceAuthorizationTitle;
+
+  /// Empty state when no pre-authorization is linked.
+  ///
+  /// In en, this message translates to:
+  /// **'No authorization on file. Request pre-authorization before high-cost orders or elective admission.'**
+  String get claimsInsuranceAuthorizationEmpty;
+
+  /// Approved insurance authorization amount label.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get claimsApprovedAmountLabel;
+
+  /// Consumed insurance authorization amount label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumed'**
+  String get claimsConsumedAmountLabel;
+
+  /// Remaining insurance authorization amount label.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get claimsRemainingAmountLabel;
+
+  /// Pre-authorization reason label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get claimsAuthorizationReasonLabel;
+
+  /// Shown when coverage plan lookup fails during OPD verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plans are unavailable. Verify insurance setup before proceeding.'**
+  String get claimsCoveragePlansUnavailable;
+
+  /// OPD insurance coverage verification section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage verification'**
+  String get opdCoverageVerificationTitle;
+
+  /// OPD insurance coverage verification helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the patient\'s active coverage plan before recording an insurance consultation payment.'**
+  String get opdCoverageVerificationBody;
+
+  /// Checkbox label confirming OPD coverage verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage verified for this visit'**
+  String get opdCoverageVerifiedLabel;
+
+  /// Validation message when insurance payment is attempted without verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify coverage before paying with insurance.'**
+  String get opdCoverageVerificationRequiredMessage;
+
+  /// Billing workspace action to approve a pre-authorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve authorization'**
+  String get billingPreAuthApproveAction;
+
+  /// Billing workspace action to deny a pre-authorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny authorization'**
+  String get billingPreAuthDenyAction;
+
+  /// Pre-authorization approved amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved amount'**
+  String get billingPreAuthApprovedAmountLabel;
+
+  /// Pre-authorization consumed amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumed amount'**
+  String get billingPreAuthConsumedAmountLabel;
+
   /// Localized text for claimsFilterAll.
   ///
   /// In en, this message translates to:

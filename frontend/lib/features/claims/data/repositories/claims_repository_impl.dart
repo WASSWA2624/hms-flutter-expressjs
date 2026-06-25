@@ -197,6 +197,33 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
     );
   }
 
+  @override
+  Future<Result<AppPage<PreAuthorizationRecord>>> listPreAuthorizationsForContext({
+    String? patientId,
+    String? admissionId,
+    String? encounterId,
+    int limit = 20,
+  }) {
+    return _apiClient.get<AppPage<PreAuthorizationRecord>>(
+      ApiEndpoints.collection(HmsApiResource.preAuthorizations),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': limit,
+        'patient_id': patientId,
+        'admission_id': admissionId,
+        'encounter_id': encounterId,
+        'sort_by': 'requested_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) {
+        return PreAuthorizationPageDto.fromResponse(
+          data,
+          AppPageRequest(pageSize: limit),
+        ).page;
+      },
+    );
+  }
+
   Future<Result<AppPage<PreAuthorizationRecord>>> _listPreAuthorizations(
     ClaimsQueueQuery query,
   ) {

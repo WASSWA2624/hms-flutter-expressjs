@@ -372,6 +372,21 @@ final class BillingWorkItem {
     return isClaim && _normalizedStatus == 'SUBMITTED';
   }
 
+  bool get canUpdatePreAuthorization {
+    if (!isPreAuthorization) {
+      return false;
+    }
+    return _normalizedStatus == 'PENDING' || _normalizedStatus == 'DENIED';
+  }
+
+  bool get canApprovePreAuthorization {
+    return isPreAuthorization && _normalizedStatus == 'PENDING';
+  }
+
+  bool get canDenyPreAuthorization {
+    return isPreAuthorization && _normalizedStatus == 'PENDING';
+  }
+
   bool get canFinalizeEncounterBilling {
     return isInvoice &&
         (encounterId?.isNotEmpty ?? false) &&

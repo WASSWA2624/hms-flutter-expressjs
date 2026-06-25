@@ -16,7 +16,10 @@ const {
 } = require('@lib/billing/identifiers');
 
 const PRE_AUTH_INCLUDE = {
-  coverage_plan: { select: { id: true, human_friendly_id: true, tenant_id: true } },
+  coverage_plan: { select: { id: true, human_friendly_id: true, tenant_id: true, name: true, provider_name: true } },
+  patient: { select: { id: true, human_friendly_id: true, first_name: true, last_name: true } },
+  encounter: { select: { id: true, human_friendly_id: true } },
+  admission: { select: { id: true, human_friendly_id: true } },
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -44,8 +47,29 @@ const mapPreAuthorizationForDisplay = (record) => {
       record?.coverage_plan?.human_friendly_id,
       record?.coverage_plan_id
     ),
+    patient_display_id: resolvePublicIdentifier(
+      record?.patient_display_id,
+      record?.patient?.human_friendly_id,
+      record?.patient_id
+    ),
+    encounter_display_id: resolvePublicIdentifier(
+      record?.encounter_display_id,
+      record?.encounter?.human_friendly_id,
+      record?.encounter_id
+    ),
+    admission_display_id: resolvePublicIdentifier(
+      record?.admission_display_id,
+      record?.admission?.human_friendly_id,
+      record?.admission_id
+    ),
     timeline_at: record?.timeline_at || record?.approved_at || record?.requested_at || record?.created_at || null,
   };
+};
+
+const resolveOptionalIdentifier = async ({ value, field, model }) => {
+  if (value === undefined) return undefined;
+  if (value === null || String(value).trim() === '') return null;
+  return resolveIdentifierForPayload({ value, field, model });
 };
 
 /**
@@ -65,6 +89,33 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
       });
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
+    }
+
+    if (filters.patient_id !== undefined) {
+      const patientId = await resolveIdentifierForFilter({
+        value: filters.patient_id,
+        model: 'patient',
+      });
+      if (patientId === null) return buildEmptyListResult(page, limit);
+      if (patientId !== undefined) whereClause.patient_id = patientId;
+    }
+
+    if (filters.encounter_id !== undefined) {
+      const encounterId = await resolveIdentifierForFilter({
+        value: filters.encounter_id,
+        model: 'encounter',
+      });
+      if (encounterId === null) return buildEmptyListResult(page, limit);
+      if (encounterId !== undefined) whereClause.encounter_id = encounterId;
+    }
+
+    if (filters.admission_id !== undefined) {
+      const admissionId = await resolveIdentifierForFilter({
+        value: filters.admission_id,
+        model: 'admission',
+      });
+      if (admissionId === null) return buildEmptyListResult(page, limit);
+      if (admissionId !== undefined) whereClause.admission_id = admissionId;
     }
 
     if (filters.status) whereClause.status = filters.status;
@@ -137,10 +188,24 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       model: 'coverage_plan',
     });
 
-    const preAuthorization = await preAuthorizationRepository.create({
-      ...data,
-      coverage_plan_id: coveragePlanId,
+    const payload = { ...data, coverage_plan_id: coveragePlanId };
+    payload.patient_id = await resolveOptionalIdentifier({
+      value: data?.patient_id,
+      field: 'patient_id',
+      model: 'patient',
     });
+    payload.encounter_id = await resolveOptionalIdentifier({
+      value: data?.encounter_id,
+      field: 'encounter_id',
+      model: 'encounter',
+    });
+    payload.admission_id = await resolveOptionalIdentifier({
+      value: data?.admission_id,
+      field: 'admission_id',
+      model: 'admission',
+    });
+
+    const preAuthorization = await preAuthorizationRepository.create(payload);
 
     const createdRecord = await preAuthorizationRepository.findById(preAuthorization.id, PRE_AUTH_INCLUDE);
 
@@ -184,6 +249,31 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
         field: 'coverage_plan_id',
         model: 'coverage_plan',
       });
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'patient_id')) {
+      payload.patient_id = await resolveOptionalIdentifier({
+        value: payload.patient_id,
+        field: 'patient_id',
+        model: 'patient',
+      });
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'encounter_id')) {
+      payload.encounter_id = await resolveOptionalIdentifier({
+        value: payload.encounter_id,
+        field: 'encounter_id',
+        model: 'encounter',
+      });
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'admission_id')) {
+      payload.admission_id = await resolveOptionalIdentifier({
+        value: payload.admission_id,
+        field: 'admission_id',
+        model: 'admission',
+      });
+    }
+
+    if (payload.status === 'APPROVED' && !payload.approved_at) {
+      payload.approved_at = new Date();
     }
 
     const preAuthorization = await preAuthorizationRepository.update(before.id, payload);

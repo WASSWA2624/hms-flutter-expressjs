@@ -84,6 +84,9 @@ const CLAIM_INCLUDE = {
 
 const PRE_AUTH_INCLUDE = {
   coverage_plan: { select: { id: true, human_friendly_id: true, name: true, provider_name: true } },
+  patient: { select: { id: true, human_friendly_id: true, first_name: true, last_name: true } },
+  encounter: { select: { id: true, human_friendly_id: true } },
+  admission: { select: { id: true, human_friendly_id: true } },
 };
 
 const ADJUSTMENT_INCLUDE = {
@@ -340,11 +343,13 @@ const mapRefund = (refund = {}) => ({
 
 const mapClaim = (claim = {}) => ({
   ...claim,
+  type: 'CLAIM',
   display_id: displayId(claim),
   invoice_display_id: displayId(claim.invoice || {}),
   coverage_plan_display_id: displayId(claim.coverage_plan || {}),
   patient_display_id: displayId(claim.invoice?.patient || {}),
   patient_display_name: patientName(claim.invoice?.patient || {}),
+  amount: toMoneyString(claim.settlement_amount || claim.invoice?.total_amount),
   timeline_at: claim.submitted_at || claim.created_at || null,
 });
 
@@ -359,8 +364,14 @@ const mapAdjustment = (adjustment = {}) => ({
 
 const mapPreAuthorization = (preAuth = {}) => ({
   ...preAuth,
+  type: 'PRE_AUTH',
   display_id: displayId(preAuth),
   coverage_plan_display_id: displayId(preAuth.coverage_plan || {}),
+  patient_display_id: displayId(preAuth.patient || {}),
+  patient_display_name: patientName(preAuth.patient || {}),
+  encounter_display_id: displayId(preAuth.encounter || {}),
+  admission_display_id: displayId(preAuth.admission || {}),
+  amount: toMoneyString(preAuth.approved_amount),
   timeline_at: preAuth.approved_at || preAuth.requested_at || preAuth.created_at || null,
 });
 
@@ -497,15 +508,32 @@ const runQueue = async (queue, scope, page, limit, search) => {
     return { queue, items: items.map((item) => mapInvoice(item)), total };
   }
   if (queue === QUEUE_TYPES.CLAIMS_PENDING) {
-    const where = {
-      status: 'SUBMITTED',
-      invoice: { deleted_at: null, tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}), ...(scope.patient_id ? { patient_id: scope.patient_id } : {}) },
+    const claimWhere = {
+      status: { in: ['SUBMITTED', 'REJECTED'] },
+      invoice: {
+        deleted_at: null,
+        tenant_id: scope.tenant_id,
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        ...(scope.patient_id ? { patient_id: scope.patient_id } : {}),
+      },
     };
-    const [items, total] = await Promise.all([
-      billingRepository.findManyClaims(where, skip, limit, { submitted_at: 'desc' }, CLAIM_INCLUDE),
-      billingRepository.countClaims(where),
+    const preAuthWhere = {
+      status: { in: ['PENDING', 'DENIED'] },
+      coverage_plan: { deleted_at: null, tenant_id: scope.tenant_id },
+      ...(scope.patient_id ? { patient_id: scope.patient_id } : {}),
+    };
+    const [claims, preAuths, claimTotal, preAuthTotal] = await Promise.all([
+      billingRepository.findManyClaims(claimWhere, 0, Math.max(limit * 3, 60), { submitted_at: 'desc' }, CLAIM_INCLUDE),
+      billingRepository.findManyPreAuthorizations(preAuthWhere, 0, Math.max(limit * 3, 60), { requested_at: 'desc' }, PRE_AUTH_INCLUDE),
+      billingRepository.countClaims(claimWhere),
+      billingRepository.countPreAuthorizations(preAuthWhere),
     ]);
-    return { queue, items: items.map((item) => mapClaim(item)), total };
+    const merged = [
+      ...claims.map((item) => mapClaim(item)),
+      ...preAuths.map((item) => mapPreAuthorization(item)),
+    ].sort((left, right) => (toDate(right.timeline_at)?.getTime() || 0) - (toDate(left.timeline_at)?.getTime() || 0));
+    const items = merged.slice(skip, skip + limit);
+    return { queue, items, total: claimTotal + preAuthTotal };
   }
   if (queue === QUEUE_TYPES.APPROVAL_REQUIRED) {
     const where = { tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}), status: 'PENDING' };
@@ -536,10 +564,15 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const [needsIssue, pendingPayment, claimsPending, approvalPending, overdue, paymentsToday, refundsToday, invoices, payments, refunds, claims, preAuthorizations, adjustments, approvals] = await Promise.all([
+  const [needsIssue, pendingPayment, claimPendingCount, preAuthPendingCount, approvalPending, overdue, paymentsToday, refundsToday, invoices, payments, refunds, claims, preAuthorizations, adjustments, approvals] = await Promise.all([
     billingRepository.countInvoices({ ...invoiceWhere, billing_status: 'DRAFT' }),
     billingRepository.countInvoices({ ...invoiceWhere, billing_status: { in: ['ISSUED', 'PARTIAL'] }, status: { in: ['SENT', 'OVERDUE'] } }),
-    billingRepository.countClaims({ ...claimWhere, status: 'SUBMITTED' }),
+    billingRepository.countClaims({ ...claimWhere, status: { in: ['SUBMITTED', 'REJECTED'] } }),
+    billingRepository.countPreAuthorizations({
+      status: { in: ['PENDING', 'DENIED'] },
+      coverage_plan: { deleted_at: null, tenant_id: scope.tenant_id },
+      ...(scope.patient_id ? { patient_id: scope.patient_id } : {}),
+    }),
     billingRepository.countApprovals({ ...approvalWhere, status: 'PENDING' }),
     billingRepository.countInvoices({ ...invoiceWhere, status: 'OVERDUE', billing_status: { not: 'CANCELLED' } }),
     billingRepository.aggregatePayments({ ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }),
@@ -570,7 +603,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
     summary: {
       needs_issue: needsIssue,
       pending_payment: pendingPayment,
-      claims_pending: claimsPending,
+      claims_pending: claimPendingCount + preAuthPendingCount,
       approval_required: approvalPending,
       overdue,
       payments_today_total: toMoneyString(paymentsToday?._sum?.amount || 0),
@@ -579,7 +612,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
     queues: [
       { queue: QUEUE_TYPES.NEEDS_ISSUE, label: 'Needs issue', count: needsIssue },
       { queue: QUEUE_TYPES.PENDING_PAYMENT, label: 'Pending payment', count: pendingPayment },
-      { queue: QUEUE_TYPES.CLAIMS_PENDING, label: 'Claims pending', count: claimsPending },
+      { queue: QUEUE_TYPES.CLAIMS_PENDING, label: 'Claims pending', count: claimPendingCount + preAuthPendingCount },
       { queue: QUEUE_TYPES.APPROVAL_REQUIRED, label: 'Approval required', count: approvalPending },
       { queue: QUEUE_TYPES.OVERDUE, label: 'Overdue', count: overdue },
     ],

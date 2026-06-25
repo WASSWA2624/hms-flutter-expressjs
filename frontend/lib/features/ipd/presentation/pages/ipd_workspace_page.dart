@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_authorization_panel.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -609,6 +610,13 @@ class _IpdDetailPanel extends ConsumerWidget {
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           _IpdBedSection(admission: admission),
+          InsuranceAuthorizationPanel(
+            patientId: admission.summary.patientId,
+            admissionId: admission.summary.id,
+            encounterId: admission.summary.encounterId,
+            canManage: canOperate,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
           _IpdRecordSection(
             title: l10n.ipdTransfersSectionTitle,
             icon: Icons.swap_horiz,

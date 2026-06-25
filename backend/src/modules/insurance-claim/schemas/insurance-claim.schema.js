@@ -53,6 +53,8 @@ const submitInsuranceClaimSchema = z.object({
  */
 const reconcileInsuranceClaimSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'PAID']).optional(),
+  settlement_amount: z.coerce.number().nonnegative().optional().nullable(),
+  payer_reference: z.string().trim().max(120).optional().nullable(),
   notes: z.string().trim().max(10000).optional().nullable()
 });
 
@@ -76,6 +78,7 @@ const insuranceClaimIdParamsSchema = z.object({
 const listInsuranceClaimsQuerySchema = listQuerySchema.extend({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
   invoice_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(['SUBMITTED', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED']).optional(),
   submitted_at_from: z.string().datetime().optional(),
   submitted_at_to: z.string().datetime().optional()

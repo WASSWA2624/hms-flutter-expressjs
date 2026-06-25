@@ -89,6 +89,16 @@ const countInvoices = async (where = {}) =>
     })
   );
 
+const countPreAuthorizations = async (where = {}) =>
+  withDbErrorHandling(() =>
+    prisma.pre_authorization.count({
+      where: {
+        deleted_at: null,
+        ...where,
+      },
+    })
+  );
+
 const countClaims = async (where = {}) =>
   withDbErrorHandling(() =>
     prisma.insurance_claim.count({
@@ -339,6 +349,7 @@ module.exports = {
   findPatientById,
   countInvoices,
   countClaims,
+  countPreAuthorizations,
   countApprovals,
   countPayments,
   countRefunds,

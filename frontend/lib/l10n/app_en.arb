@@ -9396,6 +9396,66 @@
   "@claimsCloseClaimAction": {
     "description": "Localized text for claimsCloseClaimAction."
   },
+  "claimsInsuranceAuthorizationTitle": "Insurance authorization",
+  "@claimsInsuranceAuthorizationTitle": {
+    "description": "Insurance authorization panel title for IPD and encounter contexts."
+  },
+  "claimsInsuranceAuthorizationEmpty": "No authorization on file. Request pre-authorization before high-cost orders or elective admission.",
+  "@claimsInsuranceAuthorizationEmpty": {
+    "description": "Empty state when no pre-authorization is linked."
+  },
+  "claimsApprovedAmountLabel": "Approved",
+  "@claimsApprovedAmountLabel": {
+    "description": "Approved insurance authorization amount label."
+  },
+  "claimsConsumedAmountLabel": "Consumed",
+  "@claimsConsumedAmountLabel": {
+    "description": "Consumed insurance authorization amount label."
+  },
+  "claimsRemainingAmountLabel": "Remaining",
+  "@claimsRemainingAmountLabel": {
+    "description": "Remaining insurance authorization amount label."
+  },
+  "claimsAuthorizationReasonLabel": "Reason",
+  "@claimsAuthorizationReasonLabel": {
+    "description": "Pre-authorization reason label."
+  },
+  "claimsCoveragePlansUnavailable": "Coverage plans are unavailable. Verify insurance setup before proceeding.",
+  "@claimsCoveragePlansUnavailable": {
+    "description": "Shown when coverage plan lookup fails during OPD verification."
+  },
+  "opdCoverageVerificationTitle": "Coverage verification",
+  "@opdCoverageVerificationTitle": {
+    "description": "OPD insurance coverage verification section title."
+  },
+  "opdCoverageVerificationBody": "Confirm the patient's active coverage plan before recording an insurance consultation payment.",
+  "@opdCoverageVerificationBody": {
+    "description": "OPD insurance coverage verification helper text."
+  },
+  "opdCoverageVerifiedLabel": "Coverage verified for this visit",
+  "@opdCoverageVerifiedLabel": {
+    "description": "Checkbox label confirming OPD coverage verification."
+  },
+  "opdCoverageVerificationRequiredMessage": "Verify coverage before paying with insurance.",
+  "@opdCoverageVerificationRequiredMessage": {
+    "description": "Validation message when insurance payment is attempted without verification."
+  },
+  "billingPreAuthApproveAction": "Approve authorization",
+  "@billingPreAuthApproveAction": {
+    "description": "Billing workspace action to approve a pre-authorization."
+  },
+  "billingPreAuthDenyAction": "Deny authorization",
+  "@billingPreAuthDenyAction": {
+    "description": "Billing workspace action to deny a pre-authorization."
+  },
+  "billingPreAuthApprovedAmountLabel": "Approved amount",
+  "@billingPreAuthApprovedAmountLabel": {
+    "description": "Pre-authorization approved amount field label."
+  },
+  "billingPreAuthConsumedAmountLabel": "Consumed amount",
+  "@billingPreAuthConsumedAmountLabel": {
+    "description": "Pre-authorization consumed amount field label."
+  },
   "claimsFilterAll": "All queues",
   "@claimsFilterAll": {
     "description": "Localized text for claimsFilterAll."

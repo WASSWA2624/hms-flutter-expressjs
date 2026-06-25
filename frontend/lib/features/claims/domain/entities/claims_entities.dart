@@ -111,6 +111,16 @@ final class PreAuthorizationRecord {
     required this.coveragePlanId,
     required this.coveragePlanDisplayId,
     required this.status,
+    this.patientId,
+    this.patientDisplayId,
+    this.encounterId,
+    this.encounterDisplayId,
+    this.admissionId,
+    this.admissionDisplayId,
+    this.reason,
+    this.approvedAmount,
+    this.consumedAmount,
+    this.notes,
     this.requestedAt,
     this.approvedAt,
     this.timelineAt,
@@ -121,11 +131,36 @@ final class PreAuthorizationRecord {
   final String coveragePlanId;
   final String coveragePlanDisplayId;
   final String status;
+  final String? patientId;
+  final String? patientDisplayId;
+  final String? encounterId;
+  final String? encounterDisplayId;
+  final String? admissionId;
+  final String? admissionDisplayId;
+  final String? reason;
+  final num? approvedAmount;
+  final num? consumedAmount;
+  final String? notes;
   final DateTime? requestedAt;
   final DateTime? approvedAt;
   final DateTime? timelineAt;
 
   String get apiId => _firstNonEmpty(<String?>[displayId, id]) ?? id;
+
+  num? get remainingAmount {
+    if (approvedAmount == null) {
+      return null;
+    }
+    return approvedAmount! - (consumedAmount ?? 0);
+  }
+
+  bool get isAuthorizationSufficient {
+    final num? remaining = remainingAmount;
+    if (remaining == null) {
+      return status.toUpperCase() == 'APPROVED';
+    }
+    return status.toUpperCase() == 'APPROVED' && remaining > 0;
+  }
 }
 
 @immutable
@@ -139,7 +174,11 @@ final class InsuranceClaimRecord {
     required this.invoiceDisplayId,
     required this.status,
     this.patientDisplayId,
+    this.settlementAmount,
+    this.payerReference,
+    this.notes,
     this.submittedAt,
+    this.resubmittedAt,
     this.timelineAt,
   });
 
@@ -151,7 +190,11 @@ final class InsuranceClaimRecord {
   final String invoiceDisplayId;
   final String status;
   final String? patientDisplayId;
+  final num? settlementAmount;
+  final String? payerReference;
+  final String? notes;
   final DateTime? submittedAt;
+  final DateTime? resubmittedAt;
   final DateTime? timelineAt;
 
   String get apiId => _firstNonEmpty(<String?>[displayId, id]) ?? id;
@@ -192,7 +235,8 @@ final class ClaimsQueueItem {
 
   String? get invoiceDisplayId => claim?.invoiceDisplayId;
 
-  String? get patientDisplayId => claim?.patientDisplayId;
+  String? get patientDisplayId =>
+      authorization?.patientDisplayId ?? claim?.patientDisplayId;
 
   DateTime? get timelineAt {
     return authorization?.timelineAt ??

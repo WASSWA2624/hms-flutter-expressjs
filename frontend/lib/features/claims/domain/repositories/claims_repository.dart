@@ -31,4 +31,11 @@ abstract interface class ClaimsRepository {
     String claimId,
     Map<String, Object?> payload,
   );
+
+  Future<Result<AppPage<PreAuthorizationRecord>>> listPreAuthorizationsForContext({
+    String? patientId,
+    String? admissionId,
+    String? encounterId,
+    int limit = 20,
+  });
 }

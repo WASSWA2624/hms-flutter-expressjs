@@ -452,6 +452,12 @@ Future<void> _showBillingDetailDialog(
         onReconcileClaim: item.canReconcileClaim
             ? () => _showReconcileClaimDialog(context, ref)
             : null,
+        onApprovePreAuthorization: item.canApprovePreAuthorization
+            ? () => _showPreAuthStatusDialog(context, ref, status: 'APPROVED')
+            : null,
+        onDenyPreAuthorization: item.canDenyPreAuthorization
+            ? () => _showPreAuthStatusDialog(context, ref, status: 'DENIED')
+            : null,
         onViewLedger: (item.patientId ?? item.effectivePatientNumber) != null
             ? () => showBillingLedgerDialog(context, ref, item: item)
             : null,
@@ -1423,6 +1429,45 @@ Future<void> _showReconcileClaimDialog(
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .reconcileSelectedClaim(draft);
+  if (!context.mounted) {
+    return;
+  }
+  _showMutationResult(context, ref, failure);
+}
+
+Future<void> _showPreAuthStatusDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required String status,
+}) async {
+  final AppLocalizations l10n = context.l10n;
+  final String? notes = await showAppWorkspaceActionDialog(
+    context: context,
+    title: Text(
+      status == 'APPROVED'
+          ? l10n.billingPreAuthApproveAction
+          : l10n.billingPreAuthDenyAction,
+    ),
+    icon: Icon(
+      status == 'APPROVED'
+          ? Icons.check_circle_outline
+          : Icons.cancel_outlined,
+    ),
+    content: _NotesForm(
+      submitLabel: status == 'APPROVED'
+          ? l10n.billingPreAuthApproveAction
+          : l10n.billingPreAuthDenyAction,
+    ),
+  );
+  if (!context.mounted) {
+    return;
+  }
+  final AppFailure? failure = await ref
+      .read(billingWorkspaceControllerProvider.notifier)
+      .updateSelectedPreAuthorization(<String, Object?>{
+        'status': status,
+        if ((notes ?? '').trim().isNotEmpty) 'notes': notes!.trim(),
+      });
   if (!context.mounted) {
     return;
   }

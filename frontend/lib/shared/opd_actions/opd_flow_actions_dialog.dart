@@ -25,6 +25,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_consultation_billing_breakdown.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_coverage_verification_panel.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -844,6 +845,8 @@ class _ConsultationPaymentDialogState
   String _currency = appDefaultCurrencyCode;
   String _method = 'CASH';
   bool _isSaving = false;
+  bool _coverageVerified = false;
+  String? _selectedCoveragePlanId;
   AppFailure? _failure;
 
   OpdFlowSummary get _currentFlow {
@@ -939,10 +942,27 @@ class _ConsultationPaymentDialogState
               ),
               enabled: !_isSaving,
               onChanged: (String? value) {
-                setState(() => _method = value ?? _method);
+                setState(() {
+                  _method = value ?? _method;
+                  _coverageVerified = false;
+                  _selectedCoveragePlanId = null;
+                });
               },
               options: _statusOptions(_paymentMethods),
             ),
+            if (_method == 'INSURANCE') ...<Widget>[
+              OpdCoverageVerificationPanel(
+                patientId: flow.patientId,
+                encounterId: flow.apiId,
+                enabled: !_isSaving,
+                onVerifiedChanged: (({bool verified, String? coveragePlanId}) result) {
+                  setState(() {
+                    _coverageVerified = result.verified;
+                    _selectedCoveragePlanId = result.coveragePlanId;
+                  });
+                },
+              ),
+            ],
             AppTextField(
               controller: _referenceController,
               labelText: _opdOptionalFieldLabel(
@@ -975,6 +995,12 @@ class _ConsultationPaymentDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    if (_method == 'INSURANCE' && !_coverageVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.opdCoverageVerificationRequiredMessage)),
+      );
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -987,7 +1013,7 @@ class _ConsultationPaymentDialogState
           'method': _method,
           'status': 'COMPLETED',
           'transaction_ref': _referenceController.text.trim(),
-          'notes': _notesController.text.trim(),
+          'notes': _joinPaymentNotes(),
           if (opdFlowBillingState(_currentFlow) == OpdBillingState.paid)
             'correction': true,
           'paid_at': DateTime.now().toUtc().toIso8601String(),
@@ -1003,6 +1029,19 @@ class _ConsultationPaymentDialogState
       _failure = failure;
       _isSaving = false;
     });
+  }
+
+  String _joinPaymentNotes() {
+    final String manualNotes = _notesController.text.trim();
+    if (_method != 'INSURANCE') {
+      return manualNotes;
+    }
+    final String coveragePlanId = (_selectedCoveragePlanId ?? '').trim();
+    final List<String> parts = <String>[
+      if (coveragePlanId.isNotEmpty) 'coverage_plan_id=$coveragePlanId',
+      if (manualNotes.isNotEmpty) manualNotes,
+    ];
+    return parts.join(' | ');
   }
 }
 

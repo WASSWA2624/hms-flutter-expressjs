@@ -21,6 +21,13 @@ const {
  */
 const createPreAuthorizationSchema = z.object({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema,
+  patient_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  admission_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  reason: z.string().trim().max(120).optional().nullable(),
+  approved_amount: z.coerce.number().nonnegative().optional().nullable(),
+  consumed_amount: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable(),
   status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
   requested_at: z.string().datetime().optional(),
   approved_at: z.string().datetime().optional().nullable()
@@ -33,6 +40,13 @@ const createPreAuthorizationSchema = z.object({
  */
 const updatePreAuthorizationSchema = z.object({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  admission_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  reason: z.string().trim().max(120).optional().nullable(),
+  approved_amount: z.coerce.number().nonnegative().optional().nullable(),
+  consumed_amount: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable(),
   status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
   requested_at: z.string().datetime().optional(),
   approved_at: z.string().datetime().optional().nullable()
@@ -57,6 +71,9 @@ const preAuthorizationIdParamsSchema = z.object({
  */
 const listPreAuthorizationsQuerySchema = listQuerySchema.extend({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
+  admission_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
   requested_at_from: z.string().datetime().optional(),
   requested_at_to: z.string().datetime().optional(),
