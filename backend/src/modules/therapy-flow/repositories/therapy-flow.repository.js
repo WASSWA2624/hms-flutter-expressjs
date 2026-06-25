@@ -13,7 +13,12 @@ const PATIENT_SELECT = {
   first_name: true,
   last_name: true,
   gender: true,
-  phone: true,
+  contacts: {
+    where: { deleted_at: null, contact_type: 'PHONE' },
+    orderBy: [{ is_primary: 'desc' }, { created_at: 'asc' }],
+    take: 1,
+    select: { value: true },
+  },
 };
 
 const ENCOUNTER_SELECT = {

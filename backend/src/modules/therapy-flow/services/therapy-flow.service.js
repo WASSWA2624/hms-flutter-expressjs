@@ -89,6 +89,11 @@ const resolvePatientDisplayName = (patient) => {
   return fullName || null;
 };
 
+const resolvePatientPhone = (patient) => {
+  const contact = Array.isArray(patient?.contacts) ? patient.contacts[0] : null;
+  return sanitize(contact?.value) || null;
+};
+
 const resolveByIdentifier = async (
   delegate,
   identifier,
@@ -229,7 +234,7 @@ const mapTherapyWorkItem = (episode) => {
     patient_id: resolvePublicIdentifier(patient) || patient.id,
     patient_public_id: resolvePublicIdentifier(patient),
     patient_display_name: resolvePatientDisplayName(patient),
-    patient_phone: patient.phone || null,
+    patient_phone: resolvePatientPhone(patient),
     patient_gender: patient.gender || null,
     encounter_type: encounter.encounter_type || null,
     source: episode.source_kind || 'REFERRAL',
