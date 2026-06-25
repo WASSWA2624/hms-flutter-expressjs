@@ -12831,6 +12831,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAvailabilityUnavailable => 'Unavailable';
 
   @override
+  String get hrAddAvailabilitySlotAction => 'Add slot';
+
+  @override
+  String get hrRemoveAvailabilitySlotAction => 'Remove slot';
+
+  @override
   String get hrClearFiltersAction => 'Clear filters';
 
   @override
@@ -12894,6 +12900,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrLeaveLabel => 'Leave';
+
+  @override
+  String get hrLeaveDaysLabel => 'Number of days';
+
+  @override
+  String get hrLeaveDaysHelper =>
+      'Auto-calculates the end date from the start date.';
+
+  @override
+  String get hrAddNewPositionLabel => 'Add a new position';
+
+  @override
+  String get hrNewPositionLabel => 'New position name';
+
+  @override
+  String get hrSelectShiftLabel => 'Shift';
+
+  @override
+  String get hrSelectShiftHint => 'Search shifts by name, time, or department';
+
+  @override
+  String get hrStaffOverviewSectionTitle => 'Overview';
+
+  @override
+  String get hrRoomLabel => 'Room';
+
+  @override
+  String get hrCompensationAction => 'Compensation';
+
+  @override
+  String get hrCompensationDialogTitle => 'Update compensation';
+
+  @override
+  String get hrCompensationSectionTitle => 'Compensation';
+
+  @override
+  String get hrCompensationLabel => 'Compensation';
+
+  @override
+  String get hrNoCompensationLabel => 'No compensation records';
+
+  @override
+  String get hrCompensationHourlyRateLabel => 'Hourly rate';
+
+  @override
+  String get hrCompensationMonthlyRateLabel => 'Monthly rate';
+
+  @override
+  String get hrCompensationProcedureRateLabel => 'Procedure rate';
 
   @override
   String get hrLeaveReportLabel => 'Leave summary';

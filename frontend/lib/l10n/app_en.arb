@@ -16611,6 +16611,14 @@
   "@hrAvailabilityUnavailable": {
     "description": "Human resources workspace text for hrAvailabilityUnavailable."
   },
+  "hrAddAvailabilitySlotAction": "Add slot",
+  "@hrAddAvailabilitySlotAction": {
+    "description": "Human resources workspace text for hrAddAvailabilitySlotAction."
+  },
+  "hrRemoveAvailabilitySlotAction": "Remove slot",
+  "@hrRemoveAvailabilitySlotAction": {
+    "description": "Human resources workspace text for hrRemoveAvailabilitySlotAction."
+  },
   "hrClearFiltersAction": "Clear filters",
   "@hrClearFiltersAction": {
     "description": "Human resources workspace text for hrClearFiltersAction."
@@ -16699,6 +16707,70 @@
   "hrLeaveLabel": "Leave",
   "@hrLeaveLabel": {
     "description": "Human resources workspace text for hrLeaveLabel."
+  },
+  "hrLeaveDaysLabel": "Number of days",
+  "@hrLeaveDaysLabel": {
+    "description": "Human resources workspace text for hrLeaveDaysLabel."
+  },
+  "hrLeaveDaysHelper": "Auto-calculates the end date from the start date.",
+  "@hrLeaveDaysHelper": {
+    "description": "Human resources workspace text for hrLeaveDaysHelper."
+  },
+  "hrAddNewPositionLabel": "Add a new position",
+  "@hrAddNewPositionLabel": {
+    "description": "Human resources workspace text for hrAddNewPositionLabel."
+  },
+  "hrNewPositionLabel": "New position name",
+  "@hrNewPositionLabel": {
+    "description": "Human resources workspace text for hrNewPositionLabel."
+  },
+  "hrSelectShiftLabel": "Shift",
+  "@hrSelectShiftLabel": {
+    "description": "Human resources workspace text for hrSelectShiftLabel."
+  },
+  "hrSelectShiftHint": "Search shifts by name, time, or department",
+  "@hrSelectShiftHint": {
+    "description": "Human resources workspace text for hrSelectShiftHint."
+  },
+  "hrStaffOverviewSectionTitle": "Overview",
+  "@hrStaffOverviewSectionTitle": {
+    "description": "Human resources workspace text for hrStaffOverviewSectionTitle."
+  },
+  "hrRoomLabel": "Room",
+  "@hrRoomLabel": {
+    "description": "Human resources workspace text for hrRoomLabel."
+  },
+  "hrCompensationAction": "Compensation",
+  "@hrCompensationAction": {
+    "description": "Human resources workspace text for hrCompensationAction."
+  },
+  "hrCompensationDialogTitle": "Update compensation",
+  "@hrCompensationDialogTitle": {
+    "description": "Human resources workspace text for hrCompensationDialogTitle."
+  },
+  "hrCompensationSectionTitle": "Compensation",
+  "@hrCompensationSectionTitle": {
+    "description": "Human resources workspace text for hrCompensationSectionTitle."
+  },
+  "hrCompensationLabel": "Compensation",
+  "@hrCompensationLabel": {
+    "description": "Human resources workspace text for hrCompensationLabel."
+  },
+  "hrNoCompensationLabel": "No compensation records",
+  "@hrNoCompensationLabel": {
+    "description": "Human resources workspace text for hrNoCompensationLabel."
+  },
+  "hrCompensationHourlyRateLabel": "Hourly rate",
+  "@hrCompensationHourlyRateLabel": {
+    "description": "Human resources workspace text for hrCompensationHourlyRateLabel."
+  },
+  "hrCompensationMonthlyRateLabel": "Monthly rate",
+  "@hrCompensationMonthlyRateLabel": {
+    "description": "Human resources workspace text for hrCompensationMonthlyRateLabel."
+  },
+  "hrCompensationProcedureRateLabel": "Procedure rate",
+  "@hrCompensationProcedureRateLabel": {
+    "description": "Human resources workspace text for hrCompensationProcedureRateLabel."
   },
   "hrLeaveReportLabel": "Leave summary",
   "@hrLeaveReportLabel": {

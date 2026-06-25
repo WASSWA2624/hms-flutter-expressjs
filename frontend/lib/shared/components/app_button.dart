@@ -268,6 +268,14 @@ class AppButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color foregroundColor = _buttonForegroundColor(theme, variant);
+    // The primary variant is a high-emphasis CTA (for example "Add staff").
+    // When collapsed to icon-only inside compact action bars it must stay a
+    // clearly visible, filled control in both light and dark themes rather
+    // than fading into a low-contrast plain glyph.
+    final bool filled = variant == AppButtonVariant.primary;
+    final Color overlayBaseColor = filled
+        ? colorScheme.onPrimary
+        : foregroundColor;
 
     return ButtonStyle(
       animationDuration: _buttonAnimationDuration,
@@ -289,7 +297,17 @@ class AppButton extends StatelessWidget {
         }
         return foregroundColor;
       }),
-      backgroundColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (!filled) {
+          return Colors.transparent;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return colorScheme.onSurface.withValues(alpha: 0.08);
+        }
+        return colorScheme.primary;
+      }),
       overlayColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
       ) {
@@ -297,13 +315,13 @@ class AppButton extends StatelessWidget {
           return null;
         }
         if (states.contains(WidgetState.pressed)) {
-          return foregroundColor.withValues(alpha: 0.14);
+          return overlayBaseColor.withValues(alpha: 0.14);
         }
         if (states.contains(WidgetState.focused)) {
-          return foregroundColor.withValues(alpha: 0.12);
+          return overlayBaseColor.withValues(alpha: 0.12);
         }
         if (states.contains(WidgetState.hovered)) {
-          return foregroundColor.withValues(alpha: 0.08);
+          return overlayBaseColor.withValues(alpha: 0.08);
         }
         return null;
       }),

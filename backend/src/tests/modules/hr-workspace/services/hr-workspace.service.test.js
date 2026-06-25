@@ -6,6 +6,8 @@ describe('hr-workspace.service contract', () => {
     jest.clearAllMocks();
     prisma.facility = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.department = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.unit = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_profile = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_position = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };

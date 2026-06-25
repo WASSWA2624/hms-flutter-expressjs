@@ -94,6 +94,7 @@ final class HrRepositoryImpl implements HrRepository {
             assignments: results[0] as List<HrStaffAssignment>,
             leaves: results[1] as List<HrStaffLeave>,
             availabilities: results[2] as List<HrStaffAvailability>,
+            compensations: detail.compensations,
             shiftAssignments: results[3] as List<HrShiftAssignment>,
           ),
         );

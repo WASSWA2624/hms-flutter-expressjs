@@ -23,6 +23,7 @@ const createStaffAssignmentSchema = z.object({
   staff_profile_id: uuidOrFriendlyIdentifierSchema,
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   unit_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   start_date: z.coerce.date(),
   end_date: z.coerce.date().optional().nullable()
 });
@@ -35,6 +36,7 @@ const createStaffAssignmentSchema = z.object({
 const updateStaffAssignmentSchema = z.object({
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   unit_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   start_date: z.coerce.date().optional(),
   end_date: z.coerce.date().optional().nullable()
 });
@@ -59,7 +61,8 @@ const staffAssignmentIdParamsSchema = z.object({
 const listStaffAssignmentsQuerySchema = listQuerySchema.extend({
   staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
-  unit_id: uuidOrFriendlyIdentifierSchema.optional()
+  unit_id: uuidOrFriendlyIdentifierSchema.optional(),
+  room_id: uuidOrFriendlyIdentifierSchema.optional()
 });
 
 module.exports = {

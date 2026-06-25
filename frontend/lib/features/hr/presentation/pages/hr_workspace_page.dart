@@ -655,6 +655,13 @@ class _HrStaffDetailBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text(
+          l10n.hrStaffOverviewSectionTitle,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
         AppInfoTileGrid(
           emptyValue: l10n.profileUnknownValue,
           items: <AppInfoTileData>[
@@ -708,6 +715,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
                 title: _joinDisplay(<String?>[
                   assignment.departmentId,
                   assignment.unitId,
+                  assignment.roomId,
                 ]).ifEmpty(l10n.hrAssignmentLabel),
                 subtitle: _dateRange(
                   context,
@@ -742,9 +750,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
               _RecordLine(
                 title: _dayLabel(l10n, availability.dayOfWeek),
                 subtitle: _joinDisplay(<String?>[
-                  availability.startTime,
-                  availability.endTime,
-                  _apiLabel(availability.preference),
+                  _availabilitySlotSummary(availability),
+                  _apiLabel(availability.status ?? availability.preference),
                 ]),
               ),
           ],
@@ -763,7 +770,26 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        _HrReportPanel(state: state, detail: detail),
+        _SmallRecordSection(
+          title: l10n.hrCompensationSectionTitle,
+          icon: Icons.price_change_outlined,
+          emptyText: l10n.hrNoCompensationLabel,
+          rows: <_RecordLine>[
+            for (final HrStaffCompensation compensation in detail.compensations)
+              _RecordLine(
+                title: _joinDisplay(<String?>[
+                  _apiLabel(compensation.payType),
+                  compensation.rate?.toString(),
+                  compensation.currency,
+                ]).ifEmpty(l10n.hrCompensationLabel),
+                subtitle: _dateRange(
+                  context,
+                  compensation.effectiveFrom,
+                  compensation.effectiveTo,
+                ),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -818,6 +844,13 @@ class _HrStaffDetailBody extends ConsumerWidget {
         icon: Icons.swap_horiz_outlined,
         enabled: enabled,
         onPressed: () => _showShiftSwapDialog(context, ref),
+      ),
+      AppPermissionActionItem(
+        requirement: _payrollRequirement,
+        label: l10n.hrCompensationAction,
+        icon: Icons.price_change_outlined,
+        enabled: enabled,
+        onPressed: () => _showCompensationDialog(context, ref, detail.profile),
       ),
       AppPermissionActionItem(
         requirement: _payrollRequirement,
@@ -966,54 +999,6 @@ class _HrWorkQueuePanel extends ConsumerWidget {
           return _HrWorkItemTile(item: item);
         },
       ),
-    );
-  }
-}
-
-class _HrReportPanel extends StatelessWidget {
-  const _HrReportPanel({required this.state, required this.detail});
-
-  final HrWorkspaceState state;
-  final HrStaffDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final HrWorkspaceSummary summary = state.overview.summary;
-
-    return AppSectionPanel(
-      title: l10n.hrReportsSectionTitle,
-      leadingIcon: Icons.assessment_outlined,
-      children: <Widget>[
-        AppReportSummaryGrid(
-          records: <AppReportSummaryItem>[
-            AppReportSummaryItem(
-              label: l10n.hrStaffListReportLabel,
-              value: summary.totalStaff.toString(),
-              icon: Icons.badge_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.hrLeaveReportLabel,
-              value: summary.leaveRequests.toString(),
-              icon: Icons.event_busy_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.hrRosterReportLabel,
-              value: summary.draftRosters.toString(),
-              icon: Icons.calendar_month_outlined,
-            ),
-            AppReportSummaryItem(
-              label: l10n.hrPayrollReportLabel,
-              value: summary.payrollDraftRuns.toString(),
-              icon: Icons.payments_outlined,
-            ),
-          ],
-        ),
-        AppReportActionButton.preview(
-          label: l10n.hrPreviewStaffProfileReportAction,
-          onPressed: () => _showReportPreview(context, detail),
-        ),
-      ],
     );
   }
 }
@@ -1288,36 +1273,39 @@ Future<void> _showStaffProfileDialog(
 ]) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(
-            staff == null
-                ? l10n.hrAddStaffDialogTitle
-                : l10n.hrEditStaffDialogTitle,
-          ),
-          icon: const Icon(Icons.badge_outlined),
-          scrollable: true,
-          content: _StaffProfileForm(
-            staff: staff,
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          ),
-        ),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final AppFailure? failure = staff == null
-      ? await controller.createStaffProfile(payload)
-      : await controller.updateSelectedStaffProfile(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  final GlobalKey<_StaffProfileFieldsState> fieldsKey =
+      GlobalKey<_StaffProfileFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(
+      staff == null ? l10n.hrAddStaffDialogTitle : l10n.hrEditStaffDialogTitle,
+    ),
+    icon: const Icon(Icons.badge_outlined),
+    submitLabel: staff == null
+        ? l10n.hrCreateStaffAction
+        : l10n.hrSaveStaffAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _StaffProfileFields(
+        key: fieldsKey,
+        staff: staff,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
+      );
+    },
+    onSubmit: () {
+      final Map<String, Object?> payload =
+          fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
+      return staff == null
+          ? controller.createStaffProfile(payload)
+          : controller.updateSelectedStaffProfile(payload);
+    },
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1327,50 +1315,62 @@ Future<void> _showPositionDialog(
   HrStaffProfile staff,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrAssignPositionDialogTitle),
-          icon: const Icon(Icons.work_outline),
-          content: _PositionForm(staff: staff),
-        ),
+  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_PositionFieldsState> fieldsKey =
+      GlobalKey<_PositionFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrAssignPositionDialogTitle),
+    icon: const Icon(Icons.work_outline),
+    submitLabel: l10n.hrAssignPositionAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _PositionFields(
+        key: fieldsKey,
+        staff: staff,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .updateSelectedStaffProfile(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+    },
+    onSubmit: () => controller.updateSelectedStaffProfile(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
 Future<void> _showAssignmentDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrAssignDepartmentDialogTitle),
-          icon: const Icon(Icons.account_tree_outlined),
-          content: _AssignmentForm(
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          ),
-        ),
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_AssignmentFieldsState> fieldsKey =
+      GlobalKey<_AssignmentFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrAssignDepartmentDialogTitle),
+    icon: const Icon(Icons.account_tree_outlined),
+    submitLabel: l10n.hrAssignDepartmentAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _AssignmentFields(
+        key: fieldsKey,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createAssignment(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+    },
+    onSubmit: () => controller.createAssignment(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1379,47 +1379,52 @@ Future<void> _showAvailabilityDialog(
   WidgetRef ref,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrAvailabilityDialogTitle),
-          icon: const Icon(Icons.schedule_outlined),
-          content: const _AvailabilityForm(),
-        ),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createAvailability(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_AvailabilityFieldsState> fieldsKey =
+      GlobalKey<_AvailabilityFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrAvailabilityDialogTitle),
+    icon: const Icon(Icons.schedule_outlined),
+    submitLabel: l10n.hrRecordAvailabilityAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _AvailabilityFields(key: fieldsKey);
+    },
+    onSubmit: () => controller.createAvailability(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
 Future<void> _showLeaveDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrLeaveDialogTitle),
-          icon: const Icon(Icons.event_busy_outlined),
-          content: const _LeaveForm(),
-        ),
-      );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createLeave(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_LeaveFieldsState> fieldsKey = GlobalKey<_LeaveFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrLeaveDialogTitle),
+    icon: const Icon(Icons.event_busy_outlined),
+    submitLabel: l10n.hrRequestLeaveAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _LeaveFields(key: fieldsKey);
+    },
+    onSubmit: () => controller.createLeave(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1428,50 +1433,61 @@ Future<void> _showShiftAssignmentDialog(
   WidgetRef ref,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrAssignShiftDialogTitle),
-          icon: const Icon(Icons.calendar_view_week_outlined),
-          content: const _ShiftAssignmentForm(),
-        ),
+  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_ShiftAssignmentFieldsState> fieldsKey =
+      GlobalKey<_ShiftAssignmentFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrAssignShiftDialogTitle),
+    icon: const Icon(Icons.calendar_view_week_outlined),
+    submitLabel: l10n.hrAssignShiftAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _ShiftAssignmentFields(
+        key: fieldsKey,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createShiftAssignment(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+    },
+    onSubmit: () => controller.createShiftAssignment(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
 Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrSwapShiftDialogTitle),
-          icon: const Icon(Icons.swap_horiz_outlined),
-          content: _ShiftSwapForm(
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          ),
-        ),
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_ShiftSwapFieldsState> fieldsKey =
+      GlobalKey<_ShiftSwapFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrSwapShiftDialogTitle),
+    icon: const Icon(Icons.swap_horiz_outlined),
+    submitLabel: l10n.hrSwapShiftAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _ShiftSwapFields(
+        key: fieldsKey,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createShiftSwapRequest(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+    },
+    onSubmit: () => controller.createShiftSwapRequest(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1481,24 +1497,57 @@ Future<void> _showPayrollRunDialog(
   HrStaffProfile staff,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrPayrollRunDialogTitle),
-          icon: const Icon(Icons.payments_outlined),
-          content: _PayrollRunForm(staff: staff),
-        ),
-      );
-  if (payload == null || !context.mounted) {
-    return;
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_PayrollRunFieldsState> fieldsKey =
+      GlobalKey<_PayrollRunFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrPayrollRunDialogTitle),
+    icon: const Icon(Icons.payments_outlined),
+    submitLabel: l10n.hrRunPayrollAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _PayrollRunFields(key: fieldsKey, staff: staff);
+    },
+    onSubmit: () => controller.createPayrollRun(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .createPayrollRun(payload);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+}
+
+Future<void> _showCompensationDialog(
+  BuildContext context,
+  WidgetRef ref,
+  HrStaffProfile staff,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_CompensationFieldsState> fieldsKey =
+      GlobalKey<_CompensationFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrCompensationDialogTitle),
+    icon: const Icon(Icons.price_change_outlined),
+    submitLabel: l10n.hrCompensationAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _CompensationFields(key: fieldsKey, staff: staff);
+    },
+    onSubmit: () => controller.updateSelectedStaffProfile(
+      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
+    ),
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1694,24 +1743,23 @@ Future<void> _submitReason(
   required bool requiredReason,
   required Future<AppFailure?> Function(String? reason) onSubmit,
 }) async {
-  final String? reason = await showAppDialog<String>(
+  final AppLocalizations l10n = context.l10n;
+  final GlobalKey<_ReasonFieldsState> fieldsKey =
+      GlobalKey<_ReasonFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(title),
-      icon: const Icon(Icons.notes_outlined),
-      content: _ReasonForm(
-        submitLabel: submitLabel,
-        requiredReason: requiredReason,
-      ),
-    ),
+    title: Text(title),
+    icon: const Icon(Icons.notes_outlined),
+    submitLabel: submitLabel,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _ReasonFields(key: fieldsKey, requiredReason: requiredReason);
+    },
+    onSubmit: () => onSubmit(fieldsKey.currentState?.reason),
   );
-  if (reason == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await onSubmit(reason);
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1721,27 +1769,31 @@ Future<void> _showRosterPublishDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrPublishRosterDialogTitle),
-          icon: const Icon(Icons.publish_outlined),
-          content: const _RosterPublishForm(),
-        ),
+  final GlobalKey<_RosterPublishFieldsState> fieldsKey =
+      GlobalKey<_RosterPublishFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrPublishRosterDialogTitle),
+    icon: const Icon(Icons.publish_outlined),
+    submitLabel: l10n.hrPublishRosterAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.publish_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _RosterPublishFields(key: fieldsKey);
+    },
+    onSubmit: () {
+      final Map<String, Object?> payload =
+          fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
+      return controller.publishRoster(
+        item,
+        notifyStaff: payload['notify_staff'] == true,
+        allowPartialPublish: payload['allow_partial_publish'] == true,
+        publishNote: payload['publish_note']?.toString(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await controller.publishRoster(
-    item,
-    notifyStaff: payload['notify_staff'] == true,
-    allowPartialPublish: payload['allow_partial_publish'] == true,
-    publishNote: payload['publish_note']?.toString(),
+    },
   );
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1752,30 +1804,36 @@ Future<void> _showOverrideShiftDialog(
 ) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrOverrideShiftDialogTitle),
-          icon: const Icon(Icons.manage_accounts_outlined),
-          content: _OverrideShiftForm(
-            referenceData: state?.referenceData ?? const HrReferenceData(),
-          ),
-        ),
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+  final GlobalKey<_OverrideShiftFieldsState> fieldsKey =
+      GlobalKey<_OverrideShiftFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrOverrideShiftDialogTitle),
+    icon: const Icon(Icons.manage_accounts_outlined),
+    submitLabel: l10n.hrOverrideShiftAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.save_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _OverrideShiftFields(
+        key: fieldsKey,
+        referenceData: state?.referenceData ?? const HrReferenceData(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(hrWorkspaceControllerProvider.notifier)
-      .overrideShift(
+    },
+    onSubmit: () {
+      final Map<String, Object?> payload =
+          fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
+      return controller.overrideShift(
         item,
         staffProfileId: payload['staff_profile_id']?.toString() ?? '',
         reason: payload['reason']?.toString() ?? '',
       );
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+    },
+  );
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1785,26 +1843,30 @@ Future<void> _showProcessPayrollDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload =
-      await showAppDialog<Map<String, Object?>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AppDialog(
-          title: Text(l10n.hrProcessPayrollDialogTitle),
-          icon: const Icon(Icons.price_check_outlined),
-          content: const _ProcessPayrollForm(),
-        ),
+  final GlobalKey<_ProcessPayrollFieldsState> fieldsKey =
+      GlobalKey<_ProcessPayrollFieldsState>();
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.hrProcessPayrollDialogTitle),
+    icon: const Icon(Icons.price_check_outlined),
+    submitLabel: l10n.hrProcessPayrollAction,
+    cancelLabel: l10n.commonCancelActionLabel,
+    submitIcon: Icons.price_check_outlined,
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+      return _ProcessPayrollFields(key: fieldsKey);
+    },
+    onSubmit: () {
+      final Map<String, Object?> payload =
+          fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
+      return controller.processPayrollRun(
+        item,
+        replaceExistingItems: payload['replace_existing_items'] == true,
+        notes: payload['notes']?.toString(),
       );
-  if (payload == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await controller.processPayrollRun(
-    item,
-    replaceExistingItems: payload['replace_existing_items'] == true,
-    notes: payload['notes']?.toString(),
+    },
   );
-  if (context.mounted) {
-    _showMutationResult(context, failure);
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
 }
 
@@ -1818,44 +1880,21 @@ Future<void> _submitSimple(
   }
 }
 
-void _showReportPreview(BuildContext context, HrStaffDetail detail) {
-  final AppLocalizations l10n = context.l10n;
-  showAppDialog<void>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrStaffProfileReportTitle),
-      icon: const Icon(Icons.assessment_outlined),
-      scrollable: true,
-      maxWidth: 720,
-      content: AppReportPreviewPanel(
-        title: l10n.hrStaffProfileReportTitle,
-        selectable: true,
-        child: Text(
-          _joinDisplay(<String?>[
-            detail.profile.displayName,
-            detail.profile.staffNumber,
-            detail.profile.position,
-            detail.profile.departmentName ?? detail.profile.departmentDisplayId,
-            _apiLabel(detail.profile.practitionerType),
-          ]),
-        ),
-      ),
-    ),
-  );
-}
-
-class _StaffProfileForm extends StatefulWidget {
-  const _StaffProfileForm({required this.referenceData, this.staff});
+class _StaffProfileFields extends StatefulWidget {
+  const _StaffProfileFields({
+    required this.referenceData,
+    this.staff,
+    super.key,
+  });
 
   final HrReferenceData referenceData;
   final HrStaffProfile? staff;
 
   @override
-  State<_StaffProfileForm> createState() => _StaffProfileFormState();
+  State<_StaffProfileFields> createState() => _StaffProfileFieldsState();
 }
 
-class _StaffProfileFormState extends State<_StaffProfileForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _StaffProfileFieldsState extends State<_StaffProfileFields> {
   late final TextEditingController _tenantController;
   late final TextEditingController _userController;
   late final TextEditingController _staffNumberController;
@@ -1900,11 +1939,24 @@ class _StaffProfileFormState extends State<_StaffProfileForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      if (_isCreate) 'tenant_id': _tenantController.text.trim(),
+      if (_isCreate) 'user_id': _userController.text.trim(),
+      'staff_number': _staffNumberController.text.trim(),
+      'position': _positionController.text.trim(),
+      'department_id': _departmentId,
+      'practitioner_type': _practitionerType,
+      'hire_date': _datePayload(_hireDate),
+      'consultation_fee': num.tryParse(_feeController.text.trim()),
+      'consultation_currency': _currencyController.text.trim(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         if (_isCreate)
           AppTextField(
@@ -1969,106 +2021,123 @@ class _StaffProfileFormState extends State<_StaffProfileForm> {
           labelText: l10n.hrConsultationCurrencyLabel,
           textCapitalization: TextCapitalization.characters,
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: _isCreate
-              ? l10n.hrCreateStaffAction
-              : l10n.hrSaveStaffAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              if (_isCreate) 'tenant_id': _tenantController.text.trim(),
-              if (_isCreate) 'user_id': _userController.text.trim(),
-              'staff_number': _staffNumberController.text.trim(),
-              'position': _positionController.text.trim(),
-              'department_id': _departmentId,
-              'practitioner_type': _practitionerType,
-              'hire_date': _datePayload(_hireDate),
-              'consultation_fee': num.tryParse(_feeController.text.trim()),
-              'consultation_currency': _currencyController.text.trim(),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _PositionForm extends StatefulWidget {
-  const _PositionForm({required this.staff});
+class _PositionFields extends StatefulWidget {
+  const _PositionFields({
+    required this.staff,
+    required this.referenceData,
+    super.key,
+  });
 
   final HrStaffProfile staff;
+  final HrReferenceData referenceData;
 
   @override
-  State<_PositionForm> createState() => _PositionFormState();
+  State<_PositionFields> createState() => _PositionFieldsState();
 }
 
-class _PositionFormState extends State<_PositionForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _positionController;
+class _PositionFieldsState extends State<_PositionFields> {
+  late final TextEditingController _newPositionController;
+  String? _position;
+  bool _isAddingNew = false;
 
   @override
   void initState() {
     super.initState();
-    _positionController = TextEditingController(text: widget.staff.position);
+    _newPositionController = TextEditingController();
+    _position = (widget.staff.position ?? '').trim().isEmpty
+        ? null
+        : widget.staff.position!.trim();
   }
 
   @override
   void dispose() {
-    _positionController.dispose();
+    _newPositionController.dispose();
     super.dispose();
+  }
+
+  /// Existing positions keyed by their human name so a selection submits the
+  /// position label (the `position` column is a free-text name, not an id).
+  List<AppSelectOption<String>> _positionOptions() {
+    final Map<String, String> byLabel = <String, String>{};
+    for (final HrOption option in widget.referenceData.staffPositions) {
+      final String label = option.label.trim().isEmpty
+          ? option.value.trim()
+          : option.label.trim();
+      if (label.isNotEmpty) {
+        byLabel[label] = label;
+      }
+    }
+    final String? current = _position;
+    if (current != null && current.isNotEmpty) {
+      byLabel.putIfAbsent(current, () => current);
+    }
+    return <AppSelectOption<String>>[
+      for (final String label in byLabel.keys)
+        AppSelectOption<String>(value: label, label: label),
+    ];
+  }
+
+  Map<String, Object?> toPayload() {
+    final String position = _isAddingNew
+        ? _newPositionController.text.trim()
+        : (_position ?? '').trim();
+    return <String, Object?>{'position': position};
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
-        AppTextField(
-          controller: _positionController,
-          labelText: l10n.hrPositionLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrPositionLabel),
+        if (_isAddingNew)
+          AppTextField(
+            controller: _newPositionController,
+            labelText: l10n.hrNewPositionLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.hrFieldRequiredLabel(l10n.hrNewPositionLabel),
+            ),
+          )
+        else
+          AppSelectField<String>.searchable(
+            value: _position,
+            labelText: l10n.hrPositionLabel,
+            isRequired: true,
+            options: _positionOptions(),
+            validator: AppValidators.requiredValue(
+              l10n.hrFieldRequiredLabel(l10n.hrPositionLabel),
+            ),
+            onChanged: (String? value) => setState(() => _position = value),
           ),
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrAssignPositionAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'position': _positionController.text.trim(),
-            });
-          },
+        AppCheckboxField(
+          title: l10n.hrAddNewPositionLabel,
+          value: _isAddingNew,
+          onChanged: (bool value) => setState(() => _isAddingNew = value),
         ),
       ],
     );
   }
 }
 
-class _AssignmentForm extends StatefulWidget {
-  const _AssignmentForm({required this.referenceData});
+class _AssignmentFields extends StatefulWidget {
+  const _AssignmentFields({required this.referenceData, super.key});
 
   final HrReferenceData referenceData;
 
   @override
-  State<_AssignmentForm> createState() => _AssignmentFormState();
+  State<_AssignmentFields> createState() => _AssignmentFieldsState();
 }
 
-class _AssignmentFormState extends State<_AssignmentForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _AssignmentFieldsState extends State<_AssignmentFields> {
   final TextEditingController _unitController = TextEditingController();
   String? _departmentId;
+  String? _unitId;
+  String? _roomId;
   DateTime? _startDate = DateTime.now();
   DateTime? _endDate;
 
@@ -2078,11 +2147,22 @@ class _AssignmentFormState extends State<_AssignmentForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'department_id': _departmentId,
+      'unit_id': widget.referenceData.units.isEmpty
+          ? _unitController.text.trim()
+          : _unitId,
+      'room_id': _roomId,
+      'start_date': _datePayload(_startDate),
+      'end_date': _datePayload(_endDate),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppSelectField<String>.searchable(
           value: _departmentId,
@@ -2094,9 +2174,29 @@ class _AssignmentFormState extends State<_AssignmentForm> {
           ),
           onChanged: (String? value) => setState(() => _departmentId = value),
         ),
-        AppTextField(
-          controller: _unitController,
-          labelText: l10n.hrUnitIdLabel,
+        if (widget.referenceData.units.isEmpty)
+          AppTextField(
+            controller: _unitController,
+            labelText: l10n.hrUnitIdLabel,
+          )
+        else
+          AppSelectField<String>.searchable(
+            value: _unitId,
+            labelText: l10n.hrUnitIdLabel,
+            options: _scopedOptions(
+              widget.referenceData.units,
+              departmentId: _departmentId,
+            ),
+            onChanged: (String? value) => setState(() => _unitId = value),
+          ),
+        AppSelectField<String>.searchable(
+          value: _roomId,
+          labelText: l10n.hrRoomLabel,
+          options: _scopedOptions(
+            widget.referenceData.rooms,
+            departmentId: _departmentId,
+          ),
+          onChanged: (String? value) => setState(() => _roomId = value),
         ),
         AppDateField(
           value: _startDate,
@@ -2119,39 +2219,22 @@ class _AssignmentFormState extends State<_AssignmentForm> {
           invalidDateMessage: l10n.appDateInvalidMessage,
           onChanged: (DateTime? value) => setState(() => _endDate = value),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrAssignDepartmentAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'department_id': _departmentId,
-              'unit_id': _unitController.text.trim(),
-              'start_date': _datePayload(_startDate),
-              'end_date': _datePayload(_endDate),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _AvailabilityForm extends StatefulWidget {
-  const _AvailabilityForm();
+class _AvailabilityFields extends StatefulWidget {
+  const _AvailabilityFields({super.key});
 
   @override
-  State<_AvailabilityForm> createState() => _AvailabilityFormState();
+  State<_AvailabilityFields> createState() => _AvailabilityFieldsState();
 }
 
-class _AvailabilityFormState extends State<_AvailabilityForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _startController = TextEditingController();
-  final TextEditingController _endController = TextEditingController();
+class _AvailabilityFieldsState extends State<_AvailabilityFields> {
+  final List<_AvailabilitySlotDraft> _slots = <_AvailabilitySlotDraft>[
+    _AvailabilitySlotDraft(),
+  ];
   int? _dayOfWeek = 1;
   String? _preference = 'AVAILABLE';
   DateTime? _effectiveFrom = DateTime.now();
@@ -2159,16 +2242,37 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
 
   @override
   void dispose() {
-    _startController.dispose();
-    _endController.dispose();
+    for (final _AvailabilitySlotDraft slot in _slots) {
+      slot.dispose();
+    }
     super.dispose();
+  }
+
+  Map<String, Object?> toPayload() {
+    final List<Map<String, Object?>> slots = <Map<String, Object?>>[
+      for (final _AvailabilitySlotDraft slot in _slots)
+        if (slot.start.trim().isNotEmpty && slot.end.trim().isNotEmpty)
+          <String, Object?>{
+            'start_time': slot.start.trim(),
+            'end_time': slot.end.trim(),
+          },
+    ];
+    return <String, Object?>{
+      'day_of_week': _dayOfWeek,
+      'start_time': slots.isEmpty ? null : slots.first['start_time'],
+      'end_time': slots.isEmpty ? null : slots.first['end_time'],
+      'time_slots': slots,
+      'preference': _preference,
+      'status': _preference,
+      'effective_from': _datePayload(_effectiveFrom),
+      'effective_to': _datePayload(_effectiveTo),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppSelectField<int>(
           value: _dayOfWeek,
@@ -2183,22 +2287,24 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
           ),
           onChanged: (int? value) => setState(() => _dayOfWeek = value),
         ),
-        AppTextField(
-          controller: _startController,
-          labelText: l10n.hrStartTimeLabel,
-          hintText: l10n.hrTimeHint,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrStartTimeLabel),
+        for (var index = 0; index < _slots.length; index += 1)
+          _AvailabilitySlotFields(
+            slot: _slots[index],
+            canRemove: _slots.length > 1,
+            onRemove: () {
+              setState(() {
+                final _AvailabilitySlotDraft removed = _slots.removeAt(index);
+                removed.dispose();
+              });
+            },
           ),
-        ),
-        AppTextField(
-          controller: _endController,
-          labelText: l10n.hrEndTimeLabel,
-          hintText: l10n.hrTimeHint,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrEndTimeLabel),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: AppButton.secondary(
+            label: l10n.hrAddAvailabilitySlotAction,
+            leadingIcon: Icons.add,
+            onPressed: () =>
+                setState(() => _slots.add(_AvailabilitySlotDraft())),
           ),
         ),
         AppSelectField<String>(
@@ -2242,54 +2348,173 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
           invalidDateMessage: l10n.appDateInvalidMessage,
           onChanged: (DateTime? value) => setState(() => _effectiveTo = value),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrRecordAvailabilityAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'day_of_week': _dayOfWeek,
-              'start_time': _startController.text.trim(),
-              'end_time': _endController.text.trim(),
-              'preference': _preference,
-              'effective_from': _datePayload(_effectiveFrom),
-              'effective_to': _datePayload(_effectiveTo),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _LeaveForm extends StatefulWidget {
-  const _LeaveForm();
+final class _AvailabilitySlotDraft {
+  _AvailabilitySlotDraft();
 
-  @override
-  State<_LeaveForm> createState() => _LeaveFormState();
+  final TextEditingController startController = TextEditingController();
+  final TextEditingController endController = TextEditingController();
+
+  String get start => startController.text;
+  String get end => endController.text;
+
+  void dispose() {
+    startController.dispose();
+    endController.dispose();
+  }
 }
 
-class _LeaveFormState extends State<_LeaveForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _AvailabilitySlotFields extends StatelessWidget {
+  const _AvailabilitySlotFields({
+    required this.slot,
+    required this.canRemove,
+    required this.onRemove,
+  });
+
+  final _AvailabilitySlotDraft slot;
+  final bool canRemove;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: AppTextField(
+            controller: slot.startController,
+            labelText: l10n.hrStartTimeLabel,
+            hintText: l10n.hrTimeHint,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.hrFieldRequiredLabel(l10n.hrStartTimeLabel),
+            ),
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: AppTextField(
+            controller: slot.endController,
+            labelText: l10n.hrEndTimeLabel,
+            hintText: l10n.hrTimeHint,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.hrFieldRequiredLabel(l10n.hrEndTimeLabel),
+            ),
+          ),
+        ),
+        if (canRemove) ...<Widget>[
+          SizedBox(width: theme.spacing.xs),
+          AppIconButton(
+            icon: Icons.remove_circle_outline,
+            semanticLabel: l10n.hrRemoveAvailabilitySlotAction,
+            tooltip: l10n.hrRemoveAvailabilitySlotAction,
+            onPressed: onRemove,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _LeaveFields extends StatefulWidget {
+  const _LeaveFields({super.key});
+
+  @override
+  State<_LeaveFields> createState() => _LeaveFieldsState();
+}
+
+class _LeaveFieldsState extends State<_LeaveFields> {
   final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _daysController = TextEditingController(
+    text: '1',
+  );
   DateTime? _startDate = DateTime.now();
   DateTime? _endDate = DateTime.now();
 
   @override
   void dispose() {
     _reasonController.dispose();
+    _daysController.dispose();
     super.dispose();
+  }
+
+  /// Inclusive day count between [start] and [end] (1 means same day).
+  static int _inclusiveDays(DateTime start, DateTime end) {
+    final DateTime from = DateTime(start.year, start.month, start.day);
+    final DateTime to = DateTime(end.year, end.month, end.day);
+    return to.difference(from).inDays + 1;
+  }
+
+  int get _days {
+    final int parsed = int.tryParse(_daysController.text.trim()) ?? 1;
+    return parsed < 1 ? 1 : parsed;
+  }
+
+  void _setDaysText(int value) {
+    final String text = value.toString();
+    if (_daysController.text != text) {
+      _daysController.text = text;
+    }
+  }
+
+  void _onStartChanged(DateTime? value) {
+    setState(() {
+      _startDate = value;
+      if (value != null) {
+        // Keep the end date consistent with start + number of days.
+        _endDate = DateTime(
+          value.year,
+          value.month,
+          value.day,
+        ).add(Duration(days: _days - 1));
+      }
+    });
+  }
+
+  void _onDaysChanged(String _) {
+    final DateTime? start = _startDate;
+    if (start == null) {
+      return;
+    }
+    setState(() {
+      _endDate = DateTime(
+        start.year,
+        start.month,
+        start.day,
+      ).add(Duration(days: _days - 1));
+    });
+  }
+
+  void _onEndChanged(DateTime? value) {
+    setState(() {
+      _endDate = value;
+      final DateTime? start = _startDate;
+      if (start != null && value != null) {
+        final int days = _inclusiveDays(start, value);
+        _setDaysText(days < 1 ? 1 : days);
+      }
+    });
+  }
+
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'start_date': _datePayload(_startDate),
+      'end_date': _datePayload(_endDate),
+      'reason': _reasonController.text.trim(),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppDateField(
           value: _startDate,
@@ -2300,7 +2525,17 @@ class _LeaveFormState extends State<_LeaveForm> {
           currentDate: DateTime.now(),
           pickerButtonLabel: l10n.hrPickDateAction,
           invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _startDate = value),
+          onChanged: _onStartChanged,
+        ),
+        AppTextField(
+          controller: _daysController,
+          labelText: l10n.hrLeaveDaysLabel,
+          helperText: l10n.hrLeaveDaysHelper,
+          keyboardType: TextInputType.number,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          onChanged: _onDaysChanged,
         ),
         AppDateField(
           value: _endDate,
@@ -2311,44 +2546,30 @@ class _LeaveFormState extends State<_LeaveForm> {
           currentDate: DateTime.now(),
           pickerButtonLabel: l10n.hrPickDateAction,
           invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _endDate = value),
+          onChanged: _onEndChanged,
         ),
         AppTextField(
           controller: _reasonController,
           labelText: l10n.hrReasonLabel,
           maxLines: 3,
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrRequestLeaveAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'start_date': _datePayload(_startDate),
-              'end_date': _datePayload(_endDate),
-              'reason': _reasonController.text.trim(),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _ShiftAssignmentForm extends StatefulWidget {
-  const _ShiftAssignmentForm();
+class _ShiftAssignmentFields extends StatefulWidget {
+  const _ShiftAssignmentFields({required this.referenceData, super.key});
+
+  final HrReferenceData referenceData;
 
   @override
-  State<_ShiftAssignmentForm> createState() => _ShiftAssignmentFormState();
+  State<_ShiftAssignmentFields> createState() => _ShiftAssignmentFieldsState();
 }
 
-class _ShiftAssignmentFormState extends State<_ShiftAssignmentForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _ShiftAssignmentFieldsState extends State<_ShiftAssignmentFields> {
   final TextEditingController _shiftController = TextEditingController();
+  String? _shiftId;
 
   @override
   void dispose() {
@@ -2356,52 +2577,61 @@ class _ShiftAssignmentFormState extends State<_ShiftAssignmentForm> {
     super.dispose();
   }
 
+  bool get _hasShiftOptions => widget.referenceData.shiftTemplates.isNotEmpty;
+
+  Map<String, Object?> toPayload() {
+    final String shiftId = _hasShiftOptions
+        ? (_shiftId ?? '')
+        : _shiftController.text.trim();
+    return <String, Object?>{
+      'shift_id': shiftId,
+      'assigned_at': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
-        AppTextField(
-          controller: _shiftController,
-          labelText: l10n.hrShiftIdLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
+        if (_hasShiftOptions)
+          AppSelectField<String>.searchable(
+            value: _shiftId,
+            labelText: l10n.hrSelectShiftLabel,
+            hintText: l10n.hrSelectShiftHint,
+            isRequired: true,
+            options: _selectOptions(widget.referenceData.shiftTemplates),
+            validator: AppValidators.requiredValue(
+              l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
+            ),
+            onChanged: (String? value) => setState(() => _shiftId = value),
+          )
+        else
+          AppTextField(
+            controller: _shiftController,
+            labelText: l10n.hrShiftIdLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
+            ),
           ),
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrAssignShiftAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'shift_id': _shiftController.text.trim(),
-              'assigned_at': DateTime.now().toUtc().toIso8601String(),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _ShiftSwapForm extends StatefulWidget {
-  const _ShiftSwapForm({required this.referenceData});
+class _ShiftSwapFields extends StatefulWidget {
+  const _ShiftSwapFields({required this.referenceData, super.key});
 
   final HrReferenceData referenceData;
 
   @override
-  State<_ShiftSwapForm> createState() => _ShiftSwapFormState();
+  State<_ShiftSwapFields> createState() => _ShiftSwapFieldsState();
 }
 
-class _ShiftSwapFormState extends State<_ShiftSwapForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
   final TextEditingController _shiftController = TextEditingController();
+  String? _shiftId;
   String? _targetStaffId;
 
   @override
@@ -2410,57 +2640,65 @@ class _ShiftSwapFormState extends State<_ShiftSwapForm> {
     super.dispose();
   }
 
+  bool get _hasShiftOptions => widget.referenceData.shiftTemplates.isNotEmpty;
+
+  Map<String, Object?> toPayload() {
+    final String shiftId = _hasShiftOptions
+        ? (_shiftId ?? '')
+        : _shiftController.text.trim();
+    return <String, Object?>{
+      'shift_id': shiftId,
+      'target_staff_id': _targetStaffId,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
-        AppTextField(
-          controller: _shiftController,
-          labelText: l10n.hrShiftIdLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
+        if (_hasShiftOptions)
+          AppSelectField<String>.searchable(
+            value: _shiftId,
+            labelText: l10n.hrSelectShiftLabel,
+            hintText: l10n.hrSelectShiftHint,
+            isRequired: true,
+            options: _selectOptions(widget.referenceData.shiftTemplates),
+            validator: AppValidators.requiredValue(
+              l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
+            ),
+            onChanged: (String? value) => setState(() => _shiftId = value),
+          )
+        else
+          AppTextField(
+            controller: _shiftController,
+            labelText: l10n.hrShiftIdLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
+            ),
           ),
-        ),
         AppSelectField<String>.searchable(
           value: _targetStaffId,
           labelText: l10n.hrTargetStaffLabel,
           options: _selectOptions(widget.referenceData.staffProfiles),
           onChanged: (String? value) => setState(() => _targetStaffId = value),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrSwapShiftAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'shift_id': _shiftController.text.trim(),
-              'target_staff_id': _targetStaffId,
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _PayrollRunForm extends StatefulWidget {
-  const _PayrollRunForm({required this.staff});
+class _PayrollRunFields extends StatefulWidget {
+  const _PayrollRunFields({required this.staff, super.key});
 
   final HrStaffProfile staff;
 
   @override
-  State<_PayrollRunForm> createState() => _PayrollRunFormState();
+  State<_PayrollRunFields> createState() => _PayrollRunFieldsState();
 }
 
-class _PayrollRunFormState extends State<_PayrollRunForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _PayrollRunFieldsState extends State<_PayrollRunFields> {
   late final TextEditingController _tenantController;
   DateTime? _periodStart = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _periodEnd = DateTime.now();
@@ -2477,11 +2715,19 @@ class _PayrollRunFormState extends State<_PayrollRunForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'tenant_id': _tenantController.text.trim(),
+      'period_start': _datePayload(_periodStart),
+      'period_end': _datePayload(_periodEnd),
+      'status': 'DRAFT',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppTextField(
           controller: _tenantController,
@@ -2513,41 +2759,174 @@ class _PayrollRunFormState extends State<_PayrollRunForm> {
           invalidDateMessage: l10n.appDateInvalidMessage,
           onChanged: (DateTime? value) => setState(() => _periodEnd = value),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrRunPayrollAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'tenant_id': _tenantController.text.trim(),
-              'period_start': _datePayload(_periodStart),
-              'period_end': _datePayload(_periodEnd),
-              'status': 'DRAFT',
-            });
-          },
+      ],
+    );
+  }
+}
+
+class _CompensationFields extends StatefulWidget {
+  const _CompensationFields({required this.staff, super.key});
+
+  final HrStaffProfile staff;
+
+  @override
+  State<_CompensationFields> createState() => _CompensationFieldsState();
+}
+
+class _CompensationFieldsState extends State<_CompensationFields> {
+  late final TextEditingController _currencyController;
+  late final TextEditingController _hourlyRateController;
+  late final TextEditingController _monthlyRateController;
+  late final TextEditingController _procedureRateController;
+  DateTime? _effectiveFrom = DateTime.now();
+  DateTime? _effectiveTo;
+
+  @override
+  void initState() {
+    super.initState();
+    final String currency = widget.staff.compensations.isNotEmpty
+        ? widget.staff.compensations.first.currency ?? ''
+        : widget.staff.consultationCurrency ?? '';
+    _currencyController = TextEditingController(
+      text: currency.trim().isEmpty ? 'USD' : currency,
+    );
+    _hourlyRateController = TextEditingController(
+      text:
+          _rateFor('PER_HOUR')?.toString() ??
+          widget.staff.consultationFee?.toString() ??
+          '',
+    );
+    _monthlyRateController = TextEditingController(
+      text: _rateFor('PER_MONTH')?.toString() ?? '',
+    );
+    _procedureRateController = TextEditingController(
+      text: _rateFor('PER_PROCEDURE')?.toString() ?? '',
+    );
+    if (widget.staff.compensations.isNotEmpty) {
+      _effectiveFrom = widget.staff.compensations.first.effectiveFrom;
+      _effectiveTo = widget.staff.compensations.first.effectiveTo;
+    }
+  }
+
+  @override
+  void dispose() {
+    _currencyController.dispose();
+    _hourlyRateController.dispose();
+    _monthlyRateController.dispose();
+    _procedureRateController.dispose();
+    super.dispose();
+  }
+
+  num? _rateFor(String payType) {
+    for (final HrStaffCompensation compensation in widget.staff.compensations) {
+      if ((compensation.payType ?? '').toUpperCase() == payType) {
+        return compensation.rate;
+      }
+    }
+    return null;
+  }
+
+  Map<String, Object?> toPayload() {
+    final String currency = _currencyController.text.trim().toUpperCase();
+    final List<Map<String, Object?>> compensations = <Map<String, Object?>>[];
+    void addCompensation(String payType, TextEditingController controller) {
+      final num? rate = num.tryParse(controller.text.trim());
+      if (rate == null) {
+        return;
+      }
+      compensations.add(<String, Object?>{
+        'pay_type': payType,
+        'rate': rate,
+        'currency': currency,
+        'effective_from': _datePayload(_effectiveFrom),
+        'effective_to': _datePayload(_effectiveTo),
+      });
+    }
+
+    addCompensation('PER_HOUR', _hourlyRateController);
+    addCompensation('PER_MONTH', _monthlyRateController);
+    addCompensation('PER_PROCEDURE', _procedureRateController);
+    return <String, Object?>{'compensations': compensations};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppFormSection(
+      children: <Widget>[
+        AppTextField(
+          controller: _currencyController,
+          labelText: l10n.hrConsultationCurrencyLabel,
+          isRequired: true,
+          textCapitalization: TextCapitalization.characters,
+          validator: AppValidators.requiredText(
+            l10n.hrFieldRequiredLabel(l10n.hrConsultationCurrencyLabel),
+          ),
+        ),
+        AppTextField(
+          controller: _hourlyRateController,
+          labelText: l10n.hrCompensationHourlyRateLabel,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+        ),
+        AppTextField(
+          controller: _monthlyRateController,
+          labelText: l10n.hrCompensationMonthlyRateLabel,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+        ),
+        AppTextField(
+          controller: _procedureRateController,
+          labelText: l10n.hrCompensationProcedureRateLabel,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+        ),
+        AppDateField(
+          value: _effectiveFrom,
+          labelText: l10n.hrEffectiveFromLabel,
+          isRequired: true,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          currentDate: DateTime.now(),
+          pickerButtonLabel: l10n.hrPickDateAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          onChanged: (DateTime? value) =>
+              setState(() => _effectiveFrom = value),
+        ),
+        AppDateField(
+          value: _effectiveTo,
+          labelText: l10n.hrEffectiveToLabel,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          currentDate: DateTime.now(),
+          pickerButtonLabel: l10n.hrPickDateAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          onChanged: (DateTime? value) => setState(() => _effectiveTo = value),
         ),
       ],
     );
   }
 }
 
-class _ReasonForm extends StatefulWidget {
-  const _ReasonForm({required this.submitLabel, required this.requiredReason});
+class _ReasonFields extends StatefulWidget {
+  const _ReasonFields({required this.requiredReason, super.key});
 
-  final String submitLabel;
   final bool requiredReason;
 
   @override
-  State<_ReasonForm> createState() => _ReasonFormState();
+  State<_ReasonFields> createState() => _ReasonFieldsState();
 }
 
-class _ReasonFormState extends State<_ReasonForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _ReasonFieldsState extends State<_ReasonFields> {
   final TextEditingController _reasonController = TextEditingController();
+
+  String get reason => _reasonController.text.trim();
 
   @override
   void dispose() {
@@ -2558,8 +2937,7 @@ class _ReasonFormState extends State<_ReasonForm> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppTextField(
           controller: _reasonController,
@@ -2572,32 +2950,19 @@ class _ReasonFormState extends State<_ReasonForm> {
                 )
               : null,
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(_reasonController.text.trim());
-          },
-        ),
       ],
     );
   }
 }
 
-class _RosterPublishForm extends StatefulWidget {
-  const _RosterPublishForm();
+class _RosterPublishFields extends StatefulWidget {
+  const _RosterPublishFields({super.key});
 
   @override
-  State<_RosterPublishForm> createState() => _RosterPublishFormState();
+  State<_RosterPublishFields> createState() => _RosterPublishFieldsState();
 }
 
-class _RosterPublishFormState extends State<_RosterPublishForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _RosterPublishFieldsState extends State<_RosterPublishFields> {
   final TextEditingController _noteController = TextEditingController();
   bool _notifyStaff = true;
   bool _allowPartial = false;
@@ -2608,11 +2973,18 @@ class _RosterPublishFormState extends State<_RosterPublishForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'notify_staff': _notifyStaff,
+      'allow_partial_publish': _allowPartial,
+      'publish_note': _noteController.text.trim(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppCheckboxField(
           title: l10n.hrNotifyStaffLabel,
@@ -2629,38 +3001,21 @@ class _RosterPublishFormState extends State<_RosterPublishForm> {
           labelText: l10n.hrPublishNoteLabel,
           maxLines: 3,
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrPublishRosterAction,
-          submitIcon: Icons.publish_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'notify_staff': _notifyStaff,
-              'allow_partial_publish': _allowPartial,
-              'publish_note': _noteController.text.trim(),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _OverrideShiftForm extends StatefulWidget {
-  const _OverrideShiftForm({required this.referenceData});
+class _OverrideShiftFields extends StatefulWidget {
+  const _OverrideShiftFields({required this.referenceData, super.key});
 
   final HrReferenceData referenceData;
 
   @override
-  State<_OverrideShiftForm> createState() => _OverrideShiftFormState();
+  State<_OverrideShiftFields> createState() => _OverrideShiftFieldsState();
 }
 
-class _OverrideShiftFormState extends State<_OverrideShiftForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _OverrideShiftFieldsState extends State<_OverrideShiftFields> {
   final TextEditingController _reasonController = TextEditingController();
   String? _staffProfileId;
 
@@ -2670,11 +3025,17 @@ class _OverrideShiftFormState extends State<_OverrideShiftForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'staff_profile_id': _staffProfileId,
+      'reason': _reasonController.text.trim(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppSelectField<String>.searchable(
           value: _staffProfileId,
@@ -2695,35 +3056,19 @@ class _OverrideShiftFormState extends State<_OverrideShiftForm> {
             l10n.hrFieldRequiredLabel(l10n.hrReasonLabel),
           ),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrOverrideShiftAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'staff_profile_id': _staffProfileId,
-              'reason': _reasonController.text.trim(),
-            });
-          },
-        ),
       ],
     );
   }
 }
 
-class _ProcessPayrollForm extends StatefulWidget {
-  const _ProcessPayrollForm();
+class _ProcessPayrollFields extends StatefulWidget {
+  const _ProcessPayrollFields({super.key});
 
   @override
-  State<_ProcessPayrollForm> createState() => _ProcessPayrollFormState();
+  State<_ProcessPayrollFields> createState() => _ProcessPayrollFieldsState();
 }
 
-class _ProcessPayrollFormState extends State<_ProcessPayrollForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _ProcessPayrollFieldsState extends State<_ProcessPayrollFields> {
   final TextEditingController _notesController = TextEditingController();
   bool _replaceExistingItems = false;
 
@@ -2733,11 +3078,17 @@ class _ProcessPayrollFormState extends State<_ProcessPayrollForm> {
     super.dispose();
   }
 
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'replace_existing_items': _replaceExistingItems,
+      'notes': _notesController.text.trim(),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppCheckboxField(
           title: l10n.hrReplacePayrollItemsLabel,
@@ -2750,21 +3101,6 @@ class _ProcessPayrollFormState extends State<_ProcessPayrollForm> {
           controller: _notesController,
           labelText: l10n.hrNotesLabel,
           maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.hrProcessPayrollAction,
-          submitIcon: Icons.price_check_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'replace_existing_items': _replaceExistingItems,
-              'notes': _notesController.text.trim(),
-            });
-          },
         ),
       ],
     );
@@ -2792,6 +3128,20 @@ List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
   return <AppSelectOption<String>>[
     for (final HrOption option in options)
       AppSelectOption<String>(value: option.value, label: option.label),
+  ];
+}
+
+List<AppSelectOption<String>> _scopedOptions(
+  List<HrOption> options, {
+  String? departmentId,
+}) {
+  final String selectedDepartment = departmentId?.trim() ?? '';
+  return <AppSelectOption<String>>[
+    for (final HrOption option in options)
+      if (selectedDepartment.isEmpty ||
+          (option.extra['department_id']?.toString().trim() ?? '').isEmpty ||
+          option.extra['department_id'] == selectedDepartment)
+        AppSelectOption<String>(value: option.value, label: option.label),
   ];
 }
 
@@ -2903,6 +3253,15 @@ String _workItemPeriod(BuildContext context, HrWorkItem item) {
     item.startAt,
     item.endAt,
   ).ifEmpty(context.l10n.profileUnknownValue);
+}
+
+String _availabilitySlotSummary(HrStaffAvailability availability) {
+  if (availability.timeSlots.isNotEmpty) {
+    return availability.timeSlots
+        .map((HrAvailabilitySlot slot) => '${slot.startTime}-${slot.endTime}')
+        .join(', ');
+  }
+  return _joinDisplay(<String?>[availability.startTime, availability.endTime]);
 }
 
 String _queueLabel(AppLocalizations l10n, HrQueue queue) {

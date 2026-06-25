@@ -54,6 +54,14 @@ const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
     if (filters.unit_id && unitId === null) return emptyResult(page, limit);
     if (unitId) whereClause.unit_id = unitId;
 
+    const roomId = await resolveIdentifierForFilter({
+      value: filters.room_id,
+      model: 'room',
+      where: { deleted_at: null },
+    });
+    if (filters.room_id && roomId === null) return emptyResult(page, limit);
+    if (roomId) whereClause.room_id = roomId;
+
     const [staffAssignments, total] = await Promise.all([
       staffAssignmentRepository.findMany(whereClause, skip, limit, orderBy),
       staffAssignmentRepository.count(whereClause),
@@ -109,6 +117,13 @@ const createStaffAssignment = async (data, userId, ipAddress) => {
         where: { deleted_at: null },
         nullable: true,
       }),
+      room_id: await resolveIdentifierForPayload({
+        value: data.room_id,
+        model: 'room',
+        field: 'room_id',
+        where: { deleted_at: null },
+        nullable: true,
+      }),
     };
 
     const staffAssignment = await staffAssignmentRepository.create(payload);
@@ -152,6 +167,15 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
         value: data.unit_id,
         model: 'unit',
         field: 'unit_id',
+        where: { deleted_at: null },
+        nullable: true,
+      });
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'room_id')) {
+      payload.room_id = await resolveIdentifierForPayload({
+        value: data.room_id,
+        model: 'room',
+        field: 'room_id',
         where: { deleted_at: null },
         nullable: true,
       });

@@ -1,282 +1,138 @@
-# Theater — Schedule Case Dialog UX Refinement
+# Task: Refine HR Staff Detail, Access Control & Dialog Standards
 
-## Objective
+Act as an expert HR product engineer. Refine the existing HR module (it is mostly built),
+keeping the **frontend, backend, and database fully synchronized** for every change.
 
-Replace the **Schedule theater case** modal (`_ScheduleCaseForm` in `theater_workspace_page.dart`) so coordinators schedule cases using **searchable selects and proper date/time inputs** — never raw UUIDs or ISO strings.
+Read first: `prompts/24-hr-module-prompt.md` (boundaries, architecture, quality gates).
 
-Billing must support **multiple catalog procedures with prices**, **pay-now vs bill-later**, and visibility in the **Billing** module.
+**Primary code areas**
 
-**Entry point:** Theater workspace → **Schedule case** action (full create flow; not reschedule-only mode).
+- Frontend HR: `frontend/lib/features/hr/` (`presentation/pages/hr_workspace_page.dart`,
+  `presentation/controllers/hr_workspace_controller.dart`,
+  `domain/entities/hr_entities.dart`, `domain/repositories/hr_repository.dart`,
+  `data/repositories/hr_repository_impl.dart`, `data/dtos/hr_dtos.dart`)
+- Shared dialogs/buttons: `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart`,
+  `frontend/lib/shared/components/app_dialog.dart`,
+  `frontend/lib/shared/components/app_button.dart`
+- Backend: `backend/src/modules/{hr-workspace,staff-profile,staff-assignment,staff-leave,shift-assignment,roster,payroll-run}/`
+- Strings: `frontend/lib/l10n/app_en.arb`
 
-**Parent context:** This is a focused slice of the Theater module. Read [prompts/21-theater-module-prompt.md](prompts/21-theater-module-prompt.md) and [flows/theater-flow.mdc](.cursor/flows/theater-flow.mdc) before implementing.
-
-**Central encounter rule:** Theater cases attach to an existing encounter (IPD admission hub, OPD visit, or emergency-linked encounter). Theater does not create parallel admission records.
-
----
-
-## Global Implementation Standards
-
-| Area | Requirement |
-| ---- | ----------- |
-| UI/UX | Hospital workflow language — not enum names or UUIDs. Follow `frontend/.cursor/design-system.mdc`, `components.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`. Reuse `frontend/lib/shared/*` before new widgets. |
-| Theming and i18n | All user-visible strings in `app_en.arb` — no hardcoded labels. |
-| Modal-first | Stay in-dialog; do not navigate to new routes for this workflow. |
-| Architecture | Widgets → Riverpod controller → repository → API. **No API calls from widgets.** |
-| Permissions | `AccessGate` / `AppAccessActionGate`; price override requires `billingWrite`. |
-| Quality gate | From `frontend/`: `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. |
+**Definition of done for every change:** UI ↔ controller ↔ repository ↔ API ↔ DB are
+consistent; new strings localized; `dart format --set-exit-if-changed .`, `flutter analyze`,
+`flutter test` pass from `frontend/`; targeted `npm test` passes for touched backend modules;
+migrations applied for schema changes.
 
 ---
 
-## Mandatory Reading
+## 0. Global dialog standard (applies to ALL modal dialogs in this task)
 
-1. [app-write-up.mdc](.cursor/app-write-up.mdc) — Theater vs IPD, ICU, Billing boundaries.
-2. [flows/theater-flow.mdc](.cursor/flows/theater-flow.mdc) — case lifecycle and handoff.
-3. [flows/ipd-flow.mdc](.cursor/flows/ipd-flow.mdc) — §7 surgery route, §9 OT transfer, §11 `In Procedure / OT`.
-4. [flows/opd-flow.mdc](.cursor/flows/opd-flow.mdc) — elective surgery from outpatient planning.
+**Action buttons (Save/Assign/Run/Cancel/etc.) must be non-scrollable and pinned to the
+bottom of the dialog.** Only the form content above them may scroll.
 
----
-
-## Current State (do not regress)
-
-| Field | Today | Problem |
-| ----- | ----- | ------- |
-| Encounter | `AppTextField` → `encounter_id` | Users must know/paste IDs |
-| Scheduled at | `AppTextField` (ISO string) | No date/time picker |
-| Room | `AppTextField` → `room_id` | No OT room list |
-| Surgeon / Anesthetist | `AppTextField` → `*_user_id` | No name search |
-| Billing | Single hardcoded `THEATRE_CASE_FEE` line | No procedure catalog, no multi-line items |
-| Stage notes | Multiline `AppTextField` | **Keep as-is** |
-
-**API contract** (`POST /theatre-flows/start`, `startTheatreFlowSchema` in `backend/src/modules/theatre-flow/schemas/theatre-flow.schema.js`): UI shows human labels; payload still submits internal IDs — `encounter_id`, `scheduled_at`, `room_id`, `surgeon_user_id`, `anesthetist_user_id`, `source_kind`, `billing`, etc.
+- Migrate every HR action dialog in `hr_workspace_page.dart` (currently built with raw
+  `showAppDialog` + `AppDialog(scrollable: true, actions: [...])`) to use
+  **`showAppWorkspaceMutationDialog`** from `app_workspace_mutation_dialog.dart`, which already
+  renders scrollable fields with a fixed footer via `AppDialog`'s `_DialogActions`.
+- Confirm content lives in the scrollable region and actions in the footer (never inside the
+  scroll view). This is the fix for the **Record availability "BOTTOM OVERFLOWED BY 18px"**.
+- Verify no overflow at compact (<600px), tablet, and desktop widths, in light and dark themes.
 
 ---
 
-## Reference Patterns (reuse, do not reinvent)
+## 1. Staff Detail modal — overview section
 
-| Need | Existing pattern |
-| ---- | ------------------ |
-| Patient → encounter dual select | `LabOrderContextDialog` — `AppSelectField.searchable` + `AppResponsiveFieldRow.two` (`shared/lab_catalog/lab_catalog_dialogs.dart`) |
-| Patient/encounter APIs | `LabRepository.searchOrderContextPatients` + `getOrderContextPatient` — mirror or share for theater |
-| Date + time | `AppDateField` + `AppTimeField` in `AppResponsiveFieldRow.two` (`clinical_follow_up_action_dialog.dart`) |
-| Staff search by name | Nursing handover — `searchUsers` + `AppSelectField.searchable` with `onSearchTextChanged` (`nursing_workspace_page.dart`) |
-| Procedure picker (multi) | `ClinicalProcedureCatalogDialog` + `ClinicalProcedureActionDialog` |
-| Billing panel | `ClinicalRequestBillingPanel` (already wired in `_ScheduleCaseForm`; extend line items dynamically) |
-| Searchable select | `AppSelectField.searchable` (`app_select_field.dart`) — supports `leadingIcon`, `searchText` |
-
-> **“Double select”** in this codebase means the **Lab patient + encounter pattern** — two linked `AppSelectField.searchable` fields, not a separate widget.
+- Redesign the header info block (staff number, name, position, department, practitioner type,
+  hire date) into a clean, well-spaced summary that reads well in light and dark themes.
+- **Remove/relocate the misplaced "Reports" area** in the staff detail — it does not belong there.
+- Keep the read-only **Assignments** and **Availability** summary sections, updated to reflect
+  the richer data added below.
 
 ---
 
-## Form Layout & Field Requirements
+## 2. Staff action dialogs
 
-### 1. Patient context (dual select)
+### 2.1 Assign department (multi-department + units)
+- Support a staff member assigned to **multiple departments**; list current department
+  assignments in the detail panel with start/end dates, plus edit/end actions.
+- Support hierarchy **Department → Unit → Room**: dialog selects a department and optionally a
+  unit/room. Extend entities/DTOs, `staff-assignment` schema/service, and a migration.
 
-Replace the single **Encounter ID** field with a two-step select:
+### 2.2 Assign position (searchable + add-new)
+- Replace the plain text field with a **searchable select** of existing positions; if missing,
+  the user can **type and add a new position**. Persist new positions appropriately.
 
-**Patient** — `AppSelectField.searchable`
+### 2.3 Record availability (calendar-style, multi-slot) — also fixes the overflow
+- Model availability as **day + one or more time ranges** per day (e.g. Mon 08:00–10:00 AND
+  14:00–17:00); a staff member can have **multiple availabilities** with status and effective
+  date range.
+- Implement a **work/scheduling calendar** view: visualize the week, add/edit/remove slots, and
+  **copy/duplicate** availability across days. Update entities/DTOs, backend schema/service,
+  and a migration.
 
-- Debounced remote search (name, MRN/patient number, phone when available).
-- Option label: patient display name + identifier subtitle.
-- Required.
+### 2.4 Request leave (flexible)
+- Keep current design but make it flexible: entering **start date + number of days**
+  auto-computes the **end date** (and keep the inverse in sync).
 
-**Encounter** — `AppSelectField.searchable` (enabled after patient is selected)
+### 2.5 Assign shift (make it meaningful)
+- Replace the raw "Shift ID" text field with a **search/select of existing shifts** (by
+  name/time/department) sourced from `shift-assignment`/roster reference data.
 
-- Load encounters for the selected patient (active IPD admissions, OPD visits, emergency-linked encounters).
-- Option label: encounter type/source + date + ward/location (e.g. `IPD · Ward 3 · ENC-0042`).
-- Required.
-- On selection: auto-derive `source_kind` (`IPD` | `OPD` | `EMERGENCY`) and show a read-only **Source** chip.
-- **ICU patients** arrive via IPD admission — show as IPD with ICU location in the encounter subtitle (backend `source_kind` has no separate ICU value).
+### 2.6 Swap shift (searchable)
+- Allow **searching shifts** and selecting a target staff member; clean, clear interface.
 
-Layout: `AppResponsiveFieldRow.two` on wide screens; stack on narrow.
-
-**Pre-selection:** If opened from IPD/ICU/Emergency deep link with patient/encounter context, pre-fill both selects.
-
-### 2. Scheduled at
-
-Replace the text field with **`AppDateField` + `AppTimeField`**.
-
-- Required.
-- Combine into ISO datetime for `scheduled_at` on submit.
-- Optional default: next sensible slot (e.g. today + 1 hour).
-
-### 3. Operating room
-
-Replace **Room ID** with `AppSelectField.searchable`.
-
-- Options: OT/theatre rooms for the facility (`room` records resolved by theatre-flow).
-- Label: room name; subtitle: ward/building when available.
-- Optional but recommended.
-- If source context affects room choice, filter or sort accordingly and add brief helper text.
-
-### 4. Surgeon
-
-`AppSelectField.searchable` with remote staff search.
-
-- Search: name, staff ID, phone (tenant/facility scoped).
-- Prefer surgeon-role filter when API supports it; otherwise show role in subtitle.
-- Submit `surgeon_user_id` internally — never show UUID in the field.
-- Optional.
-
-### 5. Anesthetist
-
-Same pattern as surgeon; prefer anesthetist-capable users when API supports it.
-
-- Submit `anesthetist_user_id`.
-- Optional.
-
-### 6. Stage notes
-
-**No change** — multiline `AppTextField` → `stage_notes`.
+### 2.7 Run payroll + compensation (NEW capability)
+- Add **compensation** to the staff profile: flexible pay structures — **per procedure**,
+  **per hour**, **per month** (combinations where sensible) with rate, currency, effective
+  dates. Extend `staff-profile` schema/service + migration; surface a "Compensation" action in
+  the detail panel.
+- Make **Run payroll** compute pay for the period from compensation data (`payroll-run`
+  module), producing a preview/run with an audit trail.
 
 ---
 
-## Billing Section
+## 3. RBAC / ABAC — deeper and app-wide
 
-Replace the single `THEATRE_CASE_FEE` line with a **procedure billing block**.
-
-### Procedure lines
-
-- Add procedures via nested `ClinicalProcedureCatalogDialog` (or a thin theatre wrapper).
-- Support **multiple procedures** per scheduled case.
-- Each line: procedure name/code, quantity, **unit price from catalog**, line total, currency.
-- Allow **manual price override** when user has `billingWrite` (same rules as `ClinicalRequestBillingPanel`).
-- Show **grand total + currency** prominently (reuse existing total row).
-
-### Pay now vs bill later
-
-Keep `ClinicalRequestBillingPanel` segmented control:
-
-| Mode | Behavior |
-| ---- | -------- |
-| **Bill later** | Create case + billing intent; Billing workspace sees pending charges. No payment captured in Theater. |
-| **Pay now** | Show `AppCurrencyAmountField`, payment method, reference. Amount auto-syncs to total until user edits. Payload uses existing `billing` schema. |
-
-### Payment methods
-
-Add `leadingIcon` per method on `AppSelectField` options:
-
-| Method | Icon |
-| ------ | ---- |
-| `CASH` | `Icons.payments_outlined` |
-| `CARD` | `Icons.credit_card_outlined` |
-| `MOBILE_MONEY` | `Icons.phone_android_outlined` |
-| `BANK_TRANSFER` | `Icons.account_balance_outlined` |
-| `INSURANCE` | `Icons.health_and_safety_outlined` |
-| `OTHER` | `Icons.more_horiz_outlined` |
-
-Extract a shared `clinicalRequestPaymentMethodOptions(l10n)` helper if OPD and theater both need icons.
-
-### Billing module visibility
-
-Bill-later and partial-pay charges must appear in the Billing workspace via existing clinical-request billing integration (same path as Lab/OPD). Do not duplicate cashier UI in Theater beyond capture-at-schedule.
+- Include **availability, departments, and positions** in the access model.
+- A staff member can hold **multiple roles simultaneously** (e.g. Doctor + Surgeon; Biomedical +
+  Cleaner); some roles carry **default access**.
+- Roles must drive permissions **across the whole app** (OPD, IPD, Theater, …), consistently
+  answering "does my role permit X here?".
+- Enforce on the **backend** (mandatory) and reflect in the frontend via `AccessGate` /
+  `AppAccessActionGate`. Add backend tests for multi-role resolution.
 
 ---
 
-## Data Layer (new controller/repository methods)
+## 4. Global "Add" button styling fix
 
-Theater has no search helpers today. Add to `theater_workspace_controller.dart` + `theater_repository` (or reuse shared endpoints):
-
-| Method | Purpose | Likely source |
-| ------ | ------- | ------------- |
-| `searchSchedulePatients(query)` | Patient dual-select step 1 | Mirror `LabRepository.searchOrderContextPatients` |
-| `loadSchedulePatientEncounters(patientId)` | Encounter options step 2 | Mirror `LabRepository.getOrderContextPatient` |
-| `searchTheatreRooms(query)` | OT room select | Facility `room` list filtered for theatre use |
-| `searchTheatreStaff(query, {role})` | Surgeon/anesthetist select | Mirror `NursingRepository.searchUsers` with role filter |
-
-Debounce search in the widget; call controller methods only.
+- Primary **Add** buttons (e.g. **Add staff**) are poorly styled across screens: invisible-ish
+  white on light theme, dark/invisible on dark theme.
+- Fix the shared primary button styling (`app_button.dart` / theme) so **Add** buttons are
+  clearly visible and consistent in **both themes** everywhere they appear.
 
 ---
 
-## Submit Payload
+## 5. Suggested order of work
 
-On success, pop the same map shape `_ScheduleCaseForm` uses today:
-
-```dart
-{
-  'encounter_id': selectedEncounterId,
-  'scheduled_at': combinedDateTime.toUtc().toIso8601String(),
-  if (selectedRoomId != null) 'room_id': selectedRoomId,
-  if (selectedSurgeonId != null) 'surgeon_user_id': selectedSurgeonId,
-  if (selectedAnesthetistId != null) 'anesthetist_user_id': selectedAnesthetistId,
-  if (derivedSourceKind != null) 'source_kind': derivedSourceKind, // IPD | OPD | EMERGENCY
-  'workflow_stage': 'PRE_OP',
-  'stage_notes': notes,
-  if (charge) 'billing': billing.toPayloadMap(),
-}
-```
+1. Section 0 — migrate HR dialogs to `showAppWorkspaceMutationDialog` (pinned footer, fix overflow).
+2. Section 4 — global Add button fix (quick, high visibility).
+3. Section 1 — staff detail overview cleanup.
+4. Section 2 dialogs in order 2.2 → 2.4 → 2.6 → 2.5 → 2.1 → 2.3 → 2.7 (simple → schema-heavy).
+5. Section 3 — RBAC/ABAC depth and app-wide enforcement.
+6. Run the full quality gate; apply migrations; update `app_en.arb`.
 
 ---
 
-## Reschedule Mode
+## 6. Acceptance checklist
 
-When `rescheduleOnly: true`:
-
-- Hide patient, encounter, and billing sections (unchanged scope).
-- Apply datetime, room, surgeon, anesthetist, and notes improvements from this prompt.
-
----
-
-## Architecture & UX Rules
-
-- Extract `_ScheduleCaseForm` to `presentation/widgets/theater_schedule_case_form.dart` if `theater_workspace_page.dart` grows further.
-- Replace user-facing `*IdLabel` strings with workflow language: Patient, Encounter, Operating room, Surgeon, Anesthetist.
-- Partial refresh after modal success per `frontend/.cursor/realtime_sync.mdc`.
-
----
-
-## Out of Scope
-
-- Backend schema changes unless required for patient/encounter/room search (prefer reusing existing lab/patient/nursing endpoints).
-- Full theater module completion (case board, anesthesia, post-op) — see [prompts/21-theater-module-prompt.md](prompts/21-theater-module-prompt.md).
-- Owning IPD admission creation or ICU stay lifecycle.
-
----
-
-## Acceptance Criteria
-
-- [ ] Schedule dialog has no raw ID or ISO datetime text inputs for primary fields.
-- [ ] Patient → encounter dual select works with search and cascading enablement.
-- [ ] Scheduled at uses date/time pickers.
-- [ ] Room, surgeon, and anesthetist are searchable selects; payload uses internal IDs.
-- [ ] Multiple procedures can be added with catalog prices and editable totals.
-- [ ] Total + currency displayed; pay now / bill later matches other clinical request flows.
-- [ ] Payment methods show icons in the dropdown.
-- [ ] Bill-later charges visible in Billing module (or gap documented in PR).
-- [ ] Reschedule dialog keeps encounter/billing hidden; inherits datetime/room/staff improvements.
-- [ ] `flutter analyze` and theater controller tests pass.
-
----
-
-## Quality Gate
-
-```sh
-cd frontend
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/features/theater/
-```
-
----
-
-## Key Files
-
-```
-frontend/lib/features/theater/presentation/pages/theater_workspace_page.dart
-frontend/lib/features/theater/presentation/widgets/theater_schedule_case_form.dart   # new — extract form
-frontend/lib/features/theater/presentation/controllers/theater_workspace_controller.dart
-frontend/lib/features/theater/data/repositories/theater_repository_impl.dart
-frontend/lib/shared/clinical_actions/clinical_request_billing_panel.dart             # payment icons (optional shared)
-frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart                             # reference pattern
-frontend/lib/l10n/app_en.arb
-frontend/test/features/theater/presentation/theater_workspace_controller_test.dart
-backend/src/modules/theatre-flow/schemas/theatre-flow.schema.js
-```
-
----
-
-## Notes for Implementer
-
-1. Billing panel and procedure catalog already exist — this is mostly **wiring and UX**, not new billing infrastructure.
-2. Backend `source_kind` is `IPD | OPD | EMERGENCY` only.
-3. Payment method icons in `ClinicalRequestBillingPanel` benefit Lab, Radiology, and other modules using the same panel.
-4. `procedure_name` on `startTheatreFlowSchema` is optional; derive a summary from the first selected procedure or join multiple names if the API accepts it.
+- [ ] All HR modal action buttons are pinned to a non-scrolling footer; only content scrolls.
+- [ ] No dialog overflow (incl. Record availability) at compact/tablet/desktop, light + dark.
+- [ ] Staff detail overview redesigned; misplaced Reports area removed.
+- [ ] Multi-department + Department→Unit→Room assignment works end-to-end.
+- [ ] Position select is searchable with add-new; persists correctly.
+- [ ] Calendar-style multi-slot availability with duplicate works end-to-end.
+- [ ] Leave auto-calculates end date from start + days.
+- [ ] Shift assign/swap use search/select, not raw IDs.
+- [ ] Compensation (per procedure/hour/month) captured and drives payroll runs with audit trail.
+- [ ] Multi-role RBAC/ABAC enforced backend + frontend and honored in OPD/IPD/Theater.
+- [ ] Add buttons visible in light and dark themes everywhere.
+- [ ] Quality gate green; migrations applied; strings localized.

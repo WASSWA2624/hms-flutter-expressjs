@@ -24105,6 +24105,18 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get hrAvailabilityUnavailable;
 
+  /// Human resources workspace text for hrAddAvailabilitySlotAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add slot'**
+  String get hrAddAvailabilitySlotAction;
+
+  /// Human resources workspace text for hrRemoveAvailabilitySlotAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove slot'**
+  String get hrRemoveAvailabilitySlotAction;
+
   /// Human resources workspace text for hrClearFiltersAction.
   ///
   /// In en, this message translates to:
@@ -24230,6 +24242,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave'**
   String get hrLeaveLabel;
+
+  /// Human resources workspace text for hrLeaveDaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of days'**
+  String get hrLeaveDaysLabel;
+
+  /// Human resources workspace text for hrLeaveDaysHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-calculates the end date from the start date.'**
+  String get hrLeaveDaysHelper;
+
+  /// Human resources workspace text for hrAddNewPositionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a new position'**
+  String get hrAddNewPositionLabel;
+
+  /// Human resources workspace text for hrNewPositionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New position name'**
+  String get hrNewPositionLabel;
+
+  /// Human resources workspace text for hrSelectShiftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get hrSelectShiftLabel;
+
+  /// Human resources workspace text for hrSelectShiftHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search shifts by name, time, or department'**
+  String get hrSelectShiftHint;
+
+  /// Human resources workspace text for hrStaffOverviewSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get hrStaffOverviewSectionTitle;
+
+  /// Human resources workspace text for hrRoomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get hrRoomLabel;
+
+  /// Human resources workspace text for hrCompensationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation'**
+  String get hrCompensationAction;
+
+  /// Human resources workspace text for hrCompensationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update compensation'**
+  String get hrCompensationDialogTitle;
+
+  /// Human resources workspace text for hrCompensationSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation'**
+  String get hrCompensationSectionTitle;
+
+  /// Human resources workspace text for hrCompensationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation'**
+  String get hrCompensationLabel;
+
+  /// Human resources workspace text for hrNoCompensationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No compensation records'**
+  String get hrNoCompensationLabel;
+
+  /// Human resources workspace text for hrCompensationHourlyRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly rate'**
+  String get hrCompensationHourlyRateLabel;
+
+  /// Human resources workspace text for hrCompensationMonthlyRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly rate'**
+  String get hrCompensationMonthlyRateLabel;
+
+  /// Human resources workspace text for hrCompensationProcedureRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure rate'**
+  String get hrCompensationProcedureRateLabel;
 
   /// Human resources workspace text for hrLeaveReportLabel.
   ///

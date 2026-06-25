@@ -19,6 +19,35 @@ const buildPagination = (page, limit, total) => {
   };
 };
 
+const normalizeTimeSlotsPayload = (data = {}) => {
+  const payload = { ...data };
+  const timeSlots = Array.isArray(payload.time_slots)
+    ? payload.time_slots
+        .map((slot) => ({
+          start_time: String(slot?.start_time || '').trim(),
+          end_time: String(slot?.end_time || '').trim(),
+        }))
+        .filter((slot) => slot.start_time && slot.end_time)
+    : null;
+
+  if (timeSlots?.length) {
+    payload.start_time = timeSlots[0].start_time;
+    payload.end_time = timeSlots[0].end_time;
+    payload.time_slots_json = timeSlots;
+  } else if (payload.start_time && payload.end_time) {
+    payload.time_slots_json = [
+      {
+        start_time: String(payload.start_time).trim(),
+        end_time: String(payload.end_time).trim(),
+      },
+    ];
+  }
+
+  payload.status = payload.status || payload.preference || 'AVAILABLE';
+  delete payload.time_slots;
+  return payload;
+};
+
 const emptyResult = (page, limit) => ({
   items: [],
   pagination: buildPagination(page, limit, 0),
@@ -39,6 +68,7 @@ const list = async (filters, page, limit, sortBy, order) => {
 
   if (filters.day_of_week !== undefined) whereClause.day_of_week = parseInt(filters.day_of_week, 10);
   if (filters.preference) whereClause.preference = filters.preference;
+  if (filters.status) whereClause.status = filters.status;
 
   const [items, total] = await Promise.all([
     staffAvailabilityRepository.findMany(whereClause, skip, limit, orderBy),
@@ -63,7 +93,7 @@ const getById = async (id) => {
 
 const create = async (data, userId, ipAddress) => {
   const payload = {
-    ...data,
+    ...normalizeTimeSlotsPayload(data),
     staff_profile_id: await resolveIdentifierForPayload({
       value: data.staff_profile_id,
       model: 'staff_profile',
@@ -92,7 +122,7 @@ const update = async (id, data, userId, ipAddress) => {
   });
   const before = await staffAvailabilityRepository.findById(resolvedId);
   if (!before) throw new HttpError('errors.staff_availability.not_found', 404);
-  const item = await staffAvailabilityRepository.update(before.id, data);
+  const item = await staffAvailabilityRepository.update(before.id, normalizeTimeSlotsPayload(data));
   createAuditLog({
     user_id: userId,
     action: 'UPDATE',

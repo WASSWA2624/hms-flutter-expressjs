@@ -265,6 +265,8 @@ final class HrReferenceData {
   const HrReferenceData({
     this.facilities = const <HrOption>[],
     this.departments = const <HrOption>[],
+    this.units = const <HrOption>[],
+    this.rooms = const <HrOption>[],
     this.staffProfiles = const <HrOption>[],
     this.staffPositions = const <HrOption>[],
     this.rosters = const <HrOption>[],
@@ -278,6 +280,8 @@ final class HrReferenceData {
 
   final List<HrOption> facilities;
   final List<HrOption> departments;
+  final List<HrOption> units;
+  final List<HrOption> rooms;
   final List<HrOption> staffProfiles;
   final List<HrOption> staffPositions;
   final List<HrOption> rosters;
@@ -307,6 +311,7 @@ final class HrStaffProfile {
     this.practitionerType,
     this.consultationFee,
     this.consultationCurrency,
+    this.compensations = const <HrStaffCompensation>[],
     this.hireDate,
     this.status,
     this.updatedAt,
@@ -327,6 +332,7 @@ final class HrStaffProfile {
   final String? practitionerType;
   final num? consultationFee;
   final String? consultationCurrency;
+  final List<HrStaffCompensation> compensations;
   final DateTime? hireDate;
   final String? status;
   final DateTime? updatedAt;
@@ -367,6 +373,7 @@ final class HrStaffProfile {
     String? practitionerType,
     num? consultationFee,
     String? consultationCurrency,
+    List<HrStaffCompensation>? compensations,
     DateTime? hireDate,
     String? status,
     DateTime? updatedAt,
@@ -387,6 +394,7 @@ final class HrStaffProfile {
       practitionerType: practitionerType ?? this.practitionerType,
       consultationFee: consultationFee ?? this.consultationFee,
       consultationCurrency: consultationCurrency ?? this.consultationCurrency,
+      compensations: compensations ?? this.compensations,
       hireDate: hireDate ?? this.hireDate,
       status: status ?? this.status,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -401,6 +409,7 @@ final class HrStaffDetail {
     this.assignments = const <HrStaffAssignment>[],
     this.leaves = const <HrStaffLeave>[],
     this.availabilities = const <HrStaffAvailability>[],
+    this.compensations = const <HrStaffCompensation>[],
     this.shiftAssignments = const <HrShiftAssignment>[],
   });
 
@@ -408,6 +417,7 @@ final class HrStaffDetail {
   final List<HrStaffAssignment> assignments;
   final List<HrStaffLeave> leaves;
   final List<HrStaffAvailability> availabilities;
+  final List<HrStaffCompensation> compensations;
   final List<HrShiftAssignment> shiftAssignments;
 
   HrStaffDetail copyWith({
@@ -415,6 +425,7 @@ final class HrStaffDetail {
     List<HrStaffAssignment>? assignments,
     List<HrStaffLeave>? leaves,
     List<HrStaffAvailability>? availabilities,
+    List<HrStaffCompensation>? compensations,
     List<HrShiftAssignment>? shiftAssignments,
   }) {
     return HrStaffDetail(
@@ -422,6 +433,7 @@ final class HrStaffDetail {
       assignments: assignments ?? this.assignments,
       leaves: leaves ?? this.leaves,
       availabilities: availabilities ?? this.availabilities,
+      compensations: compensations ?? this.compensations,
       shiftAssignments: shiftAssignments ?? this.shiftAssignments,
     );
   }
@@ -435,6 +447,7 @@ final class HrStaffAssignment {
     this.staffProfileId,
     this.departmentId,
     this.unitId,
+    this.roomId,
     this.startDate,
     this.endDate,
   });
@@ -444,6 +457,7 @@ final class HrStaffAssignment {
   final String? staffProfileId;
   final String? departmentId;
   final String? unitId;
+  final String? roomId;
   final DateTime? startDate;
   final DateTime? endDate;
 }
@@ -480,7 +494,9 @@ final class HrStaffAvailability {
     this.dayOfWeek,
     this.startTime,
     this.endTime,
+    this.timeSlots = const <HrAvailabilitySlot>[],
     this.preference,
+    this.status,
     this.effectiveFrom,
     this.effectiveTo,
   });
@@ -491,7 +507,40 @@ final class HrStaffAvailability {
   final int? dayOfWeek;
   final String? startTime;
   final String? endTime;
+  final List<HrAvailabilitySlot> timeSlots;
   final String? preference;
+  final String? status;
+  final DateTime? effectiveFrom;
+  final DateTime? effectiveTo;
+}
+
+@immutable
+final class HrAvailabilitySlot {
+  const HrAvailabilitySlot({required this.startTime, required this.endTime});
+
+  final String startTime;
+  final String endTime;
+}
+
+@immutable
+final class HrStaffCompensation {
+  const HrStaffCompensation({
+    required this.id,
+    this.displayId,
+    this.staffProfileId,
+    this.payType,
+    this.rate,
+    this.currency,
+    this.effectiveFrom,
+    this.effectiveTo,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? staffProfileId;
+  final String? payType;
+  final num? rate;
+  final String? currency;
   final DateTime? effectiveFrom;
   final DateTime? effectiveTo;
 }

@@ -103,6 +103,8 @@ final class HrReferenceDataDto {
     return HrReferenceData(
       facilities: _options(json['facilities']),
       departments: _options(json['departments']),
+      units: _options(json['units']),
+      rooms: _options(json['rooms']),
       staffProfiles: _options(json['staff_profiles']),
       staffPositions: _options(json['staff_positions']),
       rosters: _options(json['rosters']),
@@ -192,9 +194,38 @@ final class HrStaffProfileDto {
       practitionerType: _string(json['practitioner_type']),
       consultationFee: _number(json['consultation_fee']),
       consultationCurrency: _string(json['consultation_currency']),
+      compensations: _list(json['compensations'])
+          .map(HrStaffCompensationDto.new)
+          .map((HrStaffCompensationDto dto) => dto.toEntity())
+          .where((HrStaffCompensation item) => item.id.isNotEmpty)
+          .toList(growable: false),
       hireDate: _date(json['hire_date']),
       status: _string(json['status']) ?? 'ACTIVE',
       updatedAt: _date(json['timeline_at']) ?? _date(json['updated_at']),
+    );
+  }
+}
+
+final class HrStaffCompensationDto {
+  const HrStaffCompensationDto(this.json);
+
+  final HrJsonMap json;
+
+  HrStaffCompensation toEntity() {
+    return HrStaffCompensation(
+      id:
+          _string(json['display_id']) ??
+          _string(json['human_friendly_id']) ??
+          _string(json['id']) ??
+          '',
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      staffProfileId: _string(json['staff_profile_id']),
+      payType: _string(json['pay_type']),
+      rate: _number(json['rate']),
+      currency: _string(json['currency']),
+      effectiveFrom: _date(json['effective_from']),
+      effectiveTo: _date(json['effective_to']),
     );
   }
 }
@@ -233,6 +264,7 @@ final class HrStaffAssignmentDto {
       staffProfileId: _string(json['staff_profile_id']),
       departmentId: _string(json['department_id']),
       unitId: _string(json['unit_id']),
+      roomId: _string(json['room_id']),
       startDate: _date(json['start_date']),
       endDate: _date(json['end_date']),
     );
@@ -314,11 +346,31 @@ final class HrStaffAvailabilityDto {
       dayOfWeek: _int(json['day_of_week']),
       startTime: _string(json['start_time']),
       endTime: _string(json['end_time']),
+      timeSlots:
+          _availabilitySlots(json['time_slots']) +
+          _availabilitySlots(json['time_slots_json']),
       preference: _string(json['preference']),
+      status: _string(json['status']),
       effectiveFrom: _date(json['effective_from']),
       effectiveTo: _date(json['effective_to']),
     );
   }
+}
+
+List<HrAvailabilitySlot> _availabilitySlots(Object? value) {
+  final List<HrJsonMap> slots = _list(value);
+  return slots
+      .map(
+        (HrJsonMap slot) => HrAvailabilitySlot(
+          startTime: _string(slot['start_time']) ?? '',
+          endTime: _string(slot['end_time']) ?? '',
+        ),
+      )
+      .where(
+        (HrAvailabilitySlot slot) =>
+            slot.startTime.trim().isNotEmpty && slot.endTime.trim().isNotEmpty,
+      )
+      .toList(growable: false);
 }
 
 final class HrShiftAssignmentPageDto {

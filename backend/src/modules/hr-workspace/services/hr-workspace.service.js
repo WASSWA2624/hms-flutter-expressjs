@@ -142,6 +142,72 @@ const formatDateRangeLabel = (from, to) => {
   return fromText || toText || null;
 };
 
+const daysBetweenInclusive = (start, end) => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+  const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+  const endUtc = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
+  return Math.max(0, Math.floor((endUtc - startUtc) / 86400000) + 1);
+};
+
+const overlapDaysInclusive = (leftStart, leftEnd, rightStart, rightEnd) => {
+  const start = new Date(Math.max(new Date(leftStart).getTime(), new Date(rightStart).getTime()));
+  const end = new Date(Math.min(new Date(leftEnd).getTime(), new Date(rightEnd || leftEnd).getTime()));
+  return daysBetweenInclusive(start, end);
+};
+
+const normalizeMoney = (value) => Number((Number(value || 0) || 0).toFixed(2));
+
+const calculateCompensationAmount = ({ compensation, totalHours, periodStart, periodEnd }) => {
+  const payType = normalizeString(compensation.pay_type).toUpperCase();
+  const rate = Number(compensation.rate || 0) || 0;
+  const currency = normalizeString(compensation.currency).toUpperCase() || 'USD';
+  const calculation = {
+    compensation_id: resolveDisplayId(compensation),
+    pay_type: payType,
+    rate: normalizeMoney(rate),
+    currency,
+  };
+
+  if (payType === 'PER_HOUR') {
+    const amount = normalizeMoney(rate * totalHours);
+    return {
+      amount,
+      currency,
+      calculation: { ...calculation, hours: normalizeMoney(totalHours), formula: 'rate * hours' },
+    };
+  }
+
+  if (payType === 'PER_MONTH') {
+    const periodDays = daysBetweenInclusive(periodStart, periodEnd) || 1;
+    const eligibleDays = overlapDaysInclusive(
+      compensation.effective_from || periodStart,
+      compensation.effective_to || periodEnd,
+      periodStart,
+      periodEnd
+    );
+    const amount = normalizeMoney(rate * (eligibleDays / periodDays));
+    return {
+      amount,
+      currency,
+      calculation: { ...calculation, period_days: periodDays, eligible_days: eligibleDays, formula: 'rate * eligible_days / period_days' },
+    };
+  }
+
+  if (payType === 'PER_PROCEDURE') {
+    const procedureCount = Number(compensation.metadata_json?.procedure_count || 0) || 0;
+    const amount = normalizeMoney(rate * procedureCount);
+    return {
+      amount,
+      currency,
+      calculation: { ...calculation, procedure_count: procedureCount, formula: 'rate * procedure_count' },
+    };
+  }
+
+  return { amount: 0, currency, calculation };
+};
+
 const buildPagination = (page, limit, total) => ({
   page,
   limit,
@@ -913,7 +979,7 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
 const getReferenceData = async (filters = {}) => {
   const scope = await buildScope(filters);
 
-  const [facilities, departments, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles] =
+  const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles] =
     await Promise.all([
       prisma.facility.findMany({
         where: {
@@ -933,6 +999,32 @@ const getReferenceData = async (filters = {}) => {
         orderBy: { name: 'asc' },
         take: 200,
         select: { id: true, human_friendly_id: true, name: true, short_name: true, facility_id: true },
+      }),
+      prisma.unit.findMany({
+        where: {
+          deleted_at: null,
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+          ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+        },
+        orderBy: { name: 'asc' },
+        take: 200,
+        select: { id: true, human_friendly_id: true, name: true, facility_id: true, department_id: true },
+      }),
+      prisma.room.findMany({
+        where: {
+          deleted_at: null,
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+          ...(scope.departmentId ? { ward: { department_id: scope.departmentId } } : {}),
+        },
+        orderBy: { name: 'asc' },
+        take: 200,
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true,
+          facility_id: true,
+          ward: { select: { department_id: true } },
+        },
       }),
       prisma.staff_profile.findMany({
         where: {
@@ -1058,6 +1150,22 @@ const getReferenceData = async (filters = {}) => {
       .map((entry) =>
         toOption(entry, normalizeString(entry.name || entry.short_name) || resolvePublicIdentifier(entry.human_friendly_id), {
           facility_id: entry.facility_id || null,
+        })
+      )
+      .filter(Boolean),
+    units: units
+      .map((entry) =>
+        toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
+          facility_id: entry.facility_id || null,
+          department_id: entry.department_id || null,
+        })
+      )
+      .filter(Boolean),
+    rooms: rooms
+      .map((entry) =>
+        toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
+          facility_id: entry.facility_id || null,
+          department_id: entry.ward?.department_id || null,
         })
       )
       .filter(Boolean),
@@ -1736,6 +1844,14 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
           staff_number: true,
           consultation_fee: true,
           consultation_currency: true,
+          compensations: {
+            where: {
+              deleted_at: null,
+              effective_from: { lte: payrollRunRecord.period_end },
+              OR: [{ effective_to: null }, { effective_to: { gte: payrollRunRecord.period_start } }],
+            },
+            orderBy: { effective_from: 'desc' },
+          },
           user: {
             select: {
               email: true,
@@ -1772,9 +1888,33 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
   }
 
   const proposedItems = Array.from(grouped.values()).map((entry) => {
-    const hourlyRate = Number(entry.profile.consultation_fee || 0) || 0;
-    const amount = Number((entry.totalHours * hourlyRate).toFixed(2));
-    const currency = normalizeString(entry.profile.consultation_currency).toUpperCase() || 'USD';
+    const compensations = Array.isArray(entry.profile.compensations) && entry.profile.compensations.length
+      ? entry.profile.compensations
+      : entry.profile.consultation_fee
+        ? [
+            {
+              pay_type: 'PER_HOUR',
+              rate: entry.profile.consultation_fee,
+              currency: entry.profile.consultation_currency || 'USD',
+              effective_from: payrollRunRecord.period_start,
+              metadata_json: { source: 'legacy_consultation_fee' },
+            },
+          ]
+        : [];
+    const calculations = compensations.map((compensation) =>
+      calculateCompensationAmount({
+        compensation,
+        totalHours: entry.totalHours,
+        periodStart: payrollRunRecord.period_start,
+        periodEnd: payrollRunRecord.period_end,
+      })
+    );
+    const currency = calculations.find((item) => item.currency)?.currency || 'USD';
+    const amount = normalizeMoney(
+      calculations
+        .filter((item) => item.currency === currency)
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+    );
 
     return {
       staff_profile_id: entry.profile.id,
@@ -1786,9 +1926,13 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
         null,
       assignment_count: entry.assignmentCount,
       total_hours: Number(entry.totalHours.toFixed(2)),
-      hourly_rate: Number(hourlyRate.toFixed(2)),
+      hourly_rate: calculations.find((item) => item.calculation.pay_type === 'PER_HOUR')?.calculation.rate || 0,
       amount,
       currency,
+      calculation: {
+        compensation_count: compensations.length,
+        components: calculations.map((item) => item.calculation),
+      },
     };
   });
 
@@ -1826,7 +1970,7 @@ const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
   if (!payrollRunRecord?.id) throw new HttpError('errors.payroll_run.not_found', 404);
 
   const { proposedItems, totals } = await buildPayrollProposedItems(payrollRunRecord, filters);
-  return {
+  const preview = {
     run_summary: {
       id: resolveDisplayId(payrollRunRecord),
       display_id: resolveDisplayId(payrollRunRecord),
@@ -1838,6 +1982,11 @@ const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
     proposed_items: proposedItems,
     totals,
   };
+  await prisma.payroll_run.update({
+    where: { id: payrollRunRecord.id },
+    data: { preview_json: preview },
+  }).catch(() => {});
+  return preview;
 };
 
 const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1879,7 +2028,11 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
       if (existing) {
         await tx.payroll_item.update({
           where: { id: existing.id },
-          data: { amount: String(item.amount.toFixed(2)), currency: item.currency },
+          data: {
+            amount: String(item.amount.toFixed(2)),
+            currency: item.currency,
+            calculation_json: item.calculation,
+          },
         });
       } else {
         await tx.payroll_item.create({
@@ -1888,12 +2041,27 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
             staff_profile_id: item.staff_profile_id,
             amount: String(item.amount.toFixed(2)),
             currency: item.currency,
+            calculation_json: item.calculation,
           },
         });
       }
     }
 
-    await tx.payroll_run.update({ where: { id: payrollRunRecord.id }, data: { status: 'PROCESSED' } });
+    await tx.payroll_run.update({
+      where: { id: payrollRunRecord.id },
+      data: {
+        status: 'PROCESSED',
+        preview_json: { proposed_items: proposedItems, totals },
+        audit_trail_json: {
+          operation: 'PAYROLL_PROCESS',
+          processed_at: new Date().toISOString(),
+          processed_by_user_id: userId || null,
+          replace_existing_items: replaceExisting,
+          notes: normalizeString(payload.notes) || null,
+          totals,
+        },
+      },
+    });
   });
 
   createAuditLog({

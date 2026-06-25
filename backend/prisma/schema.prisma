@@ -1228,6 +1228,7 @@ model room {
   facility               facility                @relation(fields: [facility_id], references: [id])
   ward                   ward?                   @relation(fields: [ward_id], references: [id])
   beds                   bed[]
+  staff_assignments      staff_assignment[]
   housekeeping_tasks     housekeeping_task[]
   housekeeping_schedules housekeeping_schedule[]
 
@@ -4366,6 +4367,7 @@ model staff_profile {
   assignments                staff_assignment[]
   leaves                     staff_leave[]
   staff_availabilities       staff_availability[]
+  compensations              staff_compensation[]
   shift_assignments          shift_assignment[]
   roster_day_offs            roster_day_off[]
   swap_requests_as_requester shift_swap_request[] @relation("shift_swap_requester")
@@ -4393,6 +4395,7 @@ model staff_assignment {
   staff_profile_id  String    @db.VarChar(36)
   department_id     String?   @db.VarChar(36)
   unit_id           String?   @db.VarChar(36)
+  room_id           String?   @db.VarChar(36)
   start_date        DateTime  @default(now())
   end_date          DateTime?
   created_at        DateTime  @default(now())
@@ -4403,10 +4406,12 @@ model staff_assignment {
   staff_profile staff_profile @relation(fields: [staff_profile_id], references: [id])
   department    department?   @relation(fields: [department_id], references: [id])
   unit          unit?         @relation(fields: [unit_id], references: [id])
+  room          room?         @relation(fields: [room_id], references: [id])
 
   @@index([staff_profile_id])
   @@index([department_id])
   @@index([unit_id])
+  @@index([room_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -4469,7 +4474,9 @@ model staff_availability {
   day_of_week       Int
   start_time        String                 @db.VarChar(10)
   end_time          String                 @db.VarChar(10)
+  time_slots_json   Json?
   preference        AvailabilityPreference @default(AVAILABLE)
+  status            String?                @db.VarChar(32)
   effective_from    DateTime
   effective_to      DateTime?
   created_at        DateTime               @default(now())
@@ -4481,6 +4488,30 @@ model staff_availability {
 
   @@index([staff_profile_id])
   @@index([day_of_week])
+  @@index([effective_from])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model staff_compensation {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?   @db.VarChar(32)
+  staff_profile_id  String    @db.VarChar(36)
+  pay_type          String    @db.VarChar(32)
+  rate              Decimal   @db.Decimal(12, 2)
+  currency          String    @db.VarChar(10)
+  effective_from    DateTime
+  effective_to      DateTime?
+  metadata_json     Json?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  deleted_at        DateTime?
+  version           Int       @default(1)
+
+  staff_profile staff_profile @relation(fields: [staff_profile_id], references: [id])
+
+  @@index([staff_profile_id])
+  @@index([pay_type])
   @@index([effective_from])
   @@index([deleted_at])
   @@index([human_friendly_id])
@@ -5032,6 +5063,8 @@ model payroll_run {
   period_start      DateTime
   period_end        DateTime
   status            PayrollStatus
+  preview_json      Json?
+  audit_trail_json  Json?
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
   deleted_at        DateTime?
@@ -5055,6 +5088,7 @@ model payroll_item {
   staff_profile_id  String    @db.VarChar(36)
   amount            Decimal   @db.Decimal(12, 2)
   currency          String    @db.VarChar(10)
+  calculation_json  Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?

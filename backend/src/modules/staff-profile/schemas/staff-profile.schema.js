@@ -28,6 +28,18 @@ const friendlyIdSchema = z
 
 const resourceIdentifierSchema = z.union([uuidSchema, friendlyIdSchema]);
 const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
+const compensationPayTypeSchema = z.enum(['PER_PROCEDURE', 'PER_HOUR', 'PER_MONTH']);
+const compensationInputSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema.optional(),
+  pay_type: compensationPayTypeSchema,
+  rate: decimalInputSchema,
+  currency: z.string().trim().min(1).max(10).transform((value) => value.toUpperCase()),
+  effective_from: z.coerce.date(),
+  effective_to: z.coerce.date().optional().nullable(),
+}).refine((data) => !data.effective_to || data.effective_to >= data.effective_from, {
+  message: 'errors.validation.effective_to_after_from',
+  path: ['effective_to'],
+});
 
 // ==================== Body Schemas ====================
 
@@ -46,7 +58,8 @@ const createStaffProfileSchema = z.object({
   consultation_currency: z.string().trim().min(1).max(10).optional().nullable()
     .transform((value) => (typeof value === 'string' ? value.toUpperCase() : value)),
   is_fee_overridden: z.boolean().optional(),
-  hire_date: z.coerce.date().optional().nullable()
+  hire_date: z.coerce.date().optional().nullable(),
+  compensations: z.array(compensationInputSchema).optional()
 });
 
 /**
@@ -63,7 +76,8 @@ const updateStaffProfileSchema = z.object({
   consultation_currency: z.string().trim().min(1).max(10).optional().nullable()
     .transform((value) => (typeof value === 'string' ? value.toUpperCase() : value)),
   is_fee_overridden: z.boolean().optional(),
-  hire_date: z.coerce.date().optional().nullable()
+  hire_date: z.coerce.date().optional().nullable(),
+  compensations: z.array(compensationInputSchema).optional()
 });
 
 // ==================== URL Params ====================

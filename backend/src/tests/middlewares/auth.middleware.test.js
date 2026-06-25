@@ -84,6 +84,26 @@ describe('auth middleware', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
+  it('merges permissions across multiple simultaneous roles', () => {
+    const clinicalMiddleware = authorize('clinical:write', 'permission');
+    const biomedMiddleware = authorize('biomed:write', 'permission');
+    const req = {
+      user: {
+        role: 'DOCTOR',
+        roles: ['DOCTOR', 'BIOMED']
+      }
+    };
+    const res = {};
+    const clinicalNext = jest.fn();
+    const biomedNext = jest.fn();
+
+    clinicalMiddleware(req, res, clinicalNext);
+    biomedMiddleware(req, res, biomedNext);
+
+    expect(clinicalNext).toHaveBeenCalledWith();
+    expect(biomedNext).toHaveBeenCalledWith();
+  });
+
   it('authorizes hospital admin aliases for facility-scoped mortuary permissions', () => {
     const middleware = authorize('mortuary:read', 'permission');
     const req = {

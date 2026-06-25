@@ -43,7 +43,11 @@ const STAFF_PROFILE_INCLUDE = {
       profile: true
     }
   },
-  department: true
+  department: true,
+  compensations: {
+    where: { deleted_at: null },
+    orderBy: { effective_from: 'desc' },
+  },
 };
 
 const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -150,6 +154,50 @@ const normalizeConsultationFeePayload = (inputData = {}, { isEdit = false } = {}
   }
 
   return data;
+};
+
+const extractCompensations = (data = {}) => {
+  if (!Array.isArray(data.compensations)) return undefined;
+  return data.compensations.map((entry) => ({
+    pay_type: String(entry.pay_type || '').trim().toUpperCase(),
+    rate: entry.rate,
+    currency: String(entry.currency || '').trim().toUpperCase(),
+    effective_from: entry.effective_from,
+    effective_to: entry.effective_to || null,
+  }));
+};
+
+const stripNestedStaffProfilePayload = (data = {}) => {
+  const payload = { ...data };
+  delete payload.compensations;
+  return payload;
+};
+
+const syncStaffCompensations = async (staffProfileId, compensations) => {
+  if (!Array.isArray(compensations)) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.staff_compensation.updateMany({
+      where: {
+        staff_profile_id: staffProfileId,
+        deleted_at: null,
+      },
+      data: { deleted_at: new Date() },
+    });
+
+    for (const compensation of compensations) {
+      await tx.staff_compensation.create({
+        data: {
+          staff_profile_id: staffProfileId,
+          pay_type: compensation.pay_type,
+          rate: compensation.rate,
+          currency: compensation.currency,
+          effective_from: compensation.effective_from,
+          effective_to: compensation.effective_to,
+        },
+      });
+    }
+  });
 };
 
 const resolveUserByIdentifier = async (identifier, tenantId = null) => {
@@ -373,9 +421,10 @@ const createStaffProfile = async (data, userId, ipAddress) => {
       throw new HttpError('errors.user.not_found', 404, [{ field: 'user_id' }]);
     }
 
+    const requestedCompensations = extractCompensations(data);
     const payload = normalizeConsultationFeePayload(
       {
-        ...data,
+        ...stripNestedStaffProfilePayload(data),
         tenant_id: tenantId,
         department_id: departmentId,
         user_id: resolvedUser.id
@@ -384,6 +433,7 @@ const createStaffProfile = async (data, userId, ipAddress) => {
     );
 
     const createdProfile = await staffProfileRepository.create(payload);
+    await syncStaffCompensations(createdProfile.id, requestedCompensations);
     const createdWithRelations = await staffProfileRepository.findById(
       createdProfile.id,
       STAFF_PROFILE_INCLUDE
@@ -425,7 +475,8 @@ const updateStaffProfile = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.staff_profile.not_found', 404);
     }
 
-    const payload = normalizeConsultationFeePayload(data, { isEdit: true });
+    const requestedCompensations = extractCompensations(data);
+    const payload = normalizeConsultationFeePayload(stripNestedStaffProfilePayload(data), { isEdit: true });
     if (Object.prototype.hasOwnProperty.call(data, 'department_id')) {
       payload.department_id = await resolveIdentifierForPayload({
         value: data.department_id,
@@ -436,6 +487,7 @@ const updateStaffProfile = async (id, data, userId, ipAddress) => {
       });
     }
     const updatedProfile = await staffProfileRepository.update(before.id, payload);
+    await syncStaffCompensations(updatedProfile.id, requestedCompensations);
     const updatedWithRelations = await staffProfileRepository.findById(
       updatedProfile.id,
       STAFF_PROFILE_INCLUDE
