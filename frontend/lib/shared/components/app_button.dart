@@ -347,19 +347,29 @@ class _ButtonContent extends StatelessWidget {
       return labelText;
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        _ButtonGlyph(
-          icon: leadingIcon,
-          iconSize: iconSize,
-          isLoading: isLoading,
-          loadingColor: loadingColor,
-        ),
-        SizedBox(width: spacing.sm),
-        labelText,
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        // Only flex the label when the button has a bounded width so it can
+        // ellipsize instead of overflowing. Under unbounded constraints the
+        // label keeps its intrinsic size to avoid RenderFlex flex errors.
+        final Widget label = constraints.maxWidth.isFinite
+            ? Flexible(child: labelText)
+            : labelText;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            _ButtonGlyph(
+              icon: leadingIcon,
+              iconSize: iconSize,
+              isLoading: isLoading,
+              loadingColor: loadingColor,
+            ),
+            SizedBox(width: spacing.sm),
+            label,
+          ],
+        );
+      },
     );
   }
 }

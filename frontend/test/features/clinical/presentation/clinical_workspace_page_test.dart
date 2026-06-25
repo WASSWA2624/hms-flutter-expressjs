@@ -6,6 +6,9 @@ import 'package:hosspi_hms/features/clinical/data/repositories/clinical_reposito
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
+import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -16,6 +19,8 @@ import 'package:mocktail/mocktail.dart';
 class _MockClinicalRepository extends Mock implements ClinicalRepository {}
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockIpdRepository extends Mock implements IpdRepository {}
 
 void main() {
   setUpAll(() {
@@ -29,12 +34,14 @@ void main() {
     );
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const IpdAdmissionQuery());
   });
 
   testWidgets('renders the clinical workspace shell content', (tester) async {
     final _MockClinicalRepository clinicalRepository =
         _MockClinicalRepository();
     final _MockOpdRepository opdRepository = _MockOpdRepository();
+    final _MockIpdRepository ipdRepository = _MockIpdRepository();
     final ClinicalWorklistEntry entry = ClinicalWorklistEntry(
       id: 'encounter-1',
       sourceQueue: 'OPD',
@@ -64,6 +71,7 @@ void main() {
       encounters: <ClinicalWorklistEntry>[entry, otherEntry],
     );
     _stubOpdInitialLoad(opdRepository);
+    _stubIpdInitialLoad(ipdRepository);
 
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 900);
@@ -75,6 +83,7 @@ void main() {
         overrides: [
           clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
           opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
         ],
         child: const MaterialApp(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -131,7 +140,7 @@ void main() {
     expect(find.text('Phone'), findsOneWidget);
     expect(find.text('Encounter'), findsAtLeastNWidgets(1));
     expect(find.text('Queue scope'), findsOneWidget);
-    expect(find.text('Provider'), findsAtLeastNWidgets(1));
+    expect(find.text('Assigned staff'), findsAtLeastNWidgets(1));
     expect(find.text('Status'), findsAtLeastNWidgets(1));
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('All active work'), findsAtLeastNWidgets(1));
@@ -225,6 +234,19 @@ void _stubOpdInitialLoad(_MockOpdRepository repository) {
       AppPage<OpdFlowSummary>(
         items: const <OpdFlowSummary>[],
         request: (invocation.positionalArguments.single as OpdTriageQueueQuery)
+            .pageRequest,
+        totalItemCount: 0,
+      ),
+    ),
+  );
+}
+
+void _stubIpdInitialLoad(_MockIpdRepository repository) {
+  when(() => repository.listAdmissions(any())).thenAnswer(
+    (invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
+      AppPage<IpdAdmissionSummary>(
+        items: const <IpdAdmissionSummary>[],
+        request: (invocation.positionalArguments.single as IpdAdmissionQuery)
             .pageRequest,
         totalItemCount: 0,
       ),

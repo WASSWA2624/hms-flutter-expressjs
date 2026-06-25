@@ -12,6 +12,9 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
+import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -29,6 +32,7 @@ final class ClinicalWorkspaceController
   static const Duration _syncInterval = Duration(seconds: 8);
   ClinicalRepository get _repository => ref.read(clinicalRepositoryProvider);
   OpdRepository get _opdRepository => ref.read(opdRepositoryProvider);
+  IpdRepository get _ipdRepository => ref.read(ipdRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -686,7 +690,6 @@ final class ClinicalWorkspaceController
     final ClinicalWorklistEntry? entry = _selectedEntry;
     final String bedStatus = (bed.status ?? 'AVAILABLE').trim().toUpperCase();
     if (entry == null ||
-        entry.tenantId == null ||
         entry.apiPatientId == null ||
         bed.parentId == null ||
         bed.secondaryId == null ||
@@ -695,16 +698,19 @@ final class ClinicalWorkspaceController
     }
 
     return _mutateSelectedEncounter(
-      () => _repository.createAdmission(<String, Object?>{
-        'tenant_id': entry.tenantId,
-        'facility_id': entry.facilityId,
-        'patient_id': entry.apiPatientId,
-        'encounter_id': entry.apiEncounterId,
-        'ward_id': bed.parentId,
-        'room_id': bed.secondaryId,
-        'bed_id': bed.apiId,
-        'admitted_at': DateTime.now().toUtc().toIso8601String(),
-      }),
+      () => _ipdRepository
+          .startAdmission(<String, Object?>{
+            'tenant_id': entry.tenantId,
+            'facility_id': entry.facilityId,
+            'patient_id': entry.apiPatientId,
+            'encounter_id': entry.apiEncounterId,
+            'ward_id': bed.parentId,
+            'room_id': bed.secondaryId,
+            'bed_id': bed.apiId,
+          })
+          .then(
+            (Result<IpdAdmissionDetail> result) => result.map<void>((_) {}),
+          ),
     );
   }
 
@@ -774,16 +780,39 @@ final class ClinicalWorkspaceController
     }
 
     if (_isActiveAdmissionEntry(entry)) {
-      final String? admissionId = entry.admissionId;
+      final String? admissionId = entry.apiAdmissionId;
       if (admissionId == null || admissionId.trim().isEmpty) {
         return AppFailure.validation();
       }
 
+      final String summary = _dispositionReviewNote(
+        reason: normalizedReason,
+        notes: normalizedNotes,
+      );
+      final bool isDischargePlanned =
+          (entry.stage ?? '').toUpperCase() == 'DISCHARGE_PLANNED' ||
+          (entry.status ?? '').toUpperCase() == 'DISCHARGE_PLANNED';
+
+      if (isDischargePlanned) {
+        return _mutateSelectedEncounter(
+          () => _ipdRepository
+              .finalizeDischarge(admissionId, <String, Object?>{
+                'summary': summary,
+                'discharged_at': DateTime.now().toUtc().toIso8601String(),
+              })
+              .then(
+                (Result<IpdAdmissionDetail> result) => result.map<void>((_) {}),
+              ),
+          removeSelectedOnSuccess: true,
+        );
+      }
+
       return _mutateSelectedEncounter(
-        () => _repository.dischargeAdmission(admissionId, <String, Object?>{
-          'discharged_at': DateTime.now().toUtc().toIso8601String(),
-        }),
-        removeSelectedOnSuccess: true,
+        () => _ipdRepository
+            .planDischarge(admissionId, <String, Object?>{'summary': summary})
+            .then(
+              (Result<IpdAdmissionDetail> result) => result.map<void>((_) {}),
+            ),
       );
     }
 
@@ -1087,7 +1116,7 @@ final class ClinicalWorkspaceController
     final List<Result<AppPage<ClinicalWorklistEntry>>> results =
         await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
           _repository.listEncounters(query),
-          _repository.listAdmissions(query),
+          _ipdFlows(query),
           _opdFlows(query),
           _triageFlows(query),
         ]);
@@ -1174,6 +1203,60 @@ final class ClinicalWorkspaceController
         request: query.pageRequest,
         totalItemCount: page.totalItemCount,
       ),
+    );
+  }
+
+  Future<Result<AppPage<ClinicalWorklistEntry>>> _ipdFlows(
+    ClinicalWorklistQuery query,
+  ) async {
+    final bool wantsCompleted = query.scope == ClinicalQueueScope.completed;
+    final Result<AppPage<IpdAdmissionSummary>> result = await _ipdRepository
+        .listAdmissions(
+          IpdAdmissionQuery(
+            search: query.databaseSearch,
+            scope: wantsCompleted ? IpdQueueScope.discharged : IpdQueueScope.all,
+          ),
+        );
+
+    return result.map(
+      (AppPage<IpdAdmissionSummary> page) => AppPage<ClinicalWorklistEntry>(
+        items: page.items
+            .where(
+              (IpdAdmissionSummary item) => wantsCompleted || !item.isTerminal,
+            )
+            .map(_entryFromIpd)
+            .where((ClinicalWorklistEntry entry) => entry.encounterId.isNotEmpty)
+            .toList(growable: false),
+        request: query.pageRequest,
+        totalItemCount: page.totalItemCount,
+      ),
+    );
+  }
+
+  ClinicalWorklistEntry _entryFromIpd(IpdAdmissionSummary item) {
+    final String normalizedStage = (item.stage ?? '').toUpperCase();
+    final String normalizedNextStep = (item.nextStep ?? '').toUpperCase();
+    return ClinicalWorklistEntry(
+      id: 'IPD_${item.id}',
+      sourceQueue: 'IPD',
+      encounterId: item.encounterId ?? '',
+      patientId: item.patientId,
+      patientDisplayName: item.patientDisplayName,
+      encounterType: 'IPD',
+      status: item.admissionStatus ?? item.stage,
+      stage: item.stage,
+      nextStep: item.nextStep,
+      currentLocation: item.location,
+      startedAt: item.admittedAt,
+      updatedAt: item.dischargedAt ?? item.admittedAt,
+      admissionId: item.id,
+      admissionPublicId: item.displayId,
+      isUrgent:
+          item.hasCriticalAlert ||
+          (item.criticalSeverity ?? '').toUpperCase() == 'CRITICAL',
+      resultsReady:
+          normalizedStage.contains('RESULT') ||
+          normalizedNextStep.contains('RESULT'),
     );
   }
 
