@@ -409,3 +409,154 @@ String? _dateDisplay(DateTime? value) {
       '${local.month.toString().padLeft(2, '0')}-'
       '${local.day.toString().padLeft(2, '0')}';
 }
+
+final class TherapyFlowWorkItemDto {
+  const TherapyFlowWorkItemDto(this.json);
+
+  final PhysiotherapyJsonMap json;
+
+  TherapyWorkItem toEntity() {
+    return TherapyWorkItem(
+      id: _string(json['id']) ?? _string(json['episode_id']) ?? '',
+      encounterId:
+          _string(json['encounter_id']) ??
+          _string(json['encounter_public_id']) ??
+          '',
+      encounterPublicId: _string(json['encounter_public_id']),
+      patientId: _string(json['patient_id']),
+      patientPublicId: _string(json['patient_public_id']),
+      patientDisplayName: _string(json['patient_display_name']),
+      patientPhone: _string(json['patient_phone']),
+      patientGender: _string(json['patient_gender']),
+      encounterType: _string(json['encounter_type']),
+      source: _string(json['source']) ?? 'REFERRAL',
+      sourceId: _string(json['source_id']),
+      sourceTitle: _string(json['source_title']),
+      referralReason: _string(json['referral_reason']),
+      status: _string(json['therapy_status']) ?? _string(json['status']) ?? 'REFERRAL',
+      attendanceStatus: _string(json['attendance_status']),
+      billingStatus: _string(json['billing_status']) ?? 'NOT_BILLED',
+      therapistUserId: _string(json['therapist_user_id']),
+      therapistName: _string(json['therapist_name']),
+      appointmentId: _string(json['appointment_id']),
+      appointmentApiId: _string(json['appointment_api_id']),
+      sessionAt: _date(json['session_at']),
+      lastActivityAt: _date(json['last_activity_at']),
+      plan: _string(json['plan']) ?? _string(json['plan_summary']),
+      goals: _string(json['goals']),
+      instructions: _string(json['instructions']),
+    );
+  }
+}
+
+final class TherapyFlowPageDto {
+  const TherapyFlowPageDto({required this.page});
+
+  final AppPage<TherapyWorkItem> page;
+
+  factory TherapyFlowPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final PhysiotherapyJsonMap response = _expectMap(responseData);
+    final List<TherapyWorkItem> items = _list(response['data'])
+        .map(TherapyFlowWorkItemDto.new)
+        .map((TherapyFlowWorkItemDto dto) => dto.toEntity())
+        .where((TherapyWorkItem item) => item.id.trim().isNotEmpty)
+        .toList(growable: false);
+
+    return TherapyFlowPageDto(
+      page: AppPage<TherapyWorkItem>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+}
+
+final class TherapyFlowDetailDto {
+  const TherapyFlowDetailDto(this.responseData);
+
+  final Object? responseData;
+
+  PhysiotherapyDetail toEntity() {
+    final PhysiotherapyJsonMap json = _map(
+      responseData is PhysiotherapyJsonMap
+          ? (responseData as PhysiotherapyJsonMap)['data'] ?? responseData
+          : responseData,
+    );
+    final TherapyWorkItem item = TherapyFlowWorkItemDto(json).toEntity();
+
+    final List<PhysiotherapyRecord> sessions = _list(json['sessions'])
+        .map(
+          (PhysiotherapyJsonMap session) => PhysiotherapyRecord(
+            id: _string(session['id']) ?? '',
+            apiId: _string(session['session_id']) ?? _string(session['id']) ?? '',
+            kind: PhysiotherapyRecordKind.appointment,
+            status: _string(session['attendance_status']),
+            title: 'Therapy session',
+            description: _string(session['session_note']),
+            providerUserId: _string(session['therapist_user_id']),
+            providerName: _string(session['therapist_name']),
+            startAt: _date(session['scheduled_start_at']),
+            endAt: _date(session['scheduled_end_at']),
+            occurredAt: _date(session['attended_at']),
+          ),
+        )
+        .where((PhysiotherapyRecord record) => record.apiId.isNotEmpty)
+        .toList(growable: false);
+
+    final List<PhysiotherapyRecord> progressNotes =
+        _list(json['progress_notes'])
+            .map(
+              (PhysiotherapyJsonMap note) => PhysiotherapyRecord(
+                id: _string(note['id']) ?? '',
+                apiId: _string(note['id']) ?? '',
+                kind: PhysiotherapyRecordKind.clinicalNote,
+                title: 'Progress note',
+                description: _string(note['note']),
+                occurredAt: _date(note['recorded_at']),
+              ),
+            )
+            .where((PhysiotherapyRecord record) => record.apiId.isNotEmpty)
+            .toList(growable: false);
+
+    final List<PhysiotherapyRecord> followUps = _list(json['follow_ups'])
+        .map(
+          (PhysiotherapyJsonMap followUp) => PhysiotherapyRecord(
+            id: _string(followUp['id']) ?? '',
+            apiId: _string(followUp['id']) ?? '',
+            kind: PhysiotherapyRecordKind.followUp,
+            status: _string(followUp['status']),
+            title: 'Follow-up review',
+            description: _string(followUp['notes']),
+            startAt: _date(followUp['scheduled_at']),
+          ),
+        )
+        .where((PhysiotherapyRecord record) => record.apiId.isNotEmpty)
+        .toList(growable: false);
+
+    final List<PhysiotherapyRecord> carePlans =
+        item.plan == null || item.plan!.trim().isEmpty
+        ? const <PhysiotherapyRecord>[]
+        : <PhysiotherapyRecord>[
+            PhysiotherapyRecord(
+              id: item.id,
+              apiId: item.id,
+              kind: PhysiotherapyRecordKind.carePlan,
+              title: 'Treatment plan',
+              description: item.plan,
+              subtitle: item.goals,
+            ),
+          ];
+
+    return PhysiotherapyDetail(
+      item: item,
+      appointments: sessions,
+      carePlans: carePlans,
+      progressNotes: progressNotes,
+      followUps: followUps,
+    );
+  }
+}

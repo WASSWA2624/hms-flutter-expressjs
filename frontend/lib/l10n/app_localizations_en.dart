@@ -1800,6 +1800,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAdmissionHandoffStayAction => 'Stay in OPD';
 
   @override
+  String get opdPhysiotherapyHandoffTitle => 'Physiotherapy referral placed';
+
+  @override
+  String get opdPhysiotherapyHandoffBody =>
+      'The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.';
+
+  @override
+  String get opdOpenPhysiotherapyAction => 'Open physiotherapy';
+
+  @override
   String get opdSearchLabel => 'Search OPD';
 
   @override
@@ -5265,6 +5275,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdRequestTransferAction => 'Request transfer';
+
+  @override
+  String get ipdRequestTherapyAction => 'Request physiotherapy';
+
+  @override
+  String get ipdOpenPhysiotherapyAction => 'Open physiotherapy';
 
   @override
   String get ipdManageTransferAction => 'Manage transfer';

@@ -112,6 +112,11 @@ const requestTransfer = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.ipd_flow.request_transfer.success', flow);
 });
 
+const requestTherapy = asyncHandler(async (req, res) => {
+  const flow = await ipdFlowService.requestTherapy(req.params.id, req.body, buildAuditContext(req));
+  return sendSuccess(res, 200, 'messages.ipd_flow.request_therapy.success', flow);
+});
+
 const updateTransfer = asyncHandler(async (req, res) => {
   const flow = await ipdFlowService.updateTransfer(req.params.id, req.body, buildAuditContext(req));
   return sendSuccess(res, 200, 'messages.ipd_flow.update_transfer.success', flow);
@@ -189,6 +194,7 @@ module.exports = {
   releaseBed,
   rejectAdmissionRequest,
   requestTransfer,
+  requestTherapy,
   updateTransfer,
   addWardRound,
   addNursingNote,

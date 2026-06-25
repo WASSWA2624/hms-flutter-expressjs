@@ -114,6 +114,15 @@ final class PhysiotherapyWorklistQuery {
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
+
+  factory PhysiotherapyWorklistQuery.fromUri(Uri uri) {
+    final String? encounterId = uri.queryParameters['encounterId'] ??
+        uri.queryParameters['encounter_id'];
+    return PhysiotherapyWorklistQuery(
+      search: encounterId?.trim() ?? '',
+      scope: PhysiotherapyQueueScope.all,
+    );
+  }
 }
 
 typedef TherapyWorkItem = PhysiotherapyWorkItem;
@@ -540,6 +549,18 @@ final class PhysiotherapyWorkspaceState {
       isSaving: isSaving ?? this.isSaving,
     );
   }
+}
+
+String serverQueueScopeForPhysiotherapy(PhysiotherapyQueueScope scope) {
+  return switch (scope) {
+    PhysiotherapyQueueScope.referrals => 'REFERRAL',
+    PhysiotherapyQueueScope.today => 'TODAY',
+    PhysiotherapyQueueScope.missed => 'MISSED',
+    PhysiotherapyQueueScope.activePlans => 'ACTIVE_PLAN',
+    PhysiotherapyQueueScope.followUpDue => 'FOLLOW_UP_DUE',
+    PhysiotherapyQueueScope.completed => 'COMPLETED',
+    PhysiotherapyQueueScope.all => 'ALL',
+  };
 }
 
 bool physiotherapyItemMatchesScope(

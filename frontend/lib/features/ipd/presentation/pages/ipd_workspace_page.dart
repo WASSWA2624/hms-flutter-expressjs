@@ -984,6 +984,32 @@ class _IpdDetailActions extends ConsumerWidget {
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
+            label: l10n.ipdRequestTherapyAction,
+            leadingIcon: Icons.accessibility_new_outlined,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () => _openRequestTherapyDialog(context, ref),
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
+            label: l10n.ipdOpenPhysiotherapyAction,
+            leadingIcon: Icons.open_in_new_outlined,
+            enabled: canClinical && actionsEnabled,
+            onPressed: () {
+              final String? encounterId = admission.summary.encounterId;
+              if (encounterId == null || encounterId.isEmpty) {
+                return;
+              }
+              context.go(
+                AppRoutes.physiotherapy.location(
+                  queryParameters: <String, String>{
+                    'encounterId': encounterId,
+                  },
+                ),
+              );
+            },
+          ),
+        if (canClinical && activeBed && !terminal)
+          AppActionItem(
             label: l10n.ipdOrderPrescriptionAction,
             leadingIcon: Icons.medication_outlined,
             enabled: canClinical && actionsEnabled,
@@ -1202,6 +1228,20 @@ class _IpdDetailActions extends ConsumerWidget {
         admission: admission,
         wards: state.referenceData.wards,
       ),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+
+  Future<void> _openRequestTherapyDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => RequestTherapyDialog(admission: admission.summary),
     );
     if (saved == true && context.mounted) {
       _showSaved(context);
@@ -1889,6 +1929,104 @@ class _ReleaseBedDialogState extends ConsumerState<ReleaseBedDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+class RequestTherapyDialog extends ConsumerStatefulWidget {
+  const RequestTherapyDialog({required this.admission, super.key});
+
+  final IpdAdmissionSummary admission;
+
+  @override
+  ConsumerState<RequestTherapyDialog> createState() =>
+      _RequestTherapyDialogState();
+}
+
+class _RequestTherapyDialogState extends ConsumerState<RequestTherapyDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _indicationController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void dispose() {
+    _indicationController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.ipdRequestTherapyAction),
+      icon: const Icon(Icons.accessibility_new_outlined),
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppTextField(
+              controller: _indicationController,
+              labelText: l10n.physiotherapyReasonFieldLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.opdNotesLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.ipdRequestTherapyAction,
+          leadingIcon: Icons.accessibility_new_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(ipdWorkspaceControllerProvider.notifier)
+        .requestTherapy(
+          admission: widget.admission,
+          clinicalIndication: _indicationController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      setState(() {
+        _isSaving = false;
+        _failure = failure;
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
   }
 }
 

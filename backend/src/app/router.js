@@ -161,6 +161,7 @@ apiV1Router.use('/theatre-cases', require('../modules/theatre-case/routes/theatr
 apiV1Router.use('/anesthesia-records', require('../modules/anesthesia-record/routes/anesthesia-record.routes'));
 apiV1Router.use('/post-op-notes', require('../modules/post-op-note/routes/post-op-note.routes'));
 apiV1Router.use('/theatre-flows', require('../modules/theatre-flow/routes/theatre-flow.routes'));
+apiV1Router.use('/therapy-flows', require('../modules/therapy-flow/routes/therapy-flow.routes'));
 apiV1Router.use('/drugs', require('../modules/drug/routes/drug.routes'));
 apiV1Router.use('/drug-batches', require('../modules/drug-batch/routes/drug-batch.routes'));
 apiV1Router.use('/formulary-items', require('../modules/formulary-item/routes/formulary-item.routes'));

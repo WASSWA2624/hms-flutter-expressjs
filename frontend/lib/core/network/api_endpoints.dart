@@ -110,6 +110,7 @@ enum HmsApiResource {
   anesthesiaRecords('anesthesia-records', HmsApiEndpointGroup.clinicalCare),
   postOpNotes('post-op-notes', HmsApiEndpointGroup.clinicalCare),
   theatreFlows('theatre-flows', HmsApiEndpointGroup.clinicalCare),
+  therapyFlows('therapy-flows', HmsApiEndpointGroup.clinicalCare),
   drugs('drugs', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   drugBatches('drug-batches', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   formularyItems(

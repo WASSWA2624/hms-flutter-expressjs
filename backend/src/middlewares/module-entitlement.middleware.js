@@ -150,6 +150,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'theatre-flows': 'theatre-anesthesia',
   'anesthesia-records': 'theatre-anesthesia',
   'post-op-notes': 'theatre-anesthesia',
+  'therapy-flows': 'physiotherapy',
   lab: 'lab-workflows',
   'lab-tests': 'lab-workflows',
   'lab-panels': 'lab-workflows',

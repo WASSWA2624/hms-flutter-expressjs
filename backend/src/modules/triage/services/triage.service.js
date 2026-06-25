@@ -872,6 +872,23 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
         if (createdReferral) {
           flow.referral_ids = [...new Set([...(flow.referral_ids || []), createdReferral.id])];
         }
+        if (routeTo === ROUTE_DESTINATIONS.PHYSIOTHERAPY) {
+          const therapyFlowService = require('@services/therapy-flow/therapy-flow.service');
+          const therapyEpisode = await therapyFlowService.createTherapyReferralInternal(
+            tx,
+            {
+              encounter_id: encounter.id,
+              referral_id: createdReferral?.id || null,
+              source_kind: 'TRIAGE',
+              source_id: encounter.id,
+              source_title: 'Triage routing',
+              referral_reason: normalizeNotes(data?.reason) || 'Physiotherapy referral',
+              notes: normalizeNotes(data?.notes),
+            },
+            context
+          );
+          flow.therapy_episode_id = therapyEpisode.id;
+        }
         setFlowStage(flow, STAGES.WAITING_DISPOSITION);
         break;
       }

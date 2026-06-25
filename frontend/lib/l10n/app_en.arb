@@ -2219,6 +2219,18 @@
   "@opdAdmissionHandoffStayAction": {
     "description": "Secondary action to remain in the OPD workspace instead of opening the inpatient workspace."
   },
+  "opdPhysiotherapyHandoffTitle": "Physiotherapy referral placed",
+  "@opdPhysiotherapyHandoffTitle": {
+    "description": "Title for the dialog shown after referring a patient to physiotherapy from OPD disposition."
+  },
+  "opdPhysiotherapyHandoffBody": "The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.",
+  "@opdPhysiotherapyHandoffBody": {
+    "description": "Body copy for the post-referral physiotherapy handoff dialog."
+  },
+  "opdOpenPhysiotherapyAction": "Open physiotherapy",
+  "@opdOpenPhysiotherapyAction": {
+    "description": "Navigates from OPD to the physiotherapy workspace for the referred encounter."
+  },
   "opdSearchLabel": "Search OPD",
   "opdSearchHint": "Search patient, identifier, or assigned staff",
   "opdApplyFiltersAction": "Apply filters",
@@ -6785,6 +6797,14 @@
   "ipdRequestTransferAction": "Request transfer",
   "@ipdRequestTransferAction": {
     "description": "IPD action label to request a transfer."
+  },
+  "ipdRequestTherapyAction": "Request physiotherapy",
+  "@ipdRequestTherapyAction": {
+    "description": "Creates an inpatient physiotherapy consult request from IPD admission detail."
+  },
+  "ipdOpenPhysiotherapyAction": "Open physiotherapy",
+  "@ipdOpenPhysiotherapyAction": {
+    "description": "Navigates from IPD admission detail to the physiotherapy workspace."
   },
   "ipdManageTransferAction": "Manage transfer",
   "@ipdManageTransferAction": {

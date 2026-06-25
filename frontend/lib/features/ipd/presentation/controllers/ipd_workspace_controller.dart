@@ -439,6 +439,20 @@ final class IpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> requestTherapy({
+    required IpdAdmissionSummary admission,
+    required String clinicalIndication,
+    String? notes,
+  }) {
+    return _mutateAdmission(
+      admission,
+      () => _repository.requestTherapy(admission.apiId, <String, Object?>{
+        'clinical_indication': clinicalIndication,
+        'notes': notes,
+      }),
+    );
+  }
+
   Future<AppFailure?> updateTransfer({
     required IpdAdmissionSummary admission,
     required String action,

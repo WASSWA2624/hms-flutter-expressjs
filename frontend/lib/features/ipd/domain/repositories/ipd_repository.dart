@@ -58,6 +58,11 @@ abstract interface class IpdRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<IpdAdmissionDetail>> requestTherapy(
+    String admissionId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<IpdAdmissionDetail>> updateTransfer(
     String admissionId,
     Map<String, Object?> payload,

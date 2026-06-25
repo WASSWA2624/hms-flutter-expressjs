@@ -4310,6 +4310,12 @@ const emitAdmissionRefreshEvent = async (admissionIdentifier, context = {}) => {
   }
 };
 
+const requestTherapy = async (id, data, context = {}) => {
+  const therapyFlowService = require('@services/therapy-flow/therapy-flow.service');
+  await therapyFlowService.requestTherapyFromAdmission(id, data, context);
+  return getIpdFlowById(id);
+};
+
 module.exports = {
   STAGES,
   TRANSFER_ACTIONS,
@@ -4321,6 +4327,7 @@ module.exports = {
   releaseBed,
   rejectAdmissionRequest,
   requestTransfer,
+  requestTherapy,
   updateTransfer,
   addWardRound,
   addNursingNote,

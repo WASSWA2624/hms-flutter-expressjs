@@ -181,6 +181,13 @@ const requestTransferSchema = z.object({
   requested_at: z.string().datetime().optional(),
 });
 
+const requestTherapySchema = z.object({
+  clinical_indication: z.string().trim().min(1).max(2000),
+  priority: z.string().trim().max(40).optional().nullable(),
+  therapist_user_id: optionalIdentifierSchema,
+  notes: z.string().trim().max(65535).optional().nullable(),
+});
+
 const updateTransferSchema = z
   .object({
     transfer_request_id: optionalIdentifierSchema,
@@ -291,6 +298,7 @@ module.exports = {
   releaseBedSchema,
   rejectAdmissionSchema,
   requestTransferSchema,
+  requestTherapySchema,
   updateTransferSchema,
   addWardRoundSchema,
   addNursingNoteSchema,

@@ -3538,6 +3538,24 @@ abstract class AppLocalizations {
   /// **'Stay in OPD'**
   String get opdAdmissionHandoffStayAction;
 
+  /// Title for the dialog shown after referring a patient to physiotherapy from OPD disposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy referral placed'**
+  String get opdPhysiotherapyHandoffTitle;
+
+  /// Body copy for the post-referral physiotherapy handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.'**
+  String get opdPhysiotherapyHandoffBody;
+
+  /// Navigates from OPD to the physiotherapy workspace for the referred encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open physiotherapy'**
+  String get opdOpenPhysiotherapyAction;
+
   /// Search field label for OPD.
   ///
   /// In en, this message translates to:
@@ -9837,6 +9855,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request transfer'**
   String get ipdRequestTransferAction;
+
+  /// Creates an inpatient physiotherapy consult request from IPD admission detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Request physiotherapy'**
+  String get ipdRequestTherapyAction;
+
+  /// Navigates from IPD admission detail to the physiotherapy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open physiotherapy'**
+  String get ipdOpenPhysiotherapyAction;
 
   /// IPD action label to update an open transfer.
   ///

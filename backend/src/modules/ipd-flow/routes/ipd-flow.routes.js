@@ -23,6 +23,7 @@ const {
   releaseBedSchema,
   rejectAdmissionSchema,
   requestTransferSchema,
+  requestTherapySchema,
   updateTransferSchema,
   addWardRoundSchema,
   addNursingNoteSchema,
@@ -132,6 +133,17 @@ router.post(
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.updateTransfer
+);
+
+router.post(
+  '/:id/request-therapy',
+  validateRequest({
+    params: admissionIdParamsSchema,
+    body: requestTherapySchema,
+  }),
+  authenticate(),
+  authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
+  ipdFlowController.requestTherapy
 );
 
 router.post(

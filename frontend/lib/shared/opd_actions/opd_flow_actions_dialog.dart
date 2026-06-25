@@ -572,11 +572,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     OpdFlowDetail? detail, {
     required bool hasPharmacyOrder,
   }) async {
+    String? submittedDisposition;
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          OpdDispositionDialog(flow: flow, hasPharmacyOrder: hasPharmacyOrder),
+      builder: (_) => OpdDispositionDialog(
+        flow: flow,
+        hasPharmacyOrder: hasPharmacyOrder,
+        onDispositionSubmitted: (String decision) {
+          submittedDisposition = decision;
+        },
+      ),
     );
     if (!context.mounted || changed != true) {
       return;
@@ -595,6 +601,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     if (admissionPending) {
       await _promptIpdHandoff(context, updatedFlow, updatedDetail);
+      return;
+    }
+
+    final String? dispositionDecision = submittedDisposition;
+    if (dispositionDecision?.toUpperCase() == 'REFER_PHYSIOTHERAPY') {
+      await _promptPhysiotherapyHandoff(context, updatedFlow);
       return;
     }
 
@@ -618,6 +630,47 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (openIpd == true) {
       _navigateToIpdHandoff(context, flow, detail);
     }
+  }
+
+  Future<void> _promptPhysiotherapyHandoff(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? openPhysio = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.opdPhysiotherapyHandoffTitle),
+        icon: const Icon(Icons.accessibility_new_outlined),
+        maxWidth: 560,
+        content: Text(
+          l10n.opdPhysiotherapyHandoffBody,
+          style: Theme.of(dialogContext).textTheme.bodyMedium,
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.opdAdmissionHandoffStayAction,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          AppButton.primary(
+            label: l10n.opdOpenPhysiotherapyAction,
+            leadingIcon: Icons.accessibility_new_outlined,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted || openPhysio != true) {
+      return;
+    }
+    Navigator.of(context).pop(true);
+    final String encounterTarget =
+        flow.publicId?.trim().isNotEmpty == true ? flow.publicId! : flow.id;
+    context.go(
+      AppRoutes.physiotherapy.location(
+        queryParameters: <String, String>{'encounterId': encounterTarget},
+      ),
+    );
   }
 
   void _navigateToIpdHandoff(
@@ -1521,11 +1574,13 @@ class OpdDispositionDialog extends ConsumerWidget {
   const OpdDispositionDialog({
     required this.flow,
     required this.hasPharmacyOrder,
+    this.onDispositionSubmitted,
     super.key,
   });
 
   final OpdFlowSummary flow;
   final bool hasPharmacyOrder;
+  final ValueChanged<String>? onDispositionSubmitted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1548,6 +1603,7 @@ class OpdDispositionDialog extends ConsumerWidget {
         OpdActionContextPanel(flow: flow, showTitle: false),
       ],
       onSubmit: ({required String reason, required String notes}) {
+        onDispositionSubmitted?.call(reason);
         return ref
             .read(opdWorkspaceControllerProvider.notifier)
             .completeDisposition(flow, <String, Object?>{
@@ -3032,6 +3088,7 @@ List<String> _opdDispositionOptions({required bool hasPharmacyOrder}) {
   return <String>[
     'DISCHARGE',
     if (hasPharmacyOrder) 'SEND_TO_PHARMACY',
+    'REFER_PHYSIOTHERAPY',
     'ADMIT',
   ];
 }

@@ -181,6 +181,14 @@ final class IpdRepositoryImpl implements IpdRepository {
   }
 
   @override
+  Future<Result<IpdAdmissionDetail>> requestTherapy(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _postAction(admissionId, <String>['request-therapy'], payload);
+  }
+
+  @override
   Future<Result<IpdAdmissionDetail>> updateTransfer(
     String admissionId,
     Map<String, Object?> payload,

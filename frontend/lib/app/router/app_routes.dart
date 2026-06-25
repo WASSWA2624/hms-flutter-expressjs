@@ -255,7 +255,7 @@ abstract final class AppRoutes {
       AppPermissions.patientRead,
       AppPermissions.billingRead,
     ],
-    requiredActiveModules: <String>['encounters-vitals'],
+    requiredActiveModules: <String>['physiotherapy'],
   );
   static const AppRouteData lab = AppRouteData(
     name: 'lab',

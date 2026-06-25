@@ -225,6 +225,26 @@ enum TheatreResourceType {
   EQUIPMENT
 }
 
+enum TherapyEpisodeStatus {
+  REFERRAL
+  ACCEPTED
+  ASSESSMENT
+  ACTIVE_PLAN
+  SESSION_SCHEDULED
+  FOLLOW_UP_DUE
+  MISSED
+  COMPLETED
+  CLOSED
+}
+
+enum TherapySessionAttendance {
+  SCHEDULED
+  ATTENDED
+  NO_SHOW
+  CANCELLED
+  RESCHEDULED
+}
+
 enum ClinicalAlertStatus {
   NEW
   ACKNOWLEDGED
@@ -1360,6 +1380,8 @@ model user {
   acknowledged_clinical_alerts  clinical_alert[]          @relation("clinical_alert_acknowledged_by")
   resolved_clinical_alerts      clinical_alert[]          @relation("clinical_alert_resolved_by")
   completed_follow_ups          follow_up[]               @relation("follow_up_completed_by")
+  therapy_episodes_assigned   therapy_episode[]         @relation("therapy_episode_therapist")
+  therapy_sessions_assigned   therapy_session[]         @relation("therapy_session_therapist")
   owned_clinical_term_favorites clinical_term_favorite[]  @relation("clinical_term_favorite_owner")
   nursing_notes                 nursing_note[]
   provider_schedules            provider_schedule[]
@@ -2180,6 +2202,7 @@ model encounter {
   radiology_orders radiology_order[]
   pharmacy_orders  pharmacy_order[]
   theatre_cases    theatre_case[]
+  therapy_episodes therapy_episode[]
   pre_authorizations pre_authorization[]
 
   @@unique([tenant_id, human_friendly_id])
@@ -2358,6 +2381,7 @@ model referral {
   encounter       encounter   @relation(fields: [encounter_id], references: [id])
   from_department department? @relation("referral_from_department", fields: [from_department_id], references: [id])
   to_department   department? @relation("referral_to_department", fields: [to_department_id], references: [id])
+  therapy_episodes therapy_episode[]
 
   @@index([encounter_id])
   @@index([external_facility_name])
@@ -2552,6 +2576,7 @@ model admission {
   icu_stays                  icu_stay[]
   pre_authorizations         pre_authorization[]
   theatre_cases              theatre_case[]
+  therapy_episodes           therapy_episode[]
 
   @@index([tenant_id])
   @@index([facility_id])
@@ -2928,6 +2953,83 @@ model anesthesia_observation {
   @@index([observed_at])
   @@index([observation_type])
   @@index([metric_key])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model therapy_episode {
+  id                  String               @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id   String?              @db.VarChar(32)
+  encounter_id        String               @db.VarChar(36)
+  admission_id        String?              @db.VarChar(36)
+  referral_id         String?              @db.VarChar(36)
+  source_kind         String?              @db.VarChar(40)
+  source_id           String?              @db.VarChar(36)
+  source_title        String?              @db.VarChar(255)
+  referral_reason     String?              @db.Text
+  therapist_user_id   String?              @db.VarChar(36)
+  therapy_status      TherapyEpisodeStatus @default(REFERRAL)
+  next_step           String?              @db.VarChar(255)
+  plan_summary        String?              @db.Text
+  goals               String?              @db.Text
+  instructions        String?              @db.Text
+  contraindications   String?              @db.Text
+  session_frequency   String?              @db.VarChar(120)
+  plan_started_at     DateTime?
+  plan_ends_at        DateTime?
+  outcome_summary     String?              @db.Text
+  billing_status      String?              @db.VarChar(40)
+  billing_snapshot    Json?
+  accepted_at         DateTime?
+  assessed_at         DateTime?
+  closed_at           DateTime?
+  extension_json      Json?
+  created_at          DateTime             @default(now())
+  updated_at          DateTime             @updatedAt
+  deleted_at          DateTime?
+  version             Int                  @default(1)
+
+  encounter  encounter          @relation(fields: [encounter_id], references: [id])
+  admission  admission?         @relation(fields: [admission_id], references: [id])
+  referral   referral?          @relation(fields: [referral_id], references: [id])
+  therapist  user?              @relation("therapy_episode_therapist", fields: [therapist_user_id], references: [id])
+  sessions   therapy_session[]
+
+  @@index([encounter_id])
+  @@index([admission_id])
+  @@index([referral_id])
+  @@index([therapist_user_id])
+  @@index([therapy_status])
+  @@index([source_kind])
+  @@index([closed_at])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model therapy_session {
+  id                 String                   @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id  String?                  @db.VarChar(32)
+  therapy_episode_id String                   @db.VarChar(36)
+  therapist_user_id  String?                  @db.VarChar(36)
+  scheduled_start_at DateTime
+  scheduled_end_at   DateTime?
+  location           String?                  @db.VarChar(255)
+  attendance_status  TherapySessionAttendance @default(SCHEDULED)
+  session_note       String?                  @db.Text
+  billing_snapshot   Json?
+  attended_at        DateTime?
+  created_at         DateTime                 @default(now())
+  updated_at         DateTime                 @updatedAt
+  deleted_at         DateTime?
+  version            Int                      @default(1)
+
+  therapy_episode therapy_episode @relation(fields: [therapy_episode_id], references: [id])
+  therapist       user?           @relation("therapy_session_therapist", fields: [therapist_user_id], references: [id])
+
+  @@index([therapy_episode_id])
+  @@index([therapist_user_id])
+  @@index([scheduled_start_at])
+  @@index([attendance_status])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

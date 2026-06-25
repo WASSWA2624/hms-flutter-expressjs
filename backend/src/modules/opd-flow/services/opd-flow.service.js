@@ -4121,6 +4121,24 @@ const disposition = async (id, data, context = {}) => {
       flow.pharmacy_pending_after_disposition = true;
       setFlowStage(flow, STAGES.PHARMACY_REQUESTED);
       closeEncounter = false;
+    } else if (data.decision === 'REFER_PHYSIOTHERAPY') {
+      const therapyFlowService = require('@services/therapy-flow/therapy-flow.service');
+      const therapyEpisode = await therapyFlowService.createTherapyReferralInternal(
+        tx,
+        {
+          encounter_id: encounter.id,
+          source_kind: 'OPD',
+          source_id: encounter.id,
+          source_title: 'OPD visit',
+          referral_reason: dispositionReason,
+          notes: dispositionNotes,
+        },
+        context
+      );
+      flow.therapy_episode_id = therapyEpisode.id;
+      flow.physiotherapy_referral_id = therapyEpisode.id;
+      setFlowStage(flow, STAGES.WAITING_DISPOSITION);
+      closeEncounter = false;
     } else {
       setFlowStage(flow, STAGES.DISCHARGED);
     }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -58,6 +59,19 @@ class _PhysiotherapyWorkspacePageState
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<TherapyWorkItem>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final String? encounterId =
+          GoRouterState.of(context).uri.queryParameters['encounterId'] ??
+          GoRouterState.of(context).uri.queryParameters['encounter_id'];
+      if (encounterId != null && encounterId.trim().isNotEmpty) {
+        ref
+            .read(physiotherapyWorkspaceControllerProvider.notifier)
+            .applySearch(encounterId.trim());
+      }
+    });
   }
 
   @override
