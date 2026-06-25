@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -26,7 +27,12 @@ import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class EmergencyWorkspacePage extends ConsumerWidget {
-  const EmergencyWorkspacePage({super.key});
+  const EmergencyWorkspacePage({
+    super.key,
+    this.initialQuery = const EmergencyWorkspaceQuery(),
+  });
+
+  final EmergencyWorkspaceQuery initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,16 +50,23 @@ class EmergencyWorkspacePage extends ConsumerWidget {
         ref.read(emergencyWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, EmergencyWorkspaceState data) {
-        return _EmergencyWorkspaceContent(state: data);
+        return _EmergencyWorkspaceContent(
+          state: data,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _EmergencyWorkspaceContent extends ConsumerStatefulWidget {
-  const _EmergencyWorkspaceContent({required this.state});
+  const _EmergencyWorkspaceContent({
+    required this.state,
+    this.initialQuery = const EmergencyWorkspaceQuery(),
+  });
 
   final EmergencyWorkspaceState state;
+  final EmergencyWorkspaceQuery initialQuery;
 
   @override
   ConsumerState<_EmergencyWorkspaceContent> createState() =>
@@ -69,6 +82,7 @@ class _EmergencyWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<EmergencyCaseSummary>
   _tableColumnController;
+  String? _appliedDeepLinkSignature;
 
   @override
   void initState() {
@@ -76,6 +90,61 @@ class _EmergencyWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<EmergencyCaseSummary>();
+    if (widget.initialQuery.hasRouteTargeting) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_applyDeepLink(widget.initialQuery));
+      });
+    }
+  }
+
+  Future<void> _applyDeepLink(EmergencyWorkspaceQuery query) async {
+    if (!query.hasRouteTargeting ||
+        _appliedDeepLinkSignature == query.signature) {
+      return;
+    }
+    _appliedDeepLinkSignature = query.signature;
+
+    final EmergencyWorkspaceController controller = ref.read(
+      emergencyWorkspaceControllerProvider.notifier,
+    );
+
+    final String searchTerm = query.caseId.isNotEmpty
+        ? query.caseId
+        : query.search;
+    if (searchTerm.isNotEmpty) {
+      if (query.caseId.isNotEmpty) {
+        await controller.applyScope(EmergencyBoardScope.all);
+      }
+      await controller.applySearch(searchTerm);
+    }
+
+    if (query.caseId.isEmpty || !mounted) {
+      return;
+    }
+
+    final EmergencyWorkspaceState state =
+        _readEmergencyState(ref) ?? widget.state;
+    EmergencyCaseSummary? target;
+    for (final EmergencyCaseSummary item in state.board.items) {
+      final String needle = query.caseId.toLowerCase();
+      if (item.id.toLowerCase() == needle ||
+          (item.displayId ?? '').toLowerCase() == needle) {
+        target = item;
+        break;
+      }
+    }
+    target ??= EmergencyCaseSummary(id: query.caseId, displayId: query.caseId);
+
+    if (!mounted) {
+      return;
+    }
+    await _openEmergencyDetailDialog(
+      context,
+      ref,
+      state,
+      target,
+      _writeRequirement,
+    );
   }
 
   @override
@@ -445,10 +514,12 @@ class _EmergencyDetailPanel extends ConsumerWidget {
   const _EmergencyDetailPanel({
     required this.state,
     required this.writeRequirement,
+    this.isDialog = false,
   });
 
   final EmergencyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final bool isDialog;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -490,6 +561,12 @@ class _EmergencyDetailPanel extends ConsumerWidget {
                 tone: AppWorkspaceStatusTone.info,
                 icon: Icons.bolt_outlined,
               ),
+            if (summary.handoff?.billingDeferred ?? false)
+              const AppWorkspaceStatus(
+                label: _EmergencyText.billingDeferred,
+                tone: AppWorkspaceStatusTone.warning,
+                icon: Icons.payments_outlined,
+              ),
           ],
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
@@ -517,6 +594,13 @@ class _EmergencyDetailPanel extends ConsumerWidget {
             ),
           ],
         ),
+        if (summary.handoff != null) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _EmergencyHandoffOutcomePanel(
+            outcome: summary.handoff!,
+            isDialog: isDialog,
+          ),
+        ],
         SizedBox(height: theme.spacing.md),
         _EmergencyActionPanel(
           detail: detail,
@@ -566,6 +650,7 @@ Future<void> _openEmergencyDetailDialog(
       content: _EmergencyDetailPanel(
         state: state,
         writeRequirement: writeRequirement,
+        isDialog: true,
       ),
     ),
   );
@@ -956,6 +1041,118 @@ class _EmergencyActionPanel extends ConsumerWidget {
       context,
       listen: false,
     ).read(emergencyWorkspaceControllerProvider.notifier);
+  }
+}
+
+class _EmergencyHandoffOutcomePanel extends StatelessWidget {
+  const _EmergencyHandoffOutcomePanel({
+    required this.outcome,
+    this.isDialog = false,
+  });
+
+  final EmergencyHandoffOutcome outcome;
+  final bool isDialog;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String moduleName = _moduleName(outcome.destination);
+    final bool canOpen = outcome.hasReceivingWork;
+
+    final List<AppInfoTileData> tiles = <AppInfoTileData>[
+      AppInfoTileData(
+        label: _EmergencyText.handoffDestination,
+        value: moduleName,
+        icon: Icons.alt_route_outlined,
+      ),
+      if ((outcome.receivingDisplayId ?? '').trim().isNotEmpty)
+        AppInfoTileData(
+          label: _EmergencyText.receivingReference,
+          value: outcome.receivingDisplayId,
+          icon: Icons.tag_outlined,
+          copyable: true,
+        ),
+      if ((outcome.stage ?? '').trim().isNotEmpty)
+        AppInfoTileData(
+          label: _EmergencyText.receivingStage,
+          value: _apiLabel(outcome.stage ?? ''),
+          icon: Icons.timeline_outlined,
+        ),
+      if (outcome.handoffAt != null)
+        AppInfoTileData(
+          label: _EmergencyText.handoffTime,
+          value: _dateTimeLabel(context, outcome.handoffAt),
+          icon: Icons.schedule_outlined,
+        ),
+    ];
+
+    return AppWorkspaceDetailPanel(
+      title: _EmergencyText.handoffOutcome,
+      description: outcome.terminal
+          ? _EmergencyText.handoffTerminalDescription
+          : _EmergencyText.handoffOutcomeDescription,
+      actions: <Widget>[
+        if (canOpen)
+          AppButton.primary(
+            label: _openInModuleLabel(moduleName),
+            leadingIcon: Icons.open_in_new_outlined,
+            onPressed: () => _openReceivingModule(context),
+          ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppInfoTileGrid(items: tiles),
+          if (outcome.billingDeferred) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            const AppMessagePanel(
+              tone: AppWorkspaceStatusTone.warning,
+              icon: Icons.payments_outlined,
+              title: _EmergencyText.billingDeferred,
+              message: _EmergencyText.billingDeferredMessage,
+            ),
+          ],
+          if ((outcome.notes ?? '').trim().isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              _EmergencyText.handoffNotes,
+              style: theme.textTheme.labelLarge,
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(outcome.notes!.trim(), style: theme.textTheme.bodyMedium),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openReceivingModule(BuildContext context) async {
+    final String? link = outcome.receivingDeepLink;
+    if (link == null) {
+      return;
+    }
+    if (isDialog && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      context.go(link);
+    }
+  }
+
+  static String _moduleName(String destination) {
+    return switch (destination.toUpperCase()) {
+      'OPD' => _EmergencyText.opd,
+      'IPD' => _EmergencyText.ipd,
+      'ICU' => _EmergencyText.icu,
+      'THEATER' || 'THEATRE' => _EmergencyText.theater,
+      'REFERRAL' => _EmergencyText.referral,
+      'DISCHARGE' => _EmergencyText.discharge,
+      _ => _apiLabel(destination),
+    };
+  }
+
+  static String _openInModuleLabel(String moduleName) {
+    return '${_EmergencyText.openInPrefix} $moduleName';
   }
 }
 
@@ -1731,6 +1928,10 @@ abstract final class _EmergencyText {
   static const String ambulance = 'Ambulance';
   static const String arrival = 'Arrival';
   static const String available = 'Available';
+  static const String billingDeferred = 'Billing deferred';
+  static const String billingDeferredMessage =
+      'Stabilize first — billing for this admission can be completed later in '
+      'the Billing workspace.';
   static const String boardScope = 'Board scope';
   static const String cancel = 'Cancel';
   static const String careBeforeBilling = 'Care before billing';
@@ -1745,6 +1946,14 @@ abstract final class _EmergencyText {
   static const String enRoute = 'En route';
   static const String facility = 'Facility';
   static const String handoff = 'Handoff';
+  static const String handoffDestination = 'Destination';
+  static const String handoffNotes = 'Handoff notes';
+  static const String handoffOutcome = 'Handoff outcome';
+  static const String handoffOutcomeDescription =
+      'The receiving workflow created when this case was handed off.';
+  static const String handoffTerminalDescription =
+      'This case was closed at handoff. No downstream encounter was created.';
+  static const String handoffTime = 'Handoff time';
   static const String high = 'High';
   static const String icu = 'ICU';
   static const String ipd = 'IPD';
@@ -1761,7 +1970,10 @@ abstract final class _EmergencyText {
   static const String onScene = 'On scene';
   static const String opd = 'OPD';
   static const String openCase = 'Open case';
+  static const String openInPrefix = 'Open in';
   static const String outOfService = 'Out of service';
+  static const String receivingReference = 'Receiving reference';
+  static const String receivingStage = 'Stage';
   static const String patient = 'Patient';
   static const String patientNumber = 'Patient no.';
   static const String printSummary = 'Print summary';

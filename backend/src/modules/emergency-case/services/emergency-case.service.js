@@ -101,11 +101,19 @@ const buildEmptyListResult = (page, limit) => ({
   totalPages: 0,
 });
 
+const extractHandoffSnapshot = (record) => {
+  const extension = record?.extension_json;
+  if (!extension || typeof extension !== 'object') return null;
+  const handoff = extension.handoff;
+  return handoff && typeof handoff === 'object' ? handoff : null;
+};
+
 const mapEmergencyCaseForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
 
   return {
     ...record,
+    handoff: extractHandoffSnapshot(record),
     display_id: resolveDisplayIdentifier(record.display_id, record.human_friendly_id, record.id),
     tenant_display_id: resolveDisplayIdentifier(record.tenant_display_id, record.tenant?.human_friendly_id, record.tenant_id),
     facility_display_id: resolveDisplayIdentifier(
@@ -316,11 +324,13 @@ const startEmergencyIcuFlow = async (emergencyCase, context) => {
     throw new HttpError('errors.ipd_flow.not_found', 404, [{ field: 'admission_id' }]);
   }
 
-  return ipdFlowService.startIcuStay(
+  const icuStay = await ipdFlowService.startIcuStay(
     admissionId,
     { started_at: new Date().toISOString() },
     context
   );
+
+  return { admission: admissionSnapshot, icuStay };
 };
 
 const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
@@ -352,7 +362,7 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
   }
 
   const theatreFlowService = getTheatreFlowService();
-  return theatreFlowService.startTheatreFlow(
+  const theatre = await theatreFlowService.startTheatreFlow(
     {
       encounter_id: encounterId,
       scheduled_at: new Date().toISOString(),
@@ -362,6 +372,8 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
     },
     context
   );
+
+  return { theatre, encounterId };
 };
 
 const startReceivingDepartmentWork = async (emergencyCase, destination, note, context) => {
@@ -380,6 +392,144 @@ const startReceivingDepartmentWork = async (emergencyCase, destination, note, co
     default:
       throw new HttpError('errors.validation.invalid', 400, [{ field: 'destination' }]);
   }
+};
+
+const HANDOFF_ROUTE_BY_DESTINATION = Object.freeze({
+  OPD: 'opd',
+  IPD: 'ipd',
+  ICU: 'icu',
+  THEATER: 'theater',
+});
+
+const HANDOFF_TERMINAL_DESTINATIONS = new Set(['REFERRAL', 'DISCHARGE']);
+
+/**
+ * Normalize the receiving department workflow into a UI-friendly snapshot so
+ * the emergency case detail can deep-link to the downstream module without
+ * leaking raw identifiers or re-querying the receiving workflow.
+ *
+ * @param {string} destination - Normalized handoff destination
+ * @param {Object|null} receivingWork - Raw return of the receiving flow service
+ * @returns {Object} Receiving workflow snapshot fields
+ */
+const buildReceivingWorkSnapshot = (destination, receivingWork) => {
+  if (!receivingWork || typeof receivingWork !== 'object') {
+    return {
+      receiving_display_id: null,
+      stage: null,
+      billing_deferred: false,
+    };
+  }
+
+  switch (destination) {
+    case 'OPD': {
+      const encounter = receivingWork.encounter || receivingWork;
+      const flow = receivingWork.flow || {};
+      const encounterId = resolvePublicSnapshotId(
+        encounter?.human_friendly_id,
+        encounter?.display_id,
+        encounter?.id,
+        receivingWork.human_friendly_id,
+        receivingWork.id
+      );
+      return {
+        receiving_display_id: encounterId,
+        encounter_display_id: encounterId,
+        stage: resolvePublicSnapshotId(flow.workflow_stage, flow.stage) || 'WAITING_VITALS',
+        billing_deferred: false,
+      };
+    }
+    case 'IPD': {
+      const admission = receivingWork.admission || receivingWork;
+      const flow = receivingWork.flow || {};
+      const admissionId = resolvePublicSnapshotId(
+        admission?.human_friendly_id,
+        admission?.display_id,
+        admission?.id,
+        receivingWork.human_friendly_id,
+        receivingWork.id
+      );
+      return {
+        receiving_display_id: admissionId,
+        admission_display_id: admissionId,
+        stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage, admission?.status),
+        billing_deferred: true,
+      };
+    }
+    case 'ICU': {
+      const admission = receivingWork.admission || {};
+      const icuStay = receivingWork.icuStay || {};
+      const flow = icuStay.flow || admission.flow || {};
+      const admissionId = resolvePublicSnapshotId(
+        admission.human_friendly_id,
+        admission.display_id,
+        admission.id,
+        icuStay.human_friendly_id,
+        icuStay.id
+      );
+      return {
+        receiving_display_id: admissionId,
+        admission_display_id: admissionId,
+        icu_stay_display_id: resolvePublicSnapshotId(
+          icuStay.human_friendly_id,
+          icuStay.display_id,
+          icuStay.id
+        ),
+        stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage) || 'ICU',
+        billing_deferred: true,
+      };
+    }
+    case 'THEATER': {
+      const theatre = receivingWork.theatre || receivingWork;
+      const flow = theatre.flow || {};
+      const theatreId = resolvePublicSnapshotId(
+        theatre.human_friendly_id,
+        theatre.display_id,
+        theatre.id,
+        receivingWork.human_friendly_id,
+        receivingWork.id
+      );
+      return {
+        receiving_display_id: theatreId,
+        encounter_display_id: resolvePublicSnapshotId(receivingWork.encounterId),
+        stage:
+          resolvePublicSnapshotId(theatre.workflow_stage, flow.workflow_stage, flow.stage) ||
+          'PRE_OP',
+        billing_deferred: false,
+      };
+    }
+    default:
+      return {
+        receiving_display_id: null,
+        stage: null,
+        billing_deferred: false,
+      };
+  }
+};
+
+/**
+ * Compose the persisted handoff snapshot stored on `extension_json.handoff`.
+ *
+ * @param {string} destination - Normalized handoff destination
+ * @param {Object|null} receivingWork - Raw return of the receiving flow service
+ * @param {Object} data - Original handoff request data
+ * @returns {Object} Handoff snapshot persisted on the emergency case
+ */
+const buildHandoffSnapshot = (destination, receivingWork, data = {}) => {
+  const terminal = HANDOFF_TERMINAL_DESTINATIONS.has(destination);
+  const receiving = terminal
+    ? { receiving_display_id: null, stage: null, billing_deferred: false }
+    : buildReceivingWorkSnapshot(destination, receivingWork);
+
+  return {
+    destination,
+    route: HANDOFF_ROUTE_BY_DESTINATION[destination] || null,
+    terminal,
+    notes: sanitizeText(data.notes),
+    close_case: data.close_case !== false,
+    handoff_at: new Date().toISOString(),
+    ...receiving,
+  };
 };
 
 /**
@@ -517,6 +667,7 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
   const note = buildHandoffNote(destination, data.notes);
   const context = buildWorkflowContext(existing, user);
   const receivingWork = await startReceivingDepartmentWork(existing, destination, note, context);
+  const snapshot = buildHandoffSnapshot(destination, receivingWork, data);
 
   await getEmergencyResponseRepository().create({
     emergency_case_id: existing.id,
@@ -525,9 +676,17 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
   });
 
   const closeCase = data.close_case !== false;
-  const updated = closeCase
-    ? await emergencyCaseRepository.update(existing.id, { status: 'CLOSED' })
-    : existing;
+  const existingExtension =
+    existing.extension_json && typeof existing.extension_json === 'object'
+      ? existing.extension_json
+      : {};
+  const updatePayload = {
+    extension_json: { ...existingExtension, handoff: snapshot },
+  };
+  if (closeCase) {
+    updatePayload.status = 'CLOSED';
+  }
+  const updated = await emergencyCaseRepository.update(existing.id, updatePayload);
 
   await createAuditLog({
     action: 'HANDOFF',
@@ -539,6 +698,8 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
       destination,
       close_case: closeCase,
       receiving_work: Boolean(receivingWork),
+      receiving_display_id: snapshot.receiving_display_id,
+      billing_deferred: snapshot.billing_deferred,
       notes: sanitizeText(data.notes),
     },
   });

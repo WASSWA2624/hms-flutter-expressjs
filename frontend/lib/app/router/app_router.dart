@@ -176,7 +176,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.emergency.path,
             name: AppRoutes.emergency.name,
-            builder: (_, _) => const EmergencyWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return EmergencyWorkspacePage(
+                initialQuery: EmergencyWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.ipd.path,

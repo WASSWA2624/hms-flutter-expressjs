@@ -3787,6 +3787,7 @@ model emergency_case {
   patient_id        String            @db.VarChar(36)
   severity          EmergencySeverity
   status            EncounterStatus
+  extension_json    Json?
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
   deleted_at        DateTime?

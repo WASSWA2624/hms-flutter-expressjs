@@ -75,8 +75,33 @@ final class EmergencyCaseDto {
       status: _string(json['status']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
+      handoff: _handoffOutcome(json),
     );
   }
+}
+
+EmergencyHandoffOutcome? _handoffOutcome(EmergencyJsonMap json) {
+  final EmergencyJsonMap handoff = _map(
+    json['handoff'] ?? _map(json['extension_json'])['handoff'],
+  );
+  final String? destination = _string(handoff['destination']);
+  if (destination == null) {
+    return null;
+  }
+
+  return EmergencyHandoffOutcome(
+    destination: destination,
+    route: _string(handoff['route']),
+    receivingDisplayId: _string(handoff['receiving_display_id']),
+    encounterDisplayId: _string(handoff['encounter_display_id']),
+    admissionDisplayId: _string(handoff['admission_display_id']),
+    icuStayDisplayId: _string(handoff['icu_stay_display_id']),
+    stage: _string(handoff['stage']),
+    billingDeferred: _bool(handoff['billing_deferred']),
+    terminal: _bool(handoff['terminal']),
+    notes: _string(handoff['notes']),
+    handoffAt: _date(handoff['handoff_at']),
+  );
 }
 
 final class EmergencyTriageAssessmentDto {
@@ -296,6 +321,20 @@ DateTime? _date(Object? value) {
   }
 
   return DateTime.tryParse(normalized);
+}
+
+bool _bool(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  if (value is String) {
+    final String normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1' || normalized == 'yes';
+  }
+  return false;
 }
 
 int _int(Object? value) {

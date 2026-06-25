@@ -269,7 +269,24 @@ describe('Emergency Case Service', () => {
         response_at: expect.any(Date),
         notes: 'Handoff to OPD.\nAccepted by OPD.'
       });
-      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
+        existingCase.id,
+        expect.objectContaining({
+          status: 'CLOSED',
+          extension_json: expect.objectContaining({
+            handoff: expect.objectContaining({
+              destination: 'OPD',
+              route: 'opd',
+              terminal: false,
+              close_case: true,
+              receiving_display_id: 'ENC000001',
+              encounter_display_id: 'ENC000001',
+              stage: 'WAITING_VITALS',
+              billing_deferred: false
+            })
+          })
+        })
+      );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'HANDOFF',
@@ -281,6 +298,8 @@ describe('Emergency Case Service', () => {
             destination: 'OPD',
             close_case: true,
             receiving_work: true,
+            receiving_display_id: 'ENC000001',
+            billing_deferred: false,
             notes: 'Accepted by OPD.'
           })
         })
@@ -330,7 +349,22 @@ describe('Emergency Case Service', () => {
         expect.objectContaining({ started_at: expect.any(String) }),
         expect.objectContaining({ user_id: mockUser.id })
       );
-      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
+        existingCase.id,
+        expect.objectContaining({
+          status: 'CLOSED',
+          extension_json: expect.objectContaining({
+            handoff: expect.objectContaining({
+              destination: 'ICU',
+              route: 'icu',
+              receiving_display_id: 'ADM000001',
+              admission_display_id: 'ADM000001',
+              stage: 'ICU',
+              billing_deferred: true
+            })
+          })
+        })
+      );
     });
 
     it('should start theater work through a theatre encounter', async () => {
@@ -376,7 +410,99 @@ describe('Emergency Case Service', () => {
         }),
         expect.objectContaining({ user_id: mockUser.id })
       );
-      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
+        existingCase.id,
+        expect.objectContaining({
+          status: 'CLOSED',
+          extension_json: expect.objectContaining({
+            handoff: expect.objectContaining({
+              destination: 'THEATER',
+              route: 'theater',
+              receiving_display_id: 'THR000001',
+              encounter_display_id: 'ENC000001',
+              stage: 'PRE_OP',
+              billing_deferred: false
+            })
+          })
+        })
+      );
+    });
+
+    it('should persist a referral snapshot without starting a downstream workflow and surface handoff on the returned case', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'MEDIUM',
+        status: 'OPEN'
+      };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockImplementation(async (id, data) => ({
+        ...existingCase,
+        ...data
+      }));
+
+      const result = await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'REFERRAL', notes: 'Referred to district hospital.', close_case: true },
+        mockUser
+      );
+
+      expect(opdFlowService.startOpdFlow).not.toHaveBeenCalled();
+      expect(ipdFlowService.startIpdFlow).not.toHaveBeenCalled();
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(
+        existingCase.id,
+        expect.objectContaining({
+          status: 'CLOSED',
+          extension_json: expect.objectContaining({
+            handoff: expect.objectContaining({
+              destination: 'REFERRAL',
+              route: null,
+              terminal: true,
+              receiving_display_id: null,
+              billing_deferred: false,
+              notes: 'Referred to district hospital.'
+            })
+          })
+        })
+      );
+      expect(result.handoff).toEqual(
+        expect.objectContaining({ destination: 'REFERRAL', terminal: true })
+      );
+    });
+
+    it('should persist the handoff snapshot without closing the case when close_case is false', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'HIGH',
+        status: 'OPEN'
+      };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      opdFlowService.startOpdFlow.mockResolvedValue({ encounter: { id: 'ENC000009' }, flow: {} });
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockImplementation(async (id, data) => ({
+        ...existingCase,
+        ...data
+      }));
+
+      await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'OPD', close_case: false },
+        mockUser
+      );
+
+      const updateCall = emergencyCaseRepository.update.mock.calls[0][1];
+      expect(updateCall).not.toHaveProperty('status');
+      expect(updateCall.extension_json.handoff).toEqual(
+        expect.objectContaining({ destination: 'OPD', close_case: false })
+      );
     });
 
     it('should throw HttpError if emergency case is not found', async () => {

@@ -3,6 +3,116 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 enum EmergencyBoardScope { active, critical, ambulance, handoff, closed, all }
 
+/// Panels the emergency workspace can focus via deep link
+/// (`/emergency?id=&panel=triage|response|ambulance|handoff`).
+enum EmergencyDetailPanelFocus { none, triage, response, ambulance, handoff }
+
+/// Parsed deep-link parameters for the emergency workspace route
+/// (`/emergency?id=&panel=`).
+///
+/// `caseId` deep-links to a specific emergency case (opens its detail).
+/// `panel` pre-focuses an action panel (triage, response, ambulance, handoff).
+/// `search` pre-fills the board search box.
+@immutable
+final class EmergencyWorkspaceQuery {
+  const EmergencyWorkspaceQuery({
+    this.caseId = '',
+    this.panel = EmergencyDetailPanelFocus.none,
+    this.search = '',
+  });
+
+  factory EmergencyWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    return EmergencyWorkspaceQuery(
+      caseId: pick(<String>['id', 'case', 'caseId', 'emergencyCaseId']),
+      panel: _panelFromValue(pick(<String>['panel', 'focus', 'action'])),
+      search: pick(<String>['search', 'q', 'patient']),
+    );
+  }
+
+  final String caseId;
+  final EmergencyDetailPanelFocus panel;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      caseId.isNotEmpty ||
+      panel != EmergencyDetailPanelFocus.none ||
+      search.isNotEmpty;
+
+  String get signature => '$caseId|${panel.name}|$search';
+
+  static EmergencyDetailPanelFocus _panelFromValue(String value) {
+    return switch (value.trim().toLowerCase()) {
+      'triage' => EmergencyDetailPanelFocus.triage,
+      'response' => EmergencyDetailPanelFocus.response,
+      'ambulance' ||
+      'dispatch' ||
+      'trip' => EmergencyDetailPanelFocus.ambulance,
+      'handoff' => EmergencyDetailPanelFocus.handoff,
+      _ => EmergencyDetailPanelFocus.none,
+    };
+  }
+}
+
+/// Snapshot of the downstream workflow created when an emergency case is
+/// handed off, persisted on the case so the detail panel can deep-link into
+/// the receiving module without re-querying it.
+@immutable
+final class EmergencyHandoffOutcome {
+  const EmergencyHandoffOutcome({
+    required this.destination,
+    this.route,
+    this.receivingDisplayId,
+    this.encounterDisplayId,
+    this.admissionDisplayId,
+    this.icuStayDisplayId,
+    this.stage,
+    this.billingDeferred = false,
+    this.terminal = false,
+    this.notes,
+    this.handoffAt,
+  });
+
+  final String destination;
+  final String? route;
+  final String? receivingDisplayId;
+  final String? encounterDisplayId;
+  final String? admissionDisplayId;
+  final String? icuStayDisplayId;
+  final String? stage;
+  final bool billingDeferred;
+  final bool terminal;
+  final String? notes;
+  final DateTime? handoffAt;
+
+  /// True when a receiving workflow was created and can be opened.
+  bool get hasReceivingWork =>
+      !terminal && (receivingDisplayId ?? '').trim().isNotEmpty;
+
+  /// Deep link into the receiving module, or null when terminal / unavailable.
+  String? get receivingDeepLink {
+    final String? routeKey = route?.trim();
+    final String? id = receivingDisplayId?.trim();
+    if (routeKey == null || routeKey.isEmpty) {
+      return null;
+    }
+    if (id == null || id.isEmpty) {
+      return '/$routeKey';
+    }
+    return '/$routeKey?id=${Uri.encodeQueryComponent(id)}';
+  }
+}
+
 @immutable
 final class EmergencyBoardQuery {
   const EmergencyBoardQuery({
@@ -48,6 +158,7 @@ final class EmergencyCaseSummary {
     this.latestResponse,
     this.latestDispatch,
     this.activeTrip,
+    this.handoff,
   });
 
   final String id;
@@ -67,6 +178,7 @@ final class EmergencyCaseSummary {
   final EmergencyResponseRecord? latestResponse;
   final EmergencyAmbulanceDispatch? latestDispatch;
   final EmergencyAmbulanceTrip? activeTrip;
+  final EmergencyHandoffOutcome? handoff;
 
   String get apiId => id;
 
@@ -179,6 +291,7 @@ final class EmergencyCaseSummary {
     EmergencyResponseRecord? latestResponse,
     EmergencyAmbulanceDispatch? latestDispatch,
     EmergencyAmbulanceTrip? activeTrip,
+    EmergencyHandoffOutcome? handoff,
   }) {
     return EmergencyCaseSummary(
       id: id,
@@ -198,6 +311,7 @@ final class EmergencyCaseSummary {
       latestResponse: latestResponse ?? this.latestResponse,
       latestDispatch: latestDispatch ?? this.latestDispatch,
       activeTrip: activeTrip ?? this.activeTrip,
+      handoff: handoff ?? this.handoff,
     );
   }
 }
