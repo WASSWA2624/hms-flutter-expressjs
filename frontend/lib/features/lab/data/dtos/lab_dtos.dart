@@ -261,6 +261,18 @@ final class LabOrderSummaryDto {
       status: _string(json['status']),
       statusRank: _int(json['status_rank']),
       encounterId: _string(json['encounter_id']),
+      encounterType: _string(json['encounter_type']) ??
+          _string(_encounterField(json, 'type')),
+      encounterSource: _string(json['encounter_source']) ??
+          _string(_encounterField(json, 'source')),
+      isInpatient: _bool(json['is_inpatient']) ||
+          _bool(_encounterField(json, 'is_inpatient')),
+      wardName: _string(json['ward_name']) ??
+          _string(_encounterField(json, 'ward')),
+      bedLabel: _string(json['bed_label']) ??
+          _string(_encounterField(json, 'bed')),
+      locationLabel: _string(json['location_label']) ??
+          _string(_encounterField(json, 'location_label')),
       patientId: _string(json['patient_id']),
       patientDisplayName: _string(json['patient_display_name']),
       orderedAt: _date(json['ordered_at']),
@@ -547,6 +559,14 @@ LabJsonMap _expectMap(Object? value) {
 
 LabJsonMap _map(Object? value) {
   return value is LabJsonMap ? value : <String, Object?>{};
+}
+
+Object? _encounterField(LabJsonMap json, String key) {
+  final Object? encounter = json['encounter'];
+  if (encounter is LabJsonMap) {
+    return encounter[key];
+  }
+  return null;
 }
 
 List<LabJsonMap> _list(Object? value) {

@@ -10113,6 +10113,13 @@
       "patientName": { "type": "String" }
     }
   },
+  "clinicalLabResultCriticalNotice": "Critical lab result for {patientName} needs review.",
+  "@clinicalLabResultCriticalNotice": {
+    "description": "Realtime notice shown to clinicians when a critical lab result is released.",
+    "placeholders": {
+      "patientName": { "type": "String" }
+    }
+  },
   "labOrderFavoriteTestsLabel": "Frequently used tests",
   "@labOrderFavoriteTestsLabel": {
     "description": "Section label for favorite lab tests in the order dialog."

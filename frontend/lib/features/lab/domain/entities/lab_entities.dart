@@ -410,6 +410,12 @@ final class LabOrderSummary {
     this.status,
     this.statusRank = 0,
     this.encounterId,
+    this.encounterType,
+    this.encounterSource,
+    this.isInpatient = false,
+    this.wardName,
+    this.bedLabel,
+    this.locationLabel,
     this.patientId,
     this.patientDisplayName,
     this.orderedAt,
@@ -436,6 +442,12 @@ final class LabOrderSummary {
   final String? status;
   final int statusRank;
   final String? encounterId;
+  final String? encounterType;
+  final String? encounterSource;
+  final bool isInpatient;
+  final String? wardName;
+  final String? bedLabel;
+  final String? locationLabel;
   final String? patientId;
   final String? patientDisplayName;
   final DateTime? orderedAt;
@@ -473,6 +485,28 @@ final class LabOrderSummary {
       return _joinDisplay(<String?>[patientId, encounterId]);
     }
     return _joinDisplay(<String?>[patientId, encounterId, displayId ?? id]);
+  }
+
+  String? get encounterSourceLabel {
+    final String? source = encounterSource ?? encounterType;
+    if (source == null || source.trim().isEmpty) {
+      return null;
+    }
+    return source.trim().toUpperCase();
+  }
+
+  String? get encounterLocationLabel {
+    if (locationLabel != null && locationLabel!.trim().isNotEmpty) {
+      return locationLabel;
+    }
+    final List<String> parts = <String>[
+      if (wardName != null && wardName!.trim().isNotEmpty) wardName!.trim(),
+      if (bedLabel != null && bedLabel!.trim().isNotEmpty) bedLabel!.trim(),
+    ];
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.join(' · ');
   }
 
   String? get testsLabel {

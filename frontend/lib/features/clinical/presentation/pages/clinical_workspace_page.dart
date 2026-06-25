@@ -48,9 +48,12 @@ class ClinicalWorkspacePage extends ConsumerWidget {
           return;
         }
         final String patientName = parts.sublist(1).join('::');
-        final String message = parts.first == 'LAB_RESULT_READY'
-            ? l10n.clinicalLabResultReadyNotice(patientName)
-            : l10n.clinicalLabResultUpdatedNotice(patientName);
+        final String message = switch (parts.first) {
+          'LAB_RESULT_CRITICAL' =>
+            l10n.clinicalLabResultCriticalNotice(patientName),
+          'LAB_RESULT_READY' => l10n.clinicalLabResultReadyNotice(patientName),
+          _ => l10n.clinicalLabResultUpdatedNotice(patientName),
+        };
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(message)));

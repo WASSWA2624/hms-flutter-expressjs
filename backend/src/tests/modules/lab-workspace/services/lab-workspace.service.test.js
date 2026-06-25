@@ -5,16 +5,30 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(),
 }));
 jest.mock('@lib/websocket', () => ({
+  emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
   DIAGNOSTIC_EVENTS: {
     LAB_WORKFLOW_UPDATED: 'diagnostic.lab_workflow_updated',
     LAB_RESULT_READY: 'diagnostic.lab_result_ready',
     LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
+    LAB_RESULT_CRITICAL: 'diagnostic.lab_result_critical',
   },
+  NOTIFICATION_EVENTS: {
+    NOTIFICATION_CREATED: 'notification.created',
+  },
+}));
+jest.mock('@services/opd-flow/opd-flow.service', () => ({
+  syncDiagnosticsStage: jest.fn().mockResolvedValue(null),
 }));
 jest.mock('@prisma/client', () => ({
   user_role: {
     findMany: jest.fn(),
+  },
+  notification: {
+    create: jest.fn(),
+  },
+  notification_delivery: {
+    create: jest.fn(),
   },
 }));
 jest.mock('@services/lab-workspace/lab.shared', () => {
@@ -28,7 +42,8 @@ jest.mock('@services/lab-workspace/lab.shared', () => {
 
 const labWorkspaceRepository = require('@repositories/lab-workspace/lab-workspace.repository');
 const { createAuditLog } = require('@lib/audit');
-const { emitToUsers } = require('@lib/websocket');
+const { emitToUser, emitToUsers } = require('@lib/websocket');
+const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const prisma = require('@prisma/client');
 const {
   resolveModelIdOrThrow,
@@ -70,6 +85,19 @@ describe('lab-workspace.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
+    opdFlowService.syncDiagnosticsStage.mockResolvedValue(null);
+    prisma.notification.create.mockResolvedValue({
+      id: 'notification-internal-1',
+      human_friendly_id: 'NOT0000001',
+      user_id: 'doctor-1',
+      notification_type: 'LAB',
+      priority: 'URGENT',
+      title: 'Critical lab result',
+      message: 'Critical lab result for Amina Stone requires review.',
+      target_path: '/lab?id=LAB0000001',
+      created_at: now,
+    });
+    prisma.notification_delivery.create.mockResolvedValue({});
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'user-1' },
       { user_id: 'actor-1' },
@@ -658,6 +686,130 @@ describe('lab-workspace.service', () => {
         tenant_id: 'tenant-internal-1',
         entity: 'lab_order_item',
       })
+    );
+  });
+
+  it('releaseLabOrderItem escalates a critical result and syncs the OPD flow stage', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
+
+    const releasedResultInternal = {
+      id: 'result-internal-9',
+      human_friendly_id: 'LRS0000009',
+      status: 'CRITICAL',
+      result_value: '12.8',
+      result_unit: 'mg/dL',
+      result_text: 'Critical potassium level',
+      result_flag: 'CRITICAL_HIGH',
+      is_positive: false,
+      reported_at: now,
+      created_at: now,
+      updated_at: now,
+      lab_order_item_id: 'order-item-internal-1',
+    };
+
+    const refreshedOrder = buildBaseOrder({
+      status: 'COMPLETED',
+      ordered_by_user_id: 'doctor-1',
+      encounter: {
+        id: 'encounter-internal-1',
+        human_friendly_id: 'ENC0000001',
+        encounter_type: 'OPD',
+        provider_user_id: 'provider-1',
+      },
+      items: [
+        {
+          id: 'order-item-internal-1',
+          human_friendly_id: 'LIT0000009',
+          status: 'COMPLETED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-9',
+            human_friendly_id: 'LBT0000009',
+            name: 'Potassium',
+            code: 'K',
+            unit: 'mg/dL',
+          },
+          results: [releasedResultInternal],
+        },
+      ],
+      samples: [],
+    });
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderItemById.mockResolvedValue({
+      id: 'order-item-internal-1',
+      lab_order_id: 'order-internal-1',
+      status: 'IN_PROCESS',
+      lab_test: {
+        id: 'lab-test-internal-9',
+        unit: 'mg/dL',
+        reference_ranges: [],
+        unit_options: [],
+        result_options: [],
+      },
+      lab_order: { id: 'order-internal-1', status: 'IN_PROCESS', patient: {} },
+    });
+    labWorkspaceRepository.txFindFirstResult
+      .mockResolvedValueOnce({
+        id: 'result-internal-9',
+        status: 'PENDING',
+        result_value: null,
+        result_unit: null,
+        result_text: null,
+        reported_at: null,
+      })
+      .mockResolvedValueOnce(null);
+    labWorkspaceRepository.txUpdateResult.mockResolvedValue(releasedResultInternal);
+    labWorkspaceRepository.txUpdateOrderItem.mockResolvedValue({
+      id: 'order-item-internal-1',
+    });
+    labWorkspaceRepository.txCountOrderItems.mockResolvedValue(0);
+    labWorkspaceRepository.txUpdateOrder.mockResolvedValue({ id: 'order-internal-1' });
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(refreshedOrder);
+
+    await labWorkspaceService.releaseLabOrderItem(
+      'LIT0000009',
+      { status: 'CRITICAL', result_value: '12.8', result_unit: 'mg/dL' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    await flushAsync();
+    await flushAsync();
+
+    const emittedEvents = emitToUsers.mock.calls.map((call) => call[1]);
+    expect(emittedEvents).toContain('diagnostic.lab_result_critical');
+
+    const criticalCall = emitToUsers.mock.calls.find(
+      (call) => call[1] === 'diagnostic.lab_result_critical'
+    );
+    expect(criticalCall?.[0]).toEqual(
+      expect.arrayContaining(['doctor-1', 'provider-1'])
+    );
+    expect(criticalCall?.[0]).not.toContain('actor-1');
+
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenant_id: 'tenant-internal-1',
+          notification_type: 'LAB',
+          priority: 'URGENT',
+          context_type: 'lab_order',
+        }),
+      })
+    );
+    expect(emitToUser).toHaveBeenCalledWith(
+      'doctor-1',
+      'notification.created',
+      expect.objectContaining({ target_path: expect.any(String) })
+    );
+
+    expect(opdFlowService.syncDiagnosticsStage).toHaveBeenCalledWith(
+      'encounter-internal-1',
+      expect.objectContaining({ trigger: 'LAB_RESULT_RELEASED' })
     );
   });
 

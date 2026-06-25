@@ -395,11 +395,53 @@ const mapLabQcLogRecord = (record) => {
   };
 };
 
+const ENCOUNTER_TYPE_SOURCE = Object.freeze({
+  OPD: 'OPD',
+  EMERGENCY: 'EMERGENCY',
+  INPATIENT: 'IPD',
+  IPD: 'IPD',
+});
+
+const mapLabOrderEncounterContext = (encounter) => {
+  if (!encounter || typeof encounter !== 'object') return null;
+  const publicId = toPublicIdentifier(encounter.human_friendly_id, encounter.id);
+  const type = toText(encounter.encounter_type).toUpperCase() || null;
+  const source = type ? ENCOUNTER_TYPE_SOURCE[type] || type : null;
+  const isInpatient = type === 'INPATIENT' || type === 'IPD';
+
+  const admission = Array.isArray(encounter.admissions) && encounter.admissions.length
+    ? encounter.admissions[0]
+    : null;
+  const assignment = Array.isArray(admission?.bed_assignments) && admission.bed_assignments.length
+    ? admission.bed_assignments[0]
+    : null;
+  const bed = assignment?.bed || null;
+  const wardName = toText(bed?.ward?.name) || null;
+  const roomName = toText(bed?.room?.name) || null;
+  const bedLabel = toText(bed?.label) || null;
+  const locationLabel = [wardName, roomName, bedLabel].filter(Boolean).join(' · ') || null;
+
+  return {
+    id: publicId,
+    display_id: publicId,
+    type,
+    source,
+    status: toText(encounter.status).toUpperCase() || null,
+    is_inpatient: isInpatient,
+    admission_id: toPublicIdentifier(admission?.human_friendly_id, admission?.id),
+    ward: wardName,
+    room: roomName,
+    bed: bedLabel,
+    location_label: locationLabel,
+  };
+};
+
 const mapLabOrderRecord = (record, options = {}) => {
   if (!record || typeof record !== 'object') return null;
   const { includeChildren = true } = options;
   const patient = record.patient;
   const encounter = record.encounter;
+  const encounterContext = mapLabOrderEncounterContext(encounter);
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
 
   const items = includeChildren && Array.isArray(record.items)
@@ -428,6 +470,13 @@ const mapLabOrderRecord = (record, options = {}) => {
     status: toText(record.status) || null,
     status_rank: Math.max(toLabOrderStatusRank(record.status), highestItemState),
     encounter_id: toPublicIdentifier(encounter?.human_friendly_id, record.encounter_id),
+    encounter: encounterContext,
+    encounter_type: encounterContext?.type || null,
+    encounter_source: encounterContext?.source || null,
+    is_inpatient: encounterContext?.is_inpatient || false,
+    ward_name: encounterContext?.ward || null,
+    bed_label: encounterContext?.bed || null,
+    location_label: encounterContext?.location_label || null,
     patient_id: toPublicIdentifier(patient?.human_friendly_id, record.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
     ordered_by_user_id: toPublicIdentifier(record.ordered_by?.human_friendly_id, record.ordered_by_user_id),

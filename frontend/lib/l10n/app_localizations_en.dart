@@ -7858,6 +7858,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String clinicalLabResultCriticalNotice(String patientName) {
+    return 'Critical lab result for $patientName needs review.';
+  }
+
+  @override
   String get labOrderFavoriteTestsLabel => 'Frequently used tests';
 
   @override

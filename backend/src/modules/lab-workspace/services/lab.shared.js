@@ -19,6 +19,43 @@ const PATIENT_PUBLIC_SELECT = {
 const ENCOUNTER_PUBLIC_SELECT = {
   id: true,
   human_friendly_id: true,
+  encounter_type: true,
+  status: true,
+  provider_user_id: true,
+};
+
+// Richer encounter projection used on lab order worklist rows so the lab bench
+// can show whether the order originates from OPD vs IPD and, for inpatients,
+// the current ward/room/bed location. Lab never mutates these — read-only context.
+const LAB_ORDER_ENCOUNTER_SELECT = {
+  ...ENCOUNTER_PUBLIC_SELECT,
+  admissions: {
+    where: { deleted_at: null, status: 'ADMITTED' },
+    orderBy: { admitted_at: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      bed_assignments: {
+        where: { deleted_at: null, released_at: null },
+        orderBy: { assigned_at: 'desc' },
+        take: 1,
+        select: {
+          id: true,
+          bed: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              label: true,
+              ward: { select: { id: true, human_friendly_id: true, name: true } },
+              room: { select: { id: true, human_friendly_id: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 const TENANT_PUBLIC_SELECT = {
@@ -71,7 +108,7 @@ const LAB_ORDER_ITEM_WITH_RELATIONS_INCLUDE = {
 
 const LAB_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
-  encounter: { select: ENCOUNTER_PUBLIC_SELECT },
+  encounter: { select: LAB_ORDER_ENCOUNTER_SELECT },
   ordered_by: { select: { id: true, human_friendly_id: true } },
   items: {
     where: { deleted_at: null },
@@ -238,6 +275,7 @@ const applyDateRangeFilter = (where, field, fromValue, toValue) => {
 module.exports = {
   PATIENT_PUBLIC_SELECT,
   ENCOUNTER_PUBLIC_SELECT,
+  LAB_ORDER_ENCOUNTER_SELECT,
   TENANT_PUBLIC_SELECT,
   LAB_TEST_PUBLIC_SELECT,
   LAB_TEST_CONFIGURATION_SELECT,

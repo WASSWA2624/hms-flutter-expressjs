@@ -4,7 +4,12 @@ const { normalizeIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const prisma = require('@prisma/client');
 const labWorkspaceRepository = require('@repositories/lab-workspace/lab-workspace.repository');
-const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
+const {
+  emitToUser,
+  emitToUsers,
+  DIAGNOSTIC_EVENTS,
+  NOTIFICATION_EVENTS,
+} = require('@lib/websocket');
 const {
   LAB_ORDER_WITH_RELATIONS_INCLUDE,
   buildPagination,
@@ -889,6 +894,143 @@ const buildLabRealtimePayload = ({
   };
 };
 
+const buildLabPatientDisplayName = (orderRecord) => {
+  const patient = orderRecord?.patient || {};
+  const name = [patient.first_name, patient.last_name]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  return name || null;
+};
+
+const resolveCriticalNotificationRecipients = (orderRecord, actorUserId = null) => {
+  const ids = [
+    orderRecord?.ordered_by_user_id,
+    orderRecord?.ordered_by?.id,
+    orderRecord?.encounter?.provider_user_id,
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  const unique = [...new Set(ids)];
+  return actorUserId ? unique.filter((id) => id && id !== actorUserId) : unique;
+};
+
+/**
+ * Critical lab result escalation.
+ *
+ * When a CRITICAL result is released/verified, the ordering doctor and the
+ * encounter provider (ward/OPD) must be alerted out-of-band — beyond the generic
+ * workflow refresh — per ipd-flow §17. We emit a dedicated realtime event and
+ * persist HIGH-priority in-app notifications so the alert survives reconnects.
+ */
+const notifyCriticalLabResults = async ({
+  orderRecord,
+  releasedResults = [],
+  actorUserId = null,
+}) => {
+  try {
+    const criticalResults = (Array.isArray(releasedResults) ? releasedResults : [])
+      .filter((result) => normalizeStatus(result?.status) === 'CRITICAL');
+    if (!criticalResults.length) return;
+
+    const tenantId = String(orderRecord?.patient?.tenant_id || '').trim() || null;
+    if (!tenantId) return;
+
+    const recipients = resolveCriticalNotificationRecipients(orderRecord, actorUserId);
+    if (!recipients.length) return;
+
+    const orderPublicId =
+      toPublicIdentifier(orderRecord?.human_friendly_id, orderRecord?.id) || null;
+    const patientPublicId =
+      toPublicIdentifier(orderRecord?.patient?.human_friendly_id, orderRecord?.patient_id) || null;
+    const patientName = buildLabPatientDisplayName(orderRecord);
+    const testNames = [
+      ...new Set(
+        criticalResults
+          .map((result) => String(result?.test_display_name || result?.test_code || '').trim())
+          .filter(Boolean)
+      ),
+    ];
+    const targetPath = orderPublicId
+      ? `/lab?id=${encodeURIComponent(orderPublicId)}`
+      : '/lab';
+    const subject = patientName || patientPublicId || 'patient';
+    const testSummary = testNames.length ? ` (${testNames.slice(0, 4).join(', ')})` : '';
+    const title = 'Critical lab result';
+    const message = `Critical lab result for ${subject}${testSummary} requires review.`;
+
+    const realtimePayload = {
+      order_id: orderPublicId,
+      order_public_id: orderPublicId,
+      patient_id: patientPublicId,
+      patient_public_id: patientPublicId,
+      patient_display_name: patientName,
+      critical_count: criticalResults.length,
+      test_names: testNames,
+      action: 'CRITICAL',
+      occurred_at: new Date().toISOString(),
+      target_path: targetPath,
+    };
+
+    if (DIAGNOSTIC_EVENTS?.LAB_RESULT_CRITICAL) {
+      emitToUsers(recipients, DIAGNOSTIC_EVENTS.LAB_RESULT_CRITICAL, realtimePayload);
+    }
+
+    if (!prisma?.notification?.create) return;
+
+    for (const userId of recipients) {
+      try {
+        const notification = await prisma.notification.create({
+          data: {
+            tenant_id: tenantId,
+            user_id: userId,
+            notification_type: 'LAB',
+            priority: 'URGENT',
+            title,
+            message,
+            target_path: targetPath,
+            context_type: 'lab_order',
+            context_public_id: orderPublicId,
+          },
+        });
+
+        if (prisma?.notification_delivery?.create) {
+          await prisma.notification_delivery
+            .create({
+              data: {
+                notification_id: notification.id,
+                channel: 'IN_APP',
+                status: 'SENT',
+                sent_at: new Date(),
+              },
+            })
+            .catch(() => {});
+        }
+
+        if (typeof emitToUser === 'function' && NOTIFICATION_EVENTS?.NOTIFICATION_CREATED) {
+          emitToUser(notification.user_id, NOTIFICATION_EVENTS.NOTIFICATION_CREATED, {
+            notification: {
+              id: notification.human_friendly_id || notification.id,
+              notification_type: notification.notification_type,
+              priority: notification.priority,
+              title: notification.title,
+              message: notification.message,
+              target_path: notification.target_path,
+              created_at: notification.created_at,
+            },
+            target_path: targetPath,
+          });
+        }
+      } catch (_notificationError) {
+        // A single failed notification must not abort the remaining recipients.
+      }
+    }
+  } catch (_error) {
+    // Critical escalation must never block lab workflow updates.
+  }
+};
+
 const publishLabRealtimeUpdates = async ({
   workflow,
   orderRecord,
@@ -897,8 +1039,20 @@ const publishLabRealtimeUpdates = async ({
   resourceType = null,
   resourceId = null,
   releasedResult = null,
+  releasedResults = null,
 }) => {
   try {
+    const criticalCandidates = Array.isArray(releasedResults) && releasedResults.length
+      ? releasedResults
+      : releasedResult
+        ? [releasedResult]
+        : [];
+    notifyCriticalLabResults({
+      orderRecord,
+      releasedResults: criticalCandidates,
+      actorUserId,
+    }).catch(() => {});
+
     const tenantId = orderRecord?.patient?.tenant_id || null;
     if (!tenantId) return;
 
@@ -961,6 +1115,32 @@ const publishLabRealtimeUpdates = async ({
     }
   } catch (_error) {
     // realtime should never block lab workflow updates
+  }
+};
+
+/**
+ * Hand off to the OPD orchestrator after a lab workflow mutation so the encounter
+ * can advance out of `LAB_REQUESTED` / `LAB_AND_RADIOLOGY_REQUESTED` once lab work
+ * is done. Lab never mutates OPD stages itself — it only signals completion. The
+ * call is fire-and-forget and a safe no-op for IPD orders (no OPD flow resolves).
+ */
+const syncOpdFlowForOrder = (orderRecord, { userId = null, trigger = 'LAB_WORKFLOW_UPDATED' } = {}) => {
+  const encounterId = String(
+    orderRecord?.encounter_id || orderRecord?.encounter?.id || ''
+  ).trim();
+  if (!encounterId) return;
+
+  try {
+    const opdFlowService = require('@services/opd-flow/opd-flow.service');
+    if (typeof opdFlowService.syncDiagnosticsStage !== 'function') return;
+    Promise.resolve(
+      opdFlowService.syncDiagnosticsStage(encounterId, {
+        user_id: userId || null,
+        trigger,
+      })
+    ).catch(() => {});
+  } catch (_error) {
+    // OPD orchestration must never block lab workflow updates.
   }
 };
 
@@ -1495,6 +1675,10 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       resourceId: identifier,
       releasedResult,
     }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_RESULT_RELEASED',
+    });
 
     return {
       workflow,
@@ -1602,7 +1786,12 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
       releasedResult: releasedResults[0] || null,
+      releasedResults,
     }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_RESULTS_VERIFIED',
+    });
 
     return {
       workflow,
@@ -1699,6 +1888,10 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
       resourceType: 'order-item',
       resourceId: identifier,
     }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_ORDER_ITEM_REJECTED',
+    });
 
     return { workflow };
   } catch (error) {
@@ -1803,6 +1996,10 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
       resourceType: 'order-item',
       resourceId: identifier,
     }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_RESULT_REOPENED',
+    });
 
     return { workflow };
   } catch (error) {
@@ -1970,6 +2167,10 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
     }).catch(() => {});
+    syncOpdFlowForOrder(mutation.order, {
+      userId,
+      trigger: 'LAB_WORKFLOW_REVERSED',
+    });
 
     return { workflow };
   } catch (error) {

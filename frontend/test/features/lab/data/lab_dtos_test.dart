@@ -33,6 +33,50 @@ void main() {
       expect(item.panelItemSortOrder, 10);
       expect(item.panelTitle, 'Full blood count | FBC');
     });
+
+    test('maps top-level encounter source and inpatient ward/bed context', () {
+      const LabOrderSummaryDto dto = LabOrderSummaryDto(<String, Object?>{
+        'id': 'LAB0000010',
+        'encounter_id': 'ENC0000010',
+        'encounter_type': 'INPATIENT',
+        'encounter_source': 'IPD',
+        'is_inpatient': true,
+        'ward_name': 'Medical Ward',
+        'bed_label': 'Bed 4',
+        'location_label': 'Medical Ward · Room 2 · Bed 4',
+      });
+
+      final summary = dto.toEntity();
+
+      expect(summary.encounterId, 'ENC0000010');
+      expect(summary.encounterSource, 'IPD');
+      expect(summary.isInpatient, isTrue);
+      expect(summary.wardName, 'Medical Ward');
+      expect(summary.bedLabel, 'Bed 4');
+      expect(summary.encounterSourceLabel, 'IPD');
+      expect(summary.encounterLocationLabel, 'Medical Ward · Room 2 · Bed 4');
+    });
+
+    test('falls back to nested encounter object for context fields', () {
+      const LabOrderSummaryDto dto = LabOrderSummaryDto(<String, Object?>{
+        'id': 'LAB0000011',
+        'encounter_id': 'ENC0000011',
+        'encounter': <String, Object?>{
+          'id': 'ENC0000011',
+          'type': 'OPD',
+          'source': 'OPD',
+          'is_inpatient': false,
+        },
+      });
+
+      final summary = dto.toEntity();
+
+      expect(summary.encounterType, 'OPD');
+      expect(summary.encounterSource, 'OPD');
+      expect(summary.isInpatient, isFalse);
+      expect(summary.encounterSourceLabel, 'OPD');
+      expect(summary.encounterLocationLabel, isNull);
+    });
   });
 
   group('LabOrderItemDto', () {

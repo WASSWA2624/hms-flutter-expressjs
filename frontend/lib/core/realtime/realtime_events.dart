@@ -36,6 +36,7 @@ abstract final class RealtimeEvents {
   static const String labWorkflowUpdated = 'diagnostic.lab_workflow_updated';
   static const String labResultReady = 'diagnostic.lab_result_ready';
   static const String labResultUpdated = 'diagnostic.lab_result_updated';
+  static const String labResultCritical = 'diagnostic.lab_result_critical';
   static const String radiologyWorkflowUpdated =
       'diagnostic.radiology_workflow_updated';
   static const String radiologyResultReady =

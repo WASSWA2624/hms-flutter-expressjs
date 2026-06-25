@@ -14644,6 +14644,12 @@ abstract class AppLocalizations {
   /// **'Lab results updated for {patientName}.'**
   String clinicalLabResultUpdatedNotice(String patientName);
 
+  /// Realtime notice shown to clinicians when a critical lab result is released.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical lab result for {patientName} needs review.'**
+  String clinicalLabResultCriticalNotice(String patientName);
+
   /// Section label for favorite lab tests in the order dialog.
   ///
   /// In en, this message translates to:

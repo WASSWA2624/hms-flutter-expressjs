@@ -75,6 +75,7 @@ final class ClinicalWorkspaceController
         current.selectedBundle?.entry.patientDisplayName ??
         'patient';
     final String? notice = switch (message.event) {
+      RealtimeEvents.labResultCritical => _labResultCriticalNotice(patientName),
       RealtimeEvents.labResultReady => _labResultReadyNotice(patientName),
       RealtimeEvents.labResultUpdated => _labResultUpdatedNotice(patientName),
       _ => null,
@@ -90,6 +91,9 @@ final class ClinicalWorkspaceController
 
   String _labResultUpdatedNotice(String patientName) =>
       'LAB_RESULT_UPDATED::$patientName';
+
+  String _labResultCriticalNotice(String patientName) =>
+      'LAB_RESULT_CRITICAL::$patientName';
 
   void clearRealtimeNotice() {
     final ClinicalWorkspaceState? current = _currentState;

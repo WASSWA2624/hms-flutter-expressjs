@@ -52,6 +52,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.labWorkflowUpdated,
     RealtimeEvents.labResultReady,
     RealtimeEvents.labResultUpdated,
+    RealtimeEvents.labResultCritical,
     RealtimeEvents.radiologyWorkflowUpdated,
     RealtimeEvents.radiologyResultReady,
     RealtimeEvents.radiologyResultUpdated,
@@ -176,6 +177,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.labWorkflowUpdated,
     RealtimeEvents.labResultReady,
     RealtimeEvents.labResultUpdated,
+    RealtimeEvents.labResultCritical,
   };
 
   static const Set<String> radiology = <String>{

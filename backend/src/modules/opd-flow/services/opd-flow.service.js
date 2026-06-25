@@ -4356,6 +4356,139 @@ const correctStage = async (id, data, context = {}) => {
   return snapshot;
 };
 
+/**
+ * Diagnostics stage orchestration
+ *
+ * Lab/Radiology workspaces execute and report on orders but must not mutate OPD
+ * stages from their own UI/services. Instead, when diagnostic work completes they
+ * call `syncDiagnosticsStage(encounterId)` so the OPD orchestrator can advance the
+ * encounter out of the `LAB_REQUESTED` / `LAB_AND_RADIOLOGY_REQUESTED` /
+ * `RADIOLOGY_REQUESTED` holding stages once the relevant diagnostics are done.
+ *
+ * The hook is intentionally forward-only and a no-op unless the encounter is an
+ * OPD/EMERGENCY encounter currently parked in a diagnostics stage, so it is safe
+ * to call after any lab/radiology mutation (including for IPD orders, which never
+ * resolve to an OPD encounter here).
+ */
+const DIAGNOSTICS_SYNC_FLOW_STAGES = new Set([
+  STAGES.LAB_REQUESTED,
+  STAGES.LAB_AND_RADIOLOGY_REQUESTED,
+  STAGES.RADIOLOGY_REQUESTED
+]);
+
+const DIAGNOSTICS_SYNC_ENCOUNTER_INCLUDE = {
+  provider: PROVIDER_INCLUDE,
+  vital_signs: { where: { deleted_at: null } },
+  admissions: {
+    where: { deleted_at: null },
+    orderBy: { created_at: 'desc' },
+    include: { bed_assignments: { where: { deleted_at: null } } }
+  },
+  lab_orders: {
+    where: { deleted_at: null },
+    include: {
+      items: {
+        where: { deleted_at: null },
+        include: { results: { where: { deleted_at: null } } }
+      },
+      samples: { where: { deleted_at: null } }
+    }
+  },
+  radiology_orders: {
+    where: { deleted_at: null },
+    include: {
+      results: { where: { deleted_at: null } },
+      imaging_studies: { where: { deleted_at: null } }
+    }
+  },
+  pharmacy_orders: {
+    where: { deleted_at: null },
+    include: {
+      items: {
+        where: { deleted_at: null },
+        include: { dispense_logs: { where: { deleted_at: null } } }
+      }
+    }
+  }
+};
+
+const resolveDiagnosticsSyncStage = (encounter) => {
+  const labState = resolveLabState(encounter?.lab_orders);
+  const radiologyState = resolveRadiologyState(encounter?.radiology_orders);
+  const pharmacyState = resolvePharmacyState(encounter?.pharmacy_orders);
+
+  if (labState.pending && radiologyState.pending) return STAGES.LAB_AND_RADIOLOGY_REQUESTED;
+  if (labState.pending) return STAGES.LAB_REQUESTED;
+  if (radiologyState.pending) return STAGES.RADIOLOGY_REQUESTED;
+  if (pharmacyState.pending) return STAGES.PHARMACY_REQUESTED;
+  return STAGES.WAITING_DISPOSITION;
+};
+
+const syncDiagnosticsStage = async (encounterId, context = {}) => {
+  try {
+    const normalized = normalizeIdentifier(encounterId);
+    if (!normalized || !prisma?.$transaction) return null;
+
+    const transition = await prisma.$transaction(async (tx) => {
+      const encounter = await resolveEncounterByIdentifier(tx, normalized, {
+        include: DIAGNOSTICS_SYNC_ENCOUNTER_INCLUDE
+      });
+      if (!encounter) return null;
+
+      const flow = encounter.extension_json?.opd_flow;
+      if (!flow || typeof flow !== 'object') return null;
+
+      const stageBefore = flow.stage || null;
+      if (!DIAGNOSTICS_SYNC_FLOW_STAGES.has(stageBefore)) return null;
+      if (TERMINAL_STAGES.has(stageBefore)) return null;
+
+      const nextStage = resolveDiagnosticsSyncStage(encounter);
+      if (!nextStage || nextStage === stageBefore) return null;
+
+      setFlowStage(flow, nextStage);
+      appendTimelineEvent(flow, 'DIAGNOSTICS_STAGE_SYNCED', context, {
+        stage_from: stageBefore,
+        stage_to: nextStage,
+        trigger: context.trigger || 'DIAGNOSTICS_UPDATED'
+      });
+
+      const updatedEncounter = await tx.encounter.update({
+        where: { id: encounter.id },
+        data: {
+          extension_json: {
+            ...(encounter.extension_json || {}),
+            opd_flow: flow
+          }
+        }
+      });
+
+      return {
+        encounterId: updatedEncounter.id,
+        stage_from: stageBefore,
+        stage_to: nextStage
+      };
+    });
+
+    if (!transition) return null;
+
+    const snapshot = await getOpdFlowById(transition.encounterId);
+    await publishOpdRealtimeUpdates({
+      snapshot,
+      transition: {
+        action: 'DIAGNOSTICS_STAGE_SYNCED',
+        stage_from: transition.stage_from,
+        stage_to: transition.stage_to,
+        occurred_at: new Date().toISOString()
+      },
+      context
+    });
+    return snapshot;
+  } catch (_err) {
+    // Diagnostics orchestration must never break lab/radiology workflow responses.
+    return null;
+  }
+};
+
 module.exports = {
   listOpdFlows,
   getOpdFlowSummaryCounts,
@@ -4369,5 +4502,6 @@ module.exports = {
   assignDoctor,
   doctorReview,
   disposition,
-  correctStage
+  correctStage,
+  syncDiagnosticsStage
 };
