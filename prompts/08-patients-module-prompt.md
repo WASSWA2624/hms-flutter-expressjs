@@ -97,12 +97,13 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+- **Patient registry workspace** — `AppWorkspace` list+detail: a searchable patient list/table beside a patient profile/detail panel. Search-first: a prominent search bar drives lookup; selecting a patient opens the detail panel (not a separate route).
+- **Modal CRUD** for demographics, identifiers, contacts, guardians, allergies, documents, and consent via `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart` / `app_dialog.dart`. Contextual quick actions (start OPD, triage vitals, IPD disposition) run as modals or deep-links — never duplicating downstream flow UIs.
+- Optional summary cards (e.g. recently registered, incomplete registration) **filter** the registry list — they must not open separate list routes; hide zero-value cards.
+- Reuse shared components: `frontend/lib/shared/layout/app_workspace.dart`, `components/app_search_bar.dart`, `app_list_table.dart`, `app_file_upload_panel.dart`, `app_copyable_identifier.dart`, and field widgets.
+- Full theming (light/dark/system), all strings localized via `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Pattern peers: other registry/list workspaces, not clinical worklists.
 
 ---
 

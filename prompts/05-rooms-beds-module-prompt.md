@@ -95,12 +95,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is a **space-management workspace**, not a patient queue. Rows/tiles are physical beds, rooms, and wards; the current patient is shown only as context on an occupied/reserved space.
+
+- **Layout:** `AppWorkspace` presenting a bed board grouped by ward/room, with an `AppListTable` tabular alternative. Each space shows its status badge and, when occupied/reserved, the current patient; selecting a space opens its detail panel.
+- **Summary cards:** show occupancy/status counts over the board — Available, Reserved, Occupied, Cleaning, Maintenance, Blocked (per ipd-flow §3). Cards filter the board in place; they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Status visibility:** render bed status via `AppStatusText` badges; link an occupied bed to its IPD admission detail. Use hospital language, never raw enums or UUIDs.
+- **Modal-first / nested-modal actions:** assign, release, request/approve/complete transfer, update status, and ward/room/bed catalog edits run via `AppWorkspaceMutationDialog` / nested modals (e.g. patient selection nested inside assign; blocking-reason surfaced on failure). Deep-link ward pre-selection (`/rooms-beds?ward=`) is allowed; actions do not navigate to new routes.
+- Full theming (light/dark/system), all strings localized in `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match peer workspaces — the IPD bed board, the Tenant/Facility ward/bed catalog, and other operational management workspaces — for consistency.
 
 ---
 

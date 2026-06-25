@@ -103,7 +103,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match OPD and Nursing workspace patterns for consistency.
 
 ---
 
@@ -126,7 +126,8 @@ Mandatory platform rules for all work in this module.
 - [ ] OPD patients in `WAITING_VITALS` can complete triage and advance via backend APIs.
 - [ ] No duplicate OPD encounters created during triage.
 - [ ] ED triage stays in Emergency module; OPD triage uses `/triage` or opd-flow vitals consistently.
-- [ ] Shared triage components reused across OPD, Clinical, Patients quick actions.
+- [ ] Shared `frontend/lib/shared/*` triage components reused across OPD, Clinical, and Patients quick actions.
+- [ ] Triage capture/route actions run in dialogs/modals only — no workflow routing; affected rows, detail, and summary cards refresh via realtime sync after mutations.
 - [ ] Hospital-language labels; no raw enum names in UI.
 
 ---

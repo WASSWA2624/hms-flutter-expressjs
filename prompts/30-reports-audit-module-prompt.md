@@ -85,12 +85,18 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is a **reports, dashboards, and audit** surface — catalogs, run history, and filterable log views, **not** a patient queue.
+
+- **Layout:** `AppWorkspace` shell with tabbed/segmented sections for Report Catalog, Report Runs, Schedules, Audit Logs, and Compliance (PHI access / data processing). Each section uses `AppListTable` with `app_search_bar` and filters; selecting a row opens a detail panel.
+- **Report catalog:** definitions grouped by category; running a report opens a parameter modal (`AppDialog` / `app_workspace_mutation_dialog`), then surfaces the resulting run in run history.
+- **Report runs:** status (queued/running/ready/failed) with preview/download when `download_available` is true; disable download cleanly when the backend or platform cannot serve it.
+- **Schedules:** create/edit scheduled reports via modals (nested modals for parameter + recipient sub-steps).
+- **Audit & compliance logs:** read-only filterable views (user, action, resource, date range) linking to entity display IDs; render as dense tables, not actionable worklist rows.
+- **Dashboards:** role/action-based KPI panels (this module owns deep reports; landing KPIs belong to [prompts/07-home-dashboard-module-prompt.md](./07-home-dashboard-module-prompt.md)).
+- **Read-only contract:** expose no write/mutation actions on clinical or financial entities — only run, schedule, export, and view.
+- Theming (light/dark/system), full localization via `app_en.arb`, and responsive layout across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Peer with report-catalog, run-history, and audit-log review patterns for consistency — not clinical worklists.
 
 ---
 

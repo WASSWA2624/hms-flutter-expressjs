@@ -108,6 +108,7 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
+- `AppWorkspace` worklist + summary cards (filter the list) + detail panel + modal actions — mirror the OPD and Clinical workspace patterns for consistency.
 - Tooth chart: scannable, touch-friendly on mobile; minimal legend text; color only for status (healthy, treated, missing, planned).
 - Worklist columns: patient, encounter ref, visit type, next action, responsible role.
 - All chart edits and procedures via modals — no full-page chart routes.

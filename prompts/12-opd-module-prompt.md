@@ -159,7 +159,7 @@ When changing OPD workflow behavior, update `opd-flow.mdc` first so flow docs an
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match Triage, Clinical, and IPD workspace patterns for consistency.
 
 ---
 
@@ -198,6 +198,7 @@ Follow `frontend/.cursor/` rules and `backend/.cursor/` API standards.
 - [ ] `ADMIT` disposition hands off to IPD with source context (opd-flow §7, ipd-flow §2.2).
 - [ ] `DISCHARGED` and terminal states leave active queues by default.
 - [ ] Consultation billing gate works; orders route to lab/radiology/pharmacy workspaces.
+- [ ] Stage actions run in dialogs/sheets (no workflow routing); affected rows, detail, summary cards, and nav badge refresh via realtime sync after mutations.
 - [ ] No raw UUIDs in UI; localized strings; `flutter analyze` and tests pass.
 
 ---

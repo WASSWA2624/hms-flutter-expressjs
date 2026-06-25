@@ -95,12 +95,15 @@ Seed samples that exercise end-to-end paths documented in:
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is **admin seeding/reset tooling**, **not** a clinical workspace. The primary entry point is the backend seed CLI; any UI is a restricted admin panel — there is no patient worklist, no summary-card board, and no row-level clinical actions.
+
+- **Layout:** if/where surfaced in the app, render an admin **Demo Data** panel (super-admin/operations only) using `AppWorkspace`/`app_content_panel` with three guarded actions — **Run seed**, **Clear demo data**, **Recreate (clear + run)** — plus a status area showing last run time, outcome, and seeded counts.
+- **Safeguards:** every destructive/seed action requires a confirmation modal (`AppDialog`) that names the target environment/tenant and blocks when `NODE_ENV=production` (or a production hostname) unless an explicit dangerous override flag is provided; show a prominent warning banner in non-trivial environments.
+- **Demo marking:** clearly label all seeded entities as **demo data** in the UI (badge/banner) and reflect the idempotent demo marker; make clear which data is safe to clear/recreate.
+- **Progress & errors:** show run progress and surface backend errors verbatim; never silently partially-seed without reporting.
+- Theming (light/dark/system), full localization via `app_en.arb`, and responsive layout across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Peer with admin/maintenance tooling panels (guarded, confirmation-driven actions) — not clinical worklists.
 
 ---
 

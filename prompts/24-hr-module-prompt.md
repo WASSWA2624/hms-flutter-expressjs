@@ -104,12 +104,15 @@ When linking to billing for payroll deductions or stipends, see [prompts/09-bill
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is a **workforce administration workspace** — staff directory, assignments, leave, shifts, rosters, and payroll — not a patient clinical queue. Mirror peer **admin/management workspaces** (Users/Roles, Operations) for consistency, not clinical worklists.
+
+- **Layout:** `AppWorkspace` shell with `AppWorkspaceSummaryGrid` cards, `AppSearchBar`, and `AppListTable` for the staff directory and management lists, plus roster/calendar (shift-grid) views; selection opens `AppWorkspaceDetailPanel` via `AppWorkspaceSplitContent`.
+- **Summary cards filter management queues by status** (pending leave, pending swaps, roster approvals, payroll items) — they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Approval framing:** on actionable queues (leave, swaps, roster publish, payroll), show the pending state plus the **next required action** and the **approving role**; the staff directory is reference/CRUD, not an action queue.
+- **Modal-first / nested-modal CRUD:** create/edit staff profiles and assignments, approve/reject leave and swaps, generate/publish rosters, and preview/process payroll run in dialogs or bottom sheets (`AppActionPanel` + `showAppWorkspaceMutationDialog`) — never separate navigation routes; use nested modals for multi-step roster/payroll sub-steps.
+- Use display IDs and staff/position names — no raw UUIDs or enum codes; HR shows staff records, never patient clinical data.
+- Full theme support (light/dark/system); all strings localized via `app_en.arb`; responsive on Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
 
 ---
 

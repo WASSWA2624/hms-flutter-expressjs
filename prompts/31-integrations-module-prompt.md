@@ -81,12 +81,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is an **integrations admin** surface — management tables/cards with status indicators and log viewers, **not** a patient worklist.
+
+- **Layout:** `AppWorkspace` shell with sections for Integrations, API Keys, Webhooks, Integration Logs, and Interop. Use `AppListTable` (or status cards) with `app_search_bar` and filters; selecting a record opens a detail panel.
+- **Status-first display:** each integration/webhook/external system shows a clear status indicator (connected/degraded/disabled/error) and last-sync/last-delivery time; surface `/interop` FHIR/HL7/DICOM status live (replace the hardcoded list).
+- **Config & lifecycle actions in modals:** create/edit/test-connection/sync-now/disable for integrations, issue/revoke API keys with permission scopes, and create/rotate webhook subscriptions all use `AppDialog` / `app_workspace_mutation_dialog`; use nested modals for sub-steps (e.g., scope selection, secret rotation confirmation). Surface secrets/keys once with `app_copyable_identifier`.
+- **Integration logs:** filterable log viewer with delivery/replay detail; replay failed events from a confirmation modal.
+- Theming (light/dark/system), full localization via `app_en.arb`, and responsive layout across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Peer with admin management/configuration console patterns (status tables, log viewers) for consistency — not clinical worklists.
 
 ---
 

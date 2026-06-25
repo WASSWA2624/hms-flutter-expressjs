@@ -142,7 +142,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match OPD and IPD workspace patterns for consistency.
 
 ---
 
@@ -173,6 +173,7 @@ Mandatory platform rules for all work in this module.
 - [ ] Orders appear in Lab/Pharmacy/Radiology workspaces with billing choice respected.
 - [ ] OPD admit disposition links to IPD; clinical shows inpatient context after handoff.
 - [ ] IPD orders use ipd-flow encounter hub when migration complete.
+- [ ] Documentation/order actions run in dialogs/sheets (no workflow routing); worklist, detail, and pending-result indicators refresh via realtime sync after mutations.
 - [ ] Module boundaries match app-write-up; no raw UUIDs in UI.
 
 ---

@@ -81,12 +81,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is a **commercial administration workspace**, not a patient worklist. Rows are plans, subscriptions, modules, licenses, and invoices.
+
+- **Layout:** `AppWorkspace` with a section switcher across Plans, Active Subscription, Module Subscriptions, Licenses, and Invoices. Each section is an `AppListTable` management list with a detail panel and modal actions.
+- **Summary cards:** show commercial counts/status filters over the management list — e.g. active vs expiring subscriptions, enabled modules, overdue invoices. Cards filter the list in place; they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Status visibility:** render plan tier, module on/off, license limits/usage, and invoice/renewal state as columns and `AppStatusText` badges. Use hospital/commercial language, never raw enums or UUIDs.
+- **Modal-first / nested-modal actions:** renew, upgrade, downgrade, activate/deactivate module, and collect/retry invoice run via `AppWorkspaceMutationDialog` / nested modals (e.g. plan picker nested inside upgrade, confirmation on downgrade with limit impact). No route navigation for actions.
+- Full theming (light/dark/system), all strings localized in `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match peer admin/management workspaces — Tenant/Facility Settings and Users/Roles/Permissions — for consistency.
 
 ---
 

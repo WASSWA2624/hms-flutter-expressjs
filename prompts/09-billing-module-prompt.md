@@ -227,7 +227,7 @@ The module must support billing for all patient care areas and services, includi
 
 ## UI / UX Requirements
 
-Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **Lab**, **Radiology**, and **Pharmacy** (`AppWorkspace`, `AppListTable`, `AppWorkspaceDetailPanel`, `AppActionPanel`, `AppWorkspacePatientContextHeader`).
+Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. This is a **financial document workspace** (invoices, payments, receipts, refunds, cashier close), not a patient clinical queue. Reuse the shared `AppWorkspace` pattern (`AppListTable`, `AppWorkspaceSplitContent`, `AppWorkspaceDetailPanel`, `AppActionPanel`, `AppWorkspacePatientContextHeader`); the closest peer is the **Claims** insurance workspace (`prompts/10-claims-module-prompt.md`).
 
 ### Organization
 

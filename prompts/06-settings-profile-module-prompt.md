@@ -76,12 +76,14 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+- **Sectioned settings hub + profile view** — grouped preference sections (appearance/theme, language & region, accessibility, account/security) plus a profile panel showing name, email, and roles. No patient worklist, no summary/KPI cards.
+- Preference controls (theme mode, language, accessibility) are edited inline or via **modal/bottom-sheet** (`frontend/lib/shared/components/app_dialog.dart`, `app_workspace_mutation_dialog.dart`); changes persist per user and apply immediately to the running app.
+- Hub rows **deep-link** into admin modules (tenant/facility, subscriptions, access admin, integrations) through shell routes — those workflows are owned elsewhere and not duplicated here.
+- Change password opens the auth `change_password_dialog` (modal-first), not a separate route.
+- Reuse shared components: `app_content_panel.dart`, `app_info_tile.dart`, `app_switch_field.dart`, `app_select_field.dart`.
+- Full theming (light/dark/system), all strings localized via `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Pattern peers: other settings/preferences and profile screens, not clinical worklist workspaces.
 
 ---
 

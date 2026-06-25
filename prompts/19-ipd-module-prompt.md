@@ -164,8 +164,7 @@ Implement or finish the following, in priority order. Each item maps to sections
 - Integrate with billing module per flow §4 — do not duplicate charge capture in IPD.
 - On admission detail, show billing state: deposit required/paid, insurance pre-auth status, `Billing Deferred` flag, running account balance when API provides encounter billing summary.
 - Gate high-cost actions (optional procedures, elective admission) on clearance when policy requires; emergency path allows proceed-first-bill-later.
-- During stay: surface link to billing workspace for interim bills and deposits (`clinical_request_billing_panel` patterns where orders originate from IPD).
-- Link to billing workspace for deposits and interim bills (see [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md)).
+- During stay: link to the billing workspace for interim bills and deposits (`clinical_request_billing_panel` patterns where orders originate from IPD; see [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md)).
 - Link to patient registry for demographics ([prompts/08-patients-module-prompt.md](./08-patients-module-prompt.md)).
 - At discharge: block **Ready for exit** until billing clearance per flow §10 step 6; coordinate with billing encounter closeout.
 - Auto-posted charges from orders must not be manually re-entered in IPD UI.

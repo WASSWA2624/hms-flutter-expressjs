@@ -84,12 +84,13 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+- **Full-page auth screens** — login, register, email verification, and forgot/reset password are standalone full-page routes. This is the documented **exception** to modal-first: only the auth entry screens are full-page; once authenticated, all actions follow modal-first workspace patterns.
+- Clean, centered single-column layout with HOSSPI HMS branding/logo, a focused form card, and clear primary/secondary calls to action — no worklist, no summary cards.
+- Validated forms with inline field validation, explicit error states, and loading/disabled states during submit. Reuse shared field widgets (`frontend/lib/shared/components/app_text_field.dart`, `app_field_error_text.dart`, `app_button.dart`).
+- Post-login security actions (e.g. **change password**) are modal — use the in-page `change_password_dialog`, not a separate route.
+- Full theming (light/dark/system), all strings localized via `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Pattern peers: other full-page entry screens, not clinical worklist workspaces.
 
 ---
 

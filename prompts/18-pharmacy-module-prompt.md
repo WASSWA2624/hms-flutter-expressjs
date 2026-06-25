@@ -140,7 +140,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match the Lab and Radiology executing-department workspace patterns for consistency.
 
 ---
 

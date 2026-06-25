@@ -12,7 +12,7 @@ Complete the **Emergency and Ambulance Module** for HOSSPI HMS so emergency clin
 
 **Central encounter rule:** the **emergency case** is the hub while the patient is in the emergency department. Handoff creates or reuses the receiving workflow (OPD flow, IPD admission, ICU stay overlay, or theater flow) and links `emergency_case_id` upstream. Emergency does not own inpatient bed management, OPD consultation queues, or cashier workflows after handoff — it preserves source context and navigates staff to the receiving module.
 
-Deliver a **urgent-but-controlled emergency workspace** optimized for triage under pressure: role-focused queues, severity-first layout, predictable primary actions, patient context at a glance, care-before-billing affordances, and no raw internal identifiers in the UI.
+Deliver an **urgent-but-controlled emergency workspace** optimized for triage under pressure: role-focused queues, severity-first layout, predictable primary actions, patient context at a glance, care-before-billing affordances, and no raw internal identifiers in the UI.
 
 ---
 

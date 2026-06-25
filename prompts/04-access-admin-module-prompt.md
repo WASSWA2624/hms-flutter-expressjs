@@ -84,12 +84,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is an **access administration workspace**, not a patient worklist. Rows are users, roles, and permission groups.
+
+- **Layout:** `AppWorkspace` with sections for Users, Roles, and Permission Groups. Each is an `AppListTable` management list with a detail panel — the user panel shows assigned roles and effective permissions; the role panel shows its permission matrix.
+- **Summary cards:** show counts/status filters over the lists — e.g. active vs deactivated users, role counts, demo accounts, users with no role. Cards filter the list in place; they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Status visibility:** surface account state, role assignments, scope (tenant/facility/department), and module entitlement as columns and `AppStatusText` badges. Use staff-facing language, never raw enums or UUIDs.
+- **Modal-first / nested-modal actions:** create/edit user, activate/deactivate, assign/revoke roles, and edit permission groups run via `AppWorkspaceMutationDialog` / nested modals. Render the permission matrix as grouped toggles inside the modal or detail panel. Gate every action with `AccessGate` / `AppAccessActionGate`. No route navigation for actions.
+- Full theming (light/dark/system), all strings localized in `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match peer admin/management workspaces — Subscriptions and Tenant/Facility Settings — for consistency.
 
 ---
 

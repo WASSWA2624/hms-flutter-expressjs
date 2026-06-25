@@ -163,7 +163,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match Lab, Pharmacy, and OPD workspace patterns for consistency.
 
 ---
 
@@ -199,6 +199,7 @@ Mandatory platform rules for all work in this module.
 - [ ] IPD care loop receives reports for doctor review.
 - [ ] Billing choice at order time reflected in invoice state.
 - [ ] Attestation/addendum flows respect role permissions.
+- [ ] Workbench actions run in dialogs/sheets (no workflow routing); rows, detail, and summary cards refresh via realtime sync, and finalized reports surface on clinical timelines.
 - [ ] No raw UUIDs; permissions enforced; tests pass.
 
 ---
@@ -219,6 +220,8 @@ Run backend radiology tests from `backend/`:
 ```sh
 npm test -- --testPathPattern=radiology-workspace
 ```
+
+Apply database migrations per backend workflow before merging schema changes.
 
 ---
 

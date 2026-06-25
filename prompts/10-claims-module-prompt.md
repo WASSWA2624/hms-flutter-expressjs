@@ -133,12 +133,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is an **insurance & claims workspace** — coverage, pre-authorizations, and claim-lifecycle tracking — not a patient clinical queue. Mirror the **Billing** financial workspace (`prompts/09-billing-module-prompt.md`), its closest peer, for layout consistency.
+
+- **Layout:** `AppWorkspace` shell with `AppWorkspaceSummaryGrid` status cards, `AppSearchBar`, and `AppListTable` claim/pre-auth lists in `AppWorkspaceSplitContent` → `AppWorkspaceDetailPanel`; modal action dialogs (`AppActionPanel` + `showAppWorkspaceMutationDialog`).
+- **Summary cards filter the claim list by status** (pending submission, awaiting insurer response, approved, partial, denied/resubmit, settled) — they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Status-pipeline framing:** show each claim/pre-auth's current state plus the **next required action** (submit, record response, resubmit, settle) and the **responsible role/payer** on list rows.
+- **Modal-first / nested-modal actions:** create/submit pre-auth, build/submit claim, record insurer response, resubmit, and reconcile settlement run in dialogs or bottom sheets — never separate navigation routes; use nested modals for line-item or document sub-steps.
+- Surface patient + payer context via `AppWorkspacePatientContextHeader`; use display IDs only — no raw UUIDs or enum codes.
+- Full theme support (light/dark/system); all strings localized via `app_en.arb`; responsive on Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
 
 ---
 

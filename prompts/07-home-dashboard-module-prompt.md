@@ -89,12 +89,13 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+- **Role-based dashboard** — a responsive grid of summary widgets/KPI cards and quick-action entry points; the first screen after login. The dashboard **summarizes and routes** — it is not itself a worklist and hosts no clinical workflow forms.
+- Cards present workload at a glance (OPD waiting, IPD bed pressure, critical alerts) and **deep-link** into module workspaces (`/opd`, `/ipd`, `/nursing`, ...). Any drill-down uses modals or deep-link pre-selection on the target workspace — never intermediate workflow routes.
+- Keep it **uncluttered**: surface the few most relevant widgets per role; hide empty/zero-value KPI cards gracefully.
+- Reuse shared components and the app shell (`frontend/lib/shared/layout/responsive_shell_scaffold.dart`, `app_content_panel.dart`, `app_info_tile.dart`), including the app bar, user menu, and notification badge.
+- Full theming (light/dark/system), all strings localized via `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Pattern peers: the app shell / landing surface, not clinical worklist workspaces.
 
 ---
 

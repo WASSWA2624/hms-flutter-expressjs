@@ -138,7 +138,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match Radiology, Pharmacy, and OPD workspace patterns for consistency.
 
 ---
 
@@ -171,6 +171,7 @@ Mandatory platform rules for all work in this module.
 - [ ] OPD `LAB_*` stages clear when backend orchestrator detects completion.
 - [ ] IPD care loop receives results for doctor review.
 - [ ] Billing choice at order time reflected in invoice state.
+- [ ] Workbench actions run in dialogs/sheets (no workflow routing); rows, detail, and summary cards refresh via realtime sync, and released results surface on clinical timelines.
 - [ ] No raw UUIDs; permissions enforced; tests pass.
 
 ---

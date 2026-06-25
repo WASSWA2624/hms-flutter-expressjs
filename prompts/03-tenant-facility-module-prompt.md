@@ -85,12 +85,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is an **organizational configuration workspace**, not a patient worklist. Rows are tenants, facilities, branches, departments, units, wards, rooms, and beds.
+
+- **Layout:** `AppWorkspace` with section navigation across Tenant Identity, Facilities & Branches, Departments & Units, and the Ward/Room/Bed catalog. Present the hierarchy as structured `AppListTable` management lists or a parent→child tree; selecting a row opens its detail panel.
+- **Summary cards:** show structural counts/status filters over the catalog — e.g. facilities, departments, wards, beds, active vs inactive. Cards filter the lists in place; they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Status visibility:** surface entity type, active flag, and parent context (facility → ward → room → bed) as columns and `AppStatusText` badges. Use hospital language, never raw enums or UUIDs.
+- **Modal-first / nested-modal editors:** create/edit tenant, facility, branch, department, unit, ward, room, and bed via `AppWorkspaceMutationDialog` / shared form components (`AppFormShell`, `AppFormSection`, `AppTextField`, `AppSwitchField`). Use nested modals for child entities (e.g. add a bed from within a ward editor). No route navigation for editors.
+- Full theming (light/dark/system), all strings localized in `app_en.arb`, responsive across Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match peer admin/management workspaces — Subscriptions, Users/Roles/Permissions, and the Rooms/Wards/Beds operational board — for consistency.
 
 ---
 

@@ -98,7 +98,7 @@ Mandatory platform rules for all work in this module.
 
 ### Known gaps to close
 
-- **Prompt/documentation** — was empty; align UI with full theatre-flow stage contract.
+- **Stage-contract alignment** — align case board and stage chips with the full theatre-flow stage sequence (`PRE_OP` → `SIGN_IN` → `TIME_OUT` → `INTRA_OP` → `SIGN_OUT` → `POST_OP` → `PACU_HANDOFF` → `COMPLETED`).
 - **IPD status sync** — `In Procedure / OT` on IPD board when case active.
 - **Pre-op billing gate** — high-cost procedure authorization (ipd-flow §4).
 - **Post-op orders** — route medication/lab orders back to IPD encounter after case.
@@ -147,7 +147,7 @@ Mandatory platform rules for all work in this module.
 - Hide zero-value summary cards where the workspace pattern expects it.
 - Show **next required action** and **responsible role** on worklist rows where applicable.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Match the IPD, ICU, and Nursing workspace patterns for consistency (shared encounter, transfer, and handover semantics).
 
 ---
 

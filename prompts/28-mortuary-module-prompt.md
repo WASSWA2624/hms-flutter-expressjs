@@ -280,7 +280,7 @@ From `../.cursor/app-write-up.mdc`:
 
 ## UI / UX Requirements
 
-Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **ICU**, **Nursing**, **IPD**, and **Biomedical**.
+Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **IPD**, **Operations**, and **Biomedical** (admission linkage plus asset/storage-slot boards), and **ICU** for queue-driven board layout.
 
 ### Organization
 

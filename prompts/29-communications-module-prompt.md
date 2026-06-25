@@ -82,12 +82,15 @@ Mandatory platform rules for all work in this module.
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is a **notifications and messaging** surface — an inbox/messaging paradigm, **not** a patient worklist.
+
+- **Layout:** `AppWorkspace` shell hosting a two-pane inbox — left: filterable notification center and conversation/thread list (`AppListTable` / list items with unread vs read state, unread badges, last-message preview, timestamp); right: detail panel showing the selected notification or the full message thread.
+- **Notification center:** unread/read state, per-category counts, and an unread badge that drives the app-shell badge; filters (unread, all, archived) refine the list in place — they do not open separate routes.
+- **Compose / reply:** open in modals (`AppDialog` / `app_workspace_mutation_dialog`) for new message, reply, and participant management; attachments via `app_file_upload_panel` when wired. Use nested modals for sub-steps (e.g., add participant within compose).
+- **Deep links:** tapping a notification informs and routes to the target module workspace (`/opd?id=`, `/ipd?id=`); it must not mutate clinical state in place.
+- Theming (light/dark/system), full localization via `app_en.arb`, and responsive layout across Android, iOS, web, Windows, macOS, Linux (single-pane fallback on narrow widths).
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+- Peer with inbox/messaging patterns (notification center, conversation threads) for consistency — not clinical worklists.
 
 ---
 

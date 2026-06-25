@@ -104,12 +104,15 @@ Biomedical does not own patient encounters. Integration is **operational**:
 
 ## UI / UX Requirements
 
-- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
-- Summary cards filter the board — they must not open separate list routes.
-- Hide zero-value summary cards where the workspace pattern expects it.
-- Show **next required action** and **responsible role** on worklist rows where applicable.
+This is an **equipment lifecycle workbench** — equipment registry, maintenance plans, work orders, calibration, and incidents — not a patient clinical queue. Mirror the **Operations** maintenance workspace (`prompts/26-operations-module-prompt.md`), its closest peer, for consistency.
+
+- **Layout:** `AppWorkspace` shell with `AppWorkspaceSummaryGrid` cards, `AppSearchBar`, and `AppListTable` for the equipment registry and work-order/fault lists; selection opens `AppWorkspaceDetailPanel` via `AppWorkspaceSplitContent`.
+- **Summary cards filter asset/work-order lists by status** (open faults, work orders in progress, overdue PM, calibration due, downtime, incidents) — they must not open separate routes. Hide zero-value cards where the pattern expects it.
+- **Work-order framing:** on the fault-to-work-order pipeline, show each work order's current state plus the **next required action** (assign, start, complete, return-to-service sign-off) and the **assigned technician** on list rows; the registry view is asset reference, not an action queue.
+- **Modal-first / nested-modal actions:** report fault, create/assign/start/complete work orders, record calibration/safety tests, and log downtime and incidents run in dialogs or bottom sheets (`AppActionPanel` + `showAppWorkspaceMutationDialog`) — never separate navigation routes; use nested modals for parts/checklist sub-steps.
+- Use display IDs and equipment/location names — no raw UUIDs or enum codes; this is equipment management, not patient care.
+- Full theme support (light/dark/system); all strings localized via `app_en.arb`; responsive on Android, iOS, web, Windows, macOS, Linux.
 - Stable, error-free widgets; no runtime or compilation regressions.
-- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
 
 ---
 

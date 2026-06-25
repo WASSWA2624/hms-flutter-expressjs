@@ -341,7 +341,7 @@ From `../.cursor/app-write-up.mdc`:
 
 ## UI / UX Requirements
 
-Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **Nursing**, **IPD**, **Lab**, and **Radiology**. Before creating UI, check `frontend/lib/shared/*` for reusable components (opd-flow §6).
+Follow `frontend/.cursor/ui-patterns.mdc`, `design-system.mdc`, `components.mdc`, and `layouts.mdc`. Mirror proven workspace patterns from **IPD**, **Nursing**, and **Theater** (sibling overlays/wards on the same admission encounter). Before creating UI, check `frontend/lib/shared/*` for reusable components (opd-flow §6).
 
 ### Organization
 
