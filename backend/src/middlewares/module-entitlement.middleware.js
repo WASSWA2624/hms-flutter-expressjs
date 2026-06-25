@@ -29,6 +29,7 @@ const PLAN_TIER_RANK = Object.freeze({
 // Core module definitions used when older demo databases are missing module rows.
 const CORE_MODULE_METADATA_FALLBACKS = Object.freeze({
   mortuary: Object.freeze({ minimumPlanTierCode: 'BASIC' }),
+  physiotherapy: Object.freeze({ minimumPlanTierCode: 'PRO' }),
 });
 
 // Free core modules available across all plans.

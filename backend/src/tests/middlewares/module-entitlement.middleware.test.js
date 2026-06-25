@@ -313,6 +313,35 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
+  test('allows physiotherapy from the core catalog fallback when module metadata is missing', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/therapy-flows',
+      user: { tenant_id: 'tenant-advanced-demo', roles: ['SUPER_ADMIN'] },
+    };
+
+    subscriptionRepository.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
+    moduleRepository.count.mockResolvedValue(0);
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleRepository.count).toHaveBeenCalledWith({ slug: 'physiotherapy' });
+    expect(subscriptionRepository.count).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        tenant_id: 'tenant-advanced-demo',
+        plan: expect.objectContaining({
+          tier_code: expect.objectContaining({
+            in: ['PRO', 'ADVANCED', 'CUSTOM'],
+          }),
+        }),
+      })
+    );
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+  });
+
   test('blocks paid module when module metadata is missing', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
