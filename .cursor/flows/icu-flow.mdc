@@ -416,22 +416,25 @@ Use this section when implementing or completing the ICU module in Flutter and b
 | Realtime | `RealtimeEventGroups.icu` | Controller subscribes to ICU/IPD domain events |
 | Backend tests | `ipd-flow/`, `icu-stay/`, `icu-observation/` | Route, service, RBAC coverage |
 
-### Known gaps to close
+### Status (implemented)
 
-- **`startIcuStay` missing from repository** — `IcuRepository` has `transferOut` (end stay) but no `startIcuStay`; backend supports `POST /ipd-flows/:id/start-icu-stay`.
-- **No ICU bed board** — flow §7 expects ICU bed assignment visibility; UI shows ward/bed on rows only.
-- **Transfer lifecycle incomplete** — UI requests transfer but does not wire approve/start/complete/cancel via `update-transfer`.
-- **Discharge is readiness-only** — `plan-discharge` marks readiness; no integration with IPD multi-step clearance UI links.
-- **No inpatient clinical orders from ICU** — no lab, radiology, prescription, procedure, or consult actions.
-- **Ward round reused for ICU round** — not labeled or structured as ICU-specific documentation.
-- **Localization gap** — most ICU copy is private `_IcuText` constants; sparse `app_en.arb` coverage.
-- **No deep links** — router does not parse `/icu?id=…&panel=…` query params.
-- **OPD / IPD entry context thin** — board/detail lack source OPD encounter, emergency case, consultant, payer.
-- **Billing / insurance gates** — no `ClinicalRequestBillingPanel` on ICU-originated orders.
-- **Theater handoff** — post-op ICU patients lack cross-navigation and handover summary.
-- **IPD ↔ ICU bridge one-way** — IPD lacks “Open in ICU” / “Start ICU stay”; ICU lacks “Open in IPD”.
-- **No frontend tests** — `test/features/icu/` does not exist.
-- **Large page file** — `icu_workspace_page.dart` (~1.9k lines) needs widget extraction.
+- **`startIcuStay` in repository** — `IcuRepository.startIcuStay` → `POST /ipd-flows/:id/start-icu-stay`; **Start ICU stay** action shown when eligible (no active stay, not terminal). IPD repo/controller also expose `startIcuStay`.
+- **ICU bed board** — `IcuBedBoardPanel` (view toggle) lists ICU-ward beds via `GET /wards?ward_type=ICU` + `GET /beds?include_occupancy=true`; ward filter chips; occupancy summary; **View in IPD** per occupied bed.
+- **Transfer lifecycle** — `update-transfer` wired for `APPROVE`/`START`/`COMPLETE`/`CANCEL`; `to_bed_id` required on complete; prompts **End ICU stay** after a completed step-down.
+- **Discharge readiness** — `plan-discharge` retained as readiness-only; **Open in IPD** deep-links to IPD/Billing clearance; no false "discharged" state.
+- **Inpatient clinical orders from ICU** — lab, radiology, and prescription actions via shared `clinical_actions` dialogs, anchored to the IPD encounter, each using `ClinicalRequestBillingPanel`.
+- **ICU round** — labeled ICU round note via `add-ward-round`.
+- **Localization** — ICU copy migrated to `app_en.arb` (`icu*` keys); shared helpers in `presentation/widgets/icu_format.dart`.
+- **Deep links** — `IcuBoardQuery.fromUri` + router parse `/icu?id=…&panel=…`; pre-selects patient and focuses the panel.
+- **Entry context** — source encounter type (OPD / EMERGENCY / THEATRE) shown on detail; LOS/ICU-start column on board.
+- **IPD ↔ ICU bridge** — IPD exposes **Open in ICU** and **Start ICU stay**; ICU detail exposes **Open in IPD**.
+- **Frontend tests** — `test/features/icu/` covers query parsing, transfer/panel enums, board load, start stay, deep-link selection.
+
+### Remaining follow-ups
+
+- Consultant / payer columns await backend queue-card fields (not yet provided by `GET /ipd-flows`).
+- Theatre handoff summary awaits an explicit `theatre_case` reference on the IPD overlay DTO (source context inferred from `encounter_type` for now).
+- Further widget extraction of `icu_workspace_page.dart` (bed board + formatting already extracted).
 
 ---
 
