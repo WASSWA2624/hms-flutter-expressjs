@@ -59,7 +59,6 @@ void main() {
 
       _stubInitialLoad(
         repository,
-        cases: const <TheaterCase>[],
         detail: detail,
       );
       when(

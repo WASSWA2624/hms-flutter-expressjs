@@ -121,7 +121,6 @@ final class TheaterBoardQuery {
       search: focusId ?? pick(<String>['search', 'q']) ?? '',
       focusCaseId: focusId,
       focusPanel: TheaterDetailPanelX.fromValue(params['panel']),
-      queueScope: 'ACTIVE',
     );
   }
 

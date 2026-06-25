@@ -1337,7 +1337,7 @@ Future<void> _showHandoverDialog(BuildContext context, WidgetRef ref) async {
         context: context,
         title: Text(context.l10n.theaterHandoverDialogTitle),
         icon: const Icon(Icons.output_outlined),
-        content: _HandoverForm(),
+        content: const _HandoverForm(),
       );
   if (payload == null || !context.mounted) {
     return;

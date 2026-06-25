@@ -384,7 +384,7 @@ final class TheaterWorkspaceController
   }
 
   Future<Result<TheaterWorkspaceState>> _loadInitialState() async {
-    final TheaterCaseQuery query = const TheaterCaseQuery(queueScope: 'ACTIVE');
+    const TheaterCaseQuery query = TheaterCaseQuery();
     final Result<AppPage<TheaterCase>> casesResult = await _repository
         .listCases(query);
 
