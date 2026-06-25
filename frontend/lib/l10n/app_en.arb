@@ -16492,7 +16492,7 @@
   "@labReopenVerifiedResultDialogTitle": {
     "description": "Title for the dialog that reopens a verified lab result."
   },
-  "labReopenVerifiedResultDialogBody": "Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.",
+  "labReopenVerifiedResultDialogBody": "Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.",
   "@labReopenVerifiedResultDialogBody": {
     "description": "Body text for the verified result reopen dialog."
   },

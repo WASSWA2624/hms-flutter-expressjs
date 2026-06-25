@@ -23970,7 +23970,7 @@ abstract class AppLocalizations {
   /// Body text for the verified result reopen dialog.
   ///
   /// In en, this message translates to:
-  /// **'Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.'**
+  /// **'Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.'**
   String get labReopenVerifiedResultDialogBody;
 
   /// Label for the required reason when reopening a verified lab result.

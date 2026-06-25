@@ -3475,20 +3475,38 @@ class _ReopenVerifiedResultDialog extends ConsumerStatefulWidget {
 class _ReopenVerifiedResultDialogState
     extends ConsumerState<_ReopenVerifiedResultDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _valueController;
+  late final TextEditingController _unitController;
+  late final TextEditingController _textController;
   late final TextEditingController _reasonController;
   late final TextEditingController _notesController;
+  String? _selectedOption;
+  bool _valueError = false;
   AppFailure? _failure;
   bool _isSaving = false;
+
+  LabOrderItem get _item => widget.item;
+
+  bool get _usesOptions => _item.isQualitative && _item.resultOptions.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _valueController = TextEditingController(text: _item.resultValue ?? '');
+    _unitController = TextEditingController(
+      text: _item.resultUnit ?? _item.unit ?? '',
+    );
+    _textController = TextEditingController(text: _item.resultText ?? '');
+    _selectedOption = _item.resultText ?? _item.resultValue;
     _reasonController = TextEditingController();
     _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _valueController.dispose();
+    _unitController.dispose();
+    _textController.dispose();
     _reasonController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -3496,6 +3514,7 @@ class _ReopenVerifiedResultDialogState
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: Text(l10n.labReopenVerifiedResultDialogTitle),
@@ -3509,19 +3528,41 @@ class _ReopenVerifiedResultDialogState
             if (_failure != null) AppFailureStateView(failure: _failure!),
             Text(
               l10n.labReopenVerifiedResultDialogBody,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium,
             ),
-            SizedBox(height: Theme.of(context).spacing.sm),
+            SizedBox(height: theme.spacing.sm),
             Text(
-              widget.item.displayTitle,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              _item.displayTitle,
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: Theme.of(context).spacing.sm),
+            if (_item.displayReferenceRange != null) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                _item.displayReferenceRange!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.sm),
+            ..._buildValueEditor(l10n),
+            if (_valueError) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                l10n.labResultEntryRequiredMessage,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: _reasonController,
               labelText: l10n.labReopenVerifiedReasonLabel,
+              isRequired: true,
               enabled: !_isSaving,
               maxLines: 2,
               validator: AppValidators.minLength(
@@ -3555,30 +3596,165 @@ class _ReopenVerifiedResultDialogState
     );
   }
 
+  List<Widget> _buildValueEditor(AppLocalizations l10n) {
+    if (_item.isNumeric) {
+      return <Widget>[
+        AppTextField(
+          controller: _valueController,
+          labelText: l10n.labResultValueLabel,
+          isRequired: true,
+          enabled: !_isSaving,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (String? value) {
+            final String normalized = value?.trim() ?? '';
+            if (normalized.isEmpty) {
+              return l10n.validationRequired;
+            }
+            return num.tryParse(normalized) == null
+                ? l10n.labNumericRangeValidationMessage
+                : null;
+          },
+        ),
+        SizedBox(height: Theme.of(context).spacing.xs),
+        _ResultUnitInput(
+          item: _item,
+          controller: _unitController,
+          enabled: !_isSaving,
+          onChanged: () => setState(() {}),
+        ),
+      ];
+    }
+    if (_usesOptions) {
+      return <Widget>[
+        AppSelectField<String>.searchable(
+          value: _selectedOption,
+          labelText: l10n.labResultValueLabel,
+          isRequired: true,
+          enabled: !_isSaving,
+          options: <AppSelectOption<String>>[
+            for (final LabResultOption option in _item.resultOptions)
+              AppSelectOption<String>(
+                value: option.value ?? option.label ?? option.id,
+                label: option.displayLabel,
+                leadingIcon: const Icon(Icons.checklist_outlined),
+                searchText:
+                    '${option.id} ${option.label ?? ''} ${option.value ?? ''} ${option.status ?? ''} ${option.resultFlag ?? ''}',
+              ),
+          ],
+          onChanged: _isSaving
+              ? null
+              : (String? value) {
+                  setState(() {
+                    _selectedOption = value;
+                    _valueError = false;
+                  });
+                },
+        ),
+      ];
+    }
+    return <Widget>[
+      AppTextField(
+        controller: _textController,
+        labelText: _item.isQualitative
+            ? l10n.labResultValueLabel
+            : l10n.labResultTextLabel,
+        isRequired: true,
+        enabled: !_isSaving,
+        maxLines: _item.isText ? 3 : 1,
+        validator: AppValidators.minLength(
+          1,
+          l10n.validationRequired,
+          allowEmpty: false,
+          trim: true,
+        ),
+      ),
+    ];
+  }
+
+  bool _hasValueEntry() {
+    if (_item.isNumeric) {
+      return _valueController.text.trim().isNotEmpty;
+    }
+    if (_usesOptions) {
+      return _selectedOption?.trim().isNotEmpty ?? false;
+    }
+    return _textController.text.trim().isNotEmpty;
+  }
+
+  Map<String, Object?> _buildVerifyPayload() {
+    final Map<String, Object?> payload = <String, Object?>{
+      'reported_at': DateTime.now().toUtc().toIso8601String(),
+      if (_notesController.text.trim().isNotEmpty)
+        'notes': _notesController.text.trim(),
+    };
+    if (_item.isNumeric) {
+      payload['result_value'] = _valueController.text.trim();
+      final String unit = _unitController.text.trim();
+      if (unit.isNotEmpty) {
+        payload['result_unit'] = unit;
+      }
+      return payload;
+    }
+    if (_usesOptions) {
+      payload['result_text'] = _selectedOption?.trim();
+      return payload;
+    }
+    payload['result_text'] = _textController.text.trim();
+    return payload;
+  }
+
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final bool formValid = _formKey.currentState?.validate() ?? false;
+    final bool hasValue = _hasValueEntry();
+    if (!hasValue && _usesOptions) {
+      setState(() => _valueError = true);
+    }
+    if (!formValid || !hasValue) {
       return;
     }
+
     setState(() {
       _isSaving = true;
       _failure = null;
+      _valueError = false;
     });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .reopenOrderItemResult(widget.item.apiId, <String, Object?>{
-          'reason': _reasonController.text.trim(),
-          if (_notesController.text.trim().isNotEmpty)
-            'notes': _notesController.text.trim(),
-        });
+
+    final LabWorkspaceController controller = ref.read(
+      labWorkspaceControllerProvider.notifier,
+    );
+
+    final AppFailure? reopenFailure = await controller.reopenOrderItemResult(
+      _item.apiId,
+      <String, Object?>{
+        'reason': _reasonController.text.trim(),
+        if (_notesController.text.trim().isNotEmpty)
+          'notes': _notesController.text.trim(),
+      },
+    );
     if (!mounted) {
       return;
     }
-    if (failure == null) {
+    if (reopenFailure != null) {
+      setState(() {
+        _failure = reopenFailure;
+        _isSaving = false;
+      });
+      return;
+    }
+
+    final AppFailure? verifyFailure = await controller.verifyOrderItem(
+      _item.apiId,
+      _buildVerifyPayload(),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (verifyFailure == null) {
       Navigator.of(context).pop(true);
       return;
     }
     setState(() {
-      _failure = failure;
+      _failure = verifyFailure;
       _isSaving = false;
     });
   }

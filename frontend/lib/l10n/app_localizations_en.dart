@@ -12744,7 +12744,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReopenVerifiedResultDialogBody =>
-      'Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.';
+      'Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.';
 
   @override
   String get labReopenVerifiedReasonLabel => 'Reason for edit';
