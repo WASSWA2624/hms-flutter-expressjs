@@ -27,7 +27,9 @@ import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
-  const OpdWorkspacePage({super.key});
+  const OpdWorkspacePage({this.initialQuery, super.key});
+
+  final OpdWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,16 +48,17 @@ class OpdWorkspacePage extends ConsumerWidget {
         ref.read(opdWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, OpdWorkspaceState data) {
-        return _OpdWorkspaceContent(state: data);
+        return _OpdWorkspaceContent(state: data, initialQuery: initialQuery);
       },
     );
   }
 }
 
 class _OpdWorkspaceContent extends ConsumerStatefulWidget {
-  const _OpdWorkspaceContent({required this.state});
+  const _OpdWorkspaceContent({required this.state, this.initialQuery});
 
   final OpdWorkspaceState state;
+  final OpdWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_OpdWorkspaceContent> createState() =>
@@ -68,12 +71,22 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   late final TextEditingController _searchController;
   final ValueNotifier<AppPageRequest> _tablePageNotifier =
       ValueNotifier<AppPageRequest>(const AppPageRequest(pageSize: 12));
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(_resetTablePage);
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant _OpdWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
   }
 
   @override
@@ -388,6 +401,54 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
 
     if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
+  }
+
+  void _scheduleRouteQuery(OpdWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    if (_appliedRouteSignature == query.signature) {
+      return;
+    }
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(OpdWorkspaceQuery query) async {
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+    }
+    if (query.search.isNotEmpty || query.panel.isNotEmpty) {
+      final _OpdTableFilter panelFilter = _opdFilterForPanel(query.panel);
+      _setFilter(panelFilter.copyWith(search: query.search));
+    }
+    if (query.flowId.isNotEmpty) {
+      await _openFlowById(query.flowId);
+    }
+  }
+
+  Future<void> _openFlowById(String identifier) async {
+    final OpdFlowSummary? flow = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .resolveFlowById(identifier);
+    if (!mounted || flow == null) {
+      return;
+    }
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => FlowActionsDialog(flow: flow),
+    );
+    if (changed == true && mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
@@ -1854,6 +1915,91 @@ bool _isCompletedStatus(String? status) {
     'ADMITTED' ||
     'CLOSED' => true,
     _ => false,
+  };
+}
+
+/// Maps an `/opd?panel=` deep-link value to a worklist filter.
+///
+/// Accepts hospital-language panel names as well as raw backend stage names so
+/// links from other modules (and summary cards) resolve to the right queue.
+_OpdTableFilter _opdFilterForPanel(String panel) {
+  final String key = panel.trim().toUpperCase();
+  if (key.isEmpty) {
+    return const _OpdTableFilter();
+  }
+  return switch (key) {
+    'ARRIVALS' || 'ARRIVAL' || 'APPOINTMENTS' => const _OpdTableFilter(
+      category: _opdCategoryArrival,
+    ),
+    'QUEUE' || 'QUEUED' => const _OpdTableFilter(category: _opdCategoryQueue),
+    'TRIAGE' => const _OpdTableFilter(category: _opdCategoryTriage),
+    'ACTIVE' || 'ACTIVE_FLOW' || 'OPD' || 'FLOWS' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+    ),
+    'PAYMENT' || 'BILLING' || 'PAYMENT_DUE' || 'WAITING_CONSULTATION_PAYMENT' =>
+      const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'PAYMENT_DUE', 'WAITING_CONSULTATION_PAYMENT'},
+      ),
+    'VITALS' || 'VITALS_NEEDED' || 'WAITING_VITALS' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{'VITALS_NEEDED', 'WAITING_VITALS'},
+    ),
+    'DOCTOR' ||
+    'DOCTOR_NEEDED' ||
+    'ASSIGNMENT' ||
+    'WAITING_DOCTOR_ASSIGNMENT' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{'DOCTOR_NEEDED', 'WAITING_DOCTOR_ASSIGNMENT'},
+    ),
+    'REVIEW' || 'WITH_DOCTOR' || 'WAITING_DOCTOR_REVIEW' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{'WITH_DOCTOR', 'WAITING_DOCTOR_REVIEW'},
+    ),
+    'LAB' ||
+    'LAB_PENDING' ||
+    'LAB_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{
+        'LAB_PENDING',
+        'SAMPLE_PENDING',
+        'IN_LAB',
+        'LAB_REQUESTED',
+        'LAB_AND_RADIOLOGY_REQUESTED',
+      },
+    ),
+    'IMAGING' || 'RADIOLOGY' || 'IMAGING_PENDING' || 'RADIOLOGY_REQUESTED' =>
+      const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{
+          'IMAGING_PENDING',
+          'REPORT_PENDING',
+          'RADIOLOGY_REQUESTED',
+          'LAB_AND_RADIOLOGY_REQUESTED',
+        },
+      ),
+    'PHARMACY' || 'PHARMACY_PENDING' || 'PHARMACY_REQUESTED' =>
+      const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'PHARMACY_PENDING', 'PHARMACY_REQUESTED'},
+      ),
+    'DISPOSITION' || 'DECISION' || 'DECISION_NEEDED' || 'WAITING_DISPOSITION' =>
+      const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{
+          'DECISION_NEEDED',
+          'RESULTS_READY',
+          'REPORT_READY',
+          'MEDICINES_DISPENSED',
+          'WAITING_DISPOSITION',
+        },
+      ),
+    'ADMISSION' || 'ADMISSION_PENDING' || 'ADMITTED' => const _OpdTableFilter(
+      category: _opdCategoryActiveFlow,
+      statuses: <String>{'ADMISSION_PENDING'},
+    ),
+    _ => const _OpdTableFilter(category: _opdCategoryActiveFlow),
   };
 }
 

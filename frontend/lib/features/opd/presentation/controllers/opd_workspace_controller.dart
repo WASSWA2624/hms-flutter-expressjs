@@ -357,6 +357,42 @@ final class OpdWorkspaceController
     }
   }
 
+  /// Resolves an OPD flow summary by encounter identifier for deep-linking.
+  ///
+  /// Prefers an already-loaded summary (worklist or triage queue) and falls
+  /// back to fetching the detail snapshot. Returns `null` when the encounter
+  /// cannot be resolved (for example an unknown or completed identifier).
+  Future<OpdFlowSummary?> resolveFlowById(String identifier) async {
+    final String target = identifier.trim();
+    if (target.isEmpty) {
+      return null;
+    }
+
+    bool matches(OpdFlowSummary flow) {
+      return flow.id == target ||
+          flow.publicId == target ||
+          flow.apiId == target;
+    }
+
+    final OpdWorkspaceState? current = _currentState;
+    if (current != null) {
+      for (final OpdFlowSummary flow in <OpdFlowSummary>[
+        ...current.flows.items,
+        ...current.triageQueue.items,
+      ]) {
+        if (matches(flow)) {
+          return flow;
+        }
+      }
+    }
+
+    final Result<OpdFlowDetail> result = await _repository.getOpdFlow(target);
+    return result.when(
+      success: (OpdFlowDetail detail) => detail.summary,
+      failure: (_) => null,
+    );
+  }
+
   Future<AppFailure?> startOpdEncounter(Map<String, Object?> payload) {
     final Object? existingEncounterId = payload['existing_encounter_id'];
     if (existingEncounterId is String &&

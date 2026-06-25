@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -72,6 +74,24 @@ const AccessRequirement opdBillingActionRequirement = AccessRequirement(
 const AccessRequirement opdStageCorrectionRequirement = AccessRequirement(
   anyRoles: _opdAdminActionRoles,
   activeModules: <String>['scheduling-queue'],
+);
+
+/// Gate for the OPD→IPD admission handoff action.
+///
+/// Mirrors the IPD workspace access rules (inpatient bed management module plus
+/// inpatient-facing roles) so the handoff button only appears for staff who can
+/// actually work the inpatient queue.
+const AccessRequirement opdAdmissionHandoffRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.billing,
+    AppRole.operations,
+    AppRole.wardManager,
+    AppRole.icuManager,
+  ],
+  activeModules: <String>['inpatient-bed-management'],
 );
 
 class FlowActionsDialog extends ConsumerStatefulWidget {
@@ -271,22 +291,34 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         tooltip: canDispose ? null : opdStageDisplayLabel(l10n, stage),
         onPressed: terminal || !canDispose || !actionsEnabled
             ? null
-            : () => _openNested(
+            : () => _openDisposition(
                 context,
-                OpdDispositionDialog(
-                  flow: flow,
-                  hasPharmacyOrder:
-                      detail?.pharmacyOrders.isNotEmpty ??
-                      stage == 'PHARMACY_REQUESTED',
-                ),
+                flow,
+                detail,
+                hasPharmacyOrder:
+                    detail?.pharmacyOrders.isNotEmpty ??
+                    stage == 'PHARMACY_REQUESTED',
               ),
       );
     }
+
+    AppPermissionActionItem admissionHandoffAction() => AppPermissionActionItem(
+      requirement: opdAdmissionHandoffRequirement,
+      label: l10n.opdOpenAdmissionAction,
+      icon: Icons.bed_outlined,
+      fullWidth: true,
+      hideWhenDenied: true,
+      enabled: actionsEnabled,
+      onPressed: actionsEnabled
+          ? () => _navigateToIpdHandoff(context, flow, detail)
+          : null,
+    );
 
     final bool hasAssignedProvider =
         _isNonEmpty(flow.providerUserId) ||
         _isNonEmpty(flow.providerDisplayName) ||
         _isNonEmpty(flow.assignedStaffDisplayName);
+    final bool hasPendingAdmission = _flowHasPendingAdmission(flow, detail);
     final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
     final String nextActionKey = switch (displayCode) {
       'PAYMENT_DUE' => canPayNow ? 'billing' : 'correct_stage',
@@ -303,7 +335,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       'REPORT_READY' ||
       'MEDICINES_DISPENSED' ||
       'DECISION_NEEDED' => 'disposition',
-      'ADMISSION_PENDING' => 'handoff',
+      'ADMISSION_PENDING' => 'admission_handoff',
       _ => switch (stage) {
         'WAITING_CONSULTATION_PAYMENT' =>
           canPayNow ? 'billing' : 'correct_stage',
@@ -311,7 +343,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         'WAITING_DOCTOR_ASSIGNMENT' =>
           hasAssignedProvider ? 'doctor_review' : 'assign_doctor',
         'WAITING_DOCTOR_REVIEW' => 'doctor_review',
-        'WAITING_DISPOSITION' => 'disposition',
+        'WAITING_DISPOSITION' =>
+          hasPendingAdmission ? 'admission_handoff' : 'disposition',
         'LAB_REQUESTED' ||
         'RADIOLOGY_REQUESTED' ||
         'LAB_AND_RADIOLOGY_REQUESTED' ||
@@ -327,11 +360,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'assign_doctor': assignDoctorAction,
           'doctor_review': doctorReviewAction,
           'disposition': dispositionAction,
+          'admission_handoff': admissionHandoffAction,
         };
     final AppPermissionActionItem Function()? nextFactory =
         actionFactories[nextActionKey];
     if (nextFactory != null) {
       addAction(nextActionKey, primaryAction(nextFactory()));
+    }
+
+    if (hasPendingAdmission && nextActionKey != 'admission_handoff') {
+      addAction('admission_handoff', admissionHandoffAction());
     }
 
     if (!terminal) {
@@ -517,6 +555,80 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (closeParentOnChange || isTerminal) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  /// Runs the disposition dialog and, when the doctor admits the patient,
+  /// offers an immediate handoff to the inpatient (IPD) workspace while keeping
+  /// the source OPD encounter linked (opd-flow §7, ipd-flow §2.2).
+  Future<void> _openDisposition(
+    BuildContext context,
+    OpdFlowSummary flow,
+    OpdFlowDetail? detail, {
+    required bool hasPharmacyOrder,
+  }) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          OpdDispositionDialog(flow: flow, hasPharmacyOrder: hasPharmacyOrder),
+    );
+    if (!context.mounted || changed != true) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+
+    final OpdFlowDetail? updatedDetail = _workspaceState(ref)?.selectedFlow;
+    final OpdFlowSummary updatedFlow = updatedDetail?.summary ?? flow;
+    final bool admissionPending = _flowHasPendingAdmission(
+      updatedFlow,
+      updatedDetail,
+    );
+
+    if (admissionPending) {
+      await _promptIpdHandoff(context, updatedFlow, updatedDetail);
+      return;
+    }
+
+    if (updatedFlow.isTerminal) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _promptIpdHandoff(
+    BuildContext context,
+    OpdFlowSummary flow,
+    OpdFlowDetail? detail,
+  ) async {
+    final bool? openIpd = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => _OpdAdmissionHandoffDialog(flow: flow),
+    );
+    if (!context.mounted) {
+      return;
+    }
+    if (openIpd == true) {
+      _navigateToIpdHandoff(context, flow, detail);
+    }
+  }
+
+  void _navigateToIpdHandoff(
+    BuildContext context,
+    OpdFlowSummary flow,
+    OpdFlowDetail? detail,
+  ) {
+    final String target = _admissionHandoffTarget(flow, detail);
+    // Close the OPD action dialog before routing to the inpatient workspace.
+    Navigator.of(context).pop(true);
+    context.go(
+      AppRoutes.ipd.location(
+        queryParameters: target.isEmpty
+            ? const <String, String>{}
+            : <String, String>{'admission': target},
+      ),
+    );
   }
 
   Widget _doctorReviewDialog(BuildContext context, OpdFlowSummary flow) {
@@ -1433,6 +1545,45 @@ class OpdDispositionDialog extends ConsumerWidget {
               'notes': notes,
             });
       },
+    );
+  }
+}
+
+/// Confirmation shown after an `ADMIT` disposition, offering to jump to the
+/// inpatient (IPD) workspace where bed allocation and admission continue.
+class _OpdAdmissionHandoffDialog extends StatelessWidget {
+  const _OpdAdmissionHandoffDialog({required this.flow});
+
+  final OpdFlowSummary flow;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.opdAdmissionHandoffTitle),
+      icon: const Icon(Icons.bed_outlined),
+      maxWidth: 560,
+      content: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          OpdActionContextPanel(flow: flow, showTitle: false),
+          Text(
+            l10n.opdAdmissionHandoffBody,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.opdAdmissionHandoffStayAction,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.opdOpenAdmissionAction,
+          leadingIcon: Icons.bed_outlined,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
     );
   }
 }
@@ -2697,6 +2848,50 @@ bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
 
 String _normalizedStage(String? stage) {
   return (stage ?? '').trim().toUpperCase();
+}
+
+/// Whether the OPD encounter has a live inpatient admission attached.
+///
+/// True for the `ADMISSION_PENDING` display code, the terminal `ADMITTED`
+/// stage, or any linked admission record that has not been discharged or
+/// cancelled. Used to surface the OPD→IPD handoff action.
+bool _flowHasPendingAdmission(OpdFlowSummary? flow, OpdFlowDetail? detail) {
+  final String displayCode = (flow?.displayCode ?? '').trim().toUpperCase();
+  if (displayCode == 'ADMISSION_PENDING') {
+    return true;
+  }
+  if (_normalizedStage(flow?.stage) == 'ADMITTED') {
+    return true;
+  }
+  final List<OpdRelatedRecord> admissions =
+      detail?.admissions ?? const <OpdRelatedRecord>[];
+  return admissions.any((OpdRelatedRecord record) {
+    final String status = (record.status ?? '').trim().toUpperCase();
+    return status != 'DISCHARGED' && status != 'CANCELLED';
+  });
+}
+
+/// Resolves the best identifier to deep-link the inpatient workspace to the
+/// admission created from this OPD encounter. Prefers the admission's display
+/// id, then the patient identifier so IPD search can still locate the row.
+String _admissionHandoffTarget(OpdFlowSummary flow, OpdFlowDetail? detail) {
+  final List<OpdRelatedRecord> admissions =
+      detail?.admissions ?? const <OpdRelatedRecord>[];
+  for (final OpdRelatedRecord record in admissions) {
+    final String status = (record.status ?? '').trim().toUpperCase();
+    if (status == 'DISCHARGED' || status == 'CANCELLED') {
+      continue;
+    }
+    if (record.id.trim().isNotEmpty) {
+      return record.id.trim();
+    }
+  }
+  for (final OpdRelatedRecord record in admissions) {
+    if (record.id.trim().isNotEmpty) {
+      return record.id.trim();
+    }
+  }
+  return flow.patientIdentifier?.trim() ?? '';
 }
 
 String? _trimmedOrNull(String? value) {

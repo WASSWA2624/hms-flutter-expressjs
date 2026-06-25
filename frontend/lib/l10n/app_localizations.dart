@@ -2422,6 +2422,30 @@ abstract class AppLocalizations {
   /// **'Admission handoff'**
   String get opdNextAdmissionHandoffLabel;
 
+  /// OPD action that deep-links to the inpatient (IPD) workspace for the admitted patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Open inpatient admission'**
+  String get opdOpenAdmissionAction;
+
+  /// Title of the dialog confirming the OPD to IPD admission handoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient admitted'**
+  String get opdAdmissionHandoffTitle;
+
+  /// Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.'**
+  String get opdAdmissionHandoffBody;
+
+  /// Secondary action to remain in the OPD workspace instead of opening the inpatient workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in OPD'**
+  String get opdAdmissionHandoffStayAction;
+
   /// Search field label for OPD.
   ///
   /// In en, this message translates to:

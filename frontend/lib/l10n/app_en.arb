@@ -1451,6 +1451,22 @@
   "@opdNextAdmissionHandoffLabel": {
     "description": "OPD display label."
   },
+  "opdOpenAdmissionAction": "Open inpatient admission",
+  "@opdOpenAdmissionAction": {
+    "description": "OPD action that deep-links to the inpatient (IPD) workspace for the admitted patient."
+  },
+  "opdAdmissionHandoffTitle": "Patient admitted",
+  "@opdAdmissionHandoffTitle": {
+    "description": "Title of the dialog confirming the OPD to IPD admission handoff."
+  },
+  "opdAdmissionHandoffBody": "This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.",
+  "@opdAdmissionHandoffBody": {
+    "description": "Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace."
+  },
+  "opdAdmissionHandoffStayAction": "Stay in OPD",
+  "@opdAdmissionHandoffStayAction": {
+    "description": "Secondary action to remain in the OPD workspace instead of opening the inpatient workspace."
+  },
   "opdSearchLabel": "Search OPD",
   "opdSearchHint": "Search patient, identifier, or assigned staff",
   "opdApplyFiltersAction": "Apply filters",

@@ -87,6 +87,48 @@ final class OpdFlowQuery {
   }
 }
 
+/// Parsed deep-link parameters for the OPD workspace route (`/opd?id=&panel=`).
+///
+/// `flowId` deep-links to a specific OPD encounter (opens its action dialog).
+/// `panel` pre-selects a worklist filter (e.g. `vitals`, `doctor`, `lab`).
+/// `search` pre-fills the worklist search box.
+@immutable
+final class OpdWorkspaceQuery {
+  const OpdWorkspaceQuery({
+    this.flowId = '',
+    this.panel = '',
+    this.search = '',
+  });
+
+  factory OpdWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    return OpdWorkspaceQuery(
+      flowId: pick(<String>['id', 'flow', 'flowId', 'encounter', 'encounterId']),
+      panel: pick(<String>['panel', 'stage', 'filter', 'queue']),
+      search: pick(<String>['search', 'q', 'patient']),
+    );
+  }
+
+  final String flowId;
+  final String panel;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      flowId.isNotEmpty || panel.isNotEmpty || search.isNotEmpty;
+
+  String get signature => '$flowId|$panel|$search';
+}
+
 @immutable
 final class OpdTriageQueueQuery {
   const OpdTriageQueueQuery({

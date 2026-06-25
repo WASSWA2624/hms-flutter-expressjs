@@ -1210,6 +1210,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdNextAdmissionHandoffLabel => 'Admission handoff';
 
   @override
+  String get opdOpenAdmissionAction => 'Open inpatient admission';
+
+  @override
+  String get opdAdmissionHandoffTitle => 'Patient admitted';
+
+  @override
+  String get opdAdmissionHandoffBody =>
+      'This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.';
+
+  @override
+  String get opdAdmissionHandoffStayAction => 'Stay in OPD';
+
+  @override
   String get opdSearchLabel => 'Search OPD';
 
   @override

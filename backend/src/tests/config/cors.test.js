@@ -42,6 +42,9 @@ describe('CORS config', () => {
     expect(corsOptions.allowedHeaders).toContain('Sec-CH-UA');
     expect(corsOptions.allowedHeaders).toContain('Sec-CH-UA-Mobile');
     expect(corsOptions.allowedHeaders).toContain('Sec-CH-UA-Platform');
+    expect(corsOptions.allowedHeaders).toContain('If-Match');
+    expect(corsOptions.allowedHeaders).toContain('X-Resource-Version');
+    expect(corsOptions.allowedHeaders).toContain('Idempotency-Key');
   });
 
   test('allows requests with no origin', (done) => {

@@ -137,7 +137,10 @@ const getCorsConfig = () => {
       'X-Platform',
       'Sec-CH-UA',
       'Sec-CH-UA-Mobile',
-      'Sec-CH-UA-Platform'
+      'Sec-CH-UA-Platform',
+      'If-Match',
+      'X-Resource-Version',
+      'Idempotency-Key'
     ],
     exposedHeaders: [
       'X-RateLimit-Limit',

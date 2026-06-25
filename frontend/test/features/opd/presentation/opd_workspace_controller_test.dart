@@ -276,6 +276,142 @@ void main() {
       verifyNever(() => repository.correctTriageStage(any(), any()));
     });
 
+    test('resolveFlowById returns a loaded flow without a network call', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        stage: 'WAITING_DOCTOR_REVIEW',
+      );
+
+      _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      clearInteractions(repository);
+
+      final OpdFlowSummary? resolved = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .resolveFlowById('ENC000001');
+
+      expect(resolved?.apiId, 'ENC000001');
+      verifyNever(() => repository.getOpdFlow(any()));
+    });
+
+    test('resolveFlowById fetches the detail when not already loaded', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowDetail detail = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-9',
+          publicId: 'ENC000009',
+          stage: 'WAITING_VITALS',
+        ),
+      );
+
+      _stubInitialLoad(repository);
+      when(
+        () => repository.getOpdFlow(any()),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      clearInteractions(repository);
+
+      final OpdFlowSummary? resolved = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .resolveFlowById('ENC000009');
+
+      expect(resolved?.apiId, 'ENC000009');
+      verify(() => repository.getOpdFlow('ENC000009')).called(1);
+    });
+
+    test('resolveFlowById returns null when the encounter cannot be found', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+
+      _stubInitialLoad(repository);
+      when(
+        () => repository.getOpdFlow(any()),
+      ).thenAnswer(
+        (_) async =>
+            const Result<OpdFlowDetail>.failure(AppFailure.notFound()),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final OpdFlowSummary? resolved = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .resolveFlowById('UNKNOWN');
+
+      expect(resolved, isNull);
+    });
+
+    test('completeDisposition admits via the disposition endpoint', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        providerUserId: 'DOC000001',
+        stage: 'WAITING_DISPOSITION',
+      );
+      const OpdFlowDetail admitted = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'WAITING_DISPOSITION',
+          displayCode: 'ADMISSION_PENDING',
+        ),
+        admissions: <OpdRelatedRecord>[
+          OpdRelatedRecord(
+            id: 'ADM000001',
+            kind: 'admission',
+            status: 'ADMITTED',
+          ),
+        ],
+      );
+      Map<String, Object?>? submittedPayload;
+
+      _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
+      when(() => repository.disposition(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return const Result<OpdFlowDetail>.success(admitted);
+      });
+      when(
+        () => repository.getOpdFlow(any()),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(admitted));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      clearInteractions(repository);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .completeDisposition(flow, <String, Object?>{
+            'decision': 'ADMIT',
+            'notes': 'Needs inpatient care',
+          });
+
+      expect(failure, isNull);
+      expect(submittedPayload, containsPair('decision', 'ADMIT'));
+      verify(() => repository.disposition('ENC000001', any())).called(1);
+      verifyNever(() => repository.doctorReview(any(), any()));
+    });
+
     test(
       'updateLabOrder sends requested tests and refreshes encounter detail',
       () async {
@@ -386,6 +522,11 @@ void _stubInitialLoad(
             .pageRequest,
         totalItemCount: triageQueue.length,
       ),
+    ),
+  );
+  when(() => repository.getOpdSummaryCounts()).thenAnswer(
+    (_) async => const Result<OpdFlowAggregateCounts>.success(
+      OpdFlowAggregateCounts(),
     ),
   );
   when(
