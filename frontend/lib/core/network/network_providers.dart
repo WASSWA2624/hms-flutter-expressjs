@@ -53,7 +53,9 @@ final publicApiClientProvider = Provider<ApiClient>((ref) {
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  final tokenProvider = ref.watch(sessionTokenProvider);
+  // Use read (not watch) to avoid a circular provider chain:
+  // sessionTokenProvider -> authRepositoryProvider -> apiClientProvider -> dioProvider.
+  final tokenProvider = ref.read(sessionTokenProvider);
   final csrfDio = Dio(_dioBaseOptions(config));
   configureDioAdapter(csrfDio);
 
