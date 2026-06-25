@@ -72,7 +72,7 @@ describe('Triage Controller', () => {
     );
     expect(sendPaginated).toHaveBeenCalledWith(
       res,
-      'Triage queue loaded successfully.',
+      'messages.triage.queue.success',
       result.items,
       result.pagination
     );
@@ -96,7 +96,7 @@ describe('Triage Controller', () => {
         user_agent: 'Jest Agent'
       })
     );
-    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'Triage case loaded successfully.', flow);
+    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.triage.get.success', flow);
   });
 
   it('records vitals through the triage service', async () => {
@@ -112,7 +112,7 @@ describe('Triage Controller', () => {
     await recordVitals(req, res);
 
     expect(triageService.recordVitals).toHaveBeenCalledWith('ENC-1', body, expect.any(Object));
-    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'Triage vitals saved successfully.', flow);
+    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.triage.record_vitals.success', flow);
   });
 
   it('assigns provider through the triage service', async () => {
@@ -125,7 +125,7 @@ describe('Triage Controller', () => {
     await assignProvider(req, res);
 
     expect(triageService.assignProvider).toHaveBeenCalledWith('ENC-1', body, expect.any(Object));
-    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'Triage provider assigned successfully.', flow);
+    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.triage.assign_provider.success', flow);
   });
 
   it('routes a triage case through the triage service', async () => {
@@ -138,7 +138,7 @@ describe('Triage Controller', () => {
     await routeFromTriage(req, res);
 
     expect(triageService.routeFromTriage).toHaveBeenCalledWith('ENC-1', body, expect.any(Object));
-    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'Triage route saved successfully.', flow);
+    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.triage.route.success', flow);
   });
 
   it('corrects triage stage through the triage service', async () => {
@@ -151,6 +151,6 @@ describe('Triage Controller', () => {
     await correctStage(req, res);
 
     expect(triageService.correctStage).toHaveBeenCalledWith('ENC-1', body, expect.any(Object));
-    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'Triage stage corrected successfully.', flow);
+    expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.triage.correct_stage.success', flow);
   });
 });

@@ -24,6 +24,27 @@ String opdNextStepDisplayLabel(AppLocalizations l10n, String? value) {
       AppDisplay.apiLabel(code);
 }
 
+/// Maps triage priority levels (and their hospital-language aliases) to a
+/// localized, hospital-friendly label so raw enum values never reach the UI.
+String triageLevelDisplayLabel(
+  AppLocalizations l10n,
+  String? value, {
+  bool emptyAsPending = true,
+}) {
+  final String code = (value ?? '').trim().toUpperCase();
+  if (code.isEmpty) {
+    return emptyAsPending ? l10n.opdTriagePendingLabel : '';
+  }
+  return switch (code) {
+    'LEVEL_1' || 'IMMEDIATE' || 'CRITICAL' => l10n.opdTriageLevel1Label,
+    'LEVEL_2' || 'URGENT' || 'HIGH' => l10n.opdTriageLevel2Label,
+    'LEVEL_3' || 'LESS_URGENT' || 'MEDIUM' => l10n.opdTriageLevel3Label,
+    'LEVEL_4' || 'NON_URGENT' || 'LOW' => l10n.opdTriageLevel4Label,
+    'LEVEL_5' || 'ROUTINE' => l10n.opdTriageLevel5Label,
+    _ => AppDisplay.apiLabel(code),
+  };
+}
+
 AppWorkspaceStatusTone opdStageStatusTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' ||

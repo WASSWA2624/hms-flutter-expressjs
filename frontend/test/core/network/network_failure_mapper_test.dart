@@ -176,6 +176,38 @@ void main() {
       expect(cancelledFailure.isRetryable, isFalse);
     });
 
+    test('maps precondition and conflict responses to validation failures', () {
+      final preconditionRequest = RequestOptions(path: '/shift-closes');
+      final conflictRequest = RequestOptions(path: '/shift-closes');
+
+      final preconditionFailure = mapper.map(
+        DioException(
+          requestOptions: preconditionRequest,
+          response: Response<Object?>(
+            requestOptions: preconditionRequest,
+            statusCode: 428,
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+      final conflictFailure = mapper.map(
+        DioException(
+          requestOptions: conflictRequest,
+          response: Response<Object?>(
+            requestOptions: conflictRequest,
+            statusCode: 409,
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(preconditionFailure.category, AppFailureCategory.validation);
+      expect(conflictFailure.category, AppFailureCategory.validation);
+      expect(conflictFailure.statusCode, 409);
+    });
+
     test('maps validation responses without exposing server messages', () {
       final requestOptions = RequestOptions(path: '/example-resources');
       final failure = mapper.map(

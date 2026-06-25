@@ -33,6 +33,7 @@ void main() {
     registerFallbackValue(const BillingApprovalDecisionDraft());
     registerFallbackValue(const BillingClaimActionDraft());
     registerFallbackValue(const BillingLedgerQuery());
+    registerFallbackValue(const BillingCloseDraft());
   });
 
   group('BillingWorkspaceController', () {
@@ -315,6 +316,35 @@ void main() {
 
       expect(failure, isNull);
       verify(() => repository.submitClaim('claim-1', any())).called(1);
+    });
+
+    test('closes shift with empty amounts through the repository', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem invoice = BillingWorkItem(
+        id: 'invoice-1',
+        kind: BillingWorkItemKind.invoice,
+      );
+      BillingCloseDraft? submittedDraft;
+      _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
+      when(() => repository.closeShift(any())).thenAnswer((invocation) async {
+        submittedDraft =
+            invocation.positionalArguments.single as BillingCloseDraft;
+        return const Result<void>.success(null);
+      });
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .closeShift(const BillingCloseDraft());
+
+      expect(failure, isNull);
+      expect(submittedDraft?.submit, isTrue);
+      verify(() => repository.closeShift(any())).called(1);
     });
   });
 }

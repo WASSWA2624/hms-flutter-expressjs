@@ -14,6 +14,11 @@ final billingRepositoryProvider = Provider<BillingRepository>((ref) {
   return BillingRepositoryImpl(apiClient: ref.watch(apiClientProvider));
 });
 
+/// Last-office create mutations require a conditional header per offline policy.
+const Map<String, String> _initialConditionalMutationHeaders = <String, String>{
+  'If-Match': 'W/"1"',
+};
+
 final class BillingRepositoryImpl implements BillingRepository {
   const BillingRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
@@ -220,6 +225,7 @@ final class BillingRepositoryImpl implements BillingRepository {
         'notes': draft.notes,
         'submit': draft.submit,
       }),
+      options: Options(headers: _initialConditionalMutationHeaders),
       decoder: (_) {},
     );
   }
@@ -232,6 +238,7 @@ final class BillingRepositoryImpl implements BillingRepository {
         'notes': draft.notes,
         'submit': draft.submit,
       }),
+      options: Options(headers: _initialConditionalMutationHeaders),
       decoder: (_) {},
     );
   }

@@ -1624,6 +1624,30 @@
   "opdArrivalModeLabel": "Arrival mode",
   "opdEmergencySeverityLabel": "Emergency severity",
   "opdTriageLevelLabel": "Triage level",
+  "opdTriageLevel1Label": "Level 1 \u00b7 Immediate",
+  "@opdTriageLevel1Label": {
+    "description": "Triage priority level 1 (immediate / resuscitation) hospital-language label."
+  },
+  "opdTriageLevel2Label": "Level 2 \u00b7 Urgent",
+  "@opdTriageLevel2Label": {
+    "description": "Triage priority level 2 (urgent / emergent) hospital-language label."
+  },
+  "opdTriageLevel3Label": "Level 3 \u00b7 Less urgent",
+  "@opdTriageLevel3Label": {
+    "description": "Triage priority level 3 (less urgent) hospital-language label."
+  },
+  "opdTriageLevel4Label": "Level 4 \u00b7 Non-urgent",
+  "@opdTriageLevel4Label": {
+    "description": "Triage priority level 4 (non-urgent) hospital-language label."
+  },
+  "opdTriageLevel5Label": "Level 5 \u00b7 Routine",
+  "@opdTriageLevel5Label": {
+    "description": "Triage priority level 5 (routine) hospital-language label."
+  },
+  "opdTriagePendingLabel": "Triage pending",
+  "@opdTriagePendingLabel": {
+    "description": "Label shown when a patient has no triage level assigned yet."
+  },
   "opdChiefComplaintLabel": "Chief complaint",
   "opdEmergencyIndicatorsLabel": "Emergency indicators",
   "opdWorkflowReceptionTitle": "Reception and queue",

@@ -53,7 +53,14 @@ final class NetworkFailureMapper {
       return const AppFailure.unexpectedResponse();
     }
 
-    if (statusCode == 400 || statusCode == 422) {
+    if (statusCode == 400 || statusCode == 422 || statusCode == 428) {
+      return AppFailure.validation(
+        statusCode: statusCode,
+        validationFields: _validationFields(response?.data),
+      );
+    }
+
+    if (statusCode == 409) {
       return AppFailure.validation(
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),

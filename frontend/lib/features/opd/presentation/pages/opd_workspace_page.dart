@@ -2061,7 +2061,11 @@ Widget _opdStatusText(BuildContext context, String? value) {
 }
 
 Widget _opdTriageStatusText(BuildContext context, String? value) {
-  final String label = _apiLabel(value ?? '');
+  final String label = triageLevelDisplayLabel(
+    context.l10n,
+    value,
+    emptyAsPending: false,
+  );
   return AppStatusText(
     label: label.isEmpty ? context.l10n.profileUnknownValue : label,
     tone: appTriageToneForValue(value),

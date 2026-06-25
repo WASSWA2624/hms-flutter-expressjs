@@ -3202,6 +3202,42 @@ abstract class AppLocalizations {
   /// **'Triage level'**
   String get opdTriageLevelLabel;
 
+  /// Triage priority level 1 (immediate / resuscitation) hospital-language label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 1 · Immediate'**
+  String get opdTriageLevel1Label;
+
+  /// Triage priority level 2 (urgent / emergent) hospital-language label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 2 · Urgent'**
+  String get opdTriageLevel2Label;
+
+  /// Triage priority level 3 (less urgent) hospital-language label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 3 · Less urgent'**
+  String get opdTriageLevel3Label;
+
+  /// Triage priority level 4 (non-urgent) hospital-language label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 4 · Non-urgent'**
+  String get opdTriageLevel4Label;
+
+  /// Triage priority level 5 (routine) hospital-language label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 5 · Routine'**
+  String get opdTriageLevel5Label;
+
+  /// Label shown when a patient has no triage level assigned yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage pending'**
+  String get opdTriagePendingLabel;
+
   /// Chief complaint field label.
   ///
   /// In en, this message translates to:

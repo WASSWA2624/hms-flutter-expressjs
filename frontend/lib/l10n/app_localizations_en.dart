@@ -1628,6 +1628,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdTriageLevelLabel => 'Triage level';
 
   @override
+  String get opdTriageLevel1Label => 'Level 1 · Immediate';
+
+  @override
+  String get opdTriageLevel2Label => 'Level 2 · Urgent';
+
+  @override
+  String get opdTriageLevel3Label => 'Level 3 · Less urgent';
+
+  @override
+  String get opdTriageLevel4Label => 'Level 4 · Non-urgent';
+
+  @override
+  String get opdTriageLevel5Label => 'Level 5 · Routine';
+
+  @override
+  String get opdTriagePendingLabel => 'Triage pending';
+
+  @override
   String get opdChiefComplaintLabel => 'Chief complaint';
 
   @override

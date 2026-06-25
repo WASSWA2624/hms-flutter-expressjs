@@ -56,32 +56,32 @@ const listTriageQueue = asyncHandler(async (req, res) => {
     order
   );
 
-  return sendPaginated(res, 'Triage queue loaded successfully.', result.items, result.pagination);
+  return sendPaginated(res, 'messages.triage.queue.success', result.items, result.pagination);
 });
 
 const getTriageCase = asyncHandler(async (req, res) => {
   const flow = await triageService.getTriageCase(req.params.id, buildAuditContext(req));
-  return sendSuccess(res, 200, 'Triage case loaded successfully.', flow);
+  return sendSuccess(res, 200, 'messages.triage.get.success', flow);
 });
 
 const recordVitals = asyncHandler(async (req, res) => {
   const flow = await triageService.recordVitals(req.params.id, req.body, buildAuditContext(req));
-  return sendSuccess(res, 200, 'Triage vitals saved successfully.', flow);
+  return sendSuccess(res, 200, 'messages.triage.record_vitals.success', flow);
 });
 
 const assignProvider = asyncHandler(async (req, res) => {
   const flow = await triageService.assignProvider(req.params.id, req.body, buildAuditContext(req));
-  return sendSuccess(res, 200, 'Triage provider assigned successfully.', flow);
+  return sendSuccess(res, 200, 'messages.triage.assign_provider.success', flow);
 });
 
 const routeFromTriage = asyncHandler(async (req, res) => {
   const flow = await triageService.routeFromTriage(req.params.id, req.body, buildAuditContext(req));
-  return sendSuccess(res, 200, 'Triage route saved successfully.', flow);
+  return sendSuccess(res, 200, 'messages.triage.route.success', flow);
 });
 
 const correctStage = asyncHandler(async (req, res) => {
   const flow = await triageService.correctStage(req.params.id, req.body, buildAuditContext(req));
-  return sendSuccess(res, 200, 'Triage stage corrected successfully.', flow);
+  return sendSuccess(res, 200, 'messages.triage.correct_stage.success', flow);
 });
 
 module.exports = {

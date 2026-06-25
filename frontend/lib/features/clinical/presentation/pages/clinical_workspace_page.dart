@@ -23,6 +23,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
@@ -924,12 +925,16 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           : AppWorkspaceStatusTone.success,
     );
     final bool stageRepeatsPrimaryStatus =
-        _apiLabel(handoff.stage ?? '') == primaryStatus.label;
+        opdStageDisplayLabel(l10n, handoff.stage) == primaryStatus.label;
     final List<AppWorkspacePatientContextField> facts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
             label: l10n.opdTriageLevelLabel,
-            value: _apiLabel(handoff.triageLevel ?? ''),
+            value: triageLevelDisplayLabel(
+              l10n,
+              handoff.triageLevel,
+              emptyAsPending: false,
+            ),
             icon: Icons.priority_high_outlined,
             tone: appTriageToneForValue(handoff.triageLevel),
           ),
@@ -946,12 +951,12 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           if (!stageRepeatsPrimaryStatus)
             AppWorkspacePatientContextField(
               label: l10n.opdStageLabel,
-              value: _apiLabel(handoff.stage ?? ''),
+              value: opdStageDisplayLabel(l10n, handoff.stage),
               icon: Icons.timeline_outlined,
             ),
           AppWorkspacePatientContextField(
             label: l10n.opdNextStepColumnLabel,
-            value: _apiLabel(handoff.nextStep ?? ''),
+            value: opdNextStepDisplayLabel(l10n, handoff.nextStep),
             icon: Icons.trending_flat_outlined,
           ),
           AppWorkspacePatientContextField(

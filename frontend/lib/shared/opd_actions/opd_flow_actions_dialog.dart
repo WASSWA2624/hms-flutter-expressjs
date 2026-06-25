@@ -1585,7 +1585,7 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
           '${opdStageDisplayLabel(l10n, flow.displayCode ?? flow.stage)}',
       '${l10n.opdNextStepColumnLabel}: '
           '${opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep)}',
-      '${l10n.opdTriageLevelLabel}: ${_apiLabel(flow.triageLevel ?? '')}',
+      '${l10n.opdTriageLevelLabel}: ${triageLevelDisplayLabel(l10n, flow.triageLevel, emptyAsPending: false)}',
       '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
       if (_isNonEmpty(flow.chiefComplaint))
         '${l10n.opdChiefComplaintLabel}: ${flow.chiefComplaint}',
@@ -1842,7 +1842,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
           enabled: !_isSaving,
           onChanged: (String? value) => setState(() => _triageLevel = value),
-          options: _triageLevelFieldOptions(),
+          options: _triageLevelFieldOptions(l10n),
         ),
         AppTriageDecisionField(
           value: _routeDecision ?? _opdNoRouteDecisionValue,
@@ -2437,7 +2437,11 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
       ),
       AppInfoTileData(
         label: l10n.opdTriageLevelLabel,
-        value: _apiLabel(flow.triageLevel ?? ''),
+        value: triageLevelDisplayLabel(
+          l10n,
+          flow.triageLevel,
+          emptyAsPending: false,
+        ),
       ),
       AppInfoTileData(
         label: l10n.opdRouteDecisionLabel,
@@ -2455,7 +2459,7 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
       statuses: <AppWorkspaceStatus>[
         if (_isNonEmpty(flow.triageLevel))
           AppWorkspaceStatus(
-            label: _apiLabel(flow.triageLevel!),
+            label: triageLevelDisplayLabel(l10n, flow.triageLevel),
             tone: appTriageToneForValue(flow.triageLevel),
             icon: appTriageIconForValue(flow.triageLevel),
           ),
@@ -2528,12 +2532,12 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
   ];
 }
 
-List<AppTriageOption> _triageLevelFieldOptions() {
+List<AppTriageOption> _triageLevelFieldOptions(AppLocalizations l10n) {
   return <AppTriageOption>[
     for (final String value in _triageLevelOptions)
       AppTriageOption(
         value: value,
-        label: _apiLabel(value),
+        label: triageLevelDisplayLabel(l10n, value, emptyAsPending: false),
         tone: appTriageToneForValue(value),
         icon: appTriageIconForValue(value),
       ),
