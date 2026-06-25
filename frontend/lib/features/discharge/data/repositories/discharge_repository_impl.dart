@@ -153,6 +153,20 @@ final class DischargeRepositoryImpl implements DischargeRepository {
   }
 
   @override
+  Future<Result<void>> updateDischargeClearance(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(HmsApiResource.ipdFlows, admissionId, <String>[
+        'update-discharge-clearance',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> createFinalInvoice(Map<String, Object?> payload) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.invoices),

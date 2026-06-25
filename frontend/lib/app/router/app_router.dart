@@ -284,7 +284,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.discharge.path,
             name: AppRoutes.discharge.name,
-            builder: (_, _) => const DischargeWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return DischargeWorkspacePage(
+                initialQuery: DischargeWorklistQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.mortuary.path,

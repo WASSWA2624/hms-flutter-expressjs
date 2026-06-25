@@ -493,6 +493,7 @@ final class IpdAdmissionSummary {
     this.admittedAt,
     this.dischargedAt,
     this.dischargeStatus,
+    this.clearancePhase,
     this.admissionStatus,
     this.icuStatus,
     this.hasCriticalAlert = false,
@@ -518,6 +519,7 @@ final class IpdAdmissionSummary {
   final DateTime? admittedAt;
   final DateTime? dischargedAt;
   final String? dischargeStatus;
+  final String? clearancePhase;
   final String? admissionStatus;
   final String? icuStatus;
   final bool hasCriticalAlert;
@@ -585,6 +587,7 @@ final class IpdAdmissionSummary {
     String? bedId,
     String? bedDisplayLabel,
     String? dischargeStatus,
+    String? clearancePhase,
     String? admissionStatus,
     String? icuStatus,
     bool? hasCriticalAlert,
@@ -608,6 +611,7 @@ final class IpdAdmissionSummary {
       admittedAt: admittedAt,
       dischargedAt: dischargedAt,
       dischargeStatus: dischargeStatus ?? this.dischargeStatus,
+      clearancePhase: clearancePhase ?? this.clearancePhase,
       admissionStatus: admissionStatus ?? this.admissionStatus,
       icuStatus: icuStatus ?? this.icuStatus,
       hasCriticalAlert: hasCriticalAlert ?? this.hasCriticalAlert,

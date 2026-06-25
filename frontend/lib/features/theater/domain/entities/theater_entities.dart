@@ -371,7 +371,8 @@ int compareTheaterScheduleEncounters(
   if (byPriority != 0) {
     return byPriority;
   }
-  final DateTime leftAt = left.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final DateTime leftAt =
+      left.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   final DateTime rightAt =
       right.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   return rightAt.compareTo(leftAt);

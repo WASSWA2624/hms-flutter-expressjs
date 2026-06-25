@@ -64,24 +64,16 @@ void main() {
         type: 'OPD',
       );
 
-      expect(
-        compareTheaterScheduleEncounters(emergency, opd),
-        lessThan(0),
-      );
+      expect(compareTheaterScheduleEncounters(emergency, opd), lessThan(0));
     });
   });
 
   group('TheaterScheduleEmergencyCase', () {
     test('isOpen recognizes active emergency statuses', () {
-      const TheaterScheduleEmergencyCase openCase = TheaterScheduleEmergencyCase(
-        id: 'EMC-1',
-        status: 'OPEN',
-      );
+      const TheaterScheduleEmergencyCase openCase =
+          TheaterScheduleEmergencyCase(id: 'EMC-1', status: 'OPEN');
       const TheaterScheduleEmergencyCase closedCase =
-          TheaterScheduleEmergencyCase(
-        id: 'EMC-2',
-        status: 'CLOSED',
-      );
+          TheaterScheduleEmergencyCase(id: 'EMC-2', status: 'CLOSED');
 
       expect(openCase.isOpen, isTrue);
       expect(closedCase.isOpen, isFalse);

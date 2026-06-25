@@ -2,6 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+const Set<DischargeClearanceCode> _nonBlockingClearanceCodes =
+    <DischargeClearanceCode>{
+      DischargeClearanceCode.bedRelease,
+      DischargeClearanceCode.insurance,
+      DischargeClearanceCode.housekeeping,
+    };
+
 enum DischargeStatusFilter {
   all,
   planned,
@@ -33,21 +40,58 @@ final class DischargeWorklistQuery {
     this.search = '',
     this.status = DischargeStatusFilter.all,
     this.pageRequest = const AppPageRequest(pageSize: 12),
+    this.focusAdmissionId,
   });
 
   final String search;
   final DischargeStatusFilter status;
   final AppPageRequest pageRequest;
 
+  /// Deep-link target: pre-select this admission (display id or uuid).
+  final String? focusAdmissionId;
+
+  factory DischargeWorklistQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String? pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final String? admissionId = pick(<String>[
+      'id',
+      'admission',
+      'admissionId',
+      'admission_id',
+    ]);
+    return DischargeWorklistQuery(
+      search: admissionId ?? pick(<String>['search', 'q']) ?? '',
+      focusAdmissionId: admissionId,
+    );
+  }
+
+  bool get hasRouteTargeting {
+    return search.trim().isNotEmpty || focusAdmissionId != null;
+  }
+
   DischargeWorklistQuery copyWith({
     String? search,
     DischargeStatusFilter? status,
     AppPageRequest? pageRequest,
+    String? focusAdmissionId,
+    bool clearFocus = false,
   }) {
     return DischargeWorklistQuery(
       search: search ?? this.search,
       status: status ?? this.status,
       pageRequest: pageRequest ?? this.pageRequest,
+      focusAdmissionId: clearFocus
+          ? null
+          : focusAdmissionId ?? this.focusAdmissionId,
     );
   }
 }
@@ -194,6 +238,41 @@ final class DischargeAdmissionDetail {
     return !pharmacyDataUnavailable && !hasOpenPharmacyOrders;
   }
 
+  IpdDischargeClearance get effectiveClearance {
+    final IpdDischargeSummary? discharge = latestDischargeSummary;
+    final IpdDischargeClearance backend =
+        discharge?.clearance ?? const IpdDischargeClearance();
+    final bool pendingOrdersReviewed =
+        backend.pendingOrdersReviewed || ipd.pendingDischargeOrders.isEmpty;
+
+    return IpdDischargeClearance(
+      summaryReady: hasSummary || backend.summaryReady,
+      pendingOrdersReviewed: pendingOrdersReviewed,
+      pharmacyCleared: hasPharmacyClearance || backend.pharmacyCleared,
+      billingCleared: hasBillingClearance || backend.billingCleared,
+      nursingCleared: hasNursingClearance || backend.nursingCleared,
+      documentsReady: hasDocumentOutput || backend.documentsReady,
+      patientExited: backend.patientExited,
+      overrideReason: backend.overrideReason,
+    );
+  }
+
+  bool get isClearanceComplete => effectiveClearance.isComplete;
+
+  Map<String, Object?> buildSyncClearancePayload({String? overrideReason}) {
+    final IpdDischargeClearance clearance = effectiveClearance;
+    return IpdDischargeClearance(
+      summaryReady: clearance.summaryReady,
+      pendingOrdersReviewed: clearance.pendingOrdersReviewed,
+      pharmacyCleared: clearance.pharmacyCleared,
+      billingCleared: clearance.billingCleared,
+      nursingCleared: clearance.nursingCleared,
+      documentsReady: clearance.documentsReady,
+      patientExited: true,
+      overrideReason: overrideReason ?? clearance.overrideReason,
+    ).toPayload();
+  }
+
   bool get hasDocumentOutput {
     return hasSummary;
   }
@@ -204,10 +283,12 @@ final class DischargeAdmissionDetail {
   }
 
   List<DischargeClearanceItem> get clearanceItems {
+    final IpdDischargeClearance clearance = effectiveClearance;
+
     return <DischargeClearanceItem>[
       DischargeClearanceItem(
         code: DischargeClearanceCode.doctor,
-        state: hasSummary
+        state: clearance.summaryReady
             ? DischargeClearanceState.complete
             : DischargeClearanceState.pending,
         reference: latestDischargeSummary?.id,
@@ -215,7 +296,7 @@ final class DischargeAdmissionDetail {
       ),
       DischargeClearanceItem(
         code: DischargeClearanceCode.nursing,
-        state: hasNursingClearance
+        state: clearance.nursingCleared
             ? DischargeClearanceState.complete
             : DischargeClearanceState.pending,
         reference: ipd.nursingNotes.isEmpty ? null : ipd.nursingNotes.first.id,
@@ -227,7 +308,7 @@ final class DischargeAdmissionDetail {
         code: DischargeClearanceCode.pharmacy,
         state: pharmacyDataUnavailable
             ? DischargeClearanceState.unavailable
-            : hasPharmacyClearance
+            : clearance.pharmacyCleared
             ? DischargeClearanceState.complete
             : DischargeClearanceState.pending,
         reference: pharmacyOrders.isEmpty ? null : pharmacyOrders.first.id,
@@ -239,7 +320,7 @@ final class DischargeAdmissionDetail {
         code: DischargeClearanceCode.billing,
         state: billingDataUnavailable
             ? DischargeClearanceState.unavailable
-            : hasBillingClearance
+            : clearance.billingCleared
             ? DischargeClearanceState.complete
             : DischargeClearanceState.pending,
         reference: invoices.isEmpty ? null : invoices.first.id,
@@ -253,7 +334,7 @@ final class DischargeAdmissionDetail {
       ),
       DischargeClearanceItem(
         code: DischargeClearanceCode.documents,
-        state: hasDocumentOutput
+        state: clearance.documentsReady
             ? DischargeClearanceState.complete
             : DischargeClearanceState.pending,
         reference: latestDischargeSummary?.id,
@@ -267,9 +348,11 @@ final class DischargeAdmissionDetail {
         reference: ipd.activeBedAssignment?.id,
         updatedAt: ipd.activeBedAssignment?.releasedAt,
       ),
-      const DischargeClearanceItem(
+      DischargeClearanceItem(
         code: DischargeClearanceCode.housekeeping,
-        state: DischargeClearanceState.unavailable,
+        state: hasBedReleased
+            ? DischargeClearanceState.complete
+            : DischargeClearanceState.unavailable,
       ),
     ];
   }
@@ -277,11 +360,10 @@ final class DischargeAdmissionDetail {
   List<DischargeClearanceItem> get blockingItems {
     return clearanceItems
         .where((DischargeClearanceItem item) {
-          if (item.code == DischargeClearanceCode.bedRelease) {
+          if (_nonBlockingClearanceCodes.contains(item.code)) {
             return false;
           }
-          return item.state == DischargeClearanceState.pending ||
-              item.state == DischargeClearanceState.unavailable;
+          return item.state == DischargeClearanceState.pending;
         })
         .toList(growable: false);
   }
@@ -350,9 +432,30 @@ final class DischargeWorkspaceState {
     }).length;
   }
 
+  int get pharmacyPendingCount {
+    return queue.items.where((IpdAdmissionSummary item) {
+      return matchesDischargeStatus(
+        item,
+        DischargeStatusFilter.pharmacyPending,
+      );
+    }).length;
+  }
+
+  int get billingPendingCount {
+    return queue.items.where((IpdAdmissionSummary item) {
+      return matchesDischargeStatus(item, DischargeStatusFilter.billingPending);
+    }).length;
+  }
+
+  int get nursingPendingCount {
+    return queue.items.where((IpdAdmissionSummary item) {
+      return matchesDischargeStatus(item, DischargeStatusFilter.nursingPending);
+    }).length;
+  }
+
   int get documentsReadyCount {
     return queue.items.where((IpdAdmissionSummary item) {
-      return isPlannedDischarge(item) || isCompletedDischarge(item);
+      return matchesDischargeStatus(item, DischargeStatusFilter.documentsReady);
     }).length;
   }
 
@@ -417,15 +520,55 @@ bool matchesDischargeStatus(
   return switch (status) {
     DischargeStatusFilter.all => true,
     DischargeStatusFilter.completed => isCompletedDischarge(item),
-    DischargeStatusFilter.planned ||
-    DischargeStatusFilter.pharmacyPending ||
-    DischargeStatusFilter.nursingPending ||
-    DischargeStatusFilter.billingPending ||
-    DischargeStatusFilter.insurancePending ||
-    DischargeStatusFilter.documentsReady => isPlannedDischarge(item),
+    DischargeStatusFilter.planned => isPlannedDischarge(item),
     DischargeStatusFilter.summaryPending =>
       !isCompletedDischarge(item) && !isPlannedDischarge(item),
+    DischargeStatusFilter.pharmacyPending =>
+      isPlannedDischarge(item) &&
+          _matchesClearancePhase(item.clearancePhase, 'MEDICATION_PENDING'),
+    DischargeStatusFilter.billingPending =>
+      isPlannedDischarge(item) &&
+          _matchesClearancePhase(item.clearancePhase, 'BILLING_PENDING'),
+    DischargeStatusFilter.nursingPending =>
+      isPlannedDischarge(item) &&
+          _matchesClearancePhase(
+            item.clearancePhase,
+            'NURSING_CLEARANCE_PENDING',
+          ),
+    DischargeStatusFilter.insurancePending =>
+      isPlannedDischarge(item) &&
+          _matchesClearancePhase(item.clearancePhase, 'BILLING_PENDING'),
+    DischargeStatusFilter.documentsReady =>
+      isPlannedDischarge(item) &&
+          _matchesClearancePhase(
+            item.clearancePhase,
+            'DOCUMENTS_PENDING',
+            'READY_FOR_EXIT',
+            'PATIENT_EXIT_PENDING',
+          ),
   };
+}
+
+bool _matchesClearancePhase(
+  String? phase,
+  String first, [
+  String? second,
+  String? third,
+]) {
+  final String normalized = (phase ?? '').toUpperCase();
+  if (normalized.isEmpty) {
+    return false;
+  }
+  if (normalized == first.toUpperCase()) {
+    return true;
+  }
+  if (second != null && normalized == second.toUpperCase()) {
+    return true;
+  }
+  if (third != null && normalized == third.toUpperCase()) {
+    return true;
+  }
+  return false;
 }
 
 String? serverStageForDischargeStatus(DischargeStatusFilter status) {

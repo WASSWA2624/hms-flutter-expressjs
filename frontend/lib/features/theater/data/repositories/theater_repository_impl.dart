@@ -206,9 +206,8 @@ final class TheaterRepositoryImpl implements TheaterRepository {
   }
 
   @override
-  Future<Result<List<TheaterScheduleEmergencyCase>>> searchScheduleEmergencyCases(
-    String patientId,
-  ) {
+  Future<Result<List<TheaterScheduleEmergencyCase>>>
+  searchScheduleEmergencyCases(String patientId) {
     return _apiClient.get<List<TheaterScheduleEmergencyCase>>(
       ApiEndpoints.collection(HmsApiResource.emergencyCases),
       queryParameters: _withoutEmpty(<String, Object?>{
@@ -219,10 +218,11 @@ final class TheaterRepositoryImpl implements TheaterRepository {
         'order': 'desc',
       }),
       decoder: (Object? data) {
-        final List<EmergencyCaseSummary> items = EmergencyCasePageDto.fromResponse(
-          data,
-          const AppPageRequest(),
-        ).page.items;
+        final List<EmergencyCaseSummary> items =
+            EmergencyCasePageDto.fromResponse(
+              data,
+              const AppPageRequest(),
+            ).page.items;
         return items
             .where((EmergencyCaseSummary item) => item.isOpen)
             .map(_mapScheduleEmergencyCase)

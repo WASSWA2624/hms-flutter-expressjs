@@ -1877,6 +1877,8 @@ const toQueueCardDto = (snapshot) => {
     admitted_at: publicSnapshot?.admission?.admitted_at || null,
     discharged_at: publicSnapshot?.admission?.discharged_at || null,
     discharge_status: publicSnapshot?.latest_discharge_summary?.status || null,
+    clearance_phase:
+      publicSnapshot?.latest_discharge_summary?.clearance_phase || null,
     flow_summary: publicSnapshot.flow_summary,
     admission_status: publicSnapshot?.admission?.status || null,
     icu_status: publicSnapshot?.icu_status || null,

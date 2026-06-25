@@ -67,9 +67,8 @@ abstract interface class TheaterRepository {
     String patientId,
   );
 
-  Future<Result<List<TheaterScheduleEmergencyCase>>> searchScheduleEmergencyCases(
-    String patientId,
-  );
+  Future<Result<List<TheaterScheduleEmergencyCase>>>
+  searchScheduleEmergencyCases(String patientId);
 
   Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query);
 

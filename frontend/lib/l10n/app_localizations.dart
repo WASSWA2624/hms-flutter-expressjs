@@ -12742,6 +12742,78 @@ abstract class AppLocalizations {
   /// **'Discharge workflow updated.'**
   String get dischargeSavedMessage;
 
+  /// Action to open the multi-step discharge clearance dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage clearance'**
+  String get dischargeManageClearanceAction;
+
+  /// Title for the discharge clearance management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge clearance'**
+  String get dischargeManageClearanceTitle;
+
+  /// Action to persist discharge clearance progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Save clearance'**
+  String get dischargeSaveClearanceAction;
+
+  /// Section title for pending orders blocking discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending clinical orders'**
+  String get dischargePendingOrdersTitle;
+
+  /// Section description for pending discharge orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Review lab, radiology, medication, and nursing orders before finalizing discharge.'**
+  String get dischargePendingOrdersBody;
+
+  /// Section title for cross-module navigation links.
+  ///
+  /// In en, this message translates to:
+  /// **'Related workspaces'**
+  String get dischargeCrossModuleLinksTitle;
+
+  /// Section description for cross-module navigation links.
+  ///
+  /// In en, this message translates to:
+  /// **'Open billing, pharmacy, nursing, IPD, or housekeeping with this admission context.'**
+  String get dischargeCrossModuleLinksBody;
+
+  /// Link to open the IPD workspace for this admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Open IPD'**
+  String get dischargeOpenIpdAction;
+
+  /// Link to open the nursing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open nursing'**
+  String get dischargeOpenNursingAction;
+
+  /// Link to open the pharmacy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open pharmacy'**
+  String get dischargeOpenPharmacyAction;
+
+  /// Link to open the billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open billing'**
+  String get dischargeOpenBillingAction;
+
+  /// Link to open the housekeeping workspace after bed release.
+  ///
+  /// In en, this message translates to:
+  /// **'Open housekeeping'**
+  String get dischargeOpenHousekeepingAction;
+
   /// Printable discharge report title.
   ///
   /// In en, this message translates to:

@@ -903,7 +903,8 @@ class TheaterScheduleCaseFormState
       if (_selectedSurgeonId != null) 'surgeon_user_id': _selectedSurgeonId,
       if (_selectedAnesthetistId != null)
         'anesthetist_user_id': _selectedAnesthetistId,
-      if (!widget.rescheduleOnly && sourceKind != null) 'source_kind': sourceKind,
+      if (!widget.rescheduleOnly && sourceKind != null)
+        'source_kind': sourceKind,
       if (!widget.rescheduleOnly && _selectedEmergencyCaseId != null)
         'emergency_case_id': _selectedEmergencyCaseId,
       if (!widget.rescheduleOnly && procedureName != null)

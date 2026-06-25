@@ -27,6 +27,12 @@ final class DischargeWorkspaceController
       onRefresh: (_) => _syncFromRealtime(),
     );
     const DischargeWorklistQuery query = DischargeWorklistQuery();
+    return _loadWorkspace(query);
+  }
+
+  Future<Result<DischargeWorkspaceState>> _loadWorkspace(
+    DischargeWorklistQuery query,
+  ) async {
     final Result<AppPage<IpdAdmissionSummary>> queueResult = await _repository
         .listQueue(query);
 
@@ -50,6 +56,88 @@ final class DischargeWorkspaceController
       },
       failure: (AppFailure failure) async {
         return Result<DischargeWorkspaceState>.failure(failure);
+      },
+    );
+  }
+
+  Future<AppFailure?> applyBoardQuery(DischargeWorklistQuery query) async {
+    _emit(
+      DischargeWorkspaceState(
+        query: query.copyWith(pageRequest: query.pageRequest.first()),
+        queue: const AppPage<IpdAdmissionSummary>(
+          items: <IpdAdmissionSummary>[],
+          request: AppPageRequest(pageSize: 12),
+        ),
+        isRefreshing: true,
+      ),
+    );
+    final Result<DischargeWorkspaceState> result = await _loadWorkspace(query);
+    return result.when(
+      success: (DischargeWorkspaceState state) {
+        _emit(state);
+        return null;
+      },
+      failure: (AppFailure failure) {
+        _emit(
+          _currentState?.copyWith(isRefreshing: false, lastFailure: failure) ??
+              DischargeWorkspaceState(
+                query: query,
+                queue: const AppPage<IpdAdmissionSummary>(
+                  items: <IpdAdmissionSummary>[],
+                  request: AppPageRequest(pageSize: 12),
+                ),
+                lastFailure: failure,
+              ),
+        );
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> selectAdmissionByDisplayId(String displayId) async {
+    final DischargeWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    final String needle = displayId.trim();
+    if (needle.isEmpty) {
+      return AppFailure.validation(validationFields: <String>{'admission_id'});
+    }
+
+    IpdAdmissionSummary? match;
+    for (final IpdAdmissionSummary item in current.queue.items) {
+      if (item.displayId == needle || item.id == needle) {
+        match = item;
+        break;
+      }
+    }
+
+    if (match != null) {
+      return selectAdmission(match);
+    }
+
+    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    final Result<DischargeAdmissionDetail> result = await _repository
+        .getAdmissionDetail(needle);
+    return result.when(
+      success: (DischargeAdmissionDetail detail) {
+        _emit(
+          _currentState!.copyWith(
+            selectedDetail: detail,
+            isRefreshingDetail: false,
+          ),
+        );
+        return null;
+      },
+      failure: (AppFailure failure) {
+        _emit(
+          _currentState!.copyWith(
+            isRefreshingDetail: false,
+            lastFailure: failure,
+          ),
+        );
+        return failure;
       },
     );
   }
@@ -177,26 +265,48 @@ final class DischargeWorkspaceController
     });
   }
 
-  Future<AppFailure?> completeDischarge({String? summary}) {
+  Future<AppFailure?> completeDischarge({
+    String? summary,
+    String? overrideReason,
+  }) {
     final String? normalizedSummary = _nonEmpty(summary);
-    return _submitSelectedAction((DischargeAdmissionDetail detail) {
+    return _submitSelectedAction((DischargeAdmissionDetail detail) async {
       if (detail.blockingItems.isNotEmpty) {
-        return Future<Result<void>>.value(
-          Result<void>.failure(
-            AppFailure.validation(
-              validationFields: detail.blockingItems
-                  .map((DischargeClearanceItem item) => item.code.name)
-                  .toSet(),
-            ),
+        return Result<void>.failure(
+          AppFailure.validation(
+            validationFields: detail.blockingItems
+                .map((DischargeClearanceItem item) => item.code.name)
+                .toSet(),
           ),
         );
       }
 
-      return _repository
-          .finalizeDischarge(detail.summary.apiId, <String, Object?>{
-            'summary': normalizedSummary ?? detail.summaryText,
-            'discharged_at': DateTime.now().toUtc().toIso8601String(),
-          });
+      final Result<void> clearanceResult = await _repository
+          .updateDischargeClearance(
+            detail.summary.apiId,
+            detail.buildSyncClearancePayload(overrideReason: overrideReason),
+          );
+      return clearanceResult.when(
+        success: (_) => _repository
+            .finalizeDischarge(detail.summary.apiId, <String, Object?>{
+              'summary': normalizedSummary ?? detail.summaryText,
+              'discharged_at': DateTime.now().toUtc().toIso8601String(),
+              if (_nonEmpty(overrideReason) != null)
+                'override_reason': overrideReason!.trim(),
+            }),
+        failure: (AppFailure failure) => Result<void>.failure(failure),
+      );
+    });
+  }
+
+  Future<AppFailure?> updateDischargeClearance(
+    IpdDischargeClearance clearance,
+  ) {
+    return _submitSelectedAction((DischargeAdmissionDetail detail) {
+      return _repository.updateDischargeClearance(
+        detail.summary.apiId,
+        clearance.toPayload(),
+      );
     });
   }
 

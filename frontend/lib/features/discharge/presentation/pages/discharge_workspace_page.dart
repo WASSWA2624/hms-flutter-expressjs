@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -20,11 +23,69 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
-class DischargeWorkspacePage extends ConsumerWidget {
-  const DischargeWorkspacePage({super.key});
+class DischargeWorkspacePage extends ConsumerStatefulWidget {
+  const DischargeWorkspacePage({super.key, this.initialQuery});
+
+  final DischargeWorklistQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DischargeWorkspacePage> createState() =>
+      _DischargeWorkspacePageState();
+}
+
+class _DischargeWorkspacePageState
+    extends ConsumerState<DischargeWorkspacePage> {
+  bool _deepLinkHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleDeepLink();
+  }
+
+  void _scheduleDeepLink() {
+    final DischargeWorklistQuery? query = widget.initialQuery;
+    if (query == null || !query.hasRouteTargeting || _deepLinkHandled) {
+      return;
+    }
+    _deepLinkHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleDeepLink(query));
+    });
+  }
+
+  Future<void> _handleDeepLink(DischargeWorklistQuery query) async {
+    final DischargeWorkspaceController controller = ref.read(
+      dischargeWorkspaceControllerProvider.notifier,
+    );
+    if (query.focusAdmissionId == null && query.search.isNotEmpty) {
+      await controller.applyBoardQuery(query);
+    }
+    final String? focusId = query.focusAdmissionId?.trim();
+    if (focusId == null || focusId.isEmpty) {
+      return;
+    }
+    final AppFailure? failure = await controller.selectAdmissionByDisplayId(
+      focusId,
+    );
+    if (!mounted || failure != null) {
+      return;
+    }
+    final DischargeWorkspaceState? state = _readDischargeState(ref);
+    final DischargeAdmissionDetail? detail = state?.selectedDetail;
+    if (detail == null) {
+      return;
+    }
+    await _openDischargeDetailDialog(
+      context,
+      ref,
+      state!,
+      detail.summary,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<Result<DischargeWorkspaceState>> value = ref.watch(
       dischargeWorkspaceControllerProvider,
     );
@@ -175,6 +236,46 @@ class _DischargeWorkspaceContentState
             tone: AppWorkspaceStatusTone.warning,
             onPressed: () =>
                 controller.applyStatus(DischargeStatusFilter.summaryPending),
+          ),
+        if (state.pharmacyPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeStatusPharmacyPending,
+            value: state.pharmacyPendingCount.toString(),
+            icon: Icons.medication_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.pharmacyPending),
+          ),
+        if (state.billingPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeStatusBillingPending,
+            value: state.billingPendingCount.toString(),
+            icon: Icons.receipt_long_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.billingPending),
+          ),
+        if (state.nursingPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeStatusNursingPending,
+            value: state.nursingPendingCount.toString(),
+            icon: Icons.health_and_safety_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.nursingPending),
+          ),
+        if (state.documentsReadyCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeDocumentsReadySummaryLabel,
+            value: state.documentsReadyCount.toString(),
+            icon: Icons.description_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.documentsReady),
           ),
         if (state.completedCount > 0)
           AppWorkspaceSummaryCard(
@@ -365,8 +466,9 @@ Future<void> _openDischargeDetailDialog(
   BuildContext context,
   WidgetRef ref,
   DischargeWorkspaceState fallbackState,
-  IpdAdmissionSummary admission,
-) async {
+  IpdAdmissionSummary admission, {
+  bool openClearance = false,
+}) async {
   final DischargeWorkspaceController controller = ref.read(
     dischargeWorkspaceControllerProvider.notifier,
   );
@@ -429,6 +531,10 @@ Future<void> _openDischargeDetailDialog(
       ],
     ),
   );
+
+  if (openClearance && context.mounted) {
+    await _openClearanceDialog(context, detail);
+  }
 }
 
 DischargeWorkspaceState? _readDischargeState(WidgetRef ref) {
@@ -484,9 +590,12 @@ class _DischargeDetailContent extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.dischargeEncounterFieldLabel,
-              value: '',
+              value: detail.encounterId ?? detail.summary.encounterId ?? '',
               icon: Icons.assignment_outlined,
-              copyable: true,
+              copyable:
+                  (detail.encounterId ?? detail.summary.encounterId)
+                      ?.isNotEmpty ==
+                  true,
               copyTooltip: l10n.opdCopyEncounterIdAction,
               copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
@@ -514,6 +623,13 @@ class _DischargeDetailContent extends ConsumerWidget {
               onPressed: () => _openPlanDialog(context, controller, detail),
             ),
             AppButton.secondary(
+              label: l10n.dischargeManageClearanceAction,
+              leadingIcon: Icons.fact_check_outlined,
+              isLoading: state.isSaving,
+              enabled: detail.hasSummary && !detail.isCompleted,
+              onPressed: () => _openClearanceDialog(context, detail),
+            ),
+            AppButton.secondary(
               label: l10n.dischargeRequestBillingAction,
               leadingIcon: Icons.receipt_long_outlined,
               isLoading: state.isSaving,
@@ -538,6 +654,12 @@ class _DischargeDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.lg),
+        _CrossModuleLinksSection(detail: detail),
+        SizedBox(height: theme.spacing.lg),
+        if (detail.ipd.pendingDischargeOrders.isNotEmpty) ...<Widget>[
+          _PendingOrdersSection(detail: detail),
+          SizedBox(height: theme.spacing.lg),
+        ],
         _ClearanceChecklist(detail: detail),
         SizedBox(height: theme.spacing.lg),
         _SummarySection(detail: detail),
@@ -564,6 +686,97 @@ class _DischargeDetailContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _PendingOrdersSection extends StatelessWidget {
+  const _PendingOrdersSection({required this.detail});
+
+  final DischargeAdmissionDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargePendingOrdersTitle,
+      description: l10n.dischargePendingOrdersBody,
+      child: Column(
+        children: <Widget>[
+          for (final IpdPendingOrder order in detail.ipd.pendingDischargeOrders)
+            ListTile(
+              leading: const Icon(Icons.pending_actions_outlined),
+              title: Text(order.label ?? order.kind ?? order.id),
+              subtitle: Text(order.status ?? ''),
+              contentPadding: EdgeInsets.zero,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CrossModuleLinksSection extends StatelessWidget {
+  const _CrossModuleLinksSection({required this.detail});
+
+  final DischargeAdmissionDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String admissionId = detail.summary.displayId ?? detail.summary.id;
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.dischargeCrossModuleLinksTitle,
+      description: l10n.dischargeCrossModuleLinksBody,
+      child: Wrap(
+        spacing: theme.spacing.sm,
+        runSpacing: theme.spacing.sm,
+        children: <Widget>[
+          AppButton.tertiary(
+            label: l10n.dischargeOpenIpdAction,
+            leadingIcon: Icons.local_hotel_outlined,
+            onPressed: () => _openLinkedWorkspace(
+              context,
+              admissionId.isEmpty
+                  ? AppRoutes.ipd.path
+                  : AppRoutes.ipd.location(
+                      queryParameters: <String, String>{'id': admissionId},
+                    ),
+            ),
+          ),
+          AppButton.tertiary(
+            label: l10n.dischargeOpenNursingAction,
+            leadingIcon: Icons.health_and_safety_outlined,
+            onPressed: () =>
+                _openLinkedWorkspace(context, AppRoutes.nursing.path),
+          ),
+          AppButton.tertiary(
+            label: l10n.dischargeOpenPharmacyAction,
+            leadingIcon: Icons.medication_outlined,
+            onPressed: () =>
+                _openLinkedWorkspace(context, AppRoutes.pharmacy.path),
+          ),
+          AppButton.tertiary(
+            label: l10n.dischargeOpenBillingAction,
+            leadingIcon: Icons.receipt_long_outlined,
+            onPressed: () =>
+                _openLinkedWorkspace(context, AppRoutes.billing.path),
+          ),
+          AppButton.tertiary(
+            label: l10n.dischargeOpenHousekeepingAction,
+            leadingIcon: Icons.cleaning_services_outlined,
+            onPressed: () =>
+                _openLinkedWorkspace(context, AppRoutes.housekeeping.path),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _openLinkedWorkspace(BuildContext context, String location) {
+  context.go(location);
 }
 
 class _ClearanceChecklist extends StatelessWidget {
@@ -1271,6 +1484,19 @@ class _CompleteDialogState extends State<_CompleteDialog> {
       _failure = failure;
       _isSubmitting = false;
     });
+  }
+}
+
+Future<void> _openClearanceDialog(
+  BuildContext context,
+  DischargeAdmissionDetail detail,
+) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    builder: (_) => DischargeClearanceDialog(detail: detail),
+  );
+  if (context.mounted && saved == true) {
+    _showSaved(context);
   }
 }
 

@@ -63,6 +63,7 @@ final class IpdAdmissionSummaryDto {
       admittedAt: _date(json['admitted_at']),
       dischargedAt: _date(json['discharged_at']),
       dischargeStatus: _string(json['discharge_status']),
+      clearancePhase: _string(json['clearance_phase']),
       admissionStatus:
           _string(json['admission_status']) ??
           _string(flowSummary['admission_status']),
@@ -123,6 +124,9 @@ final class IpdAdmissionDetailDto {
       dischargedAt: _date(admission['discharged_at']),
       dischargeStatus: _string(
         _map(json['latest_discharge_summary'])['status'],
+      ),
+      clearancePhase: _string(
+        _map(json['latest_discharge_summary'])['clearance_phase'],
       ),
       admissionStatus:
           _string(admission['status']) ?? _string(flow['admission_status']),

@@ -162,15 +162,13 @@ void main() {
       final _MockTheaterRepository repository = _MockTheaterRepository();
       const TheaterScheduleEmergencyCase emergencyCase =
           TheaterScheduleEmergencyCase(
-        id: 'EMC-001',
-        displayId: 'EMC-001',
-        status: 'OPEN',
-      );
+            id: 'EMC-001',
+            displayId: 'EMC-001',
+            status: 'OPEN',
+          );
 
       _stubInitialLoad(repository);
-      when(
-        () => repository.searchScheduleEmergencyCases('P-001'),
-      ).thenAnswer(
+      when(() => repository.searchScheduleEmergencyCases('P-001')).thenAnswer(
         (_) async => const Result<List<TheaterScheduleEmergencyCase>>.success(
           <TheaterScheduleEmergencyCase>[emergencyCase],
         ),

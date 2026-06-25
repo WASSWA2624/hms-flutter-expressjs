@@ -6813,6 +6813,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeSavedMessage => 'Discharge workflow updated.';
 
   @override
+  String get dischargeManageClearanceAction => 'Manage clearance';
+
+  @override
+  String get dischargeManageClearanceTitle => 'Discharge clearance';
+
+  @override
+  String get dischargeSaveClearanceAction => 'Save clearance';
+
+  @override
+  String get dischargePendingOrdersTitle => 'Pending clinical orders';
+
+  @override
+  String get dischargePendingOrdersBody =>
+      'Review lab, radiology, medication, and nursing orders before finalizing discharge.';
+
+  @override
+  String get dischargeCrossModuleLinksTitle => 'Related workspaces';
+
+  @override
+  String get dischargeCrossModuleLinksBody =>
+      'Open billing, pharmacy, nursing, IPD, or housekeeping with this admission context.';
+
+  @override
+  String get dischargeOpenIpdAction => 'Open IPD';
+
+  @override
+  String get dischargeOpenNursingAction => 'Open nursing';
+
+  @override
+  String get dischargeOpenPharmacyAction => 'Open pharmacy';
+
+  @override
+  String get dischargeOpenBillingAction => 'Open billing';
+
+  @override
+  String get dischargeOpenHousekeepingAction => 'Open housekeeping';
+
+  @override
   String get dischargeReportTitle => 'Discharge summary';
 
   @override

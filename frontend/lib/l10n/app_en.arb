@@ -8766,6 +8766,54 @@
   "@dischargeSavedMessage": {
     "description": "Snackbar shown after a discharge workflow update succeeds."
   },
+  "dischargeManageClearanceAction": "Manage clearance",
+  "@dischargeManageClearanceAction": {
+    "description": "Action to open the multi-step discharge clearance dialog."
+  },
+  "dischargeManageClearanceTitle": "Discharge clearance",
+  "@dischargeManageClearanceTitle": {
+    "description": "Title for the discharge clearance management dialog."
+  },
+  "dischargeSaveClearanceAction": "Save clearance",
+  "@dischargeSaveClearanceAction": {
+    "description": "Action to persist discharge clearance progress."
+  },
+  "dischargePendingOrdersTitle": "Pending clinical orders",
+  "@dischargePendingOrdersTitle": {
+    "description": "Section title for pending orders blocking discharge."
+  },
+  "dischargePendingOrdersBody": "Review lab, radiology, medication, and nursing orders before finalizing discharge.",
+  "@dischargePendingOrdersBody": {
+    "description": "Section description for pending discharge orders."
+  },
+  "dischargeCrossModuleLinksTitle": "Related workspaces",
+  "@dischargeCrossModuleLinksTitle": {
+    "description": "Section title for cross-module navigation links."
+  },
+  "dischargeCrossModuleLinksBody": "Open billing, pharmacy, nursing, IPD, or housekeeping with this admission context.",
+  "@dischargeCrossModuleLinksBody": {
+    "description": "Section description for cross-module navigation links."
+  },
+  "dischargeOpenIpdAction": "Open IPD",
+  "@dischargeOpenIpdAction": {
+    "description": "Link to open the IPD workspace for this admission."
+  },
+  "dischargeOpenNursingAction": "Open nursing",
+  "@dischargeOpenNursingAction": {
+    "description": "Link to open the nursing workspace."
+  },
+  "dischargeOpenPharmacyAction": "Open pharmacy",
+  "@dischargeOpenPharmacyAction": {
+    "description": "Link to open the pharmacy workspace."
+  },
+  "dischargeOpenBillingAction": "Open billing",
+  "@dischargeOpenBillingAction": {
+    "description": "Link to open the billing workspace."
+  },
+  "dischargeOpenHousekeepingAction": "Open housekeeping",
+  "@dischargeOpenHousekeepingAction": {
+    "description": "Link to open the housekeeping workspace after bed release."
+  },
   "dischargeReportTitle": "Discharge summary",
   "@dischargeReportTitle": {
     "description": "Printable discharge report title."
