@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -27,7 +31,14 @@ import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class NursingWorkspacePage extends ConsumerWidget {
-  const NursingWorkspacePage({super.key});
+  const NursingWorkspacePage({
+    this.initialAdmissionId,
+    this.initialPanel,
+    super.key,
+  });
+
+  final String? initialAdmissionId;
+  final NursingDetailPanel? initialPanel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,16 +57,26 @@ class NursingWorkspacePage extends ConsumerWidget {
         ref.read(nursingWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, NursingWorkspaceState data) {
-        return _NursingWorkspaceContent(state: data);
+        return _NursingWorkspaceContent(
+          state: data,
+          initialAdmissionId: initialAdmissionId,
+          initialPanel: initialPanel,
+        );
       },
     );
   }
 }
 
 class _NursingWorkspaceContent extends ConsumerStatefulWidget {
-  const _NursingWorkspaceContent({required this.state});
+  const _NursingWorkspaceContent({
+    required this.state,
+    this.initialAdmissionId,
+    this.initialPanel,
+  });
 
   final NursingWorkspaceState state;
+  final String? initialAdmissionId;
+  final NursingDetailPanel? initialPanel;
 
   @override
   ConsumerState<_NursingWorkspaceContent> createState() =>
@@ -84,12 +105,62 @@ class _NursingWorkspaceContentState
 
   late final TextEditingController _searchController;
   late AppSearchBarFilterValue _filterValue;
+  bool _deepLinkHandled = false;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
     _filterValue = _filterValueFromQuery(widget.state.query);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleDeepLink());
+  }
+
+  Future<void> _handleDeepLink() async {
+    if (_deepLinkHandled) {
+      return;
+    }
+    _deepLinkHandled = true;
+    final String? id = widget.initialAdmissionId?.trim();
+    if (id == null || id.isEmpty) {
+      return;
+    }
+    final NursingWorkspaceController controller = ref.read(
+      nursingWorkspaceControllerProvider.notifier,
+    );
+    final NursingPatientSummary? summary = await controller
+        .selectPatientByDisplayId(id);
+    if (!mounted || summary == null) {
+      return;
+    }
+    unawaited(
+      showAppDialog<void>(
+        context: context,
+        builder: (BuildContext dialogContext) =>
+            const _NursingPatientDetailDialog(),
+      ),
+    );
+    final NursingDetailPanel? panel = widget.initialPanel;
+    if (panel == null || panel == NursingDetailPanel.checklist) {
+      return;
+    }
+    final NursingPatientDetail? detail = _selectedDetailFromState(
+      ref.read(nursingWorkspaceControllerProvider),
+    );
+    if (detail == null || !mounted) {
+      return;
+    }
+    switch (panel) {
+      case NursingDetailPanel.vitals:
+        await _openVitalsDialog(context);
+      case NursingDetailPanel.medication:
+        await _openMedicationDialog(context, detail);
+      case NursingDetailPanel.handover:
+        await _openHandoverDialog(context);
+      case NursingDetailPanel.discharge:
+        await _openDischargeClearanceDialog(context, detail);
+      case NursingDetailPanel.checklist:
+        break;
+    }
   }
 
   @override
@@ -466,10 +537,7 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingAdmissionColumnLabel,
       sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
-          appListTableCompareText(
-            left.displayId,
-            right.displayId,
-          ),
+          appListTableCompareText(left.displayId, right.displayId),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_admissionLabel(context, item));
       },
@@ -718,11 +786,21 @@ class _NursingActionBar extends ConsumerWidget {
       nursingWorkspaceControllerProvider.notifier,
     );
 
+    final NursingPatientSummary summary = detail.enrichedSummary;
+    final bool icuActive =
+        (summary.icuStatus ?? '').trim().toUpperCase() == 'ACTIVE';
+
     return AppAccessActionGate(
       requirement: _NursingWorkspaceContentState.writeRequirement,
       builder: (BuildContext context, bool isAllowed) => AppActionPanel(
         title: l10n.nursingActionsTitle,
         actions: <AppActionItem>[
+          AppActionItem(
+            label: l10n.nursingActionCreateHandover,
+            leadingIcon: Icons.swap_horiz_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openHandoverDialog(context),
+          ),
           AppActionItem(
             label: l10n.nursingActionRecordVitals,
             leadingIcon: Icons.monitor_heart_outlined,
@@ -748,10 +826,16 @@ class _NursingActionBar extends ConsumerWidget {
             onPressed: () => _openPrescriptionDialog(context, controller),
           ),
           AppActionItem(
-            label: l10n.nursingActionCreateHandover,
-            leadingIcon: Icons.swap_horiz_outlined,
+            label: l10n.nursingActionOrderLab,
+            leadingIcon: Icons.science_outlined,
             enabled: isAllowed,
-            onPressed: () => _openHandoverDialog(context),
+            onPressed: () => _openLabOrderDialog(context, controller),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionOrderRadiology,
+            leadingIcon: Icons.radio_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openRadiologyOrderDialog(context, controller),
           ),
           AppActionItem(
             label: l10n.nursingActionEscalate,
@@ -765,6 +849,18 @@ class _NursingActionBar extends ConsumerWidget {
             enabled: isAllowed && detail.activeTransfer != null,
             onPressed: () => _openTransferDialog(context, detail),
           ),
+          AppActionItem(
+            label: l10n.nursingActionDischargeClearance,
+            leadingIcon: Icons.fact_check_outlined,
+            enabled: isAllowed && summary.isDischargePending,
+            onPressed: () => _openDischargeClearanceDialog(context, detail),
+          ),
+          if (icuActive)
+            AppActionItem(
+              label: l10n.nursingActionOpenIcu,
+              leadingIcon: Icons.monitor_heart_outlined,
+              onPressed: () => _openIcuWorkspace(context, summary),
+            ),
           AppActionItem(
             label: l10n.nursingActionPrintSummary,
             leadingIcon: Icons.print_outlined,
@@ -1562,6 +1658,153 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
   }
 }
 
+class _DischargeClearanceDialog extends ConsumerStatefulWidget {
+  const _DischargeClearanceDialog({required this.detail});
+
+  final NursingPatientDetail detail;
+
+  @override
+  ConsumerState<_DischargeClearanceDialog> createState() =>
+      _DischargeClearanceDialogState();
+}
+
+class _DischargeClearanceDialogState
+    extends ConsumerState<_DischargeClearanceDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _notesController;
+  final Map<String, bool> _checks = <String, bool>{
+    'medication_education': false,
+    'wound_care': false,
+    'follow_up': false,
+    'belongings_returned': false,
+    'identity_band_removed': false,
+  };
+  bool _confirm = false;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.nursingDischargeClearanceTitle),
+      icon: const Icon(Icons.fact_check_outlined),
+      scrollable: true,
+      maxWidth: 640,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            Text(
+              l10n.nursingDischargeClearanceDescription,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            for (final MapEntry<String, String> entry in _clearanceLabels(
+              l10n,
+            ).entries)
+              AppCheckboxField(
+                title: entry.value,
+                value: _checks[entry.key] ?? false,
+                enabled: !_isSaving,
+                onChanged: (bool value) =>
+                    setState(() => _checks[entry.key] = value),
+              ),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.nursingDischargeClearanceNotesLabel,
+              enabled: !_isSaving,
+              maxLines: 4,
+            ),
+            AppCheckboxField(
+              title: l10n.nursingDischargeClearanceConfirmLabel,
+              value: _confirm,
+              enabled: !_isSaving,
+              validator: (bool? value) =>
+                  value == true ? null : l10n.validationRequired,
+              onChanged: (bool value) => setState(() => _confirm = value),
+            ),
+          ],
+        ),
+      ),
+      actions: _dialogActions(
+        context,
+        submitLabel: l10n.nursingActionDischargeClearance,
+        isSaving: _isSaving,
+        onSubmit: _submit,
+      ),
+    );
+  }
+
+  Map<String, String> _clearanceLabels(AppLocalizations l10n) {
+    return <String, String>{
+      'medication_education': l10n.nursingClearanceMedicationEducationLabel,
+      'wound_care': l10n.nursingClearanceWoundCareLabel,
+      'follow_up': l10n.nursingClearanceFollowUpLabel,
+      'belongings_returned': l10n.nursingClearanceBelongingsReturnedLabel,
+      'identity_band_removed': l10n.nursingClearanceIdentityBandLabel,
+    };
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final Map<String, String> labels = _clearanceLabels(l10n);
+    final List<String> completed = <String>[
+      for (final MapEntry<String, bool> entry in _checks.entries)
+        if (entry.value) labels[entry.key] ?? entry.key,
+    ];
+    if (completed.isEmpty) {
+      setState(
+        () => _failure = AppFailure.validation(
+          validationFields: const <String>{'clearance'},
+        ),
+      );
+      return;
+    }
+    final String notes = _notesController.text.trim();
+    final String body = <String>[
+      completed.join(', '),
+      if (notes.isNotEmpty) notes,
+    ].join(' - ');
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(nursingWorkspaceControllerProvider.notifier)
+        .recordDischargeClearance(body);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
 List<Widget> _dialogActions(
   BuildContext context, {
   required String submitLabel,
@@ -1765,6 +2008,213 @@ Future<void> _openAcceptHandoverDialog(
       ),
     ),
   );
+}
+
+Future<void> _openLabOrderDialog(
+  BuildContext context,
+  NursingWorkspaceController controller,
+) async {
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalLabOrderActionDialog(
+        referenceData: referenceData,
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return controller.orderLab(
+                labTestIds: labTestIds,
+                labPanelIds: labPanelIds,
+                billing: billing,
+              );
+            },
+        onUpdate:
+            ({
+              required String labOrderId,
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
+            }) {
+              return controller.orderLab(
+                labTestIds: labTestIds,
+                labPanelIds: labPanelIds,
+                billing: billing,
+              );
+            },
+      ),
+    ),
+  );
+}
+
+Future<void> _openRadiologyOrderDialog(
+  BuildContext context,
+  NursingWorkspaceController controller,
+) async {
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalRadiologyOrderActionDialog(
+        referenceData: referenceData,
+        onSubmit: controller.orderRadiology,
+      ),
+    ),
+  );
+}
+
+Future<void> _openDischargeClearanceDialog(
+  BuildContext context,
+  NursingPatientDetail detail,
+) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _DischargeClearanceDialog(detail: detail),
+    ),
+  );
+}
+
+Future<void> _openAllergiesDialog(BuildContext context) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: context.l10n.nursingActionRecordAllergies,
+        label: context.l10n.nursingAllergiesLabel,
+        submitLabel: context.l10n.nursingActionRecordAllergies,
+        icon: const Icon(Icons.health_and_safety_outlined),
+        onSubmit: (String note) {
+          return ProviderScope.containerOf(context, listen: false)
+              .read(nursingWorkspaceControllerProvider.notifier)
+              .recordAllergies(note);
+        },
+      ),
+    ),
+  );
+}
+
+Future<void> _openBelongingsDialog(BuildContext context) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: context.l10n.nursingActionRecordBelongings,
+        label: context.l10n.nursingBelongingsLabel,
+        submitLabel: context.l10n.nursingActionRecordBelongings,
+        icon: const Icon(Icons.work_outline),
+        onSubmit: (String note) {
+          return ProviderScope.containerOf(context, listen: false)
+              .read(nursingWorkspaceControllerProvider.notifier)
+              .recordBelongings(note);
+        },
+      ),
+    ),
+  );
+}
+
+Future<void> _openNotifyDoctorDialog(BuildContext context) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: context.l10n.nursingActionNotifyDoctor,
+        label: context.l10n.nursingNotifyDoctorLabel,
+        submitLabel: context.l10n.nursingActionNotifyDoctor,
+        icon: const Icon(Icons.contact_phone_outlined),
+        onSubmit: (String note) {
+          return ProviderScope.containerOf(context, listen: false)
+              .read(nursingWorkspaceControllerProvider.notifier)
+              .notifyDoctor(note);
+        },
+      ),
+    ),
+  );
+}
+
+Future<void> _confirmIdentity(BuildContext context) async {
+  final NursingWorkspaceController controller = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(nursingWorkspaceControllerProvider.notifier);
+  final AppFailure? failure = await controller.confirmIdentity();
+  if (!context.mounted) {
+    return;
+  }
+  if (failure != null) {
+    _showFailureIfNeeded(context, failure);
+    return;
+  }
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.nursingSavedMessage)));
+}
+
+Future<void> _openCarePlanDialog(BuildContext context) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: context.l10n.nursingChecklistCarePlanTitle,
+        label: context.l10n.nursingCarePlanLabel,
+        submitLabel: context.l10n.nursingChecklistCarePlanTitle,
+        icon: const Icon(Icons.playlist_add_check_outlined),
+        onSubmit: (String plan) {
+          return ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(nursingWorkspaceControllerProvider.notifier).addCarePlan(plan);
+        },
+      ),
+    ),
+  );
+}
+
+void _openIcuWorkspace(BuildContext context, NursingPatientSummary summary) {
+  final String? displayId = summary.displayId?.trim();
+  final String location = displayId == null || displayId.isEmpty
+      ? AppRoutes.icu.path
+      : '${AppRoutes.icu.path}?id=$displayId';
+  context.go(location);
 }
 
 Future<void> _showActionResult(
@@ -2020,8 +2470,18 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
   final bool handoverReady = detail.handovers.any(
     (NursingHandover item) => item.admissionId == summary.admissionId,
   );
+  final bool identityReady = detail.hasNursingNoteTag(NursingNoteTags.identity);
   final bool vitalsReady = detail.vitalSigns.isNotEmpty;
+  final bool allergiesReady = detail.hasNursingNoteTag(
+    NursingNoteTags.allergies,
+  );
+  final bool belongingsReady = detail.hasNursingNoteTag(
+    NursingNoteTags.belongings,
+  );
   final bool carePlanReady = detail.carePlans.isNotEmpty;
+  final bool doctorNotified = detail.hasNursingNoteTag(
+    NursingNoteTags.doctorNotified,
+  );
   final bool medicationReady = !detail.hasMedicationDue;
   final bool dischargeReady = !summary.isDischargePending;
 
@@ -2041,6 +2501,21 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
           : l10n.nursingChecklistHandoverPendingBody,
       isComplete: handoverReady,
       status: status(handoverReady),
+      actionLabel: handoverReady ? null : l10n.nursingActionCreateHandover,
+      actionIcon: Icons.swap_horiz_outlined,
+      onAction: handoverReady ? null : () => _openHandoverDialog(context),
+    ),
+    AppCareTaskChecklistItem(
+      title: l10n.nursingChecklistIdentityTitle,
+      subtitle: identityReady
+          ? (detail.latestNursingNoteWithTag(NursingNoteTags.identity)?.note ??
+                l10n.nursingChecklistIdentityReadyBody)
+          : l10n.nursingChecklistIdentityPendingBody,
+      isComplete: identityReady,
+      status: status(identityReady),
+      actionLabel: identityReady ? null : l10n.nursingActionConfirmIdentity,
+      actionIcon: Icons.badge_outlined,
+      onAction: identityReady ? null : () => _confirmIdentity(context),
     ),
     AppCareTaskChecklistItem(
       title: l10n.nursingChecklistVitalsTitle,
@@ -2049,6 +2524,35 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
           : l10n.nursingChecklistVitalsPendingBody,
       isComplete: vitalsReady,
       status: status(vitalsReady),
+      actionLabel: vitalsReady ? null : l10n.nursingActionRecordVitals,
+      actionIcon: Icons.monitor_heart_outlined,
+      onAction: vitalsReady ? null : () => _openVitalsDialog(context),
+    ),
+    AppCareTaskChecklistItem(
+      title: l10n.nursingChecklistAllergiesTitle,
+      subtitle: allergiesReady
+          ? (detail.latestNursingNoteWithTag(NursingNoteTags.allergies)?.note ??
+                l10n.nursingChecklistAllergiesReadyBody)
+          : l10n.nursingChecklistAllergiesPendingBody,
+      isComplete: allergiesReady,
+      status: status(allergiesReady),
+      actionLabel: l10n.nursingActionRecordAllergies,
+      actionIcon: Icons.health_and_safety_outlined,
+      onAction: () => _openAllergiesDialog(context),
+    ),
+    AppCareTaskChecklistItem(
+      title: l10n.nursingChecklistBelongingsTitle,
+      subtitle: belongingsReady
+          ? (detail
+                    .latestNursingNoteWithTag(NursingNoteTags.belongings)
+                    ?.note ??
+                l10n.nursingChecklistBelongingsReadyBody)
+          : l10n.nursingChecklistBelongingsPendingBody,
+      isComplete: belongingsReady,
+      status: status(belongingsReady),
+      actionLabel: l10n.nursingActionRecordBelongings,
+      actionIcon: Icons.work_outline,
+      onAction: () => _openBelongingsDialog(context),
     ),
     AppCareTaskChecklistItem(
       title: l10n.nursingChecklistCarePlanTitle,
@@ -2057,6 +2561,23 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
           : l10n.nursingChecklistCarePlanPendingBody,
       isComplete: carePlanReady,
       status: status(carePlanReady),
+      actionLabel: carePlanReady ? null : l10n.nursingChecklistCarePlanTitle,
+      actionIcon: Icons.playlist_add_check_outlined,
+      onAction: carePlanReady ? null : () => _openCarePlanDialog(context),
+    ),
+    AppCareTaskChecklistItem(
+      title: l10n.nursingChecklistDoctorTitle,
+      subtitle: doctorNotified
+          ? (detail
+                    .latestNursingNoteWithTag(NursingNoteTags.doctorNotified)
+                    ?.note ??
+                l10n.nursingChecklistDoctorReadyBody)
+          : l10n.nursingChecklistDoctorPendingBody,
+      isComplete: doctorNotified,
+      status: status(doctorNotified),
+      actionLabel: doctorNotified ? null : l10n.nursingActionNotifyDoctor,
+      actionIcon: Icons.contact_phone_outlined,
+      onAction: doctorNotified ? null : () => _openNotifyDoctorDialog(context),
     ),
     AppCareTaskChecklistItem(
       title: l10n.nursingChecklistMedicationTitle,
@@ -2073,6 +2594,11 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
           : l10n.nursingChecklistDischargePendingBody,
       isComplete: dischargeReady,
       status: status(dischargeReady),
+      actionLabel: dischargeReady ? null : l10n.nursingActionDischargeClearance,
+      actionIcon: Icons.fact_check_outlined,
+      onAction: dischargeReady
+          ? null
+          : () => _openDischargeClearanceDialog(context, detail),
     ),
   ];
 }

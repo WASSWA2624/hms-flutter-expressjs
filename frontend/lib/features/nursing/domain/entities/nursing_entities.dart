@@ -11,6 +11,43 @@ enum NursingQueueScope {
   all,
 }
 
+/// Panels that a deep link (`/nursing?id=...&panel=...`) can focus when the
+/// nursing detail opens.
+enum NursingDetailPanel {
+  checklist,
+  vitals,
+  medication,
+  handover,
+  discharge;
+
+  static NursingDetailPanel? fromValue(String? value) {
+    return switch (value?.trim().toLowerCase()) {
+      'checklist' || 'admission' => NursingDetailPanel.checklist,
+      'vitals' || 'observations' => NursingDetailPanel.vitals,
+      'medication' || 'mar' || 'meds' => NursingDetailPanel.medication,
+      'handover' => NursingDetailPanel.handover,
+      'discharge' || 'clearance' => NursingDetailPanel.discharge,
+      _ => null,
+    };
+  }
+}
+
+/// Structured tags embedded in free-text nursing notes so admission-checklist
+/// steps (identity, allergies, belongings, doctor notification) and discharge
+/// clearance can be tracked until dedicated backend substates exist.
+abstract final class NursingNoteTags {
+  static const String identity = 'IDENTITY_CONFIRMED';
+  static const String allergies = 'ALLERGIES_REVIEWED';
+  static const String belongings = 'BELONGINGS';
+  static const String doctorNotified = 'DOCTOR_NOTIFIED';
+  static const String dischargeClearance = 'DISCHARGE_CLEARANCE';
+
+  static String wrap(String tag, String body) {
+    final String trimmed = body.trim();
+    return trimmed.isEmpty ? '[$tag]' : '[$tag] $trimmed';
+  }
+}
+
 @immutable
 final class NursingWorklistQuery {
   const NursingWorklistQuery({
@@ -644,6 +681,33 @@ final class NursingPatientDetail {
 
   int get pendingHandoverCount {
     return handovers.where((NursingHandover item) => item.isPending).length;
+  }
+
+  /// Returns true when a nursing note recorded the given structured [tag].
+  bool hasNursingNoteTag(String tag) => latestNursingNoteWithTag(tag) != null;
+
+  /// Returns the most recent nursing note carrying the given structured [tag].
+  NursingNoteRecord? latestNursingNoteWithTag(String tag) {
+    final String needle = '[${tag.toUpperCase()}]';
+    NursingNoteRecord? latest;
+    for (final NursingNoteRecord note in nursingNotes) {
+      final String body = note.note?.trim().toUpperCase() ?? '';
+      if (!body.startsWith(needle)) {
+        continue;
+      }
+      if (latest == null) {
+        latest = note;
+        continue;
+      }
+      final DateTime current =
+          note.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final DateTime previous =
+          latest.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      if (current.isAfter(previous)) {
+        latest = note;
+      }
+    }
+    return latest;
   }
 
   NursingPatientSummary get enrichedSummary {

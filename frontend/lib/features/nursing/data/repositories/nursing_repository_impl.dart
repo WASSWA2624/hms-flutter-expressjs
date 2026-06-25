@@ -19,6 +19,14 @@ final class NursingRepositoryImpl implements NursingRepository {
 
   final ApiClient _apiClient;
 
+  static final RegExp _uuidLikePattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+  static final RegExp _friendlyIdPattern = RegExp(
+    r'^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$',
+  );
+
   @override
   Future<Result<AppPage<NursingPatientSummary>>> listWardPatients(
     NursingWorklistQuery query,
@@ -33,6 +41,7 @@ final class NursingRepositoryImpl implements NursingRepository {
         'queue_scope': query.scope == NursingQueueScope.all ? 'ALL' : 'ACTIVE',
         'stage': _backendStage(query.status),
         'transfer_status': _backendTransferStatus(query.transferStatus),
+        'ward_id': _backendWardId(query.ward),
         'include_icu': 'true',
         'sort_by': 'admitted_at',
         'order': 'desc',
@@ -506,6 +515,19 @@ final class NursingRepositoryImpl implements NursingRepository {
       'CANCELLED',
     };
     return supported.contains(value) ? value : null;
+  }
+
+  /// Only forwards the ward filter to the backend when it looks like a stable
+  /// identifier (UUID or friendly id). Free-text ward names continue to filter
+  /// client-side so partial searches do not trip backend identifier validation.
+  String? _backendWardId(String ward) {
+    final String value = ward.trim();
+    if (value.length < 2 || value.length > 64) {
+      return null;
+    }
+    final bool looksLikeIdentifier =
+        _uuidLikePattern.hasMatch(value) || _friendlyIdPattern.hasMatch(value);
+    return looksLikeIdentifier ? value : null;
   }
 
   String? _backendTransferStatus(String transferStatus) {

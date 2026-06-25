@@ -5463,6 +5463,116 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discharge nursing checks are pending; do not close the admission here.';
 
   @override
+  String get nursingChecklistIdentityTitle => 'Identity confirmed';
+
+  @override
+  String get nursingChecklistIdentityReadyBody =>
+      'Patient identity has been confirmed.';
+
+  @override
+  String get nursingChecklistIdentityPendingBody =>
+      'Confirm patient name, admission number, and ward/bed.';
+
+  @override
+  String get nursingChecklistAllergiesTitle => 'Allergies and risk flags';
+
+  @override
+  String get nursingChecklistAllergiesReadyBody =>
+      'Allergies and risk flags have been reviewed.';
+
+  @override
+  String get nursingChecklistAllergiesPendingBody =>
+      'Review and record patient allergies and risk flags.';
+
+  @override
+  String get nursingChecklistBelongingsTitle => 'Belongings';
+
+  @override
+  String get nursingChecklistBelongingsReadyBody =>
+      'Patient belongings have been recorded.';
+
+  @override
+  String get nursingChecklistBelongingsPendingBody =>
+      'Record patient belongings per hospital policy.';
+
+  @override
+  String get nursingChecklistDoctorTitle => 'Doctor notified';
+
+  @override
+  String get nursingChecklistDoctorReadyBody =>
+      'The responsible doctor has been notified.';
+
+  @override
+  String get nursingChecklistDoctorPendingBody =>
+      'Notify the responsible doctor of the ward admission.';
+
+  @override
+  String get nursingActionOrderLab => 'Order lab tests';
+
+  @override
+  String get nursingActionOrderRadiology => 'Order imaging';
+
+  @override
+  String get nursingActionDischargeClearance => 'Discharge clearance';
+
+  @override
+  String get nursingActionOpenIcu => 'Open ICU workspace';
+
+  @override
+  String get nursingActionConfirmIdentity => 'Confirm identity';
+
+  @override
+  String get nursingActionRecordAllergies => 'Record allergies & risks';
+
+  @override
+  String get nursingActionRecordBelongings => 'Record belongings';
+
+  @override
+  String get nursingActionNotifyDoctor => 'Notify doctor';
+
+  @override
+  String get nursingAllergiesLabel => 'Allergies and risk flags';
+
+  @override
+  String get nursingBelongingsLabel => 'Belongings';
+
+  @override
+  String get nursingNotifyDoctorLabel => 'Notification details';
+
+  @override
+  String get nursingCarePlanLabel => 'Care plan';
+
+  @override
+  String get nursingDischargeClearanceTitle => 'Discharge nursing clearance';
+
+  @override
+  String get nursingDischargeClearanceDescription =>
+      'Complete ward checks and patient education before IPD finalizes discharge.';
+
+  @override
+  String get nursingDischargeClearanceNotesLabel => 'Additional notes';
+
+  @override
+  String get nursingDischargeClearanceConfirmLabel =>
+      'I confirm nursing clearance is complete';
+
+  @override
+  String get nursingClearanceMedicationEducationLabel =>
+      'Medication education provided';
+
+  @override
+  String get nursingClearanceWoundCareLabel => 'Wound care instructions given';
+
+  @override
+  String get nursingClearanceFollowUpLabel => 'Follow-up appointments arranged';
+
+  @override
+  String get nursingClearanceBelongingsReturnedLabel => 'Belongings returned';
+
+  @override
+  String get nursingClearanceIdentityBandLabel => 'Identity band removed';
+
+  @override
   String get nursingShiftContextTitle => 'Shift context';
 
   @override

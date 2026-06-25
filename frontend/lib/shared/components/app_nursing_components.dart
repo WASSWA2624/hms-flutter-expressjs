@@ -347,12 +347,18 @@ final class AppCareTaskChecklistItem {
     required this.isComplete,
     this.subtitle,
     this.status,
+    this.actionLabel,
+    this.actionIcon,
+    this.onAction,
   });
 
   final String title;
   final bool isComplete;
   final String? subtitle;
   final AppWorkspaceStatus? status;
+  final String? actionLabel;
+  final IconData? actionIcon;
+  final VoidCallback? onAction;
 }
 
 class AppCareTaskChecklist extends StatelessWidget {
@@ -578,6 +584,14 @@ class _ChecklistRow extends StatelessWidget {
           if (item.status != null) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
             AppWorkspaceStatusBadge(status: item.status!),
+          ],
+          if (item.actionLabel != null && item.onAction != null) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            AppButton.tertiary(
+              label: item.actionLabel!,
+              leadingIcon: item.actionIcon,
+              onPressed: item.onAction,
+            ),
           ],
         ],
       ),

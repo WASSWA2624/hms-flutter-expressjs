@@ -349,6 +349,25 @@ final class NursingWorkspaceController
     );
   }
 
+  Future<AppFailure?> addCarePlan(String plan) {
+    final NursingPatientDetail? detail = _selectedDetail;
+    if (detail == null || detail.summary.encounterDisplayId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    final String trimmed = plan.trim();
+    if (trimmed.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return _mutateSelected(
+      (NursingPatientSummary summary) =>
+          _repository.addCarePlan(summary, <String, Object?>{
+            'encounter_id': detail.summary.encounterDisplayId,
+            'plan': trimmed,
+            'start_date': DateTime.now().toUtc().toIso8601String(),
+          }),
+    );
+  }
+
   Future<AppFailure?> addMedicationAdministration(
     Map<String, Object?> payload,
   ) {
@@ -384,24 +403,230 @@ final class NursingWorkspaceController
     }
 
     return _mutateSelected((NursingPatientSummary summary) async {
-      final Result<void> result = await _clinicalRepository
-          .createPharmacyOrder(
-            mergeClinicalRequestBilling(
-              <String, Object?>{
-                'encounter_id': encounterId,
-                'patient_id': patientId,
-                'ordered_at': DateTime.now().toUtc().toIso8601String(),
-                'items': items,
-              },
-              billing,
-            ),
-          );
+      final Result<void> result = await _clinicalRepository.createPharmacyOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          'encounter_id': encounterId,
+          'patient_id': patientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'items': items,
+        }, billing),
+      );
       return result.when<Future<Result<NursingPatientDetail>>>(
         success: (_) => _repository.loadPatientDetail(summary),
         failure: (AppFailure failure) async =>
             Result<NursingPatientDetail>.failure(failure),
       );
     });
+  }
+
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
+  }) {
+    return _clinicalRepository.searchClinicalTerms(
+      termType: termType,
+      query: query,
+      limit: limit,
+      source: source,
+    );
+  }
+
+  Future<AppFailure?> orderLab({
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    final NursingPatientDetail? detail = _selectedDetail;
+    final String? encounterId = detail?.summary.encounterDisplayId?.trim();
+    final String? patientId = detail?.summary.patientId?.trim();
+    if (detail == null ||
+        encounterId == null ||
+        encounterId.isEmpty ||
+        patientId == null ||
+        patientId.isEmpty ||
+        (labTestIds.isEmpty && labPanelIds.isEmpty)) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelected((NursingPatientSummary summary) async {
+      final Result<void> result = await _clinicalRepository.createLabOrder(
+        mergeClinicalRequestBilling(<String, Object?>{
+          'encounter_id': encounterId,
+          'patient_id': patientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        }, billing),
+      );
+      return result.when<Future<Result<NursingPatientDetail>>>(
+        success: (_) => _repository.loadPatientDetail(summary),
+        failure: (AppFailure failure) async =>
+            Result<NursingPatientDetail>.failure(failure),
+      );
+    });
+  }
+
+  Future<AppFailure?> orderRadiology({
+    required List<ClinicalRadiologyRequest> requests,
+    ClinicalRequestBillingSubmit? billing,
+  }) {
+    final NursingPatientDetail? detail = _selectedDetail;
+    final String? encounterId = detail?.summary.encounterDisplayId?.trim();
+    final String? patientId = detail?.summary.patientId?.trim();
+    if (detail == null ||
+        encounterId == null ||
+        encounterId.isEmpty ||
+        patientId == null ||
+        patientId.isEmpty ||
+        requests.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelected((NursingPatientSummary summary) async {
+      final Result<void> result = await _clinicalRepository
+          .createRadiologyOrder(<String, Object?>{
+            'encounter_id': encounterId,
+            'patient_id': patientId,
+            'ordered_at': DateTime.now().toUtc().toIso8601String(),
+            'requested_tests': <Map<String, Object?>>[
+              for (final ClinicalRadiologyRequest request in requests)
+                <String, Object?>{
+                  'radiology_test_id': request.radiologyTestId,
+                  'clinical_note': request.clinicalNote,
+                  'request_details':
+                      mergeClinicalRequestBillingIntoRequestDetails(
+                        <String, Object?>{
+                          'modality': request.modality,
+                          'body_region': request.bodyRegion,
+                          'laterality': request.laterality,
+                          'priority': request.priority,
+                        },
+                        billing,
+                        lineAmount: clinicalRequestBillingLineAmount(
+                          billing,
+                          request.radiologyTestId,
+                        ),
+                      ),
+                },
+            ],
+          });
+      return result.when<Future<Result<NursingPatientDetail>>>(
+        success: (_) => _repository.loadPatientDetail(summary),
+        failure: (AppFailure failure) async =>
+            Result<NursingPatientDetail>.failure(failure),
+      );
+    });
+  }
+
+  /// Records a structured nursing note that marks an admission-checklist step
+  /// (identity, allergies, belongings, doctor notification) or discharge
+  /// clearance as complete. Interim until dedicated backend substates exist.
+  Future<AppFailure?> recordChecklistNote({
+    required String tag,
+    String body = '',
+  }) {
+    final String? currentUserId = _currentUserId;
+    if (currentUserId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return _mutateSelected(
+      (NursingPatientSummary summary) =>
+          _repository.addNursingNote(summary, <String, Object?>{
+            'nurse_user_id': currentUserId,
+            'note': NursingNoteTags.wrap(tag, body),
+          }),
+    );
+  }
+
+  Future<AppFailure?> confirmIdentity() {
+    final NursingPatientDetail? detail = _selectedDetail;
+    if (detail == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    final NursingPatientSummary summary = detail.enrichedSummary;
+    final String body =
+        <String?>[
+              summary.patientDisplayName,
+              summary.displayId,
+              summary.locationLabel,
+            ]
+            .whereType<String>()
+            .where((String value) => value.trim().isNotEmpty)
+            .join(' | ');
+    return recordChecklistNote(tag: NursingNoteTags.identity, body: body);
+  }
+
+  Future<AppFailure?> recordAllergies(String note) {
+    return recordChecklistNote(tag: NursingNoteTags.allergies, body: note);
+  }
+
+  Future<AppFailure?> recordBelongings(String note) {
+    return recordChecklistNote(tag: NursingNoteTags.belongings, body: note);
+  }
+
+  Future<AppFailure?> notifyDoctor(String note) {
+    return recordChecklistNote(tag: NursingNoteTags.doctorNotified, body: note);
+  }
+
+  Future<AppFailure?> recordDischargeClearance(String note) {
+    return recordChecklistNote(
+      tag: NursingNoteTags.dischargeClearance,
+      body: note,
+    );
+  }
+
+  /// Selects an admission by its display id (used for deep links). Returns the
+  /// resolved summary so callers can open the detail view, or null if missing.
+  Future<NursingPatientSummary?> selectPatientByDisplayId(
+    String displayId,
+  ) async {
+    final String needle = displayId.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return null;
+    }
+    NursingPatientSummary? match = _findByDisplayId(needle);
+    if (match == null) {
+      await _syncVisibleData(showLoading: true);
+      match = _findByDisplayId(needle);
+    }
+    if (match == null) {
+      return null;
+    }
+    final AppFailure? failure = await selectPatient(match);
+    if (failure != null) {
+      return null;
+    }
+    return _currentState?.selectedDetail?.enrichedSummary ?? match;
+  }
+
+  NursingPatientSummary? _findByDisplayId(String needle) {
+    final NursingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+    for (final NursingPatientSummary item in current.worklist.items) {
+      final bool matches =
+          <String?>[
+            item.displayId,
+            item.admissionId,
+            item.patientDisplayId,
+            item.encounterDisplayId,
+          ].whereType<String>().any(
+            (String value) => value.trim().toLowerCase() == needle,
+          );
+      if (matches) {
+        return item;
+      }
+    }
+    return null;
   }
 
   Future<AppFailure?> createHandover({
@@ -923,6 +1148,9 @@ final class NursingWorkspaceController
   NursingPatientDetail? get _selectedDetail => _currentState?.selectedDetail;
 
   NursingWorkspaceState? get _currentState {
+    if (!ref.mounted) {
+      return null;
+    }
     final Result<NursingWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<NursingWorkspaceState>(value: final value) => value,

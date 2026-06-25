@@ -7028,6 +7028,138 @@
   "@nursingChecklistDischargePendingBody": {
     "description": "Localized text for nursingChecklistDischargePendingBody."
   },
+  "nursingChecklistIdentityTitle": "Identity confirmed",
+  "@nursingChecklistIdentityTitle": {
+    "description": "Checklist title for confirming patient identity on ward admission."
+  },
+  "nursingChecklistIdentityReadyBody": "Patient identity has been confirmed.",
+  "@nursingChecklistIdentityReadyBody": {
+    "description": "Checklist ready body for the identity confirmation step."
+  },
+  "nursingChecklistIdentityPendingBody": "Confirm patient name, admission number, and ward/bed.",
+  "@nursingChecklistIdentityPendingBody": {
+    "description": "Checklist pending body for the identity confirmation step."
+  },
+  "nursingChecklistAllergiesTitle": "Allergies and risk flags",
+  "@nursingChecklistAllergiesTitle": {
+    "description": "Checklist title for recording allergies and risk flags."
+  },
+  "nursingChecklistAllergiesReadyBody": "Allergies and risk flags have been reviewed.",
+  "@nursingChecklistAllergiesReadyBody": {
+    "description": "Checklist ready body for the allergies step."
+  },
+  "nursingChecklistAllergiesPendingBody": "Review and record patient allergies and risk flags.",
+  "@nursingChecklistAllergiesPendingBody": {
+    "description": "Checklist pending body for the allergies step."
+  },
+  "nursingChecklistBelongingsTitle": "Belongings",
+  "@nursingChecklistBelongingsTitle": {
+    "description": "Checklist title for recording patient belongings."
+  },
+  "nursingChecklistBelongingsReadyBody": "Patient belongings have been recorded.",
+  "@nursingChecklistBelongingsReadyBody": {
+    "description": "Checklist ready body for the belongings step."
+  },
+  "nursingChecklistBelongingsPendingBody": "Record patient belongings per hospital policy.",
+  "@nursingChecklistBelongingsPendingBody": {
+    "description": "Checklist pending body for the belongings step."
+  },
+  "nursingChecklistDoctorTitle": "Doctor notified",
+  "@nursingChecklistDoctorTitle": {
+    "description": "Checklist title for notifying the responsible doctor."
+  },
+  "nursingChecklistDoctorReadyBody": "The responsible doctor has been notified.",
+  "@nursingChecklistDoctorReadyBody": {
+    "description": "Checklist ready body for the notify doctor step."
+  },
+  "nursingChecklistDoctorPendingBody": "Notify the responsible doctor of the ward admission.",
+  "@nursingChecklistDoctorPendingBody": {
+    "description": "Checklist pending body for the notify doctor step."
+  },
+  "nursingActionOrderLab": "Order lab tests",
+  "@nursingActionOrderLab": {
+    "description": "Action label for creating a lab order from the nursing workspace."
+  },
+  "nursingActionOrderRadiology": "Order imaging",
+  "@nursingActionOrderRadiology": {
+    "description": "Action label for creating a radiology order from the nursing workspace."
+  },
+  "nursingActionDischargeClearance": "Discharge clearance",
+  "@nursingActionDischargeClearance": {
+    "description": "Action label for recording nursing discharge clearance."
+  },
+  "nursingActionOpenIcu": "Open ICU workspace",
+  "@nursingActionOpenIcu": {
+    "description": "Action label that deep links to the ICU workspace for critical-care actions."
+  },
+  "nursingActionConfirmIdentity": "Confirm identity",
+  "@nursingActionConfirmIdentity": {
+    "description": "Action label for confirming patient identity."
+  },
+  "nursingActionRecordAllergies": "Record allergies & risks",
+  "@nursingActionRecordAllergies": {
+    "description": "Action label for recording allergies and risk flags."
+  },
+  "nursingActionRecordBelongings": "Record belongings",
+  "@nursingActionRecordBelongings": {
+    "description": "Action label for recording patient belongings."
+  },
+  "nursingActionNotifyDoctor": "Notify doctor",
+  "@nursingActionNotifyDoctor": {
+    "description": "Action label for notifying the responsible doctor."
+  },
+  "nursingAllergiesLabel": "Allergies and risk flags",
+  "@nursingAllergiesLabel": {
+    "description": "Field label for entering allergies and risk flags."
+  },
+  "nursingBelongingsLabel": "Belongings",
+  "@nursingBelongingsLabel": {
+    "description": "Field label for entering patient belongings."
+  },
+  "nursingNotifyDoctorLabel": "Notification details",
+  "@nursingNotifyDoctorLabel": {
+    "description": "Field label for entering doctor notification details."
+  },
+  "nursingCarePlanLabel": "Care plan",
+  "@nursingCarePlanLabel": {
+    "description": "Field label for entering a care plan."
+  },
+  "nursingDischargeClearanceTitle": "Discharge nursing clearance",
+  "@nursingDischargeClearanceTitle": {
+    "description": "Dialog title for nursing discharge clearance."
+  },
+  "nursingDischargeClearanceDescription": "Complete ward checks and patient education before IPD finalizes discharge.",
+  "@nursingDischargeClearanceDescription": {
+    "description": "Dialog description for nursing discharge clearance."
+  },
+  "nursingDischargeClearanceNotesLabel": "Additional notes",
+  "@nursingDischargeClearanceNotesLabel": {
+    "description": "Notes field label in the discharge clearance dialog."
+  },
+  "nursingDischargeClearanceConfirmLabel": "I confirm nursing clearance is complete",
+  "@nursingDischargeClearanceConfirmLabel": {
+    "description": "Confirmation checkbox label in the discharge clearance dialog."
+  },
+  "nursingClearanceMedicationEducationLabel": "Medication education provided",
+  "@nursingClearanceMedicationEducationLabel": {
+    "description": "Discharge clearance checklist item for medication education."
+  },
+  "nursingClearanceWoundCareLabel": "Wound care instructions given",
+  "@nursingClearanceWoundCareLabel": {
+    "description": "Discharge clearance checklist item for wound care instructions."
+  },
+  "nursingClearanceFollowUpLabel": "Follow-up appointments arranged",
+  "@nursingClearanceFollowUpLabel": {
+    "description": "Discharge clearance checklist item for follow-up appointments."
+  },
+  "nursingClearanceBelongingsReturnedLabel": "Belongings returned",
+  "@nursingClearanceBelongingsReturnedLabel": {
+    "description": "Discharge clearance checklist item for returned belongings."
+  },
+  "nursingClearanceIdentityBandLabel": "Identity band removed",
+  "@nursingClearanceIdentityBandLabel": {
+    "description": "Discharge clearance checklist item for identity band removal."
+  },
   "nursingShiftContextTitle": "Shift context",
   "@nursingShiftContextTitle": {
     "description": "Localized text for nursingShiftContextTitle."

@@ -10228,6 +10228,204 @@ abstract class AppLocalizations {
   /// **'Discharge nursing checks are pending; do not close the admission here.'**
   String get nursingChecklistDischargePendingBody;
 
+  /// Checklist title for confirming patient identity on ward admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity confirmed'**
+  String get nursingChecklistIdentityTitle;
+
+  /// Checklist ready body for the identity confirmation step.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient identity has been confirmed.'**
+  String get nursingChecklistIdentityReadyBody;
+
+  /// Checklist pending body for the identity confirmation step.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm patient name, admission number, and ward/bed.'**
+  String get nursingChecklistIdentityPendingBody;
+
+  /// Checklist title for recording allergies and risk flags.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies and risk flags'**
+  String get nursingChecklistAllergiesTitle;
+
+  /// Checklist ready body for the allergies step.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies and risk flags have been reviewed.'**
+  String get nursingChecklistAllergiesReadyBody;
+
+  /// Checklist pending body for the allergies step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and record patient allergies and risk flags.'**
+  String get nursingChecklistAllergiesPendingBody;
+
+  /// Checklist title for recording patient belongings.
+  ///
+  /// In en, this message translates to:
+  /// **'Belongings'**
+  String get nursingChecklistBelongingsTitle;
+
+  /// Checklist ready body for the belongings step.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient belongings have been recorded.'**
+  String get nursingChecklistBelongingsReadyBody;
+
+  /// Checklist pending body for the belongings step.
+  ///
+  /// In en, this message translates to:
+  /// **'Record patient belongings per hospital policy.'**
+  String get nursingChecklistBelongingsPendingBody;
+
+  /// Checklist title for notifying the responsible doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor notified'**
+  String get nursingChecklistDoctorTitle;
+
+  /// Checklist ready body for the notify doctor step.
+  ///
+  /// In en, this message translates to:
+  /// **'The responsible doctor has been notified.'**
+  String get nursingChecklistDoctorReadyBody;
+
+  /// Checklist pending body for the notify doctor step.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify the responsible doctor of the ward admission.'**
+  String get nursingChecklistDoctorPendingBody;
+
+  /// Action label for creating a lab order from the nursing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Order lab tests'**
+  String get nursingActionOrderLab;
+
+  /// Action label for creating a radiology order from the nursing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Order imaging'**
+  String get nursingActionOrderRadiology;
+
+  /// Action label for recording nursing discharge clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge clearance'**
+  String get nursingActionDischargeClearance;
+
+  /// Action label that deep links to the ICU workspace for critical-care actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Open ICU workspace'**
+  String get nursingActionOpenIcu;
+
+  /// Action label for confirming patient identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm identity'**
+  String get nursingActionConfirmIdentity;
+
+  /// Action label for recording allergies and risk flags.
+  ///
+  /// In en, this message translates to:
+  /// **'Record allergies & risks'**
+  String get nursingActionRecordAllergies;
+
+  /// Action label for recording patient belongings.
+  ///
+  /// In en, this message translates to:
+  /// **'Record belongings'**
+  String get nursingActionRecordBelongings;
+
+  /// Action label for notifying the responsible doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify doctor'**
+  String get nursingActionNotifyDoctor;
+
+  /// Field label for entering allergies and risk flags.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies and risk flags'**
+  String get nursingAllergiesLabel;
+
+  /// Field label for entering patient belongings.
+  ///
+  /// In en, this message translates to:
+  /// **'Belongings'**
+  String get nursingBelongingsLabel;
+
+  /// Field label for entering doctor notification details.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification details'**
+  String get nursingNotifyDoctorLabel;
+
+  /// Field label for entering a care plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan'**
+  String get nursingCarePlanLabel;
+
+  /// Dialog title for nursing discharge clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge nursing clearance'**
+  String get nursingDischargeClearanceTitle;
+
+  /// Dialog description for nursing discharge clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete ward checks and patient education before IPD finalizes discharge.'**
+  String get nursingDischargeClearanceDescription;
+
+  /// Notes field label in the discharge clearance dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional notes'**
+  String get nursingDischargeClearanceNotesLabel;
+
+  /// Confirmation checkbox label in the discharge clearance dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm nursing clearance is complete'**
+  String get nursingDischargeClearanceConfirmLabel;
+
+  /// Discharge clearance checklist item for medication education.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication education provided'**
+  String get nursingClearanceMedicationEducationLabel;
+
+  /// Discharge clearance checklist item for wound care instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Wound care instructions given'**
+  String get nursingClearanceWoundCareLabel;
+
+  /// Discharge clearance checklist item for follow-up appointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up appointments arranged'**
+  String get nursingClearanceFollowUpLabel;
+
+  /// Discharge clearance checklist item for returned belongings.
+  ///
+  /// In en, this message translates to:
+  /// **'Belongings returned'**
+  String get nursingClearanceBelongingsReturnedLabel;
+
+  /// Discharge clearance checklist item for identity band removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity band removed'**
+  String get nursingClearanceIdentityBandLabel;
+
   /// Localized text for nursingShiftContextTitle.
   ///
   /// In en, this message translates to:
