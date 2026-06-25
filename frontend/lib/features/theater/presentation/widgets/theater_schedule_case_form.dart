@@ -18,12 +18,63 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
+Future<Map<String, Object?>?> showTheaterScheduleCaseDialog({
+  required BuildContext context,
+  required String title,
+  required Widget icon,
+  TheaterCase? theaterCase,
+  bool rescheduleOnly = false,
+  String? initialPatientId,
+  String? initialEncounterId,
+  String? initialEmergencyCaseId,
+}) {
+  final GlobalKey<TheaterScheduleCaseFormState> formKey =
+      GlobalKey<TheaterScheduleCaseFormState>();
+  final AppLocalizations l10n = context.l10n;
+  final String submitLabel = rescheduleOnly
+      ? l10n.theaterRescheduleAction
+      : l10n.theaterScheduleCaseAction;
+
+  return showAppWorkspaceActionDialog<Map<String, Object?>>(
+    context: context,
+    title: Text(title),
+    icon: icon,
+    maxWidth: 680,
+    content: TheaterScheduleCaseForm(
+      key: formKey,
+      theaterCase: theaterCase,
+      rescheduleOnly: rescheduleOnly,
+      initialPatientId: initialPatientId,
+      initialEncounterId: initialEncounterId,
+      initialEmergencyCaseId: initialEmergencyCaseId,
+    ),
+    actions: <Widget>[
+      AppButton.tertiary(
+        label: l10n.commonCancelActionLabel,
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      AppButton.primary(
+        label: submitLabel,
+        leadingIcon: Icons.save_outlined,
+        onPressed: () {
+          final Map<String, Object?>? payload = formKey.currentState
+              ?.submitIfValid();
+          if (payload != null) {
+            Navigator.of(context).pop(payload);
+          }
+        },
+      ),
+    ],
+  );
+}
+
 class TheaterScheduleCaseForm extends ConsumerStatefulWidget {
   const TheaterScheduleCaseForm({
     this.theaterCase,
     this.rescheduleOnly = false,
     this.initialPatientId,
     this.initialEncounterId,
+    this.initialEmergencyCaseId,
     super.key,
   });
 
@@ -31,13 +82,14 @@ class TheaterScheduleCaseForm extends ConsumerStatefulWidget {
   final bool rescheduleOnly;
   final String? initialPatientId;
   final String? initialEncounterId;
+  final String? initialEmergencyCaseId;
 
   @override
   ConsumerState<TheaterScheduleCaseForm> createState() =>
-      _TheaterScheduleCaseFormState();
+      TheaterScheduleCaseFormState();
 }
 
-class _TheaterScheduleCaseFormState
+class TheaterScheduleCaseFormState
     extends ConsumerState<TheaterScheduleCaseForm> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 300);
 
@@ -56,6 +108,7 @@ class _TheaterScheduleCaseFormState
 
   String? _selectedPatientId;
   String? _selectedEncounterId;
+  String? _selectedEmergencyCaseId;
   String? _selectedRoomId;
   String? _selectedSurgeonId;
   String? _selectedAnesthetistId;
@@ -65,6 +118,8 @@ class _TheaterScheduleCaseFormState
       <_ScheduleSelectOption>[];
   final List<TheaterScheduleEncounter> _patientEncounters =
       <TheaterScheduleEncounter>[];
+  final List<TheaterScheduleEmergencyCase> _patientEmergencyCases =
+      <TheaterScheduleEmergencyCase>[];
   final List<_ScheduleSelectOption> _roomOptions = <_ScheduleSelectOption>[];
   final List<_ScheduleSelectOption> _surgeonOptions = <_ScheduleSelectOption>[];
   final List<_ScheduleSelectOption> _anesthetistOptions =
@@ -79,7 +134,8 @@ class _TheaterScheduleCaseFormState
   bool _isLoadingRooms = false;
   bool _isLoadingSurgeons = false;
   bool _isLoadingAnesthetists = false;
-  AppFailure? _failure;
+  AppFailure? _patientFailure;
+  AppFailure? _encounterFailure;
   ClinicalRequestBillingSubmit? _billing;
 
   @override
@@ -98,23 +154,69 @@ class _TheaterScheduleCaseFormState
     _selectedEncounterId = _emptyToNull(
       widget.initialEncounterId ?? theaterCase?.encounterDisplayId,
     );
+    _selectedEmergencyCaseId = _emptyToNull(
+      widget.initialEmergencyCaseId ?? theaterCase?.emergencyCaseDisplayId,
+    );
     _selectedRoomId = _emptyToNull(theaterCase?.roomDisplayId);
     _selectedSurgeonId = _emptyToNull(theaterCase?.surgeonUserDisplayId);
     _selectedAnesthetistId = _emptyToNull(
       theaterCase?.anesthetistUserDisplayId,
     );
     _derivedSourceKind = theaterCase?.sourceKind;
+    _seedRescheduleSelections(theaterCase);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_searchPatients(''));
-      unawaited(_searchRooms(''));
-      unawaited(_searchSurgeons(''));
-      unawaited(_searchAnesthetists(''));
-      final String? patientId = _selectedPatientId;
-      if (patientId != null) {
-        unawaited(_loadPatientContext(patientId));
-      }
-    });
+    if (!widget.rescheduleOnly) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_searchPatients(''));
+        final String? patientId = _selectedPatientId;
+        if (patientId != null) {
+          unawaited(_loadPatientContext(patientId));
+        }
+      });
+    }
+  }
+
+  void _seedRescheduleSelections(TheaterCase? theaterCase) {
+    if (theaterCase == null) {
+      return;
+    }
+    final String? roomId = _selectedRoomId;
+    if (roomId != null) {
+      _roomOptions.add(
+        _ScheduleSelectOption(
+          value: roomId,
+          label: theaterCase.roomDisplayLabel ?? roomId,
+          icon: Icons.meeting_room_outlined,
+        ),
+      );
+    }
+    final String? surgeonId = _selectedSurgeonId;
+    if (surgeonId != null) {
+      _surgeonOptions.add(
+        _ScheduleSelectOption(
+          value: surgeonId,
+          label: theaterCase.surgeonDisplayName ?? surgeonId,
+          icon: Icons.badge_outlined,
+        ),
+      );
+    }
+    final String? anesthetistId = _selectedAnesthetistId;
+    if (anesthetistId != null) {
+      _anesthetistOptions.add(
+        _ScheduleSelectOption(
+          value: anesthetistId,
+          label: theaterCase.anesthetistDisplayName ?? anesthetistId,
+          icon: Icons.badge_outlined,
+        ),
+      );
+    }
+  }
+
+  Map<String, Object?>? submitIfValid() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return null;
+    }
+    return _buildPayload();
   }
 
   @override
@@ -131,196 +233,239 @@ class _TheaterScheduleCaseFormState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return AppFormShell(
       formKey: _formKey,
+      density: AppFormSectionDensity.compact,
       children: <Widget>[
-        if (_failure != null) AppFailureStateView(failure: _failure!),
-        if (!widget.rescheduleOnly) ...<Widget>[
-          AppSelectField<String>.searchable(
-            value: _selectedPatientId,
-            labelText: l10n.theaterPatientLabel,
-            hintText: l10n.theaterPatientSearchHint,
-            isRequired: true,
-            isLoading: _isLoadingPatients,
-            options: _toSelectOptions(_patientOptions),
-            validator: AppValidators.requiredValue(
-              l10n.theaterFieldRequiredLabel(l10n.theaterPatientLabel),
-            ),
-            onSearchTextChanged: _schedulePatientSearch,
-            onChanged: _selectPatient,
-          ),
-          AppResponsiveFieldRow.two(
-            gap: AppResponsiveFieldRowGap.form,
-            left: AppSelectField<String>.searchable(
-              value: _selectedEncounterId,
-              labelText: l10n.theaterEncounterLabel,
-              hintText: l10n.theaterEncounterSearchHint,
-              isRequired: true,
-              enabled: _selectedPatientId != null,
-              isLoading: _isLoadingPatientContext,
-              options: _toSelectOptions(_encounterOptions),
-              validator: AppValidators.requiredValue(
-                l10n.theaterFieldRequiredLabel(l10n.theaterEncounterLabel),
-              ),
-              onChanged: _selectEncounter,
-            ),
-            right: _derivedSourceKind == null
-                ? const SizedBox.shrink()
-                : Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: EdgeInsets.only(top: theme.spacing.sm),
-                      child: AppWorkspaceStatusBadge(
-                        status: AppWorkspaceStatus(
-                          label:
-                              '${l10n.theaterSourceContextLabel}: ${_sourceKindLabel(l10n, _derivedSourceKind)}',
-                          icon: Icons.hub_outlined,
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-        AppResponsiveFieldRow.two(
-          gap: AppResponsiveFieldRowGap.form,
-          left: AppDateField(
-            value: _scheduledDate,
-            labelText: l10n.theaterScheduledAtLabel,
-            hintText: l10n.appDateFormatHint,
-            isRequired: true,
-            firstDate: _dateOnly(DateTime.now()),
-            lastDate: _dateOnly(DateTime.now().add(const Duration(days: 365))),
-            currentDate: _dateOnly(DateTime.now()),
-            pickerButtonLabel: l10n.theaterPickScheduleDateAction,
-            invalidDateMessage: l10n.appDateInvalidMessage,
-            validator: AppValidators.requiredValue<DateTime>(
-              l10n.theaterFieldRequiredLabel(l10n.theaterScheduledAtLabel),
-            ),
-            onChanged: (DateTime? value) {
-              if (value == null) {
-                return;
-              }
-              setState(() => _scheduledDate = _dateOnly(value));
-            },
-          ),
-          right: AppTimeField(
-            value: _scheduledTime,
-            labelText: l10n.theaterScheduledTimeLabel,
-            hintText: l10n.appTimeFormatHint,
-            isRequired: true,
-            pickerButtonLabel: l10n.appTimePickerAction,
-            invalidTimeMessage: l10n.appTimeInvalidMessage,
-            validator: AppValidators.requiredValue<TimeOfDay>(
-              l10n.theaterFieldRequiredLabel(l10n.theaterScheduledTimeLabel),
-            ),
-            onChanged: (TimeOfDay? value) {
-              if (value == null) {
-                return;
-              }
-              setState(() => _scheduledTime = value);
-            },
+        Text(
+          l10n.theaterScheduleCaseDialogBody,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
-        AppSelectField<String>.searchable(
-          value: _selectedRoomId,
-          labelText: l10n.theaterRoomLabel,
-          hintText: l10n.theaterOperatingRoomHint,
-          isLoading: _isLoadingRooms,
-          options: _toSelectOptions(_roomOptions),
-          onSearchTextChanged: _scheduleRoomSearch,
-          onChanged: (String? value) {
-            setState(() => _selectedRoomId = _emptyToNull(value));
-          },
-        ),
-        AppResponsiveFieldRow.two(
-          gap: AppResponsiveFieldRowGap.form,
-          left: AppSelectField<String>.searchable(
-            value: _selectedSurgeonId,
-            labelText: l10n.theaterSurgeonLabel,
-            hintText: l10n.theaterSurgeonSearchHint,
-            isLoading: _isLoadingSurgeons,
-            options: _toSelectOptions(_surgeonOptions),
-            onSearchTextChanged: _scheduleSurgeonSearch,
-            onChanged: (String? value) {
-              setState(() => _selectedSurgeonId = _emptyToNull(value));
-            },
-          ),
-          right: AppSelectField<String>.searchable(
-            value: _selectedAnesthetistId,
-            labelText: l10n.theaterAnesthetistLabel,
-            hintText: l10n.theaterAnesthetistSearchHint,
-            isLoading: _isLoadingAnesthetists,
-            options: _toSelectOptions(_anesthetistOptions),
-            onSearchTextChanged: _scheduleAnesthetistSearch,
-            onChanged: (String? value) {
-              setState(() => _selectedAnesthetistId = _emptyToNull(value));
-            },
-          ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.theaterStageNotesLabel,
-          maxLines: 3,
-        ),
-        if (!widget.rescheduleOnly) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            l10n.theaterProceduresSectionLabel,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          ClinicalRequestFlowToolbar(
-            addItemsLabel: l10n.theaterAddProcedureAction,
-            showBillingAction: false,
-            onAddItems: _openProcedureCatalog,
-          ),
-          if (_selectedProcedures.isEmpty)
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.sm),
-              child: Text(
-                l10n.theaterNoProceduresSelectedLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+        if (!widget.rescheduleOnly)
+          AppFormSection(
+            density: AppFormSectionDensity.compact,
+            title: l10n.theaterSchedulePatientContextSection,
+            children: <Widget>[
+              if (_patientFailure != null)
+                AppFailureStateView(
+                  failure: _patientFailure!,
+                  onRetry: () => unawaited(_searchPatients('')),
                 ),
+              AppSelectField<String>.searchable(
+                value: _selectedPatientId,
+                labelText: l10n.theaterPatientLabel,
+                hintText: l10n.theaterPatientSearchHint,
+                isRequired: true,
+                isLoading: _isLoadingPatients,
+                options: _toSelectOptions(_patientOptions),
+                validator: AppValidators.requiredValue(
+                  l10n.theaterFieldRequiredLabel(l10n.theaterPatientLabel),
+                ),
+                onSearchTextChanged: _schedulePatientSearch,
+                onChanged: _selectPatient,
               ),
-            )
-          else
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.sm),
-              child: Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final ClinicalActionCatalogOption procedure
-                      in _selectedProcedures)
-                    InputChip(
-                      label: Text(procedure.displayTitle),
-                      onDeleted: () => _removeProcedure(procedure),
-                    ),
-                ],
+              AppSelectField<String>.searchable(
+                value: _selectedEncounterId,
+                labelText: l10n.theaterEncounterLabel,
+                hintText: _selectedPatientId == null
+                    ? l10n.theaterEncounterSelectPatientFirstHint
+                    : l10n.theaterEncounterSearchHint,
+                isRequired: true,
+                enabled: _selectedPatientId != null,
+                isLoading: _isLoadingPatientContext,
+                options: _toSelectOptions(_encounterOptions),
+                validator: AppValidators.requiredValue(
+                  l10n.theaterFieldRequiredLabel(l10n.theaterEncounterLabel),
+                ),
+                onChanged: _selectEncounter,
               ),
-            ),
-          ClinicalRequestBillingPanel(
-            lineItems: clinicalRequestBillingLineItems(
-              options: _selectedProcedures,
-            ),
-            onChanged: (ClinicalRequestBillingSubmit value) {
-              _billing = value;
-            },
+              if (_encounterFailure != null)
+                AppFailureStateView(
+                  failure: _encounterFailure!,
+                  onRetry: () {
+                    final String? patientId = _selectedPatientId;
+                    if (patientId != null) {
+                      unawaited(_loadPatientContext(patientId));
+                    }
+                  },
+                ),
+              if (_showEmergencyCaseField)
+                AppSelectField<String>(
+                  value: _selectedEmergencyCaseId,
+                  labelText: l10n.theaterEmergencyCaseLabel,
+                  hintText: _selectedPatientId == null
+                      ? l10n.theaterEmergencyCaseSelectPatientFirstHint
+                      : l10n.theaterEmergencyCaseSearchHint,
+                  isRequired: _requiresEmergencyCaseLink,
+                  enabled: _selectedPatientId != null,
+                  options: _toSelectOptions(_emergencyCaseOptions),
+                  validator: _requiresEmergencyCaseLink
+                      ? AppValidators.requiredValue(
+                          l10n.theaterFieldRequiredLabel(
+                            l10n.theaterEmergencyCaseLabel,
+                          ),
+                        )
+                      : null,
+                  onChanged: _selectEmergencyCase,
+                ),
+              if (_isEmergencyScheduling)
+                AppMessagePanel(
+                  tone: AppWorkspaceStatusTone.warning,
+                  icon: Icons.emergency_outlined,
+                  title: l10n.theaterScheduleEmergencyPanelTitle,
+                  message: l10n.theaterScheduleEmergencyHint,
+                ),
+              if (_effectiveSourceKind != null)
+                AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label:
+                        '${l10n.theaterSourceContextLabel}: ${_sourceKindLabel(l10n, _effectiveSourceKind)}',
+                    icon: _effectiveSourceKind == 'EMERGENCY'
+                        ? Icons.emergency_outlined
+                        : Icons.hub_outlined,
+                    tone: _effectiveSourceKind == 'EMERGENCY'
+                        ? AppWorkspaceStatusTone.warning
+                        : AppWorkspaceStatusTone.info,
+                  ),
+                ),
+            ],
           ),
-        ],
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.rescheduleOnly
-              ? l10n.theaterRescheduleAction
-              : l10n.theaterScheduleCaseAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: _submit,
+        AppFormSection(
+          density: AppFormSectionDensity.compact,
+          title: l10n.theaterScheduleDetailsSection,
+          children: <Widget>[
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppDateField(
+                value: _scheduledDate,
+                labelText: l10n.theaterScheduledAtLabel,
+                hintText: l10n.appDateFormatHint,
+                isRequired: true,
+                firstDate: _dateOnly(DateTime.now()),
+                lastDate: _dateOnly(
+                  DateTime.now().add(const Duration(days: 365)),
+                ),
+                currentDate: _dateOnly(DateTime.now()),
+                pickerButtonLabel: l10n.theaterPickScheduleDateAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                validator: AppValidators.requiredValue<DateTime>(
+                  l10n.theaterFieldRequiredLabel(l10n.theaterScheduledAtLabel),
+                ),
+                onChanged: (DateTime? value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _scheduledDate = _dateOnly(value));
+                },
+              ),
+              right: AppTimeField(
+                value: _scheduledTime,
+                labelText: l10n.theaterScheduledTimeLabel,
+                hintText: l10n.appTimeFormatHint,
+                isRequired: true,
+                pickerButtonLabel: l10n.appTimePickerAction,
+                invalidTimeMessage: l10n.appTimeInvalidMessage,
+                validator: AppValidators.requiredValue<TimeOfDay>(
+                  l10n.theaterFieldRequiredLabel(
+                    l10n.theaterScheduledTimeLabel,
+                  ),
+                ),
+                onChanged: (TimeOfDay? value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _scheduledTime = value);
+                },
+              ),
+            ),
+            AppSelectField<String>.searchable(
+              value: _selectedRoomId,
+              labelText: l10n.theaterRoomLabel,
+              hintText: l10n.theaterOperatingRoomHint,
+              isLoading: _isLoadingRooms,
+              options: _toSelectOptions(_roomOptions),
+              onSearchTextChanged: _scheduleRoomSearch,
+              onChanged: (String? value) {
+                setState(() => _selectedRoomId = _emptyToNull(value));
+              },
+            ),
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppSelectField<String>.searchable(
+                value: _selectedSurgeonId,
+                labelText: l10n.theaterSurgeonLabel,
+                hintText: l10n.theaterSurgeonSearchHint,
+                isLoading: _isLoadingSurgeons,
+                options: _toSelectOptions(_surgeonOptions),
+                onSearchTextChanged: _scheduleSurgeonSearch,
+                onChanged: (String? value) {
+                  setState(() => _selectedSurgeonId = _emptyToNull(value));
+                },
+              ),
+              right: AppSelectField<String>.searchable(
+                value: _selectedAnesthetistId,
+                labelText: l10n.theaterAnesthetistLabel,
+                hintText: l10n.theaterAnesthetistSearchHint,
+                isLoading: _isLoadingAnesthetists,
+                options: _toSelectOptions(_anesthetistOptions),
+                onSearchTextChanged: _scheduleAnesthetistSearch,
+                onChanged: (String? value) {
+                  setState(() => _selectedAnesthetistId = _emptyToNull(value));
+                },
+              ),
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.theaterStageNotesLabel,
+              maxLines: 3,
+            ),
+          ],
         ),
+        if (!widget.rescheduleOnly)
+          AppFormSection(
+            density: AppFormSectionDensity.compact,
+            title: l10n.theaterScheduleBillingSection,
+            description: l10n.theaterScheduleBillingSectionBody,
+            children: <Widget>[
+              ClinicalRequestFlowToolbar(
+                addItemsLabel: l10n.theaterAddProcedureAction,
+                showBillingAction: false,
+                onAddItems: _openProcedureCatalog,
+              ),
+              if (_selectedProcedures.isEmpty)
+                Text(
+                  l10n.theaterNoProceduresSelectedLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    for (final ClinicalActionCatalogOption procedure
+                        in _selectedProcedures)
+                      InputChip(
+                        label: Text(procedure.displayTitle),
+                        onDeleted: () => _removeProcedure(procedure),
+                      ),
+                  ],
+                ),
+              ClinicalRequestBillingPanel(
+                lineItems: clinicalRequestBillingLineItems(
+                  options: _selectedProcedures,
+                ),
+                onChanged: (ClinicalRequestBillingSubmit value) {
+                  _billing = value;
+                },
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -333,11 +478,43 @@ class _TheaterScheduleCaseFormState
   }
 
   List<_ScheduleSelectOption> get _encounterOptions {
+    final List<TheaterScheduleEncounter> encounters =
+        List<TheaterScheduleEncounter>.from(_patientEncounters)
+          ..sort(compareTheaterScheduleEncounters);
     return _mergeOptions(
-      _patientEncounters
-          .map(_encounterOption)
+      encounters.map(_encounterOption).whereType<_ScheduleSelectOption>(),
+    );
+  }
+
+  List<_ScheduleSelectOption> get _emergencyCaseOptions {
+    return _mergeOptions(
+      _patientEmergencyCases
+          .map(_emergencyCaseOption)
           .whereType<_ScheduleSelectOption>(),
     );
+  }
+
+  bool get _showEmergencyCaseField => _patientEmergencyCases.isNotEmpty;
+
+  bool get _requiresEmergencyCaseLink {
+    if (_patientEmergencyCases.isEmpty) {
+      return false;
+    }
+    if ((_derivedSourceKind ?? '').toUpperCase() == 'EMERGENCY') {
+      return true;
+    }
+    return _selectedEmergencyCaseId != null;
+  }
+
+  bool get _isEmergencyScheduling {
+    return (_effectiveSourceKind ?? '').toUpperCase() == 'EMERGENCY';
+  }
+
+  String? get _effectiveSourceKind {
+    if ((_selectedEmergencyCaseId ?? '').trim().isNotEmpty) {
+      return 'EMERGENCY';
+    }
+    return _derivedSourceKind;
   }
 
   void _schedulePatientSearch(String value) {
@@ -384,7 +561,7 @@ class _TheaterScheduleCaseFormState
     final int generation = ++_patientSearchGeneration;
     setState(() {
       _isLoadingPatients = true;
-      _failure = null;
+      _patientFailure = null;
     });
     final Result<List<TheaterSchedulePatient>> result = await ref
         .read(theaterWorkspaceControllerProvider.notifier)
@@ -406,7 +583,7 @@ class _TheaterScheduleCaseFormState
       failure: (AppFailure failure) {
         setState(() {
           _isLoadingPatients = false;
-          _failure = failure;
+          _patientFailure = failure;
         });
       },
     );
@@ -416,22 +593,40 @@ class _TheaterScheduleCaseFormState
     final int generation = ++_patientContextGeneration;
     setState(() {
       _isLoadingPatientContext = true;
-      _failure = null;
+      _encounterFailure = null;
     });
-    final Result<TheaterSchedulePatientDetail> result = await ref
-        .read(theaterWorkspaceControllerProvider.notifier)
-        .loadSchedulePatientEncounters(patientId);
+    final TheaterWorkspaceController controller = ref.read(
+      theaterWorkspaceControllerProvider.notifier,
+    );
+    final List<Object> results = await Future.wait<Object>(<Future<Object>>[
+      controller.loadSchedulePatientEncounters(patientId),
+      controller.searchScheduleEmergencyCases(patientId),
+    ]);
     if (!mounted || generation != _patientContextGeneration) {
       return;
     }
-    result.when(
+    final Result<TheaterSchedulePatientDetail> encounterResult =
+        results[0] as Result<TheaterSchedulePatientDetail>;
+    final Result<List<TheaterScheduleEmergencyCase>> emergencyResult =
+        results[1] as Result<List<TheaterScheduleEmergencyCase>>;
+
+    encounterResult.when(
       success: (TheaterSchedulePatientDetail detail) {
+        final List<TheaterScheduleEmergencyCase> emergencyCases =
+            emergencyResult.when(
+              success: (List<TheaterScheduleEmergencyCase> value) => value,
+              failure: (_) => const <TheaterScheduleEmergencyCase>[],
+            );
         setState(() {
           _selectedPatientOption ??= _patientOption(detail.patient);
           _patientEncounters
             ..clear()
             ..addAll(detail.encounters);
+          _patientEmergencyCases
+            ..clear()
+            ..addAll(emergencyCases);
           _isLoadingPatientContext = false;
+          _applyInitialEmergencyCaseSelection();
           if (_selectedEncounterId != null) {
             _applyEncounterSelection(_selectedEncounterId);
           }
@@ -440,7 +635,7 @@ class _TheaterScheduleCaseFormState
       failure: (AppFailure failure) {
         setState(() {
           _isLoadingPatientContext = false;
-          _failure = failure;
+          _encounterFailure = failure;
         });
       },
     );
@@ -448,10 +643,7 @@ class _TheaterScheduleCaseFormState
 
   Future<void> _searchRooms(String query) async {
     final int generation = ++_roomSearchGeneration;
-    setState(() {
-      _isLoadingRooms = true;
-      _failure = null;
-    });
+    setState(() => _isLoadingRooms = true);
     final Result<List<TheaterRoomOption>> result = await ref
         .read(theaterWorkspaceControllerProvider.notifier)
         .searchTheatreRooms(query);
@@ -460,28 +652,27 @@ class _TheaterScheduleCaseFormState
     }
     result.when(
       success: (List<TheaterRoomOption> rooms) {
+        final _ScheduleSelectOption? pinned = _pinnedOption(
+          _roomOptions,
+          _selectedRoomId,
+        );
         setState(() {
           _roomOptions
             ..clear()
             ..addAll(rooms.map(_roomOption).whereType<_ScheduleSelectOption>());
+          _restorePinnedOption(_roomOptions, pinned);
           _isLoadingRooms = false;
         });
       },
-      failure: (AppFailure failure) {
-        setState(() {
-          _isLoadingRooms = false;
-          _failure = failure;
-        });
+      failure: (_) {
+        setState(() => _isLoadingRooms = false);
       },
     );
   }
 
   Future<void> _searchSurgeons(String query) async {
     final int generation = ++_surgeonSearchGeneration;
-    setState(() {
-      _isLoadingSurgeons = true;
-      _failure = null;
-    });
+    setState(() => _isLoadingSurgeons = true);
     final Result<List<TheaterStaffOption>> result = await ref
         .read(theaterWorkspaceControllerProvider.notifier)
         .searchTheatreStaff(query, role: 'SURGEON');
@@ -490,30 +681,29 @@ class _TheaterScheduleCaseFormState
     }
     result.when(
       success: (List<TheaterStaffOption> staff) {
+        final _ScheduleSelectOption? pinned = _pinnedOption(
+          _surgeonOptions,
+          _selectedSurgeonId,
+        );
         setState(() {
           _surgeonOptions
             ..clear()
             ..addAll(
               staff.map(_staffOption).whereType<_ScheduleSelectOption>(),
             );
+          _restorePinnedOption(_surgeonOptions, pinned);
           _isLoadingSurgeons = false;
         });
       },
-      failure: (AppFailure failure) {
-        setState(() {
-          _isLoadingSurgeons = false;
-          _failure = failure;
-        });
+      failure: (_) {
+        setState(() => _isLoadingSurgeons = false);
       },
     );
   }
 
   Future<void> _searchAnesthetists(String query) async {
     final int generation = ++_anesthetistSearchGeneration;
-    setState(() {
-      _isLoadingAnesthetists = true;
-      _failure = null;
-    });
+    setState(() => _isLoadingAnesthetists = true);
     final Result<List<TheaterStaffOption>> result = await ref
         .read(theaterWorkspaceControllerProvider.notifier)
         .searchTheatreStaff(query, role: 'ANESTHETIST');
@@ -522,20 +712,22 @@ class _TheaterScheduleCaseFormState
     }
     result.when(
       success: (List<TheaterStaffOption> staff) {
+        final _ScheduleSelectOption? pinned = _pinnedOption(
+          _anesthetistOptions,
+          _selectedAnesthetistId,
+        );
         setState(() {
           _anesthetistOptions
             ..clear()
             ..addAll(
               staff.map(_staffOption).whereType<_ScheduleSelectOption>(),
             );
+          _restorePinnedOption(_anesthetistOptions, pinned);
           _isLoadingAnesthetists = false;
         });
       },
-      failure: (AppFailure failure) {
-        setState(() {
-          _isLoadingAnesthetists = false;
-          _failure = failure;
-        });
+      failure: (_) {
+        setState(() => _isLoadingAnesthetists = false);
       },
     );
   }
@@ -550,9 +742,12 @@ class _TheaterScheduleCaseFormState
       _selectedPatientId = normalizedPatientId;
       _selectedPatientOption = option;
       _selectedEncounterId = null;
+      _selectedEmergencyCaseId = null;
       _derivedSourceKind = null;
       _patientEncounters.clear();
-      _failure = null;
+      _patientEmergencyCases.clear();
+      _patientFailure = null;
+      _encounterFailure = null;
       if (normalizedPatientId == null) {
         _patientSearchGeneration += 1;
         _patientContextGeneration += 1;
@@ -570,6 +765,63 @@ class _TheaterScheduleCaseFormState
     setState(() => _applyEncounterSelection(encounterId));
   }
 
+  void _selectEmergencyCase(String? emergencyCaseId) {
+    setState(() {
+      _selectedEmergencyCaseId = _emptyToNull(emergencyCaseId);
+      if (_selectedEmergencyCaseId == null) {
+        return;
+      }
+      if (_selectedEncounterId == null) {
+        final TheaterScheduleEncounter? emergencyEncounter =
+            _firstEmergencyEncounter();
+        if (emergencyEncounter != null) {
+          _applyEncounterSelection(emergencyEncounter.id);
+        }
+      }
+    });
+  }
+
+  void _applyInitialEmergencyCaseSelection() {
+    final String? initialId = _emptyToNull(widget.initialEmergencyCaseId);
+    if (initialId != null) {
+      _selectedEmergencyCaseId = _resolveEmergencyCaseId(initialId);
+      return;
+    }
+    if (_selectedEmergencyCaseId != null) {
+      _selectedEmergencyCaseId = _resolveEmergencyCaseId(
+        _selectedEmergencyCaseId,
+      );
+      return;
+    }
+    if (_patientEmergencyCases.length == 1) {
+      _selectedEmergencyCaseId = _patientEmergencyCases.first.id;
+    }
+  }
+
+  String? _resolveEmergencyCaseId(String? candidate) {
+    final String normalized = (candidate ?? '').trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    for (final TheaterScheduleEmergencyCase emergencyCase
+        in _patientEmergencyCases) {
+      if (emergencyCase.id == normalized ||
+          emergencyCase.displayId == normalized) {
+        return emergencyCase.id;
+      }
+    }
+    return normalized;
+  }
+
+  TheaterScheduleEncounter? _firstEmergencyEncounter() {
+    for (final TheaterScheduleEncounter encounter in _patientEncounters) {
+      if ((encounter.sourceKind ?? '').toUpperCase() == 'EMERGENCY') {
+        return encounter;
+      }
+    }
+    return null;
+  }
+
   void _applyEncounterSelection(String? encounterId) {
     final String? normalizedEncounterId = _emptyToNull(encounterId);
     _selectedEncounterId = normalizedEncounterId;
@@ -580,6 +832,11 @@ class _TheaterScheduleCaseFormState
     for (final TheaterScheduleEncounter encounter in _patientEncounters) {
       if (encounter.id == normalizedEncounterId) {
         _derivedSourceKind = encounter.sourceKind;
+        if ((_derivedSourceKind ?? '').toUpperCase() == 'EMERGENCY' &&
+            _selectedEmergencyCaseId == null &&
+            _patientEmergencyCases.length == 1) {
+          _selectedEmergencyCaseId = _patientEmergencyCases.first.id;
+        }
         return;
       }
     }
@@ -622,10 +879,7 @@ class _TheaterScheduleCaseFormState
     });
   }
 
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
+  Map<String, Object?> _buildPayload() {
     final ClinicalRequestBillingSubmit? billing = _billing;
     final bool charge =
         !widget.rescheduleOnly &&
@@ -641,21 +895,23 @@ class _TheaterScheduleCaseFormState
         : _selectedProcedures
               .map((ClinicalActionCatalogOption p) => p.displayTitle)
               .join(', ');
-    Navigator.of(context).pop(<String, Object?>{
+    final String? sourceKind = _effectiveSourceKind;
+    return <String, Object?>{
       if (!widget.rescheduleOnly) 'encounter_id': _selectedEncounterId,
       'scheduled_at': scheduledAt.toUtc().toIso8601String(),
       if (_selectedRoomId != null) 'room_id': _selectedRoomId,
       if (_selectedSurgeonId != null) 'surgeon_user_id': _selectedSurgeonId,
       if (_selectedAnesthetistId != null)
         'anesthetist_user_id': _selectedAnesthetistId,
-      if (!widget.rescheduleOnly && _derivedSourceKind != null)
-        'source_kind': _derivedSourceKind,
+      if (!widget.rescheduleOnly && sourceKind != null) 'source_kind': sourceKind,
+      if (!widget.rescheduleOnly && _selectedEmergencyCaseId != null)
+        'emergency_case_id': _selectedEmergencyCaseId,
       if (!widget.rescheduleOnly && procedureName != null)
         'procedure_name': procedureName,
       'workflow_stage': widget.rescheduleOnly ? null : 'PRE_OP',
       'stage_notes': _notesController.text.trim(),
       if (charge) 'billing': billing.toPayloadMap(),
-    });
+    };
   }
 
   _ScheduleSelectOption? _patientOption(TheaterSchedulePatient patient) {
@@ -683,8 +939,25 @@ class _TheaterScheduleCaseFormState
       value: encounter.id,
       label: encounter.displayTitle,
       subtitle: encounter.displaySubtitle,
-      icon: Icons.medical_information_outlined,
+      icon: (encounter.sourceKind ?? '').toUpperCase() == 'EMERGENCY'
+          ? Icons.emergency_outlined
+          : Icons.medical_information_outlined,
       searchText: encounter.searchText,
+    );
+  }
+
+  _ScheduleSelectOption? _emergencyCaseOption(
+    TheaterScheduleEmergencyCase emergencyCase,
+  ) {
+    if (emergencyCase.id.trim().isEmpty) {
+      return null;
+    }
+    return _ScheduleSelectOption(
+      value: emergencyCase.id,
+      label: emergencyCase.displayTitle,
+      subtitle: emergencyCase.displaySubtitle,
+      icon: Icons.emergency_outlined,
+      searchText: emergencyCase.searchText,
     );
   }
 
@@ -751,6 +1024,31 @@ class _TheaterScheduleCaseFormState
       result.add(option);
     }
     return result.take(20).toList(growable: false);
+  }
+
+  _ScheduleSelectOption? _pinnedOption(
+    List<_ScheduleSelectOption> options,
+    String? selectedId,
+  ) {
+    if (selectedId == null) {
+      return null;
+    }
+    return _optionByValue(options, selectedId);
+  }
+
+  void _restorePinnedOption(
+    List<_ScheduleSelectOption> options,
+    _ScheduleSelectOption? pinned,
+  ) {
+    if (pinned == null) {
+      return;
+    }
+    final bool alreadyPresent = options.any(
+      (_ScheduleSelectOption option) => option.value == pinned.value,
+    );
+    if (!alreadyPresent) {
+      options.insert(0, pinned);
+    }
   }
 }
 

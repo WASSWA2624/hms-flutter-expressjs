@@ -4,6 +4,8 @@ import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/dtos/clinical_dtos.dart';
+import 'package:hosspi_hms/features/emergency/data/dtos/emergency_dtos.dart';
+import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/lab/data/dtos/lab_dtos.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/theater/data/dtos/theater_dtos.dart';
@@ -204,6 +206,32 @@ final class TheaterRepositoryImpl implements TheaterRepository {
   }
 
   @override
+  Future<Result<List<TheaterScheduleEmergencyCase>>> searchScheduleEmergencyCases(
+    String patientId,
+  ) {
+    return _apiClient.get<List<TheaterScheduleEmergencyCase>>(
+      ApiEndpoints.collection(HmsApiResource.emergencyCases),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 12,
+        'patient_id': patientId.trim(),
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) {
+        final List<EmergencyCaseSummary> items = EmergencyCasePageDto.fromResponse(
+          data,
+          const AppPageRequest(),
+        ).page.items;
+        return items
+            .where((EmergencyCaseSummary item) => item.isOpen)
+            .map(_mapScheduleEmergencyCase)
+            .toList(growable: false);
+      },
+    );
+  }
+
+  @override
   Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query) {
     return _apiClient.get<List<TheaterRoomOption>>(
       ApiEndpoints.collection(HmsApiResource.rooms),
@@ -243,7 +271,7 @@ final class TheaterRepositoryImpl implements TheaterRepository {
         'limit': 20,
         'search': query.trim(),
         'status': 'ACTIVE',
-        'sort_by': 'display_name',
+        'sort_by': 'created_at',
         'order': 'asc',
       }),
       decoder: (Object? data) => _decodeStaffOptions(data, role: role),
@@ -326,6 +354,18 @@ TheaterScheduleEncounter _mapScheduleEncounter(
     type: encounter.type,
     startedAt: encounter.startedAt,
     endedAt: encounter.endedAt,
+  );
+}
+
+TheaterScheduleEmergencyCase _mapScheduleEmergencyCase(
+  EmergencyCaseSummary summary,
+) {
+  return TheaterScheduleEmergencyCase(
+    id: summary.id,
+    displayId: summary.displayId,
+    severity: summary.severity,
+    status: summary.status,
+    createdAt: summary.createdAt,
   );
 }
 

@@ -2404,6 +2404,36 @@ abstract class AppLocalizations {
   /// **'Select an active encounter'**
   String get theaterEncounterSearchHint;
 
+  /// Label for emergency case selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency case'**
+  String get theaterEmergencyCaseLabel;
+
+  /// Hint for emergency case selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Link the active emergency case'**
+  String get theaterEmergencyCaseSearchHint;
+
+  /// Hint when emergency case select is disabled until patient is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a patient first'**
+  String get theaterEmergencyCaseSelectPatientFirstHint;
+
+  /// Helper text shown when scheduling theater cases from emergency context.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency cases require linking the active ED case so theater billing and handoff context stay connected.'**
+  String get theaterScheduleEmergencyHint;
+
+  /// Title for emergency scheduling helper panel in theater schedule form.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency scheduling'**
+  String get theaterScheduleEmergencyPanelTitle;
+
   /// Label for scheduled time in theater schedule forms.
   ///
   /// In en, this message translates to:
@@ -2625,6 +2655,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Schedule theater case'**
   String get theaterScheduleCaseDialogTitle;
+
+  /// Introductory help text for the schedule theater case dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.'**
+  String get theaterScheduleCaseDialogBody;
+
+  /// Section title for patient and encounter selection in schedule case dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient context'**
+  String get theaterSchedulePatientContextSection;
+
+  /// Section title for schedule datetime and team fields in schedule case dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule and team'**
+  String get theaterScheduleDetailsSection;
+
+  /// Section title for procedure billing in schedule case dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures and billing'**
+  String get theaterScheduleBillingSection;
+
+  /// Help text for procedure billing in schedule case dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.'**
+  String get theaterScheduleBillingSectionBody;
+
+  /// Hint shown on encounter field before a patient is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a patient first'**
+  String get theaterEncounterSelectPatientFirstHint;
 
   /// Dialog title for rescheduling a theater case.
   ///

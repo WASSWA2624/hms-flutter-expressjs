@@ -1585,6 +1585,26 @@
   "@theaterEncounterSearchHint": {
     "description": "Hint for encounter selection in theater schedule forms."
   },
+  "theaterEmergencyCaseLabel": "Emergency case",
+  "@theaterEmergencyCaseLabel": {
+    "description": "Label for emergency case selection in theater schedule forms."
+  },
+  "theaterEmergencyCaseSearchHint": "Link the active emergency case",
+  "@theaterEmergencyCaseSearchHint": {
+    "description": "Hint for emergency case selection in theater schedule forms."
+  },
+  "theaterEmergencyCaseSelectPatientFirstHint": "Select a patient first",
+  "@theaterEmergencyCaseSelectPatientFirstHint": {
+    "description": "Hint when emergency case select is disabled until patient is chosen."
+  },
+  "theaterScheduleEmergencyHint": "Emergency cases require linking the active ED case so theater billing and handoff context stay connected.",
+  "@theaterScheduleEmergencyHint": {
+    "description": "Helper text shown when scheduling theater cases from emergency context."
+  },
+  "theaterScheduleEmergencyPanelTitle": "Emergency scheduling",
+  "@theaterScheduleEmergencyPanelTitle": {
+    "description": "Title for emergency scheduling helper panel in theater schedule form."
+  },
   "theaterScheduledTimeLabel": "Scheduled time",
   "@theaterScheduledTimeLabel": {
     "description": "Label for scheduled time in theater schedule forms."
@@ -1732,6 +1752,30 @@
   "theaterScheduleCaseDialogTitle": "Schedule theater case",
   "@theaterScheduleCaseDialogTitle": {
     "description": "Dialog title for scheduling a theater case."
+  },
+  "theaterScheduleCaseDialogBody": "Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.",
+  "@theaterScheduleCaseDialogBody": {
+    "description": "Introductory help text for the schedule theater case dialog."
+  },
+  "theaterSchedulePatientContextSection": "Patient context",
+  "@theaterSchedulePatientContextSection": {
+    "description": "Section title for patient and encounter selection in schedule case dialog."
+  },
+  "theaterScheduleDetailsSection": "Schedule and team",
+  "@theaterScheduleDetailsSection": {
+    "description": "Section title for schedule datetime and team fields in schedule case dialog."
+  },
+  "theaterScheduleBillingSection": "Procedures and billing",
+  "@theaterScheduleBillingSection": {
+    "description": "Section title for procedure billing in schedule case dialog."
+  },
+  "theaterScheduleBillingSectionBody": "Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.",
+  "@theaterScheduleBillingSectionBody": {
+    "description": "Help text for procedure billing in schedule case dialog."
+  },
+  "theaterEncounterSelectPatientFirstHint": "Select a patient first",
+  "@theaterEncounterSelectPatientFirstHint": {
+    "description": "Hint shown on encounter field before a patient is selected."
   },
   "theaterRescheduleDialogTitle": "Reschedule theater case",
   "@theaterRescheduleDialogTitle": {

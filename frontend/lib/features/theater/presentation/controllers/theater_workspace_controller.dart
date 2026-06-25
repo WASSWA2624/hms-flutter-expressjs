@@ -339,6 +339,12 @@ final class TheaterWorkspaceController
     return _repository.loadSchedulePatientEncounters(patientId);
   }
 
+  Future<Result<List<TheaterScheduleEmergencyCase>>> searchScheduleEmergencyCases(
+    String patientId,
+  ) {
+    return _repository.searchScheduleEmergencyCases(patientId);
+  }
+
   Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query) {
     return _repository.searchTheatreRooms(query);
   }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -760,6 +761,15 @@ class _EmergencyActionPanel extends ConsumerWidget {
           enabled: canHandoff && detail.summary.isOpen,
           onPressed: () => _openHandoffDialog(context),
         ),
+        AppActionItem(
+          label: _EmergencyText.scheduleTheater,
+          leadingIcon: Icons.meeting_room_outlined,
+          enabled:
+              canWriteEmergency &&
+              detail.summary.isOpen &&
+              !_hasTheaterHandoff(detail.summary),
+          onPressed: () => _openTheaterSchedule(context, detail.summary),
+        ),
       ],
       extraActions: <Widget>[
         AppReportActionButton.print(
@@ -980,6 +990,29 @@ class _EmergencyActionPanel extends ConsumerWidget {
     if (context.mounted) {
       _showFailureIfNeeded(context, failure, successMessage: 'Trip started');
     }
+  }
+
+  void _openTheaterSchedule(
+    BuildContext context,
+    EmergencyCaseSummary summary,
+  ) {
+    final String? patientId = _firstNonEmpty(<String?>[
+      summary.patientDisplayId,
+      summary.patientId,
+    ]);
+    final String? emergencyCaseId = _firstNonEmpty(<String?>[
+      summary.displayId,
+      summary.id,
+    ]);
+    if (emergencyCaseId == null) {
+      return;
+    }
+    final Map<String, String> queryParameters = <String, String>{
+      'action': 'schedule',
+      'emergency_case_id': emergencyCaseId,
+      'patient_id': ?patientId,
+    };
+    context.go(AppRoutes.theater.location(queryParameters: queryParameters));
   }
 
   Future<void> _openHandoffDialog(BuildContext context) async {
@@ -1994,6 +2027,7 @@ abstract final class _EmergencyText {
   static const String startTrip = 'Start trip';
   static const String status = 'Status';
   static const String theater = 'Theater';
+  static const String scheduleTheater = 'Schedule in Theater';
   static const String transporting = 'Transporting';
   static const String triage = 'Triage';
   static const String update = 'Update';
@@ -2121,6 +2155,26 @@ String _joinDisplay(Iterable<String?> values) {
 String? _nonEmpty(String? value) {
   final String normalized = value?.trim() ?? '';
   return normalized.isEmpty ? null : normalized;
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String? normalized = _nonEmpty(value);
+    if (normalized != null) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+bool _hasTheaterHandoff(EmergencyCaseSummary summary) {
+  final String destination = (summary.handoff?.destination ?? '')
+      .trim()
+      .toUpperCase();
+  if (destination != 'THEATER' && destination != 'THEATRE') {
+    return false;
+  }
+  return summary.handoff?.hasReceivingWork ?? false;
 }
 
 String _normalizedOption(String? value, {required String fallback}) {

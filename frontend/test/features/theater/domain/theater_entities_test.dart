@@ -28,6 +28,19 @@ void main() {
       expect(query.initialEncounterId, 'ENC-0042');
       expect(query.hasScheduleContext, isTrue);
     });
+
+    test('fromUri parses emergency schedule deep link', () {
+      final TheaterBoardQuery query = TheaterBoardQuery.fromUri(
+        Uri.parse(
+          '/theater?action=schedule&patient_id=P-001&emergency_case_id=EMC-009',
+        ),
+      );
+
+      expect(query.initialPatientId, 'P-001');
+      expect(query.initialEmergencyCaseId, 'EMC-009');
+      expect(query.scheduleAction, 'schedule');
+      expect(query.shouldOpenScheduleDialog, isTrue);
+    });
   });
 
   group('deriveTheaterSourceKind', () {
@@ -37,6 +50,41 @@ void main() {
       expect(deriveTheaterSourceKind('OPD'), 'OPD');
       expect(deriveTheaterSourceKind('EMERGENCY'), 'EMERGENCY');
       expect(deriveTheaterSourceKind('UNKNOWN'), isNull);
+    });
+  });
+
+  group('compareTheaterScheduleEncounters', () {
+    test('prioritizes emergency encounters before other types', () {
+      const TheaterScheduleEncounter emergency = TheaterScheduleEncounter(
+        id: 'enc-emergency',
+        type: 'EMERGENCY',
+      );
+      const TheaterScheduleEncounter opd = TheaterScheduleEncounter(
+        id: 'enc-opd',
+        type: 'OPD',
+      );
+
+      expect(
+        compareTheaterScheduleEncounters(emergency, opd),
+        lessThan(0),
+      );
+    });
+  });
+
+  group('TheaterScheduleEmergencyCase', () {
+    test('isOpen recognizes active emergency statuses', () {
+      const TheaterScheduleEmergencyCase openCase = TheaterScheduleEmergencyCase(
+        id: 'EMC-1',
+        status: 'OPEN',
+      );
+      const TheaterScheduleEmergencyCase closedCase =
+          TheaterScheduleEmergencyCase(
+        id: 'EMC-2',
+        status: 'CLOSED',
+      );
+
+      expect(openCase.isOpen, isTrue);
+      expect(closedCase.isOpen, isFalse);
     });
   });
 }

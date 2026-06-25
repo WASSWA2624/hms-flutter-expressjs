@@ -75,6 +75,8 @@ final class TheaterBoardQuery {
     this.focusPanel,
     this.initialPatientId,
     this.initialEncounterId,
+    this.initialEmergencyCaseId,
+    this.scheduleAction,
   });
 
   final String search;
@@ -90,10 +92,19 @@ final class TheaterBoardQuery {
   final TheaterDetailPanel? focusPanel;
   final String? initialPatientId;
   final String? initialEncounterId;
+  final String? initialEmergencyCaseId;
+  final String? scheduleAction;
 
   bool get hasScheduleContext =>
       (initialPatientId ?? '').trim().isNotEmpty ||
-      (initialEncounterId ?? '').trim().isNotEmpty;
+      (initialEncounterId ?? '').trim().isNotEmpty ||
+      (initialEmergencyCaseId ?? '').trim().isNotEmpty;
+
+  bool get shouldOpenScheduleDialog {
+    final String action = (scheduleAction ?? '').trim().toLowerCase();
+    return hasScheduleContext &&
+        (action == 'schedule' || action == 'schedule_case');
+  }
 
   bool get hasRouteTargeting =>
       (focusCaseId ?? '').trim().isNotEmpty || focusPanel != null;
@@ -135,6 +146,12 @@ final class TheaterBoardQuery {
         'encounterId',
         'encounter',
       ]),
+      initialEmergencyCaseId: pick(<String>[
+        'emergency_case_id',
+        'emergencyCaseId',
+        'emergency_case',
+      ]),
+      scheduleAction: pick(<String>['action']),
     );
   }
 
@@ -152,6 +169,8 @@ final class TheaterBoardQuery {
     TheaterDetailPanel? focusPanel,
     String? initialPatientId,
     String? initialEncounterId,
+    String? initialEmergencyCaseId,
+    String? scheduleAction,
     bool clearStatus = false,
     bool clearStage = false,
     bool clearScheduledDate = false,
@@ -185,6 +204,12 @@ final class TheaterBoardQuery {
       initialEncounterId: clearScheduleContext
           ? null
           : initialEncounterId ?? this.initialEncounterId,
+      initialEmergencyCaseId: clearScheduleContext
+          ? null
+          : initialEmergencyCaseId ?? this.initialEmergencyCaseId,
+      scheduleAction: clearScheduleContext
+          ? null
+          : scheduleAction ?? this.scheduleAction,
     );
   }
 }
@@ -283,10 +308,73 @@ final class TheaterSchedulePatientDetail {
   const TheaterSchedulePatientDetail({
     required this.patient,
     this.encounters = const <TheaterScheduleEncounter>[],
+    this.emergencyCases = const <TheaterScheduleEmergencyCase>[],
   });
 
   final TheaterSchedulePatient patient;
   final List<TheaterScheduleEncounter> encounters;
+  final List<TheaterScheduleEmergencyCase> emergencyCases;
+}
+
+@immutable
+final class TheaterScheduleEmergencyCase {
+  const TheaterScheduleEmergencyCase({
+    required this.id,
+    this.displayId,
+    this.severity,
+    this.status,
+    this.createdAt,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? severity;
+  final String? status;
+  final DateTime? createdAt;
+
+  bool get isOpen {
+    return switch ((status ?? '').toUpperCase()) {
+      'OPEN' || 'PENDING' || 'IN_PROGRESS' => true,
+      _ => false,
+    };
+  }
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[displayId, id]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[severity, status]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[id, displayId, severity, status]) ??
+        displayTitle;
+  }
+}
+
+int compareTheaterScheduleEncounters(
+  TheaterScheduleEncounter left,
+  TheaterScheduleEncounter right,
+) {
+  int priority(String? type) {
+    return switch ((type ?? '').trim().toUpperCase()) {
+      'EMERGENCY' => 0,
+      'THEATRE' => 1,
+      'IPD' || 'ICU' || 'INPATIENT' => 2,
+      'OPD' || 'TELEMEDICINE' => 3,
+      _ => 4,
+    };
+  }
+
+  final int byPriority = priority(left.type).compareTo(priority(right.type));
+  if (byPriority != 0) {
+    return byPriority;
+  }
+  final DateTime leftAt = left.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final DateTime rightAt =
+      right.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  return rightAt.compareTo(leftAt);
 }
 
 @immutable

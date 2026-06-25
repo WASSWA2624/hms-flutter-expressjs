@@ -1218,6 +1218,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterEncounterSearchHint => 'Select an active encounter';
 
   @override
+  String get theaterEmergencyCaseLabel => 'Emergency case';
+
+  @override
+  String get theaterEmergencyCaseSearchHint => 'Link the active emergency case';
+
+  @override
+  String get theaterEmergencyCaseSelectPatientFirstHint =>
+      'Select a patient first';
+
+  @override
+  String get theaterScheduleEmergencyHint =>
+      'Emergency cases require linking the active ED case so theater billing and handoff context stay connected.';
+
+  @override
+  String get theaterScheduleEmergencyPanelTitle => 'Emergency scheduling';
+
+  @override
   String get theaterScheduledTimeLabel => 'Scheduled time';
 
   @override
@@ -1330,6 +1347,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get theaterScheduleCaseDialogTitle => 'Schedule theater case';
+
+  @override
+  String get theaterScheduleCaseDialogBody =>
+      'Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.';
+
+  @override
+  String get theaterSchedulePatientContextSection => 'Patient context';
+
+  @override
+  String get theaterScheduleDetailsSection => 'Schedule and team';
+
+  @override
+  String get theaterScheduleBillingSection => 'Procedures and billing';
+
+  @override
+  String get theaterScheduleBillingSectionBody =>
+      'Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.';
+
+  @override
+  String get theaterEncounterSelectPatientFirstHint => 'Select a patient first';
 
   @override
   String get theaterRescheduleDialogTitle => 'Reschedule theater case';

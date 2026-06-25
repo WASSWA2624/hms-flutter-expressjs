@@ -158,6 +158,44 @@ void main() {
       verify(() => repository.searchSchedulePatients('jane')).called(1);
     });
 
+    test('searchScheduleEmergencyCases delegates to repository', () async {
+      final _MockTheaterRepository repository = _MockTheaterRepository();
+      const TheaterScheduleEmergencyCase emergencyCase =
+          TheaterScheduleEmergencyCase(
+        id: 'EMC-001',
+        displayId: 'EMC-001',
+        status: 'OPEN',
+      );
+
+      _stubInitialLoad(repository);
+      when(
+        () => repository.searchScheduleEmergencyCases('P-001'),
+      ).thenAnswer(
+        (_) async => const Result<List<TheaterScheduleEmergencyCase>>.success(
+          <TheaterScheduleEmergencyCase>[emergencyCase],
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [theaterRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(theaterWorkspaceControllerProvider.future);
+
+      final Result<List<TheaterScheduleEmergencyCase>> result = await container
+          .read(theaterWorkspaceControllerProvider.notifier)
+          .searchScheduleEmergencyCases('P-001');
+
+      expect(
+        result.when(
+          success: (List<TheaterScheduleEmergencyCase> value) => value,
+          failure: (_) => null,
+        ),
+        contains(emergencyCase),
+      );
+      verify(() => repository.searchScheduleEmergencyCases('P-001')).called(1);
+    });
+
     test('searchTheatreStaff delegates role filter to repository', () async {
       final _MockTheaterRepository repository = _MockTheaterRepository();
       const TheaterStaffOption surgeon = TheaterStaffOption(

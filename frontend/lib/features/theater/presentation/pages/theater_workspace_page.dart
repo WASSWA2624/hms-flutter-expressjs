@@ -135,6 +135,7 @@ class _TheaterWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<TheaterCase>
   _tableColumnController;
+  bool _scheduleDialogHandled = false;
 
   @override
   void initState() {
@@ -142,6 +143,34 @@ class _TheaterWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<TheaterCase>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_maybeOpenScheduleDialog());
+    });
+  }
+
+  Future<void> _maybeOpenScheduleDialog() async {
+    if (_scheduleDialogHandled) {
+      return;
+    }
+    final TheaterBoardQuery? query = widget.initialQuery;
+    if (query == null || !query.shouldOpenScheduleDialog) {
+      return;
+    }
+    _scheduleDialogHandled = true;
+    if (!mounted) {
+      return;
+    }
+    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+    if (!accessPolicy.grants(AppPermissions.clinicalWrite)) {
+      return;
+    }
+    await _showScheduleCaseDialog(
+      context,
+      ref,
+      initialPatientId: query.initialPatientId,
+      initialEncounterId: query.initialEncounterId,
+      initialEmergencyCaseId: query.initialEmergencyCaseId,
+    );
   }
 
   @override
@@ -191,6 +220,8 @@ class _TheaterWorkspaceContentState
                 ref,
                 initialPatientId: widget.initialQuery?.initialPatientId,
                 initialEncounterId: widget.initialQuery?.initialEncounterId,
+                initialEmergencyCaseId:
+                    widget.initialQuery?.initialEmergencyCaseId,
               ),
             )
           : null,
@@ -1271,17 +1302,16 @@ Future<void> _showScheduleCaseDialog(
   WidgetRef ref, {
   String? initialPatientId,
   String? initialEncounterId,
+  String? initialEmergencyCaseId,
 }) async {
-  final Map<String, Object?>? payload =
-      await showAppWorkspaceActionDialog<Map<String, Object?>>(
-        context: context,
-        title: Text(context.l10n.theaterScheduleCaseDialogTitle),
-        icon: const Icon(Icons.add),
-        content: TheaterScheduleCaseForm(
-          initialPatientId: initialPatientId,
-          initialEncounterId: initialEncounterId,
-        ),
-      );
+  final Map<String, Object?>? payload = await showTheaterScheduleCaseDialog(
+    context: context,
+    title: context.l10n.theaterScheduleCaseDialogTitle,
+    icon: const Icon(Icons.add),
+    initialPatientId: initialPatientId,
+    initialEncounterId: initialEncounterId,
+    initialEmergencyCaseId: initialEmergencyCaseId,
+  );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1299,16 +1329,13 @@ Future<void> _showRescheduleDialog(
   WidgetRef ref,
   TheaterCase theaterCase,
 ) async {
-  final Map<String, Object?>? payload =
-      await showAppWorkspaceActionDialog<Map<String, Object?>>(
-        context: context,
-        title: Text(context.l10n.theaterRescheduleDialogTitle),
-        icon: const Icon(Icons.edit_calendar_outlined),
-        content: TheaterScheduleCaseForm(
-          theaterCase: theaterCase,
-          rescheduleOnly: true,
-        ),
-      );
+  final Map<String, Object?>? payload = await showTheaterScheduleCaseDialog(
+    context: context,
+    title: context.l10n.theaterRescheduleDialogTitle,
+    icon: const Icon(Icons.edit_calendar_outlined),
+    theaterCase: theaterCase,
+    rescheduleOnly: true,
+  );
   if (payload == null || !context.mounted) {
     return;
   }
