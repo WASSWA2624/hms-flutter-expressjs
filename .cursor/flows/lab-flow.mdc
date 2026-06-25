@@ -1,0 +1,90 @@
+---
+description: Use this file whenever a change is made to a Laboratory module/flow/action
+alwaysApply: false
+---
+# Laboratory Patient Flow
+
+## 0. Overview
+
+This file is the direct Laboratory flow source of truth for HOSSPI HMS. Lab is an **executing department** — every order links to a **clinical encounter** (`encounter_id`). Lab does not create OPD/IPD encounters or advance patient flow stages directly; orchestrators update OPD/IPD stages when work completes. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+
+## 1. Goal
+
+Enable lab staff to execute sample-to-result workflows: receive orders, collect samples, process tests, enter and verify results, handle QC, and release results to clinicians — with billing integration at order time and encounter traceability on every row.
+
+### Central encounter rule
+
+Orders attach to OPD or IPD encounters. Lab executes and reports — Clinical/Doctor places orders via shared clinical actions; OPD/IPD orchestrators own stage progression.
+
+---
+
+## 2. Position in the Patient Journey
+
+```mermaid
+flowchart LR
+    OPD[OPD LAB_REQUESTED] --> LAB[Lab workbench]
+    IPD[IPD order — ipd-flow §7] --> LAB
+    CLIN[Clinical order dialog] --> LAB
+    LAB --> RESULT[Result released]
+    RESULT --> OPD_DONE[OPD stage updated by orchestrator]
+    RESULT --> IPD_TL[IPD timeline / care loop §8]
+```
+
+| Source | Flow reference | Lab responsibility |
+| ------ | -------------- | ------------------ |
+| OPD | [opd-flow §3](./opd-flow.mdc) `LAB_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD encounter orders |
+| IPD | [ipd-flow §7](./ipd-flow.mdc) lab route | Sample → process → result on admission encounter |
+| IPD care loop | [ipd-flow §8](./ipd-flow.mdc) | Results for doctor/nurse review |
+| Billing | [ipd-flow §4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order; charges post per policy |
+
+---
+
+## 3. Step-by-Step Lab Workflow
+
+| Step | Stage | What Happens | Main Role |
+| ---- | ----- | ------------ | --------- |
+| 1 | Order received | Order appears on lab workbench from OPD/IPD/ICU/clinical. | System |
+| 2 | Billing gate (if required) | Pay-now or bill-later at order time. | Cashier / System |
+| 3 | Sample collection | Collect, label, send to lab. | Phlebotomist / Lab |
+| 4 | Sample receive / reject | Accession or reject with reason. | Lab tech |
+| 5 | Processing | Test in progress. | Lab tech |
+| 6 | Result entry | Enter values; flag critical results. | Lab tech |
+| 7 | Verification | Verify/release or reject result. | Lab supervisor |
+| 8 | Clinician notification | Critical results notify doctor/ward ([ipd-flow §17](./ipd-flow.mdc)). | System |
+
+---
+
+## 4. Backend Workbench Contract
+
+Use `GET /lab/workbench` and lab-workspace workflow mutations as canonical. Order pipeline: collect → receive/reject sample → release/reject result → verify → reverse (when permitted).
+
+| Order status (user meaning) | Lab action |
+| --------------------------- | ---------- |
+| Ordered | Awaiting sample |
+| Waiting sample / patient | Collect sample |
+| In progress | Processing |
+| Result pending | Entry in progress |
+| Completed | Released to clinician |
+| Cancelled | Cancel with reason |
+
+---
+
+## 5. Role and Module Boundaries
+
+| Rule | Detail |
+| ---- | ------ |
+| [opd-flow §5](./opd-flow.mdc) | Lab workspace actions only — no OPD clinical stage mutations from lab UI |
+| [opd-flow §6](./opd-flow.mdc) | `AppWorkspace`, summary cards filter worklist |
+| Clinical boundary | Doctors order via `clinical_lab_order_action_dialog.dart` |
+| Billing boundary | Pay-now at order; bill-later in Billing module |
+
+---
+
+## Key file references
+
+```
+.cursor/flows/lab-flow.mdc                         # This file
+frontend/lib/features/lab/
+backend/src/modules/lab-workspace/
+frontend/lib/shared/clinical_actions/clinical_lab_order_action_dialog.dart
+```

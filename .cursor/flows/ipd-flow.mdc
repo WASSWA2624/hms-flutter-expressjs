@@ -2,6 +2,40 @@
 description: Use this file whenever a change is made to an IPD module/flow/action
 alwaysApply: false
 ---
+# Inpatient (IPD) Patient Flow
+
+## 0. Overview
+
+This file is the direct IPD flow source of truth for HOSSPI HMS. The **IPD encounter / admission** is the central inpatient record. Departmental overlays and service execution attach to it — see dedicated flow files for detail:
+
+| Flow file | Relationship to IPD |
+| --------- | ------------------- |
+| [opd-flow.mdc](./opd-flow.mdc) | Upstream: OPD `ADMITTED` creates linked IPD admission |
+| [emergency-flow.mdc](./emergency-flow.mdc) | Upstream: emergency handoff to IPD (§2.1 deferred billing) |
+| [icu-flow.mdc](./icu-flow.mdc) | Overlay: critical care on same admission |
+| [theater-flow.mdc](./theater-flow.mdc) | Overlay: surgical episode; temporary `In Procedure / OT` |
+| [nursing-flow.mdc](./nursing-flow.mdc) | Ward execution: vitals, MAR, handover on admission |
+| [lab-flow.mdc](./lab-flow.mdc) | Service: lab orders from §7 route here |
+| [radiology-flow.mdc](./radiology-flow.mdc) | Service: imaging orders from §7 route here |
+| [pharmacy-flow.mdc](./pharmacy-flow.mdc) | Service: medication orders; discharge meds §10 |
+| [discharge-flow.mdc](./discharge-flow.mdc) | Downstream: multi-step clearance and encounter closure |
+| [app-write-up.mdc](../app-write-up.mdc) | Product module boundaries |
+
+```mermaid
+flowchart LR
+    OPD[opd-flow ADMITTED] --> IPD[IPD encounter]
+    EMR[emergency-flow IPD] --> IPD
+    IPD --> NURSE[nursing-flow ward care]
+    IPD --> ICU[icu-flow overlay]
+    IPD --> OT[theater-flow overlay]
+    IPD --> SVC[lab / radiology / pharmacy]
+    NURSE --> DISC[discharge-flow]
+    ICU --> DISC
+    OT --> DISC
+```
+
+---
+
 ## 1. Step-by-Step IPD Workflow
 
 
@@ -169,19 +203,19 @@ During IPD care, the doctor should be able to:
 
 ## 7. Inpatient Orders and Department Routing
 
-All orders should be linked to the IPD encounter and routed to the correct department queue.
+All orders should be linked to the IPD encounter and routed to the correct department queue. Detailed executing-department workflows live in the flow files below.
 
 
-| Order Type         | Route                                                       | Completion Output                                    |
-| ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
-| Medication         | Pharmacy → ward medication administration                   | Issued medicine and medication administration record |
-| Lab test           | Lab sample collection → processing → result upload          | Lab result available for doctor review               |
-| Radiology          | Imaging queue → scan/report upload                          | Radiology report and images if available             |
-| Procedure          | Procedure room / bedside procedure queue                    | Procedure note and charges                           |
-| Surgery            | OT scheduling → pre-op checklist → operation → post-op care | Operative note, anesthesia note, post-op orders      |
-| Specialist consult | Consultant queue                                            | Consultation note and recommendations                |
-| Diet order         | Dietary/kitchen queue                                       | Diet plan and delivery status                        |
-| Nursing task       | Ward nursing queue                                          | Completed nursing intervention or observation        |
+| Order Type         | Route                                                       | Flow reference | Completion Output                                    |
+| ------------------ | ----------------------------------------------------------- | -------------- | ---------------------------------------------------- |
+| Medication         | Pharmacy → ward medication administration                   | [pharmacy-flow](./pharmacy-flow.mdc), [nursing-flow](./nursing-flow.mdc) | Issued medicine and medication administration record |
+| Lab test           | Lab sample collection → processing → result upload          | [lab-flow](./lab-flow.mdc) | Lab result available for doctor review               |
+| Radiology          | Imaging queue → scan/report upload                          | [radiology-flow](./radiology-flow.mdc) | Radiology report and images if available             |
+| Procedure          | Procedure room / bedside procedure queue                    | — | Procedure note and charges                           |
+| Surgery            | OT scheduling → pre-op checklist → operation → post-op care | [theater-flow](./theater-flow.mdc) | Operative note, anesthesia note, post-op orders      |
+| Specialist consult | Consultant queue                                            | — | Consultation note and recommendations                |
+| Diet order         | Dietary/kitchen queue                                       | — | Diet plan and delivery status                        |
+| Nursing task       | Ward nursing queue                                          | [nursing-flow](./nursing-flow.mdc) | Completed nursing intervention or observation        |
 
 
 ### Recommended Order Statuses
@@ -217,17 +251,17 @@ This loop prevents IPD from becoming a single linear process and supports real h
 
 ## 9. Transfers and Escalation
 
-A patient may move during admission without closing the IPD encounter.
+A patient may move during admission without closing the IPD encounter. ICU and theater transfers use dedicated overlay flows.
 
 
-| Transfer Type         | Example                                      |
-| --------------------- | -------------------------------------------- |
-| Bed transfer          | Same ward, different bed.                    |
-| Ward transfer         | Medical ward to surgical ward.               |
-| ICU transfer          | Ward to ICU or ICU to step-down ward.        |
-| Isolation transfer    | Move due to infection control need.          |
-| OT/procedure transfer | Temporary movement for surgery or procedure. |
-| External transfer     | Referral or transfer to another hospital.    |
+| Transfer Type         | Example                                      | Flow reference |
+| --------------------- | -------------------------------------------- | -------------- |
+| Bed transfer          | Same ward, different bed.                    | IPD bed board §14.2 |
+| Ward transfer         | Medical ward to surgical ward.               | IPD `request-transfer` |
+| ICU transfer          | Ward to ICU or ICU to step-down ward.        | [icu-flow §11](./icu-flow.mdc) |
+| Isolation transfer    | Move due to infection control need.          | IPD transfer |
+| OT/procedure transfer | Temporary movement for surgery or procedure. | [theater-flow §7](./theater-flow.mdc) |
+| External transfer     | Referral or transfer to another hospital.    | IPD encounter outcome |
 
 
 Each transfer should record reason, from-location, to-location, requested by, approved by, transfer time, handover note, and billing impact.
@@ -236,7 +270,7 @@ Each transfer should record reason, from-location, to-location, requested by, ap
 
 ## 10. Discharge Planning and Discharge Flow
 
-Discharge should be treated as a workflow, not a single button.
+Discharge should be treated as a workflow, not a single button. Full clearance orchestration is documented in [discharge-flow.mdc](./discharge-flow.mdc). ICU and ward teams signal readiness; Discharge module coordinates multi-party clearance.
 
 ```mermaid
 flowchart TD
@@ -290,8 +324,8 @@ flowchart TD
 | `Billing Deferred`                | Patient is allowed to proceed while billing is completed later.      |
 | `Admitted`                        | IPD encounter is active.                                             |
 | `In Ward`                         | Patient is admitted in a ward bed.                                   |
-| `In ICU`                          | Patient is admitted in ICU or critical care unit.                    |
-| `In Procedure / OT`               | Patient is temporarily in procedure or operating area.               |
+| `In ICU`                          | Patient is admitted in ICU or critical care unit.                    | [icu-flow](./icu-flow.mdc) |
+| `In Procedure / OT`               | Patient is temporarily in procedure or operating area.               | [theater-flow](./theater-flow.mdc) |
 | `Transfer Pending`                | Internal transfer has been requested but not completed.              |
 | `Waiting Results / Review`        | Important results or doctor review are pending.                      |
 | `Discharge Planned`               | Doctor has started discharge planning.                               |
@@ -408,7 +442,7 @@ The IPD screen should have one active patient board and one bed board.
 | Bed Reserved                    | Confirm arrival, change bed, cancel reservation.                                          |
 | Pending Deposit / Authorization | Collect deposit, request insurance approval, mark billing deferred if allowed.            |
 | Admitted / In Ward              | Record vitals, nursing notes, doctor notes, orders, medication, transfer, discharge plan. |
-| In ICU                          | ICU notes, intensive monitoring, orders, transfer to ward, discharge plan.                |
+| In ICU                          | ICU notes, intensive monitoring, orders, transfer to ward, discharge plan.                | [icu-flow §16](./icu-flow.mdc) |
 | Transfer Pending                | Approve transfer, assign target bed, complete handover.                                   |
 | Waiting Results / Review        | View pending results, notify doctor, continue care.                                       |
 | Discharge Planned               | Prepare summary, check pending items, start billing, prepare medicines.                   |

@@ -101,6 +101,25 @@ This file defines product scope only: core functions, modules, and module respon
 - Reports and audit read from modules but must not replace module-owned workflows.
 - Dental owns oral health assessment, tooth-level charting, dental procedures, dental treatment planning, and dental follow-up within outpatient and emergency care workflows.
 
+## Patient Flow Documents
+
+Chronological and departmental patient workflows are documented in [`.cursor/flows/`](./flows/). Use them when implementing or changing module behavior:
+
+| Flow file | Scope |
+| --------- | ----- |
+| [opd-flow.mdc](./flows/opd-flow.mdc) | Outpatient queues, stages, OPD-to-IPD handoff |
+| [ipd-flow.mdc](./flows/ipd-flow.mdc) | Inpatient admission hub — central encounter for admitted patients |
+| [emergency-flow.mdc](./flows/emergency-flow.mdc) | Emergency intake and handoff to OPD/IPD/ICU/Theater |
+| [icu-flow.mdc](./flows/icu-flow.mdc) | ICU overlay on IPD admission |
+| [theater-flow.mdc](./flows/theater-flow.mdc) | Surgical episode overlay on IPD admission |
+| [nursing-flow.mdc](./flows/nursing-flow.mdc) | Ward nursing on IPD; OPD vitals support |
+| [lab-flow.mdc](./flows/lab-flow.mdc) | Lab order execution (OPD + IPD) |
+| [radiology-flow.mdc](./flows/radiology-flow.mdc) | Imaging order execution (OPD + IPD) |
+| [pharmacy-flow.mdc](./flows/pharmacy-flow.mdc) | Dispensing (OPD + IPD + discharge meds) |
+| [discharge-flow.mdc](./flows/discharge-flow.mdc) | IPD multi-step discharge clearance |
+
+Operational modules (Housekeeping, Mortuary, Biomedical, HR, etc.) reference [ipd-flow](./flows/ipd-flow.mdc) and [opd-flow](./flows/opd-flow.mdc) for touchpoints; dedicated flow files may be added when those modules mature.
+
 ## Demo and Seed Data Expectations
 
 The system should support safe, repeatable demo seeding for development, testing, onboarding, and product demonstrations.

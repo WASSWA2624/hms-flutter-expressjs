@@ -1,0 +1,104 @@
+---
+description: Use this file whenever a change is made to a Discharge module/flow/action
+alwaysApply: false
+---
+# Discharge Patient Flow
+
+## 0. Overview
+
+This file is the direct Discharge flow source of truth for HOSSPI HMS. Discharge orchestrates **multi-step inpatient clearance** on the **IPD admission / encounter** — it does not create parallel records. Align with [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/pharmacy-flow.mdc`](./pharmacy-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+
+## 1. Goal
+
+Enable doctors, nurses, pharmacists, billers, and discharge coordinators to complete discharge planning, pending-order review, multi-party clearance, patient exit, bed release handoff, and encounter closure — without conflating OPD visit completion with IPD discharge.
+
+### Central encounter rule
+
+All clearance attaches to the **IPD admission**. OPD `DISCHARGED` ([opd-flow §3](./opd-flow.mdc)) completes the **outpatient visit only** — handled in OPD flow, not this module.
+
+---
+
+## 2. Position in the Patient Journey
+
+```mermaid
+flowchart TD
+    CARE[IPD care loop] --> PLAN[plan-discharge]
+    PLAN --> PEND[Pending orders review]
+    PEND --> DOC[Doctor summary]
+    DOC --> PHARM[Pharmacy clearance]
+    PHARM --> BILL[Billing clearance]
+    BILL --> NURSE[Nursing clearance]
+    NURSE --> EXIT[Patient exit]
+    EXIT --> BED[Bed release → Housekeeping]
+    BED --> FIN[finalize-discharge — DISCHARGED]
+```
+
+| Related flow | Discharge responsibility |
+| ------------ | ------------------------ |
+| [ipd-flow §10–§12](./ipd-flow.mdc) | Canonical discharge steps, statuses, backend stages |
+| [ipd-flow §11](./ipd-flow.mdc) `DISCHARGE_PLANNED`, `DISCHARGED` | Queue filters and actions |
+| [icu-flow §12](./icu-flow.mdc) | ICU signals readiness only; end ICU stay before ward exit if still active |
+| [nursing-flow §3 step 8](./nursing-flow.mdc) | Nursing clearance step |
+| [pharmacy-flow §4](./pharmacy-flow.mdc) | Take-home medicines clearance |
+| [opd-flow §8](./opd-flow.mdc) | Do not conflate OPD completion with IPD discharge |
+
+**Alternate exit:** in-hospital death uses **Mortuary** pathway — not standard discharge finalize ([app-write-up](../app-write-up.mdc) Mortuary row).
+
+---
+
+## 3. Step-by-Step Discharge Workflow
+
+| Step | What Happens | Main Role | API / pattern |
+| ---- | ------------ | --------- | ------------- |
+| 1 | Doctor marks discharge planned | Doctor | `POST /ipd-flows/:id/plan-discharge` |
+| 2 | System checks pending lab, radiology, procedure, medication, consult, nursing tasks | System | Read from encounter |
+| 3 | Doctor confirms ignorable vs required pending items | Doctor | Discharge UI |
+| 4 | Discharge summary, advice, follow-up prepared | Doctor | Summary API / IPD notes |
+| 5 | Take-home medicines prepared | Pharmacy | [pharmacy-flow](./pharmacy-flow.mdc) |
+| 6 | Final bill, balance, insurance closure | Billing | Billing workspace link |
+| 7 | Nursing clearance and patient education | Nurse | [nursing-flow](./nursing-flow.mdc) |
+| 8 | Patient exits; documents provided | Discharge desk | |
+| 9 | Bed released for cleaning | Bed manager / System | `release-bed`; Housekeeping handoff |
+| 10 | IPD encounter closed | System | `POST /ipd-flows/:id/finalize-discharge` |
+
+---
+
+## 4. Discharge Status Mapping
+
+Map UI to [ipd-flow §12](./ipd-flow.mdc) recommended statuses:
+
+| Status | Meaning |
+| ------ | ------- |
+| `Not Started` | No discharge plan |
+| `Planned` | `DISCHARGE_PLANNED` stage |
+| `Summary Pending` | Doctor summary incomplete |
+| `Medication Pending` | Take-home meds not ready |
+| `Billing Pending` | Financial clearance incomplete |
+| `Nursing Clearance Pending` | Ward checklist incomplete |
+| `Documents Ready` | All clearances complete |
+| `Patient Exited` | Physical exit recorded |
+| `Completed` | `DISCHARGED` / encounter closed |
+
+**Rule:** Do not show “patient discharged” until IPD `DISCHARGED` stage ([icu-flow §12](./icu-flow.mdc) same rule).
+
+---
+
+## 5. Module Boundaries
+
+| Own in Discharge | Do not duplicate |
+| ---------------- | -------------- |
+| Clearance orchestration UI, plan/finalize actions | Invoice/payment processing (Billing) |
+| Pending-order visibility | Pharmacy dispensing (Pharmacy) |
+| Discharge summary preparation coordination | Ward MAR and vitals (Nursing) |
+| Bed release trigger after exit | Housekeeping task execution (Housekeeping) |
+
+---
+
+## Key file references
+
+```
+.cursor/flows/discharge-flow.mdc                   # This file
+frontend/lib/features/discharge/
+backend/src/modules/ipd-flow/
+backend/src/modules/discharge-summary/
+```

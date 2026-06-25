@@ -1,0 +1,112 @@
+---
+description: Use this file whenever a change is made to an Emergency module/flow/action
+alwaysApply: false
+---
+# Emergency and Ambulance Patient Flow
+
+## 0. Overview
+
+This file is the direct Emergency flow source of truth for HOSSPI HMS. The **emergency case** is the hub while the patient is in the emergency department. Emergency hands off to OPD, IPD, ICU, or Theater without duplicating downstream encounters. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), [`.cursor/flows/theater-flow.mdc`](./theater-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+
+## 1. Goal
+
+Enable emergency clinicians, triage nurses, and ambulance dispatchers to run acute intake end-to-end: quick registration, triage, stabilization, ambulance dispatch, emergency response documentation, and **handoff** to receiving workflows — with care-before-billing affordances and source context preserved on all downstream modules.
+
+### Central encounter rule
+
+While active, the emergency case owns the workflow. Handoff creates or reuses the receiving record (OPD flow, IPD admission, ICU stay, theater case) and links `emergency_case_id`. Emergency does not own inpatient bed management, OPD consultation queues, or cashier workflows after handoff.
+
+---
+
+## 2. Position in the Patient Journey
+
+Emergency sits **at the front** of the journey and branches to downstream flows.
+
+```mermaid
+flowchart LR
+    ARR[Arrival / ambulance / walk-in] --> CASE[Emergency case OPEN]
+    CASE --> TRIAGE[Triage + stabilize]
+    TRIAGE --> HO{Handoff destination}
+    HO -->|OPD| OPD[opd-flow — WAITING_VITALS]
+    HO -->|IPD| IPD[ipd-flow — admission]
+    HO -->|ICU| ICU[ipd-flow + icu-flow]
+    HO -->|THEATER| OT[theater-flow]
+    HO -->|REFERRAL / DISCHARGE| CLOSE[Case closed]
+    OPD --> OPD_ADMIT[ADMITTED → IPD]
+```
+
+| Downstream | Flow reference | Emergency responsibility |
+| ---------- | -------------- | ------------------------ |
+| OPD | [opd-flow §2](./opd-flow.mdc) | `destination=OPD`; `arrival_mode=EMERGENCY`; payment gate waived when policy allows |
+| IPD | [ipd-flow §2.1](./ipd-flow.mdc) | `destination=IPD`; `Billing Deferred` when urgent |
+| ICU | [icu-flow §4.1](./icu-flow.mdc) | `destination=ICU`; IPD + `start-icu-stay` |
+| Theater | [theater-flow §4.2](./theater-flow.mdc) | `destination=THEATER`; theatre case started |
+| Patient registry | [app-write-up](../app-write-up.mdc) | Quick arrival may create incomplete patient — complete later |
+
+---
+
+## 3. Step-by-Step Emergency Workflow
+
+| Step | Stage | What Happens | Main Role |
+| ---- | ----- | ------------ | --------- |
+| 1 | Arrival | Walk-in, ambulance, or referral arrival; verify or quick-register patient. | Reception / Triage nurse |
+| 2 | Case opened | Emergency case created with chief complaint and priority. | Triage nurse / Clinician |
+| 3 | Triage | Vitals, acuity, isolation flags, routing decision recorded. | Triage nurse |
+| 4 | Stabilization | Emergency response, treatment, monitoring documented. | Emergency clinician |
+| 5 | Diagnostics / orders | Lab, radiology, medication as needed — orders on case or linked encounter. | Clinician |
+| 6 | Handoff decision | Destination: OPD, IPD, ICU, Theater, referral, or discharge from ED. | Emergency clinician |
+| 7 | Handoff execution | `POST /emergency-cases/:id/handoff` orchestrates downstream flow. | System / Clinician |
+| 8 | Case closure | Terminal handoffs close case; show deep links to receiving module. | System |
+
+---
+
+## 4. Handoff Destinations
+
+| Destination | Backend orchestration | Receiving module |
+| ----------- | --------------------- | ---------------- |
+| `OPD` | `startEmergencyOpdFlow` | [opd-flow](./opd-flow.mdc) — `WAITING_VITALS`, emergency context |
+| `IPD` | `startEmergencyIpdFlow` | [ipd-flow §2.1](./ipd-flow.mdc) — deferred billing optional |
+| `ICU` | `startEmergencyIcuFlow` | [icu-flow §4.1](./icu-flow.mdc) — IPD + ICU stay |
+| `THEATER` | `startEmergencyTheatreFlow` | [theater-flow §4.2](./theater-flow.mdc) |
+| `REFERRAL` | Case closed with referral note | External — no IPD |
+| `DISCHARGE` | Case closed | Patient leaves from ED |
+
+**Rules:**
+
+- After handoff, surface **Open in OPD / IPD / ICU / Theater** on case detail when links exist.
+- Do not recreate IPD from Emergency when patient already routed OPD → `ADMITTED`.
+- Quick registration patients prompt **Complete registration** link to patient registry.
+
+---
+
+## 5. Billing and Care-Before-Billing
+
+Per [ipd-flow §4](./ipd-flow.mdc):
+
+- Emergency IPD/ICU path may mark `Billing Deferred`.
+- UI shows deferred status when API provides — not static copy only.
+- Billing clearance happens in Billing module after handoff.
+
+---
+
+## 6. Module Boundaries
+
+| Own in Emergency | Do not duplicate |
+| ---------------- | -------------- |
+| Emergency case, triage, response, ambulance dispatch | OPD consultation queues (OPD flow) |
+| Handoff orchestration | IPD bed board, ward nursing (IPD / Nursing) |
+| ED-level orders during case | ICU stay lifecycle (ICU) |
+| | Theater case lifecycle (Theater) |
+| | OPD pre-consultation triage queue (OPD triage module when handed to OPD) |
+
+---
+
+## Key file references
+
+```
+.cursor/flows/emergency-flow.mdc                    # This file
+frontend/lib/features/emergency/
+backend/src/modules/emergency-case/
+backend/src/modules/triage-assessment/
+backend/src/modules/emergency-response/
+```

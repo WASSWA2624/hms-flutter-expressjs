@@ -1,0 +1,80 @@
+---
+description: Use this file whenever a change is made to a Radiology module/flow/action
+alwaysApply: false
+---
+# Radiology and Imaging Patient Flow
+
+## 0. Overview
+
+This file is the direct Radiology flow source of truth for HOSSPI HMS. Radiology is an **executing department** — every order links to a **clinical encounter** (`encounter_id`). Radiology does not create OPD/IPD encounters or advance patient flow stages directly. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+
+## 1. Goal
+
+Enable radiology staff to execute order-to-report workflows: receive orders, schedule and perform studies, manage imaging assets, draft and finalize reports, sync to PACS where configured, and release results to clinicians.
+
+### Central encounter rule
+
+Orders attach to OPD or IPD encounters. Radiology executes studies and reports; Clinical places orders; OPD/IPD orchestrators own stage progression.
+
+---
+
+## 2. Position in the Patient Journey
+
+```mermaid
+flowchart LR
+    OPD[OPD RADIOLOGY_REQUESTED] --> RAD[Radiology workbench]
+    IPD[IPD order — ipd-flow §7] --> RAD
+    CLIN[Clinical order dialog] --> RAD
+    RAD --> REPORT[Report finalized]
+    REPORT --> OPD_DONE[OPD stage updated by orchestrator]
+    REPORT --> IPD_TL[IPD timeline / care loop §8]
+```
+
+| Source | Flow reference | Radiology responsibility |
+| ------ | -------------- | ------------------------ |
+| OPD | [opd-flow §3](./opd-flow.mdc) `RADIOLOGY_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD orders |
+| IPD | [ipd-flow §7](./ipd-flow.mdc) imaging route | Scan → report on admission encounter |
+| Billing | [ipd-flow §4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order |
+| Biomedical | [app-write-up](../app-write-up.mdc) | Equipment **maintenance** is Biomedical — radiology consumes equipment for scheduling only |
+
+---
+
+## 3. Step-by-Step Radiology Workflow
+
+| Step | Stage | What Happens | Main Role |
+| ---- | ----- | ------------ | --------- |
+| 1 | Order received | Order on radiology workbench. | System |
+| 2 | Billing gate (if required) | Pay-now or bill-later. | Cashier / System |
+| 3 | Scheduling / assignment | Assign modality, room, equipment. | Radiology clerk |
+| 4 | Study start | Patient scanned; study record created. | Radiographer |
+| 5 | Asset capture | Images uploaded; PACS sync if configured. | Radiographer / System |
+| 6 | Report draft | Radiologist drafts report. | Radiologist |
+| 7 | Finalization / attestation | Final report released. | Radiologist |
+| 8 | Addendum (if needed) | Corrected or supplemental report. | Radiologist |
+
+---
+
+## 4. Backend Workbench Contract
+
+Use `/api/v1/radiology/*` workspace routes as canonical. Order pipeline: assign → start → complete → cancel; study workflow with asset upload and PACS; result draft → finalize → attestation → addendum.
+
+---
+
+## 5. Role and Module Boundaries
+
+| Rule | Detail |
+| ---- | ------ |
+| [opd-flow §5](./opd-flow.mdc) | Radiology workspace only — no OPD stage mutations from radiology UI |
+| Clinical boundary | Orders via `clinical_radiology_order_action_dialog.dart` |
+| Biomedical boundary | Imaging equipment registry/PM is not radiology workflow ownership |
+
+---
+
+## Key file references
+
+```
+.cursor/flows/radiology-flow.mdc                   # This file
+frontend/lib/features/radiology/
+backend/src/modules/radiology-workspace/
+frontend/lib/shared/clinical_actions/clinical_radiology_order_action_dialog.dart
+```

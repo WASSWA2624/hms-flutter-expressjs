@@ -6,7 +6,7 @@ alwaysApply: false
 
 ## 0. Overview
 
-This file is the direct ICU flow source of truth for the HOSSPI HMS implementation plan. ICU is a **clinical overlay on the IPD encounter** — not a parallel admission system. It should stay aligned with the backend IPD flow ICU actions (`include_icu`, `icu_queue_scope`, `start-icu-stay`, `end-icu-stay`, observations, critical alerts), the Flutter ICU workspace, and the upstream/downstream flows in [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+This file is the direct ICU flow source of truth for the HOSSPI HMS implementation plan. ICU is a **clinical overlay on the IPD encounter** — not a parallel admission system. It should stay aligned with the backend IPD flow ICU actions (`include_icu`, `icu_queue_scope`, `start-icu-stay`, `end-icu-stay`, observations, critical alerts), the Flutter ICU workspace, and the upstream/downstream flows in [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/theater-flow.mdc`](./theater-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), [`.cursor/flows/emergency-flow.mdc`](./emergency-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
 
 ## 1. Goal
 
@@ -45,9 +45,9 @@ flowchart LR
 | IPD bed manager | [ipd-flow §3, §14](./ipd-flow.mdc) | ICU bed board is ICU-ward scoped view of same bed catalog |
 | IPD transfer | [ipd-flow §9](./ipd-flow.mdc) | Ward→ICU: complete transfer then `start-icu-stay`; step-down ends stay |
 | Nursing | [app-write-up](../app-write-up.mdc) Nursing row | Shared vitals/MAR visibility; ICU owns stay-scoped observations/alerts |
-| Theater post-op | [app-write-up](../app-write-up.mdc) Theater row | Post-op handoff summary on ICU detail when theatre reference exists |
+| Theater post-op | [theater-flow §4.4](./theater-flow.mdc) | Post-op handoff summary on ICU detail when theatre reference exists |
 | Billing | [ipd-flow §4](./ipd-flow.mdc) | Orders use `ClinicalRequestBillingPanel`; clearance stays in Billing/IPD |
-| Discharge | [ipd-flow §10–§12](./ipd-flow.mdc) | ICU marks readiness only; IPD/Discharge own multi-step clearance |
+| Discharge | [discharge-flow §2](./discharge-flow.mdc), [ipd-flow §10–§12](./ipd-flow.mdc) | ICU marks readiness only; Discharge/IPD own multi-step clearance |
 
 ---
 
@@ -104,7 +104,7 @@ This loop prevents ICU from becoming a disconnected silo and supports real hospi
 
 ### 4.4 Theater post-op → ICU
 
-1. Theater completes procedure with ICU recovery disposition.
+1. Theater completes procedure with ICU recovery disposition ([theater-flow §4.4](./theater-flow.mdc)).
 2. Patient transferred to ICU bed.
 3. ICU workspace shows theatre case summary when API provides reference.
 4. `start-icu-stay` and post-op monitoring begin.
@@ -339,6 +339,22 @@ Action panel hierarchy: unstable monitoring → resolve alerts → clinical orde
 - **Start ICU stay** when escalated without stay.
 - ICU detail: **Open in IPD** for admission-wide context.
 
+### Theater ([theater-flow.mdc](./theater-flow.mdc))
+
+- §4.4 Post-op → ICU: handover summary on ICU detail; theater does not start/end ICU stays.
+
+### Nursing ([nursing-flow.mdc](./nursing-flow.mdc))
+
+- Shared vitals/MAR visibility on step-down; ward care resumes in Nursing after ICU stay ends.
+
+### Discharge ([discharge-flow.mdc](./discharge-flow.mdc))
+
+- §4: ICU `plan-discharge` is readiness signal only; full clearance in Discharge module.
+
+### Emergency ([emergency-flow.mdc](./emergency-flow.mdc))
+
+- §4.1: Emergency ICU path creates IPD + `start-icu-stay`; preserve emergency context on board.
+
 ### Deep links
 
 `/icu?id={admissionDisplayId}&panel={vitals|alerts|observations|orders|transfer|discharge}` — router must pre-select patient and focus panel.
@@ -433,57 +449,8 @@ Use this section when implementing or completing the ICU module in Flutter and b
 ### Remaining follow-ups
 
 - Consultant / payer columns await backend queue-card fields (not yet provided by `GET /ipd-flows`).
-- Theatre handoff summary awaits an explicit `theatre_case` reference on the IPD overlay DTO (source context inferred from `encounter_type` for now).
+- Theatre handoff summary awaits an explicit `theatre_case` reference on the IPD overlay DTO (source context inferred from `encounter_type` for now); see [theater-flow §9](./theater-flow.mdc).
 - Further widget extraction of `icu_workspace_page.dart` (bed board + formatting already extracted).
-
----
-
-## Scope — implement in priority order
-
-### 1. Repository gaps + start ICU stay
-
-- Add `startIcuStay` → `POST /ipd-flows/:id/start-icu-stay`.
-- Expose **Start ICU stay** when eligible; handle `icu_stay_already_active`.
-
-### 2. Localization pass
-
-- Migrate `_IcuText` to `app_en.arb`; run codegen.
-
-### 3. Widget extraction + deep links
-
-- Split `icu_workspace_page.dart`; parse `/icu?id=&panel=` in `app_router.dart`.
-
-### 4. Patient board polish
-
-- Source encounter, consultant, payer, LOS columns; critical queue badge alignment.
-
-### 5. ICU bed board
-
-- ICU ward filter, bed status, assign/transfer complete via IPD actions.
-
-### 6. Transfer lifecycle
-
-- Approve/start/complete/cancel; end stay on step-down.
-
-### 7. Clinical orders + billing panel
-
-- Lab/radiology/prescription from ICU detail with `ClinicalRequestBillingPanel`.
-
-### 8. IPD / OPD / Emergency bridge
-
-- Cross-links, context headers, notification deep links.
-
-### 9. Discharge readiness handoff
-
-- Clearance links to IPD/Billing; no fake “discharged” state.
-
-### 10. Theater post-op context
-
-- Handover summary when API provides theatre reference.
-
-### 11. Tests + quality gate
-
-- Add `test/features/icu/` — controller scopes, DTO mapping, queue filter mapping.
 
 ---
 
@@ -565,6 +532,10 @@ Enable `icu-critical-care` module entitlement and `icuManager` / clinical roles 
 .cursor/flows/icu-flow.mdc                          # This file
 .cursor/flows/ipd-flow.mdc                          # ICU transfer, In ICU status, care loop
 .cursor/flows/opd-flow.mdc                          # OPD → IPD handoff, ADMITTED stage
+.cursor/flows/theater-flow.mdc                      # Post-op → ICU handoff
+.cursor/flows/nursing-flow.mdc                      # Step-down ward care
+.cursor/flows/discharge-flow.mdc                    # Readiness vs full clearance
+.cursor/flows/emergency-flow.mdc                    # Emergency → ICU entry
 .cursor/app-write-up.mdc                            # ICU module boundaries
 
 frontend/lib/features/icu/

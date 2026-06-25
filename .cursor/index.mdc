@@ -19,7 +19,7 @@ When rules disagree, apply this order:
 1. Security, privacy, safety, and compliance
 2. [`.cursor/api-contract.mdc`](./api-contract.mdc) for cross-stack HTTP, errors, pagination, and naming
 3. Product scope in [`app-write-up.mdc`](./app-write-up.mdc)
-4. Contextual flow files (`flows/opd-flow.mdc`, `flows/ipd-flow.mdc`, `flows/icu-flow.mdc`) when editing those domains
+4. Contextual flow files in [`.cursor/flows/`](./flows/) when editing those domains (see table below)
 5. Stack owner index: [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) or [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc)
 6. Other stack-specific rule files named in the stack index
 7. `dev-plan/` steps (chronology only — not a duplicate standards source)
@@ -38,7 +38,16 @@ When rules disagree, apply this order:
 | [`app-write-up.mdc`](./app-write-up.mdc) | Adding, modifying, or deleting a product module |
 | [`flows/opd-flow.mdc`](./flows/opd-flow.mdc) | OPD module, flow, or action changes |
 | [`flows/ipd-flow.mdc`](./flows/ipd-flow.mdc) | IPD module, flow, or action changes |
+| [`flows/emergency-flow.mdc`](./flows/emergency-flow.mdc) | Emergency / ambulance module changes |
 | [`flows/icu-flow.mdc`](./flows/icu-flow.mdc) | ICU module, flow, or action changes |
+| [`flows/theater-flow.mdc`](./flows/theater-flow.mdc) | Theater / OT module changes |
+| [`flows/nursing-flow.mdc`](./flows/nursing-flow.mdc) | Nursing module changes |
+| [`flows/lab-flow.mdc`](./flows/lab-flow.mdc) | Laboratory module changes |
+| [`flows/radiology-flow.mdc`](./flows/radiology-flow.mdc) | Radiology module changes |
+| [`flows/pharmacy-flow.mdc`](./flows/pharmacy-flow.mdc) | Pharmacy module changes |
+| [`flows/discharge-flow.mdc`](./flows/discharge-flow.mdc) | Discharge module changes |
+
+Full patient-journey index: [app-write-up § Patient Flow Documents](./app-write-up.mdc).
 
 ## Module implementation prompts
 

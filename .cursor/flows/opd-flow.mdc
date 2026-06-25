@@ -9,6 +9,8 @@ alwaysApply: false
 This file is the direct OPD flow source of truth for the HMS implementation plan. 
 It should stay aligned with the backend OPD flow module and the Flutter OPD workspace.
 
+**Related flow files:** executing departments ([lab-flow](./lab-flow.mdc), [radiology-flow](./radiology-flow.mdc), [pharmacy-flow](./pharmacy-flow.mdc)), upstream [emergency-flow](./emergency-flow.mdc), downstream [ipd-flow](./ipd-flow.mdc) (including [icu-flow](./icu-flow.mdc), [theater-flow](./theater-flow.mdc), [nursing-flow](./nursing-flow.mdc), [discharge-flow](./discharge-flow.mdc)), and [app-write-up.mdc](../app-write-up.mdc).
+
 ## 1. Goal
 
 Make outpatient movement simple and traceable from arrival to consultation, diagnostics, pharmacy, admission, referral, or discharge. The OPD encounter is the central outpatient record and must not be duplicated while an active OPD encounter already exists for the same patient.
@@ -16,12 +18,12 @@ Make outpatient movement simple and traceable from arrival to consultation, diag
 ## 2. Supported Entry Paths
 
 
-| Entry path               | Expected handling                                                                                                                                   |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Walk-in / new patient    | Search existing patient first, register if needed, create or reuse active OPD encounter, capture visit type/payer, then route to the correct stage. |
-| Appointment check-in     | Verify appointment, check in, create or reuse active OPD encounter, confirm payer/provider, and route to vitals, doctor, or payment gate.           |
-| Follow-up / review       | Link to previous context where available, create or reuse active OPD encounter, then route to doctor or service queue.                              |
-| Emergency-to-OPD handoff | Accept only where backend flow supports it, preserve the emergency context, and avoid creating a duplicate OPD encounter.                           |
+| Entry path               | Expected handling                                                                                                                                   | Flow reference |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Walk-in / new patient    | Search existing patient first, register if needed, create or reuse active OPD encounter, capture visit type/payer, then route to the correct stage. | — |
+| Appointment check-in     | Verify appointment, check in, create or reuse active OPD encounter, confirm payer/provider, and route to vitals, doctor, or payment gate.           | — |
+| Follow-up / review       | Link to previous context where available, create or reuse active OPD encounter, then route to doctor or service queue.                              | — |
+| Emergency-to-OPD handoff | Accept only where backend flow supports it, preserve the emergency context, and avoid creating a duplicate OPD encounter.                           | [emergency-flow §4](./emergency-flow.mdc) |
 
 
 ## 3. Backend Stage Contract
@@ -29,19 +31,19 @@ Make outpatient movement simple and traceable from arrival to consultation, diag
 Frontend labels, filters, summary cards, badges, dialogs, and actions must use the backend OPD stages below as the canonical workflow states.
 
 
-| Backend OPD stage              | User meaning                                                 | Primary owner        |
-| ------------------------------ | ------------------------------------------------------------ | -------------------- |
-| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required. | Reception / Billing  |
-| `WAITING_VITALS`               | Patient is ready for vitals.                                 | Nurse                |
-| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment.                    | Reception / Nurse    |
-| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation.                         | Doctor               |
-| `LAB_REQUESTED`                | Patient has pending lab work.                                | Lab                  |
-| `RADIOLOGY_REQUESTED`          | Patient has pending imaging.                                 | Radiology            |
-| `LAB_AND_RADIOLOGY_REQUESTED`  | Patient has pending diagnostics.                             | Lab / Radiology      |
-| `PHARMACY_REQUESTED`           | Patient has pending pharmacy action.                         | Pharmacy             |
-| `WAITING_DISPOSITION`          | Doctor must decide final outcome.                            | Doctor               |
-| `ADMITTED`                     | Patient has moved to IPD/admission flow.                     | OPD / IPD handoff    |
-| `DISCHARGED`                   | OPD visit is complete.                                       | Reception / Clinical |
+| Backend OPD stage              | User meaning                                                 | Primary owner        | Department flow |
+| ------------------------------ | ------------------------------------------------------------ | -------------------- | --------------- |
+| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required. | Reception / Billing  | — |
+| `WAITING_VITALS`               | Patient is ready for vitals.                                 | Nurse                | [nursing-flow §2](./nursing-flow.mdc) |
+| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment.                    | Reception / Nurse    | — |
+| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation.                         | Doctor               | — |
+| `LAB_REQUESTED`                | Patient has pending lab work.                                | Lab                  | [lab-flow](./lab-flow.mdc) |
+| `RADIOLOGY_REQUESTED`          | Patient has pending imaging.                                 | Radiology            | [radiology-flow](./radiology-flow.mdc) |
+| `LAB_AND_RADIOLOGY_REQUESTED`  | Patient has pending diagnostics.                             | Lab / Radiology      | lab + radiology flows |
+| `PHARMACY_REQUESTED`           | Patient has pending pharmacy action.                         | Pharmacy             | [pharmacy-flow](./pharmacy-flow.mdc) |
+| `WAITING_DISPOSITION`          | Doctor must decide final outcome.                            | Doctor               | — |
+| `ADMITTED`                     | Patient has moved to IPD/admission flow.                     | OPD / IPD handoff    | [ipd-flow §2.2](./ipd-flow.mdc) |
+| `DISCHARGED`                   | OPD visit is complete.                                       | Reception / Clinical | Not [discharge-flow](./discharge-flow.mdc) — outpatient only |
 
 
 ## 4. Worklist Contract
@@ -92,7 +94,7 @@ Actions must be visible only when both the current backend stage and current use
 
 ## 7. OPD-to-IPD Handoff
 
-When the doctor decides admission, OPD should clearly show that the outpatient visit has moved to `ADMITTED` and hand over to the IPD/admission flow without losing the source OPD encounter. IPD should then own bed allocation, ward handover, inpatient notes/orders, discharge planning, and bed release.
+When the doctor decides admission, OPD should clearly show that the outpatient visit has moved to `ADMITTED` and hand over to the IPD/admission flow without losing the source OPD encounter. IPD should then own bed allocation, ward handover ([nursing-flow](./nursing-flow.mdc)), inpatient notes/orders, discharge planning ([discharge-flow](./discharge-flow.mdc)), and bed release. ICU ([icu-flow](./icu-flow.mdc)) and Theater ([theater-flow](./theater-flow.mdc)) overlays attach to the same IPD admission when clinically indicated.
 
 ## 8. Completion Rules
 
