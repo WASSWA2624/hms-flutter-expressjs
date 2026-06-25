@@ -18,5 +18,25 @@ void main() {
       expect(query.toCaseQuery().queueScope, 'ACTIVE');
       expect(query.toCaseQuery().scheduledDate, isNull);
     });
+
+    test('fromUri parses patient and encounter prefill', () {
+      final TheaterBoardQuery query = TheaterBoardQuery.fromUri(
+        Uri.parse('/theater?patient_id=P-001&encounter_id=ENC-0042'),
+      );
+
+      expect(query.initialPatientId, 'P-001');
+      expect(query.initialEncounterId, 'ENC-0042');
+      expect(query.hasScheduleContext, isTrue);
+    });
+  });
+
+  group('deriveTheaterSourceKind', () {
+    test('maps encounter types to theater source kinds', () {
+      expect(deriveTheaterSourceKind('IPD'), 'IPD');
+      expect(deriveTheaterSourceKind('ICU'), 'IPD');
+      expect(deriveTheaterSourceKind('OPD'), 'OPD');
+      expect(deriveTheaterSourceKind('EMERGENCY'), 'EMERGENCY');
+      expect(deriveTheaterSourceKind('UNKNOWN'), isNull);
+    });
   });
 }

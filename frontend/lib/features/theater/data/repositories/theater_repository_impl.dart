@@ -3,9 +3,13 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
+import 'package:hosspi_hms/features/clinical/data/dtos/clinical_dtos.dart';
+import 'package:hosspi_hms/features/lab/data/dtos/lab_dtos.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/theater/data/dtos/theater_dtos.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/domain/repositories/theater_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final theaterRepositoryProvider = Provider<TheaterRepository>((ref) {
@@ -154,6 +158,98 @@ final class TheaterRepositoryImpl implements TheaterRepository {
     return _postCaseAction(caseId, 'reopen-record', payload);
   }
 
+  @override
+  Future<Result<List<TheaterSchedulePatient>>> searchSchedulePatients(
+    String query,
+  ) {
+    return _apiClient.get<List<TheaterSchedulePatient>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.lab.path,
+        'order-context',
+        'patients',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 8,
+        'search': query.trim(),
+      }),
+      decoder: (Object? data) => decodeLabOrderContextPatients(
+        data,
+      ).map(_mapSchedulePatient).toList(growable: false),
+    );
+  }
+
+  @override
+  Future<Result<TheaterSchedulePatientDetail>> loadSchedulePatientEncounters(
+    String patientId,
+  ) {
+    return _apiClient.get<TheaterSchedulePatientDetail>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.lab.path,
+        'order-context',
+        'patients',
+        patientId,
+      ]),
+      decoder: (Object? data) {
+        final LabOrderPatientContextDetail detail =
+            LabOrderPatientContextDetailDto.fromResponse(data).detail;
+        return TheaterSchedulePatientDetail(
+          patient: _mapSchedulePatient(detail.patient),
+          encounters: detail.encounters
+              .map(_mapScheduleEncounter)
+              .toList(growable: false),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query) {
+    return _apiClient.get<List<TheaterRoomOption>>(
+      ApiEndpoints.collection(HmsApiResource.rooms),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 40,
+        'search': query.trim(),
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: (Object? data) {
+        final List<TheaterRoomOption> rooms = decodeCatalogOptions(
+          data,
+        ).map(_mapRoomOption).toList(growable: false);
+        rooms.sort((TheaterRoomOption left, TheaterRoomOption right) {
+          final int leftScore = left.isLikelyTheatreRoom ? 0 : 1;
+          final int rightScore = right.isLikelyTheatreRoom ? 0 : 1;
+          if (leftScore != rightScore) {
+            return leftScore.compareTo(rightScore);
+          }
+          return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+        });
+        return rooms;
+      },
+    );
+  }
+
+  @override
+  Future<Result<List<TheaterStaffOption>>> searchTheatreStaff(
+    String query, {
+    String? role,
+  }) {
+    return _apiClient.get<List<TheaterStaffOption>>(
+      ApiEndpoints.collection(HmsApiResource.users),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 20,
+        'search': query.trim(),
+        'status': 'ACTIVE',
+        'sort_by': 'display_name',
+        'order': 'asc',
+      }),
+      decoder: (Object? data) => _decodeStaffOptions(data, role: role),
+    );
+  }
+
   Future<Result<TheaterCase>> _postCaseAction(
     String caseId,
     String action,
@@ -207,4 +303,142 @@ bool _isEmptyPayloadValue(Object? value) {
     return value.isEmpty;
   }
   return false;
+}
+
+TheaterSchedulePatient _mapSchedulePatient(LabOrderPatientContext patient) {
+  return TheaterSchedulePatient(
+    id: patient.id,
+    displayId: patient.displayId,
+    displayName: patient.displayName,
+    identifier: patient.identifier,
+    primaryPhone: patient.primaryPhone,
+  );
+}
+
+TheaterScheduleEncounter _mapScheduleEncounter(
+  LabOrderEncounterContext encounter,
+) {
+  return TheaterScheduleEncounter(
+    id: encounter.id,
+    displayId: encounter.displayId,
+    title: encounter.title,
+    status: encounter.status,
+    type: encounter.type,
+    startedAt: encounter.startedAt,
+    endedAt: encounter.endedAt,
+  );
+}
+
+TheaterRoomOption _mapRoomOption(ClinicalActionCatalogOption option) {
+  final Object? ward = option.metadata['ward_name'] ?? option.metadata['ward'];
+  final Object? floor = option.metadata['floor'];
+  return TheaterRoomOption(
+    id: option.apiId,
+    name: option.displayTitle,
+    wardName: ward?.toString(),
+    floor: floor?.toString(),
+  );
+}
+
+List<TheaterStaffOption> _decodeStaffOptions(Object? data, {String? role}) {
+  final List<TheaterStaffOption> users = <TheaterStaffOption>[];
+  final Object? payload = data is Map<String, Object?> ? data['data'] : data;
+  final Iterable<Object?> items = payload is List<Object?>
+      ? payload
+      : payload is Map<String, Object?> && payload['items'] is List<Object?>
+      ? payload['items'] as List<Object?>
+      : const <Object?>[];
+
+  for (final Object? item in items) {
+    if (item is! Map) {
+      continue;
+    }
+    final Map<String, Object?> map = Map<String, Object?>.from(item);
+    final Object? profileRaw =
+        map['profile'] ?? map['user_profile'] ?? map['userProfile'];
+    final Map<String, Object?> profile = profileRaw is Map
+        ? Map<String, Object?>.from(profileRaw)
+        : const <String, Object?>{};
+    final String? id = _firstNonEmpty(<Object?>[
+      map['id'],
+      map['user_id'],
+      map['userId'],
+      profile['user_id'],
+      profile['id'],
+    ])?.toString();
+    if (id == null || id.trim().isEmpty) {
+      continue;
+    }
+    final String displayLabel =
+        _firstNonEmpty(<Object?>[
+          map['display_name'],
+          map['displayName'],
+          profile['display_name'],
+          profile['displayName'],
+          _joinNonEmpty(<Object?>[
+            profile['first_name'],
+            profile['middle_name'],
+            profile['last_name'],
+          ]),
+          _joinNonEmpty(<Object?>[
+            map['first_name'],
+            map['middle_name'],
+            map['last_name'],
+          ]),
+          map['name'],
+          map['username'],
+          map['email'],
+          id,
+        ])?.toString() ??
+        id;
+    final TheaterStaffOption option = TheaterStaffOption(
+      id: id,
+      displayLabel: displayLabel,
+      email: _firstNonEmpty(<Object?>[
+        map['email'],
+        profile['email'],
+        map['email_address'],
+      ])?.toString(),
+      phone: _firstNonEmpty(<Object?>[
+        map['phone'],
+        map['phone_number'],
+        profile['phone'],
+        profile['phone_number'],
+      ])?.toString(),
+      positionTitle: _firstNonEmpty(<Object?>[
+        map['position_title'],
+        map['positionTitle'],
+        profile['position_title'],
+        profile['positionTitle'],
+      ])?.toString(),
+    );
+    if (option.matchesRole(role)) {
+      users.add(option);
+    }
+  }
+  return users;
+}
+
+Object? _firstNonEmpty(Iterable<Object?> values) {
+  for (final Object? value in values) {
+    final String trimmed = value?.toString().trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+String? _joinNonEmpty(Iterable<Object?> values) {
+  final List<String> parts = <String>[];
+  for (final Object? value in values) {
+    final String trimmed = value?.toString().trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      parts.add(trimmed);
+    }
+  }
+  if (parts.isEmpty) {
+    return null;
+  }
+  return parts.join(' ');
 }

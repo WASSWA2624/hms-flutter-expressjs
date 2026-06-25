@@ -58,4 +58,19 @@ abstract interface class TheaterRepository {
     String caseId,
     Map<String, Object?> payload,
   );
+
+  Future<Result<List<TheaterSchedulePatient>>> searchSchedulePatients(
+    String query,
+  );
+
+  Future<Result<TheaterSchedulePatientDetail>> loadSchedulePatientEncounters(
+    String patientId,
+  );
+
+  Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query);
+
+  Future<Result<List<TheaterStaffOption>>> searchTheatreStaff(
+    String query, {
+    String? role,
+  });
 }

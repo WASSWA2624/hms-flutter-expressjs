@@ -57,10 +57,7 @@ void main() {
         status: 'IN_PROGRESS',
       );
 
-      _stubInitialLoad(
-        repository,
-        detail: detail,
-      );
+      _stubInitialLoad(repository, detail: detail);
       when(
         () => repository.getCase('TC-001'),
       ).thenAnswer((_) async => const Result<TheaterCase>.success(detail));
@@ -125,6 +122,79 @@ void main() {
       expect(submittedPayload, containsPair('phase', 'SIGN_IN'));
       expect(submittedPayload, containsPair('item_code', 'CONSENT'));
       verify(() => repository.toggleChecklistItem(any(), any())).called(1);
+    });
+
+    test('searchSchedulePatients delegates to repository', () async {
+      final _MockTheaterRepository repository = _MockTheaterRepository();
+      const TheaterSchedulePatient patient = TheaterSchedulePatient(
+        id: 'P-001',
+        displayName: 'Jane Doe',
+      );
+
+      _stubInitialLoad(repository);
+      when(() => repository.searchSchedulePatients('jane')).thenAnswer(
+        (_) async => const Result<List<TheaterSchedulePatient>>.success(
+          <TheaterSchedulePatient>[patient],
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [theaterRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(theaterWorkspaceControllerProvider.future);
+
+      final Result<List<TheaterSchedulePatient>> result = await container
+          .read(theaterWorkspaceControllerProvider.notifier)
+          .searchSchedulePatients('jane');
+
+      expect(
+        result.when(
+          success: (List<TheaterSchedulePatient> value) => value,
+          failure: (_) => null,
+        ),
+        contains(patient),
+      );
+      verify(() => repository.searchSchedulePatients('jane')).called(1);
+    });
+
+    test('searchTheatreStaff delegates role filter to repository', () async {
+      final _MockTheaterRepository repository = _MockTheaterRepository();
+      const TheaterStaffOption surgeon = TheaterStaffOption(
+        id: 'U-001',
+        displayLabel: 'Dr Surgeon',
+        positionTitle: 'Surgeon',
+      );
+
+      _stubInitialLoad(repository);
+      when(
+        () => repository.searchTheatreStaff('dr', role: 'SURGEON'),
+      ).thenAnswer(
+        (_) async => const Result<List<TheaterStaffOption>>.success(
+          <TheaterStaffOption>[surgeon],
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [theaterRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(theaterWorkspaceControllerProvider.future);
+
+      final Result<List<TheaterStaffOption>> result = await container
+          .read(theaterWorkspaceControllerProvider.notifier)
+          .searchTheatreStaff('dr', role: 'SURGEON');
+
+      expect(
+        result.when(
+          success: (List<TheaterStaffOption> value) => value.single.id,
+          failure: (_) => null,
+        ),
+        'U-001',
+      );
+      verify(
+        () => repository.searchTheatreStaff('dr', role: 'SURGEON'),
+      ).called(1);
     });
   });
 }

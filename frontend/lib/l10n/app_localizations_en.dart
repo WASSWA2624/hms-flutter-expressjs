@@ -1209,6 +1209,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterEncounterLabel => 'Encounter';
 
   @override
+  String get theaterPatientLabel => 'Patient';
+
+  @override
+  String get theaterPatientSearchHint => 'Search by name, MRN, or phone';
+
+  @override
+  String get theaterEncounterSearchHint => 'Select an active encounter';
+
+  @override
+  String get theaterScheduledTimeLabel => 'Scheduled time';
+
+  @override
+  String get theaterOperatingRoomHint => 'Search operating theatre rooms';
+
+  @override
+  String get theaterSurgeonSearchHint => 'Search surgeons by name or staff ID';
+
+  @override
+  String get theaterAnesthetistSearchHint =>
+      'Search anesthetists by name or staff ID';
+
+  @override
+  String get theaterProceduresSectionLabel => 'Procedures';
+
+  @override
+  String get theaterAddProcedureAction => 'Add procedure';
+
+  @override
+  String get theaterNoProceduresSelectedLabel =>
+      'Add one or more procedures to bill for this case.';
+
+  @override
   String get theaterScheduledAtLabel => 'Scheduled at';
 
   @override

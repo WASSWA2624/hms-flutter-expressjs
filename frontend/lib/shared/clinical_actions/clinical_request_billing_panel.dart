@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
@@ -371,14 +370,7 @@ class _ClinicalRequestBillingPanelState
                     });
                     _notifyChanged();
                   },
-                  options: clinicalRequestPaymentMethods
-                      .map(
-                        (String method) => AppSelectOption<String>(
-                          value: method,
-                          label: AppDisplay.apiLabel(method),
-                        ),
-                      )
-                      .toList(growable: false),
+                  options: clinicalRequestPaymentMethodOptions(),
                 ),
                 SizedBox(height: theme.spacing.sm),
                 AppTextField(

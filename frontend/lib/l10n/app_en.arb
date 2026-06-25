@@ -1573,6 +1573,46 @@
   "@theaterEncounterLabel": {
     "description": "Label for encounter in theater detail."
   },
+  "theaterPatientLabel": "Patient",
+  "@theaterPatientLabel": {
+    "description": "Label for patient selection in theater schedule forms."
+  },
+  "theaterPatientSearchHint": "Search by name, MRN, or phone",
+  "@theaterPatientSearchHint": {
+    "description": "Hint for patient search in theater schedule forms."
+  },
+  "theaterEncounterSearchHint": "Select an active encounter",
+  "@theaterEncounterSearchHint": {
+    "description": "Hint for encounter selection in theater schedule forms."
+  },
+  "theaterScheduledTimeLabel": "Scheduled time",
+  "@theaterScheduledTimeLabel": {
+    "description": "Label for scheduled time in theater schedule forms."
+  },
+  "theaterOperatingRoomHint": "Search operating theatre rooms",
+  "@theaterOperatingRoomHint": {
+    "description": "Hint for operating room selection in theater schedule forms."
+  },
+  "theaterSurgeonSearchHint": "Search surgeons by name or staff ID",
+  "@theaterSurgeonSearchHint": {
+    "description": "Hint for surgeon selection in theater schedule forms."
+  },
+  "theaterAnesthetistSearchHint": "Search anesthetists by name or staff ID",
+  "@theaterAnesthetistSearchHint": {
+    "description": "Hint for anesthetist selection in theater schedule forms."
+  },
+  "theaterProceduresSectionLabel": "Procedures",
+  "@theaterProceduresSectionLabel": {
+    "description": "Section title for procedure billing in theater schedule forms."
+  },
+  "theaterAddProcedureAction": "Add procedure",
+  "@theaterAddProcedureAction": {
+    "description": "Action to add a procedure from catalog in theater schedule forms."
+  },
+  "theaterNoProceduresSelectedLabel": "Add one or more procedures to bill for this case.",
+  "@theaterNoProceduresSelectedLabel": {
+    "description": "Empty state when no procedures are selected in theater schedule forms."
+  },
   "theaterScheduledAtLabel": "Scheduled at",
   "@theaterScheduledAtLabel": {
     "description": "Label for scheduled date time in theater forms and detail."

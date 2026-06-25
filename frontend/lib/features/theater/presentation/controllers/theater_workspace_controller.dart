@@ -5,6 +5,9 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/theater/data/repositories/theater_repository_impl.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/domain/repositories/theater_repository.dart';
@@ -21,6 +24,9 @@ final class TheaterWorkspaceController
   static const Duration _syncInterval = Duration(seconds: 10);
 
   TheaterRepository get _repository => ref.read(theaterRepositoryProvider);
+
+  ClinicalRepository get _clinicalRepository =>
+      ref.read(clinicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -161,9 +167,7 @@ final class TheaterWorkspaceController
 
     _emit(
       current.copyWith(
-        query: TheaterCaseQuery(
-          pageRequest: current.query.pageRequest.first(),
-        ),
+        query: TheaterCaseQuery(pageRequest: current.query.pageRequest.first()),
         isRefreshing: true,
         clearLastFailure: true,
       ),
@@ -320,6 +324,43 @@ final class TheaterWorkspaceController
         }
         return failure;
       },
+    );
+  }
+
+  Future<Result<List<TheaterSchedulePatient>>> searchSchedulePatients(
+    String query,
+  ) {
+    return _repository.searchSchedulePatients(query);
+  }
+
+  Future<Result<TheaterSchedulePatientDetail>> loadSchedulePatientEncounters(
+    String patientId,
+  ) {
+    return _repository.loadSchedulePatientEncounters(patientId);
+  }
+
+  Future<Result<List<TheaterRoomOption>>> searchTheatreRooms(String query) {
+    return _repository.searchTheatreRooms(query);
+  }
+
+  Future<Result<List<TheaterStaffOption>>> searchTheatreStaff(
+    String query, {
+    String? role,
+  }) {
+    return _repository.searchTheatreStaff(query, role: role);
+  }
+
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
+  }) {
+    return _clinicalRepository.searchClinicalTerms(
+      termType: termType,
+      query: query,
+      limit: limit,
+      source: source,
     );
   }
 

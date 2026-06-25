@@ -73,6 +73,8 @@ final class TheaterBoardQuery {
     this.pageRequest = const AppPageRequest(),
     this.focusCaseId,
     this.focusPanel,
+    this.initialPatientId,
+    this.initialEncounterId,
   });
 
   final String search;
@@ -86,6 +88,12 @@ final class TheaterBoardQuery {
   final AppPageRequest pageRequest;
   final String? focusCaseId;
   final TheaterDetailPanel? focusPanel;
+  final String? initialPatientId;
+  final String? initialEncounterId;
+
+  bool get hasScheduleContext =>
+      (initialPatientId ?? '').trim().isNotEmpty ||
+      (initialEncounterId ?? '').trim().isNotEmpty;
 
   bool get hasRouteTargeting =>
       (focusCaseId ?? '').trim().isNotEmpty || focusPanel != null;
@@ -121,6 +129,12 @@ final class TheaterBoardQuery {
       search: focusId ?? pick(<String>['search', 'q']) ?? '',
       focusCaseId: focusId,
       focusPanel: TheaterDetailPanelX.fromValue(params['panel']),
+      initialPatientId: pick(<String>['patient_id', 'patientId', 'patient']),
+      initialEncounterId: pick(<String>[
+        'encounter_id',
+        'encounterId',
+        'encounter',
+      ]),
     );
   }
 
@@ -136,6 +150,8 @@ final class TheaterBoardQuery {
     AppPageRequest? pageRequest,
     String? focusCaseId,
     TheaterDetailPanel? focusPanel,
+    String? initialPatientId,
+    String? initialEncounterId,
     bool clearStatus = false,
     bool clearStage = false,
     bool clearScheduledDate = false,
@@ -143,6 +159,7 @@ final class TheaterBoardQuery {
     bool clearSurgeonUserId = false,
     bool clearAnesthetistUserId = false,
     bool clearFocus = false,
+    bool clearScheduleContext = false,
   }) {
     return TheaterBoardQuery(
       search: search ?? this.search,
@@ -162,8 +179,223 @@ final class TheaterBoardQuery {
       pageRequest: pageRequest ?? this.pageRequest,
       focusCaseId: clearFocus ? null : focusCaseId ?? this.focusCaseId,
       focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+      initialPatientId: clearScheduleContext
+          ? null
+          : initialPatientId ?? this.initialPatientId,
+      initialEncounterId: clearScheduleContext
+          ? null
+          : initialEncounterId ?? this.initialEncounterId,
     );
   }
+}
+
+String? deriveTheaterSourceKind(String? encounterType) {
+  final String type = (encounterType ?? '').trim().toUpperCase();
+  return switch (type) {
+    'EMERGENCY' => 'EMERGENCY',
+    'OPD' || 'TELEMEDICINE' => 'OPD',
+    'IPD' || 'ICU' || 'THEATRE' || 'INPATIENT' => 'IPD',
+    _ => null,
+  };
+}
+
+@immutable
+final class TheaterSchedulePatient {
+  const TheaterSchedulePatient({
+    required this.id,
+    this.displayId,
+    this.displayName,
+    this.identifier,
+    this.primaryPhone,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? displayName;
+  final String? identifier;
+  final String? primaryPhone;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[displayName, displayId, id]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[displayId, identifier, primaryPhone]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[
+          id,
+          displayId,
+          displayName,
+          identifier,
+          primaryPhone,
+        ]) ??
+        displayTitle;
+  }
+}
+
+@immutable
+final class TheaterScheduleEncounter {
+  const TheaterScheduleEncounter({
+    required this.id,
+    this.displayId,
+    this.title,
+    this.status,
+    this.type,
+    this.startedAt,
+    this.endedAt,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? title;
+  final String? status;
+  final String? type;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+
+  String? get sourceKind => deriveTheaterSourceKind(type);
+
+  String get displayTitle {
+    final String? kindLabel = _theaterEncounterKindLabel(type);
+    final String? dateLabel = startedAt == null
+        ? null
+        : '${startedAt!.year.toString().padLeft(4, '0')}-'
+              '${startedAt!.month.toString().padLeft(2, '0')}-'
+              '${startedAt!.day.toString().padLeft(2, '0')}';
+    return _joinDisplay(<String?>[kindLabel, dateLabel, displayId, title]) ??
+        id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[type, status, displayId]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[id, displayId, title, status, type]) ??
+        displayTitle;
+  }
+}
+
+@immutable
+final class TheaterSchedulePatientDetail {
+  const TheaterSchedulePatientDetail({
+    required this.patient,
+    this.encounters = const <TheaterScheduleEncounter>[],
+  });
+
+  final TheaterSchedulePatient patient;
+  final List<TheaterScheduleEncounter> encounters;
+}
+
+@immutable
+final class TheaterRoomOption {
+  const TheaterRoomOption({
+    required this.id,
+    required this.name,
+    this.wardName,
+    this.floor,
+  });
+
+  final String id;
+  final String name;
+  final String? wardName;
+  final String? floor;
+
+  String get displayTitle => name;
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[wardName, floor]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[id, name, wardName, floor]) ?? name;
+  }
+
+  bool get isLikelyTheatreRoom {
+    final String haystack =
+        '${name.toLowerCase()} ${(wardName ?? '').toLowerCase()}';
+    return haystack.contains('ot') ||
+        haystack.contains('theatre') ||
+        haystack.contains('theater') ||
+        haystack.contains('operating');
+  }
+}
+
+@immutable
+final class TheaterStaffOption {
+  const TheaterStaffOption({
+    required this.id,
+    required this.displayLabel,
+    this.email,
+    this.phone,
+    this.positionTitle,
+  });
+
+  final String id;
+  final String displayLabel;
+  final String? email;
+  final String? phone;
+  final String? positionTitle;
+
+  String get searchableLabel {
+    return _joinDisplay(<String?>[
+          displayLabel,
+          email,
+          phone,
+          positionTitle,
+          id,
+        ]) ??
+        id;
+  }
+
+  bool matchesRole(String? role) {
+    if (role == null || role.trim().isEmpty) {
+      return true;
+    }
+    final String haystack = '${positionTitle ?? ''} $displayLabel'
+        .toLowerCase();
+    return switch (role.trim().toUpperCase()) {
+      'SURGEON' => haystack.contains('surgeon') || haystack.contains('surgery'),
+      'ANESTHETIST' =>
+        haystack.contains('anesth') || haystack.contains('anaesth'),
+      _ => true,
+    };
+  }
+}
+
+String? _theaterEncounterKindLabel(String? encounterType) {
+  final String type = (encounterType ?? '').trim().toUpperCase();
+  return switch (type) {
+    'IPD' || 'INPATIENT' => 'IPD',
+    'ICU' => 'IPD',
+    'OPD' => 'OPD',
+    'EMERGENCY' => 'Emergency',
+    'THEATRE' => 'Theatre',
+    _ => type.isEmpty ? null : type,
+  };
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String trimmed = (value ?? '').trim();
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+String? _joinDisplay(Iterable<String?> values) {
+  final List<String> parts = <String>[];
+  for (final String? value in values) {
+    final String trimmed = (value ?? '').trim();
+    if (trimmed.isNotEmpty && !parts.contains(trimmed)) {
+      parts.add(trimmed);
+    }
+  }
+  return parts.isEmpty ? null : parts.join(' · ');
 }
 
 @immutable

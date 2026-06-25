@@ -13,10 +13,10 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
+import 'package:hosspi_hms/features/theater/presentation/widgets/theater_schedule_case_form.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -99,7 +99,10 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
         ref.read(theaterWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, TheaterWorkspaceState state) {
-        return _TheaterWorkspaceContent(state: state);
+        return _TheaterWorkspaceContent(
+          state: state,
+          initialQuery: widget.initialQuery,
+        );
       },
     );
   }
@@ -117,9 +120,10 @@ TheaterWorkspaceState? _readTheaterState(WidgetRef ref) {
 }
 
 class _TheaterWorkspaceContent extends ConsumerStatefulWidget {
-  const _TheaterWorkspaceContent({required this.state});
+  const _TheaterWorkspaceContent({required this.state, this.initialQuery});
 
   final TheaterWorkspaceState state;
+  final TheaterBoardQuery? initialQuery;
 
   @override
   ConsumerState<_TheaterWorkspaceContent> createState() =>
@@ -182,7 +186,12 @@ class _TheaterWorkspaceContentState
               label: l10n.theaterScheduleCaseAction,
               leadingIcon: Icons.add,
               enabled: !state.isMutating,
-              onPressed: () => _showScheduleCaseDialog(context, ref),
+              onPressed: () => _showScheduleCaseDialog(
+                context,
+                ref,
+                initialPatientId: widget.initialQuery?.initialPatientId,
+                initialEncounterId: widget.initialQuery?.initialEncounterId,
+              ),
             )
           : null,
       secondaryActions: <Widget>[
@@ -1259,14 +1268,19 @@ class _TheaterStatusBadge extends StatelessWidget {
 
 Future<void> _showScheduleCaseDialog(
   BuildContext context,
-  WidgetRef ref,
-) async {
+  WidgetRef ref, {
+  String? initialPatientId,
+  String? initialEncounterId,
+}) async {
   final Map<String, Object?>? payload =
       await showAppWorkspaceActionDialog<Map<String, Object?>>(
         context: context,
         title: Text(context.l10n.theaterScheduleCaseDialogTitle),
         icon: const Icon(Icons.add),
-        content: const _ScheduleCaseForm(),
+        content: TheaterScheduleCaseForm(
+          initialPatientId: initialPatientId,
+          initialEncounterId: initialEncounterId,
+        ),
       );
   if (payload == null || !context.mounted) {
     return;
@@ -1290,7 +1304,7 @@ Future<void> _showRescheduleDialog(
         context: context,
         title: Text(context.l10n.theaterRescheduleDialogTitle),
         icon: const Icon(Icons.edit_calendar_outlined),
-        content: _ScheduleCaseForm(
+        content: TheaterScheduleCaseForm(
           theaterCase: theaterCase,
           rescheduleOnly: true,
         ),
@@ -1489,148 +1503,6 @@ Future<void> _showFinalizeDialog(BuildContext context, WidgetRef ref) async {
     return;
   }
   _showMutationResult(context, failure);
-}
-
-class _ScheduleCaseForm extends StatefulWidget {
-  const _ScheduleCaseForm({this.theaterCase, this.rescheduleOnly = false});
-
-  final TheaterCase? theaterCase;
-  final bool rescheduleOnly;
-
-  @override
-  State<_ScheduleCaseForm> createState() => _ScheduleCaseFormState();
-}
-
-class _ScheduleCaseFormState extends State<_ScheduleCaseForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _encounterController;
-  late final TextEditingController _scheduledAtController;
-  late final TextEditingController _roomController;
-  late final TextEditingController _surgeonController;
-  late final TextEditingController _anesthetistController;
-  late final TextEditingController _notesController;
-  ClinicalRequestBillingSubmit? _billing;
-
-  @override
-  void initState() {
-    super.initState();
-    final TheaterCase? theaterCase = widget.theaterCase;
-    _encounterController = TextEditingController(
-      text: theaterCase?.encounterDisplayId,
-    );
-    _scheduledAtController = TextEditingController(
-      text: theaterCase?.scheduledAt?.toUtc().toIso8601String(),
-    );
-    _roomController = TextEditingController(text: theaterCase?.roomDisplayId);
-    _surgeonController = TextEditingController(
-      text: theaterCase?.surgeonUserDisplayId,
-    );
-    _anesthetistController = TextEditingController(
-      text: theaterCase?.anesthetistUserDisplayId,
-    );
-    _notesController = TextEditingController(text: theaterCase?.stageNotes);
-  }
-
-  @override
-  void dispose() {
-    _encounterController.dispose();
-    _scheduledAtController.dispose();
-    _roomController.dispose();
-    _surgeonController.dispose();
-    _anesthetistController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        if (!widget.rescheduleOnly)
-          AppTextField(
-            controller: _encounterController,
-            labelText: l10n.theaterEncounterIdLabel,
-            hintText: l10n.theaterEncounterIdHint,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.theaterFieldRequiredLabel(l10n.theaterEncounterIdLabel),
-            ),
-          ),
-        AppTextField(
-          controller: _scheduledAtController,
-          labelText: l10n.theaterScheduledAtLabel,
-          hintText: l10n.theaterDateTimeHint,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.theaterFieldRequiredLabel(l10n.theaterScheduledAtLabel),
-          ),
-        ),
-        AppTextField(
-          controller: _roomController,
-          labelText: l10n.theaterRoomIdLabel,
-        ),
-        AppTextField(
-          controller: _surgeonController,
-          labelText: l10n.theaterSurgeonIdLabel,
-        ),
-        AppTextField(
-          controller: _anesthetistController,
-          labelText: l10n.theaterAnesthetistIdLabel,
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.theaterStageNotesLabel,
-          maxLines: 3,
-        ),
-        if (!widget.rescheduleOnly)
-          ClinicalRequestBillingPanel(
-            lineItems: <ClinicalRequestBillingLineItem>[
-              ClinicalRequestBillingLineItem(
-                id: 'THEATRE_CASE_FEE',
-                label: l10n.theaterCaseFeeLabel,
-              ),
-            ],
-            onChanged: (ClinicalRequestBillingSubmit value) {
-              _billing = value;
-            },
-          ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.rescheduleOnly
-              ? l10n.theaterRescheduleAction
-              : l10n.theaterScheduleCaseAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            final ClinicalRequestBillingSubmit? billing = _billing;
-            final bool charge =
-                !widget.rescheduleOnly &&
-                billing != null &&
-                billing.paymentStatus !=
-                    ClinicalRequestPaymentStatus.notBilled &&
-                billing.totalAmount > 0;
-            Navigator.of(context).pop(<String, Object?>{
-              if (!widget.rescheduleOnly)
-                'encounter_id': _encounterController.text.trim(),
-              'scheduled_at': _scheduledAtController.text.trim(),
-              'room_id': _roomController.text.trim(),
-              'surgeon_user_id': _surgeonController.text.trim(),
-              'anesthetist_user_id': _anesthetistController.text.trim(),
-              'workflow_stage': widget.rescheduleOnly ? null : 'PRE_OP',
-              'stage_notes': _notesController.text.trim(),
-              if (charge) 'billing': billing.toPayloadMap(),
-            });
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _StageForm extends StatefulWidget {

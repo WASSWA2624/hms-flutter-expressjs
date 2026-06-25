@@ -2386,6 +2386,66 @@ abstract class AppLocalizations {
   /// **'Encounter'**
   String get theaterEncounterLabel;
 
+  /// Label for patient selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get theaterPatientLabel;
+
+  /// Hint for patient search in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, MRN, or phone'**
+  String get theaterPatientSearchHint;
+
+  /// Hint for encounter selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an active encounter'**
+  String get theaterEncounterSearchHint;
+
+  /// Label for scheduled time in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled time'**
+  String get theaterScheduledTimeLabel;
+
+  /// Hint for operating room selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Search operating theatre rooms'**
+  String get theaterOperatingRoomHint;
+
+  /// Hint for surgeon selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Search surgeons by name or staff ID'**
+  String get theaterSurgeonSearchHint;
+
+  /// Hint for anesthetist selection in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Search anesthetists by name or staff ID'**
+  String get theaterAnesthetistSearchHint;
+
+  /// Section title for procedure billing in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures'**
+  String get theaterProceduresSectionLabel;
+
+  /// Action to add a procedure from catalog in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Add procedure'**
+  String get theaterAddProcedureAction;
+
+  /// Empty state when no procedures are selected in theater schedule forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one or more procedures to bill for this case.'**
+  String get theaterNoProceduresSelectedLabel;
+
   /// Label for scheduled date time in theater forms and detail.
   ///
   /// In en, this message translates to:
