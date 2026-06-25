@@ -42,18 +42,29 @@ final class ClaimsWorkspaceController
                 ),
               ),
             );
+        final ClaimsWorkspaceSummary? summary = await _loadSummary();
 
         return Result<ClaimsWorkspaceState>.success(
           ClaimsWorkspaceState(
             query: query,
             queue: queue,
             referenceData: referenceData,
+            summary: summary,
           ),
         );
       },
       failure: (AppFailure failure) async {
         return Result<ClaimsWorkspaceState>.failure(failure);
       },
+    );
+  }
+
+  Future<ClaimsWorkspaceSummary?> _loadSummary() {
+    return _repository.loadWorkspaceSummary().then(
+      (Result<ClaimsWorkspaceSummary> result) => result.when(
+        success: (ClaimsWorkspaceSummary value) => value,
+        failure: (_) => null,
+      ),
     );
   }
 
@@ -348,12 +359,19 @@ final class ClaimsWorkspaceController
       current.query,
     );
 
-    return result.when(
-      success: (AppPage<ClaimsQueueItem> queue) {
-        _emit(_currentState!.copyWith(queue: queue, isRefreshing: false));
+    return result.when<Future<AppFailure?>>(
+      success: (AppPage<ClaimsQueueItem> queue) async {
+        final ClaimsWorkspaceSummary? summary = await _loadSummary();
+        _emit(
+          _currentState!.copyWith(
+            queue: queue,
+            summary: summary,
+            isRefreshing: false,
+          ),
+        );
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(
           _currentState!.copyWith(isRefreshing: false, lastFailure: failure),
         );

@@ -213,6 +213,10 @@ enum HmsApiResource {
     'pre-authorizations',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
+  claimsWorkspace(
+    'claims-workspace',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   billingAdjustments(
     'billing-adjustments',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,

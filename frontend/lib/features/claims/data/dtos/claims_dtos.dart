@@ -150,6 +150,72 @@ final class InsuranceClaimDto {
   }
 }
 
+final class ClaimsWorkItemsPageDto {
+  const ClaimsWorkItemsPageDto({required this.page});
+
+  final AppPage<ClaimsQueueItem> page;
+
+  factory ClaimsWorkItemsPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final ClaimsJsonMap response = _expectMap(responseData);
+    final List<ClaimsQueueItem> items = _list(response['data'])
+        .map(_itemFromJson)
+        .whereType<ClaimsQueueItem>()
+        .toList(growable: false);
+
+    return ClaimsWorkItemsPageDto(
+      page: AppPage<ClaimsQueueItem>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+
+  static ClaimsQueueItem? _itemFromJson(ClaimsJsonMap json) {
+    final String type = (_string(json['type']) ?? '').toUpperCase();
+    if (type == 'CLAIM') {
+      final InsuranceClaimRecord claim = InsuranceClaimDto(json).toEntity();
+      return claim.id.isEmpty ? null : ClaimsQueueItem.claim(claim);
+    }
+
+    final PreAuthorizationRecord authorization = PreAuthorizationDto(
+      json,
+    ).toEntity();
+    return authorization.id.isEmpty
+        ? null
+        : ClaimsQueueItem.authorization(authorization);
+  }
+}
+
+final class ClaimsWorkspaceSummaryDto {
+  const ClaimsWorkspaceSummaryDto({required this.summary});
+
+  final ClaimsWorkspaceSummary summary;
+
+  factory ClaimsWorkspaceSummaryDto.fromResponse(Object? responseData) {
+    final ClaimsJsonMap response = _expectMap(responseData);
+    final ClaimsJsonMap data = _map(response['data']);
+    final ClaimsJsonMap summary = _map(data['summary']);
+
+    return ClaimsWorkspaceSummaryDto(
+      summary: ClaimsWorkspaceSummary(
+        authorizationPendingCount:
+            _int(summary['authorization_pending']) ?? 0,
+        authorizationApprovedCount:
+            _int(summary['authorization_approved']) ?? 0,
+        submittedClaimsCount: _int(summary['claims_submitted']) ?? 0,
+        approvedClaimsCount: _int(summary['claims_approved']) ?? 0,
+        rejectedResubmissionCount: _int(summary['denied_resubmission']) ?? 0,
+        paidClosedCount: _int(summary['paid_closed']) ?? 0,
+        workloadCount: _int(summary['workload']) ?? 0,
+      ),
+    );
+  }
+}
+
 final class CoveragePlanPageDto {
   const CoveragePlanPageDto({required this.page});
 
@@ -260,6 +326,35 @@ final class ClaimInvoiceDto {
       totalAmount: _number(json['total_amount']),
       currency: _string(json['currency']),
       issuedAt: _date(json['issued_at']) ?? _date(json['created_at']),
+    );
+  }
+}
+
+final class ClaimsLookupsDto {
+  const ClaimsLookupsDto({required this.referenceData});
+
+  final ClaimsReferenceData referenceData;
+
+  factory ClaimsLookupsDto.fromResponse(Object? responseData) {
+    final ClaimsJsonMap response = _expectMap(responseData);
+    final ClaimsJsonMap data = _map(response['data']);
+
+    final List<CoveragePlanOption> coveragePlans = _list(data['coverage_plans'])
+        .map(CoveragePlanDto.new)
+        .map((CoveragePlanDto dto) => dto.toEntity())
+        .where((CoveragePlanOption item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final List<ClaimInvoiceOption> invoices = _list(data['invoices'])
+        .map(ClaimInvoiceDto.new)
+        .map((ClaimInvoiceDto dto) => dto.toEntity())
+        .where((ClaimInvoiceOption item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return ClaimsLookupsDto(
+      referenceData: ClaimsReferenceData(
+        coveragePlans: coveragePlans,
+        invoices: invoices,
+      ),
     );
   }
 }

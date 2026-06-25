@@ -184,6 +184,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'coverage-plans': 'billing-insurance',
   'insurance-claims': 'billing-insurance',
   'pre-authorizations': 'billing-insurance',
+  'claims-workspace': 'billing-insurance',
   'billing-adjustments': 'billing-insurance',
   'payroll-runs': 'hr-rosters',
   'payroll-items': 'hr-rosters',

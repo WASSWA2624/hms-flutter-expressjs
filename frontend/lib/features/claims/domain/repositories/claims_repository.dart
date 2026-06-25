@@ -9,6 +9,11 @@ abstract interface class ClaimsRepository {
 
   Future<Result<ClaimsReferenceData>> loadReferenceData();
 
+  /// Loads authoritative summary counts from the backend `claims-workspace`
+  /// aggregator so summary cards reflect the full scope rather than the loaded
+  /// queue page.
+  Future<Result<ClaimsWorkspaceSummary>> loadWorkspaceSummary();
+
   Future<Result<PreAuthorizationRecord>> requestPreAuthorization(
     Map<String, Object?> payload,
   );

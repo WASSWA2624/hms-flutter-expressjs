@@ -13,6 +13,14 @@ final claimsRepositoryProvider = Provider<ClaimsRepository>((ref) {
   return ClaimsRepositoryImpl(apiClient: ref.watch(apiClientProvider));
 });
 
+/// Repository for the insurance and claims workspace.
+///
+/// Reads route through the backend `claims-workspace` aggregator
+/// (`/api/v1/claims-workspace/*`) so the merged pre-authorization + claim
+/// worklist, summary counts, lookups, and authorization context are produced
+/// server-side. Mutations (request/approve authorization, prepare/submit/
+/// reconcile claim) continue to target the dedicated pre-authorization and
+/// insurance-claim modules, which own the workflow state and audit trail.
 final class ClaimsRepositoryImpl implements ClaimsRepository {
   const ClaimsRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
@@ -22,58 +30,34 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   @override
   Future<Result<AppPage<ClaimsQueueItem>>> listQueue(
     ClaimsQueueQuery query,
-  ) async {
-    final List<ClaimsQueueItem> items = <ClaimsQueueItem>[];
-    int? total = 0;
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<ClaimsQueueItem>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.claimsWorkspace.path,
+        'work-items',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'kind': claimsFilterKind(query.filter),
+        'status': claimsFilterStatus(query.filter),
+        'search': query.search,
+      }),
+      decoder: (Object? data) =>
+          ClaimsWorkItemsPageDto.fromResponse(data, request).page,
+    );
+  }
 
-    if (filterIncludesAuthorizations(query.filter)) {
-      final Result<AppPage<PreAuthorizationRecord>> result =
-          await _listPreAuthorizations(query);
-      final AppFailure? failure = result.when(
-        success: (AppPage<PreAuthorizationRecord> page) {
-          items.addAll(page.items.map(ClaimsQueueItem.authorization));
-          total = _sumTotals(total, page.totalItemCount);
-          return null;
-        },
-        failure: (AppFailure failure) => failure,
-      );
-      if (failure != null) {
-        return Result<AppPage<ClaimsQueueItem>>.failure(failure);
-      }
-    }
-
-    if (filterIncludesClaims(query.filter)) {
-      final Result<AppPage<InsuranceClaimRecord>> result = await _listClaims(
-        query,
-      );
-      final AppFailure? failure = result.when(
-        success: (AppPage<InsuranceClaimRecord> page) {
-          items.addAll(page.items.map(ClaimsQueueItem.claim));
-          total = _sumTotals(total, page.totalItemCount);
-          return null;
-        },
-        failure: (AppFailure failure) => failure,
-      );
-      if (failure != null) {
-        return Result<AppPage<ClaimsQueueItem>>.failure(failure);
-      }
-    }
-
-    final List<ClaimsQueueItem> visibleItems =
-        items
-            .where(
-              (ClaimsQueueItem item) => matchesClaimsSearch(item, query.search),
-            )
-            .toList(growable: false)
-          ..sort(_compareQueueItems);
-    final bool isSearching = query.search.trim().isNotEmpty;
-
-    return Result<AppPage<ClaimsQueueItem>>.success(
-      AppPage<ClaimsQueueItem>(
-        items: visibleItems,
-        request: query.pageRequest,
-        totalItemCount: isSearching ? visibleItems.length : total,
-      ),
+  @override
+  Future<Result<ClaimsWorkspaceSummary>> loadWorkspaceSummary() {
+    return _apiClient.get<ClaimsWorkspaceSummary>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.claimsWorkspace.path,
+        'workspace',
+      ]),
+      decoder: (Object? data) =>
+          ClaimsWorkspaceSummaryDto.fromResponse(data).summary,
     );
   }
 
@@ -87,46 +71,14 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   }
 
   @override
-  Future<Result<ClaimsReferenceData>> loadReferenceData() async {
-    const AppPageRequest request = AppPageRequest(pageSize: 50);
-    final Result<AppPage<CoveragePlanOption>> coverageResult = await _apiClient
-        .get<AppPage<CoveragePlanOption>>(
-          ApiEndpoints.collection(HmsApiResource.coveragePlans),
-          queryParameters: _withoutEmpty(<String, Object?>{
-            'page': 1,
-            'limit': request.pageSize,
-            'sort_by': 'name',
-            'order': 'asc',
-          }),
-          decoder: (Object? data) =>
-              CoveragePlanPageDto.fromResponse(data, request).page,
-        );
-    final Result<AppPage<ClaimInvoiceOption>> invoiceResult = await _apiClient
-        .get<AppPage<ClaimInvoiceOption>>(
-          ApiEndpoints.collection(HmsApiResource.invoices),
-          queryParameters: _withoutEmpty(<String, Object?>{
-            'page': 1,
-            'limit': request.pageSize,
-            'sort_by': 'issued_at',
-            'order': 'desc',
-          }),
-          decoder: (Object? data) =>
-              ClaimInvoicePageDto.fromResponse(data, request).page,
-        );
-
-    return Result<ClaimsReferenceData>.success(
-      ClaimsReferenceData(
-        coveragePlans: coverageResult.when(
-          success: (AppPage<CoveragePlanOption> page) => page.items,
-          failure: (_) => const <CoveragePlanOption>[],
-        ),
-        invoices: invoiceResult.when(
-          success: (AppPage<ClaimInvoiceOption> page) => page.items,
-          failure: (_) => const <ClaimInvoiceOption>[],
-        ),
-        coverageUnavailable: coverageResult.isFailure,
-        invoicesUnavailable: invoiceResult.isFailure,
-      ),
+  Future<Result<ClaimsReferenceData>> loadReferenceData() {
+    return _apiClient.get<ClaimsReferenceData>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.claimsWorkspace.path,
+        'lookups',
+      ]),
+      decoder: (Object? data) =>
+          ClaimsLookupsDto.fromResponse(data).referenceData,
     );
   }
 
@@ -205,59 +157,23 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
     int limit = 20,
   }) {
     return _apiClient.get<AppPage<PreAuthorizationRecord>>(
-      ApiEndpoints.collection(HmsApiResource.preAuthorizations),
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.claimsWorkspace.path,
+        'authorizations',
+        'context',
+      ]),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': 1,
         'limit': limit,
         'patient_id': patientId,
         'admission_id': admissionId,
         'encounter_id': encounterId,
-        'sort_by': 'requested_at',
-        'order': 'desc',
       }),
       decoder: (Object? data) {
         return PreAuthorizationPageDto.fromResponse(
           data,
           AppPageRequest(pageSize: limit),
         ).page;
-      },
-    );
-  }
-
-  Future<Result<AppPage<PreAuthorizationRecord>>> _listPreAuthorizations(
-    ClaimsQueueQuery query,
-  ) {
-    final AppPageRequest request = query.pageRequest;
-    return _apiClient.get<AppPage<PreAuthorizationRecord>>(
-      ApiEndpoints.collection(HmsApiResource.preAuthorizations),
-      queryParameters: _withoutEmpty(<String, Object?>{
-        'page': request.pageIndex + 1,
-        'limit': request.pageSize,
-        'status': preAuthorizationStatusForFilter(query.filter),
-        'sort_by': 'requested_at',
-        'order': 'desc',
-      }),
-      decoder: (Object? data) {
-        return PreAuthorizationPageDto.fromResponse(data, request).page;
-      },
-    );
-  }
-
-  Future<Result<AppPage<InsuranceClaimRecord>>> _listClaims(
-    ClaimsQueueQuery query,
-  ) {
-    final AppPageRequest request = query.pageRequest;
-    return _apiClient.get<AppPage<InsuranceClaimRecord>>(
-      ApiEndpoints.collection(HmsApiResource.insuranceClaims),
-      queryParameters: _withoutEmpty(<String, Object?>{
-        'page': request.pageIndex + 1,
-        'limit': request.pageSize,
-        'status': insuranceClaimStatusForFilter(query.filter),
-        'sort_by': 'submitted_at',
-        'order': 'desc',
-      }),
-      decoder: (Object? data) {
-        return InsuranceClaimPageDto.fromResponse(data, request).page;
       },
     );
   }
@@ -377,21 +293,6 @@ final class _OptionalInvoice {
 
   final ClaimInvoiceOption? value;
   final bool unavailable;
-}
-
-int? _sumTotals(int? left, int? right) {
-  if (left == null || right == null) {
-    return null;
-  }
-  return left + right;
-}
-
-int _compareQueueItems(ClaimsQueueItem left, ClaimsQueueItem right) {
-  final DateTime leftDate =
-      left.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-  final DateTime rightDate =
-      right.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-  return rightDate.compareTo(leftDate);
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

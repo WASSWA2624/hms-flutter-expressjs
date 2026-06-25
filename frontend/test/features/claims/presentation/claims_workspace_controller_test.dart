@@ -53,6 +53,11 @@ void main() {
           ClaimsReferenceData(),
         ),
       );
+      when(() => repository.loadWorkspaceSummary()).thenAnswer(
+        (_) async => const Result<ClaimsWorkspaceSummary>.success(
+          ClaimsWorkspaceSummary(authorizationPendingCount: 7),
+        ),
+      );
 
       final ProviderContainer container = ProviderContainer(
         overrides: [claimsRepositoryProvider.overrideWithValue(repository)],
@@ -69,8 +74,10 @@ void main() {
       );
       expect(state.queue.items, hasLength(1));
       expect(state.queue.items.first.displayId, 'AUTH-001');
+      expect(state.authorizationPendingCount, 7);
       verify(() => repository.listQueue(any())).called(1);
       verify(() => repository.loadReferenceData()).called(1);
+      verify(() => repository.loadWorkspaceSummary()).called(1);
     });
 
     test('updates pre-authorization status through repository', () async {
@@ -96,6 +103,11 @@ void main() {
       when(() => repository.loadReferenceData()).thenAnswer(
         (_) async => const Result<ClaimsReferenceData>.success(
           ClaimsReferenceData(),
+        ),
+      );
+      when(() => repository.loadWorkspaceSummary()).thenAnswer(
+        (_) async => const Result<ClaimsWorkspaceSummary>.success(
+          ClaimsWorkspaceSummary(),
         ),
       );
       when(

@@ -207,6 +207,7 @@ apiV1Router.use('/pricing-rules', require('../modules/pricing-rule/routes/pricin
 apiV1Router.use('/coverage-plans', require('../modules/coverage-plan/routes/coverage-plan.routes'));
 apiV1Router.use('/insurance-claims', require('../modules/insurance-claim/routes/insurance-claim.routes'));
 apiV1Router.use('/pre-authorizations', require('../modules/pre-authorization/routes/pre-authorization.routes'));
+apiV1Router.use('/claims-workspace', require('../modules/claims-workspace/routes/claims-workspace.routes'));
 apiV1Router.use('/billing-adjustments', require('../modules/billing-adjustment/routes/billing-adjustment.routes'));
 apiV1Router.use('/payroll-runs', require('../modules/payroll-run/routes/payroll-run.routes'));
 apiV1Router.use('/payroll-items', require('../modules/payroll-item/routes/payroll-item.routes'));

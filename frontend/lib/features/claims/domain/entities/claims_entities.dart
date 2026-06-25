@@ -290,11 +290,33 @@ final class ClaimsReferenceData {
 }
 
 @immutable
+final class ClaimsWorkspaceSummary {
+  const ClaimsWorkspaceSummary({
+    this.authorizationPendingCount = 0,
+    this.authorizationApprovedCount = 0,
+    this.submittedClaimsCount = 0,
+    this.approvedClaimsCount = 0,
+    this.rejectedResubmissionCount = 0,
+    this.paidClosedCount = 0,
+    this.workloadCount = 0,
+  });
+
+  final int authorizationPendingCount;
+  final int authorizationApprovedCount;
+  final int submittedClaimsCount;
+  final int approvedClaimsCount;
+  final int rejectedResubmissionCount;
+  final int paidClosedCount;
+  final int workloadCount;
+}
+
+@immutable
 final class ClaimsWorkspaceState {
   const ClaimsWorkspaceState({
     required this.query,
     required this.queue,
     this.referenceData = const ClaimsReferenceData(),
+    this.summary,
     this.selectedDetail,
     this.lastFailure,
     this.isRefreshing = false,
@@ -305,6 +327,12 @@ final class ClaimsWorkspaceState {
   final ClaimsQueueQuery query;
   final AppPage<ClaimsQueueItem> queue;
   final ClaimsReferenceData referenceData;
+
+  /// Authoritative counts from the backend `claims-workspace` aggregator.
+  /// When present these are used in preference to the queue-page heuristics so
+  /// summary cards reflect the full tenant/facility scope, not just the loaded
+  /// page.
+  final ClaimsWorkspaceSummary? summary;
   final ClaimsQueueDetail? selectedDetail;
   final Object? lastFailure;
   final bool isRefreshing;
@@ -312,63 +340,74 @@ final class ClaimsWorkspaceState {
   final bool isSaving;
 
   int get authorizationPendingCount {
-    return _count(
-      kind: ClaimsQueueKind.authorization,
-      statuses: const <String>{'PENDING'},
-    );
+    return summary?.authorizationPendingCount ??
+        _count(
+          kind: ClaimsQueueKind.authorization,
+          statuses: const <String>{'PENDING'},
+        );
   }
 
   int get authorizationApprovedCount {
-    return _count(
-      kind: ClaimsQueueKind.authorization,
-      statuses: const <String>{'APPROVED'},
-    );
+    return summary?.authorizationApprovedCount ??
+        _count(
+          kind: ClaimsQueueKind.authorization,
+          statuses: const <String>{'APPROVED'},
+        );
   }
 
   int get submittedClaimsCount {
-    return _count(
-      kind: ClaimsQueueKind.claim,
-      statuses: const <String>{'SUBMITTED'},
-    );
+    return summary?.submittedClaimsCount ??
+        _count(
+          kind: ClaimsQueueKind.claim,
+          statuses: const <String>{'SUBMITTED'},
+        );
   }
 
   int get approvedClaimsCount {
-    return _count(
-      kind: ClaimsQueueKind.claim,
-      statuses: const <String>{'APPROVED'},
-    );
+    return summary?.approvedClaimsCount ??
+        _count(
+          kind: ClaimsQueueKind.claim,
+          statuses: const <String>{'APPROVED'},
+        );
   }
 
   int get rejectedResubmissionCount {
-    return queue.items.where((ClaimsQueueItem item) {
-      return (item.isAuthorization && item.status.toUpperCase() == 'DENIED') ||
-          (item.isClaim && item.status.toUpperCase() == 'REJECTED');
-    }).length;
+    return summary?.rejectedResubmissionCount ??
+        queue.items.where((ClaimsQueueItem item) {
+          return (item.isAuthorization &&
+                  item.status.toUpperCase() == 'DENIED') ||
+              (item.isClaim && item.status.toUpperCase() == 'REJECTED');
+        }).length;
   }
 
   int get paidClosedCount {
-    return _count(
-      kind: ClaimsQueueKind.claim,
-      statuses: const <String>{'PAID', 'CANCELLED'},
-    );
+    return summary?.paidClosedCount ??
+        _count(
+          kind: ClaimsQueueKind.claim,
+          statuses: const <String>{'PAID', 'CANCELLED'},
+        );
   }
 
   int get workloadCount {
-    return queue.items.where((ClaimsQueueItem item) {
-      final String status = item.status.toUpperCase();
-      return switch (item.kind) {
-        ClaimsQueueKind.authorization =>
-          status == 'PENDING' || status == 'DENIED',
-        ClaimsQueueKind.claim =>
-          status == 'SUBMITTED' || status == 'APPROVED' || status == 'REJECTED',
-      };
-    }).length;
+    return summary?.workloadCount ??
+        queue.items.where((ClaimsQueueItem item) {
+          final String status = item.status.toUpperCase();
+          return switch (item.kind) {
+            ClaimsQueueKind.authorization =>
+              status == 'PENDING' || status == 'DENIED',
+            ClaimsQueueKind.claim =>
+              status == 'SUBMITTED' ||
+                  status == 'APPROVED' ||
+                  status == 'REJECTED',
+          };
+        }).length;
   }
 
   ClaimsWorkspaceState copyWith({
     ClaimsQueueQuery? query,
     AppPage<ClaimsQueueItem>? queue,
     ClaimsReferenceData? referenceData,
+    ClaimsWorkspaceSummary? summary,
     ClaimsQueueDetail? selectedDetail,
     Object? lastFailure,
     bool? isRefreshing,
@@ -381,6 +420,7 @@ final class ClaimsWorkspaceState {
       query: query ?? this.query,
       queue: queue ?? this.queue,
       referenceData: referenceData ?? this.referenceData,
+      summary: summary ?? this.summary,
       selectedDetail: clearSelectedDetail
           ? null
           : selectedDetail ?? this.selectedDetail,
@@ -417,6 +457,28 @@ String? insuranceClaimStatusForFilter(ClaimsQueueFilter filter) {
     ClaimsQueueFilter.claimCancelled => 'CANCELLED',
     _ => null,
   };
+}
+
+/// Maps a queue filter to the backend aggregator `kind` parameter.
+/// Returns `AUTHORIZATION`, `CLAIM`, or `null` (both kinds) for the work-items
+/// endpoint exposed by the `claims-workspace` module.
+String? claimsFilterKind(ClaimsQueueFilter filter) {
+  if (filter == ClaimsQueueFilter.all) {
+    return null;
+  }
+  if (preAuthorizationStatusForFilter(filter) != null) {
+    return 'AUTHORIZATION';
+  }
+  if (insuranceClaimStatusForFilter(filter) != null) {
+    return 'CLAIM';
+  }
+  return null;
+}
+
+/// Maps a queue filter to the backend aggregator `status` parameter.
+String? claimsFilterStatus(ClaimsQueueFilter filter) {
+  return preAuthorizationStatusForFilter(filter) ??
+      insuranceClaimStatusForFilter(filter);
 }
 
 bool filterIncludesAuthorizations(ClaimsQueueFilter filter) {
