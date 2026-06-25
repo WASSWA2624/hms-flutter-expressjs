@@ -6,9 +6,10 @@ Complete the **Radiology and Imaging Module** for HOSSPI HMS so radiology staff 
 
 **Source of truth (read in this order):**
 
-1. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Radiology and imaging module boundaries vs Clinical, OPD, IPD, Billing, Biomedical
-2. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §3 `RADIOLOGY_REQUESTED` / `LAB_AND_RADIOLOGY_REQUESTED` stages; §5 Radiology role (workspace only)
-3. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §7 radiology order routing, §12 service execution, §8 care loop results review
+1. [flows/radiology-flow.mdc](../.cursor/flows/radiology-flow.mdc) — executing-department workflow and workbench contract
+2. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Radiology and imaging module boundaries vs Clinical, OPD, IPD, Billing, Biomedical
+3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §3 `RADIOLOGY_REQUESTED` / `LAB_AND_RADIOLOGY_REQUESTED` stages; §5 Radiology role (workspace only)
+4. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §7 radiology order routing, §8 care loop results review
 
 **Central encounter rule:** every radiology order links to a **clinical encounter** (`encounter_id`). Radiology executes studies and reports on orders — it does not create OPD/IPD encounters or advance patient flow stages directly (orchestrators update OPD/IPD stages when work completes).
 
@@ -16,11 +17,32 @@ Deliver a **professional radiology workbench**: order-to-report pipeline, modali
 
 ---
 
+## Global Implementation Standards
+
+Mandatory platform rules for all work in this module.
+
+| Area | Requirement |
+| ---- | ----------- |
+| Product scope | [app-write-up.mdc](../.cursor/app-write-up.mdc) — respect module boundaries; do not duplicate workflows owned elsewhere. |
+| Patient flows | Align with [`.cursor/flows/`](../.cursor/flows/). Use [opd-flow.mdc](../.cursor/flows/opd-flow.mdc) and [ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) for journey touchpoints; read the module-specific flow file when one exists (lab, nursing, pharmacy, radiology, discharge, emergency, icu, theater). |
+| Encounters | One active OPD encounter per outpatient visit; IPD admission as inpatient hub; overlays (ICU, Theater) and executing departments attach — never parallel admission records. |
+| UI/UX | Modern, clean, minimal on-screen text; hospital workflow language (not enum names or UUIDs). Follow `frontend/.cursor/design-system.mdc`, `components.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`, `platform_guidelines.mdc`. Reuse `frontend/lib/shared/*` before creating new widgets. Responsive on Android, iOS, web, Windows, macOS, Linux. |
+| Theming and i18n | Full theme support (light/dark/system). All user-visible strings in `app_en.arb` — no hardcoded labels. |
+| Modal-first workflows | **All create/edit/approve/complete/handoff actions** use **in-page dialogs, bottom sheets, or nested modals**. Do **not** navigate to new routes for within-module workflows. Shell entry routes (`/opd`, `/ipd`, etc.) and deep-link **pre-selection** of a patient/record are allowed; selecting a row opens the workspace detail panel — not a separate workflow page. |
+| Realtime sync | Subscribe to relevant `RealtimeEventGroups` in workspace controllers. After mutations, refresh affected rows, detail panels, summary cards, and nav badges. Keep UI, frontend state, backend services, and database consistent. |
+| Architecture | UI/controllers → repository → API (`frontend/.cursor/feature_workflow.mdc`, `architecture.mdc`). Enforce RBAC + ABAC + tenant/facility scope + module entitlements (frontend `AccessGate` + backend authorization). |
+| Database | Apply migrations for schema changes per backend standards; keep API contracts and schema aligned. |
+| Quality gate | From `frontend/`: `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. From `backend/`: targeted `npm test` for touched modules. |
+
+---
+
+
 ## Mandatory Reading (before any Radiology change)
 
-1. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Radiology owns tests, orders, results, imaging studies, assets, PACS links.
-2. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — radiology stages and role isolation.
-3. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §7 imaging route and completion outputs.
+1. Re-read [flows/radiology-flow.mdc](../.cursor/flows/radiology-flow.mdc) — order-to-report pipeline and workbench contract.
+2. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Radiology owns tests, orders, results, imaging studies, assets, PACS links.
+3. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — radiology stages and role isolation.
+4. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §7 imaging route and completion outputs.
 
 ---
 
@@ -133,6 +155,31 @@ Deliver a **professional radiology workbench**: order-to-report pipeline, modali
 - OPD `opdRouteRadiologyAction` routes patient to radiology stage — workbench receives orders, does not mutate OPD stage from radiology UI.
 
 ---
+
+## UI / UX Requirements
+
+- Workspace layout: `AppWorkspace` with summary cards (filter worklist), searchable list/table, detail panel, and modal action dialogs.
+- Summary cards filter the board — they must not open separate list routes.
+- Hide zero-value summary cards where the workspace pattern expects it.
+- Show **next required action** and **responsible role** on worklist rows where applicable.
+- Stable, error-free widgets; no runtime or compilation regressions.
+- Match Nursing, IPD, Lab, and OPD workspace patterns for consistency.
+
+---
+
+
+## Architecture and Conventions
+
+| Rule | Requirement |
+| ---- | ----------- |
+| Layering | Widgets → Riverpod controllers → repository interface → impl → API client. No API calls from widgets. |
+| State | `AsyncNotifier` + `Result<T>` / `AppFailure` for errors. |
+| Permissions | `AccessGate` / `AppAccessActionGate`; backend auth mandatory even when UI hides actions. |
+| File size | Extract reusable widgets to `presentation/widgets/`; shared components to `frontend/lib/shared/`. |
+| Realtime | `frontend/.cursor/realtime_sync.mdc` — partial refresh after modal success when supported. |
+
+---
+
 
 ## Module Boundaries (do not violate)
 

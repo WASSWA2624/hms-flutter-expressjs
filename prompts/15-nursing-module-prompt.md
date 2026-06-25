@@ -2,7 +2,7 @@
 
 ## Objective
 
-Complete the **Nursing Module** for Hosspi HMS so ward nurses, charge nurses, and nursing supervisors can run inpatient nursing care end-to-end: receive IPD handovers, complete admission checklists, record vitals and observations, administer medications, execute nursing tasks, manage shift handovers, support transfers and discharge clearance, and coordinate with doctors — with clear handoffs from **OPD → IPD → Nursing** and escalation paths to **ICU** when critical care is required.
+Complete the **Nursing Module** for HOSSPI HMS so ward nurses, charge nurses, and nursing supervisors can run inpatient nursing care end-to-end: receive IPD handovers, complete admission checklists, record vitals and observations, administer medications, execute nursing tasks, manage shift handovers, support transfers and discharge clearance, and coordinate with doctors — with clear handoffs from **OPD → IPD → Nursing** and escalation paths to **ICU** when critical care is required.
 
 Deliver a **professional, calm, ward-grade workspace** that is easy to scan during busy shifts: clear workload queues, predictable primary actions, admission-checklist visibility, and no raw internal identifiers in the UI.
 
@@ -10,9 +10,36 @@ Deliver a **professional, calm, ward-grade workspace** that is easy to scan duri
 
 **Module boundary (per `../.cursor/app-write-up.mdc`):** Nursing owns nursing observations, medication administration, care tasks, ward activity, and handover. Inpatient owns admission and bed assignment; ICU owns intensive-care stays and critical-alert workflows; Clinical/Doctor owns orders; Discharge owns final episode closure. Nursing executes nursing-facing work and clearance steps — it does not finalize IPD discharge or own ICU stay lifecycle.
 
-**Flow alignment:** every nursing workflow step must map to `../.cursor/flows/ipd-flow.mdc` (steps 5–9, 11–13, 16) and respect `../.cursor/flows/opd-flow.mdc` (nurse vitals and queue support during outpatient stages; terminal `ADMITTED` handoff to IPD).
+**Flow alignment:** every nursing workflow step must map to [nursing-flow.mdc](../.cursor/flows/nursing-flow.mdc), [ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) (steps 5–9, 11–13, 16), and [opd-flow.mdc](../.cursor/flows/opd-flow.mdc) (nurse vitals during outpatient stages; terminal `ADMITTED` handoff to IPD).
+
+**Source of truth (read in this order):**
+
+1. [flows/nursing-flow.mdc](../.cursor/flows/nursing-flow.mdc) — ward nursing workflow, queue contract, cross-flow rules
+2. [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — nursing admission, care loop, transfers, discharge clearance support
+3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — `WAITING_VITALS`, nurse role §5
+4. [app-write-up.mdc](../.cursor/app-write-up.mdc) — Nursing vs IPD, ICU, Clinical, Discharge boundaries
 
 ---
+
+## Global Implementation Standards
+
+Mandatory platform rules for all work in this module.
+
+| Area | Requirement |
+| ---- | ----------- |
+| Product scope | [app-write-up.mdc](../.cursor/app-write-up.mdc) — respect module boundaries; do not duplicate workflows owned elsewhere. |
+| Patient flows | Align with [`.cursor/flows/`](../.cursor/flows/). Use [opd-flow.mdc](../.cursor/flows/opd-flow.mdc) and [ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) for journey touchpoints; read the module-specific flow file when one exists (lab, nursing, pharmacy, radiology, discharge, emergency, icu, theater). |
+| Encounters | One active OPD encounter per outpatient visit; IPD admission as inpatient hub; overlays (ICU, Theater) and executing departments attach — never parallel admission records. |
+| UI/UX | Modern, clean, minimal on-screen text; hospital workflow language (not enum names or UUIDs). Follow `frontend/.cursor/design-system.mdc`, `components.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`, `platform_guidelines.mdc`. Reuse `frontend/lib/shared/*` before creating new widgets. Responsive on Android, iOS, web, Windows, macOS, Linux. |
+| Theming and i18n | Full theme support (light/dark/system). All user-visible strings in `app_en.arb` — no hardcoded labels. |
+| Modal-first workflows | **All create/edit/approve/complete/handoff actions** use **in-page dialogs, bottom sheets, or nested modals**. Do **not** navigate to new routes for within-module workflows. Shell entry routes (`/opd`, `/ipd`, etc.) and deep-link **pre-selection** of a patient/record are allowed; selecting a row opens the workspace detail panel — not a separate workflow page. |
+| Realtime sync | Subscribe to relevant `RealtimeEventGroups` in workspace controllers. After mutations, refresh affected rows, detail panels, summary cards, and nav badges. Keep UI, frontend state, backend services, and database consistent. |
+| Architecture | UI/controllers → repository → API (`frontend/.cursor/feature_workflow.mdc`, `architecture.mdc`). Enforce RBAC + ABAC + tenant/facility scope + module entitlements (frontend `AccessGate` + backend authorization). |
+| Database | Apply migrations for schema changes per backend standards; keep API contracts and schema aligned. |
+| Quality gate | From `frontend/`: `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. From `backend/`: targeted `npm test` for touched modules. |
+
+---
+
 
 ## Current State (read before changing code)
 

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Complete the **Inpatient (IPD) Module** for Hosspi HMS so admission desk, bed managers, ward nurses, doctors, and discharge coordinators can run the full inpatient lifecycle end-to-end: admission intake, bed allocation, ward handover, clinical care and orders, transfers, configurable billing gates, multi-step discharge clearance, bed release, and encounter closure.
+Complete the **Inpatient (IPD) Module** for HOSSPI HMS so admission desk, bed managers, ward nurses, doctors, and discharge coordinators can run the full inpatient lifecycle end-to-end: admission intake, bed allocation, ward handover, clinical care and orders, transfers, configurable billing gates, multi-step discharge clearance, bed release, and encounter closure.
 
 **Source of truth:** implement the workflow defined in [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc). UI labels, queue scopes, stage chips, summary cards, role visibility, and available actions must stay aligned with that document and with the **backend IPD stage contract** (`ADMITTED_PENDING_BED`, `ADMITTED_IN_BED`, `TRANSFER_REQUESTED`, `TRANSFER_IN_PROGRESS`, `DISCHARGE_PLANNED`, `DISCHARGED`, `CANCELLED`).
 
@@ -11,6 +11,49 @@ Complete the **Inpatient (IPD) Module** for Hosspi HMS so admission desk, bed ma
 **Central encounter rule:** the IPD encounter/admission is the single anchor record. Admission requests, source OPD/emergency encounters, bed history, nursing assessment, vitals, doctor notes, orders, results, billing, insurance, and discharge artifacts must attach to it — never duplicate parallel admission records.
 
 Deliver a **professional, calm, ward-grade workspace** that is easy to scan under pressure: clear hierarchy, role-focused queues, predictable primary actions, and no raw internal identifiers in the UI.
+
+---
+
+## Global Implementation Standards
+
+Mandatory platform rules for all work in this module.
+
+| Area | Requirement |
+| ---- | ----------- |
+| Product scope | [app-write-up.mdc](../.cursor/app-write-up.mdc) — respect module boundaries; do not duplicate workflows owned elsewhere. |
+| Patient flows | Align with [`.cursor/flows/`](../.cursor/flows/). Use [opd-flow.mdc](../.cursor/flows/opd-flow.mdc) and [ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) for journey touchpoints; read the module-specific flow file when one exists (lab, nursing, pharmacy, radiology, discharge, emergency, icu, theater). |
+| Encounters | One active OPD encounter per outpatient visit; IPD admission as inpatient hub; overlays (ICU, Theater) and executing departments attach — never parallel admission records. |
+| UI/UX | Modern, clean, minimal on-screen text; hospital workflow language (not enum names or UUIDs). Follow `frontend/.cursor/design-system.mdc`, `components.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`, `platform_guidelines.mdc`. Reuse `frontend/lib/shared/*` before creating new widgets. Responsive on Android, iOS, web, Windows, macOS, Linux. |
+| Theming and i18n | Full theme support (light/dark/system). All user-visible strings in `app_en.arb` — no hardcoded labels. |
+| Modal-first workflows | **All create/edit/approve/complete/handoff actions** use **in-page dialogs, bottom sheets, or nested modals**. Do **not** navigate to new routes for within-module workflows. Shell entry routes (`/opd`, `/ipd`, etc.) and deep-link **pre-selection** of a patient/record are allowed; selecting a row opens the workspace detail panel — not a separate workflow page. |
+| Realtime sync | Subscribe to relevant `RealtimeEventGroups` in workspace controllers. After mutations, refresh affected rows, detail panels, summary cards, and nav badges. Keep UI, frontend state, backend services, and database consistent. |
+| Architecture | UI/controllers → repository → API (`frontend/.cursor/feature_workflow.mdc`, `architecture.mdc`). Enforce RBAC + ABAC + tenant/facility scope + module entitlements (frontend `AccessGate` + backend authorization). |
+| Database | Apply migrations for schema changes per backend standards; keep API contracts and schema aligned. |
+| Quality gate | From `frontend/`: `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. From `backend/`: targeted `npm test` for touched modules. |
+
+---
+
+## Mandatory Reading (before any IPD change)
+
+1. Re-read [flows/ipd-flow.mdc](../.cursor/flows/ipd-flow.mdc) — §1–§19: admission paths, bed board, billing gates, nursing/doctor care, orders, transfers, discharge, backend stage contract, encounter hub (§16).
+2. Re-read [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — §3 `ADMITTED`, §7 OPD-to-IPD handoff, §6 UI rules.
+3. Re-read downstream flows attached to IPD: [nursing-flow.mdc](../.cursor/flows/nursing-flow.mdc), [discharge-flow.mdc](../.cursor/flows/discharge-flow.mdc), [icu-flow.mdc](../.cursor/flows/icu-flow.mdc), [theater-flow.mdc](../.cursor/flows/theater-flow.mdc), [lab-flow.mdc](../.cursor/flows/lab-flow.mdc), [radiology-flow.mdc](../.cursor/flows/radiology-flow.mdc), [pharmacy-flow.mdc](../.cursor/flows/pharmacy-flow.mdc), [emergency-flow.mdc](../.cursor/flows/emergency-flow.mdc).
+4. Re-read [app-write-up.mdc](../.cursor/app-write-up.mdc) — Inpatient vs Nursing, ICU, Theater, Discharge, Billing boundaries.
+
+When changing IPD workflow behavior, update `ipd-flow.mdc` first so flow docs and implementation stay aligned.
+
+---
+
+## Flow Integration Requirements
+
+| Flow | IPD module role |
+| ---- | --------------- |
+| [opd-flow §7](../.cursor/flows/opd-flow.mdc) | Receive `ADMITTED` handoff; link source OPD encounter; do not keep patient in active OPD queues |
+| [emergency-flow §2.1](../.cursor/flows/emergency-flow.mdc) | Emergency admission with optional `Billing Deferred` |
+| [nursing-flow](../.cursor/flows/nursing-flow.mdc) | Ward admission checklist and care loop execution on same admission |
+| [discharge-flow](../.cursor/flows/discharge-flow.mdc) | Multi-step clearance; `plan-discharge` / `finalize-discharge` orchestration |
+| [icu-flow](../.cursor/flows/icu-flow.mdc) / [theater-flow](../.cursor/flows/theater-flow.mdc) | Overlays on same admission — bridge actions **Open in ICU/Theater** |
+| Executing departments | Auto-route orders per ipd-flow §7; results feed care loop §8 |
 
 ---
 
