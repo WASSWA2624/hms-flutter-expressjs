@@ -116,6 +116,10 @@ const getTheatreFlowQuerySchema = z.object({
 
 const startTheatreFlowSchema = z.object({
   encounter_id: identifierSchema,
+  admission_id: optionalIdentifierSchema,
+  emergency_case_id: optionalIdentifierSchema,
+  procedure_name: z.string().trim().max(255).optional().nullable(),
+  source_kind: z.enum(['IPD', 'OPD', 'EMERGENCY']).optional().nullable(),
   scheduled_at: z.string().datetime().optional(),
   status: theatreStatusSchema.optional(),
   room_id: optionalIdentifierSchema,
@@ -130,6 +134,7 @@ const updateStageSchema = z.object({
   workflow_stage: z.string().trim().max(80).optional(),
   status: theatreStatusSchema.optional(),
   stage_notes: z.string().trim().max(65535).optional().nullable(),
+  handover_destination: z.enum(['WARD', 'ICU', 'OPD']).optional().nullable(),
   started_at: z.string().datetime().optional().nullable(),
   completed_at: z.string().datetime().optional().nullable(),
   cancelled_at: z.string().datetime().optional().nullable(),

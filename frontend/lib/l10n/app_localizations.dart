@@ -976,6 +976,30 @@ abstract class AppLocalizations {
   /// **'Open in ICU'**
   String get ipdOpenIcuAction;
 
+  /// IPD action to open the theater workspace for an active case.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Theater'**
+  String get ipdOpenTheaterAction;
+
+  /// IPD stage label when the patient is in the operating theatre.
+  ///
+  /// In en, this message translates to:
+  /// **'In procedure / OT'**
+  String get ipdStatusInProcedureOt;
+
+  /// IPD next-step label when theatre handover is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete theatre handover'**
+  String get ipdNextCompleteTheatreHandover;
+
+  /// IPD detail section title for theatre post-op handover summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Theatre post-op handover'**
+  String get ipdTheatreHandoverTitle;
+
   /// IPD action to start an ICU stay on this admission.
   ///
   /// In en, this message translates to:
@@ -2091,6 +2115,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get theaterCompletedSummaryLabel;
+
+  /// Summary card label for all theater cases on the current board.
+  ///
+  /// In en, this message translates to:
+  /// **'All cases'**
+  String get theaterAllCasesSummaryLabel;
+
+  /// Theater board column label for case identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Case'**
+  String get theaterCaseIdColumnLabel;
+
+  /// Theater board column label for procedure name.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure'**
+  String get theaterProcedureColumnLabel;
+
+  /// Theater board column label for responsible clinical role.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get theaterResponsibleRoleColumnLabel;
+
+  /// Theater detail label for case source context.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get theaterSourceContextLabel;
+
+  /// Theater source context label for emergency pathway.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get theaterSourceEmergency;
+
+  /// Theater source context label for OPD elective pathway.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD elective'**
+  String get theaterSourceOpd;
+
+  /// Theater source context label for IPD surgery pathway.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient surgery'**
+  String get theaterSourceIpd;
+
+  /// Theater action to open linked IPD admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in IPD'**
+  String get theaterOpenInIpdAction;
+
+  /// Theater action to open linked emergency case.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Emergency'**
+  String get theaterOpenInEmergencyAction;
+
+  /// Theater handover form label for recovery destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery destination'**
+  String get theaterHandoverDestinationLabel;
+
+  /// Theater handover destination option for ward recovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get theaterHandoverToWard;
+
+  /// Theater handover destination option for ICU recovery.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get theaterHandoverToIcu;
+
+  /// Theater handover destination option for outpatient follow-up.
+  ///
+  /// In en, this message translates to:
+  /// **'Day-case / OPD follow-up'**
+  String get theaterHandoverToOpd;
+
+  /// Responsible role label for theater nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater nurse'**
+  String get theaterRoleNurse;
+
+  /// Responsible role label for surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon'**
+  String get theaterRoleSurgeon;
+
+  /// Responsible role label for anesthetist.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthetist'**
+  String get theaterRoleAnesthetist;
+
+  /// Responsible role label for multidisciplinary theater team.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater team'**
+  String get theaterRoleTeam;
+
+  /// Responsible role label for theater coordinator.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater coordinator'**
+  String get theaterRoleCoordinator;
 
   /// Accessibility label for theater filters.
   ///

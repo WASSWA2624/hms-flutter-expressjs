@@ -70,6 +70,8 @@ final class IpdAdmissionSummaryDto {
       hasCriticalAlert: _bool(json['has_critical_alert']),
       criticalSeverity: _string(json['critical_severity']),
       activeIcuStayId: _string(json['active_icu_stay_id']),
+      theatreStatus: _string(json['theatre_status']),
+      activeTheatreCaseId: _string(json['active_theatre_case_id']),
     );
   }
 }
@@ -90,6 +92,12 @@ final class IpdAdmissionDetailDto {
     final IpdJsonMap facility = _map(json['facility']);
     final IpdJsonMap flow = _map(json['flow']);
     final IpdIcuOverlay icu = IpdIcuOverlayDto(_map(json['icu'])).toEntity();
+    final IpdTheatreOverlay theatre = IpdTheatreOverlayDto(
+      _map(json['theatre']),
+      theatreStatus: _string(json['theatre_status']),
+      activeTheatreCaseId: _string(json['active_theatre_case_id']),
+      handoverSummaryJson: _nullableMap(json['theatre_handover_summary']),
+    ).toEntity();
     final IpdAdmissionSummary summary = IpdAdmissionSummary(
       id:
           _string(json['id']) ??
@@ -124,6 +132,9 @@ final class IpdAdmissionDetailDto {
       criticalSeverity:
           _string(json['critical_severity']) ?? icu.criticalSeverity,
       activeIcuStayId: _string(json['active_icu_stay_id']) ?? icu.activeStayId,
+      theatreStatus: _string(json['theatre_status']) ?? theatre.status,
+      activeTheatreCaseId:
+          _string(json['active_theatre_case_id']) ?? theatre.activeCaseId,
     );
 
     return IpdAdmissionDetail(
@@ -189,6 +200,7 @@ final class IpdAdmissionDetailDto {
           .map((IpdTimelineItemDto dto) => dto.toEntity())
           .toList(growable: false),
       icu: icu,
+      theatre: theatre,
       sourceContext: IpdSourceContextDto.nullable(
         _nullableMap(json['source_context']),
       )?.toEntity(),
@@ -512,6 +524,45 @@ final class IpdTimelineItemDto {
       type: _string(json['type']) ?? '',
       label: _string(json['label']),
       occurredAt: _date(json['at']) ?? _date(json['occurred_at']),
+    );
+  }
+}
+
+final class IpdTheatreOverlayDto {
+  const IpdTheatreOverlayDto(
+    this.json, {
+    this.theatreStatus,
+    this.activeTheatreCaseId,
+    this.handoverSummaryJson,
+  });
+
+  final IpdJsonMap json;
+  final String? theatreStatus;
+  final String? activeTheatreCaseId;
+  final IpdJsonMap? handoverSummaryJson;
+
+  IpdTheatreOverlay toEntity() {
+    final IpdJsonMap activeCase = _map(json['active_case']);
+    final IpdJsonMap handover =
+        handoverSummaryJson ?? _map(json['handover_summary']);
+    return IpdTheatreOverlay(
+      status: theatreStatus ?? _string(json['status']),
+      activeCaseId:
+          activeTheatreCaseId ??
+          _string(activeCase['display_id']) ??
+          _string(activeCase['id']),
+      procedureName: _string(activeCase['procedure_name']),
+      workflowStage: _string(activeCase['workflow_stage']),
+      handoverSummary: handover.isEmpty
+          ? null
+          : IpdTheatreHandoverSummary(
+              caseDisplayId: _string(handover['case_display_id']),
+              workflowStage: _string(handover['workflow_stage']),
+              handoverDestination: _string(handover['handover_destination']),
+              stageNotes: _string(handover['stage_notes']),
+              postOpNote: _string(handover['post_op_note']),
+              completedAt: _date(handover['completed_at']),
+            ),
     );
   }
 }

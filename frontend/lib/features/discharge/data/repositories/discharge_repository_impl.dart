@@ -179,21 +179,20 @@ final class DischargeRepositoryImpl implements DischargeRepository {
       return const _OptionalRelatedRecords();
     }
 
-    final Result<List<DischargeRelatedRecord>> result = await _apiClient
-        .get<List<DischargeRelatedRecord>>(
-          ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'workbench']),
-          queryParameters: _withoutEmpty(<String, Object?>{
-            'panel': 'orders',
-            'page': 1,
-            'limit': 20,
-            'encounter_id': encounterId,
-            if (encounterId == null || encounterId.isEmpty)
-              'patient_id': patientId,
-            'sort_by': 'ordered_at',
-            'order': 'desc',
-          }),
-          decoder: decodeDischargePharmacyWorkbenchOrders,
-        );
+    final Result<List<DischargeRelatedRecord>>
+    result = await _apiClient.get<List<DischargeRelatedRecord>>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'workbench']),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'panel': 'orders',
+        'page': 1,
+        'limit': 20,
+        'encounter_id': encounterId,
+        if (encounterId == null || encounterId.isEmpty) 'patient_id': patientId,
+        'sort_by': 'ordered_at',
+        'order': 'desc',
+      }),
+      decoder: decodeDischargePharmacyWorkbenchOrders,
+    );
 
     return result.when(
       success: (List<DischargeRelatedRecord> value) {

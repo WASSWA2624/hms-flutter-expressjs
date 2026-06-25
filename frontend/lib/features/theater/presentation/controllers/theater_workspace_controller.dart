@@ -162,9 +162,75 @@ final class TheaterWorkspaceController
     _emit(
       current.copyWith(
         query: TheaterCaseQuery(
-          scheduledDate: _today(),
           pageRequest: current.query.pageRequest.first(),
         ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshCases(showLoading: true);
+  }
+
+  Future<AppFailure?> selectCaseByDisplayId(String displayId) async {
+    final TheaterWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    final String normalized = displayId.trim();
+    if (normalized.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    TheaterCase? matched;
+    for (final TheaterCase item in current.cases.items) {
+      if (item.effectiveDisplayId == normalized || item.id == normalized) {
+        matched = item;
+        break;
+      }
+    }
+
+    if (matched != null) {
+      return selectCase(matched);
+    }
+
+    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    final Result<TheaterCase> result = await _repository.getCase(normalized);
+    return result.when(
+      success: (TheaterCase detail) {
+        final TheaterWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedCase: detail,
+              cases: _replaceCase(latest.cases, detail),
+              isRefreshingDetail: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final TheaterWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> applyBoardQuery(TheaterBoardQuery boardQuery) async {
+    final TheaterWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: boardQuery.toCaseQuery(),
         isRefreshing: true,
         clearLastFailure: true,
       ),
@@ -318,7 +384,7 @@ final class TheaterWorkspaceController
   }
 
   Future<Result<TheaterWorkspaceState>> _loadInitialState() async {
-    final TheaterCaseQuery query = TheaterCaseQuery(scheduledDate: _today());
+    final TheaterCaseQuery query = const TheaterCaseQuery(queueScope: 'ACTIVE');
     final Result<AppPage<TheaterCase>> casesResult = await _repository
         .listCases(query);
 
@@ -544,9 +610,4 @@ final class TheaterWorkspaceController
       Result<TheaterWorkspaceState>.success(nextState),
     );
   }
-}
-
-DateTime _today() {
-  final DateTime now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
 }

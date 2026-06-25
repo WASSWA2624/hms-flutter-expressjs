@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -20,11 +22,67 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class TheaterWorkspacePage extends ConsumerWidget {
-  const TheaterWorkspacePage({super.key});
+class TheaterWorkspacePage extends ConsumerStatefulWidget {
+  const TheaterWorkspacePage({super.key, this.initialQuery});
+
+  final TheaterBoardQuery? initialQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TheaterWorkspacePage> createState() =>
+      _TheaterWorkspacePageState();
+}
+
+class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
+  bool _deepLinkHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleDeepLink();
+  }
+
+  void _scheduleDeepLink() {
+    final TheaterBoardQuery? query = widget.initialQuery;
+    if (query == null || !query.hasRouteTargeting || _deepLinkHandled) {
+      return;
+    }
+    _deepLinkHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleDeepLink(query));
+    });
+  }
+
+  Future<void> _handleDeepLink(TheaterBoardQuery query) async {
+    final TheaterWorkspaceController controller = ref.read(
+      theaterWorkspaceControllerProvider.notifier,
+    );
+    if (query.focusCaseId == null && query.search.isNotEmpty) {
+      await controller.applyBoardQuery(query);
+    }
+    final String? focusId = query.focusCaseId?.trim();
+    if (focusId == null || focusId.isEmpty) {
+      return;
+    }
+    final AppFailure? failure = await controller.selectCaseByDisplayId(focusId);
+    if (!mounted || failure != null) {
+      return;
+    }
+    final TheaterWorkspaceState? state = _readTheaterState(ref);
+    if (state?.selectedCase == null) {
+      return;
+    }
+    await _openTheaterCaseDialog(
+      context,
+      ref,
+      state!,
+      state.selectedCase!,
+      ref.watch(appAccessPolicyProvider).grants(AppPermissions.clinicalWrite),
+      focusPanel: query.focusPanel,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final AsyncValue<Result<TheaterWorkspaceState>> workspace = ref.watch(
       theaterWorkspaceControllerProvider,
@@ -45,6 +103,17 @@ class TheaterWorkspacePage extends ConsumerWidget {
       },
     );
   }
+}
+
+TheaterWorkspaceState? _readTheaterState(WidgetRef ref) {
+  return ref
+      .read(theaterWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (TheaterWorkspaceState value) => value,
+        failure: (_) => null,
+      );
 }
 
 class _TheaterWorkspaceContent extends ConsumerStatefulWidget {
@@ -128,7 +197,7 @@ class _TheaterWorkspaceContentState
       summaryCards: <Widget>[
         if (_pageTotal(state.cases) > 0)
           AppWorkspaceSummaryCard(
-            label: _TheaterSummaryText.allCases,
+            label: l10n.theaterAllCasesSummaryLabel,
             value: _pageTotal(state.cases).toString(),
             icon: Icons.inventory_2_outlined,
             compact: true,
@@ -150,6 +219,15 @@ class _TheaterWorkspaceContentState
             tone: AppWorkspaceStatusTone.info,
             compact: true,
             onPressed: () => controller.applyStatus('IN_PROGRESS'),
+          ),
+        if (state.readyCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.theaterReadySummaryLabel,
+            value: state.readyCount.toString(),
+            icon: Icons.fact_check_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () => controller.applyStage('PRE_OP'),
           ),
         if (state.completedCount > 0)
           AppWorkspaceSummaryCard(
@@ -338,6 +416,28 @@ class _TheaterCaseBoard extends ConsumerWidget {
         },
         columns: <AppListTableColumn<TheaterCase>>[
           AppListTableColumn<TheaterCase>(
+            label: l10n.theaterCaseIdColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  left.effectiveDisplayId,
+                  right.effectiveDisplayId,
+                ),
+            cellBuilder: (BuildContext context, TheaterCase item) {
+              return Text(item.effectiveDisplayId);
+            },
+          ),
+          AppListTableColumn<TheaterCase>(
+            label: l10n.theaterProcedureColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  left.procedureName,
+                  right.procedureName,
+                ),
+            cellBuilder: (BuildContext context, TheaterCase item) {
+              return Text(item.procedureName ?? l10n.profileUnknownValue);
+            },
+          ),
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterPatientColumnLabel,
             sortComparator: (TheaterCase left, TheaterCase right) =>
                 appListTableCompareText(
@@ -396,6 +496,17 @@ class _TheaterCaseBoard extends ConsumerWidget {
             },
           ),
           AppListTableColumn<TheaterCase>(
+            label: l10n.theaterResponsibleRoleColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  _responsibleRoleLabel(l10n, left),
+                  _responsibleRoleLabel(l10n, right),
+                ),
+            cellBuilder: (BuildContext context, TheaterCase item) {
+              return Text(_responsibleRoleLabel(l10n, item));
+            },
+          ),
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterNextActionColumnLabel,
             sortComparator: (TheaterCase left, TheaterCase right) =>
                 appListTableCompareText(
@@ -421,12 +532,14 @@ class _TheaterCaseDetail extends ConsumerWidget {
     required this.isLoading,
     required this.isMutating,
     required this.canWrite,
+    this.focusPanel,
   });
 
   final TheaterCase? theaterCase;
   final bool isLoading;
   final bool isMutating;
   final bool canWrite;
+  final TheaterDetailPanel? focusPanel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -471,6 +584,7 @@ class _TheaterCaseDetail extends ConsumerWidget {
               theaterCase: selected,
               canWrite: canWrite,
               isMutating: isMutating,
+              focusPanel: focusPanel,
             ),
     );
   }
@@ -481,8 +595,9 @@ Future<void> _openTheaterCaseDialog(
   WidgetRef ref,
   TheaterWorkspaceState fallbackState,
   TheaterCase theaterCase,
-  bool canWrite,
-) async {
+  bool canWrite, {
+  TheaterDetailPanel? focusPanel,
+}) async {
   final TheaterWorkspaceController controller = ref.read(
     theaterWorkspaceControllerProvider.notifier,
   );
@@ -509,35 +624,61 @@ Future<void> _openTheaterCaseDialog(
         isLoading: state.isRefreshingDetail,
         isMutating: state.isMutating,
         canWrite: canWrite,
+        focusPanel: focusPanel,
       ),
     ),
   );
 }
 
-TheaterWorkspaceState? _readTheaterState(WidgetRef ref) {
-  return ref
-      .read(theaterWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(
-        success: (TheaterWorkspaceState state) => state,
-        failure: (_) => null,
-      );
-}
-
-class _TheaterCaseDetailBody extends ConsumerWidget {
+class _TheaterCaseDetailBody extends ConsumerStatefulWidget {
   const _TheaterCaseDetailBody({
     required this.theaterCase,
     required this.canWrite,
     required this.isMutating,
+    this.focusPanel,
   });
 
   final TheaterCase theaterCase;
   final bool canWrite;
   final bool isMutating;
+  final TheaterDetailPanel? focusPanel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TheaterCaseDetailBody> createState() =>
+      _TheaterCaseDetailBodyState();
+}
+
+class _TheaterCaseDetailBodyState
+    extends ConsumerState<_TheaterCaseDetailBody> {
+  @override
+  void initState() {
+    super.initState();
+    final TheaterDetailPanel? panel = widget.focusPanel;
+    if (panel == null || !widget.canWrite) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      switch (panel) {
+        case TheaterDetailPanel.checklist:
+          unawaited(_showChecklistDialog(context, ref));
+        case TheaterDetailPanel.anesthesia:
+          unawaited(_showAnesthesiaDialog(context, ref, widget.theaterCase));
+        case TheaterDetailPanel.postop:
+          unawaited(_showPostOpDialog(context, ref, widget.theaterCase));
+        case TheaterDetailPanel.resources:
+          unawaited(_showAssignResourceDialog(context, ref));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TheaterCase theaterCase = widget.theaterCase;
+    final bool canWrite = widget.canWrite;
+    final bool isMutating = widget.isMutating;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -582,6 +723,41 @@ class _TheaterCaseDetailBody extends ConsumerWidget {
             ),
           ],
         ),
+        if (_sourceContextLabel(l10n, theaterCase) != null) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _DetailSection(
+            title: l10n.theaterSourceContextLabel,
+            children: <Widget>[
+              _DetailLine(
+                label: l10n.theaterSourceContextLabel,
+                value: _sourceContextLabel(l10n, theaterCase),
+              ),
+              if (theaterCase.procedureName != null)
+                _DetailLine(
+                  label: l10n.theaterProcedureColumnLabel,
+                  value: theaterCase.procedureName,
+                ),
+              if (theaterCase.admissionDisplayId != null)
+                AppButton.tertiary(
+                  label: l10n.theaterOpenInIpdAction,
+                  leadingIcon: Icons.local_hospital_outlined,
+                  onPressed: () => _openIpdWorkspace(
+                    context,
+                    theaterCase.admissionDisplayId!,
+                  ),
+                ),
+              if (theaterCase.emergencyCaseDisplayId != null)
+                AppButton.tertiary(
+                  label: l10n.theaterOpenInEmergencyAction,
+                  leadingIcon: Icons.emergency_outlined,
+                  onPressed: () => _openEmergencyWorkspace(
+                    context,
+                    theaterCase.emergencyCaseDisplayId!,
+                  ),
+                ),
+            ],
+          ),
+        ],
         SizedBox(height: theme.spacing.md),
         if (canWrite)
           _TheaterActionBar(theaterCase: theaterCase, isMutating: isMutating),
@@ -1161,15 +1337,7 @@ Future<void> _showHandoverDialog(BuildContext context, WidgetRef ref) async {
         context: context,
         title: Text(context.l10n.theaterHandoverDialogTitle),
         icon: const Icon(Icons.output_outlined),
-        content: _NotesOnlyForm(
-          notesLabel: context.l10n.theaterHandoverNotesLabel,
-          submitLabel: context.l10n.theaterHandoverAction,
-          buildPayload: (String notes) => <String, Object?>{
-            'workflow_stage': 'PACU_HANDOFF',
-            'status': 'IN_PROGRESS',
-            'stage_notes': notes,
-          },
-        ),
+        content: _HandoverForm(),
       );
   if (payload == null || !context.mounted) {
     return;
@@ -2229,11 +2397,113 @@ String _formatDateTime(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
-int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
+class _HandoverForm extends StatefulWidget {
+  const _HandoverForm();
 
-abstract final class _TheaterSummaryText {
-  static const String allCases = 'All theatre cases';
+  @override
+  State<_HandoverForm> createState() => _HandoverFormState();
 }
+
+class _HandoverFormState extends State<_HandoverForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _notesController = TextEditingController();
+  String _destination = 'WARD';
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppFormShell(
+      formKey: _formKey,
+      children: <Widget>[
+        AppSelectField<String>(
+          value: _destination,
+          labelText: l10n.theaterHandoverDestinationLabel,
+          options: <AppSelectOption<String>>[
+            AppSelectOption<String>(
+              value: 'WARD',
+              label: l10n.theaterHandoverToWard,
+            ),
+            AppSelectOption<String>(
+              value: 'ICU',
+              label: l10n.theaterHandoverToIcu,
+            ),
+            AppSelectOption<String>(
+              value: 'OPD',
+              label: l10n.theaterHandoverToOpd,
+            ),
+          ],
+          onChanged: (String? value) {
+            if (value != null) {
+              setState(() => _destination = value);
+            }
+          },
+        ),
+        AppTextField(
+          controller: _notesController,
+          labelText: l10n.theaterHandoverNotesLabel,
+          maxLines: 4,
+        ),
+        AppFormActions(
+          cancelLabel: l10n.commonCancelActionLabel,
+          submitLabel: l10n.theaterHandoverAction,
+          submitIcon: Icons.save_outlined,
+          onCancel: () => Navigator.of(context).maybePop(),
+          onSubmit: () {
+            Navigator.of(context).pop(<String, Object?>{
+              'workflow_stage': 'PACU_HANDOFF',
+              'status': 'IN_PROGRESS',
+              'handover_destination': _destination,
+              'stage_notes': _notesController.text.trim(),
+            });
+          },
+        ),
+      ],
+    );
+  }
+}
+
+String? _sourceContextLabel(AppLocalizations l10n, TheaterCase theaterCase) {
+  return switch ((theaterCase.sourceKind ?? '').toUpperCase()) {
+    'EMERGENCY' => l10n.theaterSourceEmergency,
+    'OPD' => l10n.theaterSourceOpd,
+    'IPD' => l10n.theaterSourceIpd,
+    _ => null,
+  };
+}
+
+void _openIpdWorkspace(BuildContext context, String admissionDisplayId) {
+  context.go(
+    AppRoutes.ipd.location(
+      queryParameters: <String, String>{'id': admissionDisplayId},
+    ),
+  );
+}
+
+void _openEmergencyWorkspace(BuildContext context, String caseDisplayId) {
+  context.go(
+    AppRoutes.emergency.location(
+      queryParameters: <String, String>{'id': caseDisplayId},
+    ),
+  );
+}
+
+String _responsibleRoleLabel(AppLocalizations l10n, TheaterCase theaterCase) {
+  return switch (theaterCase.responsibleRoleLabel) {
+    'NURSE' => l10n.theaterRoleNurse,
+    'SURGEON' => l10n.theaterRoleSurgeon,
+    'ANESTHETIST' => l10n.theaterRoleAnesthetist,
+    'TEAM' => l10n.theaterRoleTeam,
+    _ => l10n.theaterRoleCoordinator,
+  };
+}
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String? _formatDateTimeOrNull(BuildContext context, DateTime? value) {
   return value == null

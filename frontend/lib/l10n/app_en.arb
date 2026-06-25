@@ -612,6 +612,22 @@
   "@ipdOpenIcuAction": {
     "description": "IPD action to open the ICU workspace for this admission."
   },
+  "ipdOpenTheaterAction": "Open in Theater",
+  "@ipdOpenTheaterAction": {
+    "description": "IPD action to open the theater workspace for an active case."
+  },
+  "ipdStatusInProcedureOt": "In procedure / OT",
+  "@ipdStatusInProcedureOt": {
+    "description": "IPD stage label when the patient is in the operating theatre."
+  },
+  "ipdNextCompleteTheatreHandover": "Complete theatre handover",
+  "@ipdNextCompleteTheatreHandover": {
+    "description": "IPD next-step label when theatre handover is pending."
+  },
+  "ipdTheatreHandoverTitle": "Theatre post-op handover",
+  "@ipdTheatreHandoverTitle": {
+    "description": "IPD detail section title for theatre post-op handover summary."
+  },
   "ipdStartIcuStayAction": "Start ICU stay",
   "@ipdStartIcuStayAction": {
     "description": "IPD action to start an ICU stay on this admission."
@@ -1365,6 +1381,82 @@
   "theaterCompletedSummaryLabel": "Completed",
   "@theaterCompletedSummaryLabel": {
     "description": "Summary card label for completed theater cases."
+  },
+  "theaterAllCasesSummaryLabel": "All cases",
+  "@theaterAllCasesSummaryLabel": {
+    "description": "Summary card label for all theater cases on the current board."
+  },
+  "theaterCaseIdColumnLabel": "Case",
+  "@theaterCaseIdColumnLabel": {
+    "description": "Theater board column label for case identifier."
+  },
+  "theaterProcedureColumnLabel": "Procedure",
+  "@theaterProcedureColumnLabel": {
+    "description": "Theater board column label for procedure name."
+  },
+  "theaterResponsibleRoleColumnLabel": "Owner",
+  "@theaterResponsibleRoleColumnLabel": {
+    "description": "Theater board column label for responsible clinical role."
+  },
+  "theaterSourceContextLabel": "Source",
+  "@theaterSourceContextLabel": {
+    "description": "Theater detail label for case source context."
+  },
+  "theaterSourceEmergency": "Emergency",
+  "@theaterSourceEmergency": {
+    "description": "Theater source context label for emergency pathway."
+  },
+  "theaterSourceOpd": "OPD elective",
+  "@theaterSourceOpd": {
+    "description": "Theater source context label for OPD elective pathway."
+  },
+  "theaterSourceIpd": "Inpatient surgery",
+  "@theaterSourceIpd": {
+    "description": "Theater source context label for IPD surgery pathway."
+  },
+  "theaterOpenInIpdAction": "Open in IPD",
+  "@theaterOpenInIpdAction": {
+    "description": "Theater action to open linked IPD admission."
+  },
+  "theaterOpenInEmergencyAction": "Open in Emergency",
+  "@theaterOpenInEmergencyAction": {
+    "description": "Theater action to open linked emergency case."
+  },
+  "theaterHandoverDestinationLabel": "Recovery destination",
+  "@theaterHandoverDestinationLabel": {
+    "description": "Theater handover form label for recovery destination."
+  },
+  "theaterHandoverToWard": "Ward",
+  "@theaterHandoverToWard": {
+    "description": "Theater handover destination option for ward recovery."
+  },
+  "theaterHandoverToIcu": "ICU",
+  "@theaterHandoverToIcu": {
+    "description": "Theater handover destination option for ICU recovery."
+  },
+  "theaterHandoverToOpd": "Day-case / OPD follow-up",
+  "@theaterHandoverToOpd": {
+    "description": "Theater handover destination option for outpatient follow-up."
+  },
+  "theaterRoleNurse": "Theater nurse",
+  "@theaterRoleNurse": {
+    "description": "Responsible role label for theater nurse."
+  },
+  "theaterRoleSurgeon": "Surgeon",
+  "@theaterRoleSurgeon": {
+    "description": "Responsible role label for surgeon."
+  },
+  "theaterRoleAnesthetist": "Anesthetist",
+  "@theaterRoleAnesthetist": {
+    "description": "Responsible role label for anesthetist."
+  },
+  "theaterRoleTeam": "Theater team",
+  "@theaterRoleTeam": {
+    "description": "Responsible role label for multidisciplinary theater team."
+  },
+  "theaterRoleCoordinator": "Theater coordinator",
+  "@theaterRoleCoordinator": {
+    "description": "Responsible role label for theater coordinator."
   },
   "theaterFiltersLabel": "Theater filters",
   "@theaterFiltersLabel": {

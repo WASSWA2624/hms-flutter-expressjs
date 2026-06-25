@@ -31,6 +31,7 @@ const UUID_LIKE_REGEX =
 const STAGES = Object.freeze({
   ADMITTED_PENDING_BED: "ADMITTED_PENDING_BED",
   ADMITTED_IN_BED: "ADMITTED_IN_BED",
+  IN_PROCEDURE_OT: "IN_PROCEDURE_OT",
   TRANSFER_REQUESTED: "TRANSFER_REQUESTED",
   TRANSFER_IN_PROGRESS: "TRANSFER_IN_PROGRESS",
   DISCHARGE_PLANNED: "DISCHARGE_PLANNED",
@@ -66,6 +67,15 @@ const CRITICAL_SEVERITY_ORDER = Object.freeze({
   CRITICAL: 4,
 });
 const TERMINAL_STAGES = new Set([STAGES.DISCHARGED, STAGES.CANCELLED]);
+const OT_ACTIVE_STAGES = new Set([
+  "SIGN_IN",
+  "TIME_OUT",
+  "INTRA_OP",
+  "SIGN_OUT",
+  "POST_OP",
+  "PACU_HANDOFF",
+]);
+const ACTIVE_THEATRE_STATUSES = new Set(["SCHEDULED", "IN_PROGRESS"]);
 const DEFAULT_DISCHARGE_CLEARANCE = Object.freeze({
   summary_ready: false,
   pending_orders_reviewed: false,
@@ -757,6 +767,38 @@ const getIcuStays = (admission) =>
         })
     : [];
 
+const getTheatreCases = (admission) => {
+  const fromEncounter = admission?.encounter?.theatre_cases;
+  if (!Array.isArray(fromEncounter)) return [];
+  return fromEncounter
+    .filter((entry) => entry && !entry.deleted_at)
+    .sort((left, right) => {
+      const leftTs =
+        new Date(left?.scheduled_at || left?.created_at || 0).getTime() || 0;
+      const rightTs =
+        new Date(right?.scheduled_at || right?.created_at || 0).getTime() || 0;
+      return rightTs - leftTs;
+    });
+};
+
+const getActiveTheatreCase = (admission) => {
+  const cases = getTheatreCases(admission);
+  return (
+    cases.find((entry) =>
+      ACTIVE_THEATRE_STATUSES.has(String(entry?.status || "").toUpperCase()),
+    ) || null
+  );
+};
+
+const getLatestCompletedTheatreCase = (admission) => {
+  const cases = getTheatreCases(admission);
+  return (
+    cases.find(
+      (entry) => String(entry?.status || "").toUpperCase() === "COMPLETED",
+    ) || null
+  );
+};
+
 const getIcuStayObservations = (stay) =>
   Array.isArray(stay?.observations)
     ? stay.observations
@@ -808,10 +850,22 @@ const deriveIpdStage = ({
   activeBedAssignment,
   openTransferRequest,
   latestDischargeSummary,
+  activeTheatreCase = null,
 }) => {
   const admissionStatus = String(admission?.status || "").toUpperCase();
   if (admissionStatus === "CANCELLED") return STAGES.CANCELLED;
   if (admissionStatus === "DISCHARGED") return STAGES.DISCHARGED;
+
+  const theatreStatus = String(activeTheatreCase?.status || "").toUpperCase();
+  const theatreStage = String(
+    activeTheatreCase?.workflow_stage || "",
+  ).toUpperCase();
+  if (
+    theatreStatus === "IN_PROGRESS" &&
+    OT_ACTIVE_STAGES.has(theatreStage)
+  ) {
+    return STAGES.IN_PROCEDURE_OT;
+  }
 
   const dischargeStatus = String(
     latestDischargeSummary?.status || "",
@@ -833,6 +887,7 @@ const deriveIpdStage = ({
 const deriveNextStep = (stage, openTransferRequest = null) => {
   if (stage === STAGES.ADMITTED_PENDING_BED) return "ASSIGN_BED";
   if (stage === STAGES.ADMITTED_IN_BED) return "RECORD_NURSING_NOTE";
+  if (stage === STAGES.IN_PROCEDURE_OT) return "COMPLETE_THEATRE_HANDOVER";
   if (stage === STAGES.TRANSFER_REQUESTED) {
     return String(openTransferRequest?.status || "").toUpperCase() ===
       "APPROVED"
@@ -927,11 +982,74 @@ const buildIcuOverlay = (admission) => {
   };
 };
 
+const mapTheatreCaseSummary = (theatreCase) => {
+  if (!theatreCase) return null;
+  const postOpNotes = Array.isArray(theatreCase.post_op_notes)
+    ? theatreCase.post_op_notes
+    : [];
+  const latestPostOp = postOpNotes[0] || null;
+  return {
+    id: resolvePublicIdentifier(theatreCase),
+    display_id: resolvePublicIdentifier(theatreCase),
+    status: sanitizeIdentifier(theatreCase.status) || null,
+    workflow_stage: sanitizeIdentifier(theatreCase.workflow_stage) || null,
+    procedure_name: sanitizeIdentifier(theatreCase.procedure_name) || null,
+    scheduled_at: theatreCase.scheduled_at || null,
+    started_at: theatreCase.started_at || null,
+    completed_at: theatreCase.completed_at || null,
+    handover_destination:
+      sanitizeIdentifier(theatreCase.handover_destination) || null,
+    stage_notes: theatreCase.stage_notes || null,
+    post_op_note: latestPostOp?.notes || null,
+    post_op_status: sanitizeIdentifier(latestPostOp?.record_status) || null,
+    room_label: sanitizeIdentifier(theatreCase.room?.name) || null,
+  };
+};
+
+const buildTheatreOverlay = (admission) => {
+  const activeCase = getActiveTheatreCase(admission);
+  const latestCompleted = getLatestCompletedTheatreCase(admission);
+  const handoverCase =
+    activeCase &&
+    ["POST_OP", "PACU_HANDOFF"].includes(
+      String(activeCase?.workflow_stage || "").toUpperCase(),
+    )
+      ? activeCase
+      : latestCompleted;
+  const handoverSummary = handoverCase
+    ? {
+        case_display_id: resolvePublicIdentifier(handoverCase),
+        workflow_stage:
+          sanitizeIdentifier(handoverCase.workflow_stage) || null,
+        handover_destination:
+          sanitizeIdentifier(handoverCase.handover_destination) || null,
+        stage_notes: handoverCase.stage_notes || null,
+        post_op_note:
+          (Array.isArray(handoverCase.post_op_notes)
+            ? handoverCase.post_op_notes[0]?.notes
+            : null) || null,
+        completed_at: handoverCase.completed_at || null,
+      }
+    : null;
+
+  return {
+    status: activeCase
+      ? "ACTIVE"
+      : latestCompleted
+        ? "COMPLETED"
+        : "NONE",
+    active_case: mapTheatreCaseSummary(activeCase),
+    latest_completed_case: mapTheatreCaseSummary(latestCompleted),
+    handover_summary: handoverSummary,
+  };
+};
+
 const buildIpdSnapshot = (admission, options = {}) => {
   const includeIcu = Boolean(options?.include_icu);
   const activeBedAssignment = getActiveBedAssignment(admission);
   const openTransferRequest = getOpenTransferRequest(admission);
   const latestDischargeSummary = getLatestDischargeSummary(admission);
+  const activeTheatreCase = getActiveTheatreCase(admission);
   const medicationSuggestions = buildMedicationSuggestions(admission);
   const medicationReminders = buildMedicationReminders(admission);
 
@@ -940,6 +1058,7 @@ const buildIpdSnapshot = (admission, options = {}) => {
     activeBedAssignment,
     openTransferRequest,
     latestDischargeSummary,
+    activeTheatreCase,
   });
 
   const snapshot = {
@@ -991,6 +1110,7 @@ const buildIpdSnapshot = (admission, options = {}) => {
       admission_status: admission.status,
     },
     icu: includeIcu ? buildIcuOverlay(admission) : null,
+    theatre: buildTheatreOverlay(admission),
   };
 
   snapshot.flow_summary = buildFlowSummary(snapshot);
@@ -1429,6 +1549,52 @@ const mapPublicIcuOverlay = (overlay) => {
   };
 };
 
+const mapPublicTheatreCaseSummary = (entry) => {
+  if (!entry) return null;
+  return {
+    id: sanitizeIdentifier(entry.id) || null,
+    display_id: sanitizeIdentifier(entry.display_id) || sanitizeIdentifier(entry.id),
+    status: sanitizeIdentifier(entry.status) || null,
+    workflow_stage: sanitizeIdentifier(entry.workflow_stage) || null,
+    procedure_name: sanitizeIdentifier(entry.procedure_name) || null,
+    scheduled_at: entry.scheduled_at || null,
+    started_at: entry.started_at || null,
+    completed_at: entry.completed_at || null,
+    handover_destination:
+      sanitizeIdentifier(entry.handover_destination) || null,
+    stage_notes: entry.stage_notes || null,
+    post_op_note: entry.post_op_note || null,
+    post_op_status: sanitizeIdentifier(entry.post_op_status) || null,
+    room_label: sanitizeIdentifier(entry.room_label) || null,
+  };
+};
+
+const mapPublicTheatreOverlay = (overlay) => {
+  if (!overlay) return null;
+  return {
+    status: sanitizeIdentifier(overlay.status) || null,
+    active_case: mapPublicTheatreCaseSummary(overlay.active_case),
+    latest_completed_case: mapPublicTheatreCaseSummary(
+      overlay.latest_completed_case,
+    ),
+    handover_summary: overlay.handover_summary
+      ? {
+          case_display_id:
+            sanitizeIdentifier(overlay.handover_summary.case_display_id) ||
+            null,
+          workflow_stage:
+            sanitizeIdentifier(overlay.handover_summary.workflow_stage) || null,
+          handover_destination:
+            sanitizeIdentifier(overlay.handover_summary.handover_destination) ||
+            null,
+          stage_notes: overlay.handover_summary.stage_notes || null,
+          post_op_note: overlay.handover_summary.post_op_note || null,
+          completed_at: overlay.handover_summary.completed_at || null,
+        }
+      : null,
+  };
+};
+
 const buildPublicTimeline = (snapshot) => {
   const events = [];
 
@@ -1536,6 +1702,7 @@ const toPublicIpdSnapshot = (snapshot) => {
   );
   const patientName = resolvePatientDisplayName(snapshot?.patient);
   const icuOverlay = mapPublicIcuOverlay(snapshot?.icu);
+  const theatreOverlay = mapPublicTheatreOverlay(snapshot?.theatre);
 
   const publicSnapshot = {
     id: admissionPublicId,
@@ -1674,6 +1841,10 @@ const toPublicIpdSnapshot = (snapshot) => {
       sanitizeIdentifier(icuOverlay?.critical_severity) || null,
     active_icu_stay_id: icuOverlay?.active_stay?.id || null,
     latest_icu_stay_id: icuOverlay?.latest_stay?.id || null,
+    theatre: theatreOverlay,
+    theatre_status: sanitizeIdentifier(theatreOverlay?.status) || null,
+    active_theatre_case_id: theatreOverlay?.active_case?.id || null,
+    theatre_handover_summary: theatreOverlay?.handover_summary || null,
   };
 
   publicSnapshot.timeline = buildPublicTimeline(publicSnapshot);
@@ -1721,6 +1892,9 @@ const toQueueCardDto = (snapshot) => {
       publicSnapshot?.icu?.active_stay?.started_at ||
       publicSnapshot?.icu?.latest_stay?.started_at ||
       null,
+    theatre_status: publicSnapshot?.theatre_status || null,
+    active_theatre_case_id: publicSnapshot?.active_theatre_case_id || null,
+    theatre_handover_summary: publicSnapshot?.theatre_handover_summary || null,
   };
 };
 
@@ -1824,6 +1998,36 @@ const DETAILED_SNAPSHOT_INCLUDE = {
           completed_at: true,
           created_at: true,
           notes: true,
+        },
+      },
+      theatre_cases: {
+        where: {
+          deleted_at: null,
+        },
+        orderBy: {
+          scheduled_at: "desc",
+        },
+        take: 5,
+        include: {
+          post_op_notes: {
+            where: { deleted_at: null },
+            orderBy: { updated_at: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              human_friendly_id: true,
+              notes: true,
+              record_status: true,
+              created_at: true,
+            },
+          },
+          room: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+            },
+          },
         },
       },
       pharmacy_orders: {

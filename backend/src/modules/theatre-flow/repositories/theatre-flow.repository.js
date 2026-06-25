@@ -27,9 +27,30 @@ const ENCOUNTER_SELECT = {
   status: true,
   started_at: true,
   ended_at: true,
+  admissions: {
+    where: { deleted_at: null },
+    orderBy: { admitted_at: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      human_friendly_id: true,
+    },
+  },
 };
 
 const BASE_INCLUDE = {
+  admission: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+    },
+  },
+  emergency_case: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+    },
+  },
   encounter: {
     select: {
       ...ENCOUNTER_SELECT,

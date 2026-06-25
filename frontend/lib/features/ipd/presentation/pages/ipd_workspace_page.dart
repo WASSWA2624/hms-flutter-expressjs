@@ -749,6 +749,8 @@ class _IpdDetailPanel extends ConsumerWidget {
           SizedBox(height: Theme.of(context).spacing.md),
           if (admission.sourceContext != null)
             _IpdSourceContextSection(admission: admission),
+          if (admission.theatre.handoverSummary != null)
+            _IpdTheatreHandoverSection(admission: admission),
           _IpdBedSection(admission: admission),
           InsuranceAuthorizationPanel(
             patientId: admission.summary.patientId,
@@ -917,6 +919,12 @@ class _IpdDetailActions extends ConsumerWidget {
             leadingIcon: Icons.monitor_heart_outlined,
             onPressed: () => _openIcuWorkspace(context, summary),
           ),
+        if (summary.hasActiveTheatreCase)
+          AppActionItem(
+            label: l10n.ipdOpenTheaterAction,
+            leadingIcon: Icons.event_seat_outlined,
+            onPressed: () => _openTheaterWorkspace(context, summary),
+          ),
         if (canClinical && icuEligible)
           AppActionItem(
             label: l10n.ipdStartIcuStayAction,
@@ -961,10 +969,8 @@ class _IpdDetailActions extends ConsumerWidget {
             label: l10n.ipdOrderLabAction,
             leadingIcon: Icons.biotech_outlined,
             enabled: canClinical && actionsEnabled,
-            onPressed: () => _openClinicalOrder(
-              context,
-              openIpdLabOrderDialog(context),
-            ),
+            onPressed: () =>
+                _openClinicalOrder(context, openIpdLabOrderDialog(context)),
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
@@ -981,10 +987,8 @@ class _IpdDetailActions extends ConsumerWidget {
             label: l10n.ipdOrderPrescriptionAction,
             leadingIcon: Icons.medication_outlined,
             enabled: canClinical && actionsEnabled,
-            onPressed: () => _openClinicalOrder(
-              context,
-              openIpdPrescriptionDialog(context),
-            ),
+            onPressed: () =>
+                _openClinicalOrder(context, openIpdPrescriptionDialog(context)),
           ),
         if (canClinical && activeBed && !terminal)
           AppActionItem(
@@ -1066,6 +1070,19 @@ class _IpdDetailActions extends ConsumerWidget {
         ? AppRoutes.icu.path
         : AppRoutes.icu.location(
             queryParameters: <String, String>{'id': displayId},
+          );
+    context.go(location);
+  }
+
+  void _openTheaterWorkspace(
+    BuildContext context,
+    IpdAdmissionSummary summary,
+  ) {
+    final String? caseId = summary.activeTheatreCaseId?.trim();
+    final String location = caseId == null || caseId.isEmpty
+        ? AppRoutes.theater.path
+        : AppRoutes.theater.location(
+            queryParameters: <String, String>{'id': caseId},
           );
     context.go(location);
   }
@@ -1439,9 +1456,7 @@ class _IpdDischargeSection extends StatelessWidget {
                 l10n.ipdPharmacyClearanceLabel,
                 pharmacy.hasClearance
                     ? l10n.ipdPharmacyClearanceCleared
-                    : l10n.ipdPharmacyClearancePending(
-                        pharmacy.openOrderCount,
-                      ),
+                    : l10n.ipdPharmacyClearancePending(pharmacy.openOrderCount),
               ),
             ],
           ),
@@ -1452,12 +1467,12 @@ class _IpdDischargeSection extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: Theme.of(context).spacing.xs),
                 child: Text(
                   _joinDisplay(<String?>[
-                    order.id,
-                    order.status == null
-                        ? null
-                        : _statusLikeLabel(context, order.status),
-                    _dateTimeLabel(context, order.orderedAt),
-                  ]) ??
+                        order.id,
+                        order.status == null
+                            ? null
+                            : _statusLikeLabel(context, order.status),
+                        _dateTimeLabel(context, order.orderedAt),
+                      ]) ??
                       '',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -1512,6 +1527,49 @@ class _IpdSourceContextSection extends StatelessWidget {
             _dateTimeLabel(context, source.startedAt),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _IpdTheatreHandoverSection extends StatelessWidget {
+  const _IpdTheatreHandoverSection({required this.admission});
+
+  final IpdAdmissionDetail admission;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final IpdTheatreHandoverSummary? handover =
+        admission.theatre.handoverSummary;
+    if (handover == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
+      child: _IpdSection(
+        title: l10n.ipdTheatreHandoverTitle,
+        icon: Icons.event_seat_outlined,
+        child: _IpdKeyValueGrid(
+          values: <_IpdKeyValue>[
+            _IpdKeyValue(l10n.theaterCaseIdColumnLabel, handover.caseDisplayId),
+            _IpdKeyValue(
+              l10n.theaterStageLabel,
+              handover.workflowStage == null
+                  ? null
+                  : _apiLabel(handover.workflowStage!),
+            ),
+            _IpdKeyValue(
+              l10n.theaterHandoverDestinationLabel,
+              handover.handoverDestination == null
+                  ? null
+                  : _apiLabel(handover.handoverDestination!),
+            ),
+            _IpdKeyValue(l10n.theaterPostOpNoteLabel, handover.postOpNote),
+            _IpdKeyValue(l10n.theaterStageNotesLabel, handover.stageNotes),
+          ],
+        ),
       ),
     );
   }
@@ -2459,6 +2517,7 @@ String _ipdOwnerRoleLabel(BuildContext context, String? stage) {
       '${l10n.navigationOperationsLabel} / ${l10n.navigationNursingLabel}',
     _stageAdmittedInBed =>
       '${l10n.navigationNursingLabel} / ${l10n.opdWorkflowDoctorTitle}',
+    _stageInProcedureOt => l10n.navigationTheaterLabel,
     _stageTransferRequested || _stageTransferInProgress =>
       '${l10n.navigationOperationsLabel} / ${l10n.navigationNursingLabel}',
     _stageDischargePlanned => _joinDisplay(<String>[
@@ -2476,6 +2535,7 @@ String _ipdOwnerRoleLabel(BuildContext context, String? stage) {
 AppWorkspaceStatus _stageStatus(BuildContext context, String? stage) {
   final AppWorkspaceStatusTone tone = switch ((stage ?? '').toUpperCase()) {
     _stageAdmittedInBed => AppWorkspaceStatusTone.info,
+    _stageInProcedureOt => AppWorkspaceStatusTone.warning,
     _stageAdmittedPendingBed => AppWorkspaceStatusTone.warning,
     _stageTransferRequested ||
     _stageTransferInProgress => AppWorkspaceStatusTone.warning,
@@ -2492,6 +2552,7 @@ String _stageLabel(BuildContext context, String? stage) {
   return switch ((stage ?? '').toUpperCase()) {
     _stageAdmittedPendingBed => l10n.ipdStatusAdmittedPendingBed,
     _stageAdmittedInBed => l10n.ipdStatusAdmittedInBed,
+    _stageInProcedureOt => l10n.ipdStatusInProcedureOt,
     _stageTransferRequested => l10n.ipdStatusTransferRequested,
     _stageTransferInProgress => l10n.ipdStatusTransferInProgress,
     _stageDischargePlanned => l10n.ipdStatusDischargePlanned,
@@ -2509,6 +2570,7 @@ String _nextStepLabel(BuildContext context, String? nextStep) {
     'APPROVE_TRANSFER' => l10n.ipdNextApproveTransfer,
     'START_TRANSFER' => l10n.ipdNextStartTransfer,
     'COMPLETE_TRANSFER' => l10n.ipdNextCompleteTransfer,
+    'COMPLETE_THEATRE_HANDOVER' => l10n.ipdNextCompleteTheatreHandover,
     'FINALIZE_DISCHARGE' => l10n.ipdNextFinalizeDischarge,
     _ => l10n.ipdNextContinueCare,
   };
@@ -2792,6 +2854,7 @@ void _showSaved(BuildContext context) {
 
 const String _stageAdmittedPendingBed = 'ADMITTED_PENDING_BED';
 const String _stageAdmittedInBed = 'ADMITTED_IN_BED';
+const String _stageInProcedureOt = 'IN_PROCEDURE_OT';
 const String _stageTransferRequested = 'TRANSFER_REQUESTED';
 const String _stageTransferInProgress = 'TRANSFER_IN_PROGRESS';
 const String _stageDischargePlanned = 'DISCHARGE_PLANNED';

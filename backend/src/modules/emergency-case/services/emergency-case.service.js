@@ -365,6 +365,12 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
   const theatre = await theatreFlowService.startTheatreFlow(
     {
       encounter_id: encounterId,
+      emergency_case_id: resolvePublicSnapshotId(
+        emergencyCase?.human_friendly_id,
+        emergencyCase?.display_id,
+        emergencyCase?.id
+      ),
+      source_kind: 'EMERGENCY',
       scheduled_at: new Date().toISOString(),
       status: 'SCHEDULED',
       workflow_stage: 'PRE_OP',

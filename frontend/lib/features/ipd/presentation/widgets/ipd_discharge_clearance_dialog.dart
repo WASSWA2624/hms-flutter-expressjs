@@ -126,14 +126,11 @@ class _IpdDischargeClearanceDialogState
     final List<IpdPendingOrder> pendingOrders =
         widget.admission.pendingDischargeOrders;
     final bool canFinalize =
-        _clearance.isComplete ||
-        _overrideController.text.trim().isNotEmpty;
+        _clearance.isComplete || _overrideController.text.trim().isNotEmpty;
 
     return AppDialog(
       title: Text(
-        _isPlanned
-            ? l10n.ipdManageDischargeTitle
-            : l10n.ipdPlanDischargeAction,
+        _isPlanned ? l10n.ipdManageDischargeTitle : l10n.ipdPlanDischargeAction,
       ),
       icon: const Icon(Icons.logout_outlined),
       scrollable: true,
@@ -171,7 +168,10 @@ class _IpdDischargeClearanceDialogState
                   ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.pending_actions_outlined, size: 18),
+                    leading: const Icon(
+                      Icons.pending_actions_outlined,
+                      size: 18,
+                    ),
                     title: Text(order.label ?? order.kind ?? order.id),
                     subtitle: Text(order.status ?? ''),
                   ),
@@ -180,97 +180,103 @@ class _IpdDischargeClearanceDialogState
                 label: l10n.ipdClearancePendingOrders,
                 value: _clearance.pendingOrdersReviewed,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: value,
-                      pharmacyCleared: _clearance.pharmacyCleared,
-                      billingCleared: _clearance.billingCleared,
-                      nursingCleared: _clearance.nursingCleared,
-                      documentsReady: _clearance.documentsReady,
-                      patientExited: _clearance.patientExited,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: value,
+                    pharmacyCleared: _clearance.pharmacyCleared,
+                    billingCleared: _clearance.billingCleared,
+                    nursingCleared: _clearance.nursingCleared,
+                    documentsReady: _clearance.documentsReady,
+                    patientExited: _clearance.patientExited,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               _ClearanceTile(
                 label: l10n.ipdClearancePharmacy,
                 value: _clearance.pharmacyCleared,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
-                      pharmacyCleared: value,
-                      billingCleared: _clearance.billingCleared,
-                      nursingCleared: _clearance.nursingCleared,
-                      documentsReady: _clearance.documentsReady,
-                      patientExited: _clearance.patientExited,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
+                    pharmacyCleared: value,
+                    billingCleared: _clearance.billingCleared,
+                    nursingCleared: _clearance.nursingCleared,
+                    documentsReady: _clearance.documentsReady,
+                    patientExited: _clearance.patientExited,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               _ClearanceTile(
                 label: l10n.ipdClearanceBilling,
                 value: _clearance.billingCleared,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
-                      pharmacyCleared: _clearance.pharmacyCleared,
-                      billingCleared: value,
-                      nursingCleared: _clearance.nursingCleared,
-                      documentsReady: _clearance.documentsReady,
-                      patientExited: _clearance.patientExited,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
+                    pharmacyCleared: _clearance.pharmacyCleared,
+                    billingCleared: value,
+                    nursingCleared: _clearance.nursingCleared,
+                    documentsReady: _clearance.documentsReady,
+                    patientExited: _clearance.patientExited,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               _ClearanceTile(
                 label: l10n.ipdClearanceNursing,
                 value: _clearance.nursingCleared,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
-                      pharmacyCleared: _clearance.pharmacyCleared,
-                      billingCleared: _clearance.billingCleared,
-                      nursingCleared: value,
-                      documentsReady: _clearance.documentsReady,
-                      patientExited: _clearance.patientExited,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
+                    pharmacyCleared: _clearance.pharmacyCleared,
+                    billingCleared: _clearance.billingCleared,
+                    nursingCleared: value,
+                    documentsReady: _clearance.documentsReady,
+                    patientExited: _clearance.patientExited,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               _ClearanceTile(
                 label: l10n.ipdClearanceDocuments,
                 value: _clearance.documentsReady,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
-                      pharmacyCleared: _clearance.pharmacyCleared,
-                      billingCleared: _clearance.billingCleared,
-                      nursingCleared: _clearance.nursingCleared,
-                      documentsReady: value,
-                      patientExited: _clearance.patientExited,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
+                    pharmacyCleared: _clearance.pharmacyCleared,
+                    billingCleared: _clearance.billingCleared,
+                    nursingCleared: _clearance.nursingCleared,
+                    documentsReady: value,
+                    patientExited: _clearance.patientExited,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               _ClearanceTile(
                 label: l10n.ipdClearancePatientExit,
                 value: _clearance.patientExited,
                 enabled: !_submitting,
-                onChanged: (bool value) =>
-                    setState(() => _clearance = IpdDischargeClearance(
-                      summaryReady: _clearance.summaryReady,
-                      pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
-                      pharmacyCleared: _clearance.pharmacyCleared,
-                      billingCleared: _clearance.billingCleared,
-                      nursingCleared: _clearance.nursingCleared,
-                      documentsReady: _clearance.documentsReady,
-                      patientExited: value,
-                      overrideReason: _clearance.overrideReason,
-                    )),
+                onChanged: (bool value) => setState(
+                  () => _clearance = IpdDischargeClearance(
+                    summaryReady: _clearance.summaryReady,
+                    pendingOrdersReviewed: _clearance.pendingOrdersReviewed,
+                    pharmacyCleared: _clearance.pharmacyCleared,
+                    billingCleared: _clearance.billingCleared,
+                    nursingCleared: _clearance.nursingCleared,
+                    documentsReady: _clearance.documentsReady,
+                    patientExited: value,
+                    overrideReason: _clearance.overrideReason,
+                  ),
+                ),
               ),
               SizedBox(height: theme.spacing.sm),
               AppTextField(
@@ -308,7 +314,9 @@ class _IpdDischargeClearanceDialogState
             label: l10n.ipdFinalizeDischargeAction,
             isLoading: _submitting,
             enabled: canFinalize,
-            onPressed: canFinalize ? () => _saveClearance(finalize: true) : null,
+            onPressed: canFinalize
+                ? () => _saveClearance(finalize: true)
+                : null,
           ),
         ],
       ],

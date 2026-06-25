@@ -294,7 +294,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.theater.path,
             name: AppRoutes.theater.name,
-            builder: (_, _) => const TheaterWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return TheaterWorkspacePage(
+                initialQuery: TheaterBoardQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.reports.path,

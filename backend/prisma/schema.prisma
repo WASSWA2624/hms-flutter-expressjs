@@ -2551,6 +2551,7 @@ model admission {
   transfer_requests          transfer_request[]
   icu_stays                  icu_stay[]
   pre_authorizations         pre_authorization[]
+  theatre_cases              theatre_case[]
 
   @@index([tenant_id])
   @@index([facility_id])
@@ -2751,26 +2752,33 @@ model critical_alert {
 }
 
 model theatre_case {
-  id                  String            @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id   String?           @db.VarChar(32)
-  encounter_id        String            @db.VarChar(36)
-  scheduled_at        DateTime
-  status              TheatreCaseStatus
-  room_id             String?           @db.VarChar(36)
-  surgeon_user_id     String?           @db.VarChar(36)
-  anesthetist_user_id String?           @db.VarChar(36)
-  started_at          DateTime?
-  completed_at        DateTime?
-  cancelled_at        DateTime?
-  workflow_stage      String?           @db.VarChar(80)
-  stage_notes         String?           @db.Text
-  billing_snapshot    Json?
-  created_at          DateTime          @default(now())
-  updated_at          DateTime          @updatedAt
-  deleted_at          DateTime?
-  version             Int               @default(1)
+  id                   String            @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?           @db.VarChar(32)
+  encounter_id         String            @db.VarChar(36)
+  admission_id         String?           @db.VarChar(36)
+  emergency_case_id    String?           @db.VarChar(36)
+  procedure_name       String?           @db.VarChar(255)
+  source_kind          String?           @db.VarChar(40)
+  handover_destination String?           @db.VarChar(40)
+  scheduled_at         DateTime
+  status               TheatreCaseStatus
+  room_id              String?           @db.VarChar(36)
+  surgeon_user_id      String?           @db.VarChar(36)
+  anesthetist_user_id  String?           @db.VarChar(36)
+  started_at           DateTime?
+  completed_at         DateTime?
+  cancelled_at         DateTime?
+  workflow_stage       String?           @db.VarChar(80)
+  stage_notes          String?           @db.Text
+  billing_snapshot     Json?
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+  deleted_at           DateTime?
+  version              Int               @default(1)
 
-  encounter               encounter                          @relation(fields: [encounter_id], references: [id])
+  encounter      encounter       @relation(fields: [encounter_id], references: [id])
+  admission      admission?      @relation(fields: [admission_id], references: [id])
+  emergency_case emergency_case? @relation(fields: [emergency_case_id], references: [id])
   anesthesia_records      anesthesia_record[]
   post_op_notes           post_op_note[]
   resource_allocations    theatre_case_resource_allocation[]
@@ -2778,6 +2786,8 @@ model theatre_case {
   anesthesia_observations anesthesia_observation[]
 
   @@index([encounter_id])
+  @@index([admission_id])
+  @@index([emergency_case_id])
   @@index([scheduled_at])
   @@index([status])
   @@index([room_id])
@@ -3804,6 +3814,7 @@ model emergency_case {
   responses            emergency_response[]
   ambulance_dispatches ambulance_dispatch[]
   ambulance_trips      ambulance_trip[]
+  theatre_cases        theatre_case[]
 
   @@index([tenant_id])
   @@index([facility_id])

@@ -437,6 +437,44 @@ final class IpdIcuOverlay {
 }
 
 @immutable
+final class IpdTheatreHandoverSummary {
+  const IpdTheatreHandoverSummary({
+    this.caseDisplayId,
+    this.workflowStage,
+    this.handoverDestination,
+    this.stageNotes,
+    this.postOpNote,
+    this.completedAt,
+  });
+
+  final String? caseDisplayId;
+  final String? workflowStage;
+  final String? handoverDestination;
+  final String? stageNotes;
+  final String? postOpNote;
+  final DateTime? completedAt;
+}
+
+@immutable
+final class IpdTheatreOverlay {
+  const IpdTheatreOverlay({
+    this.status,
+    this.activeCaseId,
+    this.procedureName,
+    this.workflowStage,
+    this.handoverSummary,
+  });
+
+  final String? status;
+  final String? activeCaseId;
+  final String? procedureName;
+  final String? workflowStage;
+  final IpdTheatreHandoverSummary? handoverSummary;
+
+  bool get hasActiveCase => (status ?? '').toUpperCase() == 'ACTIVE';
+}
+
+@immutable
 final class IpdAdmissionSummary {
   const IpdAdmissionSummary({
     required this.id,
@@ -460,6 +498,8 @@ final class IpdAdmissionSummary {
     this.hasCriticalAlert = false,
     this.criticalSeverity,
     this.activeIcuStayId,
+    this.theatreStatus,
+    this.activeTheatreCaseId,
   });
 
   final String id;
@@ -483,6 +523,8 @@ final class IpdAdmissionSummary {
   final bool hasCriticalAlert;
   final String? criticalSeverity;
   final String? activeIcuStayId;
+  final String? theatreStatus;
+  final String? activeTheatreCaseId;
 
   String get apiId => id;
 
@@ -493,6 +535,12 @@ final class IpdAdmissionSummary {
   String? get location {
     return _joinDisplay(<String?>[wardDisplayName, bedDisplayLabel]);
   }
+
+  bool get isInProcedureOt => stage == 'IN_PROCEDURE_OT';
+
+  bool get hasActiveTheatreCase =>
+      (theatreStatus ?? '').toUpperCase() == 'ACTIVE' ||
+      (activeTheatreCaseId ?? '').isNotEmpty;
 
   bool get isTerminal {
     return switch ((stage ?? admissionStatus ?? '').toUpperCase()) {
@@ -619,6 +667,7 @@ final class IpdAdmissionDetail {
     this.pharmacyClearance = const IpdPharmacyClearance(),
     this.timeline = const <IpdTimelineItem>[],
     this.icu = const IpdIcuOverlay(),
+    this.theatre = const IpdTheatreOverlay(),
     this.sourceContext,
     this.pendingDischargeOrders = const <IpdPendingOrder>[],
     this.encounterType,
@@ -643,6 +692,7 @@ final class IpdAdmissionDetail {
   final IpdPharmacyClearance pharmacyClearance;
   final List<IpdTimelineItem> timeline;
   final IpdIcuOverlay icu;
+  final IpdTheatreOverlay theatre;
   final IpdSourceContext? sourceContext;
   final List<IpdPendingOrder> pendingDischargeOrders;
   final String? encounterType;

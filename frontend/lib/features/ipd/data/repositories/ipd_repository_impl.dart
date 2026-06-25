@@ -235,11 +235,9 @@ final class IpdRepositoryImpl implements IpdRepository {
     String admissionId,
     Map<String, Object?> payload,
   ) {
-    return _postAction(
-      admissionId,
-      <String>['update-discharge-clearance'],
-      payload,
-    );
+    return _postAction(admissionId, <String>[
+      'update-discharge-clearance',
+    ], payload);
   }
 
   Future<Result<IpdAdmissionDetail>> _postAction(

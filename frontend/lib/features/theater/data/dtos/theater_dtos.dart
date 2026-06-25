@@ -71,6 +71,11 @@ final class TheaterCaseDto {
       surgeonDisplayName: _string(json['surgeon_display_name']),
       anesthetistUserDisplayId: _string(json['anesthetist_user_display_id']),
       anesthetistDisplayName: _string(json['anesthetist_display_name']),
+      procedureName: _string(json['procedure_name']),
+      sourceKind: _string(json['source_kind']),
+      admissionDisplayId: _string(json['admission_display_id']),
+      emergencyCaseDisplayId: _string(json['emergency_case_display_id']),
+      handoverDestination: _string(json['handover_destination']),
       anesthesiaRecordDisplayId: _string(json['anesthesia_record_display_id']),
       postOpNoteDisplayId: _string(json['post_op_note_display_id']),
       anesthesiaStatus:

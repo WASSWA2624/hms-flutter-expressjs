@@ -243,7 +243,52 @@ const resolveEncounterByIdentifier = (tx, identifier) =>
     tenant_id: true,
     facility_id: true,
     patient_id: true,
+    admissions: {
+      where: { deleted_at: null },
+      orderBy: { admitted_at: 'desc' },
+      take: 1,
+      select: { id: true },
+    },
   });
+
+const resolveAdmissionByIdentifier = (
+  tx,
+  identifier,
+  tenantId = null,
+  facilityId = null
+) =>
+  resolveByIdentifier(
+    tx.admission,
+    identifier,
+    {
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+      ...(facilityId ? { facility_id: facilityId } : {}),
+    },
+    {
+      id: true,
+      human_friendly_id: true,
+      encounter_id: true,
+    }
+  );
+
+const resolveEmergencyCaseByIdentifier = (
+  tx,
+  identifier,
+  tenantId = null,
+  facilityId = null
+) =>
+  resolveByIdentifier(
+    tx.emergency_case,
+    identifier,
+    {
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+      ...(facilityId ? { facility_id: facilityId } : {}),
+    },
+    {
+      id: true,
+      human_friendly_id: true,
+    }
+  );
 
 const resolveRoomByIdentifier = (tx, identifier, tenantId = null, facilityId = null) =>
   resolveByIdentifier(
@@ -614,9 +659,13 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
 
   const encounter = snapshot.encounter || null;
   const patient = encounter?.patient || null;
+  const admission = snapshot.admission || encounter?.admissions?.[0] || null;
+  const emergencyCase = snapshot.emergency_case || null;
   const caseDisplayId = resolvePublicIdentifier(snapshot);
   const encounterDisplayId = resolvePublicIdentifier(encounter);
   const patientDisplayId = resolvePublicIdentifier(patient);
+  const admissionDisplayId = resolvePublicIdentifier(admission);
+  const emergencyCaseDisplayId = resolvePublicIdentifier(emergencyCase);
 
   const roomRecord = snapshot.room_id
     ? await lookupResolver.read('room', snapshot.room_id)
@@ -676,6 +725,11 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
     status: toUpper(snapshot?.status) || null,
     workflow_stage: toUpper(snapshot?.workflow_stage) || null,
     stage_notes: sanitize(snapshot?.stage_notes) || null,
+    procedure_name: sanitize(snapshot?.procedure_name) || null,
+    source_kind: toUpper(snapshot?.source_kind) || null,
+    handover_destination: toUpper(snapshot?.handover_destination) || null,
+    admission_display_id: admissionDisplayId,
+    emergency_case_display_id: emergencyCaseDisplayId,
     ...mapClinicalOrderBillingFields(snapshot),
     encounter_display_id: encounterDisplayId,
     patient_display_id: patientDisplayId,
@@ -1143,7 +1197,38 @@ const startTheatreFlow = async (data, context = {}) => {
       status: requestedStatus,
       workflow_stage: requestedStage,
       stage_notes: sanitize(data?.stage_notes) || null,
+      procedure_name: sanitize(data?.procedure_name) || null,
+      source_kind: toUpper(data?.source_kind) || null,
     };
+
+    if (data.admission_id) {
+      const admission = await resolveAdmissionByIdentifier(
+        tx,
+        data.admission_id,
+        encounter.tenant_id,
+        encounter.facility_id || null
+      );
+      if (!admission) throw new HttpError('errors.theatre_flow.admission_not_found', 404);
+      payload.admission_id = admission.id;
+      if (!payload.source_kind) payload.source_kind = 'IPD';
+    } else if (Array.isArray(encounter.admissions) && encounter.admissions[0]?.id) {
+      payload.admission_id = encounter.admissions[0].id;
+      if (!payload.source_kind) payload.source_kind = 'IPD';
+    }
+
+    if (data.emergency_case_id) {
+      const emergencyCase = await resolveEmergencyCaseByIdentifier(
+        tx,
+        data.emergency_case_id,
+        encounter.tenant_id,
+        encounter.facility_id || null
+      );
+      if (!emergencyCase) {
+        throw new HttpError('errors.theatre_flow.emergency_case_not_found', 404);
+      }
+      payload.emergency_case_id = emergencyCase.id;
+      if (!payload.source_kind) payload.source_kind = 'EMERGENCY';
+    }
 
     if (data.room_id) {
       const room = await resolveRoomByIdentifier(
@@ -1224,6 +1309,9 @@ const updateStage = async (id, data, context = {}) => {
       }
     }
     if (data.stage_notes !== undefined) payload.stage_notes = sanitize(data.stage_notes) || null;
+    if (data.handover_destination !== undefined) {
+      payload.handover_destination = toUpper(data.handover_destination) || null;
+    }
     if (data.status !== undefined) payload.status = toUpper(data.status) || theatreCase.status;
     if (data.started_at !== undefined) payload.started_at = data.started_at ? toDate(data.started_at) : null;
     if (data.completed_at !== undefined) payload.completed_at = data.completed_at ? toDate(data.completed_at) : null;

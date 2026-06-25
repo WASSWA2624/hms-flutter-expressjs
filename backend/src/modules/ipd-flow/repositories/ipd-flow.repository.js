@@ -75,7 +75,42 @@ const BASE_INCLUDE = {
     select: PATIENT_SELECT,
   },
   encounter: {
-    select: ENCOUNTER_SELECT,
+    select: {
+      ...ENCOUNTER_SELECT,
+      theatre_cases: {
+        where: { deleted_at: null },
+        orderBy: { scheduled_at: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          human_friendly_id: true,
+          status: true,
+          workflow_stage: true,
+          procedure_name: true,
+          scheduled_at: true,
+          started_at: true,
+          completed_at: true,
+          handover_destination: true,
+          stage_notes: true,
+          post_op_notes: {
+            where: { deleted_at: null },
+            orderBy: { updated_at: 'desc' },
+            take: 1,
+            select: {
+              notes: true,
+              record_status: true,
+            },
+          },
+          room: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
   },
   bed_assignments: {
     where: {

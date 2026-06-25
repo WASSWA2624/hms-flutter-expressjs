@@ -18,25 +18,18 @@ void main() {
   });
 
   group('TheaterWorkspaceController', () {
-    test('loads daily cases and selects the first case detail', () async {
+    test('loads active cases without default date filter', () async {
       final _MockTheaterRepository repository = _MockTheaterRepository();
       const TheaterCase summary = TheaterCase(
         id: 'TC-001',
         patientDisplayName: 'Jane Doe',
         status: 'SCHEDULED',
       );
-      const TheaterCase detail = TheaterCase(
-        id: 'TC-001',
-        patientDisplayName: 'Jane Doe',
-        status: 'SCHEDULED',
-        checklistCompleted: 1,
-        checklistTotal: 2,
-      );
 
       _stubInitialLoad(
         repository,
         cases: <TheaterCase>[summary],
-        detail: detail,
+        detail: summary,
       );
 
       final ProviderContainer container = ProviderContainer(
@@ -52,9 +45,38 @@ void main() {
         success: (TheaterWorkspaceState value) => value,
         failure: (AppFailure failure) => fail(failure.code),
       );
-      expect(state.cases.items.single.id, 'TC-001');
-      expect(state.selectedCase?.checklistCompleted, 1);
-      verify(() => repository.listCases(any())).called(1);
+      expect(state.query.queueScope, 'ACTIVE');
+      expect(state.query.scheduledDate, isNull);
+    });
+
+    test('selectCaseByDisplayId loads case detail by display id', () async {
+      final _MockTheaterRepository repository = _MockTheaterRepository();
+      const TheaterCase detail = TheaterCase(
+        id: 'uuid-1',
+        displayId: 'TC-001',
+        status: 'IN_PROGRESS',
+      );
+
+      _stubInitialLoad(
+        repository,
+        cases: const <TheaterCase>[],
+        detail: detail,
+      );
+      when(
+        () => repository.getCase('TC-001'),
+      ).thenAnswer((_) async => const Result<TheaterCase>.success(detail));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [theaterRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(theaterWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(theaterWorkspaceControllerProvider.notifier)
+          .selectCaseByDisplayId('TC-001');
+
+      expect(failure, isNull);
       verify(() => repository.getCase('TC-001')).called(1);
     });
 

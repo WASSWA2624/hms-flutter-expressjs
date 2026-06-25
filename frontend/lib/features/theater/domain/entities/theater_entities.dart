@@ -44,6 +44,129 @@ const List<String> theaterFinalizeRecordTypes = <String>[
   'ALL',
 ];
 
+enum TheaterDetailPanel { checklist, anesthesia, postop, resources }
+
+extension TheaterDetailPanelX on TheaterDetailPanel {
+  static TheaterDetailPanel? fromValue(String? value) {
+    final String normalized = (value ?? '').trim().toLowerCase();
+    return switch (normalized) {
+      'checklist' => TheaterDetailPanel.checklist,
+      'anesthesia' => TheaterDetailPanel.anesthesia,
+      'postop' || 'post-op' || 'post_op' => TheaterDetailPanel.postop,
+      'resources' => TheaterDetailPanel.resources,
+      _ => null,
+    };
+  }
+}
+
+@immutable
+final class TheaterBoardQuery {
+  const TheaterBoardQuery({
+    this.search = '',
+    this.status,
+    this.stage,
+    this.scheduledDate,
+    this.roomId,
+    this.surgeonUserId,
+    this.anesthetistUserId,
+    this.queueScope = 'ACTIVE',
+    this.pageRequest = const AppPageRequest(),
+    this.focusCaseId,
+    this.focusPanel,
+  });
+
+  final String search;
+  final String? status;
+  final String? stage;
+  final DateTime? scheduledDate;
+  final String? roomId;
+  final String? surgeonUserId;
+  final String? anesthetistUserId;
+  final String queueScope;
+  final AppPageRequest pageRequest;
+  final String? focusCaseId;
+  final TheaterDetailPanel? focusPanel;
+
+  bool get hasRouteTargeting =>
+      (focusCaseId ?? '').trim().isNotEmpty || focusPanel != null;
+
+  TheaterCaseQuery toCaseQuery() {
+    return TheaterCaseQuery(
+      search: search,
+      status: status,
+      stage: stage,
+      scheduledDate: scheduledDate,
+      roomId: roomId,
+      surgeonUserId: surgeonUserId,
+      anesthetistUserId: anesthetistUserId,
+      queueScope: queueScope,
+      pageRequest: pageRequest,
+    );
+  }
+
+  factory TheaterBoardQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String? pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    }
+
+    final String? focusId = pick(<String>['id', 'case', 'caseId', 'case_id']);
+    return TheaterBoardQuery(
+      search: focusId ?? pick(<String>['search', 'q']) ?? '',
+      focusCaseId: focusId,
+      focusPanel: TheaterDetailPanelX.fromValue(params['panel']),
+      queueScope: 'ACTIVE',
+    );
+  }
+
+  TheaterBoardQuery copyWith({
+    String? search,
+    String? status,
+    String? stage,
+    DateTime? scheduledDate,
+    String? roomId,
+    String? surgeonUserId,
+    String? anesthetistUserId,
+    String? queueScope,
+    AppPageRequest? pageRequest,
+    String? focusCaseId,
+    TheaterDetailPanel? focusPanel,
+    bool clearStatus = false,
+    bool clearStage = false,
+    bool clearScheduledDate = false,
+    bool clearRoomId = false,
+    bool clearSurgeonUserId = false,
+    bool clearAnesthetistUserId = false,
+    bool clearFocus = false,
+  }) {
+    return TheaterBoardQuery(
+      search: search ?? this.search,
+      status: clearStatus ? null : status ?? this.status,
+      stage: clearStage ? null : stage ?? this.stage,
+      scheduledDate: clearScheduledDate
+          ? null
+          : scheduledDate ?? this.scheduledDate,
+      roomId: clearRoomId ? null : roomId ?? this.roomId,
+      surgeonUserId: clearSurgeonUserId
+          ? null
+          : surgeonUserId ?? this.surgeonUserId,
+      anesthetistUserId: clearAnesthetistUserId
+          ? null
+          : anesthetistUserId ?? this.anesthetistUserId,
+      queueScope: queueScope ?? this.queueScope,
+      pageRequest: pageRequest ?? this.pageRequest,
+      focusCaseId: clearFocus ? null : focusCaseId ?? this.focusCaseId,
+      focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+    );
+  }
+}
+
 @immutable
 final class TheaterCaseQuery {
   const TheaterCaseQuery({
@@ -147,6 +270,12 @@ final class TheaterWorkspaceState {
         .length;
   }
 
+  int get cancelledCount {
+    return cases.items
+        .where((TheaterCase item) => item.normalizedStatus == 'CANCELLED')
+        .length;
+  }
+
   int get readyCount {
     return cases.items.where((TheaterCase item) => item.isReady).length;
   }
@@ -197,6 +326,11 @@ final class TheaterCase {
     this.surgeonDisplayName,
     this.anesthetistUserDisplayId,
     this.anesthetistDisplayName,
+    this.procedureName,
+    this.sourceKind,
+    this.admissionDisplayId,
+    this.emergencyCaseDisplayId,
+    this.handoverDestination,
     this.anesthesiaRecordDisplayId,
     this.postOpNoteDisplayId,
     this.anesthesiaStatus,
@@ -231,6 +365,11 @@ final class TheaterCase {
   final String? surgeonDisplayName;
   final String? anesthetistUserDisplayId;
   final String? anesthetistDisplayName;
+  final String? procedureName;
+  final String? sourceKind;
+  final String? admissionDisplayId;
+  final String? emergencyCaseDisplayId;
+  final String? handoverDestination;
   final String? anesthesiaRecordDisplayId;
   final String? postOpNoteDisplayId;
   final String? anesthesiaStatus;
@@ -274,6 +413,16 @@ final class TheaterCase {
 
   TheaterClinicalRecord? get latestPostOpNote {
     return postOpNotes.isEmpty ? null : postOpNotes.first;
+  }
+
+  String get responsibleRoleLabel {
+    return switch (normalizedStage) {
+      'PRE_OP' => 'NURSE',
+      'SIGN_IN' || 'TIME_OUT' || 'SIGN_OUT' => 'TEAM',
+      'INTRA_OP' => 'SURGEON',
+      'POST_OP' || 'PACU_HANDOFF' => 'ANESTHETIST',
+      _ => 'COORDINATOR',
+    };
   }
 }
 

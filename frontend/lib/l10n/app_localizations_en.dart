@@ -474,6 +474,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdOpenIcuAction => 'Open in ICU';
 
   @override
+  String get ipdOpenTheaterAction => 'Open in Theater';
+
+  @override
+  String get ipdStatusInProcedureOt => 'In procedure / OT';
+
+  @override
+  String get ipdNextCompleteTheatreHandover => 'Complete theatre handover';
+
+  @override
+  String get ipdTheatreHandoverTitle => 'Theatre post-op handover';
+
+  @override
   String get ipdStartIcuStayAction => 'Start ICU stay';
 
   @override
@@ -1054,6 +1066,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get theaterCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get theaterAllCasesSummaryLabel => 'All cases';
+
+  @override
+  String get theaterCaseIdColumnLabel => 'Case';
+
+  @override
+  String get theaterProcedureColumnLabel => 'Procedure';
+
+  @override
+  String get theaterResponsibleRoleColumnLabel => 'Owner';
+
+  @override
+  String get theaterSourceContextLabel => 'Source';
+
+  @override
+  String get theaterSourceEmergency => 'Emergency';
+
+  @override
+  String get theaterSourceOpd => 'OPD elective';
+
+  @override
+  String get theaterSourceIpd => 'Inpatient surgery';
+
+  @override
+  String get theaterOpenInIpdAction => 'Open in IPD';
+
+  @override
+  String get theaterOpenInEmergencyAction => 'Open in Emergency';
+
+  @override
+  String get theaterHandoverDestinationLabel => 'Recovery destination';
+
+  @override
+  String get theaterHandoverToWard => 'Ward';
+
+  @override
+  String get theaterHandoverToIcu => 'ICU';
+
+  @override
+  String get theaterHandoverToOpd => 'Day-case / OPD follow-up';
+
+  @override
+  String get theaterRoleNurse => 'Theater nurse';
+
+  @override
+  String get theaterRoleSurgeon => 'Surgeon';
+
+  @override
+  String get theaterRoleAnesthetist => 'Anesthetist';
+
+  @override
+  String get theaterRoleTeam => 'Theater team';
+
+  @override
+  String get theaterRoleCoordinator => 'Theater coordinator';
 
   @override
   String get theaterFiltersLabel => 'Theater filters';
