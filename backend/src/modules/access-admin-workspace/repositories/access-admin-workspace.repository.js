@@ -29,13 +29,15 @@ const scopedWhere = (scope = {}, options = {}) => {
 const buildSearchFilter = (search = '') => {
   const term = String(search || '').trim();
   if (!term) return null;
+  // MySQL/MariaDB Prisma provider does not support `mode: 'insensitive'`.
+  // Demo data uses lowercase emails and the default collation is case-insensitive.
   return {
     OR: [
-      { email: { contains: term, mode: 'insensitive' } },
-      { position_title: { contains: term, mode: 'insensitive' } },
-      { human_friendly_id: { contains: term, mode: 'insensitive' } },
-      { name: { contains: term, mode: 'insensitive' } },
-      { description: { contains: term, mode: 'insensitive' } },
+      { email: { contains: term } },
+      { position_title: { contains: term } },
+      { human_friendly_id: { contains: term } },
+      { name: { contains: term } },
+      { description: { contains: term } },
     ],
   };
 };
@@ -101,7 +103,7 @@ const countDemoUsers = async (scope = {}) => {
     return prisma.user.count({
       where: {
         ...scopedWhere(scope, { includeFacility: true }),
-        email: { endsWith: DEMO_EMAIL_SUFFIX, mode: 'insensitive' },
+        email: { endsWith: DEMO_EMAIL_SUFFIX },
       },
     });
   } catch (error) {
@@ -156,7 +158,7 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
       ...scopedWhere(scope, { includeFacility: true }),
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.is_demo
-        ? { email: { endsWith: DEMO_EMAIL_SUFFIX, mode: 'insensitive' } }
+        ? { email: { endsWith: DEMO_EMAIL_SUFFIX } }
         : {}),
     };
     const searchFilter = buildSearchFilter(filters.search);
