@@ -275,6 +275,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('shows the compact title in the mobile drawer header', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(tester, const Size(320, 640));
+
+      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('App'), findsOneWidget);
+      expect(find.text('Template'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('shows short labels in the mobile drawer', (
       WidgetTester tester,
     ) async {

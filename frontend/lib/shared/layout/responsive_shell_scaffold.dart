@@ -224,7 +224,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
           key: _scaffoldKey,
           drawer: isMobile && canNavigate
               ? _MobileShellDrawer(
-                  title: widget.title,
+                  title: widget.compactTitle ?? widget.title,
                   destinations: widget.destinations,
                   selectedIndex: effectiveSelectedIndex,
                   closeTooltip: widget.closeDrawerTooltip,
