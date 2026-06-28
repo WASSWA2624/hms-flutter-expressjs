@@ -12,6 +12,7 @@ final class AppWorkspaceSummaryNotification {
     required this.icon,
     required this.onSelected,
     this.tone = AppWorkspaceStatusTone.neutral,
+    this.isSelected = false,
   });
 
   final String label;
@@ -19,6 +20,7 @@ final class AppWorkspaceSummaryNotification {
   final IconData icon;
   final VoidCallback onSelected;
   final AppWorkspaceStatusTone tone;
+  final bool isSelected;
 
   bool get isVisible => count > 0;
 }
@@ -75,4 +77,14 @@ List<AppWorkspaceSummaryNotification> visibleWorkspaceSummaryNotifications(
   List<AppWorkspaceSummaryNotification> notifications,
 ) {
   return notifications.where((AppWorkspaceSummaryNotification n) => n.isVisible).toList(growable: false);
+}
+
+int totalWorkspaceSummaryNotificationCount(
+  List<AppWorkspaceSummaryNotification> notifications,
+) {
+  var total = 0;
+  for (final AppWorkspaceSummaryNotification notification in notifications) {
+    total += notification.count;
+  }
+  return total;
 }

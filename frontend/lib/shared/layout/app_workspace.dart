@@ -121,6 +121,10 @@ class AppWorkspace extends StatelessWidget {
             spacing: theme.spacing,
           )
         : ResponsiveSpacing.contentGapFor(breakpoint, spacing: theme.spacing);
+    final EdgeInsets? resolvedPadding = padding ??
+        (compactHeader
+            ? _compactWorkspacePagePadding(breakpoint, theme)
+            : null);
     final Widget? effectiveLeading =
         leading ??
         (leadingIcon == null
@@ -163,7 +167,7 @@ class AppWorkspace extends StatelessWidget {
 
     return ResponsivePage(
       maxWidth: maxWidth,
-      padding: padding,
+      padding: resolvedPadding,
       scrollable: scrollable,
       child: SizedBox(
         width: double.infinity,
@@ -220,7 +224,7 @@ class AppWorkspaceHeader extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: compact ? theme.spacing.xs : theme.spacing.sm,
+          bottom: compact ? theme.spacing.none : theme.spacing.sm,
         ),
         child: Row(
           children: <Widget>[
@@ -232,7 +236,7 @@ class AppWorkspaceHeader extends StatelessWidget {
               child: _WorkspaceHeaderTitle(title: title, compact: compact),
             ),
             if (actionBar != null) ...<Widget>[
-              SizedBox(width: theme.spacing.md),
+              SizedBox(width: theme.spacing.sm),
               Flexible(
                 child: ClipRect(
                   child: Align(
@@ -2087,3 +2091,24 @@ Future<T?> showAppWorkspaceDetailDrawer<T>({
 const double _searchWidth = 280;
 const double _filterWidth = 220;
 const double _defaultDrawerWidth = 480;
+
+EdgeInsets _compactWorkspacePagePadding(
+  AppBreakpoint breakpoint,
+  ThemeData theme,
+) {
+  final double horizontal = ResponsiveSpacing.pagePaddingValueFor(
+    breakpoint,
+    designTokens: theme.appTokens,
+  );
+  final double top = switch (breakpoint) {
+    AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.xs,
+    _ => theme.spacing.sm,
+  };
+  final double bottom = switch (breakpoint) {
+    AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.sm,
+    AppBreakpoint.md || AppBreakpoint.lg => theme.spacing.md,
+    _ => theme.spacing.md,
+  };
+
+  return EdgeInsets.fromLTRB(horizontal, top, horizontal, bottom);
+}

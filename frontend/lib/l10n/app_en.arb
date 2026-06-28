@@ -40,6 +40,15 @@
   "@workspaceNotificationsMenuLabel": {
     "description": "Label for the workspace toolbar notifications submenu that lists worklist filter shortcuts."
   },
+  "workspaceToolbarOverflowAttentionTooltip": "More actions — {count} items need attention",
+  "@workspaceToolbarOverflowAttentionTooltip": {
+    "description": "Accessibility label for the workspace overflow menu when notification counts are pending.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "workspaceFullscreenEnterLabel": "Full screen",
   "@workspaceFullscreenEnterLabel": {
     "description": "Label for entering full-screen mode from the app shell."

@@ -1,259 +1,150 @@
-# Modal Dialog — Global Unification & UX Consistency
+# Workspace More Actions & Notifications — UX polish
 
 ## Objective
 
-Audit and unify **every modal dialog** in the HMS frontend so they share one shell (`AppDialog` / `showAppDialog`), consistent footer actions, predictable sizing on all viewports, and no duplicated dialog scaffolding. Call sites should supply **content and domain logic only**; chrome, layout, drag/resize, focus, and action placement live in shared components.
+The **Notifications** nested submenu inside workspace **More actions** is functionally in place (see `prompt2.md`), but the current presentation is poor: the flyout detaches from its trigger, the menu feels unpolished, and the header/toolbar wastes vertical space. Refine layout, positioning, and affordances so the pattern is compact, obvious, and uniform across all module workspaces.
 
-**Manual smoke URL:** `127.0.0.1:5201` — test dialogs from Lab, Patients, Tenant Facility setup, ICU, and one clinical action flow.
-
----
-
-## Problem summary (current behavior)
-
-The app already has a shared dialog shell, but usage is inconsistent and sizing behavior does not match product intent.
-
-### 1. Fragmented action/footer patterns
-
-| Pattern | Location | Issue |
-|---------|----------|-------|
-| `_DialogActions` footer | `app_dialog.dart` | Correct target — fixed footer, end-aligned `OverflowBar`. |
-| `_actionDialogButtons` | `app_action_dialogs.dart` | Cancel + primary; duplicated logic. |
-| `clinicalActionDialogActions` | `clinical_action_dialog_actions.dart` | Cancel + primary; duplicated logic. |
-| `_dialogActions` (local) | `lab_workspace_page.dart`, `nursing_workspace_page.dart`, `icu_workspace_page.dart`, `pharmacy_workspace_page.dart`, `physiotherapy_workspace_page.dart`, `reports_workspace_page.dart`, `lab_catalog_dialogs.dart`, … | Same Cancel + primary helper copy-pasted per module. |
-| `showAppWorkspaceMutationDialog` | `app_workspace_mutation_dialog.dart` | Cancel + submit + optional extras — still renders Cancel in footer. |
-| Inline delete confirm | `tenant_facility_setup_page.dart` `_deleteEntity` | Ad-hoc `AppDialog` with Cancel + Delete instead of `AppConfirmActionDialog`. |
-
-**Cancel buttons are redundant.** `AppDialog` already provides header close (×), Escape (`CallbackShortcuts`), and optional barrier dismiss. Footer Cancel duplicates dismiss without adding value.
-
-### 2. Inconsistent destructive / submit placement
-
-- Footer uses `MainAxisAlignment.end` — **rightmost action is the last widget** in the `actions` list.
-- Some dialogs use `AppButton.primary` for Delete; others use tertiary; order varies (Cancel left, Delete right vs. mixed).
-- No single helper encodes: *secondary/extra actions → primary submit → destructive last-on-right* (or the project's chosen canonical order).
-
-### 3. Sizing, drag, and resize do not match intent
-
-In `app_dialog.dart`:
-
-- Initial desktop height is intrinsic (`_desktopSize == null`) but capped by `maxHeight = viewport - insetPadding`; large forms can clip when `scrollable: false`.
-- Resize (`_handleResize`) enforces `_desktopMinWidth` / `_desktopMinHeight` but **does not clamp to available viewport** on the max side during drag-resize.
-- Maximize sets size to full viewport — good — but restore/drag paths feel capped below usable screen space (user-reported max vertical height while dragging).
-- `_snackBarClearance` (88px bottom inset) permanently reduces usable height even when no snackbar is visible.
-- Content that exceeds available space should **grow the shell up to viewport bounds**, then scroll inside the body — not clip silently.
-
-### 4. Duplicated domain dialogs
-
-Examples of the same UX rebuilt in multiple places:
-
-- Delete confirmation: inline in `tenant_facility_setup_page.dart` vs. `AppConfirmActionDialog` elsewhere.
-- Lab delete flows: `LabDeleteReasonDialog` (good shared widget) vs. one-off confirms in other modules.
-- Form mutation: some pages use `showAppWorkspaceMutationDialog`; others inline `AppDialog` + `Form` + local `_dialogActions`.
-- Patient create/edit: verify `patient_registry_page.dart` does not duplicate a form dialog that should be extracted once.
-
-### 5. Stray modal chrome at call sites
-
-Call sites sometimes reimplement header controls, embed action rows inside `content`, or pass empty/redundant wrappers instead of using `actions`, `scrollable`, and `icon` on `AppDialog`.
+**Smoke URL:** `127.0.0.1:5201` — verify on **OPD** (primary reference), then Lab, Billing, ICU, and one operational module.
 
 ---
 
-## Target UX (all breakpoints)
+## Problems observed (screenshots)
 
-### Single dialog shell
+### 1. Notifications submenu is visually disconnected
 
-Every modal must be opened with **`showAppDialog`** and rendered with **`AppDialog`** (or a thin shared wrapper listed below). No raw `showDialog`, `AlertDialog`, or bespoke `Dialog` widgets.
+When **More actions** is opened and **Notifications** is hovered/expanded, the nested flyout appears **far from the parent menu** (often centered in the worklist area) instead of hugging the trigger. This breaks the parent–child relationship and looks like a floating orphan panel over the table.
 
-**Approved wrappers** (extend `AppDialog`; do not fork layout):
+| Symptom | Likely cause |
+|---------|----------------|
+| Flyout floats in the middle of the content | `SubmenuButton` / `MenuAnchor` default alignment not constrained to the overflow trigger |
+| Hard to trace which menu opened the panel | No visual anchor (shadow overlap, shared edge, or proximity) between parent and child menus |
 
-| Wrapper | Use when |
-|---------|----------|
-| `AppDialog` | Generic content + footer actions |
-| `showAppWorkspaceMutationDialog` | Validated form create/edit with submit lifecycle |
-| `AppConfirmActionDialog` | Yes/no or async confirm (delete, irreversible actions) |
-| `AppTextActionDialog` | Free-text note/summary capture |
-| Domain-specific widgets (e.g. `LabDeleteReasonDialog`, `ClinicalDiagnosisActionDialog`) | One widget per distinct domain flow; must compose `AppDialog` internally |
+### 2. Menu design is not production-quality
 
-### Layout regions
+- Parent **Notifications** row shows **two chevrons** (duplicate trailing affordance).
+- Row density, padding, and icon alignment do not match the rest of the app chrome.
+- Submenu width (`320–360px`) may be wider than needed for short labels + counts.
+- No clear selected/active state when a notification filter is already applied to the worklist.
 
-```
-┌─ Header (draggable on desktop): [icon] Title ··· [maximize] [close ×] ─┐
-├─ Body (padded, scrolls when needed) ────────────────────────────────────┤
-└─ Footer (fixed): ··· [secondary] [primary submit] [destructive?] ────────┘
-```
+### 3. No at-a-glance signal on the More actions trigger
 
-| Region | Rule |
-|--------|------|
-| Header | Title + optional icon; close (×) always dismisses (respect `closeEnabled` while saving). **No action buttons in header** except maximize/close. |
-| Body | Form fields, read-only detail, confirmation copy. **No Save/Delete/Cancel buttons in body.** |
-| Footer | **All** action buttons live here via `AppDialog.actions`. |
+Users cannot tell there are actionable queue items **before** opening the menu. The overflow trigger (`Icons.more_vert`) looks identical whether there are 0 or 20 pending notifications.
 
-### Footer action conventions
+### 4. No aggregate count on the Notifications parent row
 
-**Remove Cancel from all dialog footers.** Dismiss via close (×), Escape, or barrier tap (when `barrierDismissible`).
+Individual notification rows show per-queue counts (`AppMenuCountBadge`), but the parent **Notifications** item does not summarize **total items needing attention**. Users must expand the submenu to discover volume.
 
-| Action type | Component | Position |
-|-------------|-----------|----------|
-| Secondary / optional | `AppButton.secondary` or `AppButton.tertiary` | Left of primary (earlier in `actions` list) |
-| Primary submit (Save, Add, Confirm) | `AppButton.primary` | Right side; rightmost when no destructive action |
-| Destructive (Delete, Remove, Cancel order*) | `AppButton.primary` with error/destructive styling **or** documented destructive variant | **Rightmost** in footer |
-| Loading | `isLoading` on the submitting button; disable other footer actions |
+### 5. Workspace header / toolbar uses too much vertical space
 
-\* “Cancel order” etc. are domain destructive actions, not dialog dismiss.
-
-**Canonical order** (left → right in `OverflowBar`, end-aligned):
-
-```
-[secondary…] [primary submit] [destructive]
-```
-
-When only one action exists (e.g. “Close” or “OK”), it is a single `AppButton.primary` aligned end.
-
-Use **`AppButton`** only — no raw `TextButton`, `ElevatedButton`, or `FilledButton` in dialog footers.
-
-### Sizing & interaction (desktop ≥ 600px width)
-
-| Behavior | Rule |
-|----------|------|
-| Initial size | **Shrink-wrap** to content width/height, clamped to available viewport (after insets). |
-| Auto-grow | If content height (or width) exceeds current shell size, expand shell **up to** `viewport − insetPadding` so content is fully visible before scrolling kicks in. |
-| Max bounds | Manual drag-resize and maximize may use **full available viewport** width and height — not an artificial cap below screen space. |
-| Min bounds | Keep reasonable minimums (`_desktopMinWidth`, `_desktopMinHeight`) so the shell stays usable. |
-| Overflow | When content exceeds max expanded shell, set `scrollable: true` on body (`SingleChildScrollView` — already in `_DialogBody`). |
-| Drag | Header drag moves dialog; clamp translation so dialog remains reachable, not clamped to a fraction of viewport unnecessarily. |
-| Resize | Edge/corner handles respect min **and max** = available viewport. |
-| Maximize | Fills viewport; restore returns to pre-maximize size/position. |
-| Mobile (< 600px) | Full-width inset dialog; no drag/resize/maximize; body scrolls when needed. |
-
-### Accessibility & focus
-
-Preserve existing behavior from `showAppDialog`:
-
-- Focus restoration to opener after close.
-- `FocusTraversalGroup`, Escape to dismiss.
-- `semanticLabel` on dialogs that need screen-reader context.
-- `closeEnabled: false` while async submit in flight.
+The OPD workspace header band (title + primary action + toolbar) has **excess top/bottom padding**, pushing the worklist down. The goal is maximum information density without crowding — compact but readable.
 
 ---
 
-## Scope
+## Target UX
 
-### In scope
+### A. Intelligent submenu positioning
 
-| Area | Location |
-|------|----------|
-| Core dialog shell | `frontend/lib/shared/components/app_dialog.dart` |
-| Dialog entrypoint | `showAppDialog` (same file) |
-| Shared action helpers | New or consolidated helper in `app_dialog.dart` or `app_dialog_actions.dart` |
-| Mutation wrapper | `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart` |
-| Action dialog wrappers | `frontend/lib/shared/actions/app_action_dialogs.dart` |
-| Clinical actions helper | `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart` |
-| All `showAppDialog` / `AppDialog` call sites | Feature pages under `frontend/lib/features/`, shared dialogs under `frontend/lib/shared/` |
-| Tests | `frontend/test/shared/components/app_dialog_test.dart` + affected dialog tests |
+Position nested menus **relative to available viewport space**, not a fixed offset that ignores layout.
 
-### Out of scope
+| Viewport situation | Behavior |
+|--------------------|----------|
+| Room to the **right** of the parent menu (typical desktop) | Flyout opens **flush to the right edge** of the parent panel, vertically aligned with the **Notifications** row |
+| Insufficient space on the right | Flip flyout to the **left** of the parent menu |
+| Insufficient space below | Shift vertically so the submenu stays fully on-screen |
+| Narrow (`xs` / `sm`) | Acceptable stacked pattern, but still **anchored to the trigger** — never centered in the page body |
 
-- Bottom sheets, drawers, full-page routes, or `showModalBottomSheet` — not modal dialogs.
-- Snackbar/toast styling (but re-evaluate whether `_snackBarClearance` should remain fixed or become conditional).
-- Changing business logic inside domain forms (field validation, API calls) — only dialog chrome and action placement.
-- New third-party dialog packages.
+**Rules:**
 
----
+- Parent and child menus should **share a border edge** or overlap by 1px so they read as one control.
+- Maximum gap between parent menu and flyout: **0–4 logical px** (theme `spacing.xs` or less).
+- Do **not** let `crossAxisUnconstrained` or default `MenuAnchor` placement push the flyout into the worklist center.
+- Prefer a shared helper (e.g. extend `_ToolbarOverflowMenu` or extract `AppToolbarNestedMenu`) so every workspace gets the same behavior.
 
-## Implementation strategy
+**Primary files:** `frontend/lib/shared/layout/app_workspace_toolbar.dart` (`_ToolbarOverflowMenu`, `SubmenuButton`, `MenuAnchor`).
 
-Work in this order. **Fix shared components first** so all call sites inherit behavior.
+### B. Polished menu chrome
 
-### Phase 1 — Fix `AppDialog` sizing, drag, and resize
+Apply existing design-system tokens — no ad-hoc colors or spacing in feature pages.
 
-1. **Auto-size to content** up to viewport max on first layout (measure intrinsic content; set initial `_desktopSize` when needed).
-2. **Clamp resize** in `_handleResize` to `availableWidth` / `availableHeight` (viewport minus insets).
-3. **Review drag clamp** in `_handleDrag` — ensure users can position the dialog anywhere within the viewport without an overly restrictive vertical cap.
-4. **Revisit `_snackBarClearance`** — use full height when safe, or reduce inset if it causes persistent clipping.
-5. **Default `scrollable: true`** for dialogs with unbounded/large content, or auto-enable when measured content exceeds max shell height.
-6. Ensure `Flexible` + `fillHeight` interaction does not clip: when content is taller than viewport, body scrolls; shell height = viewport max.
+| Element | Spec |
+|---------|------|
+| Menu panel | `colorScheme.surface`, `outlineVariant` border, `theme.radius.sm` — match current `menuStyle` but tune width to content (`min` ~240, `max` ~320 unless labels require more) |
+| Row height | Consistent `48` tap target; horizontal padding `theme.spacing.sm` |
+| Icons | `AppMenuItemLabel` with tone-colored icons (reuse `workspaceStatusToneAccentColor`) |
+| Trailing affordance | **Single** `Icons.chevron_right` on parent submenu rows — remove duplicate |
+| Active filter | When a notification filter is active, show subtle selected background (`colorScheme.secondaryContainer` or existing menu selected state) on that submenu row |
+| Hover / focus | Visible focus ring for keyboard users; pointer cursor on all interactive menu rows |
 
-### Phase 2 — Centralize footer actions
+### C. More actions trigger — attention indicator
 
-1. Add **`AppDialogActions`** (or `buildAppDialogActions`) — single helper returning `List<Widget>`:
+When `visibleWorkspaceSummaryNotifications` is non-empty, the **More actions** trigger must show a **visual pending indicator**:
 
-   ```dart
-   // API sketch — adjust to match AppButton variants available
-   List<Widget> buildAppDialogActions(
-     BuildContext context, {
-     String? primaryLabel,
-     VoidCallback? onPrimary,
-     bool isPrimaryLoading = false,
-     List<AppDialogSecondaryAction> secondaryActions = const [],
-     AppDialogDestructiveAction? destructiveAction,
-   });
-   ```
+| Option | When to use |
+|--------|-------------|
+| **Red dot** (small badge, top-right of icon button) | At least one notification with `count > 0` — preferred default |
+| Dot only, no number on trigger | Keeps the ⋮ icon clean; counts live in the submenu |
 
-2. **Remove Cancel** from the helper; document dismiss via close/Escape.
-3. Replace duplicates:
-   - `_actionDialogButtons` → shared helper
-   - `clinicalActionDialogActions` → shared helper
-   - All page-local `_dialogActions` → import shared helper
-4. Update `showAppWorkspaceMutationDialog` — drop `cancelLabel` parameter; remove Cancel button from `_buildActions`.
-5. Update `AppConfirmActionDialog` — single destructive/confirm primary button; no Cancel.
+**Rules:**
 
-### Phase 3 — Migrate call sites
+- Dot uses `theme.statusColors.error` or `colorScheme.error` — consistent with app notification badges (e.g. shell bell).
+- Dot hidden when all notification counts are zero (same visibility rule as today).
+- Accessible: `Semantics` / tooltip e.g. “More actions — N items need attention” (localized via `app_en.arb`).
+- Reuse or extend `AppButton.popupMenuTrigger` rather than one-off decoration in each workspace.
 
-1. Grep for `commonCancelActionLabel` inside dialog `actions` — remove each Cancel footer button.
-2. Grep for `AppDialog(` and verify:
-   - `actions` populated for any button that submits/deletes/confirms
-   - No action `Row` inside `content`
-   - Uses `showAppDialog`, not raw `showDialog`
-3. Replace inline delete confirms (e.g. `tenant_facility_setup_page.dart` `_deleteEntity`) with `AppConfirmActionDialog` or a shared `showAppDeleteConfirmDialog` if delete copy differs by entity.
-4. Prefer `showAppWorkspaceMutationDialog` for standard create/edit forms instead of inlined `AppDialog` + `Form`.
-5. **Deduplicate domain dialogs** — if two modules implement the same “create patient” (or similar) modal, extract one shared widget under `frontend/lib/shared/` or the owning feature package.
+### D. Notifications parent row — aggregate badge
 
-### Phase 4 — Cleanup & performance
+On the **Notifications** submenu parent row, show a **total count badge** summing all visible notification `count` values:
 
-1. Delete dead private helpers (`_dialogActions` per page) after migration.
-2. Avoid rebuilding entire dialog trees on unrelated setState — keep submit loading localized (existing pattern in mutation dialog).
-3. Do not wrap large lists in non-scrollable body — always `scrollable: true` for forms with > ~6 fields or dynamic lists.
-4. Remove redundant `barrierDismissible: false` where close + unsaved-state guard is sufficient (keep `false` when form data loss is a concern).
+```
+[ bell icon ]  Notifications ……………………  [ 4 ]
+                                      ▸
+```
 
-### Phase 5 — Regression pass
-
-Manually exercise dialogs at **258px, 426px, 626px, 759px, and desktop** widths:
-
-| Flow | Module |
+| Rule | Detail |
 |------|--------|
-| Create/edit form | Patients or HR (`showAppWorkspaceMutationDialog`) |
-| Delete confirm | Tenant Facility or Lab delete |
-| Clinical action | OPD/IPD clinical action dialog |
-| Large form | Lab result entry or Subscriptions |
-| Drag + resize + maximize | Any desktop form dialog |
+| Total | `sum` of counts for all `visibleWorkspaceSummaryNotifications` |
+| Format | `AppFormatters.compactNumber` (same as row badges) |
+| Style | Reuse `AppMenuCountBadge` with neutral or `info` tone, **or** extract `AppMenuAggregateCountBadge` if styling differs from per-row badges |
+| Zero | Parent row hidden entirely when total is 0 (existing behavior) |
+
+### E. Compact workspace header / toolbar
+
+Reduce wasted vertical space in `AppWorkspaceHeader` and related spacing **without** breaking touch targets on mobile.
+
+| Area | Direction |
+|------|-----------|
+| `AppWorkspaceHeader` padding | Tighten `bottom` padding when `compact: true`; audit top padding inherited from `ResponsivePage` |
+| Title row | Keep `compactHeader: true` default; ensure title + toolbar fit on one line on `md+` |
+| Gap to filters/worklist | Use `ResponsiveSpacing.compactContentGapFor` — do not add extra `SizedBox` in feature pages |
+| Toolbar action row | Preserve minimum 44–48px hit areas; reduce **margins** and **inter-row** gaps, not tap targets |
+
+**Primary files:** `frontend/lib/shared/layout/app_workspace.dart` (`AppWorkspaceHeader`, `AppWorkspace`), `frontend/lib/shared/layout/responsive_spacing.dart`, `frontend/lib/shared/layout/responsive_page.dart`.
+
+---
+
+## Scope & constraints
+
+- **Shared components only** — changes live in `app_workspace_toolbar.dart`, `app_workspace.dart`, `app_button.dart`, `app_menu_item_label.dart`, and shared badge helpers. Do **not** duplicate menu logic in individual `*_workspace_page.dart` files.
+- **No behavior regression** — notification taps still apply the same worklist filters; zero-count rows still hidden.
+- **Follow project rules:** `frontend/.cursor/ui-workspace.mdc`, `design-system.mdc`, `localization_i18n.mdc` (new strings in `app_en.arb`).
+- **Uniform** — OPD, Lab, Billing, ICU, and all other workspaces using `appWorkspaceToolbarWithLabels` must look identical without per-module overrides.
 
 ---
 
 ## Acceptance criteria
 
-- [ ] **100% of modals** use `showAppDialog` + `AppDialog` (or an approved wrapper that composes it).
-- [ ] **No footer Cancel buttons** anywhere; dismiss works via ×, Escape, and barrier (when enabled).
-- [ ] **All action buttons** (Save, Edit, Delete, Confirm, …) render in the **footer region** only, with consistent labels (`AppButton`, l10n keys).
-- [ ] **Destructive actions** are consistently styled and **rightmost** in the footer.
-- [ ] **Primary submit** sits immediately left of destructive (when both present).
-- [ ] Dialog **auto-expands** to show content up to viewport max; **no clipped fields** on small or large screens.
-- [ ] Manual **resize and drag** respect min size and **full available viewport** as max.
-- [ ] **One shared footer-action helper** — no per-page `_dialogActions` copies remain.
-- [ ] **No duplicate domain dialog** implementations for the same entity/action (extract shared widget where found).
-- [ ] `dart analyze` passes on touched files; `app_dialog_test.dart` updated for sizing/action changes; existing dialog widget tests pass.
+1. Opening **More actions** on OPD shows a menu anchored to the ⋮ button in the header toolbar — not floating over the table center.
+2. Hovering/expanding **Notifications** opens a flyout **immediately adjacent** to the parent menu (right or left based on space).
+3. **Notifications** parent row has exactly **one** chevron and displays the **aggregate count** badge.
+4. **More actions** ⋮ shows a **red dot** when any notification count > 0; dot disappears when all counts are zero.
+5. Workspace header is **visibly shorter** than before on desktop while remaining usable on mobile.
+6. Existing tests in `frontend/test/shared/layout/app_workspace_toolbar_test.dart` pass; add tests for dot visibility, aggregate badge, and submenu positioning where feasible.
+7. Manual smoke on `127.0.0.1:5201` across OPD + two other modules confirms uniform appearance.
 
 ---
 
-## Verification
+## Out of scope (this pass)
 
-1. **Automated:** `flutter test frontend/test/shared/components/app_dialog_test.dart` and other dialog tests under `frontend/test/`.
-2. **Static:** search confirms zero `commonCancelActionLabel` in dialog footer actions; zero raw `showDialog(` outside `app_dialog.dart`.
-3. **Manual:** open dialogs listed in Phase 5; verify footer-only actions, dismiss without Cancel, resize to full viewport, scroll when content exceeds max height.
-
----
-
-## Constraints
-
-- **Minimize diff scope** — shared-component fixes first; migrate call sites in batches by module if needed.
-- **Preserve behavior** — submit validation, async error display (`AppFailureStateView`), `closeEnabled` while saving, and focus restoration must remain intact.
-- **Follow existing conventions** — `AppButton`, `theme.spacing.*`, `AppFormShell`, `AppFieldRequirementScope`, l10n via `context.l10n`.
-- **No new dependencies.**
-- **No unrelated refactors** — touch dialog chrome and action placement only unless deduplication requires extracting a shared domain widget.
+- Changing what each notification count represents or filter logic in module controllers.
+- Reintroducing inline summary card grids.
+- Shell-level notification bell (`responsive_shell_scaffold.dart`) — only workspace toolbar More actions is in scope.

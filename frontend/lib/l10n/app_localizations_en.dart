@@ -39,6 +39,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNotificationsMenuLabel => 'Notifications';
 
   @override
+  String workspaceToolbarOverflowAttentionTooltip(int count) {
+    return 'More actions — $count items need attention';
+  }
+
+  @override
   String get workspaceFullscreenEnterLabel => 'Full screen';
 
   @override

@@ -46,7 +46,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pending collection'), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
+    expect(find.text('4'), findsNWidgets(2));
 
     await tester.tap(find.text('Pending collection'));
     await tester.pump();
@@ -83,6 +83,139 @@ void main() {
 
     expect(find.byIcon(Icons.more_vert), findsNothing);
     expect(find.text('Notifications'), findsNothing);
+  });
+
+  testWidgets('notifications parent shows aggregate count badge', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Lab',
+          toolbar: AppWorkspaceToolbarConfig(
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
+              AppWorkspaceSummaryNotification(
+                label: 'Pending collection',
+                count: 4,
+                icon: Icons.biotech_outlined,
+                onSelected: _noop,
+              ),
+              AppWorkspaceSummaryNotification(
+                label: 'Critical results',
+                count: 2,
+                icon: Icons.warning_amber_outlined,
+                onSelected: _noop,
+              ),
+            ],
+            notificationsMenuLabel: 'Notifications',
+            overflowLabel: 'More actions',
+          ),
+          body: Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    expect(find.text('6'), findsOneWidget);
+  });
+
+  testWidgets('more actions trigger shows attention dot when counts pending', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Billing',
+          toolbar: AppWorkspaceToolbarConfig(
+            showGlobalActions: false,
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
+              AppWorkspaceSummaryNotification(
+                label: 'Awaiting payment',
+                count: 2,
+                icon: Icons.payments_outlined,
+                onSelected: _noop,
+              ),
+            ],
+            overflowLabel: 'More actions',
+          ),
+          body: Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byType(Badge), findsOneWidget);
+  });
+
+  testWidgets('attention dot hidden when all notification counts are zero', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Billing',
+          toolbar: AppWorkspaceToolbarConfig(
+            showGlobalActions: false,
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
+              AppWorkspaceSummaryNotification(
+                label: 'Awaiting payment',
+                count: 0,
+                icon: Icons.payments_outlined,
+                onSelected: _noop,
+              ),
+            ],
+            overflowLabel: 'More actions',
+          ),
+          body: Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byType(Badge), findsNothing);
+  });
+
+  testWidgets('notifications submenu uses constrained cross axis', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Lab',
+          toolbar: AppWorkspaceToolbarConfig(
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
+              AppWorkspaceSummaryNotification(
+                label: 'Pending collection',
+                count: 4,
+                icon: Icons.biotech_outlined,
+                onSelected: _noop,
+              ),
+            ],
+            notificationsMenuLabel: 'Notifications',
+            overflowLabel: 'More actions',
+          ),
+          body: Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    final List<MenuAnchor> menuAnchors = tester
+        .widgetList<MenuAnchor>(find.byType(MenuAnchor))
+        .toList();
+    expect(menuAnchors.length, greaterThanOrEqualTo(2));
+    expect(menuAnchors.last.crossAxisUnconstrained, isFalse);
+    expect(menuAnchors.last.alignmentOffset, const Offset(-1, 0));
   });
 
   testWidgets('more actions trigger uses pointer cursor', (

@@ -100,14 +100,27 @@ class AppButton extends StatelessWidget {
 
   IconData? get _resolvedIcon => leadingIcon ?? icon;
 
-  /// Icon-only trigger for [PopupMenuButton] children.
+  /// Icon-only trigger for [PopupMenuButton] and [MenuAnchor] overflow menus.
   static Widget popupMenuTrigger({
     required BuildContext context,
     required IconData icon,
     required String semanticLabel,
     Color? color,
     VoidCallback? onPressed,
+    int attentionCount = 0,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double iconSize = theme.appTokens.listIconSize;
+    final Widget? iconWidget = attentionCount > 0
+        ? Badge(
+            isLabelVisible: false,
+            backgroundColor: colorScheme.error,
+            smallSize: 8,
+            child: Icon(icon, size: iconSize),
+          )
+        : null;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: AppButton(
@@ -117,6 +130,7 @@ class AppButton extends StatelessWidget {
         semanticLabel: semanticLabel,
         tooltip: semanticLabel,
         color: color,
+        iconWidget: iconWidget,
         onPressed: onPressed,
       ),
     );

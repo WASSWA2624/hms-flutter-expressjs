@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_global_fault_report_action.dart';
 import 'package:hosspi_hms/shared/actions/app_global_housekeeping_request_action.dart';
 import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
@@ -12,6 +13,7 @@ import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_menu_item_label.dart';
 import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_resolver.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_summary_notification.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_view_toggle.dart';
@@ -514,27 +516,19 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final MenuStyle menuStyle = MenuStyle(
-      minimumSize: WidgetStateProperty.all(const Size(320, 0)),
-      maximumSize: WidgetStateProperty.all(const Size(360, double.infinity)),
-      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
-      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(
-          side: BorderSide(color: colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(theme.radius.sm),
-        ),
-      ),
-      padding: WidgetStateProperty.all(
-        EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      ),
-    );
+    final int attentionTotal =
+        totalWorkspaceSummaryNotificationCount(summaryNotifications);
+    final String triggerLabel = attentionTotal > 0
+        ? context.l10n.workspaceToolbarOverflowAttentionTooltip(attentionTotal)
+        : label;
+    final MenuStyle menuStyle = _toolbarMenuStyle(theme, colorScheme);
+    final MenuStyle submenuStyle = _toolbarSubmenuStyle(theme, colorScheme);
 
     return UncontrolledProviderScope(
       container: container,
       child: MenuAnchor(
         style: menuStyle,
-        alignmentOffset: const Offset(0, 4),
+        alignmentOffset: Offset(0, theme.spacing.xs),
         crossAxisUnconstrained: false,
         menuChildren: <Widget>[
           for (final AppToolbarOverflowEntry entry in entries)
@@ -549,41 +543,14 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
               ),
             ),
           if (summaryNotifications.isNotEmpty)
-            SubmenuButton(
-              style: _overflowMenuItemStyle(theme),
-              menuStyle: menuStyle,
-              menuChildren: <Widget>[
-                for (final AppWorkspaceSummaryNotification notification
-                    in summaryNotifications)
-                  MenuItemButton(
-                    style: _overflowMenuItemStyle(theme),
-                    onPressed: notification.onSelected,
-                    child: AppMenuItemLabel(
-                      icon: notification.icon,
-                      label: notification.label,
-                      iconTone: notification.tone,
-                      trailing: AppMenuCountBadge(
-                        count: notification.count,
-                        tone: notification.tone,
-                      ),
-                    ),
-                  ),
-              ],
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: AppMenuItemLabel(
-                      icon: Icons.notifications_outlined,
-                      label: notificationsLabel,
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    size: theme.appTokens.listIconSize,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
+            _ToolbarNotificationsSubmenu(
+              label: notificationsLabel,
+              aggregateCount: attentionTotal,
+              notifications: summaryNotifications,
+              submenuStyle: submenuStyle,
+              buttonStyle: _overflowMenuItemStyle(theme),
+              itemStyle: ({required bool selected}) =>
+                  _overflowMenuItemStyle(theme, selected: selected),
             ),
         ],
         builder: (
@@ -594,7 +561,8 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
           return AppButton.popupMenuTrigger(
             context: context,
             icon: Icons.more_vert,
-            semanticLabel: label,
+            semanticLabel: triggerLabel,
+            attentionCount: attentionTotal,
             onPressed: () {
               if (controller.isOpen) {
                 controller.close();
@@ -608,13 +576,170 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
     );
   }
 
-  ButtonStyle _overflowMenuItemStyle(ThemeData theme) {
+  MenuStyle _toolbarMenuStyle(ThemeData theme, ColorScheme colorScheme) {
+    return MenuStyle(
+      minimumSize: WidgetStateProperty.all(const Size(240, 0)),
+      maximumSize: WidgetStateProperty.all(const Size(320, double.infinity)),
+      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
+      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
+      shape: WidgetStateProperty.all(
+        RoundedRectangleBorder(
+          side: BorderSide(color: colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+        ),
+      ),
+      padding: WidgetStateProperty.all(
+        EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      ),
+    );
+  }
+
+  MenuStyle _toolbarSubmenuStyle(ThemeData theme, ColorScheme colorScheme) {
+    return MenuStyle(
+      minimumSize: WidgetStateProperty.all(const Size(240, 0)),
+      maximumSize: WidgetStateProperty.all(const Size(320, double.infinity)),
+      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
+      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
+      shape: WidgetStateProperty.all(
+        RoundedRectangleBorder(
+          side: BorderSide(color: colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+        ),
+      ),
+      padding: WidgetStateProperty.all(
+        EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      ),
+      alignment: AlignmentDirectional.centerEnd,
+    );
+  }
+
+  ButtonStyle _overflowMenuItemStyle(
+    ThemeData theme, {
+    bool selected = false,
+  }) {
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return ButtonStyle(
       padding: WidgetStateProperty.all(
         EdgeInsets.symmetric(horizontal: theme.spacing.sm),
       ),
       minimumSize: WidgetStateProperty.all(const Size(0, 48)),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (selected) {
+          return colorScheme.secondaryContainer;
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return colorScheme.surfaceContainerHighest;
+        }
+        return null;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((
+        Set<WidgetState> states,
+      ) {
+        if (!states.contains(WidgetState.focused)) {
+          return null;
+        }
+        return BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.72),
+          width: 1.25,
+        );
+      }),
+    );
+  }
+}
+
+class _ToolbarNotificationsSubmenu extends StatelessWidget {
+  const _ToolbarNotificationsSubmenu({
+    required this.label,
+    required this.aggregateCount,
+    required this.notifications,
+    required this.submenuStyle,
+    required this.buttonStyle,
+    required this.itemStyle,
+  });
+
+  final String label;
+  final int aggregateCount;
+  final List<AppWorkspaceSummaryNotification> notifications;
+  final MenuStyle submenuStyle;
+  final ButtonStyle buttonStyle;
+  final ButtonStyle Function({required bool selected}) itemStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return MenuAnchor(
+      style: submenuStyle,
+      alignmentOffset: const Offset(-1, 0),
+      crossAxisUnconstrained: false,
+      menuChildren: <Widget>[
+        for (final AppWorkspaceSummaryNotification notification
+            in notifications)
+          MenuItemButton(
+            style: itemStyle(selected: notification.isSelected),
+            onPressed: notification.onSelected,
+            child: AppMenuItemLabel(
+              icon: notification.icon,
+              label: notification.label,
+              iconTone: notification.tone,
+              trailing: AppMenuCountBadge(
+                count: notification.count,
+                tone: notification.tone,
+              ),
+            ),
+          ),
+      ],
+      builder: (
+        BuildContext context,
+        MenuController controller,
+        Widget? child,
+      ) {
+        return MouseRegion(
+          onEnter: (_) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted && !controller.isOpen) {
+                controller.open();
+              }
+            });
+          },
+          child: TextButton(
+            style: buttonStyle,
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppMenuItemLabel(
+                    icon: Icons.notifications_outlined,
+                    label: label,
+                    trailing: AppMenuCountBadge(
+                      count: aggregateCount,
+                      tone: AppWorkspaceStatusTone.info,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: theme.appTokens.listIconSize,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

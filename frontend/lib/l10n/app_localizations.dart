@@ -154,6 +154,12 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get workspaceNotificationsMenuLabel;
 
+  /// Accessibility label for the workspace overflow menu when notification counts are pending.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions — {count} items need attention'**
+  String workspaceToolbarOverflowAttentionTooltip(int count);
+
   /// Label for entering full-screen mode from the app shell.
   ///
   /// In en, this message translates to:
