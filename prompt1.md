@@ -1,483 +1,244 @@
-# Human Resources Module — Comprehensive Implementation Prompt
+# Task: HR Workspace UI/UX Polish — Toolbar, Dialogs, Staff Detail, and Work Queues
 
 ## Objective
 
-Complete the **Human Resources (HR) Module** for HOSSPI HMS so HR managers and workforce administrators can run hospital staffing end-to-end from one professional workspace: onboard staff, assign roles and module access, attach staff to departments and units, configure compensation, manage leave and availability, create and approve work schedules (including reusable templates), generate and publish rosters, and preview/process payroll — **enabling** clinical and operational modules without owning patient flows.
+Improve the **Human Resources** workspace at `/hr` so toolbar actions, work-queue navigation, notifications submenu, and staff-detail dialogs are clear, professional, and easy to use on desktop/web. This pass focuses on **UI structure, labeling, dialog behavior, and layout** — not re-wiring staff-action business logic (that is a follow-up phase).
 
-**Source of truth:**
-
-1. [app-write-up.mdc](./.cursor/app-write-up.mdc) — HR module scope vs clinical and operational modules; demo seed expectations (default HR account, department users)
-2. [flows/opd-flow.mdc](./.cursor/flows/opd-flow.mdc) — §5 role teams (reception, nurse, doctor, billing, lab, radiology, pharmacy) require rostered staff with correct RBAC
-3. [flows/ipd-flow.mdc](./.cursor/flows/ipd-flow.mdc) — §13 key IPD actions by role (admission desk, bed manager, ward nurse, doctor, cashier, pharmacy, lab, radiology, OT, housekeeping, admin)
-4. [flows/nursing-flow.mdc](./.cursor/flows/nursing-flow.mdc) — ward nursing coverage depends on assigned nurses and shift rosters
-5. [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md) — Users/Roles owns authentication accounts and permission matrices; HR links staff profiles to users
-6. [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md) — module entitlements (`hr-rosters`) gate HR workspace visibility
-
-**Central workforce rule:** every staff profile, assignment, shift, roster, leave record, and compensation row attaches to **tenant/facility scope** and links to a **user account** when the person needs system access. HR does **not** mutate OPD/IPD encounters, patient records, clinical orders, or patient billing. Clinical modules consume **user accounts, role assignments, and rostered availability** maintained by HR (and Users/Roles).
-
-Deliver a **professional HR workspace**: staffing overview, staff directory, work-item queues, roster generation/publish, and payroll preview/process — modal-first, permission-gated, and realtime-aware.
+**Companion context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) (module scope), [prompt2.md](./prompt2.md) (`AppDialog` resize/maximize fix).
 
 ---
 
-## Global Implementation Standards
+## Current State
 
-Mandatory platform rules for all work in this module.
+| Area | Location | Notes |
+|------|----------|-------|
+| HR workspace page | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` | Staff directory, dialogs, work-queue panel, staff detail body |
+| HR dialogs/widgets | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` | Shift template, role assign, roster preview, etc. |
+| Controller | `frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart` | Queue filters, staff selection, mutations |
+| Shared dialog shell | `frontend/lib/shared/components/app_dialog.dart` | Resize, maximize, footer actions |
+| Workspace toolbar | `frontend/lib/shared/layout/app_workspace_toolbar.dart` | Overflow menu, notifications submenu |
+| Action sections | `frontend/lib/shared/actions/app_action_panel.dart` | `AppActionSection`, `AppPermissionActionList` |
+| Info tiles | `frontend/lib/shared/components/app_info_tile.dart` | `AppInfoTileGrid` used in staff overview |
+| Strings | `frontend/lib/l10n/app_en.arb` | All labels via l10n — no hardcoded text |
 
-| Area | Requirement |
-| ---- | ----------- |
-| Product scope | [app-write-up.mdc](./.cursor/app-write-up.mdc) — respect module boundaries; do not duplicate workflows owned elsewhere. |
-| Patient flows | Align with [`.cursor/flows/`](./.cursor/flows/). Use [opd-flow.mdc](./.cursor/flows/opd-flow.mdc) and [ipd-flow.mdc](./.cursor/flows/ipd-flow.mdc) for journey touchpoints; read the module-specific flow file when one exists (lab, nursing, pharmacy, radiology, discharge, emergency, icu, theater). |
-| Encounters | One active OPD encounter per outpatient visit; IPD admission as inpatient hub; overlays (ICU, Theater) and executing departments attach — never parallel admission records. |
-| UI/UX | Modern, clean, minimal on-screen text; hospital workflow language (not enum names or UUIDs). Follow `frontend/.cursor/design-system.mdc`, `components.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`, `platform_guidelines.mdc`. Reuse `frontend/lib/shared/*` before creating new widgets. Responsive on Android, iOS, web, Windows, macOS, Linux. |
-| Theming and i18n | Full theme support (light/dark/system). All user-visible strings in `app_en.arb` — no hardcoded labels. |
-| Modal-first workflows | **All create/edit/approve/complete/handoff actions** use **in-page dialogs, bottom sheets, or nested modals**. Do **not** navigate to new routes for within-module workflows. Shell entry route `/hr` and deep-link **pre-selection** (`?id=`, `?queue=`, `?search=`) are allowed; selecting a row opens the workspace detail panel — not a separate workflow page. |
-| Realtime sync | Subscribe to relevant `RealtimeEventGroups` in workspace controllers. After mutations, refresh affected rows, detail panels, summary cards, and nav badges. Keep UI, frontend state, backend services, and database consistent. |
-| Architecture | UI/controllers → repository → API (`frontend/.cursor/feature_workflow.mdc`, `architecture.mdc`). Enforce RBAC + ABAC + tenant/facility scope + module entitlements (frontend `AccessGate` + backend authorization). |
-| Database | Apply migrations for schema changes per backend standards; keep API contracts and schema aligned. |
-| Quality gate | From `frontend/`: `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. From `backend/`: targeted `npm test` for touched modules. |
+**Toolbar today (secondary actions):**
 
----
+1. `hrShiftTemplateAction` → "Manage schedule templates" → opens **create-only** shift-template mutation dialog
+2. `hrWorkQueuesTitle` → opens work-queues `AppDialog`
+3. `hrActivityTitle` → opens HR activity timeline dialog
 
-## Flow Integration Requirements
+Overflow (⋮) menu also exposes Refresh, global maintenance actions, and a **Notifications** submenu with summary counts (total staff, leave requests, roster drafts, unassigned shifts, payroll drafts).
 
-HR does not implement patient flow stages. Integration is **indirect** — HR ensures the right people exist, are authorized, and are scheduled.
+**Staff detail flow:** selecting a staff row calls `selectStaff`, then opens `_openSelectedStaffDialog` — an `AppDialog` (`maxWidth: 980`, `scrollable: true`) containing `_HrStaffDetailPanel` → `_HrStaffDetailBody` (overview `AppInfoTileGrid`, `AppActionSection`, record sections).
 
-### OPD flow ([opd-flow.mdc](./.cursor/flows/opd-flow.mdc) §5)
-
-| OPD concept | HR module responsibility |
-| ----------- | ------------------------ |
-| Reception team | Staff profiles + roles for receptionists; module entitlement for scheduling/patients |
-| Nurse team | Rostered nurses for vitals and queue support; availability windows |
-| Doctor team | Provider schedules and practitioner type on staff profile; compensation per consultation/review where applicable |
-| Billing / Lab / Radiology / Pharmacy teams | Correct RBAC roles and module entitlements so each module's workspace actions are unlocked |
-| Provider assignment | OPD doctor assignment consumes staff marked available and with clinical roles — HR rosters and availability must align |
-
-### IPD flow ([ipd-flow.mdc](./.cursor/flows/ipd-flow.mdc) §13)
-
-| IPD role | HR module responsibility |
-| -------- | ------------------------ |
-| Admission desk, bed manager | Staff exist with correct roles and facility scope |
-| Ward nurse, charge nurse | Shift rosters and assignments cover ward units; swap/leave approvals do not leave gaps unflagged |
-| Doctor / consultant | Active assignments to departments/units; on-call or ward-round coverage via rosters |
-| Cashier, insurance, pharmacy, lab, radiology, OT | Role matrices per §13; HR assigns roles, Users/Roles defines permissions |
-| Housekeeping | Distinct from HR — HR does not own cleaning tasks; may share staff directory for non-clinical staff |
-| Admin | Configure via Users/Roles; HR does not replace tenant/facility admin |
-
-### Nursing flow ([nursing-flow.mdc](./.cursor/flows/nursing-flow.mdc))
-
-| Nursing concept | HR module responsibility |
-| --------------- | ------------------------ |
-| Ward care loop | Assigned ward nurses appear as users with nursing role in Nursing/IPD modules |
-| Handover / transfer | Staff on shift at time of handover traceable via shift assignments |
-| Discharge nursing clearance | Not an HR stage — HR only ensures staffing coverage |
-
-### Users/Roles and subscriptions ([04-access-admin](./prompts/04-access-admin-module-prompt.md), [02-subscriptions](./prompts/02-subscriptions-module-prompt.md))
-
-| Concept | HR responsibility |
-| ------- | ----------------- |
-| User accounts | HR staff profiles **link** to users; account creation/activation may delegate to Access Admin or be initiated from HR onboarding modal |
-| Role assignment | HR assigns **one or more roles** to the linked user; backend `user_role` is source of truth |
-| Module entitlements | Subscription module flags (`hr-rosters`, `scheduling`, `clinical`, etc.) determine menu visibility — HR surfaces effective access on staff detail |
-| Multi-role users | Supported per app-write-up; staff detail shows all active roles |
-| Permission preview | Show effective permissions summary (read-only) — editing permission groups stays in Access Admin |
-
-### Billing touchpoint
-
-Payroll deductions or stipends that reference patient billing are owned by [prompts/09-billing-module-prompt.md](./prompts/09-billing-module-prompt.md). HR owns **payroll runs and staff compensation** — not patient invoices.
-
-### Recommended HR journeys
-
-**Staff onboarding**
-
-```mermaid
-flowchart LR
-    A[Add staff profile] --> B{User exists?}
-    B -->|No| C[Create/link user account]
-    B -->|Yes| D[Link user_id]
-    C --> D
-    D --> E[Assign roles + module access]
-    E --> F[Set position + departments]
-    F --> G[Configure compensation]
-    G --> H[Record availability / assign shifts]
-```
-
-**Roster lifecycle**
-
-```mermaid
-flowchart LR
-    A[Define shift template] --> B[Create roster draft]
-    B --> C[Generate assignments]
-    C --> D{Coverage OK?}
-    D -->|No| E[Override shifts / assign manually]
-    E --> C
-    D -->|Yes| F[Approve roster]
-    F --> G[Publish + notify staff]
-```
+**Work-queue dialog:** `_HrWorkQueuePanel` uses `AppWorkspaceDetailPanel` with **icon-only** queue switcher buttons (leave, swap, roster drafts, unassigned shifts, payroll drafts) and an `AppListTable` bound to `state.workItems`.
 
 ---
 
-## Current State (read before changing code)
+## Problems Observed (from QA at `127.0.0.1:5201/hr`)
 
-### Already in place
+### Toolbar and navigation
 
-| Area | Location / API | Notes |
-|------|----------------|-------|
-| Product scope | `.cursor/app-write-up.mdc` | HR owns staff profiles, assignments, shifts, rosters, leave, workforce planning |
-| Frontend scaffold | `frontend/lib/features/hr/` | `data/`, `domain/`, `presentation/` layers |
-| Workspace UI | `hr_workspace_page.dart` (~3.4k lines) | Staff directory, detail panel, work queues, modal CRUD |
-| Controller | `hr_workspace_controller.dart` | Load, filter, select staff, mutations, deep-link query |
-| Repository | `hr_repository_impl.dart` | Workspace, reference data, staff CRUD, assignments, leave, availability, shifts, swaps, roster generate/publish, payroll process |
-| HR workspace API | `backend/src/modules/hr-workspace/` | `GET /hr/workspace`, `/work-items`, `/reference-data`; roster/swap/leave/payroll actions |
-| Legacy CRUD APIs | `staff-profile`, `staff-assignment`, `staff-leave`, `staff-availability`, `shift-assignment`, `shift-swap`, `roster`, `payroll-run`, `staff-compensation` | Hybrid workspace + granular REST |
-| Roster engine | `backend/.../hr-roster-engine.js` | Generate assignments, coverage metrics, constraints |
-| Feature flag | `hr_workspace_v1` | Required for `/hr` workspace routes |
-| Module gate | `hr-rosters` entitlement + `hrRead`/`hrWrite`/`rosterWrite`/`rosterApprove`/`rosterPublish` permissions | See `AccessRequirement` constants in workspace page |
-| Deep links | `HrWorkspaceQuery.fromUri` | `?id=`, `?queue=`, `?search=` parsed |
-| Localization | `app_en.arb` | HR workspace strings largely defined |
-| Backend tests | hr-workspace service/schema tests | Present |
-| Compensation schema | `staff_compensation` table | Pay types: `PER_HOUR`, `PER_MONTH`, `PER_PROCEDURE` |
-| Realtime | HR workspace update events | Emitted to HR recipient roles after mutations |
+1. **Misleading schedule-template action** — Button reads "Manage schedule templates" but only opens a **create template** form. Users expect list/manage or at minimum a create-oriented label.
+2. **Work queues buried or unclear** — Work queues should be a **primary toolbar action** (visible label on large screens), not only reachable via overflow. Queue switcher inside the dialog uses unlabeled icons; purpose is unclear without hovering tooltips.
+3. **Notifications submenu hard to use** — Hovering "Notifications" in the overflow menu opens a flyout, but moving the pointer to select an item often closes the submenu (`_ToolbarNotificationsSubmenu` hover-only open, no safe bridge between parent menu and child).
+4. **Overflow menu noise** — Items like "Request maintenance" and "Report equipment fault" feel out of place in HR; acceptable if global, but must not crowd HR-specific actions.
 
-### Known gaps to close
+### Staff directory table
 
-- **Staff onboarding flow** — create staff requires manual `user_id`; no integrated user creation or initial role assignment from HR.
-- **Roles and module access UI** — `HrReferenceData.roles` loaded from API; **no assign/revoke role or module entitlement actions** on staff detail.
-- **Multi-department UX** — backend supports multiple `staff_assignment` rows; UI needs clearer primary vs additional assignments and end-assignment flow.
-- **Compensation pay types** — clinical models (per task, per review) not in schema; compensation dialog covers hourly/monthly/procedure only.
-- **Schedule templates** — `shift_templates` in reference data used in shift dialogs; **no template CRUD** or bulk attach-to-staff workflow.
-- **Work-item completeness** — approve/reject leave, swap, roster publish, payroll process partially wired in queue panel; preview payroll not exposed in UI.
-- **Roster ↔ OPD scheduling** — provider schedules for OPD not fully unified with HR rosters.
-- **Access Admin overlap** — no deep-link from HR staff detail to Users/Roles for advanced permission editing.
-- **Large page file** — `hr_workspace_page.dart` mixes directory, detail, queues, and all dialogs; needs widget extraction to `presentation/widgets/`.
-- **Frontend tests** — expand beyond backend coverage.
-- **Feature flag gating** — document enablement for dev/demo (`hr_workspace_v1` + `hr-rosters` subscription).
+5. **Truncated next-action column** — "Review profile" clips to "Review profi…" on typical widths.
+6. **Noisy department column** — Shows `Department | DEP-XXXXXXXX` inline; department name alone is enough for scan; IDs belong in detail/copy affordances.
+7. **Summary card overlap** — "Total staff" notification/summary can float over table content and obscure rows.
+
+### Staff detail dialog
+
+8. **Maximize/resize broken** — Fullscreen header control does not fill the viewport; manual resize is unreliable (see [prompt2.md](./prompt2.md)).
+9. **Redundant Close button** — Footer `Close` duplicates header ✕ on staff detail, work queues, and activity dialogs.
+10. **Overview layout weak** — `AppInfoTileGrid` reads as flat, uneven cards; linked user crams name + email + ID into one long string; empty fields show "Not available" without hierarchy.
+11. **Staff actions poorly organized** — Ten permission-gated actions (assign department, assign position, record availability, request leave, assign shift, swap shift, compensation, run payroll, assign role, view module access) render as an unstructured grid without grouping or visual priority.
+12. **Repeated titles** — "Staff detail" appears in dialog header and again inside `AppWorkspaceDetailPanel`.
+
+### Work queues and activity
+
+13. **Queue switcher not responsive** — Icon-only on desktop; should show **text labels on large breakpoints** (md+), icons only on compact.
+14. **Queue content must stay in sync** — Clicking a queue tab must call `controller.applyQueue`, refresh `state.workItems`, update description/subtitle, highlight active queue, and show correct empty/loaded table — end-to-end from `GET /hr/work-items?queue=`.
+15. **HR activity purpose unclear** — Timeline shows sparse shift/roster events without actor, deep link, or filter. Acceptable to keep read-only, but needs a clear description or light enhancement so users understand it is an audit-style feed.
 
 ---
 
-## Scope — Core Capabilities
+## Requirements
 
-Implement or finish the following, in priority order. Each item maps to app-write-up HR responsibilities and flow staffing requirements.
+### 1. Toolbar actions — labels, order, and honesty
 
-### 1. Staff directory and profiles
+- On **md+ breakpoints**, show labeled secondary toolbar buttons per `AppActionLabelScope` / `appWorkspaceToolbarWithLabels` conventions.
+- **Toolbar order (left → right among HR actions):** Work queues → Create schedule template → HR activity (adjust `maxVisibleScreenActions` so Work queues stays inline on typical desktop widths).
+- **Rename schedule-template action** to reflect actual behavior:
+  - **Phase 1 (this task):** Change `hrShiftTemplateAction` to **"Create schedule template"** (or equivalent). Keep existing create form fields unchanged.
+  - **Optional stretch:** Open a small manage dialog first (list existing templates from `referenceData.shiftTemplates` + "Create new") — only if low effort; otherwise defer to a later prompt.
+- Ensure Work queues toolbar button opens `_showWorkQueueDialog` with the **last selected queue** (or default `unassignedShifts` / first non-empty queue from summary counts).
 
-**Goal:** Searchable workforce directory with professional detail panel for every staff member.
+### 2. Notifications submenu — clickable, not hover-fragile
 
-**Actions:**
+In `app_workspace_toolbar.dart` (`_ToolbarNotificationsSubmenu`):
 
-- Keep primary layout: **summary cards → staff directory → detail panel** (`AppWorkspace`, `AppWorkspaceSummaryGrid`, `AppListTable`, `AppWorkspaceSplitContent`, `AppWorkspaceDetailPanel`).
-- Directory columns: staff number, name, position, primary department, practitioner type, assignment status — use display IDs and names, never raw UUIDs.
-- Search and filters: text search, position, department, practitioner type via `AppSearchBar` advanced filters.
-- Detail overview: `AppInfoTileGrid` for staff number, name, position, department, practitioner type, hire date, linked user.
-- **Add staff** and **Edit staff** via `showAppWorkspaceMutationDialog` — create requires `user_id` today; extend to support user picker or nested onboarding sub-modal.
-- Preserve deep links: `/hr?id={staffDisplayId}` pre-selects staff in directory.
+- Replace hover-only open with **click-to-open** (or click + stable hover bridge).
+- Keep submenu open while pointer travels from parent overflow item to child items (use `MenuAnchor` parent/child linkage or a single merged menu level).
+- Each notification row must be easy to tap/click on web and desktop; minimum 48px row height preserved.
+- Selecting an item runs existing `onSelected` (e.g. `_applyQueueAndShow`) and closes menus.
+- Do not regress mobile overflow behavior.
 
-**Reference APIs:** `GET /hr/workspace`, `GET /staff-profiles`, `GET /staff-profiles/:id`, `POST/PUT /staff-profiles`.
+### 3. Work queues dialog — labeled switcher and live content
 
-### 2. Roles, permissions, and module access
+In `_HrWorkQueuePanel`:
 
-**Goal:** HR can grant staff the roles and module rights needed for OPD/IPD/clinical modules per flow role tables.
-
-**Actions:**
-
-- Add staff detail actions: **Assign role**, **Revoke role**, **View module access** (read-only effective entitlements).
-- Support **one or more roles** per linked user; show role list with facility/department scope where applicable.
-- Module access summary: which subscribed modules the user can reach (derived from roles + subscription entitlements).
-- Use existing Users/Roles APIs (`user_role`, role assignment) via HR repository or coordinated service — do not duplicate permission group editing ( stays in Access Admin).
-- Optional: **Open in Users/Roles** deep-link for advanced permission matrix editing.
-- Gate actions with `AccessRequirement` (HR write + appropriate admin permissions).
-
-**Reference APIs:** Users/Roles module endpoints; `GET /hr/reference-data` (roles list).
-
-### 3. Positions, titles, and department assignments
-
-**Goal:** Staff can hold a position/title and belong to one or more departments (and unit/room where supported).
-
-**Actions:**
-
-- **Assign position** dialog — update staff position/title and practitioner type.
-- **Assign department** dialog — create new `staff_assignment` with facility, department, unit, room, start/end dates.
-- Detail **Assignments** section: list all active and historical assignments; distinguish primary department (on profile) vs additional assignments.
-- Add **End assignment** action when backend supports status/end-date update.
-- Directory shows primary department; detail shows full assignment history.
-
-**Reference APIs:** `POST /staff-assignments`, `GET /staff-assignments?staff_profile_id=`, `PUT /staff-profiles/:id`.
-
-### 4. Leave and availability
-
-**Goal:** HR and managers approve leave; staff availability informs roster generation.
-
-**Actions:**
-
-- **Request leave** from staff detail (create `staff_leave`).
-- Work queue **Leave requests** — approve/reject with reason via nested confirmation modal.
-- **Record availability** — time slots and preference status on staff detail.
-- Summary card counts pending leave; card click filters queue in place (no route change).
-- After approval/rejection, refresh staff detail leave section and queue counts.
-
-**Reference APIs:** `POST /staff-leaves`, `POST /hr/leaves/:id/approve`, `POST /hr/leaves/:id/reject`, `POST /staff-availabilities`.
-
-### 5. Work schedules, shift templates, and rosters
-
-**Goal:** HR creates individual schedules and reusable templates, generates rosters, and publishes approved schedules.
-
-**Actions:**
-
-- **Shift templates (predefined schedules):** CRUD modal for templates; attach template to one or more staff via shift assignment or roster generation.
-- **Assign shift** — assign staff to a shift (optionally from template).
-- **Record availability** — feeds roster engine constraints.
-- **Shift swap** — staff-initiated swap request; HR approves/rejects from swap queue.
-- Work queues:
-  - **Roster drafts** — generate (`dry_run` preview in nested modal), publish, override shifts.
-  - **Unassigned shifts** — assign or override from queue row actions.
-  - **Overdue shifts** — surface staffing gaps (when queue supported).
-- Roster workflow: draft → generate assignments → review coverage → approve → publish + notify staff.
-- Align published rosters with OPD provider scheduling where product requires unified coverage (coordinate with OPD module — do not duplicate OPD encounter logic).
-
-**Reference APIs:** `GET /hr/rosters/:id/workflow`, `POST /hr/rosters/:id/generate`, `POST /hr/rosters/:id/publish`, `POST /hr/shifts/:id/override`, `POST /shift-assignments`, `POST /shift-swap-requests`, `POST /hr/swaps/:id/approve|reject`.
-
-### 6. Payroll and compensation
-
-**Goal:** Per-staff compensation configuration and facility payroll run processing.
-
-**Actions:**
-
-- **Compensation** dialog per staff — configure pay type and rate:
-  - **Per hour** (`PER_HOUR`)
-  - **Per month / salary** (`PER_MONTH`)
-  - **Per procedure** (`PER_PROCEDURE`) — extend to **per task** / **per review** if schema migration approved
-- Multiple compensation rows with effective from/to dates and currency; show in detail **Compensation** section.
-- **Run payroll** from staff detail or **Payroll drafts** queue — create payroll run, preview line items (`GET /hr/payroll-runs/:id/preview`), process with notes.
-- Payroll is operational — not on critical path for single patient flow; audit trail on process action.
-- Gate payroll actions with `hrWrite` + `financialApprove` where required.
-
-**Reference APIs:** `staff_compensation` CRUD (via staff profile or dedicated endpoint), `POST /payroll-runs`, `GET /hr/payroll-runs/:id/preview`, `POST /hr/payroll-runs/:id/process`.
-
-### 7. Work-item queues and summary cards
-
-**Goal:** HR managers see pending approvals and act without leaving the workspace.
-
-**Actions:**
-
-- Summary cards (filter queues in place):
-  - Pending leave
-  - Pending shift swaps
-  - Roster drafts awaiting publish
+- Extract queue switcher into a reusable widget (e.g. `hr_queue_switcher.dart` under `presentation/widgets/`).
+- **Large screens (md+):** show icon **+ label** buttons (or segmented control) for:
+  - Leave requests
+  - Swap requests
+  - Roster drafts
   - Unassigned shifts
   - Payroll drafts
-- Hide zero-value cards where workspace pattern expects it.
-- Work queue panel: `AppListTable` with queue-specific columns and row actions (approve, reject, generate, publish, assign).
-- **Approval framing:** show pending state, next required action, and approving role on actionable rows.
-- Queue switcher in detail panel header — icon buttons filter `HrQueue` without navigation.
+- **Compact screens:** icon-only with tooltips/semantics.
+- Active queue visually distinct (selected tone, disabled press on current queue).
+- On queue change: `controller.applyQueue(queue)` → table shows loading → renders items or empty state for **that** queue; panel `description` updates to queue name.
+- Remove redundant footer **Close** button; rely on header ✕ (same for activity dialog).
+- Wire row actions and empty states per queue type (existing `_workItemActions`); verify backend data for demo seed so at least one queue can show items in dev.
 
-**Reference APIs:** `GET /hr/work-items?queue=`.
+### 4. Staff directory table polish
 
-### 8. Cross-module staffing enablement
+- Fix **Next action** column: prefer `AppButton.tertiary` link style, flexible width, or `overflow: visible` / wider min width so "Review profile" is not clipped.
+- **Department column:** show `departmentName` only; move `departmentDisplayId` to staff detail or copy chip on hover.
+- **Role / position column:** hide "Not available" subtitle when practitioner type is null — show primary position only.
+- Ensure summary notification UI does **not** overlay the table (summary belongs in toolbar notifications submenu or a dedicated summary strip, not floating over rows).
 
-**Goal:** Staff configured in HR appear correctly in clinical modules.
+### 5. Staff detail dialog — layout, maximize, and actions (UI only)
 
-**Actions:**
+**Dialog shell ([prompt2.md](./prompt2.md)):**
 
-- After role assignment, session refresh or realtime update ensures OPD/IPD/Nursing modules see assignable users.
-- Practitioner type and department on staff profile visible to modules that consume provider lists.
-- Document demo seed: default HR user, department users (doctor, nurse, receptionist, etc.) per app-write-up.
-- Do **not** call patient-flow APIs from HR; integration is via shared user/role/staff records only.
+- Fix `AppDialog` so maximize fills viewport and resize works on desktop.
+- Staff detail dialog: `scrollable: true`, `maxWidth: 980`, allow vertical/horizontal resize.
+- **Remove footer Close** from staff detail, work queues, and HR activity dialogs.
 
-### 9. Deep links, notifications, and shell integration
+**Header / structure:**
 
-**Goal:** Staff reach HR context from home and cross-module entry points.
+- Single clear title in `AppDialog` header; avoid repeating the same title inside `AppWorkspaceDetailPanel` (use description for staff display ID only).
+- Keep edit (pencil) action in panel header.
 
-**Actions:**
+**Overview section:**
 
-- Parse `/hr?id=&queue=&search=` — implemented via `HrWorkspaceQuery`; verify router wiring and pre-selection.
-- Home dashboard **approve roster** action → `/hr?queue=ROSTER_DRAFTS` when entitled.
-- Realtime: subscribe to HR workspace events; refresh summary counts and selected detail after remote mutations.
-- Shell nav badge when pending work items exist (if pattern supported).
+- Reorganize `_HrStaffDetailBody` overview using design-system patterns from peer modules (Communications, Mortuary, Emergency use `AppInfoTileGrid` well).
+- Group fields logically:
+  - **Identity:** staff number, name
+  - **Role:** position, practitioner type (omit tile when empty)
+  - **Placement:** department
+  - **Dates:** hire date
+  - **Account:** linked user as structured sub-lines (name, email, copyable user ID) — not one pipe-separated string
+- Tune `maxColumns` / `minItemWidth` for balanced grid; use `borderedTiles` consistently with admin workspaces.
 
-### 10. Widget extraction and test coverage
+**Staff actions section (organize, do not rewire handlers):**
 
-**Goal:** Maintainable codebase and regression safety.
+- Keep existing `onPressed` callbacks and permission gates unchanged in this phase.
+- Group actions under clear subheadings inside one `AppActionSection` or multiple titled sections:
+  - **Placement:** Assign department, Assign position
+  - **Scheduling:** Record availability, Assign shift, Swap shift, Request leave
+  - **Payroll:** Compensation, Run payroll
+  - **Access:** Assign role, View module access (only when user linked)
+- Use `AppPermissionActionList` with consistent `AppButton.secondary` (or tertiary link) styling, aligned grid, `minItemWidth` ~200, `maxColumns` 3 on desktop / 2 on tablet / 1 on mobile.
+- Actions remain visible but disabled when `state.isMutating` — no behavior change.
 
-**Actions:**
+**Record sections below actions** (assignments, leave, availability, shifts, compensation): keep `_SmallRecordSection` titles; ensure spacing matches overview (`theme.spacing.md` between sections).
 
-- Extract from `hr_workspace_page.dart` into `presentation/widgets/`: staff detail body, work queue panel, dialog field groups (`_StaffProfileFields`, `_AssignmentFields`, etc.).
-- Add controller tests for mutations and queue filters.
-- Add widget tests for critical dialogs (staff create, leave approve, roster publish) where feasible.
-- Backend: extend hr-workspace tests for new role-assignment coordination endpoints if added.
+### 6. HR activity dialog — clarify purpose
 
----
+- Keep read-only timeline for this pass.
+- Ensure `hrActivityDescription` explains: *recent HR updates, roster publishes, and shift changes*.
+- Optional: add actor name and tap-to-open related entity if IDs exist in `HrTimelineItem` — only if data is already in API response.
+- Remove footer Close; header ✕ only.
 
-## UI / UX Requirements
+### 7. Global standards (mandatory)
 
-This is a **workforce administration workspace** — staff directory, assignments, leave, shifts, rosters, and payroll — **not** a patient clinical queue. Mirror peer **admin/management workspaces** (Users/Roles, Operations, Subscriptions) for consistency.
-
-### Organization
-
-- **Two primary regions:**
-  1. **Staff directory** (default) — searchable workforce list with detail panel.
-  2. **Work queues** — management approvals (toggle via summary cards or queue panel).
-- **Single primary task per region:** directory (browse/select staff), detail (read + act), queues (approve/process).
-- **Progressive disclosure:** summary cards for queue counts; advanced filters in search bar; complex forms in dialogs/nested modals.
-- **Role-appropriate actions:** HR manager (full CRUD), roster supervisor (approve/publish), payroll approver (process runs) — per permissions.
-
-### Simplicity
-
-- Use hospital workflow language: "Assign to department", "Approve leave", "Publish roster" — not enum names (`PER_HOUR`, `ROSTER_DRAFTS`).
-- One status chip + next-action column on work queues.
-- **Action panel hierarchy** on staff detail: profile edit → assignments → roles/access → compensation → scheduling → leave.
-- Loading/saving: `AppWorkspace` status tone; refresh selected staff row and summary cards after modal success.
-
-### Professional HR feel
-
-- Calm admin aesthetic; urgency color only on overdue shifts or SLA-breached items if applicable.
-- Display IDs (`staffNumber`, `displayId`) — copyable where useful.
-- No patient data in HR workspace.
-- Full theme support (light/dark/system); all strings in `app_en.arb`.
-- Responsive on Android, iOS, web, Windows, macOS, Linux.
-- Accessibility: semantic labels on tables, action buttons, and dialogs.
-
-### Modal-first (mandatory)
-
-- **All** create, edit, assign, approve, reject, generate, publish, and process actions use `showAppWorkspaceMutationDialog`, `AppDialog`, or nested modals.
-- Multi-step flows (roster generate preview → confirm publish; payroll preview → process) use **nested modals**, not new routes.
-- Shell route `/hr` and query pre-selection only — never `/hr/staff/:id/edit` style workflow routes.
+- All new/changed strings in `app_en.arb`; run codegen.
+- Follow `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
+- Reuse `frontend/lib/shared/*` — no one-off dialog chrome.
+- Full theme support (light/dark).
+- Responsive: Android, iOS, web, Windows.
+- Modal-first: no new routes for these flows.
+- RBAC unchanged: existing `AccessRequirement` constants on actions.
 
 ---
 
-## Architecture and Conventions
+## Out of Scope (this task)
 
-Follow `frontend/.cursor/feature_workflow.mdc`, `architecture.mdc`, and `realtime_sync.mdc`. **Re-read app-write-up and OPD/IPD flow role tables before any HR flow change.**
-
-| Rule | Requirement |
-| ---- | ----------- |
-| Layering | Widgets → Riverpod controllers → repository interface → impl → API client. No API calls from widgets. |
-| State | `AsyncNotifier` + `Result<T>` / `AppFailure` for errors. |
-| DTOs | `data/dtos/` with explicit mappers to `domain/entities/`. |
-| Permissions | `AccessGate` / `AppAccessActionGate`; `hr-rosters` module + `hrRead`/`hrWrite`/`rosterWrite`/`rosterApprove`/`rosterPublish`/`financialApprove`. |
-| Scope | Tenant, facility, department on assignments and roster operations. |
-| Module boundaries | Do not implement patient registry, OPD queues, IPD admissions, or billing in HR. |
-| Users/Roles | Link staff to users; coordinate role APIs — do not duplicate permission group CRUD. |
-| File size | Extract widgets to `presentation/widgets/`; shared components to `frontend/lib/shared/`. |
-| Realtime | Partial refresh after modal success; subscribe to HR workspace event group. |
-| Backend | Prefer extending hr-workspace service for coordinated mutations before parallel endpoints. |
-
-**Do not** create OPD encounters or IPD admissions from HR. **Do not** own patient billing. **Do not** embed clinical order or vitals workflows.
-
-**Reuse existing services** — analyze Access Admin user/role APIs, legacy staff CRUD modules, and hr-roster-engine before adding endpoints.
+- Rewiring staff-action mutation flows (assign department form behavior, payroll processing, etc.) — **Phase 2** after UI lands.
+- Full schedule-template CRUD/list management (unless trivial list wrapper).
+- Backend schema/API changes unless required to fix queue data not loading.
+- Patient/clinical flows.
+- `AppDialog` visual redesign beyond sizing/maximize ([prompt2.md](./prompt2.md) owns shell behavior).
 
 ---
 
-## Module Boundaries (do not violate)
+## Key Files
 
-From [app-write-up.mdc](./.cursor/app-write-up.mdc):
+```
+frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart
+frontend/lib/features/hr/presentation/widgets/          — new extract targets
+frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart
+frontend/lib/shared/components/app_dialog.dart          — prompt2.md
+frontend/lib/shared/layout/app_workspace_toolbar.dart   — notifications submenu
+frontend/lib/shared/actions/app_action_panel.dart
+frontend/lib/shared/components/app_info_tile.dart
+frontend/lib/l10n/app_en.arb
+frontend/test/shared/components/app_dialog_test.dart
+```
 
-| Module | Owns | HR must not duplicate |
-| ------ | ---- | --------------------- |
-| **HR** | Staff profiles, assignments, leave, availability, shifts, rosters, payroll runs, workforce admin | — |
-| **Users/Roles** | Authentication accounts, permission groups, system role definitions | Full permission matrix editing |
-| **Subscriptions** | Plan modules and entitlements | Subscription CRUD |
-| **OPD / IPD / Clinical** | Patient flows and encounters | Any patient queue or clinical action |
-| **Billing** | Patient invoices and cashier actions | Patient billing (payroll only) |
-| **Nursing** | Ward care execution on IPD admission | Nursing notes, MAR, vitals |
-| **Tenant/Facility** | Org structure master data | Facility/department CRUD — consume IDs from settings |
-
----
-
-## Suggested Implementation Order
-
-1. **Audit** — map each scope item to existing dialogs/actions in `hr_workspace_page.dart`; produce gap checklist.
-2. **Widget extraction** — split page into compositional widgets before adding features.
-3. **Multi-assignment UX** — improve assignments section; end-assignment if API supports.
-4. **Roles and module access** — staff detail actions + repository methods coordinating Users/Roles APIs.
-5. **Onboarding flow** — user picker or nested create-user sub-modal on add staff.
-6. **Schedule template CRUD** — template modal + attach-to-staff via shift/roster flows.
-7. **Work queue completeness** — wire all approve/reject/generate/publish/preview actions; nested modals for confirm steps.
-8. **Compensation pay types** — schema migration if `PER_TASK`/`PER_REVIEW` required; update dialog and payroll calculation.
-9. **Deep links and home integration** — verify router, home roster action, nav badges.
-10. **Tests + quality gate** — controller, repository, critical widget tests; backend hr-workspace tests.
+**Reference implementations:** `communications_workspace_page.dart`, `subscriptions_workspace_page.dart` (toolbar + detail density), `mortuary_workspace_page.dart` (`AppInfoTileGrid` layout).
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] HR can add, edit, and view staff profiles from `/hr` without route navigation for CRUD.
-- [ ] HR can assign **one or more roles** and view **module access** for a staff member's linked user.
-- [ ] HR can assign **one or more departments** (and unit/room); detail lists all assignments with dates.
-- [ ] HR can set position/title and compensation (hourly, monthly, procedure/variable pay types per schema).
-- [ ] HR can record availability, assign shifts, manage swap requests, and use **predefined schedule templates**.
-- [ ] HR can generate, approve, and publish rosters from work queues with nested confirmation modals.
-- [ ] HR can preview and process payroll runs from staff detail or payroll draft queue.
-- [ ] Leave and swap queues are fully actionable with correct permissions and localized strings.
-- [ ] Staff with clinical roles (doctor, nurse, receptionist, etc.) are assignable in OPD/IPD modules via user/role system per flow §5 / §13.
-- [ ] No patient-flow API calls from HR module.
-- [ ] All within-module actions use dialogs or nested modals — no workflow sub-routes.
-- [ ] Feature flag (`hr_workspace_v1`) and module entitlement (`hr-rosters`) documented for dev/demo.
-- [ ] `flutter analyze`, HR tests, and targeted backend tests pass.
+### Toolbar
+- [ ] Work queues is a visible labeled toolbar button on md+ desktop.
+- [ ] Schedule-template button label matches behavior ("Create schedule template" or manage+create if implemented).
+- [ ] Notifications submenu items are reliably clickable without disappearing on pointer move.
+
+### Work queues
+- [ ] Queue switcher shows labels on large screens, icons on compact.
+- [ ] Switching queues updates title/description, loading state, table rows, and empty state correctly.
+- [ ] No duplicate Close in dialog footer.
+
+### Staff directory
+- [ ] "Review profile" not truncated on standard desktop width.
+- [ ] Department column shows name without raw DEP- ID clutter.
+- [ ] No summary card overlapping table body.
+
+### Staff detail
+- [ ] Dialog maximizes to full viewport and resizes smoothly (per prompt2.md).
+- [ ] Overview fields grouped and visually balanced; linked user readable.
+- [ ] Staff actions grouped by category with consistent button styling; handlers unchanged.
+- [ ] No duplicate Close in footer; no duplicate "Staff detail" title.
+
+### HR activity
+- [ ] Description makes purpose clear; footer Close removed.
+
+### Quality
+- [ ] `dart format`, `flutter analyze`, `flutter test` pass from `frontend/`.
+- [ ] Manual QA: `.\tool\run_web_5201.ps1` → `/hr` → toolbar → work queues (switch all tabs) → notifications → open staff → resize/maximize → scan overview and actions.
 
 ---
 
-## Quality Gate
+## Suggested Implementation Order
 
-From `frontend/` when touching Flutter:
-
-```sh
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test
-```
-
-From `backend/` when touching API or schema:
-
-```sh
-npm test -- --testPathPattern="hr-workspace|staff-profile|roster|payroll"
-```
-
-Apply database migrations per backend workflow before merging schema changes.
-
-Manual QA (web):
-
-```sh
-cd frontend
-.\tool\run_web_5201.ps1
-```
-
-Navigate to `/hr` → add staff → assign departments and roles → set compensation → create schedule from template → approve roster draft → preview payroll.
+1. **AppDialog sizing/maximize** — land [prompt2.md](./prompt2.md) first (shared fix benefits all HR dialogs).
+2. **Toolbar** — rename create-template label, tune `maxVisibleScreenActions`, fix notifications submenu interaction.
+3. **Work queues** — extract switcher widget, responsive labels, remove footer Close, verify queue refresh.
+4. **Staff directory** — column content and next-action truncation; summary overlap fix.
+5. **Staff detail** — overview layout, action grouping, dedupe titles, remove footer Close.
+6. **HR activity** — copy tweak, footer Close removal.
+7. **L10n + tests** — arb updates, widget test for queue switcher and/or toolbar submenu if feasible.
 
 ---
-
-## Key File References
-
-```
-frontend/lib/features/hr/
-  presentation/pages/hr_workspace_page.dart
-  presentation/controllers/hr_workspace_controller.dart
-  presentation/widgets/                    — extract target
-  domain/entities/hr_entities.dart
-  data/repositories/hr_repository_impl.dart
-  data/dtos/hr_dtos.dart
-
-backend/src/modules/hr-workspace/
-  routes/hr-workspace.routes.js
-  services/hr-workspace.service.js
-  services/hr-roster-engine.js
-
-backend/src/modules/staff-profile/, staff-assignment/, staff-leave/,
-  staff-availability/, shift-assignment/, roster/, payroll-run/
-
-Related:
-  frontend/lib/features/access_admin/       — Users/Roles coordination
-  prompts/04-access-admin-module-prompt.md
-  prompts/24-hr-module-prompt.md            — companion summary prompt
-  prompts/12-opd-module-prompt.md           — OPD staffing context
-  prompts/19-ipd-module-prompt.md           — IPD staffing context
-  prompts/09-billing-module-prompt.md       — payroll vs patient billing boundary
-
-Standards:
-  .cursor/app-write-up.mdc
-  .cursor/flows/opd-flow.mdc, ipd-flow.mdc, nursing-flow.mdc
-  frontend/.cursor/ui-workspace.mdc, design-system.mdc, realtime_sync.mdc
-```
 
 ## Deliverable
 
-A production-ready HR workspace — frontend and backend as needed — that closes the gaps above, respects module and flow boundaries, and delivers modal-first workforce administration enabling hospital clinical and operational modules.
+A focused HR workspace UI pass: honest toolbar labels, stable notifications menu, labeled work-queue navigation with live data, polished staff directory columns, and a staff-detail dialog that maximizes/resizes correctly with organized overview and grouped action buttons — ready for a follow-up phase to refine staff-action workflows.
