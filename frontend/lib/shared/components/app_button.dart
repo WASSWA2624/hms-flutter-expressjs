@@ -106,15 +106,19 @@ class AppButton extends StatelessWidget {
     required IconData icon,
     required String semanticLabel,
     Color? color,
+    VoidCallback? onPressed,
   }) {
-    return AppButton(
-      iconOnly: true,
-      icon: icon,
-      label: semanticLabel,
-      semanticLabel: semanticLabel,
-      tooltip: semanticLabel,
-      color: color,
-      onPressed: null,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: AppButton(
+        iconOnly: true,
+        icon: icon,
+        label: semanticLabel,
+        semanticLabel: semanticLabel,
+        tooltip: semanticLabel,
+        color: color,
+        onPressed: onPressed,
+      ),
     );
   }
 

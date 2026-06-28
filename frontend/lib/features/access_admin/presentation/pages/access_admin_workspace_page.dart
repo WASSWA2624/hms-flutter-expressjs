@@ -138,12 +138,11 @@ class _AccessAdminWorkspaceContentState
       leadingIcon: Icons.manage_accounts_outlined,
       toolbar: appWorkspaceToolbarWithLabels(
         context.l10n,
+        summaryNotifications: _summaryNotifications(context, state),
         primary: _primaryAction(context, state, canWrite, controller),
         onRefresh: controller.refresh,
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state),
-      compactSummaryCards: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -211,32 +210,36 @@ class _AccessAdminWorkspaceContentState
     };
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) {
     final AccessAdminOverview overview = state.data.overview;
-    return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: context.l10n.accessAdminActiveUsersLabel,
-        value: '${overview.activeUsers}',
-        icon: Icons.people_outline,
-      ),
-      AppWorkspaceSummaryCard(
-        label: context.l10n.accessAdminRolesLabel,
-        value: '${overview.totalRoles}',
-        icon: Icons.badge_outlined,
-      ),
-      AppWorkspaceSummaryCard(
-        label: context.l10n.accessAdminPermissionsLabel,
-        value: '${overview.totalPermissions}',
-        icon: Icons.key_outlined,
-      ),
-      AppWorkspaceSummaryCard(
-        label: context.l10n.accessAdminModulesLabel,
-        value: '${overview.activeModulesCount}',
-        icon: Icons.extension_outlined,
-      ),
+    return <AppWorkspaceSummaryNotification>[
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.accessAdminActiveUsersLabel,
+  count: overview.activeUsers,
+  icon: Icons.people_outline,
+  onSelected: () {},
+),
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.accessAdminRolesLabel,
+  count: overview.totalRoles,
+  icon: Icons.badge_outlined,
+  onSelected: () {},
+),
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.accessAdminPermissionsLabel,
+  count: overview.totalPermissions,
+  icon: Icons.key_outlined,
+  onSelected: () {},
+),
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.accessAdminModulesLabel,
+  count: overview.activeModulesCount,
+  icon: Icons.extension_outlined,
+  onSelected: () {},
+),
     ];
   }
 

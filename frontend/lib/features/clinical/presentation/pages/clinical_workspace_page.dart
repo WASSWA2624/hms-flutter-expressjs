@@ -196,9 +196,52 @@ class _ClinicalWorkspaceContentState
     return AppWorkspace(
       title: l10n.clinicalTitle,
       leadingIcon: AppRouteIcons.clinical,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (_pageTotal(state.worklist) > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.clinicalAllScopeLabel,
+  count: _pageTotal(state.worklist),
+  icon: Icons.inventory_2_outlined,
+  onSelected: () => controller.applyScope(ClinicalQueueScope.all),
+),
+        if (state.waitingReviewCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.clinicalWaitingReviewSummaryLabel,
+  count: state.waitingReviewCount,
+  icon: Icons.rate_review_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () =>
+                controller.applyScope(ClinicalQueueScope.waitingReview),
+),
+        if (state.urgentCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.clinicalUrgentSummaryLabel,
+  count: state.urgentCount,
+  icon: Icons.priority_high_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () => controller.applyScope(ClinicalQueueScope.urgent),
+),
+        if (state.resultsReadyCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.clinicalResultsReadySummaryLabel,
+  count: state.resultsReadyCount,
+  icon: Icons.science_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () =>
+                controller.applyScope(ClinicalQueueScope.resultsReady),
+),
+        if (state.inConsultationCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.clinicalInConsultationSummaryLabel,
+  count: state.inConsultationCount,
+  icon: Icons.medical_information_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () =>
+                controller.applyScope(ClinicalQueueScope.inConsultation),
+),
+      ],
         secondary: <Widget>[
           _clinicalToolbarButton(
             requirement: _writeRequirement,
@@ -239,55 +282,7 @@ class _ClinicalWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: <Widget>[
-        if (_pageTotal(state.worklist) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.clinicalAllScopeLabel,
-            value: _countLabel(context, _pageTotal(state.worklist)),
-            icon: Icons.inventory_2_outlined,
-            compact: true,
-            onPressed: () => controller.applyScope(ClinicalQueueScope.all),
-          ),
-        if (state.waitingReviewCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.clinicalWaitingReviewSummaryLabel,
-            value: _countLabel(context, state.waitingReviewCount),
-            icon: Icons.rate_review_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            compact: true,
-            onPressed: () =>
-                controller.applyScope(ClinicalQueueScope.waitingReview),
-          ),
-        if (state.urgentCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.clinicalUrgentSummaryLabel,
-            value: _countLabel(context, state.urgentCount),
-            icon: Icons.priority_high_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            compact: true,
-            onPressed: () => controller.applyScope(ClinicalQueueScope.urgent),
-          ),
-        if (state.resultsReadyCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.clinicalResultsReadySummaryLabel,
-            value: _countLabel(context, state.resultsReadyCount),
-            icon: Icons.science_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            compact: true,
-            onPressed: () =>
-                controller.applyScope(ClinicalQueueScope.resultsReady),
-          ),
-        if (state.inConsultationCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.clinicalInConsultationSummaryLabel,
-            value: _countLabel(context, state.inConsultationCount),
-            icon: Icons.medical_information_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            compact: true,
-            onPressed: () =>
-                controller.applyScope(ClinicalQueueScope.inConsultation),
-          ),
-      ],
+      
       body: _ClinicalWorklistPanel(
         state: state,
         searchController: _searchController,

@@ -107,9 +107,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     return AppWorkspace(
       title: l10n.opdTitle,
       leadingIcon: AppRouteIcons.opd,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _opdBackendSummaryNotifications(context, state.summaryCounts),
         primary: AppAccessActionGate(
           requirement: opdEncounterPermissionRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -137,9 +137,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             state.isRefreshingFlows ||
             state.isRefreshingTriageQueue,
       ),
-      summaryCards: <Widget>[
-        ..._opdBackendSummaryCards(context, state.summaryCounts),
-      ],
+      
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
         builder: (BuildContext context, _OpdTableFilter filter, _) {
@@ -170,12 +168,12 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     _tablePageNotifier.value = _tablePageNotifier.value.first();
   }
 
-  List<Widget> _opdBackendSummaryCards(
+  List<AppWorkspaceSummaryNotification> _opdBackendSummaryNotifications(
     BuildContext context,
     OpdFlowAggregateCounts counts,
   ) {
     final Locale locale = Localizations.localeOf(context);
-    final List<Widget> cards = <Widget>[];
+    final List<AppWorkspaceSummaryNotification> notifications = <AppWorkspaceSummaryNotification>[];
 
     void addCard(
       String key,
@@ -187,14 +185,13 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       if (value <= 0) {
         return;
       }
-      cards.add(
-        AppWorkspaceSummaryCard(
+      notifications.add(
+        AppWorkspaceSummaryNotification(
           label: opdSummaryCountLabel(context.l10n, key),
-          value: AppFormatters.compactNumber(value, locale),
+          count: value,
           icon: icon,
-          tone: tone,
-          compact: true,
-          onPressed: () => _applySummaryFilter(filter),
+          tone: tone ?? AppWorkspaceStatusTone.neutral,
+          onSelected: () => _applySummaryFilter(filter),
         ),
       );
     }
@@ -310,7 +307,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       ),
     );
 
-    return cards;
+    return notifications;
   }
 
   void _applySummaryFilter(_OpdTableFilter filter) {

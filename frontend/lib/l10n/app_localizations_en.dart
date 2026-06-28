@@ -36,6 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceToolbarOverflowLabel => 'More actions';
 
   @override
+  String get workspaceNotificationsMenuLabel => 'Notifications';
+
+  @override
   String get workspaceFullscreenEnterLabel => 'Full screen';
 
   @override

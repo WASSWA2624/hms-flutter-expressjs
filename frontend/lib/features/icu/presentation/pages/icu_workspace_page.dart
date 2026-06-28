@@ -164,9 +164,52 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     return AppWorkspace(
       title: l10n.navigationIcuLabel,
       leadingIcon: AppRouteIcons.icu,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: isBedView ? const <AppWorkspaceSummaryNotification>[] : [
+              if (_pageTotal(state.board) > 0)
+                AppWorkspaceSummaryNotification(
+                  label: l10n.icuAllIcuLabel,
+                  count: _pageTotal(state.board),
+                  icon: Icons.inventory_2_outlined,
+                  onSelected: () => controller.applyScope(IcuBoardScope.all),
+                ),
+              if (state.activeCount > 0)
+                AppWorkspaceSummaryNotification(
+  label: l10n.icuActiveIcuLabel,
+  count: state.activeCount,
+  icon: Icons.bed_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyScope(IcuBoardScope.active),
+),
+              if (state.criticalCount > 0)
+                AppWorkspaceSummaryNotification(
+  label: l10n.icuCriticalAlertsLabel,
+  count: state.criticalCount,
+  icon: Icons.priority_high_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () =>
+                      controller.applyScope(IcuBoardScope.critical),
+),
+              if (state.transferCount > 0)
+                AppWorkspaceSummaryNotification(
+  label: l10n.icuTransfersLabel,
+  count: state.transferCount,
+  icon: Icons.compare_arrows_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () =>
+                      controller.applyScope(IcuBoardScope.transfer),
+),
+              if (state.dischargeReadyCount > 0)
+                AppWorkspaceSummaryNotification(
+  label: l10n.icuDischargeReadyLabel,
+  count: state.dischargeReadyCount,
+  icon: Icons.fact_check_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () =>
+                      controller.applyScope(IcuBoardScope.discharge),
+),
+            ],
         secondary: <Widget>[
           AppWorkspaceBoardToggle<IcuBoardView>(
             value: state.view,
@@ -240,57 +283,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         },
         isRefreshing: state.isRefreshingBoard || state.isRefreshingBeds,
       ),
-      summaryCards: isBedView
-          ? const <Widget>[]
-          : <Widget>[
-              if (_pageTotal(state.board) > 0)
-                AppWorkspaceSummaryCard(
-                  label: l10n.icuAllIcuLabel,
-                  value: _countLabel(context, _pageTotal(state.board)),
-                  icon: Icons.inventory_2_outlined,
-                  compact: true,
-                  onPressed: () => controller.applyScope(IcuBoardScope.all),
-                ),
-              if (state.activeCount > 0)
-                AppWorkspaceSummaryCard(
-                  label: l10n.icuActiveIcuLabel,
-                  value: _countLabel(context, state.activeCount),
-                  icon: Icons.bed_outlined,
-                  tone: AppWorkspaceStatusTone.info,
-                  compact: true,
-                  onPressed: () => controller.applyScope(IcuBoardScope.active),
-                ),
-              if (state.criticalCount > 0)
-                AppWorkspaceSummaryCard(
-                  label: l10n.icuCriticalAlertsLabel,
-                  value: _countLabel(context, state.criticalCount),
-                  icon: Icons.priority_high_outlined,
-                  tone: AppWorkspaceStatusTone.error,
-                  compact: true,
-                  onPressed: () =>
-                      controller.applyScope(IcuBoardScope.critical),
-                ),
-              if (state.transferCount > 0)
-                AppWorkspaceSummaryCard(
-                  label: l10n.icuTransfersLabel,
-                  value: _countLabel(context, state.transferCount),
-                  icon: Icons.compare_arrows_outlined,
-                  tone: AppWorkspaceStatusTone.warning,
-                  compact: true,
-                  onPressed: () =>
-                      controller.applyScope(IcuBoardScope.transfer),
-                ),
-              if (state.dischargeReadyCount > 0)
-                AppWorkspaceSummaryCard(
-                  label: l10n.icuDischargeReadyLabel,
-                  value: _countLabel(context, state.dischargeReadyCount),
-                  icon: Icons.fact_check_outlined,
-                  tone: AppWorkspaceStatusTone.success,
-                  compact: true,
-                  onPressed: () =>
-                      controller.applyScope(IcuBoardScope.discharge),
-                ),
-            ],
+      
       body: isBedView
           ? IcuBedBoardPanel(
               state: state,

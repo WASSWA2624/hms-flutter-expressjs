@@ -134,10 +134,41 @@ class _PatientRegistryContentState
     return AppWorkspace(
       title: l10n.patientsTitle,
       leadingIcon: AppRouteIcons.patients,
-      compactSummaryCards: true,
-      inlineSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (widget.state.overview.totalPatients > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.opdSummaryAllPatientsLabel,
+  count: widget.state.overview.totalPatients,
+  icon: Icons.groups_outlined,
+  onSelected: () {
+              unawaited(
+                _applySummaryQuery(
+                  PatientListQuery(
+                    pageRequest: widget.state.query.pageRequest.first(),
+                  ),
+                ),
+              );
+            },
+),
+        if (widget.state.overview.activePatients > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.patientsActiveSummaryLabel,
+  count: widget.state.overview.activePatients,
+  icon: Icons.how_to_reg_outlined,
+  onSelected: () {
+              unawaited(
+                _applySummaryQuery(
+                  PatientListQuery(
+                    isActive: true,
+                    pageRequest: widget.state.query.pageRequest.first(),
+                  ),
+                ),
+              );
+            },
+),
+      ],
         primary: AppAccessActionGate(
           requirement: _PatientRegistryContent._writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -177,51 +208,7 @@ class _PatientRegistryContentState
         },
         isRefreshing: widget.state.isRefreshingList,
       ),
-      summaryCards: <Widget>[
-        if (widget.state.overview.totalPatients > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.opdSummaryAllPatientsLabel,
-            value: AppFormatters.compactNumber(
-              widget.state.overview.totalPatients,
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.groups_outlined,
-            compact: true,
-            navigation: true,
-            selected: widget.state.query.isActive == null,
-            onPressed: () {
-              unawaited(
-                _applySummaryQuery(
-                  PatientListQuery(
-                    pageRequest: widget.state.query.pageRequest.first(),
-                  ),
-                ),
-              );
-            },
-          ),
-        if (widget.state.overview.activePatients > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.patientsActiveSummaryLabel,
-            value: AppFormatters.compactNumber(
-              widget.state.overview.activePatients,
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.how_to_reg_outlined,
-            compact: true,
-            navigation: true,
-            selected: widget.state.query.isActive == true,
-            onPressed: () {
-              unawaited(
-                _applySummaryQuery(
-                  PatientListQuery(
-                    isActive: true,
-                    pageRequest: widget.state.query.pageRequest.first(),
-                  ),
-                ),
-              );
-            },
-          ),
-      ],
+      
       body: _PatientList(
         state: widget.state,
         searchController: _tableSearchController,

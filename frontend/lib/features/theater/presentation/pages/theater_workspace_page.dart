@@ -203,6 +203,45 @@ class _TheaterWorkspaceContentState
       leadingIcon: AppRouteIcons.theater,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (_pageTotal(state.cases) > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.theaterAllCasesSummaryLabel,
+  count: _pageTotal(state.cases),
+  icon: Icons.inventory_2_outlined,
+  onSelected: controller.clearFilters,
+),
+        if (state.scheduledCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.theaterScheduledSummaryLabel,
+  count: state.scheduledCount,
+  icon: Icons.event_available_outlined,
+  onSelected: () => controller.applyStatus('SCHEDULED'),
+),
+        if (state.inTheaterCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.theaterInTheaterSummaryLabel,
+  count: state.inTheaterCount,
+  icon: Icons.meeting_room_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyStatus('IN_PROGRESS'),
+),
+        if (state.readyCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.theaterReadySummaryLabel,
+  count: state.readyCount,
+  icon: Icons.fact_check_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () => controller.applyStage('PRE_OP'),
+),
+        if (state.completedCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.theaterCompletedSummaryLabel,
+  count: state.completedCount,
+  icon: Icons.task_alt_outlined,
+  onSelected: () => controller.applyStatus('COMPLETED'),
+),
+      ],
         primary: canWrite
             ? AppButton.primary(
                 label: l10n.theaterScheduleCaseAction,
@@ -223,51 +262,7 @@ class _TheaterWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: <Widget>[
-        if (_pageTotal(state.cases) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.theaterAllCasesSummaryLabel,
-            value: _pageTotal(state.cases).toString(),
-            icon: Icons.inventory_2_outlined,
-            compact: true,
-            onPressed: controller.clearFilters,
-          ),
-        if (state.scheduledCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.theaterScheduledSummaryLabel,
-            value: state.scheduledCount.toString(),
-            icon: Icons.event_available_outlined,
-            compact: true,
-            onPressed: () => controller.applyStatus('SCHEDULED'),
-          ),
-        if (state.inTheaterCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.theaterInTheaterSummaryLabel,
-            value: state.inTheaterCount.toString(),
-            icon: Icons.meeting_room_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            compact: true,
-            onPressed: () => controller.applyStatus('IN_PROGRESS'),
-          ),
-        if (state.readyCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.theaterReadySummaryLabel,
-            value: state.readyCount.toString(),
-            icon: Icons.fact_check_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            compact: true,
-            onPressed: () => controller.applyStage('PRE_OP'),
-          ),
-        if (state.completedCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.theaterCompletedSummaryLabel,
-            value: state.completedCount.toString(),
-            icon: Icons.task_alt_outlined,
-            compact: true,
-            onPressed: () => controller.applyStatus('COMPLETED'),
-          ),
-      ],
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

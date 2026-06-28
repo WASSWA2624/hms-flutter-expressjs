@@ -174,9 +174,51 @@ class _EmergencyWorkspaceContentState
     return AppWorkspace(
       title: 'Emergency',
       leadingIcon: AppRouteIcons.emergency,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (_pageTotal(state.board) > 0)
+          AppWorkspaceSummaryNotification(
+  label: _EmergencyText.allBoard,
+  count: _pageTotal(state.board),
+  icon: Icons.inventory_2_outlined,
+  onSelected: () => controller.applyScope(EmergencyBoardScope.all),
+),
+        if (state.activeCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: _EmergencyText.active,
+  count: state.activeCount,
+  icon: Icons.emergency_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyScope(EmergencyBoardScope.active),
+),
+        if (state.criticalCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: _EmergencyText.critical,
+  count: state.criticalCount,
+  icon: Icons.priority_high_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () =>
+                controller.applyScope(EmergencyBoardScope.critical),
+),
+        if (state.ambulanceCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: _EmergencyText.ambulance,
+  count: state.ambulanceCount,
+  icon: Icons.airport_shuttle_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () =>
+                controller.applyScope(EmergencyBoardScope.ambulance),
+),
+        if (state.handoffCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: _EmergencyText.handoff,
+  count: state.handoffCount,
+  icon: Icons.output_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () => controller.applyScope(EmergencyBoardScope.handoff),
+),
+      ],
         primary: AppAccessActionGate(
           requirement: _writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -196,54 +238,7 @@ class _EmergencyWorkspaceContentState
         },
         isRefreshing: state.isRefreshingBoard,
       ),
-      summaryCards: <Widget>[
-        if (_pageTotal(state.board) > 0)
-          AppWorkspaceSummaryCard(
-            label: _EmergencyText.allBoard,
-            value: _countLabel(context, _pageTotal(state.board)),
-            icon: Icons.inventory_2_outlined,
-            compact: true,
-            onPressed: () => controller.applyScope(EmergencyBoardScope.all),
-          ),
-        if (state.activeCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _EmergencyText.active,
-            value: _countLabel(context, state.activeCount),
-            icon: Icons.emergency_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            compact: true,
-            onPressed: () => controller.applyScope(EmergencyBoardScope.active),
-          ),
-        if (state.criticalCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _EmergencyText.critical,
-            value: _countLabel(context, state.criticalCount),
-            icon: Icons.priority_high_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            compact: true,
-            onPressed: () =>
-                controller.applyScope(EmergencyBoardScope.critical),
-          ),
-        if (state.ambulanceCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _EmergencyText.ambulance,
-            value: _countLabel(context, state.ambulanceCount),
-            icon: Icons.airport_shuttle_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            compact: true,
-            onPressed: () =>
-                controller.applyScope(EmergencyBoardScope.ambulance),
-          ),
-        if (state.handoffCount > 0)
-          AppWorkspaceSummaryCard(
-            label: _EmergencyText.handoff,
-            value: _countLabel(context, state.handoffCount),
-            icon: Icons.output_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            compact: true,
-            onPressed: () => controller.applyScope(EmergencyBoardScope.handoff),
-          ),
-      ],
+      
       body: _EmergencyBoardPanel(
         state: state,
         writeRequirement: _writeRequirement,

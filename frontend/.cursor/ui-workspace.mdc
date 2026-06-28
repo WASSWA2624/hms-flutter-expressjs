@@ -17,7 +17,7 @@ Module work queues (OPD, IPD, Lab, Billing, Nursing, etc.) must use this stack u
 |---|---|---|
 | Page root | `AsyncStateScaffold` | loading, error, retry ([`ui-feedback.mdc`](./ui-feedback.mdc)) |
 | Page width | `ResponsivePage` + `PageMaxWidth` | padding and max width ([`layouts.mdc`](./layouts.mdc)) |
-| Workspace shell | `AppWorkspace` | title, summary cards, worklist, detail, status tone |
+| Workspace shell | `AppWorkspace` | title, worklist, detail, status tone; queue counts via toolbar notifications submenu |
 | Worklist | `AppListTable` | columns, pagination, mobile list fallback, selection |
 | Detail | `AppWorkspaceDetailPanel` | selected item sections |
 | Actions | `AppActionPanel` / `AppActionList` | primary actions grouped by role/state |
@@ -27,8 +27,8 @@ Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/c
 
 ## Mandatory behavior (aligned with OPD/IPD flows)
 
-- **Summary cards filter** the current worklist — they must not open modal lists of the same data.
-- **Hide zero-value summary cards** when the workspace pattern expects it.
+- **Notifications submenu (More actions) filters** the current worklist — it must not open modal lists of the same data.
+- **Hide zero-value notification rows** when the workspace pattern expects it.
 - **Hospital workflow language** in labels — never expose raw enum names, API stage codes, or internal IDs to users.
 - **Display IDs only** — use `displayId`, patient display name, human-friendly refs; never surface raw UUIDs in production UI.
 - **Role + state gating** — show actions only when backend stage and user permission both allow; disable with tooltip when helpful.
@@ -49,7 +49,7 @@ Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/c
 | File | Max guidance | Owns |
 |---|---|---|
 | `*_workspace_page.dart` | prefer `< 800` lines | composition, wiring |
-| `presentation/widgets/` | extract when page grows | summary cards, detail sections, dialogs |
+| `presentation/widgets/` | extract when page grows | notification builders, detail sections, dialogs |
 | `*_workspace_controller.dart` | — | mutations, filters, selection |
 
 When a workspace page exceeds ~800 lines, extract widgets before adding more inline UI.

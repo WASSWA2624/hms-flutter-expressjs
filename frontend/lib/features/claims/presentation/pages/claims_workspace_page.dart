@@ -146,6 +146,134 @@ class _ClaimsWorkspaceContentState
       leadingIcon: AppRouteIcons.claims,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (allCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsFilterAll,
+  count: allCount,
+  icon: Icons.inventory_2_outlined,
+  onSelected: () {
+              unawaited(_applySummaryFilter(controller, ClaimsQueueFilter.all));
+            },
+),
+        if (state.authorizationPendingCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsAuthorizationPendingSummaryLabel,
+  count: state.authorizationPendingCount,
+  icon: Icons.schedule_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationPending,
+                ),
+              );
+            },
+),
+        if (state.authorizationApprovedCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsAuthorizationApprovedSummaryLabel,
+  count: state.authorizationApprovedCount,
+  icon: Icons.verified_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationApproved,
+                ),
+              );
+            },
+),
+        if (state.submittedClaimsCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsSubmittedSummaryLabel,
+  count: state.submittedClaimsCount,
+  icon: Icons.outbox_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimSubmitted,
+                ),
+              );
+            },
+),
+        if (authorizationDeniedCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsFilterAuthorizationDenied,
+  count: authorizationDeniedCount,
+  icon: Icons.report_gmailerrorred_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationDenied,
+                ),
+              );
+            },
+),
+        if (rejectedClaimsCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsFilterClaimRejected,
+  count: rejectedClaimsCount,
+  icon: Icons.report_gmailerrorred_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimRejected,
+                ),
+              );
+            },
+),
+        if (state.approvedClaimsCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsApprovedSummaryLabel,
+  count: state.approvedClaimsCount,
+  icon: Icons.fact_check_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimApproved,
+                ),
+              );
+            },
+),
+        if (paidClaimsCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsFilterClaimPaid,
+  count: paidClaimsCount,
+  icon: Icons.task_alt_outlined,
+  tone: AppWorkspaceStatusTone.neutral,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(controller, ClaimsQueueFilter.claimPaid),
+              );
+            },
+),
+        if (cancelledClaimsCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.claimsFilterClaimCancelled,
+  count: cancelledClaimsCount,
+  icon: Icons.cancel_outlined,
+  tone: AppWorkspaceStatusTone.neutral,
+  onSelected: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimCancelled,
+                ),
+              );
+            },
+),
+      ],
         primary: AppButton.primary(
           label: l10n.claimsRequestAuthorizationAction,
           leadingIcon: Icons.verified_user_outlined,
@@ -174,144 +302,7 @@ class _ClaimsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: <Widget>[
-        if (allCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsFilterAll,
-            value: allCount.toString(),
-            icon: Icons.inventory_2_outlined,
-            onPressed: () {
-              unawaited(_applySummaryFilter(controller, ClaimsQueueFilter.all));
-            },
-          ),
-        if (state.authorizationPendingCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsAuthorizationPendingSummaryLabel,
-            value: state.authorizationPendingCount.toString(),
-            icon: Icons.schedule_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.authorizationPending,
-                ),
-              );
-            },
-          ),
-        if (state.authorizationApprovedCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsAuthorizationApprovedSummaryLabel,
-            value: state.authorizationApprovedCount.toString(),
-            icon: Icons.verified_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.authorizationApproved,
-                ),
-              );
-            },
-          ),
-        if (state.submittedClaimsCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsSubmittedSummaryLabel,
-            value: state.submittedClaimsCount.toString(),
-            icon: Icons.outbox_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.claimSubmitted,
-                ),
-              );
-            },
-          ),
-        if (authorizationDeniedCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsFilterAuthorizationDenied,
-            value: authorizationDeniedCount.toString(),
-            icon: Icons.report_gmailerrorred_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.authorizationDenied,
-                ),
-              );
-            },
-          ),
-        if (rejectedClaimsCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsFilterClaimRejected,
-            value: rejectedClaimsCount.toString(),
-            icon: Icons.report_gmailerrorred_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.claimRejected,
-                ),
-              );
-            },
-          ),
-        if (state.approvedClaimsCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsApprovedSummaryLabel,
-            value: state.approvedClaimsCount.toString(),
-            icon: Icons.fact_check_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.claimApproved,
-                ),
-              );
-            },
-          ),
-        if (paidClaimsCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsFilterClaimPaid,
-            value: paidClaimsCount.toString(),
-            icon: Icons.task_alt_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(controller, ClaimsQueueFilter.claimPaid),
-              );
-            },
-          ),
-        if (cancelledClaimsCount > 0)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: l10n.claimsFilterClaimCancelled,
-            value: cancelledClaimsCount.toString(),
-            icon: Icons.cancel_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
-            onPressed: () {
-              unawaited(
-                _applySummaryFilter(
-                  controller,
-                  ClaimsQueueFilter.claimCancelled,
-                ),
-              );
-            },
-          ),
-      ],
+      
       body: _ClaimsQueuePanel(
         state: state,
         searchController: _searchController,

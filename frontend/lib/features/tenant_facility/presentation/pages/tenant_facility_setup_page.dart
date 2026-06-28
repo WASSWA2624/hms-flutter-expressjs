@@ -77,14 +77,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       maxWidth: PageMaxWidth.dashboard,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        onRefresh: () async {
-          await ref
-              .read(tenantFacilitySetupControllerProvider.notifier)
-              .refresh();
-        },
-        isRefreshing: isRefreshing,
-      ),
-      summaryCards: _setupSummaryCards(
+        summaryNotifications: _setupSummaryNotifications(
         context,
         l10n,
         snapshot,
@@ -95,6 +88,14 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
           AppPermissions.systemAdmin,
         ]),
       ),
+        onRefresh: () async {
+          await ref
+              .read(tenantFacilitySetupControllerProvider.notifier)
+              .refresh();
+        },
+        isRefreshing: isRefreshing,
+      ),
+      
       body: _SetupBody(
         snapshot: snapshot,
         canManageTenant: canManageTenant,
@@ -104,119 +105,83 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
   }
 }
 
-List<Widget> _setupSummaryCards(
+List<AppWorkspaceSummaryNotification> _setupSummaryNotifications(
   BuildContext context,
   AppLocalizations l10n,
   FacilitySetupSnapshot snapshot, {
   required bool canViewSubscriptions,
 }) {
-  return <Widget>[
-    AppWorkspaceSummaryCard(
-      icon: Icons.apartment_outlined,
-      label: l10n.tenantFacilityTenantSectionTitle,
-      value: snapshot.tenant?.name ?? l10n.tenantFacilitySummaryNoTenant,
-      description: _tenantSummaryDetail(l10n, snapshot.tenant),
-      status: _setupSummaryStatus(l10n, snapshot.hasTenant),
-      compact: true,
-      onPressed: () => _openTenantProfileModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.local_hospital_outlined,
-      label: l10n.tenantFacilityFacilitySectionTitle,
-      value: snapshot.facility?.name ?? l10n.tenantFacilitySummaryNoFacility,
-      description: _facilitySummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.hasFacilityIdentity),
-      compact: true,
-      onPressed: () => _openFacilityProfileModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.account_tree_outlined,
-      label: l10n.tenantFacilityBranchesSectionTitle,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.branches.length),
-      description: _branchSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.branches.isNotEmpty),
-      compact: true,
-      onPressed: () => _openBranchesModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.groups_2_outlined,
-      label: l10n.tenantFacilityDepartmentsListTitle,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.departments.length),
-      description: _departmentSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.departments.isNotEmpty),
-      compact: true,
-      onPressed: () => _openDepartmentsModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.hub_outlined,
-      label: l10n.tenantFacilityUnitsListTitle,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.units.length),
-      description: _unitSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.units.isNotEmpty),
-      compact: true,
-      onPressed: () => _openUnitsModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.local_hotel_outlined,
-      label: l10n.tenantFacilityWardsLabel,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.wards.length),
-      description: _wardSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.wards.isNotEmpty),
-      compact: true,
-      onPressed: () => _openWardsModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.meeting_room_outlined,
-      label: l10n.tenantFacilityRoomsLabel,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.rooms.length),
-      description: _roomSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.rooms.isNotEmpty),
-      compact: true,
-      onPressed: () => _openRoomsModal(context),
-    ),
-    AppWorkspaceSummaryCard(
-      icon: Icons.bed_outlined,
-      label: l10n.tenantFacilityBedsLabel,
-      value: l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
-      description: _bedSummaryDetail(l10n, snapshot),
-      status: _setupSummaryStatus(l10n, snapshot.beds.isNotEmpty),
-      compact: true,
-      onPressed: () => _openBedsModal(context),
-    ),
-    if (snapshot.facility?.id != null)
-      AppWorkspaceSummaryCard(
-        icon: Icons.medical_information_outlined,
-        label: l10n.clinicalCatalogConfigurationTitle,
-        value: l10n.clinicalCatalogSourceFacility,
-        description: l10n.clinicalCatalogConfigurationBody,
-        status: _setupSummaryStatus(l10n, true),
-        compact: true,
-        onPressed: () => _openFacilityCatalogModal(context, snapshot),
+  return <AppWorkspaceSummaryNotification>[
+    if (snapshot.hasTenant)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityTenantSectionTitle,
+        count: 1,
+        icon: Icons.apartment_outlined,
+        onSelected: () => _openTenantProfileModal(context),
       ),
-    if (canViewSubscriptions)
-      AppWorkspaceSummaryCard(
-        icon: Icons.workspace_premium_outlined,
+    if (snapshot.hasFacilityIdentity)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityFacilitySectionTitle,
+        count: 1,
+        icon: Icons.local_hospital_outlined,
+        onSelected: () => _openFacilityProfileModal(context),
+      ),
+    if (snapshot.branches.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityBranchesSectionTitle,
+        count: snapshot.branches.length,
+        icon: Icons.account_tree_outlined,
+        onSelected: () => _openBranchesModal(context),
+      ),
+    if (snapshot.departments.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityDepartmentsListTitle,
+        count: snapshot.departments.length,
+        icon: Icons.groups_2_outlined,
+        onSelected: () => _openDepartmentsModal(context),
+      ),
+    if (snapshot.units.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityUnitsListTitle,
+        count: snapshot.units.length,
+        icon: Icons.hub_outlined,
+        onSelected: () => _openUnitsModal(context),
+      ),
+    if (snapshot.wards.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityWardsLabel,
+        count: snapshot.wards.length,
+        icon: Icons.local_hotel_outlined,
+        onSelected: () => _openWardsModal(context),
+      ),
+    if (snapshot.rooms.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityRoomsLabel,
+        count: snapshot.rooms.length,
+        icon: Icons.meeting_room_outlined,
+        onSelected: () => _openRoomsModal(context),
+      ),
+    if (snapshot.beds.isNotEmpty)
+      AppWorkspaceSummaryNotification(
+        label: l10n.tenantFacilityBedsLabel,
+        count: snapshot.beds.length,
+        icon: Icons.bed_outlined,
+        onSelected: () => _openBedsModal(context),
+      ),
+    if (snapshot.facility?.id != null)
+      AppWorkspaceSummaryNotification(
+        label: l10n.clinicalCatalogConfigurationTitle,
+        count: 1,
+        icon: Icons.medical_information_outlined,
+        onSelected: () => _openFacilityCatalogModal(context, snapshot),
+      ),
+    if (canViewSubscriptions &&
+        snapshot.subscriptionSummary?.hasActivePlan == true)
+      AppWorkspaceSummaryNotification(
         label: l10n.tenantFacilitySubscriptionSummaryTitle,
-        value: snapshot.subscriptionSummary?.hasActivePlan == true
-            ? snapshot.subscriptionSummary!.planLabel!
-            : l10n.tenantFacilitySubscriptionNoPlan,
-        description: snapshot.subscriptionSummary?.hasActivePlan == true
-            ? tenantFacilityJoinParts(<String?>[
-                snapshot.subscriptionSummary?.status,
-                l10n.tenantFacilitySubscriptionModulesCount(
-                  snapshot.subscriptionSummary?.activeModulesCount ?? 0,
-                ),
-              ])
-            : l10n.navigationSubscriptionsLabel,
-        status: AppWorkspaceStatus(
-          label: snapshot.subscriptionSummary?.status ?? 'Commercial',
-          tone: snapshot.subscriptionSummary?.hasActivePlan == true
-              ? AppWorkspaceStatusTone.success
-              : AppWorkspaceStatusTone.info,
-          icon: Icons.insights_outlined,
-        ),
-        compact: true,
-        onPressed: () => context.go(AppRoutes.subscriptions.location()),
+        count: 1,
+        icon: Icons.workspace_premium_outlined,
+        onSelected: () => context.go(AppRoutes.subscriptions.location()),
       ),
   ];
 }

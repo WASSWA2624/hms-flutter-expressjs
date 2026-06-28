@@ -145,6 +145,43 @@ class _RadiologyWorkspaceContentState
       leadingIcon: AppRouteIcons.radiology,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (state.summary.totalForView(state.query.view) > 0)
+          AppWorkspaceSummaryNotification(
+  label: state.query.view == RadiologyWorkbenchView.patients
+                ? l10n.radiologyPatientsSummaryLabel
+                : l10n.radiologyTotalOrdersSummaryLabel,
+  count: state.summary.totalForView(state.query.view),
+  icon: Icons.assignment_outlined,
+  onSelected: controller.clearFilters,
+),
+        if (state.summary.orderedForView(state.query.view) > 0)
+          AppWorkspaceSummaryNotification(
+  label: state.query.view == RadiologyWorkbenchView.patients
+                ? l10n.radiologyPatientsWaitingImagingSummaryLabel
+                : l10n.radiologyWaitingImagingSummaryLabel,
+  count: state.summary.orderedForView(state.query.view),
+  icon: Icons.pending_actions_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () => controller.applyStage('ORDERED'),
+),
+        if (state.reportingCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.radiologyReportingSummaryLabel,
+  count: state.reportingCount,
+  icon: Icons.edit_note_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyStage('REPORTING'),
+),
+        if (state.releasedCount > 0)
+          AppWorkspaceSummaryNotification(
+  label: l10n.radiologyReleasedSummaryLabel,
+  count: state.releasedCount,
+  icon: Icons.verified_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () => controller.applyStage('COMPLETED'),
+),
+      ],
         secondary: <Widget>[
           AppButton.secondary(
             label: state.query.view == RadiologyWorkbenchView.patients
@@ -196,48 +233,7 @@ class _RadiologyWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: <Widget>[
-        if (state.summary.totalForView(state.query.view) > 0)
-          AppWorkspaceSummaryCard(
-            label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyPatientsSummaryLabel
-                : l10n.radiologyTotalOrdersSummaryLabel,
-            value: state.summary.totalForView(state.query.view).toString(),
-            icon: Icons.assignment_outlined,
-            compact: true,
-            onPressed: controller.clearFilters,
-          ),
-        if (state.summary.orderedForView(state.query.view) > 0)
-          AppWorkspaceSummaryCard(
-            label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyPatientsWaitingImagingSummaryLabel
-                : l10n.radiologyWaitingImagingSummaryLabel,
-            value: state.summary.orderedForView(state.query.view).toString(),
-            icon: Icons.pending_actions_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            compact: true,
-            onPressed: () => controller.applyStage('ORDERED'),
-          ),
-        if (state.reportingCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.radiologyReportingSummaryLabel,
-            value: state.reportingCount.toString(),
-            icon: Icons.edit_note_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            compact: true,
-            onPressed: () => controller.applyStage('REPORTING'),
-          ),
-        if (state.releasedCount > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.radiologyReleasedSummaryLabel,
-            value: state.releasedCount.toString(),
-            icon: Icons.verified_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            compact: true,
-            onPressed: () => controller.applyStage('COMPLETED'),
-          ),
-      ],
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

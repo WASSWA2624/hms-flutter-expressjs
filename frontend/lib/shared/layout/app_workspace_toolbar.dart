@@ -13,6 +13,7 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_menu_item_label.dart';
 import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_resolver.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_summary_notification.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_view_toggle.dart';
 
 /// Declarative workspace toolbar configuration.
@@ -30,6 +31,8 @@ final class AppWorkspaceToolbarConfig {
     this.faultReportLabel,
     this.housekeepingRequestLabel,
     this.overflowLabel,
+    this.notificationsMenuLabel,
+    this.summaryNotifications = const <AppWorkspaceSummaryNotification>[],
     this.maxVisibleScreenActions = 3,
   });
 
@@ -44,6 +47,8 @@ final class AppWorkspaceToolbarConfig {
   final String? faultReportLabel;
   final String? housekeepingRequestLabel;
   final String? overflowLabel;
+  final String? notificationsMenuLabel;
+  final List<AppWorkspaceSummaryNotification> summaryNotifications;
   final int maxVisibleScreenActions;
 
   bool get hasActions {
@@ -100,6 +105,8 @@ class AppWorkspaceToolbar extends ConsumerWidget {
             showLabels: showLabels,
             spacing: theme.spacing.xs,
             overflowLabel: config.overflowLabel ?? 'More actions',
+            summaryNotifications: config.summaryNotifications,
+            notificationsMenuLabel: config.notificationsMenuLabel,
             providerContainer: ProviderScope.containerOf(context),
           );
         },
@@ -297,6 +304,8 @@ class _AdaptiveToolbarLayout extends StatefulWidget {
     required this.showLabels,
     required this.spacing,
     required this.overflowLabel,
+    required this.summaryNotifications,
+    required this.notificationsMenuLabel,
     required this.providerContainer,
   });
 
@@ -307,6 +316,8 @@ class _AdaptiveToolbarLayout extends StatefulWidget {
   final bool showLabels;
   final double spacing;
   final String overflowLabel;
+  final List<AppWorkspaceSummaryNotification> summaryNotifications;
+  final String? notificationsMenuLabel;
   final ProviderContainer providerContainer;
 
   @override
@@ -405,6 +416,8 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       inlineActions: _layout.inlineActions,
       overflowActions: _layout.overflowActions,
       overflowLabel: widget.overflowLabel,
+      summaryNotifications: widget.summaryNotifications,
+      notificationsMenuLabel: widget.notificationsMenuLabel,
       providerContainer: widget.providerContainer,
     );
   }
@@ -418,12 +431,16 @@ class _ToolbarActionRow extends StatelessWidget {
     required this.providerContainer,
     this.overflowActions = const <Widget>[],
     this.overflowLabel,
+    this.summaryNotifications = const <AppWorkspaceSummaryNotification>[],
+    this.notificationsMenuLabel,
   });
 
   final double spacing;
   final List<Widget> inlineActions;
   final List<Widget> overflowActions;
   final String? overflowLabel;
+  final List<AppWorkspaceSummaryNotification> summaryNotifications;
+  final String? notificationsMenuLabel;
   final ProviderContainer providerContainer;
 
   @override
@@ -437,7 +454,10 @@ class _ToolbarActionRow extends StatelessWidget {
       children.add(inlineActions[index]);
     }
 
-    if (overflowActions.isNotEmpty) {
+    final List<AppWorkspaceSummaryNotification> visibleNotifications =
+        visibleWorkspaceSummaryNotifications(summaryNotifications);
+
+    if (overflowActions.isNotEmpty || visibleNotifications.isNotEmpty) {
       if (children.isNotEmpty) {
         children.add(SizedBox(width: spacing));
       }
@@ -445,6 +465,8 @@ class _ToolbarActionRow extends StatelessWidget {
         _ToolbarOverflowMenu(
           label: overflowLabel ?? 'More actions',
           actions: overflowActions,
+          summaryNotifications: visibleNotifications,
+          notificationsMenuLabel: notificationsMenuLabel,
           container: providerContainer,
         ),
       );
@@ -467,11 +489,15 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
     required this.label,
     required this.actions,
     required this.container,
+    this.summaryNotifications = const <AppWorkspaceSummaryNotification>[],
+    this.notificationsMenuLabel,
   });
 
   final String label;
   final List<Widget> actions;
   final ProviderContainer container;
+  final List<AppWorkspaceSummaryNotification> summaryNotifications;
+  final String? notificationsMenuLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -481,45 +507,114 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
       actions,
       ref,
     );
+    final String notificationsLabel =
+        notificationsMenuLabel ?? 'Notifications';
 
-    if (entries.isEmpty) {
+    if (entries.isEmpty && summaryNotifications.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return UncontrolledProviderScope(
-      container: container,
-      child: PopupMenuButton<int>(
-        tooltip: label,
-        position: PopupMenuPosition.under,
-        constraints: const BoxConstraints(minWidth: 320, maxWidth: 360),
-        color: colorScheme.surface,
-        surfaceTintColor: colorScheme.surfaceTint,
-        shape: RoundedRectangleBorder(
+    final MenuStyle menuStyle = MenuStyle(
+      minimumSize: WidgetStateProperty.all(const Size(320, 0)),
+      maximumSize: WidgetStateProperty.all(const Size(360, double.infinity)),
+      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
+      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
+      shape: WidgetStateProperty.all(
+        RoundedRectangleBorder(
           side: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        onSelected: (int index) {
-          entries[index].onSelected?.call(context, ref);
-        },
-        itemBuilder: (BuildContext menuContext) {
-          return <PopupMenuEntry<int>>[
-            for (var index = 0; index < entries.length; index += 1)
-              PopupMenuItem<int>(
-                value: index,
-                enabled: entries[index].enabled,
-                padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-                child: AppMenuItemLabel(
-                  icon: entries[index].icon,
-                  label: entries[index].label,
-                ),
-              ),
-          ];
-        },
-        child: AppButton.popupMenuTrigger(
-          context: context,
-          icon: Icons.more_vert,
-          semanticLabel: label,
+          borderRadius: BorderRadius.circular(theme.radius.sm),
         ),
       ),
+      padding: WidgetStateProperty.all(
+        EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      ),
+    );
+
+    return UncontrolledProviderScope(
+      container: container,
+      child: MenuAnchor(
+        style: menuStyle,
+        alignmentOffset: const Offset(0, 4),
+        crossAxisUnconstrained: false,
+        menuChildren: <Widget>[
+          for (final AppToolbarOverflowEntry entry in entries)
+            MenuItemButton(
+              onPressed: entry.enabled
+                  ? () => entry.onSelected?.call(context, ref)
+                  : null,
+              style: _overflowMenuItemStyle(theme),
+              child: AppMenuItemLabel(
+                icon: entry.icon,
+                label: entry.label,
+              ),
+            ),
+          if (summaryNotifications.isNotEmpty)
+            SubmenuButton(
+              style: _overflowMenuItemStyle(theme),
+              menuStyle: menuStyle,
+              menuChildren: <Widget>[
+                for (final AppWorkspaceSummaryNotification notification
+                    in summaryNotifications)
+                  MenuItemButton(
+                    style: _overflowMenuItemStyle(theme),
+                    onPressed: notification.onSelected,
+                    child: AppMenuItemLabel(
+                      icon: notification.icon,
+                      label: notification.label,
+                      iconTone: notification.tone,
+                      trailing: AppMenuCountBadge(
+                        count: notification.count,
+                        tone: notification.tone,
+                      ),
+                    ),
+                  ),
+              ],
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: AppMenuItemLabel(
+                      icon: Icons.notifications_outlined,
+                      label: notificationsLabel,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: theme.appTokens.listIconSize,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+        ],
+        builder: (
+          BuildContext context,
+          MenuController controller,
+          Widget? child,
+        ) {
+          return AppButton.popupMenuTrigger(
+            context: context,
+            icon: Icons.more_vert,
+            semanticLabel: label,
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  ButtonStyle _overflowMenuItemStyle(ThemeData theme) {
+    return ButtonStyle(
+      padding: WidgetStateProperty.all(
+        EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+      ),
+      minimumSize: WidgetStateProperty.all(const Size(0, 48)),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
@@ -534,6 +629,8 @@ AppWorkspaceToolbarConfig appWorkspaceToolbarWithLabels(
   bool showGlobalActions = true,
   bool showFaultReport = true,
   bool showHousekeepingRequest = true,
+  List<AppWorkspaceSummaryNotification> summaryNotifications =
+      const <AppWorkspaceSummaryNotification>[],
   int maxVisibleScreenActions = 3,
 }) {
   return AppWorkspaceToolbarConfig(
@@ -548,6 +645,8 @@ AppWorkspaceToolbarConfig appWorkspaceToolbarWithLabels(
     faultReportLabel: l10n.workspaceGlobalFaultReportAction,
     housekeepingRequestLabel: l10n.workspaceGlobalHousekeepingRequestAction,
     overflowLabel: l10n.workspaceToolbarOverflowLabel,
+    notificationsMenuLabel: l10n.workspaceNotificationsMenuLabel,
+    summaryNotifications: summaryNotifications,
     maxVisibleScreenActions: maxVisibleScreenActions,
   );
 }

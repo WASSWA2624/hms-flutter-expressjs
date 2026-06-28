@@ -120,6 +120,31 @@ class _MortuaryWorkspaceContentState
       leadingIcon: AppRouteIcons.mortuary,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        for (final MortuarySummaryItem item in state.summary)
+          AppWorkspaceSummaryNotification(
+  label: _summaryLabel(l10n, item.id),
+  count: item.value,
+  icon: _summaryIcon(item.id),
+  tone: _summaryTone(item.id),
+  onSelected: item.id == 'total_cases'
+                ? () {
+                    unawaited(controller.switchPanel(mortuaryPanelOverview));
+                  }
+                : () {},
+),
+        for (final MortuaryQueueSummary queue in state.spotlight)
+          if (queue.count > 0)
+            AppWorkspaceSummaryNotification(
+  label: _queueLabel(l10n, queue.queue),
+  count: queue.count,
+  icon: _queueIcon(queue.queue),
+  tone: _queueTone(queue.queue),
+  onSelected: () {
+                unawaited(controller.applyQueue(queue.queue));
+              },
+),
+      ],
         primary: AppPermissionActionButton(
           requirement: _writeRequirement,
           label: l10n.mortuaryReceiveCaseAction,
@@ -136,34 +161,7 @@ class _MortuaryWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: <Widget>[
-        for (final MortuarySummaryItem item in state.summary)
-          AppWorkspaceSummaryCard(
-            compact: true,
-            label: _summaryLabel(l10n, item.id),
-            value: item.value.toString(),
-            icon: _summaryIcon(item.id),
-            tone: _summaryTone(item.id),
-            onPressed: item.id == 'total_cases'
-                ? () {
-                    unawaited(controller.switchPanel(mortuaryPanelOverview));
-                  }
-                : null,
-          ),
-        for (final MortuaryQueueSummary queue in state.spotlight)
-          if (queue.count > 0)
-            AppWorkspaceSummaryCard(
-              compact: true,
-              label: _queueLabel(l10n, queue.queue),
-              value: queue.count.toString(),
-              icon: _queueIcon(queue.queue),
-              tone: _queueTone(queue.queue),
-              onPressed: () {
-                unawaited(controller.applyQueue(queue.queue));
-              },
-            ),
-      ],
+      
       body: _MortuaryWorklist(
         state: state,
         controller: controller,

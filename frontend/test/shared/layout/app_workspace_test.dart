@@ -26,9 +26,6 @@ void main() {
               actionCount += 1;
             },
           ),
-          summaryCards: const <Widget>[
-            AppWorkspaceSummaryCard(label: 'Waiting', value: '12'),
-          ],
           filters: const AppWorkspaceFilterBar(
             search: Text('Search'),
             filters: <Widget>[Text('Status filter')],
@@ -49,7 +46,6 @@ void main() {
     );
 
     expect(find.text('Admissions'), findsOneWidget);
-    expect(find.text('Waiting'), findsOneWidget);
     expect(find.text('Search'), findsOneWidget);
     expect(find.text('Workspace body'), findsOneWidget);
     expect(find.text('Patient admitted'), findsOneWidget);
@@ -58,141 +54,6 @@ void main() {
     await tester.pump();
 
     expect(actionCount, 1);
-  });
-
-  testWidgets('AppWorkspaceSummaryGrid renders compact icon cards on phones', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const AppWorkspaceSummaryGrid(
-        compact: true,
-        children: <Widget>[
-          AppWorkspaceSummaryCard(
-            label: 'First',
-            value: '1',
-            icon: Icons.groups_outlined,
-            compact: true,
-          ),
-          AppWorkspaceSummaryCard(
-            label: 'Second',
-            value: '2',
-            icon: Icons.queue_outlined,
-            compact: true,
-          ),
-        ],
-      ),
-      size: const Size(420, 600),
-    );
-
-    final Offset firstIconTop = tester.getTopLeft(
-      find.byIcon(Icons.groups_outlined),
-    );
-    final Offset secondIconTop = tester.getTopLeft(
-      find.byIcon(Icons.queue_outlined),
-    );
-
-    expect(find.text('First'), findsNothing);
-    expect(find.text('Second'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
-    expect(secondIconTop.dy, closeTo(firstIconTop.dy, 0.1));
-    expect(secondIconTop.dx, greaterThan(firstIconTop.dx));
-  });
-
-  testWidgets('AppWorkspaceSummaryGrid stacks cards on narrow screens', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const AppWorkspaceSummaryGrid(
-        children: <Widget>[
-          AppWorkspaceSummaryCard(label: 'First', value: '1'),
-          AppWorkspaceSummaryCard(label: 'Second', value: '2'),
-        ],
-      ),
-      size: const Size(420, 600),
-    );
-
-    final Offset firstTop = tester.getTopLeft(find.text('First'));
-    final Offset secondTop = tester.getTopLeft(find.text('Second'));
-
-    expect(secondTop.dy, greaterThan(firstTop.dy));
-  });
-
-  testWidgets('AppWorkspaceSummaryGrid uses columns on wide screens', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const AppWorkspaceSummaryGrid(
-        children: <Widget>[
-          AppWorkspaceSummaryCard(label: 'First', value: '1'),
-          AppWorkspaceSummaryCard(label: 'Second', value: '2'),
-        ],
-      ),
-      size: const Size(1200, 600),
-    );
-
-    final Offset firstTop = tester.getTopLeft(find.text('First'));
-    final Offset secondTop = tester.getTopLeft(find.text('Second'));
-
-    expect(secondTop.dy, closeTo(firstTop.dy, 0.1));
-    expect(secondTop.dx, greaterThan(firstTop.dx));
-  });
-
-  testWidgets('AppWorkspaceSummaryGrid compacts into two medium columns', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const AppWorkspaceSummaryGrid(
-        compact: true,
-        children: <Widget>[
-          AppWorkspaceSummaryCard(label: 'First', value: '1', compact: true),
-          AppWorkspaceSummaryCard(label: 'Second', value: '2', compact: true),
-          AppWorkspaceSummaryCard(label: 'Third', value: '3', compact: true),
-          AppWorkspaceSummaryCard(label: 'Fourth', value: '4', compact: true),
-        ],
-      ),
-      size: const Size(662, 600),
-    );
-
-    final Offset firstTop = tester.getTopLeft(find.text('First'));
-    final Offset secondTop = tester.getTopLeft(find.text('Second'));
-    final Offset thirdTop = tester.getTopLeft(find.text('Third'));
-
-    expect(secondTop.dy, closeTo(firstTop.dy, 0.1));
-    expect(secondTop.dx, greaterThan(firstTop.dx));
-    expect(thirdTop.dy, greaterThan(firstTop.dy));
-  });
-
-  testWidgets('AppWorkspaceSummaryGrid fits four compact desktop cards', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      const AppWorkspaceSummaryGrid(
-        compact: true,
-        children: <Widget>[
-          AppWorkspaceSummaryCard(label: 'First', value: '1', compact: true),
-          AppWorkspaceSummaryCard(label: 'Second', value: '2', compact: true),
-          AppWorkspaceSummaryCard(label: 'Third', value: '3', compact: true),
-          AppWorkspaceSummaryCard(label: 'Fourth', value: '4', compact: true),
-        ],
-      ),
-      size: const Size(1000, 600),
-    );
-
-    final Offset firstTop = tester.getTopLeft(find.text('First'));
-    final Offset secondTop = tester.getTopLeft(find.text('Second'));
-    final Offset thirdTop = tester.getTopLeft(find.text('Third'));
-    final Offset fourthTop = tester.getTopLeft(find.text('Fourth'));
-
-    expect(secondTop.dy, closeTo(firstTop.dy, 0.1));
-    expect(thirdTop.dy, closeTo(firstTop.dy, 0.1));
-    expect(fourthTop.dy, closeTo(firstTop.dy, 0.1));
-    expect(fourthTop.dx, greaterThan(thirdTop.dx));
   });
 
   testWidgets('AppWorkspaceSplitContent switches from side panel to stack', (

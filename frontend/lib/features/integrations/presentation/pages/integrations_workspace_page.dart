@@ -147,6 +147,69 @@ class _IntegrationsWorkspaceContentState
       leadingIcon: AppRouteIcons.integrations,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsAllSummaryLabel,
+  count: totalCount,
+  icon: Icons.hub_outlined,
+  onSelected: () {
+            unawaited(_applyFilter(controller, IntegrationWorkspaceFilter.all));
+          },
+),
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsActiveSummaryLabel,
+  count: state.activeCount,
+  icon: Icons.check_circle_outline,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () {
+            unawaited(
+              _applyFilter(controller, IntegrationWorkspaceFilter.active),
+            );
+          },
+),
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsWarningsSummaryLabel,
+  count: state.warningCount,
+  icon: Icons.warning_amber_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () {
+            unawaited(
+              _applyFilter(controller, IntegrationWorkspaceFilter.warning),
+            );
+          },
+),
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsFailedSummaryLabel,
+  count: state.failedCount,
+  icon: Icons.error_outline,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () {
+            unawaited(
+              _applyFilter(controller, IntegrationWorkspaceFilter.failed),
+            );
+          },
+),
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsApiKeysSummaryLabel,
+  count: state.apiKeys.length,
+  icon: Icons.key_outlined,
+  onSelected: () {
+            unawaited(
+              _applyFilter(controller, IntegrationWorkspaceFilter.apiKeys),
+            );
+          },
+),
+        AppWorkspaceSummaryNotification(
+  label: l10n.integrationsWebhooksSummaryLabel,
+  count: state.webhooks.length,
+  icon: Icons.webhook_outlined,
+  onSelected: () {
+            unawaited(
+              _applyFilter(controller, IntegrationWorkspaceFilter.webhooks),
+            );
+          },
+),
+      ],
         secondary: <Widget>[
           AppPermissionActionButton(
             requirement: _integrationsManageRequirement,
@@ -188,76 +251,7 @@ class _IntegrationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsAllSummaryLabel,
-          value: totalCount.toString(),
-          icon: Icons.hub_outlined,
-          onPressed: () {
-            unawaited(_applyFilter(controller, IntegrationWorkspaceFilter.all));
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsActiveSummaryLabel,
-          value: state.activeCount.toString(),
-          icon: Icons.check_circle_outline,
-          tone: AppWorkspaceStatusTone.success,
-          onPressed: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.active),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsWarningsSummaryLabel,
-          value: state.warningCount.toString(),
-          icon: Icons.warning_amber_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.warning),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsFailedSummaryLabel,
-          value: state.failedCount.toString(),
-          icon: Icons.error_outline,
-          tone: AppWorkspaceStatusTone.error,
-          onPressed: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.failed),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsApiKeysSummaryLabel,
-          value: state.apiKeys.length.toString(),
-          icon: Icons.key_outlined,
-          onPressed: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.apiKeys),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.integrationsWebhooksSummaryLabel,
-          value: state.webhooks.length.toString(),
-          icon: Icons.webhook_outlined,
-          onPressed: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.webhooks),
-            );
-          },
-        ),
-      ],
+      
       body: _IntegrationWorklistPanel(
         state: state,
         searchController: _searchController,

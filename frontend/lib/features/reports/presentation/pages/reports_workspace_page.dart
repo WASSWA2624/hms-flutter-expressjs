@@ -113,9 +113,9 @@ class _ReportsWorkspaceContentState
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, state),
         secondary: <Widget>[
           if (_canWriteReports(policy) && state.selectedItem?.canRun == true)
             AppButton.secondary(
@@ -128,7 +128,7 @@ class _ReportsWorkspaceContentState
         onRefresh: controller.refresh,
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state),
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -159,7 +159,7 @@ class _ReportsWorkspaceContentState
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     ReportsWorkspaceState state,
   ) {
@@ -168,16 +168,16 @@ class _ReportsWorkspaceContentState
       reportsWorkspaceControllerProvider.notifier,
     );
     final List<ReportsSummaryCard> summary = state.overview.summary;
-    final List<Widget> cards = <Widget>[
+    final List<AppWorkspaceSummaryNotification> notifications =
+        <AppWorkspaceSummaryNotification>[
       for (final ReportsSummaryCard card in summary)
         if (card.value > 0)
-          AppWorkspaceSummaryCard(
+          AppWorkspaceSummaryNotification(
             label: card.label,
-            value: AppFormatters.compactNumber(card.value, locale),
+            count: card.value,
             icon: _summaryIcon(card.id),
             tone: _summaryTone(card.id),
-            compact: true,
-            onPressed: () {
+            onSelected: () {
               final ReportsQueueSummary? queue = state.overview.queueSummaries
                   .where((ReportsQueueSummary item) => item.count > 0)
                   .firstOrNull;
@@ -191,25 +191,23 @@ class _ReportsWorkspaceContentState
           ),
     ];
 
-    if (cards.isNotEmpty) {
-      return cards;
+    if (notifications.isNotEmpty) {
+      return notifications;
     }
 
-    return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: context.l10n.reportsPanelCatalog,
-        value: AppFormatters.compactNumber(0, locale),
-        icon: Icons.article_outlined,
-        compact: true,
-        onPressed: () => controller.applyPanel(ReportsWorkspacePanel.catalog),
-      ),
-      AppWorkspaceSummaryCard(
-        label: context.l10n.reportsPanelAudit,
-        value: AppFormatters.compactNumber(0, locale),
-        icon: Icons.manage_search_outlined,
-        compact: true,
-        onPressed: () => controller.applyPanel(ReportsWorkspacePanel.audit),
-      ),
+    return <AppWorkspaceSummaryNotification>[
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.reportsPanelCatalog,
+  count: 0,
+  icon: Icons.article_outlined,
+  onSelected: () => controller.applyPanel(ReportsWorkspacePanel.catalog),
+),
+      AppWorkspaceSummaryNotification(
+  label: context.l10n.reportsPanelAudit,
+  count: 0,
+  icon: Icons.manage_search_outlined,
+  onSelected: () => controller.applyPanel(ReportsWorkspacePanel.audit),
+),
     ];
   }
 }

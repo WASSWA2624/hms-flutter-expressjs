@@ -167,6 +167,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       leadingIcon: AppRouteIcons.hr,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, state, controller),
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
@@ -197,8 +198,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
         isRefreshing: state.isRefreshing,
       ),
-      compactSummaryCards: true,
-      summaryCards: _summaryCards(context, state, controller),
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -350,7 +350,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     await _showWorkQueueDialog(context);
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     HrWorkspaceState state,
     HrWorkspaceController controller,
@@ -358,64 +358,59 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final AppLocalizations l10n = context.l10n;
     final HrWorkspaceSummary summary = state.overview.summary;
 
-    return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: l10n.hrTotalStaffSummaryLabel,
-        value: summary.totalStaff.toString(),
-        icon: Icons.badge_outlined,
-        compact: true,
-        onPressed: controller.clearStaffFilters,
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.hrLeaveRequestsSummaryLabel,
-        value: summary.leaveRequests.toString(),
-        icon: Icons.event_busy_outlined,
-        tone: summary.leaveRequests > 0
+    return <AppWorkspaceSummaryNotification>[
+      AppWorkspaceSummaryNotification(
+  label: l10n.hrTotalStaffSummaryLabel,
+  count: summary.totalStaff,
+  icon: Icons.badge_outlined,
+  onSelected: controller.clearStaffFilters,
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.hrLeaveRequestsSummaryLabel,
+  count: summary.leaveRequests,
+  icon: Icons.event_busy_outlined,
+  tone: summary.leaveRequests > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-        compact: true,
-        onPressed: () {
+  onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.leaveRequests),
           );
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.hrRosterDraftsSummaryLabel,
-        value: summary.draftRosters.toString(),
-        icon: Icons.calendar_month_outlined,
-        compact: true,
-        onPressed: () {
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.hrRosterDraftsSummaryLabel,
+  count: summary.draftRosters,
+  icon: Icons.calendar_month_outlined,
+  onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.rosterDrafts),
           );
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.hrUnassignedShiftsSummaryLabel,
-        value: summary.unassignedShifts.toString(),
-        icon: Icons.pending_actions_outlined,
-        tone: summary.unassignedShifts > 0
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.hrUnassignedShiftsSummaryLabel,
+  count: summary.unassignedShifts,
+  icon: Icons.pending_actions_outlined,
+  tone: summary.unassignedShifts > 0
             ? AppWorkspaceStatusTone.info
             : AppWorkspaceStatusTone.neutral,
-        compact: true,
-        onPressed: () {
+  onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.unassignedShifts),
           );
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.hrPayrollDraftsSummaryLabel,
-        value: summary.payrollDraftRuns.toString(),
-        icon: Icons.payments_outlined,
-        compact: true,
-        onPressed: () {
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.hrPayrollDraftsSummaryLabel,
+  count: summary.payrollDraftRuns,
+  icon: Icons.payments_outlined,
+  onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.payrollDrafts),
           );
         },
-      ),
+),
     ];
   }
 }

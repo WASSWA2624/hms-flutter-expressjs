@@ -107,9 +107,9 @@ class _OperationsWorkspaceContentState
     return AppWorkspace(
       title: l10n.operationsTitle,
       leadingIcon: AppRouteIcons.operations,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, state, controller),
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.operationsOpenReportAction,
@@ -133,7 +133,7 @@ class _OperationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state, controller),
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -157,7 +157,7 @@ class _OperationsWorkspaceContentState
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     OperationsWorkspaceState state,
     OperationsWorkspaceController controller,
@@ -167,58 +167,53 @@ class _OperationsWorkspaceContentState
     final int total =
         state.workItems.totalItemCount ?? state.workItems.items.length;
 
-    return <Widget>[
+    return <AppWorkspaceSummaryNotification>[
       if (total > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsAllRequestsSummaryLabel,
-          value: AppFormatters.compactNumber(total, locale),
-          icon: Icons.inventory_2_outlined,
-          compact: true,
-          onPressed: controller.clearFilters,
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsAllRequestsSummaryLabel,
+  count: total,
+  icon: Icons.inventory_2_outlined,
+  onSelected: controller.clearFilters,
+      ),
       if (state.openCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsOpenSummaryLabel,
-          value: AppFormatters.compactNumber(state.openCount, locale),
-          icon: Icons.pending_actions_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyStatus('OPEN'),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsOpenSummaryLabel,
+  count: state.openCount,
+  icon: Icons.pending_actions_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () => controller.applyStatus('OPEN'),
+),
       if (state.inProgressCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsInProgressSummaryLabel,
-          value: AppFormatters.compactNumber(state.inProgressCount, locale),
-          icon: Icons.engineering_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () => controller.applyStatus('IN_PROGRESS'),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsInProgressSummaryLabel,
+  count: state.inProgressCount,
+  icon: Icons.engineering_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyStatus('IN_PROGRESS'),
+),
       if (state.completedCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsCompletedSummaryLabel,
-          value: AppFormatters.compactNumber(state.completedCount, locale),
-          icon: Icons.task_alt_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () => controller.applyStatus('COMPLETED'),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsCompletedSummaryLabel,
+  count: state.completedCount,
+  icon: Icons.task_alt_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () => controller.applyStatus('COMPLETED'),
+),
       if (state.cancelledCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsCancelledSummaryLabel,
-          value: AppFormatters.compactNumber(state.cancelledCount, locale),
-          icon: Icons.cancel_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          compact: true,
-          onPressed: () => controller.applyStatus('CANCELLED'),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsCancelledSummaryLabel,
+  count: state.cancelledCount,
+  icon: Icons.cancel_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () => controller.applyStatus('CANCELLED'),
+),
       if (state.assetCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.operationsAssetsSummaryLabel,
-          value: AppFormatters.compactNumber(state.assetCount, locale),
-          icon: Icons.precision_manufacturing_outlined,
-          compact: true,
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.operationsAssetsSummaryLabel,
+  count: state.assetCount,
+  icon: Icons.precision_manufacturing_outlined,
+  onSelected: () {},
+),
     ];
   }
 
@@ -1447,29 +1442,22 @@ class _OperationsReportDialog extends StatelessWidget {
             records: <AppReportSummaryItem>[
               AppReportSummaryItem(
                 label: l10n.operationsAllRequestsSummaryLabel,
-                value: AppFormatters.compactNumber(
-                  state.workItems.totalItemCount ??
-                      state.workItems.items.length,
-                  locale,
-                ),
+                value: '${state.workItems.totalItemCount ?? state.workItems.items.length}',
                 icon: Icons.inventory_2_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.operationsOpenSummaryLabel,
-                value: AppFormatters.compactNumber(state.openCount, locale),
+                value: '${state.openCount}',
                 icon: Icons.pending_actions_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.operationsInProgressSummaryLabel,
-                value: AppFormatters.compactNumber(
-                  state.inProgressCount,
-                  locale,
-                ),
+                value: '${state.inProgressCount}',
                 icon: Icons.engineering_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.operationsAssetsSummaryLabel,
-                value: AppFormatters.compactNumber(state.assetCount, locale),
+                value: '${state.assetCount}',
                 icon: Icons.precision_manufacturing_outlined,
               ),
             ],

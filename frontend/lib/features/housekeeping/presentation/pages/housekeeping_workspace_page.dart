@@ -106,6 +106,7 @@ class _HousekeepingWorkspaceContentState
       leadingIcon: AppRouteIcons.housekeeping,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, state),
         showHousekeepingRequest: false,
         secondary: <Widget>[
           AppButton.secondary(
@@ -150,8 +151,6 @@ class _HousekeepingWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state),
-      compactSummaryCards: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -176,7 +175,7 @@ class _HousekeepingWorkspaceContentState
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     HousekeepingWorkspaceState state,
   ) {
@@ -186,75 +185,56 @@ class _HousekeepingWorkspaceContentState
       housekeepingWorkspaceControllerProvider.notifier,
     );
 
-    return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: l10n.housekeepingPendingTasksSummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.overview.summaryValue('pending_tasks'),
-          locale,
-        ),
-        icon: Icons.cleaning_services_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        compact: true,
-        onPressed: () => controller.applyFilters(
+    return <AppWorkspaceSummaryNotification>[
+      AppWorkspaceSummaryNotification(
+  label: l10n.housekeepingPendingTasksSummaryLabel,
+  count: state.overview.summaryValue('pending_tasks'),
+  icon: Icons.cleaning_services_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.tasks,
           status: 'PENDING',
           queue: HousekeepingQueue.all,
         ),
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.housekeepingCompletedTodaySummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.overview.summaryValue('completed_today'),
-          locale,
-        ),
-        icon: Icons.task_alt_outlined,
-        tone: AppWorkspaceStatusTone.success,
-        compact: true,
-        onPressed: () => controller.applyFilters(
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.housekeepingCompletedTodaySummaryLabel,
+  count: state.overview.summaryValue('completed_today'),
+  icon: Icons.task_alt_outlined,
+  tone: AppWorkspaceStatusTone.success,
+  onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.tasks,
           status: 'COMPLETED',
           datePreset: HousekeepingDatePreset.today,
           queue: HousekeepingQueue.all,
         ),
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.housekeepingOpenRequestsSummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.overview.summaryValue('open_requests'),
-          locale,
-        ),
-        icon: Icons.build_circle_outlined,
-        tone: AppWorkspaceStatusTone.info,
-        compact: true,
-        onPressed: () => controller.applyFilters(
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.housekeepingOpenRequestsSummaryLabel,
+  count: state.overview.summaryValue('open_requests'),
+  icon: Icons.build_circle_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.maintenanceRequests,
           queue: HousekeepingQueue.openRequests,
         ),
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.housekeepingOverdueRequestsSummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.overview.summaryValue('overdue_requests'),
-          locale,
-        ),
-        icon: Icons.warning_amber_outlined,
-        tone: AppWorkspaceStatusTone.error,
-        compact: true,
-        onPressed: () => controller.applyFilters(
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.housekeepingOverdueRequestsSummaryLabel,
+  count: state.overview.summaryValue('overdue_requests'),
+  icon: Icons.warning_amber_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.maintenanceRequests,
           queue: HousekeepingQueue.overdueRequests,
         ),
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.housekeepingAssetsSummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.overview.summaryValue('total_assets'),
-          locale,
-        ),
-        icon: Icons.inventory_2_outlined,
-        compact: true,
-      ),
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.housekeepingAssetsSummaryLabel,
+  count: state.overview.summaryValue('total_assets'),
+  icon: Icons.inventory_2_outlined,
+  onSelected: () {},
+),
     ];
   }
 

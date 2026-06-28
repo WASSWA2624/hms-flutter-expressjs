@@ -109,9 +109,76 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     return AppWorkspace(
       title: l10n.labTitle,
       leadingIcon: AppRouteIcons.lab,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (state.summary.totalForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsSummaryLabel
+                : l10n.labTotalOrdersSummaryLabel,
+            value: state.summary.totalForView(state.query.view),
+            icon: Icons.assignment_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(LabQueueScope.all),
+          ),
+        if (state.summary.collectionForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsAwaitingResultsSummaryLabel
+                : l10n.labWaitingSampleSummaryLabel,
+            value: state.summary.collectionForView(state.query.view),
+            icon: Icons.biotech_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () => controller.applyScope(LabQueueScope.collection),
+          ),
+        if (state.summary.processingForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsProcessingSummaryLabel
+                : l10n.labProcessingSummaryLabel,
+            value: state.summary.processingForView(state.query.view),
+            icon: Icons.sync_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(LabQueueScope.processing),
+          ),
+        if (state.summary.resultsForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsPendingVerificationSummaryLabel
+                : l10n.labResultPendingSummaryLabel,
+            value: state.summary.resultsForView(state.query.view),
+            icon: Icons.pending_actions_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () => controller.applyScope(LabQueueScope.results),
+          ),
+        if (state.summary.criticalForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsCriticalSummaryLabel
+                : l10n.labCriticalSummaryLabel,
+            value: state.summary.criticalForView(state.query.view),
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () => controller.applyScope(LabQueueScope.critical),
+          ),
+        if (state.summary.completedForView(state.query.view) > 0)
+          _summaryNotification(
+            context,
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labPatientsCompletedSummaryLabel
+                : l10n.labCompletedSummaryLabel,
+            value: state.summary.completedForView(state.query.view),
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () => controller.applyScope(LabQueueScope.completed),
+          ),
+      ],
         secondary: <Widget>[
           AppWorkspaceViewToggle(
             label: state.query.view == LabWorkbenchView.patients
@@ -158,74 +225,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: <Widget>[
-        if (state.summary.totalForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsSummaryLabel
-                : l10n.labTotalOrdersSummaryLabel,
-            value: state.summary.totalForView(state.query.view),
-            icon: Icons.assignment_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () => controller.applyScope(LabQueueScope.all),
-          ),
-        if (state.summary.collectionForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsAwaitingResultsSummaryLabel
-                : l10n.labWaitingSampleSummaryLabel,
-            value: state.summary.collectionForView(state.query.view),
-            icon: Icons.biotech_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () => controller.applyScope(LabQueueScope.collection),
-          ),
-        if (state.summary.processingForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsProcessingSummaryLabel
-                : l10n.labProcessingSummaryLabel,
-            value: state.summary.processingForView(state.query.view),
-            icon: Icons.sync_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () => controller.applyScope(LabQueueScope.processing),
-          ),
-        if (state.summary.resultsForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsPendingVerificationSummaryLabel
-                : l10n.labResultPendingSummaryLabel,
-            value: state.summary.resultsForView(state.query.view),
-            icon: Icons.pending_actions_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () => controller.applyScope(LabQueueScope.results),
-          ),
-        if (state.summary.criticalForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsCriticalSummaryLabel
-                : l10n.labCriticalSummaryLabel,
-            value: state.summary.criticalForView(state.query.view),
-            icon: Icons.priority_high_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onPressed: () => controller.applyScope(LabQueueScope.critical),
-          ),
-        if (state.summary.completedForView(state.query.view) > 0)
-          _summaryCard(
-            context,
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labPatientsCompletedSummaryLabel
-                : l10n.labCompletedSummaryLabel,
-            value: state.summary.completedForView(state.query.view),
-            icon: Icons.verified_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onPressed: () => controller.applyScope(LabQueueScope.completed),
-          ),
-      ],
+      
       body: _LabWorklistPanel(
         state: state,
         canMutate: canMutate,
@@ -268,7 +268,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     );
   }
 
-  Widget _summaryCard(
+  AppWorkspaceSummaryNotification _summaryNotification(
     BuildContext context, {
     required String label,
     required int value,
@@ -276,16 +276,12 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     required AppWorkspaceStatusTone tone,
     required VoidCallback onPressed,
   }) {
-    return AppWorkspaceSummaryCard(
+    return AppWorkspaceSummaryNotification(
       label: label,
-      value: AppFormatters.compactNumber(
-        value,
-        Localizations.localeOf(context),
-      ),
+      count: value,
       icon: icon,
       tone: tone,
-      compact: true,
-      onPressed: onPressed,
+      onSelected: onPressed,
     );
   }
 }

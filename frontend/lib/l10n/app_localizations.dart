@@ -148,6 +148,12 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get workspaceToolbarOverflowLabel;
 
+  /// Label for the workspace toolbar notifications submenu that lists worklist filter shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get workspaceNotificationsMenuLabel;
+
   /// Label for entering full-screen mode from the app shell.
   ///
   /// In en, this message translates to:

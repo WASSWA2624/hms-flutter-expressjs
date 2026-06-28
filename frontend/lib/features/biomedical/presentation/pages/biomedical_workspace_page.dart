@@ -121,9 +121,56 @@ class _BiomedicalWorkspaceContentState
     return AppWorkspace(
       title: l10n.biomedicalTitle,
       leadingIcon: AppRouteIcons.biomedical,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        _summaryNotification(
+          context,
+          label: l10n.biomedicalTotalEquipmentSummaryLabel,
+          value: state.workbench.summary.totalEquipment,
+          icon: Icons.medical_services_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          onPressed: () {
+            unawaited(controller.applyPanel(BiomedicalPanels.registry));
+          },
+        ),
+        _summaryNotification(
+          context,
+          label: l10n.biomedicalOverduePmSummaryLabel,
+          value: state.workbench.summary.overduePm,
+          icon: Icons.event_busy_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.overduePm),
+        ),
+        _summaryNotification(
+          context,
+          label: l10n.biomedicalOpenWorkOrdersSummaryLabel,
+          value: state.workbench.summary.openWorkOrders,
+          icon: Icons.build_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.openWorkOrders),
+        ),
+        _summaryNotification(
+          context,
+          label: l10n.biomedicalCriticalDowntimeSummaryLabel,
+          value: state.workbench.summary.criticalDowntime,
+          icon: Icons.power_settings_new_outlined,
+          tone: AppWorkspaceStatusTone.error,
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.criticalDowntime),
+        ),
+        _summaryNotification(
+          context,
+          label: l10n.biomedicalActiveRecallsSummaryLabel,
+          value: state.workbench.summary.activeRecalls,
+          icon: Icons.campaign_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.recallActions),
+        ),
+      ],
         showFaultReport: false,
         primary: canWrite
             ? AppButton.primary(
@@ -150,54 +197,7 @@ class _BiomedicalWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: <Widget>[
-        _summaryCard(
-          context,
-          label: l10n.biomedicalTotalEquipmentSummaryLabel,
-          value: state.workbench.summary.totalEquipment,
-          icon: Icons.medical_services_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onPressed: () {
-            unawaited(controller.applyPanel(BiomedicalPanels.registry));
-          },
-        ),
-        _summaryCard(
-          context,
-          label: l10n.biomedicalOverduePmSummaryLabel,
-          value: state.workbench.summary.overduePm,
-          icon: Icons.event_busy_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () =>
-              _applyQueue(controller, state, BiomedicalQueues.overduePm),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.biomedicalOpenWorkOrdersSummaryLabel,
-          value: state.workbench.summary.openWorkOrders,
-          icon: Icons.build_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onPressed: () =>
-              _applyQueue(controller, state, BiomedicalQueues.openWorkOrders),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.biomedicalCriticalDowntimeSummaryLabel,
-          value: state.workbench.summary.criticalDowntime,
-          icon: Icons.power_settings_new_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          onPressed: () =>
-              _applyQueue(controller, state, BiomedicalQueues.criticalDowntime),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.biomedicalActiveRecallsSummaryLabel,
-          value: state.workbench.summary.activeRecalls,
-          icon: Icons.campaign_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () =>
-              _applyQueue(controller, state, BiomedicalQueues.recallActions),
-        ),
-      ],
+      
       body: _BiomedicalWorklistPanel(
         state: state,
         searchController: _searchController,
@@ -209,7 +209,7 @@ class _BiomedicalWorkspaceContentState
     );
   }
 
-  Widget _summaryCard(
+  AppWorkspaceSummaryNotification _summaryNotification(
     BuildContext context, {
     required String label,
     required int value,
@@ -217,17 +217,13 @@ class _BiomedicalWorkspaceContentState
     required AppWorkspaceStatusTone tone,
     required VoidCallback onPressed,
   }) {
-    return AppWorkspaceSummaryCard(
+    return AppWorkspaceSummaryNotification(
       label: label,
-      value: AppFormatters.compactNumber(
-        value,
-        Localizations.localeOf(context),
-      ),
-      icon: icon,
-      tone: tone,
-      compact: true,
-      onPressed: onPressed,
-    );
+      count: value,
+  icon: icon,
+  tone: tone,
+  onSelected: onPressed,
+      );
   }
 
   void _applyQueue(

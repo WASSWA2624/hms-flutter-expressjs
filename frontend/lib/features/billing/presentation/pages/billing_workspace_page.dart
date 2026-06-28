@@ -121,6 +121,7 @@ class _BillingWorkspaceContentState
       leadingIcon: AppRouteIcons.billing,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, ref, state),
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.billingCloseShift,
@@ -138,8 +139,6 @@ class _BillingWorkspaceContentState
         onRefresh: controller.refresh,
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, ref, state),
-      compactSummaryCards: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -161,7 +160,7 @@ class _BillingWorkspaceContentState
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     WidgetRef ref,
     BillingWorkspaceState state,
@@ -171,61 +170,55 @@ class _BillingWorkspaceContentState
     final Locale locale = Localizations.localeOf(context);
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
-    return <Widget>[
+    return <AppWorkspaceSummaryNotification>[
       if (summary.workloadCount > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingAllWorkItems,
-          value: AppFormatters.compactNumber(summary.workloadCount, locale),
-          icon: Icons.inventory_2_outlined,
-          compact: true,
-          onPressed: () => controller.applyQueue(BillingQueueType.all),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingAllWorkItems,
+  count: summary.workloadCount,
+  icon: Icons.inventory_2_outlined,
+  onSelected: () => controller.applyQueue(BillingQueueType.all),
+),
       if (summary.pendingPayment > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingAwaitingPayment,
-          value: AppFormatters.compactNumber(summary.pendingPayment, locale),
-          icon: Icons.payments_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () =>
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingAwaitingPayment,
+  count: summary.pendingPayment,
+  icon: Icons.payments_outlined,
+  tone: AppWorkspaceStatusTone.warning,
+  onSelected: () =>
               controller.applyQueue(BillingQueueType.pendingPayment),
-        ),
+),
       if (summary.needsIssue > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingIssueQueue,
-          value: AppFormatters.compactNumber(summary.needsIssue, locale),
-          icon: Icons.receipt_long_outlined,
-          compact: true,
-          onPressed: () => controller.applyQueue(BillingQueueType.needsIssue),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingIssueQueue,
+  count: summary.needsIssue,
+  icon: Icons.receipt_long_outlined,
+  onSelected: () => controller.applyQueue(BillingQueueType.needsIssue),
+),
       if (summary.claimsPending > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingClaimsPending,
-          value: AppFormatters.compactNumber(summary.claimsPending, locale),
-          icon: Icons.health_and_safety_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () =>
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingClaimsPending,
+  count: summary.claimsPending,
+  icon: Icons.health_and_safety_outlined,
+  tone: AppWorkspaceStatusTone.info,
+  onSelected: () =>
               controller.applyQueue(BillingQueueType.claimsPending),
-        ),
+),
       if (summary.approvalRequired > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingApprovals,
-          value: AppFormatters.compactNumber(summary.approvalRequired, locale),
-          icon: Icons.rule_outlined,
-          compact: true,
-          onPressed: () =>
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingApprovals,
+  count: summary.approvalRequired,
+  icon: Icons.rule_outlined,
+  onSelected: () =>
               controller.applyQueue(BillingQueueType.approvalRequired),
-        ),
+),
       if (summary.overdue > 0)
-        AppWorkspaceSummaryCard(
-          label: l10n.billingOverdue,
-          value: AppFormatters.compactNumber(summary.overdue, locale),
-          icon: Icons.warning_amber_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          compact: true,
-          onPressed: () => controller.applyQueue(BillingQueueType.overdue),
-        ),
+        AppWorkspaceSummaryNotification(
+  label: l10n.billingOverdue,
+  count: summary.overdue,
+  icon: Icons.warning_amber_outlined,
+  tone: AppWorkspaceStatusTone.error,
+  onSelected: () => controller.applyQueue(BillingQueueType.overdue),
+),
     ];
   }
 }

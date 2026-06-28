@@ -191,9 +191,78 @@ class _NursingWorkspaceContentState
     return AppWorkspace(
       title: l10n.nursingTitle,
       leadingIcon: AppRouteIcons.nursing,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: <AppWorkspaceSummaryNotification>[
+        if (_pageTotal(state.worklist) > 0)
+          _summaryNotification(
+            context,
+            label: _NursingSummaryText.allWorklist,
+            value: _pageTotal(state.worklist),
+            icon: Icons.inventory_2_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(NursingQueueScope.all),
+          ),
+        if (state.assignedWardCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingAssignedWardSummaryLabel,
+            value: state.assignedWardCount,
+            icon: Icons.local_hospital_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.assignedWard),
+          ),
+        if (state.urgentCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingUrgentSummaryLabel,
+            value: state.urgentCount,
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () => controller.applyScope(NursingQueueScope.urgent),
+          ),
+        if (state.medicationDueCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingMedicationDueSummaryLabel,
+            value: state.medicationDueCount,
+            icon: Icons.medication_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.medicationDue),
+          ),
+        if (state.handoverPendingCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingHandoverPendingSummaryLabel,
+            value: state.handoverPendingCount,
+            icon: Icons.swap_horiz_outlined,
+            tone: AppWorkspaceStatusTone.neutral,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.handoverPending),
+          ),
+        if (state.transferPendingCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingTransferPendingSummaryLabel,
+            value: state.transferPendingCount,
+            icon: Icons.transfer_within_a_station_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.transferPending),
+          ),
+        if (state.dischargePendingCount > 0)
+          _summaryNotification(
+            context,
+            label: l10n.nursingDischargePendingSummaryLabel,
+            value: state.dischargePendingCount,
+            icon: Icons.logout_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.dischargePending),
+          ),
+      ],
         secondary: <Widget>[
           AppButton.secondary(
             leadingIcon: Icons.assignment_ind_outlined,
@@ -244,76 +313,7 @@ class _NursingWorkspaceContentState
         },
         isRefreshing: state.isRefreshing || state.isRefreshingDetail,
       ),
-      summaryCards: <Widget>[
-        if (_pageTotal(state.worklist) > 0)
-          _summaryCard(
-            context,
-            label: _NursingSummaryText.allWorklist,
-            value: _pageTotal(state.worklist),
-            icon: Icons.inventory_2_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () => controller.applyScope(NursingQueueScope.all),
-          ),
-        if (state.assignedWardCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingAssignedWardSummaryLabel,
-            value: state.assignedWardCount,
-            icon: Icons.local_hospital_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () =>
-                controller.applyScope(NursingQueueScope.assignedWard),
-          ),
-        if (state.urgentCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingUrgentSummaryLabel,
-            value: state.urgentCount,
-            icon: Icons.priority_high_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onPressed: () => controller.applyScope(NursingQueueScope.urgent),
-          ),
-        if (state.medicationDueCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingMedicationDueSummaryLabel,
-            value: state.medicationDueCount,
-            icon: Icons.medication_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () =>
-                controller.applyScope(NursingQueueScope.medicationDue),
-          ),
-        if (state.handoverPendingCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingHandoverPendingSummaryLabel,
-            value: state.handoverPendingCount,
-            icon: Icons.swap_horiz_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
-            onPressed: () =>
-                controller.applyScope(NursingQueueScope.handoverPending),
-          ),
-        if (state.transferPendingCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingTransferPendingSummaryLabel,
-            value: state.transferPendingCount,
-            icon: Icons.transfer_within_a_station_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () =>
-                controller.applyScope(NursingQueueScope.transferPending),
-          ),
-        if (state.dischargePendingCount > 0)
-          _summaryCard(
-            context,
-            label: l10n.nursingDischargePendingSummaryLabel,
-            value: state.dischargePendingCount,
-            icon: Icons.logout_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onPressed: () =>
-                controller.applyScope(NursingQueueScope.dischargePending),
-          ),
-      ],
+      
       body: _NursingWorklistPanel(
         state: state,
         searchController: _searchController,
@@ -362,7 +362,7 @@ class _NursingWorkspaceContentState
     );
   }
 
-  Widget _summaryCard(
+  AppWorkspaceSummaryNotification _summaryNotification(
     BuildContext context, {
     required String label,
     required int value,
@@ -370,17 +370,13 @@ class _NursingWorkspaceContentState
     required AppWorkspaceStatusTone tone,
     required VoidCallback onPressed,
   }) {
-    return AppWorkspaceSummaryCard(
+    return AppWorkspaceSummaryNotification(
       label: label,
-      value: AppFormatters.compactNumber(
-        value,
-        Localizations.localeOf(context),
-      ),
-      icon: icon,
-      tone: tone,
-      compact: true,
-      onPressed: onPressed,
-    );
+      count: value,
+  icon: icon,
+  tone: tone,
+  onSelected: onPressed,
+      );
   }
 }
 

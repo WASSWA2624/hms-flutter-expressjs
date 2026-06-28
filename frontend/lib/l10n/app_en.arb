@@ -36,6 +36,10 @@
   "@workspaceToolbarOverflowLabel": {
     "description": "Accessibility label for the workspace toolbar overflow menu."
   },
+  "workspaceNotificationsMenuLabel": "Notifications",
+  "@workspaceNotificationsMenuLabel": {
+    "description": "Label for the workspace toolbar notifications submenu that lists worklist filter shortcuts."
+  },
   "workspaceFullscreenEnterLabel": "Full screen",
   "@workspaceFullscreenEnterLabel": {
     "description": "Label for entering full-screen mode from the app shell."

@@ -192,12 +192,11 @@ class _SubscriptionsWorkspaceContentState
       leadingIcon: AppRouteIcons.subscriptions,
       toolbar: appWorkspaceToolbarWithLabels(
         context.l10n,
+        summaryNotifications: _summaryNotifications(context, state),
         primary: _primaryAction(context, canWrite, state),
         onRefresh: controller.refresh,
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state),
-      compactSummaryCards: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -262,7 +261,7 @@ class _SubscriptionsWorkspaceContentState
     };
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     SubscriptionsWorkspaceState state,
   ) {
@@ -279,7 +278,7 @@ class _SubscriptionsWorkspaceContentState
       return null;
     }
 
-    Widget card({
+    AppWorkspaceSummaryNotification card({
       required String metricId,
       required String label,
       required IconData icon,
@@ -289,20 +288,16 @@ class _SubscriptionsWorkspaceContentState
       final SubscriptionQueueSummary? queue = queueId == null
           ? null
           : queueById(queueId);
-      return AppWorkspaceSummaryCard(
-        label: label,
-        value: AppFormatters.compactNumber(
-          state.summaryValue(metricId),
-          locale,
-        ),
-        icon: icon,
-        tone: tone,
-        compact: true,
-        onPressed: queue == null ? null : () => controller.applyQueue(queue),
-      );
+      return AppWorkspaceSummaryNotification(
+  label: label,
+  count: state.summaryValue(metricId),
+  icon: icon,
+  tone: tone,
+  onSelected: queue == null ? () {} : () => controller.applyQueue(queue),
+);
     }
 
-    return <Widget>[
+    return <AppWorkspaceSummaryNotification>[
       card(
         metricId: _SummaryIds.activeSubscriptions,
         label: _SubscriptionsText.activeSubscriptions,

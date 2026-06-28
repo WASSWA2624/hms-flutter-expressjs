@@ -24,7 +24,7 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 
 | Component | Built on | Purpose |
 |---|---|---|
-| `AppWorkspace` | composition | module work-queue shell: summary cards, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
+| `AppWorkspace` | composition | module work-queue shell: toolbar notifications submenu, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
 | `AppListTable` | `ListView` / table layout | paginated worklist with mobile adaptive mode |
 | `AppWorkspaceDetailPanel` | composition | selected row detail sections |
 | `AppActionPanel` / `AppActionList` | composition | grouped primary/secondary actions |

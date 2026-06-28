@@ -137,6 +137,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         leadingIcon: Icons.accessibility_new_outlined,
         toolbar: appWorkspaceToolbarWithLabels(
           l10n,
+        summaryNotifications: _summaryNotifications(context, controller),
           secondary: <Widget>[
             AppButton.secondary(
               label: l10n.physiotherapyReferralsSummaryLabel,
@@ -222,20 +223,19 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           },
           isRefreshing: state.isRefreshing,
         ),
-        compactSummaryCards: true,
-        summaryCards: _summaryCards(context, controller),
+        
         body: _buildWorklist(context, ref, controller),
       ),
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     PhysiotherapyWorkspaceController controller,
   ) {
     final l10n = context.l10n;
-    return <Widget>[
-      _summaryCard(
+    return <AppWorkspaceSummaryNotification>[
+      _summaryNotification(
         label: l10n.physiotherapyReferralsSummaryLabel,
         value: state.referralsCount,
         icon: Icons.assignment_outlined,
@@ -243,7 +243,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         scope: PhysiotherapyQueueScope.referrals,
         controller: controller,
       ),
-      _summaryCard(
+      _summaryNotification(
         label: l10n.physiotherapyTodaySummaryLabel,
         value: state.todayCount,
         icon: Icons.today_outlined,
@@ -251,7 +251,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         scope: PhysiotherapyQueueScope.today,
         controller: controller,
       ),
-      _summaryCard(
+      _summaryNotification(
         label: l10n.physiotherapyMissedSummaryLabel,
         value: state.missedCount,
         icon: Icons.event_busy_outlined,
@@ -259,7 +259,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         scope: PhysiotherapyQueueScope.missed,
         controller: controller,
       ),
-      _summaryCard(
+      _summaryNotification(
         label: l10n.physiotherapyActivePlansSummaryLabel,
         value: state.activePlansCount,
         icon: Icons.fact_check_outlined,
@@ -267,7 +267,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         scope: PhysiotherapyQueueScope.activePlans,
         controller: controller,
       ),
-      _summaryCard(
+      _summaryNotification(
         label: l10n.physiotherapyFollowUpDueSummaryLabel,
         value: state.followUpDueCount,
         icon: Icons.notification_important_outlined,
@@ -275,7 +275,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         scope: PhysiotherapyQueueScope.followUpDue,
         controller: controller,
       ),
-      _summaryCard(
+      _summaryNotification(
         label: l10n.physiotherapyCompletedSummaryLabel,
         value: state.completedCount,
         icon: Icons.task_alt_outlined,
@@ -286,7 +286,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     ];
   }
 
-  Widget _summaryCard({
+  AppWorkspaceSummaryNotification _summaryNotification({
     required String label,
     required int value,
     required IconData icon,
@@ -294,16 +294,15 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     required PhysiotherapyQueueScope scope,
     required PhysiotherapyWorkspaceController controller,
   }) {
-    return AppWorkspaceSummaryCard(
+    return AppWorkspaceSummaryNotification(
       label: label,
-      value: value.toString(),
-      icon: icon,
-      tone: tone,
-      compact: true,
-      onPressed: () {
+      count: value,
+  icon: icon,
+  tone: tone,
+  onSelected: () {
         controller.applyScope(scope);
       },
-    );
+);
   }
 
   Widget _buildWorklist(

@@ -154,9 +154,9 @@ class _CommunicationsWorkspaceContentState
     return AppWorkspace(
       title: l10n.communicationsWorkspaceTitle,
       leadingIcon: AppRouteIcons.communications,
-      compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        summaryNotifications: _summaryNotifications(context, state, controller),
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {
@@ -165,7 +165,7 @@ class _CommunicationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      summaryCards: _summaryCards(context, state, controller),
+      
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -190,7 +190,7 @@ class _CommunicationsWorkspaceContentState
     );
   }
 
-  List<Widget> _summaryCards(
+  List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     CommunicationsWorkspaceState state,
     CommunicationsWorkspaceController controller,
@@ -198,56 +198,49 @@ class _CommunicationsWorkspaceContentState
     final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
 
-    return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: l10n.communicationsUnreadThreadsSummaryLabel,
-        value: AppFormatters.compactNumber(state.summary.unreadThreads, locale),
-        icon: Icons.mark_chat_unread_outlined,
-        tone: state.summary.unreadThreads > 0
+    return <AppWorkspaceSummaryNotification>[
+      AppWorkspaceSummaryNotification(
+  label: l10n.communicationsUnreadThreadsSummaryLabel,
+  count: state.summary.unreadThreads,
+  icon: Icons.mark_chat_unread_outlined,
+  tone: state.summary.unreadThreads > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-        compact: true,
-        onPressed: () {
+  onSelected: () {
           controller.applyPanel(CommunicationsPanel.inbox);
           controller.applyFilter(unreadOnly: true);
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.communicationsUnreadNotificationsSummaryLabel,
-        value: AppFormatters.compactNumber(state.metrics.unread, locale),
-        icon: Icons.notifications_active_outlined,
-        tone: state.metrics.unread > 0
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.communicationsUnreadNotificationsSummaryLabel,
+  count: state.metrics.unread,
+  icon: Icons.notifications_active_outlined,
+  tone: state.metrics.unread > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-        compact: true,
-        onPressed: () {
+  onSelected: () {
           controller.applyPanel(CommunicationsPanel.notifications);
           controller.applyFilter(unreadOnly: true);
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.communicationsFailedDeliveriesSummaryLabel,
-        value: AppFormatters.compactNumber(
-          state.metrics.failedDeliveries,
-          locale,
-        ),
-        icon: Icons.error_outline,
-        tone: state.metrics.failedDeliveries > 0
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.communicationsFailedDeliveriesSummaryLabel,
+  count: state.metrics.failedDeliveries,
+  icon: Icons.error_outline,
+  tone: state.metrics.failedDeliveries > 0
             ? AppWorkspaceStatusTone.error
             : AppWorkspaceStatusTone.neutral,
-        compact: true,
-        onPressed: () {
+  onSelected: () {
           controller.applyPanel(CommunicationsPanel.deliveries);
           controller.applyFilter(filter: _failedFilterValue);
         },
-      ),
-      AppWorkspaceSummaryCard(
-        label: l10n.communicationsTemplatesSummaryLabel,
-        value: AppFormatters.compactNumber(state.summary.templates, locale),
-        icon: Icons.description_outlined,
-        compact: true,
-        onPressed: () => controller.applyPanel(CommunicationsPanel.templates),
-      ),
+),
+      AppWorkspaceSummaryNotification(
+  label: l10n.communicationsTemplatesSummaryLabel,
+  count: state.summary.templates,
+  icon: Icons.description_outlined,
+  onSelected: () => controller.applyPanel(CommunicationsPanel.templates),
+),
     ];
   }
 }

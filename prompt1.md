@@ -1,10 +1,136 @@
-# Global Form Input Uniformity — Floating Labels
+# Modal Dialog — Global Unification & UX Consistency
 
 ## Objective
 
-Standardize every user-editable form input across the HMS Flutter frontend so labels use the **floating-label pattern** consistently. The app should look and behave the same whether the field appears on a page, inside a dialog, inside a drawer, or nested within another form.
+Audit and unify **every modal dialog** in the HMS frontend so they share one shell (`AppDialog` / `showAppDialog`), consistent footer actions, predictable sizing on all viewports, and no duplicated dialog scaffolding. Call sites should supply **content and domain logic only**; chrome, layout, drag/resize, focus, and action placement live in shared components.
 
-**Reference implementation:** Auth flows already demonstrate the target UX — see `frontend/lib/features/auth/presentation/pages/login_page.dart`, `register_page.dart`, and related auth widgets where `AppTextField` is used with `useFloatingLabel: true`.
+**Manual smoke URL:** `127.0.0.1:5201` — test dialogs from Lab, Patients, Tenant Facility setup, ICU, and one clinical action flow.
+
+---
+
+## Problem summary (current behavior)
+
+The app already has a shared dialog shell, but usage is inconsistent and sizing behavior does not match product intent.
+
+### 1. Fragmented action/footer patterns
+
+| Pattern | Location | Issue |
+|---------|----------|-------|
+| `_DialogActions` footer | `app_dialog.dart` | Correct target — fixed footer, end-aligned `OverflowBar`. |
+| `_actionDialogButtons` | `app_action_dialogs.dart` | Cancel + primary; duplicated logic. |
+| `clinicalActionDialogActions` | `clinical_action_dialog_actions.dart` | Cancel + primary; duplicated logic. |
+| `_dialogActions` (local) | `lab_workspace_page.dart`, `nursing_workspace_page.dart`, `icu_workspace_page.dart`, `pharmacy_workspace_page.dart`, `physiotherapy_workspace_page.dart`, `reports_workspace_page.dart`, `lab_catalog_dialogs.dart`, … | Same Cancel + primary helper copy-pasted per module. |
+| `showAppWorkspaceMutationDialog` | `app_workspace_mutation_dialog.dart` | Cancel + submit + optional extras — still renders Cancel in footer. |
+| Inline delete confirm | `tenant_facility_setup_page.dart` `_deleteEntity` | Ad-hoc `AppDialog` with Cancel + Delete instead of `AppConfirmActionDialog`. |
+
+**Cancel buttons are redundant.** `AppDialog` already provides header close (×), Escape (`CallbackShortcuts`), and optional barrier dismiss. Footer Cancel duplicates dismiss without adding value.
+
+### 2. Inconsistent destructive / submit placement
+
+- Footer uses `MainAxisAlignment.end` — **rightmost action is the last widget** in the `actions` list.
+- Some dialogs use `AppButton.primary` for Delete; others use tertiary; order varies (Cancel left, Delete right vs. mixed).
+- No single helper encodes: *secondary/extra actions → primary submit → destructive last-on-right* (or the project's chosen canonical order).
+
+### 3. Sizing, drag, and resize do not match intent
+
+In `app_dialog.dart`:
+
+- Initial desktop height is intrinsic (`_desktopSize == null`) but capped by `maxHeight = viewport - insetPadding`; large forms can clip when `scrollable: false`.
+- Resize (`_handleResize`) enforces `_desktopMinWidth` / `_desktopMinHeight` but **does not clamp to available viewport** on the max side during drag-resize.
+- Maximize sets size to full viewport — good — but restore/drag paths feel capped below usable screen space (user-reported max vertical height while dragging).
+- `_snackBarClearance` (88px bottom inset) permanently reduces usable height even when no snackbar is visible.
+- Content that exceeds available space should **grow the shell up to viewport bounds**, then scroll inside the body — not clip silently.
+
+### 4. Duplicated domain dialogs
+
+Examples of the same UX rebuilt in multiple places:
+
+- Delete confirmation: inline in `tenant_facility_setup_page.dart` vs. `AppConfirmActionDialog` elsewhere.
+- Lab delete flows: `LabDeleteReasonDialog` (good shared widget) vs. one-off confirms in other modules.
+- Form mutation: some pages use `showAppWorkspaceMutationDialog`; others inline `AppDialog` + `Form` + local `_dialogActions`.
+- Patient create/edit: verify `patient_registry_page.dart` does not duplicate a form dialog that should be extracted once.
+
+### 5. Stray modal chrome at call sites
+
+Call sites sometimes reimplement header controls, embed action rows inside `content`, or pass empty/redundant wrappers instead of using `actions`, `scrollable`, and `icon` on `AppDialog`.
+
+---
+
+## Target UX (all breakpoints)
+
+### Single dialog shell
+
+Every modal must be opened with **`showAppDialog`** and rendered with **`AppDialog`** (or a thin shared wrapper listed below). No raw `showDialog`, `AlertDialog`, or bespoke `Dialog` widgets.
+
+**Approved wrappers** (extend `AppDialog`; do not fork layout):
+
+| Wrapper | Use when |
+|---------|----------|
+| `AppDialog` | Generic content + footer actions |
+| `showAppWorkspaceMutationDialog` | Validated form create/edit with submit lifecycle |
+| `AppConfirmActionDialog` | Yes/no or async confirm (delete, irreversible actions) |
+| `AppTextActionDialog` | Free-text note/summary capture |
+| Domain-specific widgets (e.g. `LabDeleteReasonDialog`, `ClinicalDiagnosisActionDialog`) | One widget per distinct domain flow; must compose `AppDialog` internally |
+
+### Layout regions
+
+```
+┌─ Header (draggable on desktop): [icon] Title ··· [maximize] [close ×] ─┐
+├─ Body (padded, scrolls when needed) ────────────────────────────────────┤
+└─ Footer (fixed): ··· [secondary] [primary submit] [destructive?] ────────┘
+```
+
+| Region | Rule |
+|--------|------|
+| Header | Title + optional icon; close (×) always dismisses (respect `closeEnabled` while saving). **No action buttons in header** except maximize/close. |
+| Body | Form fields, read-only detail, confirmation copy. **No Save/Delete/Cancel buttons in body.** |
+| Footer | **All** action buttons live here via `AppDialog.actions`. |
+
+### Footer action conventions
+
+**Remove Cancel from all dialog footers.** Dismiss via close (×), Escape, or barrier tap (when `barrierDismissible`).
+
+| Action type | Component | Position |
+|-------------|-----------|----------|
+| Secondary / optional | `AppButton.secondary` or `AppButton.tertiary` | Left of primary (earlier in `actions` list) |
+| Primary submit (Save, Add, Confirm) | `AppButton.primary` | Right side; rightmost when no destructive action |
+| Destructive (Delete, Remove, Cancel order*) | `AppButton.primary` with error/destructive styling **or** documented destructive variant | **Rightmost** in footer |
+| Loading | `isLoading` on the submitting button; disable other footer actions |
+
+\* “Cancel order” etc. are domain destructive actions, not dialog dismiss.
+
+**Canonical order** (left → right in `OverflowBar`, end-aligned):
+
+```
+[secondary…] [primary submit] [destructive]
+```
+
+When only one action exists (e.g. “Close” or “OK”), it is a single `AppButton.primary` aligned end.
+
+Use **`AppButton`** only — no raw `TextButton`, `ElevatedButton`, or `FilledButton` in dialog footers.
+
+### Sizing & interaction (desktop ≥ 600px width)
+
+| Behavior | Rule |
+|----------|------|
+| Initial size | **Shrink-wrap** to content width/height, clamped to available viewport (after insets). |
+| Auto-grow | If content height (or width) exceeds current shell size, expand shell **up to** `viewport − insetPadding` so content is fully visible before scrolling kicks in. |
+| Max bounds | Manual drag-resize and maximize may use **full available viewport** width and height — not an artificial cap below screen space. |
+| Min bounds | Keep reasonable minimums (`_desktopMinWidth`, `_desktopMinHeight`) so the shell stays usable. |
+| Overflow | When content exceeds max expanded shell, set `scrollable: true` on body (`SingleChildScrollView` — already in `_DialogBody`). |
+| Drag | Header drag moves dialog; clamp translation so dialog remains reachable, not clamped to a fraction of viewport unnecessarily. |
+| Resize | Edge/corner handles respect min **and max** = available viewport. |
+| Maximize | Fills viewport; restore returns to pre-maximize size/position. |
+| Mobile (< 600px) | Full-width inset dialog; no drag/resize/maximize; body scrolls when needed. |
+
+### Accessibility & focus
+
+Preserve existing behavior from `showAppDialog`:
+
+- Focus restoration to opener after close.
+- `FocusTraversalGroup`, Escape to dismiss.
+- `semanticLabel` on dialogs that need screen-reader context.
+- `closeEnabled: false` while async submit in flight.
 
 ---
 
@@ -12,140 +138,122 @@ Standardize every user-editable form input across the HMS Flutter frontend so la
 
 ### In scope
 
-All components where the user types, selects, or edits structured data, including but not limited to:
-
-| Component | Location |
-|-----------|----------|
-| `AppTextField` | `shared/components/app_text_field.dart` |
-| `AppSelectField` | `shared/components/app_select_field.dart` |
-| `AppDateField` | `shared/components/app_date_field.dart` |
-| `AppTimeField` | `shared/components/app_time_field.dart` |
-| `AppEmailField` | `shared/components/app_email_field.dart` |
-| `AppPhoneField` | `shared/components/app_phone_field.dart` |
-| `AppCurrencyAmountField` | `shared/components/app_currency_amount_field.dart` |
-| `AppGenderField` | `shared/components/app_gender_field.dart` (if applicable) |
-| Any wrapper or composite field built on top of the above | e.g. `app_vitals_form.dart`, clinical action dialogs, workspace pages |
-
-Applies everywhere these appear: workspace pages, setup wizards, `AppDialog` forms, action dialogs, catalog panels, and nested sub-forms.
+| Area | Location |
+|------|----------|
+| Core dialog shell | `frontend/lib/shared/components/app_dialog.dart` |
+| Dialog entrypoint | `showAppDialog` (same file) |
+| Shared action helpers | New or consolidated helper in `app_dialog.dart` or `app_dialog_actions.dart` |
+| Mutation wrapper | `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart` |
+| Action dialog wrappers | `frontend/lib/shared/actions/app_action_dialogs.dart` |
+| Clinical actions helper | `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart` |
+| All `showAppDialog` / `AppDialog` call sites | Feature pages under `frontend/lib/features/`, shared dialogs under `frontend/lib/shared/` |
+| Tests | `frontend/test/shared/components/app_dialog_test.dart` + affected dialog tests |
 
 ### Out of scope
 
-- **Buttons** (`AppButton`, icon buttons, toggles that are not data-entry fields).
-- **Read-only display** widgets (`AppInfoTile`, status text, table cells showing data).
-- **Checkboxes / radio / switch** groups — keep existing label layout unless they already wrap a text/select field.
-- **Search bars used purely as list filters** (`AppSearchBar` toolbar filters) — only migrate if they contain editable text/select filters that should match form-field styling; do not redesign the search-bar UX beyond label consistency.
-
----
-
-## Current gaps (known)
-
-1. **`AppTextField.useFloatingLabel` defaults to `false`.** Most of the app renders an external label above the field instead of a floating label inside the decoration. Only auth pages pass `useFloatingLabel: true` explicitly.
-2. **Wrapper fields do not propagate floating labels.** `AppTimeField`, `AppEmailField`, and similar wrappers delegate to `AppTextField` without enabling floating labels.
-3. **Raw Flutter field usage bypasses shared components.** Direct `TextFormField`, `TextField`, `DropdownButtonFormField`, or hand-rolled `InputDecoration(labelText: …)` appear in:
-   - `shared/components/app_vitals_form.dart`
-   - `shared/components/app_currency_amount_field.dart`
-   - `shared/components/app_phone_field.dart` (country-code search)
-   - `shared/components/app_search_bar.dart`
-   - `features/settings/presentation/widgets/settings_workspace_section.dart`
-4. **`AppSelectField` and `AppDateField` already use floating labels** via `DropdownMenuFormField.label` and `InputDecorator` + `appFieldLabelWidget`. Treat these as the pattern to match, not rewrite.
-5. **Duplicate label rendering.** When floating labels are enabled, external/stacked labels above the field must be removed to avoid double labels.
+- Bottom sheets, drawers, full-page routes, or `showModalBottomSheet` — not modal dialogs.
+- Snackbar/toast styling (but re-evaluate whether `_snackBarClearance` should remain fixed or become conditional).
+- Changing business logic inside domain forms (field validation, API calls) — only dialog chrome and action placement.
+- New third-party dialog packages.
 
 ---
 
 ## Implementation strategy
 
-Work in this order. Prefer fixing shared components first so call sites inherit the behavior automatically.
+Work in this order. **Fix shared components first** so all call sites inherit behavior.
 
-### Phase 1 — Shared component defaults
+### Phase 1 — Fix `AppDialog` sizing, drag, and resize
 
-1. **Change `AppTextField` default:** set `useFloatingLabel = true`.
-   - Preserve rich required/optional indicators via `appFieldLabelWidget` inside the decoration (already implemented when `useFloatingLabel` is true).
-   - Keep `FloatingLabelBehavior.auto` for text fields.
-   - Remove or guard the external label column so it never renders when floating labels are active.
+1. **Auto-size to content** up to viewport max on first layout (measure intrinsic content; set initial `_desktopSize` when needed).
+2. **Clamp resize** in `_handleResize` to `availableWidth` / `availableHeight` (viewport minus insets).
+3. **Review drag clamp** in `_handleDrag` — ensure users can position the dialog anywhere within the viewport without an overly restrictive vertical cap.
+4. **Revisit `_snackBarClearance`** — use full height when safe, or reduce inset if it causes persistent clipping.
+5. **Default `scrollable: true`** for dialogs with unbounded/large content, or auto-enable when measured content exceeds max shell height.
+6. Ensure `Flexible` + `fillHeight` interaction does not clip: when content is taller than viewport, body scrolls; shell height = viewport max.
 
-2. **Update field wrappers** to either remove their own `useFloatingLabel` parameter (inherit default) or default it to `true`:
-   - `AppEmailField`
-   - `AppPhoneField` (including any internal sub-fields)
-   - `AppTimeField`
-   - `AppCurrencyAmountField`
+### Phase 2 — Centralize footer actions
 
-3. **Align composite fields:**
-   - `AppDateField` — already compliant; verify sub-part hints (DD/MM/YYYY) do not conflict visually.
-   - `AppSelectField` — already compliant; verify sizing/padding matches `AppTextField`.
-   - `AppVitalsForm` — replace raw `DropdownButtonFormField` + `InputDecoration(labelText: …)` with `AppSelectField` or apply the same floating-label decoration pattern.
+1. Add **`AppDialogActions`** (or `buildAppDialogActions`) — single helper returning `List<Widget>`:
 
-4. **Remove redundant per-call-site `useFloatingLabel: true`** in auth pages once the default is true (optional cleanup).
+   ```dart
+   // API sketch — adjust to match AppButton variants available
+   List<Widget> buildAppDialogActions(
+     BuildContext context, {
+     String? primaryLabel,
+     VoidCallback? onPrimary,
+     bool isPrimaryLoading = false,
+     List<AppDialogSecondaryAction> secondaryActions = const [],
+     AppDialogDestructiveAction? destructiveAction,
+   });
+   ```
 
-### Phase 2 — Audit and migrate call sites
+2. **Remove Cancel** from the helper; document dismiss via close/Escape.
+3. Replace duplicates:
+   - `_actionDialogButtons` → shared helper
+   - `clinicalActionDialogActions` → shared helper
+   - All page-local `_dialogActions` → import shared helper
+4. Update `showAppWorkspaceMutationDialog` — drop `cancelLabel` parameter; remove Cancel button from `_buildActions`.
+5. Update `AppConfirmActionDialog` — single destructive/confirm primary button; no Cancel.
 
-Run a repo-wide audit under `frontend/lib/`:
+### Phase 3 — Migrate call sites
 
-```bash
-# Raw Flutter inputs (should be zero outside shared components after migration)
-rg "TextFormField\(|TextField\(|DropdownButtonFormField\(|InputDecoration\(" frontend/lib --glob "*.dart"
+1. Grep for `commonCancelActionLabel` inside dialog `actions` — remove each Cancel footer button.
+2. Grep for `AppDialog(` and verify:
+   - `actions` populated for any button that submits/deletes/confirms
+   - No action `Row` inside `content`
+   - Uses `showAppDialog`, not raw `showDialog`
+3. Replace inline delete confirms (e.g. `tenant_facility_setup_page.dart` `_deleteEntity`) with `AppConfirmActionDialog` or a shared `showAppDeleteConfirmDialog` if delete copy differs by entity.
+4. Prefer `showAppWorkspaceMutationDialog` for standard create/edit forms instead of inlined `AppDialog` + `Form`.
+5. **Deduplicate domain dialogs** — if two modules implement the same “create patient” (or similar) modal, extract one shared widget under `frontend/lib/shared/` or the owning feature package.
 
-# External-label mode still explicitly disabled (review each)
-rg "useFloatingLabel:\s*false" frontend/lib --glob "*.dart"
+### Phase 4 — Cleanup & performance
 
-# Legacy stacked labels above fields (manual review)
-rg "labelText:" frontend/lib --glob "*.dart"
-```
+1. Delete dead private helpers (`_dialogActions` per page) after migration.
+2. Avoid rebuilding entire dialog trees on unrelated setState — keep submit loading localized (existing pattern in mutation dialog).
+3. Do not wrap large lists in non-scrollable body — always `scrollable: true` for forms with > ~6 fields or dynamic lists.
+4. Remove redundant `barrierDismissible: false` where close + unsaved-state guard is sufficient (keep `false` when form data loss is a concern).
 
-For every hit outside `shared/components/`:
+### Phase 5 — Regression pass
 
-- Replace raw inputs with the appropriate `App*` component.
-- Pass `labelText`, `hintText`, `isRequired`, validators, and controllers as today — do not drop accessibility or validation behavior.
-- Do **not** add a separate `Text` label above the field when the shared component already renders a floating label.
+Manually exercise dialogs at **258px, 426px, 626px, 759px, and desktop** widths:
 
-### Phase 3 — Visual and UX consistency
-
-Ensure all form inputs share:
-
-- **Height** — respect `theme.inputDecorationTheme.constraints` (min height ~48).
-- **Typography** — body text `bodyLarge`, label `labelLarge` / field label style from theme.
-- **Spacing** — use `theme.spacing.*` between fields (typically `md`), consistent with auth forms.
-- **Required / optional markers** — use `isRequired: true` and `(optional)` suffix parsing via `app_field_label.dart`; never hard-code `*` in l10n strings unless already standardized.
-- **Error / helper text** — render through the shared component's `errorText` / `helperText`, not a separate widget below unless the component requires it.
-
-Use `AppFormShell`, `AppFormSection`, and `AppResponsiveFieldRow` (`shared/forms/`) for layout — do not introduce one-off column/wrap spacing for forms.
-
-### Phase 4 — Cleanup
-
-- Delete dead helpers, duplicate field widgets, or legacy decoration builders that exist only to support the old external-label pattern.
-- Remove unused imports after migrations.
-- Do not leave both an old and new field implementation for the same use case.
+| Flow | Module |
+|------|--------|
+| Create/edit form | Patients or HR (`showAppWorkspaceMutationDialog`) |
+| Delete confirm | Tenant Facility or Lab delete |
+| Clinical action | OPD/IPD clinical action dialog |
+| Large form | Lab result entry or Subscriptions |
+| Drag + resize + maximize | Any desktop form dialog |
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Every editable form field in `frontend/lib/` uses a shared `App*` input component (or a composite built exclusively from them).
-- [ ] No field shows **both** an external label and a floating label.
-- [ ] `AppTextField` (and wrappers) default to floating labels; auth and non-auth screens look identical in label behavior.
-- [ ] `AppSelectField`, `AppDateField`, `AppTextField`, and currency/phone/email/time fields have matching height, border radius, and label animation.
-- [ ] Raw `TextFormField` / `TextField` / `DropdownButtonFormField` usage is confined to shared component internals (grep audit passes).
-- [ ] Existing tests pass; update widget tests if they assert on external label widgets or label text placement.
-- [ ] Run `dart analyze` on touched files with no new issues.
+- [ ] **100% of modals** use `showAppDialog` + `AppDialog` (or an approved wrapper that composes it).
+- [ ] **No footer Cancel buttons** anywhere; dismiss works via ×, Escape, and barrier (when enabled).
+- [ ] **All action buttons** (Save, Edit, Delete, Confirm, …) render in the **footer region** only, with consistent labels (`AppButton`, l10n keys).
+- [ ] **Destructive actions** are consistently styled and **rightmost** in the footer.
+- [ ] **Primary submit** sits immediately left of destructive (when both present).
+- [ ] Dialog **auto-expands** to show content up to viewport max; **no clipped fields** on small or large screens.
+- [ ] Manual **resize and drag** respect min size and **full available viewport** as max.
+- [ ] **One shared footer-action helper** — no per-page `_dialogActions` copies remain.
+- [ ] **No duplicate domain dialog** implementations for the same entity/action (extract shared widget where found).
+- [ ] `dart analyze` passes on touched files; `app_dialog_test.dart` updated for sizing/action changes; existing dialog widget tests pass.
 
 ---
 
 ## Verification
 
-1. **Automated:** run existing frontend tests, especially component and dialog tests under `frontend/test/shared/components/`.
-2. **Manual smoke test** these surfaces (forms in dialogs and full pages):
-   - Auth (login, register, forgot/reset password)
-   - Tenant/facility setup
-   - Patient registry create/edit
-   - Lab catalog dialogs
-   - HR, billing, and clinical action dialogs
-   - Settings workspace filters (if migrated)
-3. **Visual check:** empty, focused, filled, error, and disabled states for text, select, date, and currency fields at desktop and compact widths.
+1. **Automated:** `flutter test frontend/test/shared/components/app_dialog_test.dart` and other dialog tests under `frontend/test/`.
+2. **Static:** search confirms zero `commonCancelActionLabel` in dialog footer actions; zero raw `showDialog(` outside `app_dialog.dart`.
+3. **Manual:** open dialogs listed in Phase 5; verify footer-only actions, dismiss without Cancel, resize to full viewport, scroll when content exceeds max height.
 
 ---
 
 ## Constraints
 
-- **Minimize diff scope per file** — change only what is required for label uniformity; do not refactor unrelated logic.
-- **Preserve behavior** — validation, autofill, focus order, restoration IDs, and semantics must remain intact.
-- **Follow existing conventions** — match naming, imports (`shared/components/components.dart`), and l10n usage already in the codebase.
+- **Minimize diff scope** — shared-component fixes first; migrate call sites in batches by module if needed.
+- **Preserve behavior** — submit validation, async error display (`AppFailureStateView`), `closeEnabled` while saving, and focus restoration must remain intact.
+- **Follow existing conventions** — `AppButton`, `theme.spacing.*`, `AppFormShell`, `AppFieldRequirementScope`, l10n via `context.l10n`.
 - **No new dependencies.**
+- **No unrelated refactors** — touch dialog chrome and action placement only unless deduplication requires extracting a shared domain widget.
