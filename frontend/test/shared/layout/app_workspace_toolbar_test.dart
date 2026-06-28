@@ -49,7 +49,7 @@ void main() {
     expect(refreshCount, 1);
   });
 
-  testWidgets('AppWorkspaceToolbar collapses left actions on narrow widths', (
+  testWidgets('AppWorkspaceToolbar shows More when screen actions exceed budget', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -60,6 +60,8 @@ void main() {
             secondary: <Widget>[
               AppButton.secondary(label: 'One', onPressed: () {}),
               AppButton.secondary(label: 'Two', onPressed: () {}),
+              AppButton.secondary(label: 'Three', onPressed: () {}),
+              AppButton.secondary(label: 'Four', onPressed: () {}),
             ],
             onRefresh: () async {},
             showFaultReport: false,
@@ -69,12 +71,53 @@ void main() {
           ),
         ),
       ),
-      size: const Size(360, 600),
+      size: const Size(1200, 600),
     );
 
     expect(find.byIcon(Icons.more_vert), findsOneWidget);
-    expect(find.text('One'), findsNothing);
-    expect(find.text('Two'), findsNothing);
+    expect(find.text('One'), findsOneWidget);
+    expect(find.text('Two'), findsOneWidget);
+    expect(find.text('Three'), findsOneWidget);
+    expect(find.text('Four'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Four'), findsOneWidget);
+    expect(find.byType(Wrap), findsNothing);
+  });
+
+  testWidgets('AppWorkspaceToolbar moves global actions to More on narrow widths', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspaceToolbar(
+          config: AppWorkspaceToolbarConfig(
+            secondary: <Widget>[
+              AppButton.secondary(label: 'One', onPressed: () {}),
+              AppButton.secondary(label: 'Two', onPressed: () {}),
+              AppButton.secondary(label: 'Three', onPressed: () {}),
+            ],
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+            refreshLabel: 'Refresh',
+            faultReportLabel: 'Report equipment fault',
+            housekeepingRequestLabel: 'Request maintenance',
+          ),
+        ),
+      ),
+      size: const Size(360, 600),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
     expect(find.byIcon(Icons.refresh), findsOneWidget);
   });
 
@@ -126,5 +169,36 @@ void main() {
     expect(find.text('Workspace body'), findsOneWidget);
     expect(find.text('Start walk-in'), findsOneWidget);
     expect(find.byIcon(Icons.refresh), findsOneWidget);
+  });
+
+  testWidgets('AppWorkspace header toolbar avoids overflow at 1280x800', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Billing',
+          toolbar: AppWorkspaceToolbarConfig(
+            secondary: <Widget>[
+              AppButton.secondary(label: 'Close shift', onPressed: () {}),
+              AppButton.secondary(label: 'Close day', onPressed: () {}),
+            ],
+            primary: AppButton.primary(label: 'Post payment', onPressed: () {}),
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+            refreshLabel: 'Refresh',
+            faultReportLabel: 'Report equipment fault',
+            housekeepingRequestLabel: 'Request maintenance',
+          ),
+          body: const Text('Billing body'),
+        ),
+      ),
+      size: const Size(1280, 800),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 }

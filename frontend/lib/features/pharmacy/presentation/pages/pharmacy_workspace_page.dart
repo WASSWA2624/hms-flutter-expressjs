@@ -126,7 +126,17 @@ class _PharmacyWorkspaceContentState
               unawaited(_openCatalogDialog(context, state));
             },
           ),
+          AppButton.secondary(
+            label: l10n.pharmacySummaryReadyLabel,
+            leadingIcon: Icons.medication_liquid_outlined,
+            onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
+          ),
         ],
+        primary: AppButton.primary(
+          label: l10n.pharmacyDispenseAction,
+          leadingIcon: Icons.medication_liquid_outlined,
+          onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
+        ),
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {

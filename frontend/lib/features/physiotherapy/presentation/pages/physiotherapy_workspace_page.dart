@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -141,6 +142,86 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         ),
         toolbar: appWorkspaceToolbarWithLabels(
           l10n,
+          secondary: <Widget>[
+            AppButton.secondary(
+              label: l10n.physiotherapyReferralsSummaryLabel,
+              leadingIcon: Icons.assignment_outlined,
+              onPressed: () =>
+                  controller.applyScope(PhysiotherapyQueueScope.referrals),
+            ),
+            AppAccessActionGate(
+              requirement: _therapyWriteRequirement,
+              builder: (BuildContext context, bool isAllowed) {
+                final TherapyWorkItem? item = state.selectedDetail?.item;
+                return AppButton.secondary(
+                  label: l10n.physiotherapyRecordAssessmentAction,
+                  leadingIcon: Icons.assignment_outlined,
+                  enabled: isAllowed && item != null && !state.isSaving,
+                  onPressed: state.isSaving || item == null
+                      ? null
+                      : () async {
+                          final _AssessmentPayload? payload =
+                              await showAppDialog<_AssessmentPayload>(
+                                context: context,
+                                builder: (_) => const _AssessmentDialog(),
+                              );
+                          if (payload == null || !context.mounted) {
+                            return;
+                          }
+                          final AppFailure? failure = await controller.recordAssessment(
+                            assessment: payload.assessment,
+                            goals: payload.goals,
+                            plan: payload.plan,
+                            instructions: payload.instructions,
+                          );
+                          if (!context.mounted) {
+                            return;
+                          }
+                          if (failure != null) {
+                            _showFailure(context, failure);
+                          }
+                        },
+                );
+              },
+            ),
+          ],
+          primary: AppAccessActionGate(
+            requirement: _therapyWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final TherapyWorkItem? item = state.selectedDetail?.item;
+              return AppButton.primary(
+                label: l10n.physiotherapyScheduleSessionAction,
+                leadingIcon: Icons.event_available_outlined,
+                enabled:
+                    isAllowed && item?.apiPatientId != null && !state.isSaving,
+                onPressed: state.isSaving || item?.apiPatientId == null
+                    ? null
+                    : () async {
+                        final _SchedulePayload? payload =
+                            await showAppDialog<_SchedulePayload>(
+                              context: context,
+                              builder: (_) => _ScheduleSessionDialog(
+                                title: l10n.physiotherapyScheduleSessionDialogTitle,
+                              ),
+                            );
+                        if (payload == null || !context.mounted) {
+                          return;
+                        }
+                        final AppFailure? failure = await controller.scheduleSession(
+                          startAt: payload.startAt,
+                          endAt: payload.endAt,
+                          reason: payload.reason,
+                        );
+                        if (!context.mounted) {
+                          return;
+                        }
+                        if (failure != null) {
+                          _showFailure(context, failure);
+                        }
+                      },
+              );
+            },
+          ),
           onRefresh: () async {
             await controller.refresh();
           },

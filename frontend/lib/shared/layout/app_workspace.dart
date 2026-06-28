@@ -280,10 +280,24 @@ class AppWorkspaceHeader extends StatelessWidget {
 
             return Row(
               children: <Widget>[
-                Expanded(child: titleBlock),
+                Expanded(
+                  child: ClipRect(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: titleBlock,
+                    ),
+                  ),
+                ),
                 if (actionBar != null) ...<Widget>[
                   SizedBox(width: theme.spacing.md),
-                  Flexible(child: actionBar),
+                  Flexible(
+                    child: ClipRect(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: actionBar,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             );
@@ -576,8 +590,14 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
             colorScheme.surface,
           )
         : Color.alphaBlend(
-            accentColor.withValues(alpha: active ? 0.055 : 0.025),
-            colorScheme.surface,
+            accentColor.withValues(
+              alpha: selected
+                  ? 0.12
+                  : active
+                  ? 0.06
+                  : 0.02,
+            ),
+            colorScheme.surfaceContainerLow,
           );
     final Color borderColor = navigation
         ? accentColor.withValues(
@@ -587,10 +607,9 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
                 ? 0.28
                 : 0.12,
           )
-        : Color.alphaBlend(
-            accentColor.withValues(alpha: active ? 0.34 : 0.14),
-            colorScheme.outlineVariant,
-          );
+        : selected
+        ? accentColor.withValues(alpha: 0.32)
+        : Colors.transparent;
     final double scale = navigation
         ? 1
         : _pressed
@@ -639,7 +658,9 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
               ? null
               : BoxDecoration(
                   color: navigation || !iconOnlyCompact ? surfaceColor : null,
-                  border: navigation || !iconOnlyCompact
+                  border: navigation
+                      ? Border.all(color: borderColor)
+                      : selected
                       ? Border.all(color: borderColor)
                       : null,
                   borderRadius: borderRadius,

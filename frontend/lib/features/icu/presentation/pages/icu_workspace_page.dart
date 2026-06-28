@@ -189,6 +189,51 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
             ],
             onChanged: controller.setView,
           ),
+          AppAccessActionGate(
+            requirement: _IcuWorkspaceContent.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool canStartStay =
+                  state.selectedDetail?.isEligibleToStartStay ?? false;
+              return AppButton.secondary(
+                label: l10n.icuActionStartStay,
+                leadingIcon: Icons.play_circle_outline,
+                enabled: isAllowed && canStartStay && !state.isSaving,
+                onPressed: () => _confirmAction(
+                  context: context,
+                  title: l10n.icuStartStayTitle,
+                  body: l10n.icuStartStayBody,
+                  actionLabel: l10n.icuStartStayActionLabel,
+                  onConfirmed: controller.startIcuStay,
+                ),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _IcuWorkspaceContent.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasEncounter =
+                  state.selectedDetail?.summary.encounterId != null;
+              return AppButton.secondary(
+                label: l10n.icuActionRecordVitals,
+                leadingIcon: Icons.monitor_heart_outlined,
+                enabled: isAllowed && hasEncounter && !state.isSaving,
+                onPressed: () => _openVitalsDialog(context),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _IcuWorkspaceContent.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasActiveStay =
+                  state.selectedDetail?.canRecordIcuAction ?? false;
+              return AppButton.secondary(
+                label: l10n.icuActionRecordObservation,
+                leadingIcon: Icons.note_add_outlined,
+                enabled: isAllowed && hasActiveStay && !state.isSaving,
+                onPressed: () => _openObservationDialog(context),
+              );
+            },
+          ),
         ],
         onRefresh: () async {
           final AppFailure? failure = isBedView

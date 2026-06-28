@@ -145,6 +145,68 @@ class _ClinicalWorkspaceContentState
       ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        secondary: <Widget>[
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasSelection = state.selectedBundle != null;
+              return AppButton.secondary(
+                label: l10n.clinicalAddNoteAction,
+                leadingIcon: Icons.note_add_outlined,
+                enabled: isAllowed && hasSelection && !state.isSaving,
+                onPressed: () => _openNoteDialog(context, controller),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasSelection = state.selectedBundle != null;
+              return AppButton.secondary(
+                label: l10n.clinicalRequestLabAction,
+                leadingIcon: Icons.science_outlined,
+                enabled: isAllowed && hasSelection && !state.isSaving,
+                onPressed: () => _openLabDialog(
+                  context,
+                  controller,
+                  state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasSelection = state.selectedBundle != null;
+              return AppButton.secondary(
+                label: l10n.clinicalPrescribeAction,
+                leadingIcon: Icons.medication_outlined,
+                enabled: isAllowed && hasSelection && !state.isSaving,
+                onPressed: () => _openPrescriptionDialog(
+                  context,
+                  controller,
+                  state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              final bool hasSelection = state.selectedBundle != null;
+              return AppButton.secondary(
+                label: l10n.clinicalRequestRadiologyAction,
+                leadingIcon: Icons.biotech_outlined,
+                enabled: isAllowed && hasSelection && !state.isSaving,
+                onPressed: () => _openRadiologyDialog(
+                  context,
+                  controller,
+                  state.referenceData,
+                ),
+              );
+            },
+          ),
+        ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {

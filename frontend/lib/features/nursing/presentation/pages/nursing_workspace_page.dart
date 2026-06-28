@@ -206,6 +206,39 @@ class _NursingWorkspaceContentState
             tooltip: l10n.nursingShiftContextTitle,
             onPressed: () => _openShiftContextDialog(context),
           ),
+          AppAccessActionGate(
+            requirement: _NursingWorkspaceContentState.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.nursingActionRecordVitals,
+                leadingIcon: Icons.monitor_heart_outlined,
+                enabled: isAllowed && !state.isSaving,
+                onPressed: () => _openVitalsDialog(context),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _NursingWorkspaceContentState.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.nursingActionCreateHandover,
+                leadingIcon: Icons.swap_horiz_outlined,
+                enabled: isAllowed && !state.isSaving,
+                onPressed: () => _openHandoverDialog(context),
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: _NursingWorkspaceContentState.writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.nursingActionAddNote,
+                leadingIcon: Icons.note_add_outlined,
+                enabled: isAllowed && !state.isSaving,
+                onPressed: () => _openNoteDialog(context),
+              );
+            },
+          ),
         ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();

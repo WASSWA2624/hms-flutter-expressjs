@@ -22,7 +22,32 @@ class AppFullscreenToggle extends StatefulWidget {
 }
 
 class _AppFullscreenToggleState extends State<AppFullscreenToggle> {
-  bool _isFullscreen = appFullscreenIsActive();
+  late bool _isFullscreen;
+  late final VoidCallback _fullscreenChangeListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFullscreen = appFullscreenIsActive();
+    _fullscreenChangeListener = () {
+      if (!mounted) {
+        return;
+      }
+      final bool active = appFullscreenIsActive();
+      if (_isFullscreen != active) {
+        setState(() {
+          _isFullscreen = active;
+        });
+      }
+    };
+    appFullscreenAddChangeListener(_fullscreenChangeListener);
+  }
+
+  @override
+  void dispose() {
+    appFullscreenRemoveChangeListener(_fullscreenChangeListener);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

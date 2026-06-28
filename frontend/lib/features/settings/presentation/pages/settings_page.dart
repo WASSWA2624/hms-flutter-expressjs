@@ -19,9 +19,8 @@ import 'package:hosspi_hms/features/settings/presentation/controllers/settings_w
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -42,30 +41,40 @@ class SettingsPage extends ConsumerWidget {
         })
         .toList(growable: false);
 
-    return AppScreen(
+    return AppWorkspace(
       title: l10n.settingsTitle,
-      body: l10n.settingsBody,
       leadingIcon: AppRouteIcons.settings,
-      headerActions: <Widget>[
-        AppWorkspaceRefreshAction(
-          label: l10n.commonRefreshActionLabel,
-          onPressed: () {
-            ref
-              ..invalidate(appLocaleProvider)
-              ..invalidate(appThemeModeProvider)
-              ..invalidate(appAccessibilityProvider)
-              ..invalidate(appAccessPolicyProvider)
-              ..invalidate(settingsWorkspaceControllerProvider);
+      maxWidth: PageMaxWidth.dashboard,
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        showFaultReport: false,
+        showHousekeepingRequest: false,
+        onRefresh: () async {
+          ref
+            ..invalidate(appLocaleProvider)
+            ..invalidate(appThemeModeProvider)
+            ..invalidate(appAccessibilityProvider)
+            ..invalidate(appAccessPolicyProvider)
+            ..invalidate(settingsWorkspaceControllerProvider);
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.commonRefreshActionLabel)),
             );
-          },
-        ),
-      ],
-      maxWidth: PageMaxWidth.dashboard,
-      children: <Widget>[
-        _SettingsSectionGrid(
-          sections: <Widget>[
+          }
+        },
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.settingsBody,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: Theme.of(context).spacing.lg),
+          _SettingsSectionGrid(
+            sections: <Widget>[
             AppScreenSection(
               title: l10n.settingsPreferencesSectionTitle,
               body: l10n.settingsPreferencesSectionBody,
@@ -207,7 +216,8 @@ class SettingsPage extends ConsumerWidget {
           SizedBox(height: Theme.of(context).spacing.md),
           const SettingsWorkspaceSection(),
         ],
-      ],
+        ],
+      ),
     );
   }
 
