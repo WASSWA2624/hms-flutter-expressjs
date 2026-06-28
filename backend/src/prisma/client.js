@@ -412,7 +412,7 @@ const basePrisma =
   globalForPrisma.basePrisma ||
   new PrismaClient({
     adapter: adapter,
-    log: isDevelopment ? ['query', 'error', 'warn'] : ['error'],
+    log: isDevelopment ? ['error', 'warn'] : ['error'],
   });
 
 if (isDevelopment || NODE_ENV !== 'production') {
