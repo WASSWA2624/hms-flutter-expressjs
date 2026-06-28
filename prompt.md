@@ -2,7 +2,7 @@
 
 ## Objective
 
-Eliminate inconsistent toolbar and action-button behavior across HOSSPI HMS module workspaces. Every module screen must use the same responsive action pattern: **icon + label on desktop/tablet**, **icon-only with overflow menu on small screens**, with correct hover, tooltip, permission, and accessibility behavior.
+Eliminate inconsistent toolbar and action-button behavior across HOSSPI HMS module workspaces. Every module screen must use the same responsive action pattern: **icon + label on desktop/tablet**, and on small screens **only the More actions button** in the toolbar — every other toolbar action moves into its overflow menu, with correct hover, tooltip, permission, and accessibility behavior.
 
 This is a **cross-cutting UI consistency** task. Fix shared primitives first, then migrate every affected screen, clean up legacy code, and pass the quality gate.
 
@@ -34,13 +34,15 @@ This is a **cross-cutting UI consistency** task. Fix shared primitives first, th
 - Disabled actions remain visible with reduced opacity; add a **tooltip** explaining why when permission or module entitlement blocks the action.
 - Hover and focus states must match other `AppButton` controls (pointer cursor on web/desktop, visible focus ring).
 
-### Small screens (`xs` and `sm`)
+### Small screens (`xs` and `sm`) — toolbar only
 
-- Toolbar actions render **icon-only** (labels hidden via `AppActionLabelScope`).
-- When actions do not fit, collapse extras into the **More actions** overflow menu (`Icons.more_vert`).
-- On the narrowest layouts, **only the page icon, page title, and More actions button** stay on one header row — no wrapping to a second line.
+On `xs` and `sm` breakpoints, the **workspace toolbar** must show **only the More actions button** (`Icons.more_vert`). No other toolbar buttons (primary, secondary, refresh, global actions, board toggles, etc.) may appear inline in the toolbar row.
+
+- **Hide all toolbar actions** on small screens; route **every** toolbar action into the More actions overflow menu.
+- The overflow menu lists **all** toolbar actions with **icon + label** (`AppMenuItemLabel`), including refresh, create, configure, fault report, housekeeping request, and module-specific actions.
+- The workspace header row shows **page icon**, **page title**, and **More actions** on one line — no wrapping to a second line.
 - More actions trigger must use `AppButton.popupMenuTrigger`, show a tooltip, and use a **clickable pointer cursor** on hover.
-- Overflow menu items always show **icon + label** (`AppMenuItemLabel`).
+- This rule applies **only to `AppWorkspaceToolbar`** / `AppWorkspace` header actions. It does **not** change row-level table actions, detail-panel buttons, or dialog footers.
 
 ### Actions outside the main toolbar
 
@@ -57,7 +59,7 @@ These bugs explain most reported inconsistencies. Fix them before auditing indiv
 
 In `app_button.dart`, `showLabel` currently suppresses labels for `AppButtonVariant.secondary` when `AppActionLabelScope.showLabels == true`. That inverts the intended behavior and is why refresh, configure, shift context, and most secondary toolbar actions appear icon-only on large screens.
 
-**Fix:** When `forceIconOnly` is false and `iconOnly` is false, show the label for **all** variants on desktop. Reserve icon-only rendering for `xs`/`sm` (`forceIconOnly == true`) or explicit `iconOnly: true` in compact contexts (table row actions, popup triggers).
+**Fix:** When `forceIconOnly` is false and `iconOnly` is false, show the label for **all** variants on desktop. On `xs`/`sm`, toolbar actions are not rendered inline at all — they appear only in the More actions menu (see § Small screens). Reserve explicit `iconOnly: true` for non-toolbar compact contexts (table row actions, popup triggers).
 
 ### 2. Global toolbar actions hard-code `iconOnly: true`
 
@@ -89,9 +91,15 @@ Use `AppWorkspaceToolbarConfig` — not legacy `primaryAction` / `secondaryActio
 
 IPD/ICU **Patient board / Bed board** toggles use `SegmentedButton` with default Material rounding that looks overly pill-shaped.
 
-**Fix:** Apply design-system border radius (`8–12px` per `components.mdc`) via `SegmentedButton.styleFrom` / theme override in [`app_workspace_board_toggle.dart`](frontend/lib/shared/layout/app_workspace_board_toggle.dart). Keep icon + label segments on desktop; icon-only segments only when `AppActionLabelScope` forces compact mode.
+**Fix:** Apply design-system border radius (`8–12px` per `components.mdc`) via `SegmentedButton.styleFrom` / theme override in [`app_workspace_board_toggle.dart`](frontend/lib/shared/layout/app_workspace_board_toggle.dart). Keep icon + label segments on desktop. On `xs`/`sm`, include board-toggle options in the More actions overflow menu instead of rendering inline.
 
-### 5. Overflow resolver dead code
+### 5. Small-screen toolbar shows inline actions instead of More-only
+
+[`app_workspace_toolbar.dart`](frontend/lib/shared/layout/app_workspace_toolbar.dart) currently keeps some actions inline on narrow widths and only overflows extras. On `xs`/`sm`, **all** toolbar actions must be in the overflow menu — the inline action list must be empty and only `_ToolbarOverflowMenu` renders.
+
+**Fix:** When `showLabels == false` (i.e. `xs` or `sm`), skip inline rendering entirely; pass the full `screenActions` + `globalActions` list to the overflow menu.
+
+### 6. Overflow resolver dead code
 
 [`app_toolbar_overflow_resolver.dart`](frontend/lib/shared/layout/app_toolbar_overflow_resolver.dart) has unreachable duplicate `AppButton` handling after an early return. Clean up while touching the file.
 
@@ -99,7 +107,7 @@ IPD/ICU **Patient board / Bed board** toggles use `SegmentedButton` with default
 
 ## Module audit checklist
 
-Work through **every** workspace below. For each screen, verify desktop labels, mobile overflow, tooltips, permissions, and that create/edit flows use existing dialogs — not new routes.
+Work through **every** workspace below. For each screen, verify desktop labels, small-screen More-only toolbar, tooltips, permissions, and that create/edit flows use existing dialogs — not new routes.
 
 | Module | Route / page | Known issues to resolve |
 | ------ | ------------ | ----------------------- |
@@ -147,7 +155,7 @@ Work through **every** workspace below. For each screen, verify desktop labels, 
 ## Implementation steps (in order)
 
 1. **Fix shared primitives** — `AppButton` label logic, global action widgets, board toggle styling, overflow resolver cleanup.
-2. **Extend toolbar tests** — update [`app_workspace_toolbar_test.dart`](frontend/test/shared/layout/app_workspace_toolbar_test.dart) so secondary and refresh actions assert visible labels at `1200×800` and icon-only at `360×600`.
+2. **Extend toolbar tests** — update [`app_workspace_toolbar_test.dart`](frontend/test/shared/layout/app_workspace_toolbar_test.dart) so secondary and refresh actions assert visible labels at `1200×800`; at `360×600` assert **no inline toolbar buttons** except More actions, with all actions reachable from the overflow menu.
 3. **Migrate module toolbars** — replace hand-rolled action rows with `appWorkspaceToolbarWithLabels`; add missing `leadingIcon` + localized `label` on every `AppButton`.
 4. **Fix permission gaps** — clinical inactive buttons, housekeeping module availability, biomedical mystery action.
 5. **Row-level actions** — ensure table/record icon buttons always set `tooltip` and `semanticLabel`.
@@ -186,7 +194,8 @@ Manual smoke test at **`1280×800`** (desktop) and **`360×640`** (mobile):
 
 - [ ] Every module workspace toolbar action shows icon + label on desktop.
 - [ ] Refresh, More actions, and global actions match module-specific actions visually.
-- [ ] Narrow width: title + page icon + More actions stay on one line; overflow menu lists all hidden actions with labels.
+- [ ] Narrow width (`xs`/`sm`): toolbar shows **only** More actions — no inline primary, secondary, refresh, or global buttons.
+- [ ] Narrow width: page icon + title + More actions stay on one line; overflow menu lists **all** toolbar actions with icon + label.
 - [ ] More actions button shows pointer cursor and tooltip on hover (web/desktop).
 - [ ] No unexplained disabled toolbar buttons for platform admin.
 - [ ] Rooms & beds: create room/bed opens existing dialogs.
@@ -198,6 +207,7 @@ Manual smoke test at **`1280×800`** (desktop) and **`360×640`** (mobile):
 
 - Shared toolbar/button behavior is correct and covered by passing widget tests.
 - All module workspaces in the audit table use `AppWorkspaceToolbar` / `appWorkspaceToolbarWithLabels` with consistent labeled desktop actions.
+- On `xs`/`sm`, every module toolbar renders **only** the More actions button; all toolbar actions are in the overflow menu.
 - No remaining `AppIconButton` usages; no toolbar `AppButton(iconOnly: true)` except popup menu triggers and intentional compact row actions.
 - `flutter analyze` and `flutter test` pass with no new lint debt.
 - User-visible strings are localized in `app_en.arb`.
