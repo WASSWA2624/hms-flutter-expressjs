@@ -162,7 +162,6 @@ class _OperationsWorkspaceContentState
     OperationsWorkspaceState state,
     OperationsWorkspaceController controller,
   ) {
-    final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
     final int total =
         state.workItems.totalItemCount ?? state.workItems.items.length;
@@ -1428,7 +1427,6 @@ class _OperationsReportDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
     final OperationsWorkItem? request = item;
 
     return AppDialog(

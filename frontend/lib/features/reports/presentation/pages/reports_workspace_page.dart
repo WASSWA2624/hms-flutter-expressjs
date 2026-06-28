@@ -163,7 +163,6 @@ class _ReportsWorkspaceContentState
     BuildContext context,
     ReportsWorkspaceState state,
   ) {
-    final Locale locale = Localizations.localeOf(context);
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );

@@ -259,7 +259,6 @@ class _DischargeWorkspaceContentState
   label: l10n.dischargeCompletedSummaryLabel,
   count: state.completedCount,
   icon: Icons.check_circle_outline,
-  tone: AppWorkspaceStatusTone.neutral,
   onSelected: () =>
                 controller.applyStatus(DischargeStatusFilter.completed),
 ),

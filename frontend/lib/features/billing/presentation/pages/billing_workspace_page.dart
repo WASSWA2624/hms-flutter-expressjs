@@ -10,7 +10,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
@@ -167,7 +166,6 @@ class _BillingWorkspaceContentState
   ) {
     final AppLocalizations l10n = context.l10n;
     final BillingSummary summary = state.overview.summary;
-    final Locale locale = Localizations.localeOf(context);
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
     return <AppWorkspaceSummaryNotification>[

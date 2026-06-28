@@ -195,7 +195,6 @@ class _CommunicationsWorkspaceContentState
     CommunicationsWorkspaceState state,
     CommunicationsWorkspaceController controller,
   ) {
-    final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
 
     return <AppWorkspaceSummaryNotification>[

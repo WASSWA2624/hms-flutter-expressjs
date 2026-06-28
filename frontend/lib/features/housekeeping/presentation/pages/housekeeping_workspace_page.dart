@@ -180,7 +180,6 @@ class _HousekeepingWorkspaceContentState
     HousekeepingWorkspaceState state,
   ) {
     final l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
     final controller = ref.read(
       housekeepingWorkspaceControllerProvider.notifier,
     );

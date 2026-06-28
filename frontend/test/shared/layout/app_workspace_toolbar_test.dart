@@ -59,12 +59,12 @@ void main() {
   ) async {
     await pumpComponent(
       tester,
-      ProviderScope(
+      const ProviderScope(
         child: AppWorkspace(
           title: 'Lab',
           toolbar: AppWorkspaceToolbarConfig(
             showGlobalActions: false,
-            summaryNotifications: const <AppWorkspaceSummaryNotification>[
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
               AppWorkspaceSummaryNotification(
                 label: 'Hidden queue',
                 count: 0,
@@ -75,7 +75,7 @@ void main() {
             notificationsMenuLabel: 'Notifications',
             overflowLabel: 'More actions',
           ),
-          body: const Text('Worklist'),
+          body: Text('Worklist'),
         ),
       ),
       size: const Size(900, 600),
@@ -90,12 +90,12 @@ void main() {
   ) async {
     await pumpComponent(
       tester,
-      ProviderScope(
+      const ProviderScope(
         child: AppWorkspace(
           title: 'Billing',
           toolbar: AppWorkspaceToolbarConfig(
             showGlobalActions: false,
-            summaryNotifications: const <AppWorkspaceSummaryNotification>[
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
               AppWorkspaceSummaryNotification(
                 label: 'Awaiting payment',
                 count: 2,
@@ -105,7 +105,7 @@ void main() {
             ],
             overflowLabel: 'More actions',
           ),
-          body: const Text('Worklist'),
+          body: Text('Worklist'),
         ),
       ),
       size: const Size(900, 600),

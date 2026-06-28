@@ -2187,11 +2187,6 @@ String _dispenseProgressLabel(BuildContext context, PharmacyOrder order) {
     _numberLabel(order.quantityPrescribedTotal),
   );
 }
-
-String _countLabel(BuildContext context, int value) {
-  return AppFormatters.compactNumber(value, Localizations.localeOf(context));
-}
-
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   final int total = page.totalItemCount ?? page.items.length;
   if (total == 0) {

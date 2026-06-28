@@ -251,7 +251,6 @@ class _ClaimsWorkspaceContentState
   label: l10n.claimsFilterClaimPaid,
   count: paidClaimsCount,
   icon: Icons.task_alt_outlined,
-  tone: AppWorkspaceStatusTone.neutral,
   onSelected: () {
               unawaited(
                 _applySummaryFilter(controller, ClaimsQueueFilter.claimPaid),
@@ -263,7 +262,6 @@ class _ClaimsWorkspaceContentState
   label: l10n.claimsFilterClaimCancelled,
   count: cancelledClaimsCount,
   icon: Icons.cancel_outlined,
-  tone: AppWorkspaceStatusTone.neutral,
   onSelected: () {
               unawaited(
                 _applySummaryFilter(

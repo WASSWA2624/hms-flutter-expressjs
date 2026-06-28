@@ -13,7 +13,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -2435,11 +2434,6 @@ bool _isOpenTransfer(String? status) {
     _ => false,
   };
 }
-
-String _countLabel(BuildContext context, int value) {
-  return AppFormatters.compactNumber(value, Localizations.localeOf(context));
-}
-
 int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel(BuildContext context, AppPage<IcuPatientSummary> page) {

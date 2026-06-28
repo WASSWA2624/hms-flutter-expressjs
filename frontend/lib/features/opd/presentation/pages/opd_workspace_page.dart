@@ -172,8 +172,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     BuildContext context,
     OpdFlowAggregateCounts counts,
   ) {
-    final Locale locale = Localizations.localeOf(context);
-    final List<AppWorkspaceSummaryNotification> notifications = <AppWorkspaceSummaryNotification>[];
+    final List<AppWorkspaceSummaryNotification> notifications =
+        <AppWorkspaceSummaryNotification>[];
 
     void addCard(
       String key,

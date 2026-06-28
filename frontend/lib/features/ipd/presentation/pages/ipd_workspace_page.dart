@@ -2780,11 +2780,6 @@ IconData _recordIcon(String kind) {
     _ => Icons.circle_outlined,
   };
 }
-
-String _countLabel(BuildContext context, int value) {
-  return AppFormatters.compactNumber(value, Localizations.localeOf(context));
-}
-
 int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {

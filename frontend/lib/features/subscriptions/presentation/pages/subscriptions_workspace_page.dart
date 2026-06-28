@@ -265,7 +265,6 @@ class _SubscriptionsWorkspaceContentState
     BuildContext context,
     SubscriptionsWorkspaceState state,
   ) {
-    final Locale locale = Localizations.localeOf(context);
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
