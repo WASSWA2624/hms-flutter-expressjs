@@ -433,7 +433,10 @@ final class TherapyFlowWorkItemDto {
       sourceId: _string(json['source_id']),
       sourceTitle: _string(json['source_title']),
       referralReason: _string(json['referral_reason']),
-      status: _string(json['therapy_status']) ?? _string(json['status']) ?? 'REFERRAL',
+      status:
+          _string(json['therapy_status']) ??
+          _string(json['status']) ??
+          'REFERRAL',
       attendanceStatus: _string(json['attendance_status']),
       billingStatus: _string(json['billing_status']) ?? 'NOT_BILLED',
       therapistUserId: _string(json['therapist_user_id']),
@@ -492,7 +495,8 @@ final class TherapyFlowDetailDto {
         .map(
           (PhysiotherapyJsonMap session) => PhysiotherapyRecord(
             id: _string(session['id']) ?? '',
-            apiId: _string(session['session_id']) ?? _string(session['id']) ?? '',
+            apiId:
+                _string(session['session_id']) ?? _string(session['id']) ?? '',
             kind: PhysiotherapyRecordKind.appointment,
             status: _string(session['attendance_status']),
             title: 'Therapy session',

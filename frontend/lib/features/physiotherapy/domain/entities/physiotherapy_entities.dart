@@ -116,7 +116,8 @@ final class PhysiotherapyWorklistQuery {
   }
 
   factory PhysiotherapyWorklistQuery.fromUri(Uri uri) {
-    final String? encounterId = uri.queryParameters['encounterId'] ??
+    final String? encounterId =
+        uri.queryParameters['encounterId'] ??
         uri.queryParameters['encounter_id'];
     return PhysiotherapyWorklistQuery(
       search: encounterId?.trim() ?? '',

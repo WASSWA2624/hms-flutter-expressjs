@@ -198,7 +198,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -360,57 +360,57 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
 
     return <AppWorkspaceSummaryNotification>[
       AppWorkspaceSummaryNotification(
-  label: l10n.hrTotalStaffSummaryLabel,
-  count: summary.totalStaff,
-  icon: Icons.badge_outlined,
-  onSelected: controller.clearStaffFilters,
-),
+        label: l10n.hrTotalStaffSummaryLabel,
+        count: summary.totalStaff,
+        icon: Icons.badge_outlined,
+        onSelected: controller.clearStaffFilters,
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.hrLeaveRequestsSummaryLabel,
-  count: summary.leaveRequests,
-  icon: Icons.event_busy_outlined,
-  tone: summary.leaveRequests > 0
+        label: l10n.hrLeaveRequestsSummaryLabel,
+        count: summary.leaveRequests,
+        icon: Icons.event_busy_outlined,
+        tone: summary.leaveRequests > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-  onSelected: () {
+        onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.leaveRequests),
           );
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.hrRosterDraftsSummaryLabel,
-  count: summary.draftRosters,
-  icon: Icons.calendar_month_outlined,
-  onSelected: () {
+        label: l10n.hrRosterDraftsSummaryLabel,
+        count: summary.draftRosters,
+        icon: Icons.calendar_month_outlined,
+        onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.rosterDrafts),
           );
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.hrUnassignedShiftsSummaryLabel,
-  count: summary.unassignedShifts,
-  icon: Icons.pending_actions_outlined,
-  tone: summary.unassignedShifts > 0
+        label: l10n.hrUnassignedShiftsSummaryLabel,
+        count: summary.unassignedShifts,
+        icon: Icons.pending_actions_outlined,
+        tone: summary.unassignedShifts > 0
             ? AppWorkspaceStatusTone.info
             : AppWorkspaceStatusTone.neutral,
-  onSelected: () {
+        onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.unassignedShifts),
           );
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.hrPayrollDraftsSummaryLabel,
-  count: summary.payrollDraftRuns,
-  icon: Icons.payments_outlined,
-  onSelected: () {
+        label: l10n.hrPayrollDraftsSummaryLabel,
+        count: summary.payrollDraftRuns,
+        icon: Icons.payments_outlined,
+        onSelected: () {
           unawaited(
             _applyQueueAndShow(context, controller, HrQueue.payrollDrafts),
           );
         },
-),
+      ),
     ];
   }
 }
@@ -513,13 +513,10 @@ class _HrStaffDirectory extends ConsumerWidget {
           );
         },
         onPageChanged: onPageChanged,
-        emptyBuilder: (BuildContext context) {
-          return AppStateView(
-            title: l10n.hrNoStaffTitle,
-            body: l10n.hrNoStaffBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.hrNoStaffTitle,
+          body: l10n.hrNoStaffBody,
+        ),
         columns: <AppListTableColumn<HrStaffProfile>>[
           AppListTableColumn<HrStaffProfile>(
             label: l10n.hrStaffColumnLabel,
@@ -950,13 +947,10 @@ class _HrWorkQueuePanel extends ConsumerWidget {
           );
         },
         onPageChanged: onPageChanged,
-        emptyBuilder: (BuildContext context) {
-          return AppStateView(
-            title: l10n.hrNoQueueItemsTitle,
-            body: l10n.hrNoQueueItemsBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.hrNoQueueItemsTitle,
+          body: l10n.hrNoQueueItemsBody,
+        ),
         columns: <AppListTableColumn<HrWorkItem>>[
           AppListTableColumn<HrWorkItem>(
             label: l10n.hrQueueItemColumnLabel,

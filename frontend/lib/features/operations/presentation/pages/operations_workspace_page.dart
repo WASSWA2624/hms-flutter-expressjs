@@ -133,7 +133,7 @@ class _OperationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -169,50 +169,50 @@ class _OperationsWorkspaceContentState
     return <AppWorkspaceSummaryNotification>[
       if (total > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsAllRequestsSummaryLabel,
-  count: total,
-  icon: Icons.inventory_2_outlined,
-  onSelected: controller.clearFilters,
-      ),
+          label: l10n.operationsAllRequestsSummaryLabel,
+          count: total,
+          icon: Icons.inventory_2_outlined,
+          onSelected: controller.clearFilters,
+        ),
       if (state.openCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsOpenSummaryLabel,
-  count: state.openCount,
-  icon: Icons.pending_actions_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () => controller.applyStatus('OPEN'),
-),
+          label: l10n.operationsOpenSummaryLabel,
+          count: state.openCount,
+          icon: Icons.pending_actions_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          onSelected: () => controller.applyStatus('OPEN'),
+        ),
       if (state.inProgressCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsInProgressSummaryLabel,
-  count: state.inProgressCount,
-  icon: Icons.engineering_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyStatus('IN_PROGRESS'),
-),
+          label: l10n.operationsInProgressSummaryLabel,
+          count: state.inProgressCount,
+          icon: Icons.engineering_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          onSelected: () => controller.applyStatus('IN_PROGRESS'),
+        ),
       if (state.completedCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsCompletedSummaryLabel,
-  count: state.completedCount,
-  icon: Icons.task_alt_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () => controller.applyStatus('COMPLETED'),
-),
+          label: l10n.operationsCompletedSummaryLabel,
+          count: state.completedCount,
+          icon: Icons.task_alt_outlined,
+          tone: AppWorkspaceStatusTone.success,
+          onSelected: () => controller.applyStatus('COMPLETED'),
+        ),
       if (state.cancelledCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsCancelledSummaryLabel,
-  count: state.cancelledCount,
-  icon: Icons.cancel_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () => controller.applyStatus('CANCELLED'),
-),
+          label: l10n.operationsCancelledSummaryLabel,
+          count: state.cancelledCount,
+          icon: Icons.cancel_outlined,
+          tone: AppWorkspaceStatusTone.error,
+          onSelected: () => controller.applyStatus('CANCELLED'),
+        ),
       if (state.assetCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.operationsAssetsSummaryLabel,
-  count: state.assetCount,
-  icon: Icons.precision_manufacturing_outlined,
-  onSelected: () {},
-),
+          label: l10n.operationsAssetsSummaryLabel,
+          count: state.assetCount,
+          icon: Icons.precision_manufacturing_outlined,
+          onSelected: () {},
+        ),
     ];
   }
 
@@ -358,13 +358,10 @@ class _OperationsQueuePanel extends ConsumerWidget {
         onPageChanged: (AppPageRequest request) {
           unawaited(controller.changePage(request));
         },
-        emptyBuilder: (BuildContext context) {
-          return AppStateView(
-            title: l10n.operationsNoRequestsTitle,
-            body: l10n.operationsNoRequestsBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.operationsNoRequestsTitle,
+          body: l10n.operationsNoRequestsBody,
+        ),
         columns: _operationColumns(l10n),
         columnChoices: _operationColumnChoices(l10n),
         mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
@@ -400,7 +397,8 @@ class _OperationsDetailPanel extends ConsumerWidget {
       title: l10n.operationsDetailTitle,
       description: item.effectiveDisplayId,
       actions: <Widget>[
-        AppButton(iconOnly: true, 
+        AppButton(
+          iconOnly: true,
           leadingIcon: Icons.summarize_outlined,
           label: l10n.operationsOpenReportAction,
 
@@ -414,11 +412,7 @@ class _OperationsDetailPanel extends ConsumerWidget {
         children: <Widget>[
           if (state.isRefreshingDetail)
             const LinearProgressIndicator(minHeight: 2),
-          _OperationsDetailBody(
-            state: state,
-            item: item,
-            canMutate: canMutate,
-          ),
+          _OperationsDetailBody(state: state, item: item, canMutate: canMutate),
         ],
       ),
     );
@@ -1444,7 +1438,8 @@ class _OperationsReportDialog extends StatelessWidget {
             records: <AppReportSummaryItem>[
               AppReportSummaryItem(
                 label: l10n.operationsAllRequestsSummaryLabel,
-                value: '${state.workItems.totalItemCount ?? state.workItems.items.length}',
+                value:
+                    '${state.workItems.totalItemCount ?? state.workItems.items.length}',
                 icon: Icons.inventory_2_outlined,
               ),
               AppReportSummaryItem(

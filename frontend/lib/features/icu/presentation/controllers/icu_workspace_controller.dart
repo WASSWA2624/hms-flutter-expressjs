@@ -40,7 +40,10 @@ final class IcuWorkspaceController
       events: RealtimeEventGroups.icu,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<IcuWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<IcuWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

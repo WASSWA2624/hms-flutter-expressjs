@@ -55,10 +55,7 @@ class AuthShellLayout extends StatelessWidget {
 }
 
 class _AuthBrandHeader extends StatelessWidget {
-  const _AuthBrandHeader({
-    required this.isLarge,
-    required this.displayName,
-  });
+  const _AuthBrandHeader({required this.isLarge, required this.displayName});
 
   final bool isLarge;
   final String displayName;

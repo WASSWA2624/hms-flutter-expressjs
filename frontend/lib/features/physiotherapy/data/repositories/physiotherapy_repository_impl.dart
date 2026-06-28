@@ -58,9 +58,11 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required TherapyWorkItem item,
     required String note,
   }) {
-    return _postAction(item.id, <String>['accept-referral'], <String, Object?>{
-      'note': note,
-    });
+    return _postAction(
+      item.id,
+      <String>['accept-referral'],
+      <String, Object?>{'note': note},
+    );
   }
 
   @override
@@ -71,12 +73,16 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     String? providerUserId,
     String? reason,
   }) {
-    return _postAction(item.id, <String>['schedule-session'], <String, Object?>{
-      'therapist_user_id': providerUserId,
-      'scheduled_start_at': startAt.toUtc().toIso8601String(),
-      'scheduled_end_at': endAt.toUtc().toIso8601String(),
-      'reason': reason,
-    });
+    return _postAction(
+      item.id,
+      <String>['schedule-session'],
+      <String, Object?>{
+        'therapist_user_id': providerUserId,
+        'scheduled_start_at': startAt.toUtc().toIso8601String(),
+        'scheduled_end_at': endAt.toUtc().toIso8601String(),
+        'reason': reason,
+      },
+    );
   }
 
   @override
@@ -87,12 +93,16 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required String plan,
     String? instructions,
   }) {
-    return _postAction(item.id, <String>['record-assessment'], <String, Object?>{
-      'assessment': assessment,
-      'goals': goals,
-      'plan': plan,
-      'instructions': instructions,
-    });
+    return _postAction(
+      item.id,
+      <String>['record-assessment'],
+      <String, Object?>{
+        'assessment': assessment,
+        'goals': goals,
+        'plan': plan,
+        'instructions': instructions,
+      },
+    );
   }
 
   @override
@@ -101,11 +111,15 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required String note,
     String? attendanceStatus,
   }) {
-    return _postAction(item.id, <String>['record-session'], <String, Object?>{
-      'note': note,
-      'attendance_status': attendanceStatus,
-      'session_id': item.appointmentApiId,
-    });
+    return _postAction(
+      item.id,
+      <String>['record-session'],
+      <String, Object?>{
+        'note': note,
+        'attendance_status': attendanceStatus,
+        'session_id': item.appointmentApiId,
+      },
+    );
   }
 
   @override
@@ -117,16 +131,18 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     final String? sessionId = item.appointmentApiId;
     if (sessionId == null || sessionId.isEmpty) {
       return Future<Result<PhysiotherapyDetail>>.value(
-        Result<PhysiotherapyDetail>.failure(
-          AppFailure.validation(),
-        ),
+        Result<PhysiotherapyDetail>.failure(AppFailure.validation()),
       );
     }
-    return _postAction(item.id, <String>['mark-attendance'], <String, Object?>{
-      'session_id': sessionId,
-      'attendance_status': status,
-      'note': note,
-    });
+    return _postAction(
+      item.id,
+      <String>['mark-attendance'],
+      <String, Object?>{
+        'session_id': sessionId,
+        'attendance_status': status,
+        'note': note,
+      },
+    );
   }
 
   @override
@@ -136,12 +152,16 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     DateTime? startDate,
     DateTime? endDate,
   }) {
-    return _postAction(item.id, <String>['update-plan'], <String, Object?>{
-      'plan': plan,
-      if (startDate != null)
-        'plan_started_at': startDate.toUtc().toIso8601String(),
-      if (endDate != null) 'plan_ends_at': endDate.toUtc().toIso8601String(),
-    });
+    return _postAction(
+      item.id,
+      <String>['update-plan'],
+      <String, Object?>{
+        'plan': plan,
+        if (startDate != null)
+          'plan_started_at': startDate.toUtc().toIso8601String(),
+        if (endDate != null) 'plan_ends_at': endDate.toUtc().toIso8601String(),
+      },
+    );
   }
 
   @override
@@ -150,9 +170,11 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required String authorUserId,
     required String note,
   }) {
-    return _postAction(item.id, <String>['add-progress-note'], <String, Object?>{
-      'note': note,
-    });
+    return _postAction(
+      item.id,
+      <String>['add-progress-note'],
+      <String, Object?>{'note': note},
+    );
   }
 
   @override
@@ -161,10 +183,14 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required DateTime scheduledAt,
     String? notes,
   }) {
-    return _postAction(item.id, <String>['schedule-follow-up'], <String, Object?>{
-      'scheduled_at': scheduledAt.toUtc().toIso8601String(),
-      'notes': notes,
-    });
+    return _postAction(
+      item.id,
+      <String>['schedule-follow-up'],
+      <String, Object?>{
+        'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+        'notes': notes,
+      },
+    );
   }
 
   @override
@@ -172,9 +198,11 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     required TherapyWorkItem item,
     required String summary,
   }) {
-    return _postAction(item.id, <String>['close-episode'], <String, Object?>{
-      'outcome_summary': summary,
-    });
+    return _postAction(
+      item.id,
+      <String>['close-episode'],
+      <String, Object?>{'outcome_summary': summary},
+    );
   }
 
   Future<Result<PhysiotherapyDetail>> _loadDetailById(String episodeId) {

@@ -34,7 +34,10 @@ final class MortuaryWorkspaceController
       events: RealtimeEventGroups.mortuary,
       onRefresh: (_) => _syncVisibleData(),
     );
-    final Result<MortuaryWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<MortuaryWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

@@ -33,7 +33,10 @@ final class HrWorkspaceController
       events: RealtimeEventGroups.hr,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<HrWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<HrWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

@@ -4,10 +4,8 @@ const String connectionRetryCountExtraKey = 'connection_retry_count';
 
 /// Retries transient connection failures that can occur during shell startup.
 final class ConnectionRetryInterceptor extends Interceptor {
-  ConnectionRetryInterceptor({
-    required Dio retryClient,
-    this.maxRetries = 2,
-  }) : _retryClient = retryClient;
+  ConnectionRetryInterceptor({required Dio retryClient, this.maxRetries = 2})
+    : _retryClient = retryClient;
 
   final Dio _retryClient;
   final int maxRetries;

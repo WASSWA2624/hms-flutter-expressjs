@@ -171,52 +171,52 @@ class _BillingWorkspaceContentState
     return <AppWorkspaceSummaryNotification>[
       if (summary.workloadCount > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingAllWorkItems,
-  count: summary.workloadCount,
-  icon: Icons.inventory_2_outlined,
-  onSelected: () => controller.applyQueue(BillingQueueType.all),
-),
+          label: l10n.billingAllWorkItems,
+          count: summary.workloadCount,
+          icon: Icons.inventory_2_outlined,
+          onSelected: () => controller.applyQueue(BillingQueueType.all),
+        ),
       if (summary.pendingPayment > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingAwaitingPayment,
-  count: summary.pendingPayment,
-  icon: Icons.payments_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
+          label: l10n.billingAwaitingPayment,
+          count: summary.pendingPayment,
+          icon: Icons.payments_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          onSelected: () =>
               controller.applyQueue(BillingQueueType.pendingPayment),
-),
+        ),
       if (summary.needsIssue > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingIssueQueue,
-  count: summary.needsIssue,
-  icon: Icons.receipt_long_outlined,
-  onSelected: () => controller.applyQueue(BillingQueueType.needsIssue),
-),
+          label: l10n.billingIssueQueue,
+          count: summary.needsIssue,
+          icon: Icons.receipt_long_outlined,
+          onSelected: () => controller.applyQueue(BillingQueueType.needsIssue),
+        ),
       if (summary.claimsPending > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingClaimsPending,
-  count: summary.claimsPending,
-  icon: Icons.health_and_safety_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
+          label: l10n.billingClaimsPending,
+          count: summary.claimsPending,
+          icon: Icons.health_and_safety_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          onSelected: () =>
               controller.applyQueue(BillingQueueType.claimsPending),
-),
+        ),
       if (summary.approvalRequired > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingApprovals,
-  count: summary.approvalRequired,
-  icon: Icons.rule_outlined,
-  onSelected: () =>
+          label: l10n.billingApprovals,
+          count: summary.approvalRequired,
+          icon: Icons.rule_outlined,
+          onSelected: () =>
               controller.applyQueue(BillingQueueType.approvalRequired),
-),
+        ),
       if (summary.overdue > 0)
         AppWorkspaceSummaryNotification(
-  label: l10n.billingOverdue,
-  count: summary.overdue,
-  icon: Icons.warning_amber_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () => controller.applyQueue(BillingQueueType.overdue),
-),
+          label: l10n.billingOverdue,
+          count: summary.overdue,
+          icon: Icons.warning_amber_outlined,
+          tone: AppWorkspaceStatusTone.error,
+          onSelected: () => controller.applyQueue(BillingQueueType.overdue),
+        ),
     ];
   }
 }
@@ -1635,10 +1635,7 @@ List<AppSearchBarFilterChoice> _billingQueueFilterChoices(
 }
 
 class _ClaimReconcileForm extends StatefulWidget {
-  const _ClaimReconcileForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-  });
+  const _ClaimReconcileForm({required this.dialogTitle, this.dialogIcon});
 
   final Widget dialogTitle;
   final Widget? dialogIcon;

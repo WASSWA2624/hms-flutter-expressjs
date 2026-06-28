@@ -226,59 +226,59 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (_pageTotal(state.admissions) > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdScopeAll,
-  count: _pageTotal(state.admissions),
-  icon: Icons.inventory_2_outlined,
-  onSelected: () => controller.applyScope(IpdQueueScope.all),
-),
-        if (state.admissionQueueCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdAdmissionQueueSummaryLabel,
-  count: state.admissionQueueCount,
-  icon: Icons.bed_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyScope(IpdQueueScope.admissionQueue),
-),
-        if (state.activePatientCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdActivePatientsSummaryLabel,
-  count: state.activePatientCount,
-  icon: Icons.local_hospital_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
-                controller.applyScope(IpdQueueScope.activePatients),
-),
-        if (state.transferPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdTransferPendingSummaryLabel,
-  count: state.transferPendingCount,
-  icon: Icons.swap_horiz,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyScope(IpdQueueScope.transferPending),
-),
-        if (state.dischargePlannedCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdDischargePlannedSummaryLabel,
-  count: state.dischargePlannedCount,
-  icon: Icons.fact_check_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () =>
-                controller.applyScope(IpdQueueScope.dischargePlanned),
-),
-        if (state.criticalAlertCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.ipdCriticalAlertsSummaryLabel,
-  count: state.criticalAlertCount,
-  icon: Icons.notification_important_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () =>
-                controller.applyScope(IpdQueueScope.activePatients),
-),
-      ],
+          if (_pageTotal(state.admissions) > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdScopeAll,
+              count: _pageTotal(state.admissions),
+              icon: Icons.inventory_2_outlined,
+              onSelected: () => controller.applyScope(IpdQueueScope.all),
+            ),
+          if (state.admissionQueueCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdAdmissionQueueSummaryLabel,
+              count: state.admissionQueueCount,
+              icon: Icons.bed_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyScope(IpdQueueScope.admissionQueue),
+            ),
+          if (state.activePatientCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdActivePatientsSummaryLabel,
+              count: state.activePatientCount,
+              icon: Icons.local_hospital_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyScope(IpdQueueScope.activePatients),
+            ),
+          if (state.transferPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdTransferPendingSummaryLabel,
+              count: state.transferPendingCount,
+              icon: Icons.swap_horiz,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyScope(IpdQueueScope.transferPending),
+            ),
+          if (state.dischargePlannedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdDischargePlannedSummaryLabel,
+              count: state.dischargePlannedCount,
+              icon: Icons.fact_check_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  controller.applyScope(IpdQueueScope.dischargePlanned),
+            ),
+          if (state.criticalAlertCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.ipdCriticalAlertsSummaryLabel,
+              count: state.criticalAlertCount,
+              icon: Icons.notification_important_outlined,
+              tone: AppWorkspaceStatusTone.error,
+              onSelected: () =>
+                  controller.applyScope(IpdQueueScope.activePatients),
+            ),
+        ],
         secondary: <Widget>[
           AppWorkspaceBoardToggle<IpdBoardMode>(
             value: _boardMode,
@@ -316,7 +316,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: _boardMode == IpdBoardMode.bedBoard
           ? IpdBedBoardPanel(
               state: state,
@@ -968,9 +968,7 @@ class _IpdDetailActions extends ConsumerWidget {
               }
               context.go(
                 AppRoutes.physiotherapy.location(
-                  queryParameters: <String, String>{
-                    'encounterId': encounterId,
-                  },
+                  queryParameters: <String, String>{'encounterId': encounterId},
                 ),
               );
             },
@@ -2779,6 +2777,7 @@ IconData _recordIcon(String kind) {
     _ => Icons.circle_outlined,
   };
 }
+
 int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {

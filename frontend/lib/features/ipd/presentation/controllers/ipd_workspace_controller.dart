@@ -40,7 +40,10 @@ final class IpdWorkspaceController
       events: RealtimeEventGroups.ipd,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<IpdWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<IpdWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

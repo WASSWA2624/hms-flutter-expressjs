@@ -40,7 +40,10 @@ final class TheaterWorkspaceController
       events: RealtimeEventGroups.theater,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<TheaterWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<TheaterWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

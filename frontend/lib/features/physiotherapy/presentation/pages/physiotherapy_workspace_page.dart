@@ -137,7 +137,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         leadingIcon: Icons.accessibility_new_outlined,
         toolbar: appWorkspaceToolbarWithLabels(
           l10n,
-        summaryNotifications: _summaryNotifications(context, controller),
+          summaryNotifications: _summaryNotifications(context, controller),
           secondary: <Widget>[
             AppButton.secondary(
               label: l10n.physiotherapyReferralsSummaryLabel,
@@ -164,12 +164,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                           if (payload == null || !context.mounted) {
                             return;
                           }
-                          final AppFailure? failure = await controller.recordAssessment(
-                            assessment: payload.assessment,
-                            goals: payload.goals,
-                            plan: payload.plan,
-                            instructions: payload.instructions,
-                          );
+                          final AppFailure? failure = await controller
+                              .recordAssessment(
+                                assessment: payload.assessment,
+                                goals: payload.goals,
+                                plan: payload.plan,
+                                instructions: payload.instructions,
+                              );
                           if (!context.mounted) {
                             return;
                           }
@@ -193,21 +194,22 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 onPressed: state.isSaving || item?.apiPatientId == null
                     ? null
                     : () async {
-                        final _SchedulePayload? payload =
-                            await showAppDialog<_SchedulePayload>(
-                              context: context,
-                              builder: (_) => _ScheduleSessionDialog(
-                                title: l10n.physiotherapyScheduleSessionDialogTitle,
-                              ),
-                            );
+                        final _SchedulePayload?
+                        payload = await showAppDialog<_SchedulePayload>(
+                          context: context,
+                          builder: (_) => _ScheduleSessionDialog(
+                            title: l10n.physiotherapyScheduleSessionDialogTitle,
+                          ),
+                        );
                         if (payload == null || !context.mounted) {
                           return;
                         }
-                        final AppFailure? failure = await controller.scheduleSession(
-                          startAt: payload.startAt,
-                          endAt: payload.endAt,
-                          reason: payload.reason,
-                        );
+                        final AppFailure? failure = await controller
+                            .scheduleSession(
+                              startAt: payload.startAt,
+                              endAt: payload.endAt,
+                              reason: payload.reason,
+                            );
                         if (!context.mounted) {
                           return;
                         }
@@ -223,7 +225,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           },
           isRefreshing: state.isRefreshing,
         ),
-        
+
         body: _buildWorklist(context, ref, controller),
       ),
     );
@@ -297,12 +299,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     return AppWorkspaceSummaryNotification(
       label: label,
       count: value,
-  icon: icon,
-  tone: tone,
-  onSelected: () {
+      icon: icon,
+      tone: tone,
+      onSelected: () {
         controller.applyScope(scope);
       },
-);
+    );
   }
 
   Widget _buildWorklist(
@@ -320,79 +322,79 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       title: l10n.physiotherapyWorklistTitle,
       description: l10n.physiotherapyWorklistDescription,
       child: AppListTable<TherapyWorkItem>(
-      page: state.worklist,
-      isLoading: state.isRefreshing,
-      columns: _columns(context, locale),
-      columnChoices: _optionalColumns(context, locale),
-      columnVisibilityController: columnVisibilityController,
-      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.physiotherapyTableColumnsTitle,
-      columnVisibilityApplyLabel: l10n.physiotherapyApplyColumnsAction,
-      columnVisibilityResetLabel: l10n.physiotherapyResetColumnsAction,
-      itemKeyBuilder: (TherapyWorkItem item) => ValueKey<String>(item.id),
-      onRowSelected: (TherapyWorkItem item) {
-        unawaited(_openTherapyDetailDialog(context, ref, controller, item));
-      },
-      onPageChanged: controller.changePage,
-      previousPageLabel: l10n.opdPreviousPageLabel,
-      nextPageLabel: l10n.opdNextPageLabel,
-      pageLabelBuilder: (AppPage<TherapyWorkItem> page) => l10n.opdPageLabel(
-        page.firstItemNumber,
-        page.lastItemNumber,
-        page.totalItemCount ?? page.lastItemNumber,
-      ),
-      emptyBuilder: (BuildContext context) => AppWorkspaceStatePanel.empty(
-        title: l10n.physiotherapyNoWorkTitle,
-        body: l10n.physiotherapyNoWorkBody,
-        minHeight: 220,
-      ),
-      mobileItemBuilder: (BuildContext context, TherapyWorkItem item) {
-        return _TherapyWorklistMobileItem(item: item);
-      },
-      search: AppListTableSearch<TherapyWorkItem>(
-        controller: searchController,
-        semanticLabel: l10n.physiotherapySearchLabel,
-        hintText: l10n.physiotherapySearchHint,
-        clearLabel: l10n.opdClearFiltersAction,
-        matcher: (TherapyWorkItem item, String query) =>
-            item.matchesSearch(query, field: state.query.filters.searchField),
-        onSubmitted: controller.applySearch,
-        onClear: () {
-          controller.applySearch('');
+        page: state.worklist,
+        isLoading: state.isRefreshing,
+        columns: _columns(context, locale),
+        columnChoices: _optionalColumns(context, locale),
+        columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.physiotherapyTableColumnsTitle,
+        columnVisibilityApplyLabel: l10n.physiotherapyApplyColumnsAction,
+        columnVisibilityResetLabel: l10n.physiotherapyResetColumnsAction,
+        itemKeyBuilder: (TherapyWorkItem item) => ValueKey<String>(item.id),
+        onRowSelected: (TherapyWorkItem item) {
+          unawaited(_openTherapyDetailDialog(context, ref, controller, item));
         },
-        showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.physiotherapyFiltersLabel,
-        advancedFilterTitle: l10n.physiotherapyFiltersLabel,
-        advancedFilterApplyLabel: l10n.physiotherapyApplyFiltersAction,
-        advancedFilterResetLabel: l10n.physiotherapyClearFiltersAction,
-        searchFields: _searchFields(l10n),
-        searchFieldLabel: l10n.physiotherapySearchFieldLabel,
-        allFieldsLabel: l10n.physiotherapyAllFieldsLabel,
-        dateFilterLabel: l10n.physiotherapyDateFilterLabel,
-        dateFromLabel: l10n.physiotherapyDateFromLabel,
-        dateToLabel: l10n.physiotherapyDateToLabel,
-        datePickerButtonLabel: l10n.patientsDatePickerAction,
-        invalidDateMessage: l10n.appDateInvalidMessage,
-        currentDate: DateTime.now(),
-        filterGroups: _filterGroups(l10n),
-        textFilters: <AppSearchBarTextFilter>[
-          AppSearchBarTextFilter(
-            key: 'therapist',
-            label: l10n.physiotherapyTherapistFilterLabel,
-            hintText: l10n.physiotherapyTherapistFilterHint,
-            icon: Icons.person_search_outlined,
-          ),
-        ],
-        filterValue: filterValue,
-        hasActiveFilters: state.query.hasActiveFilters,
-        onFilterChanged: (AppSearchBarFilterValue value) {
-          controller.applyWorklistFilters(
-            search: searchController.text,
-            scope: _scopeFromFilterValue(value) ?? state.query.scope,
-            filters: _filtersFromValue(value),
-          );
+        onPageChanged: controller.changePage,
+        previousPageLabel: l10n.opdPreviousPageLabel,
+        nextPageLabel: l10n.opdNextPageLabel,
+        pageLabelBuilder: (AppPage<TherapyWorkItem> page) => l10n.opdPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        ),
+        emptyBuilder: (BuildContext context) => AppWorkspaceStatePanel.empty(
+          title: l10n.physiotherapyNoWorkTitle,
+          body: l10n.physiotherapyNoWorkBody,
+          minHeight: 220,
+        ),
+        mobileItemBuilder: (BuildContext context, TherapyWorkItem item) {
+          return _TherapyWorklistMobileItem(item: item);
         },
-      ),
+        search: AppListTableSearch<TherapyWorkItem>(
+          controller: searchController,
+          semanticLabel: l10n.physiotherapySearchLabel,
+          hintText: l10n.physiotherapySearchHint,
+          clearLabel: l10n.opdClearFiltersAction,
+          matcher: (TherapyWorkItem item, String query) =>
+              item.matchesSearch(query, field: state.query.filters.searchField),
+          onSubmitted: controller.applySearch,
+          onClear: () {
+            controller.applySearch('');
+          },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.physiotherapyFiltersLabel,
+          advancedFilterTitle: l10n.physiotherapyFiltersLabel,
+          advancedFilterApplyLabel: l10n.physiotherapyApplyFiltersAction,
+          advancedFilterResetLabel: l10n.physiotherapyClearFiltersAction,
+          searchFields: _searchFields(l10n),
+          searchFieldLabel: l10n.physiotherapySearchFieldLabel,
+          allFieldsLabel: l10n.physiotherapyAllFieldsLabel,
+          dateFilterLabel: l10n.physiotherapyDateFilterLabel,
+          dateFromLabel: l10n.physiotherapyDateFromLabel,
+          dateToLabel: l10n.physiotherapyDateToLabel,
+          datePickerButtonLabel: l10n.patientsDatePickerAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          currentDate: DateTime.now(),
+          filterGroups: _filterGroups(l10n),
+          textFilters: <AppSearchBarTextFilter>[
+            AppSearchBarTextFilter(
+              key: 'therapist',
+              label: l10n.physiotherapyTherapistFilterLabel,
+              hintText: l10n.physiotherapyTherapistFilterHint,
+              icon: Icons.person_search_outlined,
+            ),
+          ],
+          filterValue: filterValue,
+          hasActiveFilters: state.query.hasActiveFilters,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyWorklistFilters(
+              search: searchController.text,
+              scope: _scopeFromFilterValue(value) ?? state.query.scope,
+              filters: _filtersFromValue(value),
+            );
+          },
+        ),
       ),
     );
   }

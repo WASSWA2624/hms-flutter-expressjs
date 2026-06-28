@@ -128,7 +128,7 @@ class _ReportsWorkspaceContentState
         onRefresh: controller.refresh,
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -169,26 +169,28 @@ class _ReportsWorkspaceContentState
     final List<ReportsSummaryCard> summary = state.overview.summary;
     final List<AppWorkspaceSummaryNotification> notifications =
         <AppWorkspaceSummaryNotification>[
-      for (final ReportsSummaryCard card in summary)
-        if (card.value > 0)
-          AppWorkspaceSummaryNotification(
-            label: card.label,
-            count: card.value,
-            icon: _summaryIcon(card.id),
-            tone: _summaryTone(card.id),
-            onSelected: () {
-              final ReportsQueueSummary? queue = state.overview.queueSummaries
-                  .where((ReportsQueueSummary item) => item.count > 0)
-                  .firstOrNull;
-              if (queue != null &&
-                  (card.id.contains('run') ||
-                      card.id.contains('schedule') ||
-                      card.id.contains('kpi'))) {
-                controller.applyPanel(queue.panel);
-              }
-            },
-          ),
-    ];
+          for (final ReportsSummaryCard card in summary)
+            if (card.value > 0)
+              AppWorkspaceSummaryNotification(
+                label: card.label,
+                count: card.value,
+                icon: _summaryIcon(card.id),
+                tone: _summaryTone(card.id),
+                onSelected: () {
+                  final ReportsQueueSummary? queue = state
+                      .overview
+                      .queueSummaries
+                      .where((ReportsQueueSummary item) => item.count > 0)
+                      .firstOrNull;
+                  if (queue != null &&
+                      (card.id.contains('run') ||
+                          card.id.contains('schedule') ||
+                          card.id.contains('kpi'))) {
+                    controller.applyPanel(queue.panel);
+                  }
+                },
+              ),
+        ];
 
     if (notifications.isNotEmpty) {
       return notifications;
@@ -196,17 +198,17 @@ class _ReportsWorkspaceContentState
 
     return <AppWorkspaceSummaryNotification>[
       AppWorkspaceSummaryNotification(
-  label: context.l10n.reportsPanelCatalog,
-  count: 0,
-  icon: Icons.article_outlined,
-  onSelected: () => controller.applyPanel(ReportsWorkspacePanel.catalog),
-),
+        label: context.l10n.reportsPanelCatalog,
+        count: 0,
+        icon: Icons.article_outlined,
+        onSelected: () => controller.applyPanel(ReportsWorkspacePanel.catalog),
+      ),
       AppWorkspaceSummaryNotification(
-  label: context.l10n.reportsPanelAudit,
-  count: 0,
-  icon: Icons.manage_search_outlined,
-  onSelected: () => controller.applyPanel(ReportsWorkspacePanel.audit),
-),
+        label: context.l10n.reportsPanelAudit,
+        count: 0,
+        icon: Icons.manage_search_outlined,
+        onSelected: () => controller.applyPanel(ReportsWorkspacePanel.audit),
+      ),
     ];
   }
 }

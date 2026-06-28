@@ -109,7 +109,10 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       leadingIcon: AppRouteIcons.opd,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        summaryNotifications: _opdBackendSummaryNotifications(context, state.summaryCounts),
+        summaryNotifications: _opdBackendSummaryNotifications(
+          context,
+          state.summaryCounts,
+        ),
         primary: AppAccessActionGate(
           requirement: opdEncounterPermissionRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -137,7 +140,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             state.isRefreshingFlows ||
             state.isRefreshingTriageQueue,
       ),
-      
+
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
         builder: (BuildContext context, _OpdTableFilter filter, _) {
@@ -2026,78 +2029,78 @@ class _OpdMainTable extends ConsumerWidget {
         title: l10n.opdFlowsTitle,
         description: l10n.opdTableDescription,
         child: AppListTable<_OpdTableItem>(
-        page: page,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        isLoading: isLoading,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.opdNoFlowsTitle,
-          body: l10n.opdNoFlowsBody,
-          icon: Icons.medical_services_outlined,
-          minHeight: 260,
-        ),
-        columns: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in visibleColumns)
-            _opdDataColumn(context, column),
-        ],
-        columnChoices: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in _availableOpdTableColumns)
-            _opdDataColumn(context, column),
-        ],
-        onRowSelected: (_OpdTableItem item) =>
-            _openTableItemActions(context, item),
-        onPageChanged: onPageChanged,
-        pageLabelBuilder: (AppPage<_OpdTableItem> page) =>
-            _opdPageLabel(context, page),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        search: AppListTableSearch<_OpdTableItem>(
-          controller: searchController,
-          semanticLabel: l10n.opdSearchLabel,
-          hintText: l10n.opdSearchHint,
-          clearLabel: l10n.opdClearFiltersAction,
-          matcher: (_OpdTableItem item, String query) =>
-              item.matches(query, field: filter.searchField),
-          onChanged: (String value) {
-            onFilterChanged(filter.copyWith(search: value));
-          },
-          onClear: () {
-            onFilterChanged(filter.copyWith(clearSearch: true));
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.opdFilterAction,
-          advancedFilterTitle: l10n.opdFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          searchFields: _opdTableSearchFields(context),
-          searchFieldLabel: l10n.opdSearchFieldFilterLabel,
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          dateFilterLabel: l10n.opdArrivalDateFilterLabel,
-          dateFromLabel: l10n.opdDateFromLabel,
-          dateToLabel: l10n.opdDateToLabel,
-          datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
-          invalidDateMessage: l10n.opdInvalidDateMessage,
-          firstDate: DateTime(DateTime.now().year - 10),
-          lastDate: DateTime(DateTime.now().year + 2, 12, 31),
-          currentDate: DateTime.now(),
-          filterGroups: _opdTableFilterGroups(context, filterItems, statuses),
-          filterValue: filter.toSearchBarValue(),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            onFilterChanged(
-              _OpdTableFilter.fromSearchBarValue(
-                value,
-                search: searchController.text,
-              ),
-            );
-          },
-          hasActiveFilters: filter.hasAdvancedFilters,
-        ),
-        mobileItemBuilder: (_, _OpdTableItem item) =>
-            _OpdTableMobileRow(item: item),
-        itemKeyBuilder: (_OpdTableItem item) =>
-            ValueKey<String>('opd-${item.stableKey}'),
-        rowColorBuilder: _opdTableRowColor,
+          page: page,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          isLoading: isLoading,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+            title: l10n.opdNoFlowsTitle,
+            body: l10n.opdNoFlowsBody,
+            icon: Icons.medical_services_outlined,
+            minHeight: 260,
+          ),
+          columns: <AppListTableColumn<_OpdTableItem>>[
+            for (final _OpdTableColumnId column in visibleColumns)
+              _opdDataColumn(context, column),
+          ],
+          columnChoices: <AppListTableColumn<_OpdTableItem>>[
+            for (final _OpdTableColumnId column in _availableOpdTableColumns)
+              _opdDataColumn(context, column),
+          ],
+          onRowSelected: (_OpdTableItem item) =>
+              _openTableItemActions(context, item),
+          onPageChanged: onPageChanged,
+          pageLabelBuilder: (AppPage<_OpdTableItem> page) =>
+              _opdPageLabel(context, page),
+          previousPageLabel: l10n.opdPreviousPageLabel,
+          nextPageLabel: l10n.opdNextPageLabel,
+          search: AppListTableSearch<_OpdTableItem>(
+            controller: searchController,
+            semanticLabel: l10n.opdSearchLabel,
+            hintText: l10n.opdSearchHint,
+            clearLabel: l10n.opdClearFiltersAction,
+            matcher: (_OpdTableItem item, String query) =>
+                item.matches(query, field: filter.searchField),
+            onChanged: (String value) {
+              onFilterChanged(filter.copyWith(search: value));
+            },
+            onClear: () {
+              onFilterChanged(filter.copyWith(clearSearch: true));
+            },
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.opdFilterAction,
+            advancedFilterTitle: l10n.opdFiltersLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            searchFields: _opdTableSearchFields(context),
+            searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+            allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+            dateFilterLabel: l10n.opdArrivalDateFilterLabel,
+            dateFromLabel: l10n.opdDateFromLabel,
+            dateToLabel: l10n.opdDateToLabel,
+            datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+            invalidDateMessage: l10n.opdInvalidDateMessage,
+            firstDate: DateTime(DateTime.now().year - 10),
+            lastDate: DateTime(DateTime.now().year + 2, 12, 31),
+            currentDate: DateTime.now(),
+            filterGroups: _opdTableFilterGroups(context, filterItems, statuses),
+            filterValue: filter.toSearchBarValue(),
+            onFilterChanged: (AppSearchBarFilterValue value) {
+              onFilterChanged(
+                _OpdTableFilter.fromSearchBarValue(
+                  value,
+                  search: searchController.text,
+                ),
+              );
+            },
+            hasActiveFilters: filter.hasAdvancedFilters,
+          ),
+          mobileItemBuilder: (_, _OpdTableItem item) =>
+              _OpdTableMobileRow(item: item),
+          itemKeyBuilder: (_OpdTableItem item) =>
+              ValueKey<String>('opd-${item.stableKey}'),
+          rowColorBuilder: _opdTableRowColor,
         ),
       ),
     );

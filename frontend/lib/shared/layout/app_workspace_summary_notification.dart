@@ -44,11 +44,7 @@ Color workspaceStatusToneAccentColor(
 
 /// Compact numeric badge for menu notification rows.
 class AppMenuCountBadge extends StatelessWidget {
-  const AppMenuCountBadge({
-    required this.count,
-    required this.tone,
-    super.key,
-  });
+  const AppMenuCountBadge({required this.count, required this.tone, super.key});
 
   final int count;
   final AppWorkspaceStatusTone tone;
@@ -76,7 +72,9 @@ class AppMenuCountBadge extends StatelessWidget {
 List<AppWorkspaceSummaryNotification> visibleWorkspaceSummaryNotifications(
   List<AppWorkspaceSummaryNotification> notifications,
 ) {
-  return notifications.where((AppWorkspaceSummaryNotification n) => n.isVisible).toList(growable: false);
+  return notifications
+      .where((AppWorkspaceSummaryNotification n) => n.isVisible)
+      .toList(growable: false);
 }
 
 int totalWorkspaceSummaryNotificationCount(

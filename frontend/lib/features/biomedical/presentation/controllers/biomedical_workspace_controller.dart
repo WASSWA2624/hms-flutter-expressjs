@@ -35,7 +35,8 @@ final class BiomedicalWorkspaceController
       events: RealtimeEventGroups.biomedical,
       onRefresh: (_) => _syncVisibleData(),
     );
-    final Result<BiomedicalWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<BiomedicalWorkspaceState> result =
+        await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

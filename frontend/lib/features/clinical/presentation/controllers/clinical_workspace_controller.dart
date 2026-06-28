@@ -49,7 +49,10 @@ final class ClinicalWorkspaceController
       shouldRefresh: _clinicalRealtimeEventTouchesVisibleData,
       onRefresh: _handleClinicalRealtime,
     );
-    final Result<ClinicalWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<ClinicalWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

@@ -1778,7 +1778,7 @@ class _PanelTestPicker extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.sm),
         if (selectedTests.isEmpty)
-          _EmptyInlineText(text: l10n.labPanelNoSelectedTests)
+          AppMutedText(l10n.labPanelNoSelectedTests)
         else
           DecoratedBox(
             decoration: BoxDecoration(
@@ -2110,22 +2110,6 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
               ),
             );
           },
-    );
-  }
-}
-
-class _EmptyInlineText extends StatelessWidget {
-  const _EmptyInlineText({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
     );
   }
 }

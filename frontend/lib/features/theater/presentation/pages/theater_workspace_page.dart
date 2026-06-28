@@ -204,44 +204,44 @@ class _TheaterWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (_pageTotal(state.cases) > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.theaterAllCasesSummaryLabel,
-  count: _pageTotal(state.cases),
-  icon: Icons.inventory_2_outlined,
-  onSelected: controller.clearFilters,
-),
-        if (state.scheduledCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.theaterScheduledSummaryLabel,
-  count: state.scheduledCount,
-  icon: Icons.event_available_outlined,
-  onSelected: () => controller.applyStatus('SCHEDULED'),
-),
-        if (state.inTheaterCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.theaterInTheaterSummaryLabel,
-  count: state.inTheaterCount,
-  icon: Icons.meeting_room_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyStatus('IN_PROGRESS'),
-),
-        if (state.readyCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.theaterReadySummaryLabel,
-  count: state.readyCount,
-  icon: Icons.fact_check_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () => controller.applyStage('PRE_OP'),
-),
-        if (state.completedCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.theaterCompletedSummaryLabel,
-  count: state.completedCount,
-  icon: Icons.task_alt_outlined,
-  onSelected: () => controller.applyStatus('COMPLETED'),
-),
-      ],
+          if (_pageTotal(state.cases) > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.theaterAllCasesSummaryLabel,
+              count: _pageTotal(state.cases),
+              icon: Icons.inventory_2_outlined,
+              onSelected: controller.clearFilters,
+            ),
+          if (state.scheduledCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.theaterScheduledSummaryLabel,
+              count: state.scheduledCount,
+              icon: Icons.event_available_outlined,
+              onSelected: () => controller.applyStatus('SCHEDULED'),
+            ),
+          if (state.inTheaterCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.theaterInTheaterSummaryLabel,
+              count: state.inTheaterCount,
+              icon: Icons.meeting_room_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () => controller.applyStatus('IN_PROGRESS'),
+            ),
+          if (state.readyCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.theaterReadySummaryLabel,
+              count: state.readyCount,
+              icon: Icons.fact_check_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () => controller.applyStage('PRE_OP'),
+            ),
+          if (state.completedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.theaterCompletedSummaryLabel,
+              count: state.completedCount,
+              icon: Icons.task_alt_outlined,
+              onSelected: () => controller.applyStatus('COMPLETED'),
+            ),
+        ],
         primary: canWrite
             ? AppButton.primary(
                 label: l10n.theaterScheduleCaseAction,
@@ -262,7 +262,7 @@ class _TheaterWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -431,13 +431,10 @@ class _TheaterCaseBoard extends ConsumerWidget {
           );
         },
         onPageChanged: onPageChanged,
-        emptyBuilder: (BuildContext context) {
-          return AppStateView(
-            title: l10n.theaterNoCasesTitle,
-            body: l10n.theaterNoCasesBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.theaterNoCasesTitle,
+          body: l10n.theaterNoCasesBody,
+        ),
         columns: <AppListTableColumn<TheaterCase>>[
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterCaseIdColumnLabel,
@@ -584,7 +581,8 @@ class _TheaterCaseDetail extends ConsumerWidget {
       description: selected.displayId,
       actions: canWrite
           ? <Widget>[
-              AppButton(iconOnly: true, 
+              AppButton(
+                iconOnly: true,
                 leadingIcon: Icons.edit_calendar_outlined,
                 label: l10n.theaterRescheduleAction,
 
@@ -594,7 +592,8 @@ class _TheaterCaseDetail extends ConsumerWidget {
                     ? null
                     : () => _showRescheduleDialog(context, ref, selected),
               ),
-              AppButton(iconOnly: true, 
+              AppButton(
+                iconOnly: true,
                 leadingIcon: Icons.alt_route_outlined,
                 label: l10n.theaterUpdateStageAction,
 
@@ -908,7 +907,7 @@ class _ChecklistSection extends StatelessWidget {
     return _DetailSection(
       title: l10n.theaterChecklistTitle,
       children: items.isEmpty
-          ? <Widget>[_EmptyDetailLine(label: l10n.theaterNoChecklistItemsLabel)]
+          ? <Widget>[AppMutedText(l10n.theaterNoChecklistItemsLabel)]
           : <Widget>[
               for (final TheaterChecklistItem item in items)
                 _StatusLine(
@@ -962,7 +961,7 @@ class _RecordsSection extends StatelessWidget {
           value: theaterCase.latestPostOpNote?.notes,
         ),
         if (theaterCase.anesthesiaObservations.isEmpty)
-          _EmptyDetailLine(label: l10n.theaterNoObservationsLabel)
+          AppMutedText(l10n.theaterNoObservationsLabel)
         else
           for (final TheaterAnesthesiaObservation observation
               in theaterCase.anesthesiaObservations.take(6))
@@ -1001,7 +1000,7 @@ class _ResourceSection extends StatelessWidget {
     return _DetailSection(
       title: l10n.theaterResourcesTitle,
       children: allocations.isEmpty
-          ? <Widget>[_EmptyDetailLine(label: l10n.theaterNoResourcesLabel)]
+          ? <Widget>[AppMutedText(l10n.theaterNoResourcesLabel)]
           : <Widget>[
               for (final TheaterResourceAllocation allocation in allocations)
                 _StatusLine(
@@ -1039,7 +1038,7 @@ class _TimelineSection extends StatelessWidget {
     return _DetailSection(
       title: l10n.theaterTimelineTitle,
       children: timeline.isEmpty
-          ? <Widget>[_EmptyDetailLine(label: l10n.theaterNoTimelineLabel)]
+          ? <Widget>[AppMutedText(l10n.theaterNoTimelineLabel)]
           : <Widget>[
               for (final TheaterTimelineItem item in timeline.take(8))
                 _StatusLine(
@@ -1119,22 +1118,6 @@ class _DetailLine extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptyDetailLine extends StatelessWidget {
-  const _EmptyDetailLine({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

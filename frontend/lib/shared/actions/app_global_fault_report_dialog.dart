@@ -98,7 +98,9 @@ class _AppGlobalFaultReportDialogState
           action: AppButton.primary(
             label: l10n.commonRetryActionLabel,
             onPressed: () {
-              ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh();
+              ref
+                  .read(biomedicalWorkspaceControllerProvider.notifier)
+                  .refresh();
             },
           ),
         ),

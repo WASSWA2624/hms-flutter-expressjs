@@ -36,7 +36,10 @@ final class PharmacyWorkspaceController
       events: RealtimeEventGroups.pharmacyWorkspace,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<PharmacyWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<PharmacyWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

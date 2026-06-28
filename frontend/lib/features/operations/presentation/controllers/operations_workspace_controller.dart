@@ -35,7 +35,8 @@ final class OperationsWorkspaceController
       events: RealtimeEventGroups.operations,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<OperationsWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<OperationsWorkspaceState> result =
+        await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

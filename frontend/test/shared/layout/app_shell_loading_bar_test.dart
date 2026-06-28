@@ -9,9 +9,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
-          home: const Scaffold(
-            body: AppShellLoadingBar(visible: false),
-          ),
+          home: const Scaffold(body: AppShellLoadingBar(visible: false)),
         ),
       );
 
@@ -25,9 +23,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
-          home: const Scaffold(
-            body: AppShellLoadingBar(visible: true),
-          ),
+          home: const Scaffold(body: AppShellLoadingBar(visible: true)),
         ),
       );
 
@@ -48,9 +44,7 @@ void main() {
           theme: AppTheme.light,
           home: const MediaQuery(
             data: MediaQueryData(disableAnimations: true),
-            child: Scaffold(
-              body: AppShellLoadingBar(visible: true),
-            ),
+            child: Scaffold(body: AppShellLoadingBar(visible: true)),
           ),
         ),
       );

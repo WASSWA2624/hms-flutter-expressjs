@@ -148,68 +148,70 @@ class _IntegrationsWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsAllSummaryLabel,
-  count: totalCount,
-  icon: Icons.hub_outlined,
-  onSelected: () {
-            unawaited(_applyFilter(controller, IntegrationWorkspaceFilter.all));
-          },
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsActiveSummaryLabel,
-  count: state.activeCount,
-  icon: Icons.check_circle_outline,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.active),
-            );
-          },
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsWarningsSummaryLabel,
-  count: state.warningCount,
-  icon: Icons.warning_amber_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.warning),
-            );
-          },
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsFailedSummaryLabel,
-  count: state.failedCount,
-  icon: Icons.error_outline,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.failed),
-            );
-          },
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsApiKeysSummaryLabel,
-  count: state.apiKeys.length,
-  icon: Icons.key_outlined,
-  onSelected: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.apiKeys),
-            );
-          },
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.integrationsWebhooksSummaryLabel,
-  count: state.webhooks.length,
-  icon: Icons.webhook_outlined,
-  onSelected: () {
-            unawaited(
-              _applyFilter(controller, IntegrationWorkspaceFilter.webhooks),
-            );
-          },
-),
-      ],
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsAllSummaryLabel,
+            count: totalCount,
+            icon: Icons.hub_outlined,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.all),
+              );
+            },
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsActiveSummaryLabel,
+            count: state.activeCount,
+            icon: Icons.check_circle_outline,
+            tone: AppWorkspaceStatusTone.success,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.active),
+              );
+            },
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsWarningsSummaryLabel,
+            count: state.warningCount,
+            icon: Icons.warning_amber_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.warning),
+              );
+            },
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsFailedSummaryLabel,
+            count: state.failedCount,
+            icon: Icons.error_outline,
+            tone: AppWorkspaceStatusTone.error,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.failed),
+              );
+            },
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsApiKeysSummaryLabel,
+            count: state.apiKeys.length,
+            icon: Icons.key_outlined,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.apiKeys),
+              );
+            },
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.integrationsWebhooksSummaryLabel,
+            count: state.webhooks.length,
+            icon: Icons.webhook_outlined,
+            onSelected: () {
+              unawaited(
+                _applyFilter(controller, IntegrationWorkspaceFilter.webhooks),
+              );
+            },
+          ),
+        ],
         secondary: <Widget>[
           AppPermissionActionButton(
             requirement: _integrationsManageRequirement,
@@ -251,7 +253,7 @@ class _IntegrationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: _IntegrationWorklistPanel(
         state: state,
         searchController: _searchController,
@@ -1035,7 +1037,8 @@ class _PermissionGrantRow extends StatelessWidget {
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
         SizedBox(width: theme.spacing.xs),
-        AppButton(iconOnly: true, 
+        AppButton(
+          iconOnly: true,
           leadingIcon: Icons.remove_circle_outline,
           label: l10n.integrationsRemovePermissionAction,
 

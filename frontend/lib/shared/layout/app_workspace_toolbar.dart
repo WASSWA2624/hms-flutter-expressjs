@@ -367,7 +367,8 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       return;
     }
 
-    final double estimatedWidth = AppWorkspaceToolbar._rowWidth(
+    final double estimatedWidth =
+        AppWorkspaceToolbar._rowWidth(
           _layout.inlineActions,
           showLabels: widget.showLabels,
           spacing: widget.spacing,
@@ -509,15 +510,15 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
       actions,
       ref,
     );
-    final String notificationsLabel =
-        notificationsMenuLabel ?? 'Notifications';
+    final String notificationsLabel = notificationsMenuLabel ?? 'Notifications';
 
     if (entries.isEmpty && summaryNotifications.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final int attentionTotal =
-        totalWorkspaceSummaryNotificationCount(summaryNotifications);
+    final int attentionTotal = totalWorkspaceSummaryNotificationCount(
+      summaryNotifications,
+    );
     final String triggerLabel = attentionTotal > 0
         ? context.l10n.workspaceToolbarOverflowAttentionTooltip(attentionTotal)
         : label;
@@ -537,10 +538,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
                   ? () => entry.onSelected?.call(context, ref)
                   : null,
               style: _overflowMenuItemStyle(theme),
-              child: AppMenuItemLabel(
-                icon: entry.icon,
-                label: entry.label,
-              ),
+              child: AppMenuItemLabel(icon: entry.icon, label: entry.label),
             ),
           if (summaryNotifications.isNotEmpty)
             _ToolbarNotificationsSubmenu(
@@ -553,25 +551,22 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
                   _overflowMenuItemStyle(theme, selected: selected),
             ),
         ],
-        builder: (
-          BuildContext context,
-          MenuController controller,
-          Widget? child,
-        ) {
-          return AppButton.popupMenuTrigger(
-            context: context,
-            icon: Icons.more_vert,
-            semanticLabel: triggerLabel,
-            attentionCount: attentionTotal,
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
+        builder:
+            (BuildContext context, MenuController controller, Widget? child) {
+              return AppButton.popupMenuTrigger(
+                context: context,
+                icon: Icons.more_vert,
+                semanticLabel: triggerLabel,
+                attentionCount: attentionTotal,
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+              );
             },
-          );
-        },
       ),
     );
   }
@@ -613,10 +608,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
     );
   }
 
-  ButtonStyle _overflowMenuItemStyle(
-    ThemeData theme, {
-    bool selected = false,
-  }) {
+  ButtonStyle _overflowMenuItemStyle(ThemeData theme, {bool selected = false}) {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return ButtonStyle(
@@ -696,50 +688,47 @@ class _ToolbarNotificationsSubmenu extends StatelessWidget {
             ),
           ),
       ],
-      builder: (
-        BuildContext context,
-        MenuController controller,
-        Widget? child,
-      ) {
-        return MouseRegion(
-          onEnter: (_) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (context.mounted && !controller.isOpen) {
-                controller.open();
-              }
-            });
-          },
-          child: TextButton(
-            style: buttonStyle,
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
-            },
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppMenuItemLabel(
-                    icon: Icons.notifications_outlined,
-                    label: label,
-                    trailing: AppMenuCountBadge(
-                      count: aggregateCount,
-                      tone: AppWorkspaceStatusTone.info,
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return MouseRegion(
+              onEnter: (_) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted && !controller.isOpen) {
+                    controller.open();
+                  }
+                });
+              },
+              child: TextButton(
+                style: buttonStyle,
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: AppMenuItemLabel(
+                        icon: Icons.notifications_outlined,
+                        label: label,
+                        trailing: AppMenuCountBadge(
+                          count: aggregateCount,
+                          tone: AppWorkspaceStatusTone.info,
+                        ),
+                      ),
                     ),
-                  ),
+                    Icon(
+                      Icons.chevron_right,
+                      size: theme.appTokens.listIconSize,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  size: theme.appTokens.listIconSize,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
     );
   }
 }

@@ -217,29 +217,29 @@ class _AccessAdminWorkspaceContentState
     final AccessAdminOverview overview = state.data.overview;
     return <AppWorkspaceSummaryNotification>[
       AppWorkspaceSummaryNotification(
-  label: context.l10n.accessAdminActiveUsersLabel,
-  count: overview.activeUsers,
-  icon: Icons.people_outline,
-  onSelected: () {},
-),
+        label: context.l10n.accessAdminActiveUsersLabel,
+        count: overview.activeUsers,
+        icon: Icons.people_outline,
+        onSelected: () {},
+      ),
       AppWorkspaceSummaryNotification(
-  label: context.l10n.accessAdminRolesLabel,
-  count: overview.totalRoles,
-  icon: Icons.badge_outlined,
-  onSelected: () {},
-),
+        label: context.l10n.accessAdminRolesLabel,
+        count: overview.totalRoles,
+        icon: Icons.badge_outlined,
+        onSelected: () {},
+      ),
       AppWorkspaceSummaryNotification(
-  label: context.l10n.accessAdminPermissionsLabel,
-  count: overview.totalPermissions,
-  icon: Icons.key_outlined,
-  onSelected: () {},
-),
+        label: context.l10n.accessAdminPermissionsLabel,
+        count: overview.totalPermissions,
+        icon: Icons.key_outlined,
+        onSelected: () {},
+      ),
       AppWorkspaceSummaryNotification(
-  label: context.l10n.accessAdminModulesLabel,
-  count: overview.activeModulesCount,
-  icon: Icons.extension_outlined,
-  onSelected: () {},
-),
+        label: context.l10n.accessAdminModulesLabel,
+        count: overview.activeModulesCount,
+        icon: Icons.extension_outlined,
+        onSelected: () {},
+      ),
     ];
   }
 

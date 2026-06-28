@@ -162,48 +162,48 @@ class _RoomsBedsWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        AppWorkspaceSummaryNotification(
-  label: l10n.roomsBedsTotalSummaryLabel,
-  count: state.totalBedCount,
-  icon: Icons.bed_outlined,
-  onSelected: controller.clearFilters,
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.tenantFacilityBedStatusAvailable,
-  count: state.availableCount,
-  icon: Icons.check_circle_outline,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () => controller.applyStatus(BedSetupStatus.available),
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.tenantFacilityBedStatusOccupied,
-  count: state.occupiedCount,
-  icon: Icons.person_pin_circle_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyStatus(BedSetupStatus.occupied),
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.tenantFacilityBedStatusReserved,
-  count: state.reservedCount,
-  icon: Icons.event_available_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () => controller.applyStatus(BedSetupStatus.reserved),
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.tenantFacilityBedStatusCleaning,
-  count: state.cleaningCount,
-  icon: Icons.cleaning_services_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () => controller.applyStatus(BedSetupStatus.cleaning),
-),
-        AppWorkspaceSummaryNotification(
-  label: l10n.tenantFacilityBedStatusBlocked,
-  count: state.blockedCount,
-  icon: Icons.block_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () => controller.applyStatus(BedSetupStatus.blocked),
-),
-      ],
+          AppWorkspaceSummaryNotification(
+            label: l10n.roomsBedsTotalSummaryLabel,
+            count: state.totalBedCount,
+            icon: Icons.bed_outlined,
+            onSelected: controller.clearFilters,
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.tenantFacilityBedStatusAvailable,
+            count: state.availableCount,
+            icon: Icons.check_circle_outline,
+            tone: AppWorkspaceStatusTone.success,
+            onSelected: () => controller.applyStatus(BedSetupStatus.available),
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.tenantFacilityBedStatusOccupied,
+            count: state.occupiedCount,
+            icon: Icons.person_pin_circle_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onSelected: () => controller.applyStatus(BedSetupStatus.occupied),
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.tenantFacilityBedStatusReserved,
+            count: state.reservedCount,
+            icon: Icons.event_available_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onSelected: () => controller.applyStatus(BedSetupStatus.reserved),
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.tenantFacilityBedStatusCleaning,
+            count: state.cleaningCount,
+            icon: Icons.cleaning_services_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onSelected: () => controller.applyStatus(BedSetupStatus.cleaning),
+          ),
+          AppWorkspaceSummaryNotification(
+            label: l10n.tenantFacilityBedStatusBlocked,
+            count: state.blockedCount,
+            icon: Icons.block_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onSelected: () => controller.applyStatus(BedSetupStatus.blocked),
+          ),
+        ],
         primary: canAdminBeds
             ? AppButton.primary(
                 label: l10n.tenantFacilityAddRoomAction,
@@ -263,7 +263,7 @@ class _RoomsBedsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

@@ -146,42 +146,42 @@ class _RadiologyWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (state.summary.totalForView(state.query.view) > 0)
-          AppWorkspaceSummaryNotification(
-  label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyPatientsSummaryLabel
-                : l10n.radiologyTotalOrdersSummaryLabel,
-  count: state.summary.totalForView(state.query.view),
-  icon: Icons.assignment_outlined,
-  onSelected: controller.clearFilters,
-),
-        if (state.summary.orderedForView(state.query.view) > 0)
-          AppWorkspaceSummaryNotification(
-  label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyPatientsWaitingImagingSummaryLabel
-                : l10n.radiologyWaitingImagingSummaryLabel,
-  count: state.summary.orderedForView(state.query.view),
-  icon: Icons.pending_actions_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () => controller.applyStage('ORDERED'),
-),
-        if (state.reportingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.radiologyReportingSummaryLabel,
-  count: state.reportingCount,
-  icon: Icons.edit_note_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyStage('REPORTING'),
-),
-        if (state.releasedCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.radiologyReleasedSummaryLabel,
-  count: state.releasedCount,
-  icon: Icons.verified_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () => controller.applyStage('COMPLETED'),
-),
-      ],
+          if (state.summary.totalForView(state.query.view) > 0)
+            AppWorkspaceSummaryNotification(
+              label: state.query.view == RadiologyWorkbenchView.patients
+                  ? l10n.radiologyPatientsSummaryLabel
+                  : l10n.radiologyTotalOrdersSummaryLabel,
+              count: state.summary.totalForView(state.query.view),
+              icon: Icons.assignment_outlined,
+              onSelected: controller.clearFilters,
+            ),
+          if (state.summary.orderedForView(state.query.view) > 0)
+            AppWorkspaceSummaryNotification(
+              label: state.query.view == RadiologyWorkbenchView.patients
+                  ? l10n.radiologyPatientsWaitingImagingSummaryLabel
+                  : l10n.radiologyWaitingImagingSummaryLabel,
+              count: state.summary.orderedForView(state.query.view),
+              icon: Icons.pending_actions_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () => controller.applyStage('ORDERED'),
+            ),
+          if (state.reportingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.radiologyReportingSummaryLabel,
+              count: state.reportingCount,
+              icon: Icons.edit_note_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () => controller.applyStage('REPORTING'),
+            ),
+          if (state.releasedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.radiologyReleasedSummaryLabel,
+              count: state.releasedCount,
+              icon: Icons.verified_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () => controller.applyStage('COMPLETED'),
+            ),
+        ],
         secondary: <Widget>[
           AppButton.secondary(
             label: state.query.view == RadiologyWorkbenchView.patients
@@ -233,7 +233,7 @@ class _RadiologyWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -2430,10 +2430,11 @@ class _TimelineNode extends StatelessWidget {
 }
 
 Future<void> _showCreateOrderDialog(BuildContext context, WidgetRef ref) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => const _CreateOrderForm(),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _CreateOrderForm(),
+      );
 
   if (payload == null || !context.mounted) {
     return;
@@ -2858,10 +2859,11 @@ Future<void> _showStudyDialog(
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => _StudyForm(order: order),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => _StudyForm(order: order),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -3317,13 +3319,12 @@ Future<void> _showFinalizationNoteDialog(
   String submitLabel,
   _RadiologyResultMutation submit,
 ) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => _FinalizationNoteForm(
-      dialogTitle: title,
-      submitLabel: submitLabel,
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) =>
+            _FinalizationNoteForm(dialogTitle: title, submitLabel: submitLabel),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -3413,10 +3414,11 @@ Future<void> _showAddendumDialog(
   WidgetRef ref,
   RadiologyResult result,
 ) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => const _AddendumForm(),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _AddendumForm(),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -3501,10 +3503,11 @@ class _AddendumFormState extends State<_AddendumForm> {
 }
 
 Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => const _CancelForm(),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _CancelForm(),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -3594,10 +3597,11 @@ Future<void> _showPacsSyncDialog(
   WidgetRef ref,
   ImagingStudy study,
 ) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => const _PacsSyncForm(),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _PacsSyncForm(),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -3679,14 +3683,15 @@ Future<void> _submitNotesOnly({
   required String submitLabel,
   required Future<AppFailure?> Function(Map<String, Object?> payload) submit,
 }) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => _NotesOnlyForm(
-      dialogTitle: title,
-      notesLabel: notesLabel,
-      submitLabel: submitLabel,
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => _NotesOnlyForm(
+          dialogTitle: title,
+          notesLabel: notesLabel,
+          submitLabel: submitLabel,
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }

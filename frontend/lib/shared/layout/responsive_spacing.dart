@@ -49,7 +49,10 @@ abstract final class ResponsiveSpacing {
   }) {
     return switch (breakpoint) {
       AppBreakpoint.xs || AppBreakpoint.sm => spacing.sm,
-      AppBreakpoint.md || AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => spacing.sm,
+      AppBreakpoint.md ||
+      AppBreakpoint.lg ||
+      AppBreakpoint.xl ||
+      AppBreakpoint.xxl => spacing.sm,
     };
   }
 }

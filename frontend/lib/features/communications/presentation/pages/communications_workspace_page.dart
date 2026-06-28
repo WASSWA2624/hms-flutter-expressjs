@@ -165,7 +165,7 @@ class _CommunicationsWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -199,47 +199,47 @@ class _CommunicationsWorkspaceContentState
 
     return <AppWorkspaceSummaryNotification>[
       AppWorkspaceSummaryNotification(
-  label: l10n.communicationsUnreadThreadsSummaryLabel,
-  count: state.summary.unreadThreads,
-  icon: Icons.mark_chat_unread_outlined,
-  tone: state.summary.unreadThreads > 0
+        label: l10n.communicationsUnreadThreadsSummaryLabel,
+        count: state.summary.unreadThreads,
+        icon: Icons.mark_chat_unread_outlined,
+        tone: state.summary.unreadThreads > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-  onSelected: () {
+        onSelected: () {
           controller.applyPanel(CommunicationsPanel.inbox);
           controller.applyFilter(unreadOnly: true);
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.communicationsUnreadNotificationsSummaryLabel,
-  count: state.metrics.unread,
-  icon: Icons.notifications_active_outlined,
-  tone: state.metrics.unread > 0
+        label: l10n.communicationsUnreadNotificationsSummaryLabel,
+        count: state.metrics.unread,
+        icon: Icons.notifications_active_outlined,
+        tone: state.metrics.unread > 0
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
-  onSelected: () {
+        onSelected: () {
           controller.applyPanel(CommunicationsPanel.notifications);
           controller.applyFilter(unreadOnly: true);
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.communicationsFailedDeliveriesSummaryLabel,
-  count: state.metrics.failedDeliveries,
-  icon: Icons.error_outline,
-  tone: state.metrics.failedDeliveries > 0
+        label: l10n.communicationsFailedDeliveriesSummaryLabel,
+        count: state.metrics.failedDeliveries,
+        icon: Icons.error_outline,
+        tone: state.metrics.failedDeliveries > 0
             ? AppWorkspaceStatusTone.error
             : AppWorkspaceStatusTone.neutral,
-  onSelected: () {
+        onSelected: () {
           controller.applyPanel(CommunicationsPanel.deliveries);
           controller.applyFilter(filter: _failedFilterValue);
         },
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.communicationsTemplatesSummaryLabel,
-  count: state.summary.templates,
-  icon: Icons.description_outlined,
-  onSelected: () => controller.applyPanel(CommunicationsPanel.templates),
-),
+        label: l10n.communicationsTemplatesSummaryLabel,
+        count: state.summary.templates,
+        icon: Icons.description_outlined,
+        onSelected: () => controller.applyPanel(CommunicationsPanel.templates),
+      ),
     ];
   }
 }

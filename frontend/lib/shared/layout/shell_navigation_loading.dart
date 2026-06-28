@@ -138,9 +138,7 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
   @override
   Widget build(BuildContext context) {
     final bool retainPrevious =
-        _pendingRouteKey != null &&
-        widget.isLoading &&
-        _visibleChild != null;
+        _pendingRouteKey != null && widget.isLoading && _visibleChild != null;
 
     if (!retainPrevious) {
       return widget.child;
@@ -150,9 +148,7 @@ class _ShellRouteChildRetentionState extends State<ShellRouteChildRetention> {
       fit: StackFit.expand,
       children: <Widget>[
         _visibleChild!,
-        Offstage(
-          child: TickerMode(enabled: true, child: widget.child),
-        ),
+        Offstage(child: TickerMode(enabled: true, child: widget.child)),
       ],
     );
   }

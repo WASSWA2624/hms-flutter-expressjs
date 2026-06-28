@@ -113,84 +113,86 @@ class _PharmacyWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (state.workbench.summary.totalOrders > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacyFilterAll,
-  count: state.workbench.summary.totalOrders,
-  icon: Icons.inventory_2_outlined,
-  onSelected: () => controller.applyFilter(PharmacyOrderFilter.all),
-),
-        if (state.workbench.summary.orderedQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacySummaryReadyLabel,
-  count: state.workbench.summary.orderedQueue,
-  icon: Icons.medication_liquid_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyFilter(PharmacyOrderFilter.ready),
-),
-        if (state.workbench.summary.partiallyDispensedQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacySummaryPartialLabel,
-  count: state.workbench.summary.partiallyDispensedQueue,
-  icon: Icons.pending_actions_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.partial),
-),
-        if (state.workbench.summary.dispensedOrders > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacySummaryCompletedLabel,
-  count: state.workbench.summary.dispensedOrders,
-  icon: Icons.done_all_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.completed),
-),
-        if (state.workbench.summary.dischargePendingQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacyFilterDischarge,
-  count: state.workbench.summary.dischargePendingQueue,
-  icon: Icons.local_hospital_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.discharge),
-),
-        if (state.workbench.summary.outpatientQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacyFilterOutpatient,
-  count: state.workbench.summary.outpatientQueue,
-  icon: Icons.person_outline,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.outpatient),
-),
-        if (state.workbench.summary.wardQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacyFilterWard,
-  count: state.workbench.summary.wardQueue,
-  icon: Icons.bed_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyFilter(PharmacyOrderFilter.ward),
-),
-        if (state.workbench.summary.pendingPaymentQueue > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacyFilterPendingPayment,
-  count: state.workbench.summary.pendingPaymentQueue,
-  icon: Icons.payments_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.pendingPayment),
-),
-        if (state.workbench.summary.pendingAttestations > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.pharmacySummaryAttestationLabel,
-  count: state.workbench.summary.pendingAttestations,
-  icon: Icons.verified_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyFilter(PharmacyOrderFilter.partial),
-),
-      ],
+          if (state.workbench.summary.totalOrders > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacyFilterAll,
+              count: state.workbench.summary.totalOrders,
+              icon: Icons.inventory_2_outlined,
+              onSelected: () => controller.applyFilter(PharmacyOrderFilter.all),
+            ),
+          if (state.workbench.summary.orderedQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryReadyLabel,
+              count: state.workbench.summary.orderedQueue,
+              icon: Icons.medication_liquid_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.ready),
+            ),
+          if (state.workbench.summary.partiallyDispensedQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryPartialLabel,
+              count: state.workbench.summary.partiallyDispensedQueue,
+              icon: Icons.pending_actions_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.partial),
+            ),
+          if (state.workbench.summary.dispensedOrders > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryCompletedLabel,
+              count: state.workbench.summary.dispensedOrders,
+              icon: Icons.done_all_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.completed),
+            ),
+          if (state.workbench.summary.dischargePendingQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacyFilterDischarge,
+              count: state.workbench.summary.dischargePendingQueue,
+              icon: Icons.local_hospital_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.discharge),
+            ),
+          if (state.workbench.summary.outpatientQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacyFilterOutpatient,
+              count: state.workbench.summary.outpatientQueue,
+              icon: Icons.person_outline,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.outpatient),
+            ),
+          if (state.workbench.summary.wardQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacyFilterWard,
+              count: state.workbench.summary.wardQueue,
+              icon: Icons.bed_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.ward),
+            ),
+          if (state.workbench.summary.pendingPaymentQueue > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacyFilterPendingPayment,
+              count: state.workbench.summary.pendingPaymentQueue,
+              icon: Icons.payments_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.pendingPayment),
+            ),
+          if (state.workbench.summary.pendingAttestations > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryAttestationLabel,
+              count: state.workbench.summary.pendingAttestations,
+              icon: Icons.verified_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyFilter(PharmacyOrderFilter.partial),
+            ),
+        ],
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.pharmacyCatalogPanelTitle,
@@ -218,7 +220,7 @@ class _PharmacyWorkspaceContentState
         },
         isRefreshing: state.isRefreshingOrders,
       ),
-      
+
       body: _PharmacyQueuePanel(
         state: state,
         writeRequirement: _writeRequirement,
@@ -2185,6 +2187,7 @@ String _dispenseProgressLabel(BuildContext context, PharmacyOrder order) {
     _numberLabel(order.quantityPrescribedTotal),
   );
 }
+
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   final int total = page.totalItemCount ?? page.items.length;
   if (total == 0) {

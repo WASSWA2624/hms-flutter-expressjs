@@ -76,12 +76,7 @@ class _DischargeWorkspacePageState
     if (detail == null) {
       return;
     }
-    await _openDischargeDetailDialog(
-      context,
-      ref,
-      state!,
-      detail.summary,
-    );
+    await _openDischargeDetailDialog(context, ref, state!, detail.summary);
   }
 
   @override
@@ -193,76 +188,77 @@ class _DischargeWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (_pageTotal(state.queue) > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeStatusAll,
-  count: _pageTotal(state.queue),
-  icon: Icons.inventory_2_outlined,
-  onSelected: () => controller.applyStatus(DischargeStatusFilter.all),
-),
-        if (state.plannedCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargePlannedSummaryLabel,
-  count: state.plannedCount,
-  icon: Icons.event_available_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.planned),
-),
-        if (state.summaryPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeSummaryPendingSummaryLabel,
-  count: state.summaryPendingCount,
-  icon: Icons.edit_note_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.summaryPending),
-),
-        if (state.pharmacyPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeStatusPharmacyPending,
-  count: state.pharmacyPendingCount,
-  icon: Icons.medication_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.pharmacyPending),
-),
-        if (state.billingPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeStatusBillingPending,
-  count: state.billingPendingCount,
-  icon: Icons.receipt_long_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.billingPending),
-),
-        if (state.nursingPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeStatusNursingPending,
-  count: state.nursingPendingCount,
-  icon: Icons.health_and_safety_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.nursingPending),
-),
-        if (state.documentsReadyCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeDocumentsReadySummaryLabel,
-  count: state.documentsReadyCount,
-  icon: Icons.description_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.documentsReady),
-),
-        if (state.completedCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.dischargeCompletedSummaryLabel,
-  count: state.completedCount,
-  icon: Icons.check_circle_outline,
-  onSelected: () =>
-                controller.applyStatus(DischargeStatusFilter.completed),
-),
-      ],
+          if (_pageTotal(state.queue) > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeStatusAll,
+              count: _pageTotal(state.queue),
+              icon: Icons.inventory_2_outlined,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.all),
+            ),
+          if (state.plannedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargePlannedSummaryLabel,
+              count: state.plannedCount,
+              icon: Icons.event_available_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.planned),
+            ),
+          if (state.summaryPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeSummaryPendingSummaryLabel,
+              count: state.summaryPendingCount,
+              icon: Icons.edit_note_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.summaryPending),
+            ),
+          if (state.pharmacyPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeStatusPharmacyPending,
+              count: state.pharmacyPendingCount,
+              icon: Icons.medication_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.pharmacyPending),
+            ),
+          if (state.billingPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeStatusBillingPending,
+              count: state.billingPendingCount,
+              icon: Icons.receipt_long_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.billingPending),
+            ),
+          if (state.nursingPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeStatusNursingPending,
+              count: state.nursingPendingCount,
+              icon: Icons.health_and_safety_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.nursingPending),
+            ),
+          if (state.documentsReadyCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeDocumentsReadySummaryLabel,
+              count: state.documentsReadyCount,
+              icon: Icons.description_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.documentsReady),
+            ),
+          if (state.completedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.dischargeCompletedSummaryLabel,
+              count: state.completedCount,
+              icon: Icons.check_circle_outline,
+              onSelected: () =>
+                  controller.applyStatus(DischargeStatusFilter.completed),
+            ),
+        ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {
@@ -271,7 +267,7 @@ class _DischargeWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: _DischargeQueuePanel(
         state: state,
         searchController: _searchController,

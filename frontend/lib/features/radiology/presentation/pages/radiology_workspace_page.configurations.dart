@@ -247,7 +247,8 @@ class _RadiologyConfigurationsDialogState
       runSpacing: Theme.of(context).spacing.xs,
       children: <Widget>[
         if (item.isStandard)
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.copy_outlined,
             label: l10n.radiologyCopyStandardTestAction,
 
@@ -263,7 +264,8 @@ class _RadiologyConfigurationsDialogState
                   ),
           )
         else ...<Widget>[
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.edit_outlined,
             label: l10n.radiologyEditImagingTestAction,
 
@@ -277,7 +279,8 @@ class _RadiologyConfigurationsDialogState
                     tenantId: widget.tenantId,
                   ),
           ),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.delete_outline,
             label: l10n.radiologyDeleteImagingTestAction,
 
@@ -555,10 +558,11 @@ class _RadiologyTestConfigurationDialogState
 }
 
 Future<void> _showAssignDialog(BuildContext context, WidgetRef ref) async {
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    builder: (_) => const _AssignForm(),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _AssignForm(),
+      );
   if (payload == null || !context.mounted) {
     return;
   }

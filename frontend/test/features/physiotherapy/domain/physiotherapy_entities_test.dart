@@ -4,9 +4,10 @@ import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_
 void main() {
   group('PhysiotherapyWorklistQuery', () {
     test('fromUri pre-fills encounter search', () {
-      final PhysiotherapyWorklistQuery query = PhysiotherapyWorklistQuery.fromUri(
-        Uri.parse('/physiotherapy?encounterId=ENC-001'),
-      );
+      final PhysiotherapyWorklistQuery query =
+          PhysiotherapyWorklistQuery.fromUri(
+            Uri.parse('/physiotherapy?encounterId=ENC-001'),
+          );
 
       expect(query.search, 'ENC-001');
       expect(query.scope, PhysiotherapyQueueScope.all);

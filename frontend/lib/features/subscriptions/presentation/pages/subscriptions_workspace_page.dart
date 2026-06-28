@@ -288,12 +288,12 @@ class _SubscriptionsWorkspaceContentState
           ? null
           : queueById(queueId);
       return AppWorkspaceSummaryNotification(
-  label: label,
-  count: state.summaryValue(metricId),
-  icon: icon,
-  tone: tone,
-  onSelected: queue == null ? () {} : () => controller.applyQueue(queue),
-);
+        label: label,
+        count: state.summaryValue(metricId),
+        icon: icon,
+        tone: tone,
+        onSelected: queue == null ? () {} : () => controller.applyQueue(queue),
+      );
     }
 
     return <AppWorkspaceSummaryNotification>[
@@ -615,13 +615,10 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               );
             },
             onPageChanged: controller.changePage,
-            emptyBuilder: (BuildContext context) {
-              return const AppStateView(
-                title: _SubscriptionsText.emptyTitle,
-                body: _SubscriptionsText.emptyBody,
-                variant: AppStateViewVariant.empty,
-              );
-            },
+            emptyBuilder: (_) => const AppWorkspaceStatePanel.empty(
+              title: _SubscriptionsText.emptyTitle,
+              body: _SubscriptionsText.emptyBody,
+            ),
             columns: <AppListTableColumn<SubscriptionItem>>[
               AppListTableColumn<SubscriptionItem>(
                 label: _SubscriptionsText.record,
@@ -1470,7 +1467,8 @@ class _PlanChangeFormState extends State<_PlanChangeForm> {
             context: context,
             labelText: _SubscriptionsText.effectiveAt,
             value: _effectiveAt,
-            onChanged: (DateTime? value) => setState(() => _effectiveAt = value),
+            onChanged: (DateTime? value) =>
+                setState(() => _effectiveAt = value),
           ),
           AppTextField(
             controller: _reasonController,
@@ -1503,10 +1501,7 @@ class _PlanChangeFormState extends State<_PlanChangeForm> {
 }
 
 class _RenewalForm extends StatefulWidget {
-  const _RenewalForm({
-    required this.dialogTitle,
-    required this.dialogIcon,
-  });
+  const _RenewalForm({required this.dialogTitle, required this.dialogIcon});
 
   final Widget dialogTitle;
   final Widget? dialogIcon;
@@ -1975,21 +1970,22 @@ Future<void> _showPlanDialog(
   WidgetRef ref, {
   SubscriptionItem? initial,
 }) async {
-  final SubscriptionPlanDraft? draft = await showAppDialog<SubscriptionPlanDraft>(
-    context: context,
-    builder: (_) => _PlanForm(
-      dialogTitle: Text(
-        initial == null
-            ? _SubscriptionsText.createPlan
-            : _SubscriptionsText.editPlan,
-      ),
-      dialogIcon: const Icon(Icons.workspace_premium_outlined),
-      submitLabel: initial == null
-          ? _SubscriptionsText.createPlan
-          : _SubscriptionsText.savePlan,
-      initial: initial,
-    ),
-  );
+  final SubscriptionPlanDraft? draft =
+      await showAppDialog<SubscriptionPlanDraft>(
+        context: context,
+        builder: (_) => _PlanForm(
+          dialogTitle: Text(
+            initial == null
+                ? _SubscriptionsText.createPlan
+                : _SubscriptionsText.editPlan,
+          ),
+          dialogIcon: const Icon(Icons.workspace_premium_outlined),
+          submitLabel: initial == null
+              ? _SubscriptionsText.createPlan
+              : _SubscriptionsText.savePlan,
+          initial: initial,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2036,13 +2032,13 @@ Future<void> _showPlanChangeDialog(
 ) async {
   final SubscriptionPlanChangeDraft? draft =
       await showAppDialog<SubscriptionPlanChangeDraft>(
-    context: context,
-    builder: (_) => _PlanChangeForm(
-      dialogTitle: const Text(_SubscriptionsText.changePlan),
-      dialogIcon: const Icon(Icons.swap_horiz_outlined),
-      state: state,
-    ),
-  );
+        context: context,
+        builder: (_) => _PlanChangeForm(
+          dialogTitle: const Text(_SubscriptionsText.changePlan),
+          dialogIcon: const Icon(Icons.swap_horiz_outlined),
+          state: state,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2057,12 +2053,12 @@ Future<void> _showPlanChangeDialog(
 Future<void> _showRenewalDialog(BuildContext context, WidgetRef ref) async {
   final SubscriptionRenewalDraft? draft =
       await showAppDialog<SubscriptionRenewalDraft>(
-    context: context,
-    builder: (_) => const _RenewalForm(
-      dialogTitle: Text(_SubscriptionsText.renew),
-      dialogIcon: Icon(Icons.event_repeat_outlined),
-    ),
-  );
+        context: context,
+        builder: (_) => const _RenewalForm(
+          dialogTitle: Text(_SubscriptionsText.renew),
+          dialogIcon: Icon(Icons.event_repeat_outlined),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2081,13 +2077,13 @@ Future<void> _showModuleSubscriptionDialog(
 ) async {
   final ModuleSubscriptionDraft? draft =
       await showAppDialog<ModuleSubscriptionDraft>(
-    context: context,
-    builder: (_) => _ModuleSubscriptionForm(
-      dialogTitle: const Text(_SubscriptionsText.assignModule),
-      dialogIcon: const Icon(Icons.extension_outlined),
-      state: state,
-    ),
-  );
+        context: context,
+        builder: (_) => _ModuleSubscriptionForm(
+          dialogTitle: const Text(_SubscriptionsText.assignModule),
+          dialogIcon: const Icon(Icons.extension_outlined),
+          state: state,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2140,20 +2136,20 @@ Future<void> _showToggleModuleDialog(
 ) async {
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
-    context: context,
-    builder: (_) => _ReasonForm(
-      dialogTitle: Text(
-        item.isActive == true
-            ? _SubscriptionsText.disableModule
-            : _SubscriptionsText.enableModule,
-      ),
-      dialogIcon: const Icon(Icons.extension_outlined),
-      submitLabel: item.isActive == true
-          ? _SubscriptionsText.disableModule
-          : _SubscriptionsText.enableModule,
-      reasonLabel: _SubscriptionsText.reason,
-    ),
-  );
+        context: context,
+        builder: (_) => _ReasonForm(
+          dialogTitle: Text(
+            item.isActive == true
+                ? _SubscriptionsText.disableModule
+                : _SubscriptionsText.enableModule,
+          ),
+          dialogIcon: const Icon(Icons.extension_outlined),
+          submitLabel: item.isActive == true
+              ? _SubscriptionsText.disableModule
+              : _SubscriptionsText.enableModule,
+          reasonLabel: _SubscriptionsText.reason,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2171,14 +2167,14 @@ Future<void> _showCancelSubscriptionDialog(
 ) async {
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
-    context: context,
-    builder: (_) => const _ReasonForm(
-      dialogTitle: Text(_SubscriptionsText.cancelSubscription),
-      dialogIcon: Icon(Icons.block_outlined),
-      submitLabel: _SubscriptionsText.cancelSubscription,
-      reasonLabel: _SubscriptionsText.reason,
-    ),
-  );
+        context: context,
+        builder: (_) => const _ReasonForm(
+          dialogTitle: Text(_SubscriptionsText.cancelSubscription),
+          dialogIcon: Icon(Icons.block_outlined),
+          submitLabel: _SubscriptionsText.cancelSubscription,
+          reasonLabel: _SubscriptionsText.reason,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2196,12 +2192,12 @@ Future<void> _showCollectInvoiceDialog(
 ) async {
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
-    context: context,
-    builder: (_) => const _InvoiceCollectForm(
-      dialogTitle: Text(_SubscriptionsText.collectInvoice),
-      dialogIcon: Icon(Icons.payments_outlined),
-    ),
-  );
+        context: context,
+        builder: (_) => const _InvoiceCollectForm(
+          dialogTitle: Text(_SubscriptionsText.collectInvoice),
+          dialogIcon: Icon(Icons.payments_outlined),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -2219,14 +2215,14 @@ Future<void> _showRetryInvoiceDialog(
 ) async {
   final SubscriptionActionDraft? draft =
       await showAppDialog<SubscriptionActionDraft>(
-    context: context,
-    builder: (_) => const _ReasonForm(
-      dialogTitle: Text(_SubscriptionsText.retryInvoice),
-      dialogIcon: Icon(Icons.replay_outlined),
-      submitLabel: _SubscriptionsText.retryInvoice,
-      reasonLabel: _SubscriptionsText.retryReason,
-    ),
-  );
+        context: context,
+        builder: (_) => const _ReasonForm(
+          dialogTitle: Text(_SubscriptionsText.retryInvoice),
+          dialogIcon: Icon(Icons.replay_outlined),
+          submitLabel: _SubscriptionsText.retryInvoice,
+          reasonLabel: _SubscriptionsText.retryReason,
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }

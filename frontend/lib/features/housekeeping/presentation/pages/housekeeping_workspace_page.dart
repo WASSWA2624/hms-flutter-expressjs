@@ -186,54 +186,54 @@ class _HousekeepingWorkspaceContentState
 
     return <AppWorkspaceSummaryNotification>[
       AppWorkspaceSummaryNotification(
-  label: l10n.housekeepingPendingTasksSummaryLabel,
-  count: state.overview.summaryValue('pending_tasks'),
-  icon: Icons.cleaning_services_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () => controller.applyFilters(
+        label: l10n.housekeepingPendingTasksSummaryLabel,
+        count: state.overview.summaryValue('pending_tasks'),
+        icon: Icons.cleaning_services_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+        onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.tasks,
           status: 'PENDING',
           queue: HousekeepingQueue.all,
         ),
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.housekeepingCompletedTodaySummaryLabel,
-  count: state.overview.summaryValue('completed_today'),
-  icon: Icons.task_alt_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () => controller.applyFilters(
+        label: l10n.housekeepingCompletedTodaySummaryLabel,
+        count: state.overview.summaryValue('completed_today'),
+        icon: Icons.task_alt_outlined,
+        tone: AppWorkspaceStatusTone.success,
+        onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.tasks,
           status: 'COMPLETED',
           datePreset: HousekeepingDatePreset.today,
           queue: HousekeepingQueue.all,
         ),
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.housekeepingOpenRequestsSummaryLabel,
-  count: state.overview.summaryValue('open_requests'),
-  icon: Icons.build_circle_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () => controller.applyFilters(
+        label: l10n.housekeepingOpenRequestsSummaryLabel,
+        count: state.overview.summaryValue('open_requests'),
+        icon: Icons.build_circle_outlined,
+        tone: AppWorkspaceStatusTone.info,
+        onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.maintenanceRequests,
           queue: HousekeepingQueue.openRequests,
         ),
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.housekeepingOverdueRequestsSummaryLabel,
-  count: state.overview.summaryValue('overdue_requests'),
-  icon: Icons.warning_amber_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () => controller.applyFilters(
+        label: l10n.housekeepingOverdueRequestsSummaryLabel,
+        count: state.overview.summaryValue('overdue_requests'),
+        icon: Icons.warning_amber_outlined,
+        tone: AppWorkspaceStatusTone.error,
+        onSelected: () => controller.applyFilters(
           resource: HousekeepingResource.maintenanceRequests,
           queue: HousekeepingQueue.overdueRequests,
         ),
-),
+      ),
       AppWorkspaceSummaryNotification(
-  label: l10n.housekeepingAssetsSummaryLabel,
-  count: state.overview.summaryValue('total_assets'),
-  icon: Icons.inventory_2_outlined,
-  onSelected: () {},
-),
+        label: l10n.housekeepingAssetsSummaryLabel,
+        count: state.overview.summaryValue('total_assets'),
+        icon: Icons.inventory_2_outlined,
+        onSelected: () {},
+      ),
     ];
   }
 
@@ -348,13 +348,10 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
           );
         },
         onPageChanged: controller.changePage,
-        emptyBuilder: (BuildContext context) {
-          return AppStateView(
-            title: l10n.housekeepingEmptyQueueTitle,
-            body: l10n.housekeepingEmptyQueueBody,
-            variant: AppStateViewVariant.empty,
-          );
-        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.housekeepingEmptyQueueTitle,
+          body: l10n.housekeepingEmptyQueueBody,
+        ),
         columns: <AppListTableColumn<HousekeepingWorkItem>>[
           AppListTableColumn<HousekeepingWorkItem>(
             label: l10n.housekeepingTaskColumnLabel,

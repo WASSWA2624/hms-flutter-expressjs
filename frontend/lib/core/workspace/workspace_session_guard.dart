@@ -16,17 +16,17 @@ Future<void> awaitAuthenticatedWorkspaceSession(Ref ref) {
 
   final Completer<void> completer = Completer<void>();
   late final ProviderSubscription<SessionState> subscription;
-  subscription = ref.listen<SessionState>(
-    sessionStateProvider,
-    (SessionState? previous, SessionState next) {
-      if (next.isAuthenticated || next.status != SessionStatus.unknown) {
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-        subscription.close();
+  subscription = ref.listen<SessionState>(sessionStateProvider, (
+    SessionState? previous,
+    SessionState next,
+  ) {
+    if (next.isAuthenticated || next.status != SessionStatus.unknown) {
+      if (!completer.isCompleted) {
+        completer.complete();
       }
-    },
-  );
+      subscription.close();
+    }
+  });
   ref.onDispose(subscription.close);
 
   final SessionState latest = ref.read(sessionStateProvider);

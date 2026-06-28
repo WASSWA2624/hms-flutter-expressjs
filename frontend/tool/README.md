@@ -16,6 +16,18 @@ flutter test
 Use `dart run build_runner watch --delete-conflicting-outputs` during model,
 provider, or database schema work when continuous generation is useful.
 
+## One-off migration scripts
+
+`migrate_dialog_form_actions.py` migrates in-dialog `AppFormActions` to
+`AppDialog.actions` with a fixed footer. It was partially applied (billing,
+subscriptions, and radiology); remaining targets still use `AppFormActions`
+directly. Run only when continuing that migration—do not re-run on files that
+already use `buildAppDialogFormActions`.
+
+Previously applied migrations (icon button consolidation, workspace session
+guard, summary notification toolbar, controller lint fixes) have been removed
+from this folder.
+
 ## Web development
 
 Use the port-specific script when running the Flutter web app locally:

@@ -38,7 +38,10 @@ final class PatientRegistryController
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startVisibleDataSync();
     return result;
   }
@@ -54,7 +57,10 @@ final class PatientRegistryController
   Future<AppFailure?> refresh() async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {
-      final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+      final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(
+        ref,
+        _loadInitialState,
+      );
       state = AsyncData<Result<PatientRegistryState>>(result);
       return _failureOrNull(result);
     }

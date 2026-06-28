@@ -199,49 +199,50 @@ class _ClinicalWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-        if (_pageTotal(state.worklist) > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.clinicalAllScopeLabel,
-  count: _pageTotal(state.worklist),
-  icon: Icons.inventory_2_outlined,
-  onSelected: () => controller.applyScope(ClinicalQueueScope.all),
-),
-        if (state.waitingReviewCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.clinicalWaitingReviewSummaryLabel,
-  count: state.waitingReviewCount,
-  icon: Icons.rate_review_outlined,
-  tone: AppWorkspaceStatusTone.info,
-  onSelected: () =>
-                controller.applyScope(ClinicalQueueScope.waitingReview),
-),
-        if (state.urgentCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.clinicalUrgentSummaryLabel,
-  count: state.urgentCount,
-  icon: Icons.priority_high_outlined,
-  tone: AppWorkspaceStatusTone.error,
-  onSelected: () => controller.applyScope(ClinicalQueueScope.urgent),
-),
-        if (state.resultsReadyCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.clinicalResultsReadySummaryLabel,
-  count: state.resultsReadyCount,
-  icon: Icons.science_outlined,
-  tone: AppWorkspaceStatusTone.success,
-  onSelected: () =>
-                controller.applyScope(ClinicalQueueScope.resultsReady),
-),
-        if (state.inConsultationCount > 0)
-          AppWorkspaceSummaryNotification(
-  label: l10n.clinicalInConsultationSummaryLabel,
-  count: state.inConsultationCount,
-  icon: Icons.medical_information_outlined,
-  tone: AppWorkspaceStatusTone.warning,
-  onSelected: () =>
-                controller.applyScope(ClinicalQueueScope.inConsultation),
-),
-      ],
+          if (_pageTotal(state.worklist) > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.clinicalAllScopeLabel,
+              count: _pageTotal(state.worklist),
+              icon: Icons.inventory_2_outlined,
+              onSelected: () => controller.applyScope(ClinicalQueueScope.all),
+            ),
+          if (state.waitingReviewCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.clinicalWaitingReviewSummaryLabel,
+              count: state.waitingReviewCount,
+              icon: Icons.rate_review_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  controller.applyScope(ClinicalQueueScope.waitingReview),
+            ),
+          if (state.urgentCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.clinicalUrgentSummaryLabel,
+              count: state.urgentCount,
+              icon: Icons.priority_high_outlined,
+              tone: AppWorkspaceStatusTone.error,
+              onSelected: () =>
+                  controller.applyScope(ClinicalQueueScope.urgent),
+            ),
+          if (state.resultsReadyCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.clinicalResultsReadySummaryLabel,
+              count: state.resultsReadyCount,
+              icon: Icons.science_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  controller.applyScope(ClinicalQueueScope.resultsReady),
+            ),
+          if (state.inConsultationCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.clinicalInConsultationSummaryLabel,
+              count: state.inConsultationCount,
+              icon: Icons.medical_information_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  controller.applyScope(ClinicalQueueScope.inConsultation),
+            ),
+        ],
         secondary: <Widget>[
           _clinicalToolbarButton(
             requirement: _writeRequirement,
@@ -282,7 +283,7 @@ class _ClinicalWorkspaceContentState
         },
         isRefreshing: state.isRefreshing,
       ),
-      
+
       body: _ClinicalWorklistPanel(
         state: state,
         searchController: _searchController,
@@ -336,40 +337,40 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         title: l10n.clinicalWorklistTitle,
         description: l10n.clinicalWorklistDescription,
         child: AppListTable<ClinicalWorklistEntry>(
-        page: state.worklist,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changePage,
-        onRowSelected: (ClinicalWorklistEntry entry) {
-          _openClinicalEntryDialog(context, ref, entry);
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.clinicalNoWorklistTitle,
-          body: l10n.clinicalNoWorklistBody,
-          icon: Icons.assignment_outlined,
-        ),
-        search: _worklistSearch(
-          context,
-          controller,
-          searchController,
-          filters: state.query.filters,
-          scope: state.query.scope,
-          filterEntries: state.worklist.items,
-          onSearchChanged: onSearchChanged,
-          onSearchSubmitted: onSearchSubmitted,
-        ),
-        columns: _clinicalWorklistColumns(l10n),
-        mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
-        itemKeyBuilder: _clinicalWorklistItemKey,
-        rowColorBuilder: _clinicalRowColor,
+          page: state.worklist,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          isLoading: state.isRefreshing,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          previousPageLabel: l10n.opdPreviousPageLabel,
+          nextPageLabel: l10n.opdNextPageLabel,
+          pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
+            return _pageLabel(context, page);
+          },
+          onPageChanged: controller.changePage,
+          onRowSelected: (ClinicalWorklistEntry entry) {
+            _openClinicalEntryDialog(context, ref, entry);
+          },
+          emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+            variant: AppStateViewVariant.empty,
+            title: l10n.clinicalNoWorklistTitle,
+            body: l10n.clinicalNoWorklistBody,
+            icon: Icons.assignment_outlined,
+          ),
+          search: _worklistSearch(
+            context,
+            controller,
+            searchController,
+            filters: state.query.filters,
+            scope: state.query.scope,
+            filterEntries: state.worklist.items,
+            onSearchChanged: onSearchChanged,
+            onSearchSubmitted: onSearchSubmitted,
+          ),
+          columns: _clinicalWorklistColumns(l10n),
+          mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+          itemKeyBuilder: _clinicalWorklistItemKey,
+          rowColorBuilder: _clinicalRowColor,
         ),
       ),
     );
@@ -618,9 +619,7 @@ Widget _clinicalWorklistMobileItemBuilder(
       title: item.displayTitle,
       subtitle: item.patientPublicId ?? item.encounterPublicId,
       padding: EdgeInsets.zero,
-      details: <Widget>[
-        _ClinicalStatusCell(item: item),
-      ],
+      details: <Widget>[_ClinicalStatusCell(item: item)],
       trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
     ),
   );
@@ -3352,6 +3351,7 @@ bool _canDeletePharmacyOrder(String? status) {
     _ => false,
   };
 }
+
 int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel(BuildContext context, AppPage<ClinicalWorklistEntry> page) {

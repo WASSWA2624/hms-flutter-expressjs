@@ -135,31 +135,35 @@ final class SessionTokenProvider {
 
     // Use the public client with an explicit bearer token to avoid a circular
     // provider chain through authRepositoryProvider -> apiClientProvider.
-    final result = await _ref.read(publicApiClientProvider).get<AuthSession>(
-      ApiEndpoints.auth(AuthEndpoint.me),
-      options: Options(
-        headers: <String, Object?>{
-          authorizationHeaderName: 'Bearer $accessToken',
-        },
-      ),
-      decoder: (Object? data) => ApiResponseEnvelope.decodeData<AuthSession>(
-        data,
-        decoder: (Object? payload) {
-          final profile = AuthSessionDto.userProfileFromResponseData(payload);
-          final permissions = AuthSessionDto.permissionsFromResponseData(
-            payload,
-          );
-          var enriched = session;
-          if (profile != null) {
-            enriched = enriched.enrichFromUserProfile(profile);
-          }
-          if (permissions.isNotEmpty) {
-            enriched = enriched.copyWith(permissions: permissions);
-          }
-          return enriched;
-        },
-      ),
-    );
+    final result = await _ref
+        .read(publicApiClientProvider)
+        .get<AuthSession>(
+          ApiEndpoints.auth(AuthEndpoint.me),
+          options: Options(
+            headers: <String, Object?>{
+              authorizationHeaderName: 'Bearer $accessToken',
+            },
+          ),
+          decoder: (Object? data) =>
+              ApiResponseEnvelope.decodeData<AuthSession>(
+                data,
+                decoder: (Object? payload) {
+                  final profile = AuthSessionDto.userProfileFromResponseData(
+                    payload,
+                  );
+                  final permissions =
+                      AuthSessionDto.permissionsFromResponseData(payload);
+                  var enriched = session;
+                  if (profile != null) {
+                    enriched = enriched.enrichFromUserProfile(profile);
+                  }
+                  if (permissions.isNotEmpty) {
+                    enriched = enriched.copyWith(permissions: permissions);
+                  }
+                  return enriched;
+                },
+              ),
+        );
     return result.when(
       success: (AuthSession enriched) => enriched,
       failure: (_) => session,

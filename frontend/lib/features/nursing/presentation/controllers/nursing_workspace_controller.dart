@@ -51,7 +51,10 @@ final class NursingWorkspaceController
       events: RealtimeEventGroups.nursing,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<NursingWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<NursingWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startSync();
     return result;
   }

@@ -38,7 +38,10 @@ final class OpdWorkspaceController
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<OpdWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<OpdWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     _startVisibleDataSync();
     return result;
   }

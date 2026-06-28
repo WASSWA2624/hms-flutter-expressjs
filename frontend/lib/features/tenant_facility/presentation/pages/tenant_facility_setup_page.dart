@@ -78,16 +78,16 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: _setupSummaryNotifications(
-        context,
-        l10n,
-        snapshot,
-        canViewSubscriptions: accessPolicy.grantsAny(const <AppPermission>[
-          AppPermissions.subscriptionsRead,
-          AppPermissions.subscriptionsWrite,
-          AppPermissions.tenantAdmin,
-          AppPermissions.systemAdmin,
-        ]),
-      ),
+          context,
+          l10n,
+          snapshot,
+          canViewSubscriptions: accessPolicy.grantsAny(const <AppPermission>[
+            AppPermissions.subscriptionsRead,
+            AppPermissions.subscriptionsWrite,
+            AppPermissions.tenantAdmin,
+            AppPermissions.systemAdmin,
+          ]),
+        ),
         onRefresh: () async {
           await ref
               .read(tenantFacilitySetupControllerProvider.notifier)
@@ -95,7 +95,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         },
         isRefreshing: isRefreshing,
       ),
-      
+
       body: _SetupBody(
         snapshot: snapshot,
         canManageTenant: canManageTenant,

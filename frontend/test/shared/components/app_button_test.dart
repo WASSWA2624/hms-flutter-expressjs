@@ -81,9 +81,14 @@ void main() {
         ),
       );
 
-      final TextButton button = tester.widget<TextButton>(find.byType(TextButton));
+      final TextButton button = tester.widget<TextButton>(
+        find.byType(TextButton),
+      );
       final ButtonStyle style = button.style!;
-      expect(style.backgroundColor?.resolve(<WidgetState>{}), Colors.transparent);
+      expect(
+        style.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.transparent,
+      );
       expect(style.overlayColor?.resolve(<WidgetState>{}), isNull);
     });
   });

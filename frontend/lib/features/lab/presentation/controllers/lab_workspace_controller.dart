@@ -69,7 +69,10 @@ final class LabWorkspaceController
       events: RealtimeEventGroups.lab,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
     if (result.isSuccess) {
       _startSync();
     }
@@ -83,7 +86,10 @@ final class LabWorkspaceController
   Future<AppFailure?> refresh() async {
     if (_currentState == null) {
       state = const AsyncLoading<Result<LabWorkspaceState>>();
-      final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+      final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(
+        ref,
+        _loadInitialState,
+      );
       state = AsyncData<Result<LabWorkspaceState>>(result);
       if (result.isSuccess) {
         _startSync();

@@ -143,6 +143,30 @@ class AppListItemRow extends StatelessWidget {
   }
 }
 
+/// Secondary body text for inline empty hints inside panels and form sections.
+class AppMutedText extends StatelessWidget {
+  const AppMutedText(this.text, {this.maxLines, this.textAlign, super.key});
+
+  final String text;
+  final int? maxLines;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Text(
+      text,
+      maxLines: maxLines,
+      textAlign: textAlign,
+      overflow: maxLines == null ? null : TextOverflow.ellipsis,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
 class AppInlineMetaText extends StatelessWidget {
   const AppInlineMetaText({
     required this.icon,

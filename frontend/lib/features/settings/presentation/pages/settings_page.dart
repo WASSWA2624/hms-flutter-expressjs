@@ -75,147 +75,147 @@ class SettingsPage extends ConsumerWidget {
           SizedBox(height: Theme.of(context).spacing.lg),
           _SettingsSectionGrid(
             sections: <Widget>[
-            AppScreenSection(
-              title: l10n.settingsPreferencesSectionTitle,
-              body: l10n.settingsPreferencesSectionBody,
-              child: Column(
-                children: <Widget>[
-                  AppSelectField<Locale>(
-                    labelText: l10n.settingsLanguageFieldLabel,
-                    value: selectedLocale,
-                    options: <AppSelectOption<Locale>>[
-                      AppSelectOption<Locale>(
-                        value: _englishLocale,
-                        label: l10n.settingsLanguageEnglish,
-                        leadingIcon: const _LanguageFlag('EN'),
-                      ),
-                    ],
-                    onChanged: (Locale? locale) {
-                      if (locale == null) {
-                        return;
-                      }
-
-                      unawaited(_setLocale(context, ref, locale));
-                    },
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.lg),
-                  AppRadioGroup<ThemeMode>(
-                    labelText: l10n.settingsThemeModeFieldLabel,
-                    value: themeMode,
-                    options: <AppRadioOption<ThemeMode>>[
-                      AppRadioOption<ThemeMode>(
-                        value: ThemeMode.system,
-                        label: l10n.settingsThemeModeSystem,
-                        description: l10n.settingsThemeModeSystemDescription,
-                        secondary: const Icon(Icons.brightness_auto_outlined),
-                      ),
-                      AppRadioOption<ThemeMode>(
-                        value: ThemeMode.light,
-                        label: l10n.settingsThemeModeLight,
-                        description: l10n.settingsThemeModeLightDescription,
-                        secondary: const Icon(Icons.light_mode_outlined),
-                      ),
-                      AppRadioOption<ThemeMode>(
-                        value: ThemeMode.dark,
-                        label: l10n.settingsThemeModeDark,
-                        description: l10n.settingsThemeModeDarkDescription,
-                        secondary: const Icon(Icons.dark_mode_outlined),
-                      ),
-                    ],
-                    onChanged: (ThemeMode? mode) {
-                      if (mode == null) {
-                        return;
-                      }
-
-                      unawaited(_setThemeMode(context, ref, mode));
-                    },
-                  ),
-                ],
-              ),
-            ),
-            AppScreenSection(
-              title: l10n.settingsAccessibilitySectionTitle,
-              body: l10n.settingsAccessibilitySectionBody,
-              child: Column(
-                children: <Widget>[
-                  AppCheckboxField(
-                    title: l10n.settingsReduceMotionLabel,
-                    subtitle: l10n.settingsReduceMotionDescription,
-                    value: accessibility.reduceMotion,
-                    onChanged: (bool value) {
-                      unawaited(_setReduceMotion(context, ref, value));
-                    },
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppCheckboxField(
-                    title: l10n.settingsBoldTextLabel,
-                    subtitle: l10n.settingsBoldTextDescription,
-                    value: accessibility.boldText,
-                    onChanged: (bool value) {
-                      unawaited(_setBoldText(context, ref, value));
-                    },
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.lg),
-                  AppSelectField<AppTextScaleLevel>(
-                    labelText: l10n.settingsTextScaleFieldLabel,
-                    value: accessibility.textScaleLevel,
-                    options: <AppSelectOption<AppTextScaleLevel>>[
-                      AppSelectOption<AppTextScaleLevel>(
-                        value: AppTextScaleLevel.normal,
-                        label: l10n.settingsTextScaleNormal,
-                      ),
-                      AppSelectOption<AppTextScaleLevel>(
-                        value: AppTextScaleLevel.large,
-                        label: l10n.settingsTextScaleLarge,
-                      ),
-                      AppSelectOption<AppTextScaleLevel>(
-                        value: AppTextScaleLevel.extraLarge,
-                        label: l10n.settingsTextScaleExtraLarge,
-                      ),
-                    ],
-                    onChanged: (AppTextScaleLevel? level) {
-                      if (level == null) {
-                        return;
-                      }
-
-                      unawaited(_setTextScaleLevel(context, ref, level));
-                    },
-                  ),
-                ],
-              ),
-            ),
-            AppScreenSection(
-              title: l10n.settingsAccountSectionTitle,
-              body: l10n.settingsAccountSectionBody,
-              child: _SettingsActionList(
-                actions: <_SettingsAction>[
-                  _SettingsAction(
-                    icon: Icons.person_outline,
-                    title: l10n.settingsProfileActionTitle,
-                    body: l10n.settingsProfileActionBody,
-                    onTap: () => context.go(AppRoutes.profile.location()),
-                  ),
-                  _SettingsAction(
-                    icon: Icons.lock_reset_outlined,
-                    title: l10n.settingsChangePasswordActionTitle,
-                    body: l10n.settingsChangePasswordActionBody,
-                    onTap: () => unawaited(_changePassword(context)),
-                  ),
-                ],
-              ),
-            ),
-            if (adminActions.isNotEmpty)
               AppScreenSection(
-                title: l10n.settingsAdministrationSectionTitle,
-                body: l10n.settingsAdministrationSectionBody,
-                child: _SettingsActionList(actions: adminActions),
+                title: l10n.settingsPreferencesSectionTitle,
+                body: l10n.settingsPreferencesSectionBody,
+                child: Column(
+                  children: <Widget>[
+                    AppSelectField<Locale>(
+                      labelText: l10n.settingsLanguageFieldLabel,
+                      value: selectedLocale,
+                      options: <AppSelectOption<Locale>>[
+                        AppSelectOption<Locale>(
+                          value: _englishLocale,
+                          label: l10n.settingsLanguageEnglish,
+                          leadingIcon: const _LanguageFlag('EN'),
+                        ),
+                      ],
+                      onChanged: (Locale? locale) {
+                        if (locale == null) {
+                          return;
+                        }
+
+                        unawaited(_setLocale(context, ref, locale));
+                      },
+                    ),
+                    SizedBox(height: Theme.of(context).spacing.lg),
+                    AppRadioGroup<ThemeMode>(
+                      labelText: l10n.settingsThemeModeFieldLabel,
+                      value: themeMode,
+                      options: <AppRadioOption<ThemeMode>>[
+                        AppRadioOption<ThemeMode>(
+                          value: ThemeMode.system,
+                          label: l10n.settingsThemeModeSystem,
+                          description: l10n.settingsThemeModeSystemDescription,
+                          secondary: const Icon(Icons.brightness_auto_outlined),
+                        ),
+                        AppRadioOption<ThemeMode>(
+                          value: ThemeMode.light,
+                          label: l10n.settingsThemeModeLight,
+                          description: l10n.settingsThemeModeLightDescription,
+                          secondary: const Icon(Icons.light_mode_outlined),
+                        ),
+                        AppRadioOption<ThemeMode>(
+                          value: ThemeMode.dark,
+                          label: l10n.settingsThemeModeDark,
+                          description: l10n.settingsThemeModeDarkDescription,
+                          secondary: const Icon(Icons.dark_mode_outlined),
+                        ),
+                      ],
+                      onChanged: (ThemeMode? mode) {
+                        if (mode == null) {
+                          return;
+                        }
+
+                        unawaited(_setThemeMode(context, ref, mode));
+                      },
+                    ),
+                  ],
+                ),
               ),
+              AppScreenSection(
+                title: l10n.settingsAccessibilitySectionTitle,
+                body: l10n.settingsAccessibilitySectionBody,
+                child: Column(
+                  children: <Widget>[
+                    AppCheckboxField(
+                      title: l10n.settingsReduceMotionLabel,
+                      subtitle: l10n.settingsReduceMotionDescription,
+                      value: accessibility.reduceMotion,
+                      onChanged: (bool value) {
+                        unawaited(_setReduceMotion(context, ref, value));
+                      },
+                    ),
+                    SizedBox(height: Theme.of(context).spacing.md),
+                    AppCheckboxField(
+                      title: l10n.settingsBoldTextLabel,
+                      subtitle: l10n.settingsBoldTextDescription,
+                      value: accessibility.boldText,
+                      onChanged: (bool value) {
+                        unawaited(_setBoldText(context, ref, value));
+                      },
+                    ),
+                    SizedBox(height: Theme.of(context).spacing.lg),
+                    AppSelectField<AppTextScaleLevel>(
+                      labelText: l10n.settingsTextScaleFieldLabel,
+                      value: accessibility.textScaleLevel,
+                      options: <AppSelectOption<AppTextScaleLevel>>[
+                        AppSelectOption<AppTextScaleLevel>(
+                          value: AppTextScaleLevel.normal,
+                          label: l10n.settingsTextScaleNormal,
+                        ),
+                        AppSelectOption<AppTextScaleLevel>(
+                          value: AppTextScaleLevel.large,
+                          label: l10n.settingsTextScaleLarge,
+                        ),
+                        AppSelectOption<AppTextScaleLevel>(
+                          value: AppTextScaleLevel.extraLarge,
+                          label: l10n.settingsTextScaleExtraLarge,
+                        ),
+                      ],
+                      onChanged: (AppTextScaleLevel? level) {
+                        if (level == null) {
+                          return;
+                        }
+
+                        unawaited(_setTextScaleLevel(context, ref, level));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              AppScreenSection(
+                title: l10n.settingsAccountSectionTitle,
+                body: l10n.settingsAccountSectionBody,
+                child: _SettingsActionList(
+                  actions: <_SettingsAction>[
+                    _SettingsAction(
+                      icon: Icons.person_outline,
+                      title: l10n.settingsProfileActionTitle,
+                      body: l10n.settingsProfileActionBody,
+                      onTap: () => context.go(AppRoutes.profile.location()),
+                    ),
+                    _SettingsAction(
+                      icon: Icons.lock_reset_outlined,
+                      title: l10n.settingsChangePasswordActionTitle,
+                      body: l10n.settingsChangePasswordActionBody,
+                      onTap: () => unawaited(_changePassword(context)),
+                    ),
+                  ],
+                ),
+              ),
+              if (adminActions.isNotEmpty)
+                AppScreenSection(
+                  title: l10n.settingsAdministrationSectionTitle,
+                  body: l10n.settingsAdministrationSectionBody,
+                  child: _SettingsActionList(actions: adminActions),
+                ),
+            ],
+          ),
+          if (adminActions.isNotEmpty) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.md),
+            const SettingsWorkspaceSection(),
           ],
-        ),
-        if (adminActions.isNotEmpty) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.md),
-          const SettingsWorkspaceSection(),
-        ],
         ],
       ),
     );

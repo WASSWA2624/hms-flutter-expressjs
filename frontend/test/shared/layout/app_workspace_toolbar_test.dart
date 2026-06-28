@@ -254,7 +254,9 @@ void main() {
       ),
     );
     expect(
-      regions.any((MouseRegion region) => region.cursor == SystemMouseCursors.click),
+      regions.any(
+        (MouseRegion region) => region.cursor == SystemMouseCursors.click,
+      ),
       isTrue,
     );
   });

@@ -121,7 +121,8 @@ class AppWorkspace extends StatelessWidget {
             spacing: theme.spacing,
           )
         : ResponsiveSpacing.contentGapFor(breakpoint, spacing: theme.spacing);
-    final EdgeInsets? resolvedPadding = padding ??
+    final EdgeInsets? resolvedPadding =
+        padding ??
         (compactHeader
             ? _compactWorkspacePagePadding(breakpoint, theme)
             : null);

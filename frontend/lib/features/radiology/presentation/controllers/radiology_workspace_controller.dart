@@ -39,7 +39,8 @@ final class RadiologyWorkspaceController
       },
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<RadiologyWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<RadiologyWorkspaceState> result =
+        await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

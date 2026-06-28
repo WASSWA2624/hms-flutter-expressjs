@@ -1521,18 +1521,20 @@ class _LabOrderResultSection extends StatelessWidget {
                     spacing: theme.spacing.xs,
                     children: <Widget>[
                       if (onEditOrder != null)
-                        AppButton(iconOnly: true, 
+                        AppButton(
+                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.labEditOrderAction,
-      semanticLabel: l10n.labEditOrderAction,
+                          semanticLabel: l10n.labEditOrderAction,
                           tooltip: l10n.labEditOrderAction,
                           onPressed: onEditOrder,
                         ),
                       if (onDeleteOrder != null)
-                        AppButton(iconOnly: true, 
+                        AppButton(
+                          iconOnly: true,
                           icon: Icons.delete_outline,
                           label: l10n.labDeleteOrderAction,
-      semanticLabel: l10n.labDeleteOrderAction,
+                          semanticLabel: l10n.labDeleteOrderAction,
                           tooltip: l10n.labDeleteOrderAction,
                           onPressed: onDeleteOrder,
                         ),
@@ -2554,7 +2556,8 @@ class _PanelGroupHeader extends ConsumerWidget {
               ),
             ),
             if (showDelete)
-              AppButton(iconOnly: true, 
+              AppButton(
+                iconOnly: true,
                 leadingIcon: Icons.delete_outline,
                 label: l10n.labDeletePanelAction,
 

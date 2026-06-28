@@ -35,7 +35,8 @@ final class EmergencyWorkspaceController
       events: RealtimeEventGroups.emergencyWorkspace,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<EmergencyWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
+    final Result<EmergencyWorkspaceState> result =
+        await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

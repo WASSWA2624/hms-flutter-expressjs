@@ -181,7 +181,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                 builder: (BuildContext context, bool isAllowed) => Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    AppButton(iconOnly: true, 
+                    AppButton(
+                      iconOnly: true,
                       leadingIcon: Icons.edit_outlined,
                       label: l10n.pharmacyEditDrugAction,
 
@@ -189,7 +190,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                       enabled: isAllowed,
                       onPressed: () => _openDrugDialog(context, drug: item),
                     ),
-                    AppButton(iconOnly: true, 
+                    AppButton(
+                      iconOnly: true,
                       leadingIcon: Icons.delete_outline,
                       label: l10n.pharmacyDeleteDrugAction,
 
@@ -674,15 +676,15 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
             cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
               return AppAccessActionGate(
                 requirement: widget.writeRequirement,
-                builder: (BuildContext context, bool isAllowed) =>
-                    AppButton(iconOnly: true, 
-                      leadingIcon: Icons.tune_outlined,
-                      label: l10n.pharmacyAdjustStockAction,
+                builder: (BuildContext context, bool isAllowed) => AppButton(
+                  iconOnly: true,
+                  leadingIcon: Icons.tune_outlined,
+                  label: l10n.pharmacyAdjustStockAction,
 
-                      semanticLabel: l10n.pharmacyAdjustStockAction,
-                      enabled: isAllowed,
-                      onPressed: () => _openAdjustDialog(context, item),
-                    ),
+                  semanticLabel: l10n.pharmacyAdjustStockAction,
+                  enabled: isAllowed,
+                  onPressed: () => _openAdjustDialog(context, item),
+                ),
               );
             },
           ),
