@@ -441,15 +441,23 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? mortuaryWorkloadCount,
   int? theaterWorkloadCount,
 }) {
+  // Navigation groups follow primary hospital workflows:
+  // - Overview: landing dashboard
+  // - Patient intake: register → outpatient visit → emergency triage
+  // - Inpatient care: admit → bed capacity → ICU → ward nursing
+  // - Clinical care: documentation, rehab, surgery, discharge planning
+  // - Diagnostics & pharmacy: investigations and medication dispensing
+  // - Billing & revenue: charges → insurance claims → subscription plans
+  // - Facility services: non-clinical hospital operations
+  // - Administration: people, comms, integrations, reporting, configuration
   final String overviewGroup = l10n.navigationGroupOverviewLabel;
-  final String patientAccessGroup = l10n.navigationGroupPatientAccessLabel;
+  final String patientIntakeGroup = l10n.navigationGroupPatientAccessLabel;
   final String inpatientCareGroup = l10n.navigationGroupInpatientCareLabel;
-  final String clinicalServicesGroup =
-      l10n.navigationGroupClinicalServicesLabel;
-  final String diagnosticsMedicationGroup =
+  final String clinicalCareGroup = l10n.navigationGroupClinicalServicesLabel;
+  final String diagnosticsPharmacyGroup =
       l10n.navigationGroupDiagnosticsMedicationLabel;
-  final String revenueCycleGroup = l10n.navigationGroupRevenueCycleLabel;
-  final String facilityOperationsGroup =
+  final String billingRevenueGroup = l10n.navigationGroupRevenueCycleLabel;
+  final String facilityServicesGroup =
       l10n.navigationGroupFacilityOperationsLabel;
   final String administrationGroup = l10n.navigationGroupAdministrationLabel;
 
@@ -458,6 +466,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.home,
       destination: ResponsiveShellDestination(
         label: l10n.navigationHomeLabel,
+        shortLabel: l10n.navigationHomeShortLabel,
         groupLabel: overviewGroup,
         icon: AppRouteIcons.home,
         selectedIcon: AppRouteIcons.homeSelected,
@@ -467,7 +476,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.patients,
       destination: ResponsiveShellDestination(
         label: l10n.navigationPatientsLabel,
-        groupLabel: patientAccessGroup,
+        shortLabel: l10n.navigationPatientsShortLabel,
+        groupLabel: patientIntakeGroup,
         icon: AppRouteIcons.patients,
         selectedIcon: AppRouteIcons.patientsSelected,
       ),
@@ -476,7 +486,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.opd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationOpdLabel,
-        groupLabel: patientAccessGroup,
+        shortLabel: l10n.navigationOpdShortLabel,
+        groupLabel: patientIntakeGroup,
         icon: AppRouteIcons.opd,
         selectedIcon: AppRouteIcons.opdSelected,
         badgeCount: opdWorkloadCount,
@@ -486,7 +497,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.emergency,
       destination: ResponsiveShellDestination(
         label: l10n.navigationEmergencyLabel,
-        groupLabel: patientAccessGroup,
+        shortLabel: l10n.navigationEmergencyShortLabel,
+        groupLabel: patientIntakeGroup,
         icon: AppRouteIcons.emergency,
         selectedIcon: AppRouteIcons.emergencySelected,
         badgeCount: emergencyWorkloadCount,
@@ -496,6 +508,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.ipd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationIpdLabel,
+        shortLabel: l10n.navigationIpdShortLabel,
         groupLabel: inpatientCareGroup,
         icon: AppRouteIcons.ipd,
         selectedIcon: AppRouteIcons.ipdSelected,
@@ -505,7 +518,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.roomsBeds,
       destination: ResponsiveShellDestination(
-        label: l10n.roomsBedsTitle,
+        label: l10n.navigationRoomsBedsLabel,
+        shortLabel: l10n.navigationRoomsBedsShortLabel,
         groupLabel: inpatientCareGroup,
         icon: AppRouteIcons.roomsBeds,
         selectedIcon: AppRouteIcons.roomsBedsSelected,
@@ -516,6 +530,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.icu,
       destination: ResponsiveShellDestination(
         label: l10n.navigationIcuLabel,
+        shortLabel: l10n.navigationIcuShortLabel,
         groupLabel: inpatientCareGroup,
         icon: AppRouteIcons.icu,
         selectedIcon: AppRouteIcons.icuSelected,
@@ -526,6 +541,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.nursing,
       destination: ResponsiveShellDestination(
         label: l10n.navigationNursingLabel,
+        shortLabel: l10n.navigationNursingShortLabel,
         groupLabel: inpatientCareGroup,
         icon: AppRouteIcons.nursing,
         selectedIcon: AppRouteIcons.nursingSelected,
@@ -533,20 +549,11 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
-      route: AppRoutes.discharge,
-      destination: ResponsiveShellDestination(
-        label: l10n.navigationDischargeLabel,
-        groupLabel: inpatientCareGroup,
-        icon: AppRouteIcons.discharge,
-        selectedIcon: AppRouteIcons.dischargeSelected,
-        badgeCount: dischargeWorkloadCount,
-      ),
-    ),
-    _ShellDestinationRoute(
       route: AppRoutes.clinical,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClinicalLabel,
-        groupLabel: clinicalServicesGroup,
+        shortLabel: l10n.navigationClinicalShortLabel,
+        groupLabel: clinicalCareGroup,
         icon: AppRouteIcons.clinical,
         selectedIcon: AppRouteIcons.clinicalSelected,
         badgeCount: clinicalWorkloadCount,
@@ -556,7 +563,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.physiotherapy,
       destination: ResponsiveShellDestination(
         label: l10n.navigationPhysiotherapyLabel,
-        groupLabel: clinicalServicesGroup,
+        shortLabel: l10n.navigationPhysiotherapyShortLabel,
+        groupLabel: clinicalCareGroup,
         icon: AppRouteIcons.physiotherapy,
         selectedIcon: AppRouteIcons.physiotherapySelected,
       ),
@@ -565,17 +573,30 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.theater,
       destination: ResponsiveShellDestination(
         label: l10n.navigationTheaterLabel,
-        groupLabel: clinicalServicesGroup,
+        shortLabel: l10n.navigationTheaterShortLabel,
+        groupLabel: clinicalCareGroup,
         icon: AppRouteIcons.theater,
         selectedIcon: AppRouteIcons.theaterSelected,
         badgeCount: theaterWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.discharge,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationDischargeLabel,
+        shortLabel: l10n.navigationDischargeShortLabel,
+        groupLabel: clinicalCareGroup,
+        icon: AppRouteIcons.discharge,
+        selectedIcon: AppRouteIcons.dischargeSelected,
+        badgeCount: dischargeWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.lab,
       destination: ResponsiveShellDestination(
         label: l10n.navigationLabLabel,
-        groupLabel: diagnosticsMedicationGroup,
+        shortLabel: l10n.navigationLabShortLabel,
+        groupLabel: diagnosticsPharmacyGroup,
         icon: AppRouteIcons.lab,
         selectedIcon: AppRouteIcons.labSelected,
         badgeCount: labWorkloadCount,
@@ -585,7 +606,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.radiology,
       destination: ResponsiveShellDestination(
         label: l10n.navigationRadiologyLabel,
-        groupLabel: diagnosticsMedicationGroup,
+        shortLabel: l10n.navigationRadiologyShortLabel,
+        groupLabel: diagnosticsPharmacyGroup,
         icon: AppRouteIcons.radiology,
         selectedIcon: AppRouteIcons.radiologySelected,
         badgeCount: radiologyWorkloadCount,
@@ -595,7 +617,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.pharmacy,
       destination: ResponsiveShellDestination(
         label: l10n.navigationPharmacyLabel,
-        groupLabel: diagnosticsMedicationGroup,
+        shortLabel: l10n.navigationPharmacyShortLabel,
+        groupLabel: diagnosticsPharmacyGroup,
         icon: AppRouteIcons.pharmacy,
         selectedIcon: AppRouteIcons.pharmacySelected,
         badgeCount: pharmacyWorkloadCount,
@@ -605,7 +628,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.billing,
       destination: ResponsiveShellDestination(
         label: l10n.navigationBillingLabel,
-        groupLabel: revenueCycleGroup,
+        shortLabel: l10n.navigationBillingShortLabel,
+        groupLabel: billingRevenueGroup,
         icon: AppRouteIcons.billing,
         selectedIcon: AppRouteIcons.billingSelected,
         badgeCount: billingWorkloadCount,
@@ -615,7 +639,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.claims,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClaimsLabel,
-        groupLabel: revenueCycleGroup,
+        shortLabel: l10n.navigationClaimsShortLabel,
+        groupLabel: billingRevenueGroup,
         icon: AppRouteIcons.claims,
         selectedIcon: AppRouteIcons.claimsSelected,
         badgeCount: claimsWorkloadCount,
@@ -625,7 +650,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.subscriptions,
       destination: ResponsiveShellDestination(
         label: l10n.navigationSubscriptionsLabel,
-        groupLabel: revenueCycleGroup,
+        shortLabel: l10n.navigationSubscriptionsShortLabel,
+        groupLabel: billingRevenueGroup,
         icon: AppRouteIcons.subscriptions,
         selectedIcon: AppRouteIcons.subscriptionsSelected,
         badgeCount: subscriptionsWorkloadCount,
@@ -635,7 +661,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.operations,
       destination: ResponsiveShellDestination(
         label: l10n.navigationOperationsLabel,
-        groupLabel: facilityOperationsGroup,
+        shortLabel: l10n.navigationOperationsShortLabel,
+        groupLabel: facilityServicesGroup,
         icon: AppRouteIcons.operations,
         selectedIcon: AppRouteIcons.operationsSelected,
         badgeCount: operationsWorkloadCount,
@@ -644,8 +671,9 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.housekeeping,
       destination: ResponsiveShellDestination(
-        label: l10n.housekeepingTitle,
-        groupLabel: facilityOperationsGroup,
+        label: l10n.navigationHousekeepingLabel,
+        shortLabel: l10n.navigationHousekeepingShortLabel,
+        groupLabel: facilityServicesGroup,
         icon: AppRouteIcons.housekeeping,
         selectedIcon: AppRouteIcons.housekeepingSelected,
         badgeCount: housekeepingWorkloadCount,
@@ -655,7 +683,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.biomedical,
       destination: ResponsiveShellDestination(
         label: l10n.navigationBiomedicalLabel,
-        groupLabel: facilityOperationsGroup,
+        shortLabel: l10n.navigationBiomedicalShortLabel,
+        groupLabel: facilityServicesGroup,
         icon: AppRouteIcons.biomedical,
         selectedIcon: AppRouteIcons.biomedicalSelected,
         badgeCount: biomedicalWorkloadCount,
@@ -665,7 +694,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.mortuary,
       destination: ResponsiveShellDestination(
         label: l10n.navigationMortuaryLabel,
-        groupLabel: facilityOperationsGroup,
+        shortLabel: l10n.navigationMortuaryShortLabel,
+        groupLabel: facilityServicesGroup,
         icon: AppRouteIcons.mortuary,
         selectedIcon: AppRouteIcons.mortuarySelected,
         badgeCount: mortuaryWorkloadCount,
@@ -675,6 +705,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.hr,
       destination: ResponsiveShellDestination(
         label: l10n.navigationHrLabel,
+        shortLabel: l10n.navigationHrShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.hr,
         selectedIcon: AppRouteIcons.hrSelected,
@@ -685,6 +716,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.communications,
       destination: ResponsiveShellDestination(
         label: l10n.navigationCommunicationsLabel,
+        shortLabel: l10n.navigationCommunicationsShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.communications,
         selectedIcon: AppRouteIcons.communicationsSelected,
@@ -695,6 +727,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.integrations,
       destination: ResponsiveShellDestination(
         label: l10n.navigationIntegrationsLabel,
+        shortLabel: l10n.navigationIntegrationsShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.integrations,
         selectedIcon: AppRouteIcons.integrationsSelected,
@@ -705,6 +738,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.reports,
       destination: ResponsiveShellDestination(
         label: l10n.navigationReportsLabel,
+        shortLabel: l10n.navigationReportsShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.reports,
         selectedIcon: AppRouteIcons.reportsSelected,
@@ -714,6 +748,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.settings,
       destination: ResponsiveShellDestination(
         label: l10n.navigationSettingsLabel,
+        shortLabel: l10n.navigationSettingsShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.settings,
         selectedIcon: AppRouteIcons.settingsSelected,
@@ -723,6 +758,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.tenantFacilitySetup,
       destination: ResponsiveShellDestination(
         label: l10n.navigationSetupLabel,
+        shortLabel: l10n.navigationSetupShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.setup,
         selectedIcon: AppRouteIcons.setupSelected,

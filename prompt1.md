@@ -1,104 +1,95 @@
-# Frontend UI audit, consolidation, and optimization
+# Task: Reorganize and refine the HMS side navigation
 
-Perform a full audit of the Flutter frontend (`frontend/lib/`) and implement fixes that improve performance, responsiveness, visual consistency, and maintainability—without changing product behavior or breaking existing flows.
+## Goal
 
-## Scope
+Improve the left sidebar and mobile navigation drawer so menu items are grouped by real hospital workflows, consistently named, and easy to scan. Users should find the right module quickly without reading a long, flat list.
 
-- **In scope:** `frontend/lib/` (features, shared components, layout, forms, clinical actions, l10n usage).
-- **Out of scope:** Backend API changes, database/schema work, and net-new features unless required to remove duplication safely.
-- **Reference library:** Existing shared components live under `frontend/lib/shared/components/` and are exported from `components.dart`. Prefer extending these over creating parallel implementations.
+## Context
 
-## Phase 1 — Discovery and inventory
+The app shell renders navigation from `ResponsiveShellDestination` entries built in `frontend/lib/app/router/app_router.dart` (`_shellDestinations`). Groups are assigned via `groupLabel` and rendered in `frontend/lib/shared/layout/responsive_shell_scaffold.dart` (`SideNavigation`, `_MobileShellDrawer`).
 
-Produce a written audit before making broad refactors. For each finding, note file path(s), severity, and recommended action.
+Current groups (from `app_en.arb`):
 
-### 1.1 UI performance
+| Group | Example destinations |
+|---|---|
+| Overview | Dashboard |
+| Patient access | Patients, OPD, Emergency |
+| Inpatient care | IPD, Rooms & beds, ICU, Nursing, Discharge |
+| Clinical services | Clinical, Physiotherapy, Theater |
+| Diagnostics and medication | Lab, Radiology, Pharmacy |
+| Revenue cycle | Billing, Claims, Subscriptions |
+| Facility operations | Operations, Housekeeping, Biomedical, Mortuary |
+| Administration | HR, Communications, Integrations, Reports, Settings, Setup |
 
-Identify anything that degrades runtime performance or perceived smoothness, including:
+Navigation labels live in `frontend/lib/l10n/app_en.arb`. On desktop/tablet, the sidebar supports expand/collapse and search. On mobile (`AppBreakpoint.isMobile`), navigation moves into a drawer opened from the app menu bar; the main content area has no persistent sidebar.
 
-- Unnecessary rebuilds (`setState`, provider/listenable misuse, missing `const`, oversized `build()` methods).
-- Heavy widgets rebuilt on every frame (lists without keys/lazy loading, unbounded `Column`/`ListView` nesting, expensive layout in item builders).
-- Synchronous work on the UI thread (parsing, filtering large collections in `build`, blocking I/O).
-- Missing memoization or caching where the same derived data is recomputed repeatedly.
-- Large monolithic pages (e.g. workspace pages >1k lines) that hurt hot reload, navigation, and reviewability.
+## Problem
 
-### 1.2 Responsiveness and layout
+- Grouping does not always match how staff think about their work (e.g. related clinical actions are scattered or mis-grouped).
+- Some labels are inconsistent in length or style (abbreviations vs full words, title casing, domain jargon).
+- On narrow/mobile layouts, long labels truncate or crowd the drawer, making items hard to distinguish.
 
-Review breakpoints, spacing, and overflow behavior across form factors (mobile, tablet, desktop/web):
+## Requirements
 
-- Inconsistent use of shared layout helpers (e.g. `responsive_spacing.dart`, toolbar overflow handling).
-- Fixed sizes, hard-coded padding, or layouts that break at narrow widths.
-- Dialogs, tables, and toolbars that clip, scroll incorrectly, or feel cramped on smaller viewports.
+### 1. Use-case-driven grouping
 
-### 1.3 Component duplication and drift
+- Audit every shell destination and regroup items by primary user workflow, not by backend module name alone.
+- Keep related clinical workflows together (e.g. clinical documentation, theatre, physiotherapy, discharge planning) where that improves discoverability.
+- Prefer fewer, clearer group headings over many thin groups.
+- Preserve route paths and access-policy filtering; only change navigation metadata (group, labels, order), not authorization.
 
-Find UI patterns implemented more than once when a shared component already exists or should exist:
+### 2. Consistent naming
 
-- Buttons, icon buttons, fields, dialogs, list rows, status chips, skeleton/loading states, empty/error views, search bars, sort menus, record sections, etc.
-- Near-duplicate widgets that differ only in styling or minor layout—candidates for parameterized shared components.
-- Feature-local copies of logic already in `shared/components/`, `shared/layout/`, `shared/forms/`, or `shared/clinical_actions/`.
+- Standardize nav item labels: concise, action- or domain-oriented, parallel structure within each group.
+- Use established hospital abbreviations where appropriate (OPD, IPD, ICU, HR) and spell out terms where clarity matters.
+- Align sidebar labels with page titles where reasonable; note intentional differences.
+- Update all affected strings in `app_en.arb` (and regenerate l10n if needed).
 
-**Goal:** Every reusable UI primitive is defined once in `shared/` (or a clearly named feature submodule if truly feature-specific). Similarity across screens is expected; copy-paste implementations are not.
+### 3. Short labels for constrained layouts
 
-### 1.4 Dead and obsolete code
+- Add a `shortLabel` (or equivalent) to `ResponsiveShellDestination` for compact display.
+- Use **short labels** on mobile drawer items and anywhere horizontal space is limited.
+- Use **full labels** on expanded desktop sidebar.
+- Short labels must remain unambiguous within their group (e.g. "Physio" vs "Physiotherapy", "Tenant setup" vs "Setup").
+- Collapsed desktop sidebar may continue to show icons only; tooltips should use the full label.
 
-Identify code that is safe to remove:
+### 4. Visual polish (minimal)
 
-- Unused Dart files, widgets, exports, and private helpers (verify with analyzer and reference search—do not delete based on guesswork).
-- Obsolete one-off migration scripts in `frontend/tool/` that have already been applied and are no longer referenced (keep `run_web_5201.ps1` and any script documented in `frontend/tool/README.md`).
-- Commented-out blocks, unused imports, and unreachable branches introduced by prior migrations.
+- Ensure group headers, spacing, and item order feel intentional after regrouping.
+- Avoid truncation where a better short label solves the problem.
+- Do not redesign the shell layout or theme tokens unless required for the above.
 
-## Phase 2 — Implementation
+## Out of scope
 
-Execute fixes in small, reviewable commits grouped by theme (performance, shared components, dead code removal).
+- Adding or removing routes/modules.
+- Changing RBAC / `appAccessPolicy` rules.
+- Home-page shortcuts (`home_page.dart`) unless needed to stay consistent with nav labels.
+- New navigation patterns (bottom tabs, flyout menus, etc.).
 
-### 2.1 Consolidation rules
+## Key files
 
-- Move duplicated UI into `frontend/lib/shared/components/` (or the appropriate `shared/` submodule) and update call sites.
-- Match existing naming (`app_*`), export new components from `components.dart`, and follow patterns in nearby files (e.g. `app_button.dart`, `app_dialog.dart`, `app_state_view.dart`).
-- Prefer composition and parameters over subclass forests. Do not over-abstract one-off screens.
-- Keep diffs minimal: refactor only what the audit flagged; avoid drive-by reformatting or unrelated renames.
+- `frontend/lib/app/router/app_router.dart` — destination list, group assignment, order
+- `frontend/lib/shared/layout/responsive_shell_scaffold.dart` — sidebar, drawer, menu item rendering
+- `frontend/lib/l10n/app_en.arb` — navigation and group labels
+- `frontend/test/shared/layout/responsive_shell_scaffold_test.dart` — shell/nav widget tests
 
-### 2.2 Performance and responsiveness fixes
+## Acceptance criteria
 
-- Apply targeted fixes from the audit (const constructors, extract subtrees, `ListView.builder`, debounced search, split giant pages where practical).
-- Ensure loading, empty, and error states use shared primitives (`app_skeleton.dart`, `app_state_view.dart`) for a uniform feel.
-- Verify web and desktop layouts after changes—this app is actively run via `frontend/tool/run_web_5201.ps1`.
+- [ ] Every shell destination sits in a workflow-oriented group with a documented rationale (brief comment or PR note).
+- [ ] Navigation item order within each group follows a logical task flow (e.g. register → treat → discharge).
+- [ ] All nav labels follow a consistent naming convention; no awkward truncation on desktop expanded sidebar.
+- [ ] Mobile drawer shows short labels; desktop expanded sidebar shows full labels.
+- [ ] Search still matches both full and short labels.
+- [ ] Existing nav/shell tests pass; add or update tests for short-label behavior and any regrouped structure.
+- [ ] `flutter analyze` and relevant tests pass.
 
-### 2.3 Cleanup
+## Suggested approach
 
-- Delete confirmed dead code and obsolete scripts; document any retained script’s purpose in `frontend/tool/README.md` if unclear.
-- Remove unused imports and fix analyzer warnings introduced or exposed by the work.
+1. Propose a revised grouping + label table (full + short) for review before coding.
+2. Implement model change (`shortLabel`), l10n keys, and router updates.
+3. Wire short labels into `_MobileShellDrawer` and any narrow-layout nav surfaces.
+4. Run widget tests and manually verify at mobile and desktop breakpoints (`.\tool\run_web_5201.ps1`).
 
-## Phase 3 — Verification
+## Deliverable
 
-Before finishing, run from `frontend/`:
-
-```sh
-dart format .
-flutter analyze
-flutter test
-```
-
-Manually smoke-test critical workspaces (auth, patient registry, at least two large workspace pages) on web at port 5201. Confirm no visual regressions, no new overflow errors, and no functional breakage.
-
-## Deliverables
-
-1. **Audit summary** — categorized findings (performance, responsiveness, duplication, dead code) with paths and severity.
-2. **Implementation** — consolidated shared components, performance/responsiveness fixes, and removed dead code.
-3. **Changelog note** — brief list of what moved to shared components and what was deleted, so future work does not reintroduce duplicates.
-
-## Constraints
-
-- Do not change user-visible behavior, API contracts, or routing unless fixing a clear bug.
-- Do not add dependencies without strong justification.
-- Do not create commits unless explicitly asked.
-- Preserve accessibility semantics right-to-left compatibility where already supported.
-- When two implementations differ in behavior, reconcile behavior in the shared component rather than silently dropping edge cases.
-
-## Definition of done
-
-- No duplicated reusable UI primitives remain without a documented reason.
-- Analyzer is clean (no new errors; warnings reduced where touched).
-- Tests pass.
-- The app feels more uniform (consistent buttons, fields, dialogs, loading/empty states) and measurably leaner (fewer redundant widgets, fewer unnecessary rebuilds on key screens).
+A focused PR that improves navigation IA and labeling, with a short summary of grouping decisions and before/after label changes.

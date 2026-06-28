@@ -618,16 +618,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationHomeLabel => 'Dashboard';
 
   @override
+  String get navigationHomeShortLabel => 'Dashboard';
+
+  @override
   String get navigationSettingsLabel => 'Settings';
 
   @override
-  String get navigationSetupLabel => 'Setup';
+  String get navigationSettingsShortLabel => 'Settings';
 
   @override
-  String get navigationPatientsLabel => 'Patients';
+  String get navigationSetupLabel => 'Tenant setup';
+
+  @override
+  String get navigationSetupShortLabel => 'Setup';
+
+  @override
+  String get navigationPatientsLabel => 'Patient registry';
+
+  @override
+  String get navigationPatientsShortLabel => 'Patients';
 
   @override
   String get navigationBillingLabel => 'Billing';
+
+  @override
+  String get navigationBillingShortLabel => 'Billing';
 
   @override
   String get billingWorkspaceTitle => 'Billing';
@@ -995,50 +1010,71 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get navigationSubscriptionsLabel => 'Subscriptions';
+  String get navigationSubscriptionsLabel => 'Subscription plans';
+
+  @override
+  String get navigationSubscriptionsShortLabel => 'Plans';
 
   @override
   String get navigationEmergencyLabel => 'Emergency';
 
   @override
-  String get navigationIcuLabel => 'ICU';
+  String get navigationEmergencyShortLabel => 'Emergency';
 
   @override
-  String get navigationHrLabel => 'HR';
+  String get navigationIcuLabel => 'Intensive care (ICU)';
+
+  @override
+  String get navigationIcuShortLabel => 'ICU';
+
+  @override
+  String get navigationHrLabel => 'Human resources';
+
+  @override
+  String get navigationHrShortLabel => 'HR';
 
   @override
   String get navigationGroupOverviewLabel => 'Overview';
 
   @override
-  String get navigationGroupPatientAccessLabel => 'Patient access';
+  String get navigationGroupPatientAccessLabel => 'Patient intake';
 
   @override
   String get navigationGroupInpatientCareLabel => 'Inpatient care';
 
   @override
-  String get navigationGroupClinicalServicesLabel => 'Clinical services';
+  String get navigationGroupClinicalServicesLabel => 'Clinical care';
 
   @override
   String get navigationGroupDiagnosticsMedicationLabel =>
-      'Diagnostics and medication';
+      'Diagnostics & pharmacy';
 
   @override
-  String get navigationGroupRevenueCycleLabel => 'Revenue cycle';
+  String get navigationGroupRevenueCycleLabel => 'Billing & revenue';
 
   @override
-  String get navigationGroupFacilityOperationsLabel => 'Facility operations';
+  String get navigationGroupFacilityOperationsLabel => 'Facility services';
 
   @override
   String get navigationGroupAdministrationLabel => 'Administration';
 
   @override
-  String get navigationOpdLabel => 'OPD';
+  String get navigationOpdLabel => 'Outpatient (OPD)';
 
   @override
-  String get navigationTheaterLabel => 'Theater';
+  String get navigationOpdShortLabel => 'OPD';
+
+  @override
+  String get navigationTheaterLabel => 'Operating theater';
+
+  @override
+  String get navigationTheaterShortLabel => 'Theater';
 
   @override
   String get navigationCommunicationsLabel => 'Communications';
+
+  @override
+  String get navigationCommunicationsShortLabel => 'Comms';
 
   @override
   String get hrTitle => 'Human resources';
@@ -1047,10 +1083,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationIntegrationsLabel => 'Integrations';
 
   @override
+  String get navigationIntegrationsShortLabel => 'Integrations';
+
+  @override
   String get navigationMortuaryLabel => 'Mortuary';
 
   @override
+  String get navigationMortuaryShortLabel => 'Mortuary';
+
+  @override
   String get navigationReportsLabel => 'Reports';
+
+  @override
+  String get navigationReportsShortLabel => 'Reports';
+
+  @override
+  String get navigationRoomsBedsLabel => 'Rooms & beds';
+
+  @override
+  String get navigationRoomsBedsShortLabel => 'Beds';
+
+  @override
+  String get navigationHousekeepingLabel => 'Housekeeping';
+
+  @override
+  String get navigationHousekeepingShortLabel => 'HK';
 
   @override
   String get theaterTitle => 'Theater';
@@ -4600,7 +4657,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnexpectedMessage => 'Something went wrong. Try again.';
 
   @override
-  String get navigationClinicalLabel => 'Clinical';
+  String get navigationClinicalLabel => 'Clinical notes';
+
+  @override
+  String get navigationClinicalShortLabel => 'Clinical';
 
   @override
   String get clinicalTitle => 'Clinical workspace';
@@ -5189,7 +5249,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalConsultationSummaryTitle => 'Consultation summary';
 
   @override
-  String get navigationIpdLabel => 'IPD';
+  String get navigationIpdLabel => 'Inpatient (IPD)';
+
+  @override
+  String get navigationIpdShortLabel => 'IPD';
 
   @override
   String get ipdTitle => 'Inpatient workspace';
@@ -5866,6 +5929,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationNursingLabel => 'Nursing';
 
   @override
+  String get navigationNursingShortLabel => 'Nursing';
+
+  @override
   String get nursingTitle => 'Nursing';
 
   @override
@@ -6448,7 +6514,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No roster assignments found for this shift.';
 
   @override
-  String get navigationDischargeLabel => 'Discharge';
+  String get navigationDischargeLabel => 'Discharge planning';
+
+  @override
+  String get navigationDischargeShortLabel => 'Discharge';
 
   @override
   String get dischargeWorkspaceTitle => 'Discharge workspace';
@@ -7498,10 +7567,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationPharmacyLabel => 'Pharmacy';
 
   @override
-  String get navigationLabLabel => 'Lab';
+  String get navigationPharmacyShortLabel => 'Pharmacy';
+
+  @override
+  String get navigationLabLabel => 'Laboratory';
+
+  @override
+  String get navigationLabShortLabel => 'Lab';
 
   @override
   String get navigationRadiologyLabel => 'Radiology';
+
+  @override
+  String get navigationRadiologyShortLabel => 'Imaging';
 
   @override
   String get pharmacyLoadingTitle => 'Loading pharmacy workspace';
@@ -7995,7 +8073,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyReportFooter => 'Generated from pharmacy workflow data.';
 
   @override
-  String get navigationClaimsLabel => 'Claims';
+  String get navigationClaimsLabel => 'Insurance claims';
+
+  @override
+  String get navigationClaimsShortLabel => 'Claims';
 
   @override
   String get claimsWorkspaceTitle => 'Insurance and claims';
@@ -9140,6 +9221,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationOperationsLabel => 'Operations';
 
   @override
+  String get navigationOperationsShortLabel => 'Operations';
+
+  @override
   String get operationsTitle => 'Operations';
 
   @override
@@ -9478,7 +9562,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get navigationBiomedicalLabel => 'Biomedical';
+  String get navigationBiomedicalLabel => 'Biomedical engineering';
+
+  @override
+  String get navigationBiomedicalShortLabel => 'Biomedical';
 
   @override
   String get biomedicalTitle => 'Biomedical';
@@ -10829,6 +10916,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navigationPhysiotherapyLabel => 'Physiotherapy';
+
+  @override
+  String get navigationPhysiotherapyShortLabel => 'Physio';
 
   @override
   String get communicationsLoadingTitle => 'Loading communications';

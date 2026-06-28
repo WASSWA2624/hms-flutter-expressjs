@@ -1240,29 +1240,59 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get navigationHomeLabel;
 
+  /// Compact navigation label for the dashboard destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get navigationHomeShortLabel;
+
   /// Navigation label for the settings destination.
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get navigationSettingsLabel;
 
+  /// Compact navigation label for the settings destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navigationSettingsShortLabel;
+
   /// Navigation label for tenant and facility setup.
   ///
   /// In en, this message translates to:
-  /// **'Setup'**
+  /// **'Tenant setup'**
   String get navigationSetupLabel;
+
+  /// Compact navigation label for tenant and facility setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get navigationSetupShortLabel;
 
   /// Navigation label for the patient registry destination.
   ///
   /// In en, this message translates to:
-  /// **'Patients'**
+  /// **'Patient registry'**
   String get navigationPatientsLabel;
+
+  /// Compact navigation label for the patient registry destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients'**
+  String get navigationPatientsShortLabel;
 
   /// Navigation label for the billing workspace.
   ///
   /// In en, this message translates to:
   /// **'Billing'**
   String get navigationBillingLabel;
+
+  /// Compact navigation label for the billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get navigationBillingShortLabel;
 
   /// Title for the billing cashier workspace.
   ///
@@ -1975,8 +2005,14 @@ abstract class AppLocalizations {
   /// Navigation label for the subscriptions workspace.
   ///
   /// In en, this message translates to:
-  /// **'Subscriptions'**
+  /// **'Subscription plans'**
   String get navigationSubscriptionsLabel;
+
+  /// Compact navigation label for the subscriptions workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans'**
+  String get navigationSubscriptionsShortLabel;
 
   /// Navigation label for the emergency workspace.
   ///
@@ -1984,17 +2020,35 @@ abstract class AppLocalizations {
   /// **'Emergency'**
   String get navigationEmergencyLabel;
 
+  /// Compact navigation label for the emergency workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get navigationEmergencyShortLabel;
+
   /// Navigation label for the ICU workspace.
   ///
   /// In en, this message translates to:
-  /// **'ICU'**
+  /// **'Intensive care (ICU)'**
   String get navigationIcuLabel;
+
+  /// Compact navigation label for the ICU workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get navigationIcuShortLabel;
 
   /// Navigation label for the human resources workspace.
   ///
   /// In en, this message translates to:
-  /// **'HR'**
+  /// **'Human resources'**
   String get navigationHrLabel;
+
+  /// Compact navigation label for the human resources workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'HR'**
+  String get navigationHrShortLabel;
 
   /// Desktop side navigation group label for overview destinations.
   ///
@@ -2005,7 +2059,7 @@ abstract class AppLocalizations {
   /// Desktop side navigation group label for front-desk and access destinations.
   ///
   /// In en, this message translates to:
-  /// **'Patient access'**
+  /// **'Patient intake'**
   String get navigationGroupPatientAccessLabel;
 
   /// Desktop side navigation group label for inpatient care destinations.
@@ -2017,25 +2071,25 @@ abstract class AppLocalizations {
   /// Desktop side navigation group label for clinical service destinations.
   ///
   /// In en, this message translates to:
-  /// **'Clinical services'**
+  /// **'Clinical care'**
   String get navigationGroupClinicalServicesLabel;
 
   /// Desktop side navigation group label for diagnostic and medication destinations.
   ///
   /// In en, this message translates to:
-  /// **'Diagnostics and medication'**
+  /// **'Diagnostics & pharmacy'**
   String get navigationGroupDiagnosticsMedicationLabel;
 
   /// Desktop side navigation group label for billing and revenue destinations.
   ///
   /// In en, this message translates to:
-  /// **'Revenue cycle'**
+  /// **'Billing & revenue'**
   String get navigationGroupRevenueCycleLabel;
 
   /// Desktop side navigation group label for facility operations destinations.
   ///
   /// In en, this message translates to:
-  /// **'Facility operations'**
+  /// **'Facility services'**
   String get navigationGroupFacilityOperationsLabel;
 
   /// Desktop side navigation group label for administrative destinations.
@@ -2047,20 +2101,38 @@ abstract class AppLocalizations {
   /// Navigation label for the OPD workflow destination.
   ///
   /// In en, this message translates to:
-  /// **'OPD'**
+  /// **'Outpatient (OPD)'**
   String get navigationOpdLabel;
+
+  /// Compact navigation label for the OPD workflow destination.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD'**
+  String get navigationOpdShortLabel;
 
   /// Navigation label for the theater workflow destination.
   ///
   /// In en, this message translates to:
-  /// **'Theater'**
+  /// **'Operating theater'**
   String get navigationTheaterLabel;
+
+  /// Compact navigation label for the theater workflow destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater'**
+  String get navigationTheaterShortLabel;
 
   /// Navigation label for the communications workspace.
   ///
   /// In en, this message translates to:
   /// **'Communications'**
   String get navigationCommunicationsLabel;
+
+  /// Compact navigation label for the communications workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Comms'**
+  String get navigationCommunicationsShortLabel;
 
   /// Human resources workspace text for hrTitle.
   ///
@@ -2074,17 +2146,59 @@ abstract class AppLocalizations {
   /// **'Integrations'**
   String get navigationIntegrationsLabel;
 
+  /// Compact navigation label for the integrations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get navigationIntegrationsShortLabel;
+
   /// Navigation label for the mortuary workspace.
   ///
   /// In en, this message translates to:
   /// **'Mortuary'**
   String get navigationMortuaryLabel;
 
+  /// Compact navigation label for the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary'**
+  String get navigationMortuaryShortLabel;
+
   /// Navigation label for the reports workspace.
   ///
   /// In en, this message translates to:
   /// **'Reports'**
   String get navigationReportsLabel;
+
+  /// Compact navigation label for the reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get navigationReportsShortLabel;
+
+  /// Navigation label for the rooms and beds workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms & beds'**
+  String get navigationRoomsBedsLabel;
+
+  /// Compact navigation label for the rooms and beds workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Beds'**
+  String get navigationRoomsBedsShortLabel;
+
+  /// Navigation label for the housekeeping workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping'**
+  String get navigationHousekeepingLabel;
+
+  /// Compact navigation label for the housekeeping workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'HK'**
+  String get navigationHousekeepingShortLabel;
 
   /// Title for the theater workspace.
   ///
@@ -8629,8 +8743,14 @@ abstract class AppLocalizations {
   /// Navigation label for the clinical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Clinical'**
+  /// **'Clinical notes'**
   String get navigationClinicalLabel;
+
+  /// Compact navigation label for the clinical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get navigationClinicalShortLabel;
 
   /// Clinical workspace page title.
   ///
@@ -9685,8 +9805,14 @@ abstract class AppLocalizations {
   /// Navigation label for the inpatient department workspace.
   ///
   /// In en, this message translates to:
-  /// **'IPD'**
+  /// **'Inpatient (IPD)'**
   String get navigationIpdLabel;
+
+  /// Compact navigation label for the inpatient department workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'IPD'**
+  String get navigationIpdShortLabel;
 
   /// Inpatient workspace page title.
   ///
@@ -10984,6 +11110,12 @@ abstract class AppLocalizations {
   /// **'Nursing'**
   String get navigationNursingLabel;
 
+  /// Compact navigation label for the nursing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing'**
+  String get navigationNursingShortLabel;
+
   /// Nursing workspace page title.
   ///
   /// In en, this message translates to:
@@ -12073,8 +12205,14 @@ abstract class AppLocalizations {
   /// Navigation label for the discharge workspace.
   ///
   /// In en, this message translates to:
-  /// **'Discharge'**
+  /// **'Discharge planning'**
   String get navigationDischargeLabel;
+
+  /// Compact navigation label for the discharge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get navigationDischargeShortLabel;
 
   /// Discharge workspace page title.
   ///
@@ -14044,17 +14182,35 @@ abstract class AppLocalizations {
   /// **'Pharmacy'**
   String get navigationPharmacyLabel;
 
+  /// Compact navigation label for the pharmacy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get navigationPharmacyShortLabel;
+
   /// Navigation destination label for the lab workspace.
   ///
   /// In en, this message translates to:
-  /// **'Lab'**
+  /// **'Laboratory'**
   String get navigationLabLabel;
+
+  /// Compact navigation label for the lab workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get navigationLabShortLabel;
 
   /// Navigation destination label for the radiology workspace.
   ///
   /// In en, this message translates to:
   /// **'Radiology'**
   String get navigationRadiologyLabel;
+
+  /// Compact navigation label for the radiology workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging'**
+  String get navigationRadiologyShortLabel;
 
   /// Pharmacy workspace loading title.
   ///
@@ -14965,8 +15121,14 @@ abstract class AppLocalizations {
   /// Localized text for navigationClaimsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Claims'**
+  /// **'Insurance claims'**
   String get navigationClaimsLabel;
+
+  /// Compact navigation label for the claims workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims'**
+  String get navigationClaimsShortLabel;
 
   /// Localized text for claimsWorkspaceTitle.
   ///
@@ -17074,6 +17236,12 @@ abstract class AppLocalizations {
   /// **'Operations'**
   String get navigationOperationsLabel;
 
+  /// Compact navigation label for the operations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get navigationOperationsShortLabel;
+
   /// Title for the operations workspace.
   ///
   /// In en, this message translates to:
@@ -17724,8 +17892,14 @@ abstract class AppLocalizations {
   /// Navigation label for the biomedical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Biomedical'**
+  /// **'Biomedical engineering'**
   String get navigationBiomedicalLabel;
+
+  /// Compact navigation label for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical'**
+  String get navigationBiomedicalShortLabel;
 
   /// Title for the biomedical workspace.
   ///
@@ -20294,6 +20468,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Physiotherapy'**
   String get navigationPhysiotherapyLabel;
+
+  /// Compact navigation label for the physiotherapy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Physio'**
+  String get navigationPhysiotherapyShortLabel;
 
   /// Loading title for the communications workspace.
   ///

@@ -218,7 +218,7 @@ void main() {
           ),
           ResponsiveShellDestination(
             label: 'Claims',
-            groupLabel: 'Revenue cycle',
+            groupLabel: 'Billing & revenue',
             icon: Icons.receipt_long_outlined,
             selectedIcon: Icons.receipt_long,
           ),
@@ -271,6 +271,76 @@ void main() {
       await tester.tap(find.byTooltip('Close navigation menu'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Settings'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('shows short labels in the mobile drawer', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(
+        tester,
+        const Size(320, 640),
+        destinations: const <ResponsiveShellDestination>[
+          ResponsiveShellDestination(
+            label: 'Patient registry',
+            shortLabel: 'Patients',
+            groupLabel: 'Patient intake',
+            icon: Icons.people_outline,
+            selectedIcon: Icons.people,
+          ),
+          ResponsiveShellDestination(
+            label: 'Radiology',
+            shortLabel: 'Imaging',
+            groupLabel: 'Diagnostics & pharmacy',
+            icon: Icons.medical_services_outlined,
+            selectedIcon: Icons.medical_services,
+          ),
+        ],
+      );
+
+      await tester.tap(find.byTooltip('Open navigation menu'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patients'), findsOneWidget);
+      expect(find.text('Imaging'), findsOneWidget);
+      expect(find.text('Patient registry'), findsNothing);
+      expect(find.text('Radiology'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('search matches short labels on desktop sidebar', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(
+        tester,
+        const Size(1200, 900),
+        destinations: const <ResponsiveShellDestination>[
+          ResponsiveShellDestination(
+            label: 'Radiology',
+            shortLabel: 'Imaging',
+            groupLabel: 'Diagnostics & pharmacy',
+            icon: Icons.medical_services_outlined,
+            selectedIcon: Icons.medical_services,
+          ),
+          ResponsiveShellDestination(
+            label: 'Settings',
+            icon: Icons.settings_outlined,
+            selectedIcon: Icons.settings,
+          ),
+        ],
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SideNavigation),
+          matching: find.byType(TextFormField),
+        ),
+        'imaging',
+      );
+      await tester.pump();
+
+      expect(find.text('Radiology'), findsOneWidget);
       expect(find.text('Settings'), findsNothing);
       expect(tester.takeException(), isNull);
     });

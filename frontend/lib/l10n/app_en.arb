@@ -798,21 +798,41 @@
   "@navigationHomeLabel": {
     "description": "Navigation label for the dashboard destination."
   },
+  "navigationHomeShortLabel": "Dashboard",
+  "@navigationHomeShortLabel": {
+    "description": "Compact navigation label for the dashboard destination."
+  },
   "navigationSettingsLabel": "Settings",
   "@navigationSettingsLabel": {
     "description": "Navigation label for the settings destination."
   },
-  "navigationSetupLabel": "Setup",
+  "navigationSettingsShortLabel": "Settings",
+  "@navigationSettingsShortLabel": {
+    "description": "Compact navigation label for the settings destination."
+  },
+  "navigationSetupLabel": "Tenant setup",
   "@navigationSetupLabel": {
     "description": "Navigation label for tenant and facility setup."
   },
-  "navigationPatientsLabel": "Patients",
+  "navigationSetupShortLabel": "Setup",
+  "@navigationSetupShortLabel": {
+    "description": "Compact navigation label for tenant and facility setup."
+  },
+  "navigationPatientsLabel": "Patient registry",
   "@navigationPatientsLabel": {
     "description": "Navigation label for the patient registry destination."
+  },
+  "navigationPatientsShortLabel": "Patients",
+  "@navigationPatientsShortLabel": {
+    "description": "Compact navigation label for the patient registry destination."
   },
   "navigationBillingLabel": "Billing",
   "@navigationBillingLabel": {
     "description": "Navigation label for the billing workspace."
+  },
+  "navigationBillingShortLabel": "Billing",
+  "@navigationBillingShortLabel": {
+    "description": "Compact navigation label for the billing workspace."
   },
   "billingWorkspaceTitle": "Billing",
   "@billingWorkspaceTitle": {
@@ -1291,27 +1311,43 @@
       }
     }
   },
-  "navigationSubscriptionsLabel": "Subscriptions",
+  "navigationSubscriptionsLabel": "Subscription plans",
   "@navigationSubscriptionsLabel": {
     "description": "Navigation label for the subscriptions workspace."
+  },
+  "navigationSubscriptionsShortLabel": "Plans",
+  "@navigationSubscriptionsShortLabel": {
+    "description": "Compact navigation label for the subscriptions workspace."
   },
   "navigationEmergencyLabel": "Emergency",
   "@navigationEmergencyLabel": {
     "description": "Navigation label for the emergency workspace."
   },
-  "navigationIcuLabel": "ICU",
+  "navigationEmergencyShortLabel": "Emergency",
+  "@navigationEmergencyShortLabel": {
+    "description": "Compact navigation label for the emergency workspace."
+  },
+  "navigationIcuLabel": "Intensive care (ICU)",
   "@navigationIcuLabel": {
     "description": "Navigation label for the ICU workspace."
   },
-  "navigationHrLabel": "HR",
+  "navigationIcuShortLabel": "ICU",
+  "@navigationIcuShortLabel": {
+    "description": "Compact navigation label for the ICU workspace."
+  },
+  "navigationHrLabel": "Human resources",
   "@navigationHrLabel": {
     "description": "Navigation label for the human resources workspace."
+  },
+  "navigationHrShortLabel": "HR",
+  "@navigationHrShortLabel": {
+    "description": "Compact navigation label for the human resources workspace."
   },
   "navigationGroupOverviewLabel": "Overview",
   "@navigationGroupOverviewLabel": {
     "description": "Desktop side navigation group label for overview destinations."
   },
-  "navigationGroupPatientAccessLabel": "Patient access",
+  "navigationGroupPatientAccessLabel": "Patient intake",
   "@navigationGroupPatientAccessLabel": {
     "description": "Desktop side navigation group label for front-desk and access destinations."
   },
@@ -1319,19 +1355,19 @@
   "@navigationGroupInpatientCareLabel": {
     "description": "Desktop side navigation group label for inpatient care destinations."
   },
-  "navigationGroupClinicalServicesLabel": "Clinical services",
+  "navigationGroupClinicalServicesLabel": "Clinical care",
   "@navigationGroupClinicalServicesLabel": {
     "description": "Desktop side navigation group label for clinical service destinations."
   },
-  "navigationGroupDiagnosticsMedicationLabel": "Diagnostics and medication",
+  "navigationGroupDiagnosticsMedicationLabel": "Diagnostics & pharmacy",
   "@navigationGroupDiagnosticsMedicationLabel": {
     "description": "Desktop side navigation group label for diagnostic and medication destinations."
   },
-  "navigationGroupRevenueCycleLabel": "Revenue cycle",
+  "navigationGroupRevenueCycleLabel": "Billing & revenue",
   "@navigationGroupRevenueCycleLabel": {
     "description": "Desktop side navigation group label for billing and revenue destinations."
   },
-  "navigationGroupFacilityOperationsLabel": "Facility operations",
+  "navigationGroupFacilityOperationsLabel": "Facility services",
   "@navigationGroupFacilityOperationsLabel": {
     "description": "Desktop side navigation group label for facility operations destinations."
   },
@@ -1339,17 +1375,29 @@
   "@navigationGroupAdministrationLabel": {
     "description": "Desktop side navigation group label for administrative destinations."
   },
-  "navigationOpdLabel": "OPD",
+  "navigationOpdLabel": "Outpatient (OPD)",
   "@navigationOpdLabel": {
     "description": "Navigation label for the OPD workflow destination."
   },
-  "navigationTheaterLabel": "Theater",
+  "navigationOpdShortLabel": "OPD",
+  "@navigationOpdShortLabel": {
+    "description": "Compact navigation label for the OPD workflow destination."
+  },
+  "navigationTheaterLabel": "Operating theater",
   "@navigationTheaterLabel": {
     "description": "Navigation label for the theater workflow destination."
+  },
+  "navigationTheaterShortLabel": "Theater",
+  "@navigationTheaterShortLabel": {
+    "description": "Compact navigation label for the theater workflow destination."
   },
   "navigationCommunicationsLabel": "Communications",
   "@navigationCommunicationsLabel": {
     "description": "Navigation label for the communications workspace."
+  },
+  "navigationCommunicationsShortLabel": "Comms",
+  "@navigationCommunicationsShortLabel": {
+    "description": "Compact navigation label for the communications workspace."
   },
   "hrTitle": "Human resources",
   "@hrTitle": {
@@ -1359,13 +1407,41 @@
   "@navigationIntegrationsLabel": {
     "description": "Navigation label for the integrations workspace."
   },
+  "navigationIntegrationsShortLabel": "Integrations",
+  "@navigationIntegrationsShortLabel": {
+    "description": "Compact navigation label for the integrations workspace."
+  },
   "navigationMortuaryLabel": "Mortuary",
   "@navigationMortuaryLabel": {
     "description": "Navigation label for the mortuary workspace."
   },
+  "navigationMortuaryShortLabel": "Mortuary",
+  "@navigationMortuaryShortLabel": {
+    "description": "Compact navigation label for the mortuary workspace."
+  },
   "navigationReportsLabel": "Reports",
   "@navigationReportsLabel": {
     "description": "Navigation label for the reports workspace."
+  },
+  "navigationReportsShortLabel": "Reports",
+  "@navigationReportsShortLabel": {
+    "description": "Compact navigation label for the reports workspace."
+  },
+  "navigationRoomsBedsLabel": "Rooms & beds",
+  "@navigationRoomsBedsLabel": {
+    "description": "Navigation label for the rooms and beds workspace."
+  },
+  "navigationRoomsBedsShortLabel": "Beds",
+  "@navigationRoomsBedsShortLabel": {
+    "description": "Compact navigation label for the rooms and beds workspace."
+  },
+  "navigationHousekeepingLabel": "Housekeeping",
+  "@navigationHousekeepingLabel": {
+    "description": "Navigation label for the housekeeping workspace."
+  },
+  "navigationHousekeepingShortLabel": "HK",
+  "@navigationHousekeepingShortLabel": {
+    "description": "Compact navigation label for the housekeeping workspace."
   },
   "theaterTitle": "Theater",
   "@theaterTitle": {
@@ -5919,9 +5995,13 @@
   "@errorUnexpectedMessage": {
     "description": "Generic safe error message for unexpected recoverable failures."
   },
-  "navigationClinicalLabel": "Clinical",
+  "navigationClinicalLabel": "Clinical notes",
   "@navigationClinicalLabel": {
     "description": "Navigation label for the clinical workspace."
+  },
+  "navigationClinicalShortLabel": "Clinical",
+  "@navigationClinicalShortLabel": {
+    "description": "Compact navigation label for the clinical workspace."
   },
   "clinicalTitle": "Clinical workspace",
   "@clinicalTitle": {
@@ -6687,9 +6767,13 @@
   "@clinicalConsultationSummaryTitle": {
     "description": "Clinical consultation summary print title."
   },
-  "navigationIpdLabel": "IPD",
+  "navigationIpdLabel": "Inpatient (IPD)",
   "@navigationIpdLabel": {
     "description": "Navigation label for the inpatient department workspace."
+  },
+  "navigationIpdShortLabel": "IPD",
+  "@navigationIpdShortLabel": {
+    "description": "Compact navigation label for the inpatient department workspace."
   },
   "ipdTitle": "Inpatient workspace",
   "@ipdTitle": {
@@ -7580,6 +7664,10 @@
   "@navigationNursingLabel": {
     "description": "Navigation label for the nursing workspace."
   },
+  "navigationNursingShortLabel": "Nursing",
+  "@navigationNursingShortLabel": {
+    "description": "Compact navigation label for the nursing workspace."
+  },
   "nursingTitle": "Nursing",
   "@nursingTitle": {
     "description": "Nursing workspace page title."
@@ -8304,9 +8392,13 @@
   "@nursingNoRosterLabel": {
     "description": "Localized text for nursingNoRosterLabel."
   },
-  "navigationDischargeLabel": "Discharge",
+  "navigationDischargeLabel": "Discharge planning",
   "@navigationDischargeLabel": {
     "description": "Navigation label for the discharge workspace."
+  },
+  "navigationDischargeShortLabel": "Discharge",
+  "@navigationDischargeShortLabel": {
+    "description": "Compact navigation label for the discharge workspace."
   },
   "dischargeWorkspaceTitle": "Discharge workspace",
   "@dischargeWorkspaceTitle": {
@@ -9653,13 +9745,25 @@
   "@navigationPharmacyLabel": {
     "description": "Navigation destination label for the pharmacy workspace."
   },
-  "navigationLabLabel": "Lab",
+  "navigationPharmacyShortLabel": "Pharmacy",
+  "@navigationPharmacyShortLabel": {
+    "description": "Compact navigation label for the pharmacy workspace."
+  },
+  "navigationLabLabel": "Laboratory",
   "@navigationLabLabel": {
     "description": "Navigation destination label for the lab workspace."
+  },
+  "navigationLabShortLabel": "Lab",
+  "@navigationLabShortLabel": {
+    "description": "Compact navigation label for the lab workspace."
   },
   "navigationRadiologyLabel": "Radiology",
   "@navigationRadiologyLabel": {
     "description": "Navigation destination label for the radiology workspace."
+  },
+  "navigationRadiologyShortLabel": "Imaging",
+  "@navigationRadiologyShortLabel": {
+    "description": "Compact navigation label for the radiology workspace."
   },
   "pharmacyLoadingTitle": "Loading pharmacy workspace",
   "@pharmacyLoadingTitle": {
@@ -10299,9 +10403,13 @@
   "@pharmacyReportFooter": {
     "description": "Pharmacy report footer."
   },
-  "navigationClaimsLabel": "Claims",
+  "navigationClaimsLabel": "Insurance claims",
   "@navigationClaimsLabel": {
     "description": "Localized text for navigationClaimsLabel."
+  },
+  "navigationClaimsShortLabel": "Claims",
+  "@navigationClaimsShortLabel": {
+    "description": "Compact navigation label for the claims workspace."
   },
   "claimsWorkspaceTitle": "Insurance and claims",
   "@claimsWorkspaceTitle": {
@@ -11792,6 +11900,10 @@
   "@navigationOperationsLabel": {
     "description": "Navigation label for the operations workspace."
   },
+  "navigationOperationsShortLabel": "Operations",
+  "@navigationOperationsShortLabel": {
+    "description": "Compact navigation label for the operations workspace."
+  },
   "operationsTitle": "Operations",
   "@operationsTitle": {
     "description": "Title for the operations workspace."
@@ -12250,9 +12362,13 @@
       }
     }
   },
-  "navigationBiomedicalLabel": "Biomedical",
+  "navigationBiomedicalLabel": "Biomedical engineering",
   "@navigationBiomedicalLabel": {
     "description": "Navigation label for the biomedical workspace."
+  },
+  "navigationBiomedicalShortLabel": "Biomedical",
+  "@navigationBiomedicalShortLabel": {
+    "description": "Compact navigation label for the biomedical workspace."
   },
   "biomedicalTitle": "Biomedical",
   "@biomedicalTitle": {
@@ -14016,6 +14132,10 @@
   "navigationPhysiotherapyLabel": "Physiotherapy",
   "@navigationPhysiotherapyLabel": {
     "description": "Navigation label for the physiotherapy workspace."
+  },
+  "navigationPhysiotherapyShortLabel": "Physio",
+  "@navigationPhysiotherapyShortLabel": {
+    "description": "Compact navigation label for the physiotherapy workspace."
   },
   "communicationsLoadingTitle": "Loading communications",
   "@communicationsLoadingTitle": {

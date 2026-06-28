@@ -13,15 +13,24 @@ final class ResponsiveShellDestination {
     required this.label,
     required this.icon,
     required this.selectedIcon,
+    this.shortLabel,
     this.groupLabel,
     this.badgeCount,
   });
 
   final String label;
+  final String? shortLabel;
   final IconData icon;
   final IconData selectedIcon;
   final String? groupLabel;
   final int? badgeCount;
+
+  String displayLabel({required bool compact}) {
+    if (compact) {
+      return shortLabel ?? label;
+    }
+    return label;
+  }
 }
 
 final class UserMenuProfileData {
@@ -1091,6 +1100,7 @@ class _MobileShellDrawer extends StatelessWidget {
                     entry: entries[index],
                     selectedIndex: selectedIndex,
                     showLabel: true,
+                    useShortLabel: true,
                     onDestinationSelected: onDestinationSelected,
                   );
                 },
@@ -1229,12 +1239,14 @@ class _NavigationListEntryWidget extends StatelessWidget {
     required this.entry,
     required this.selectedIndex,
     required this.showLabel,
+    this.useShortLabel = false,
     required this.onDestinationSelected,
   });
 
   final _NavigationListEntry entry;
   final int selectedIndex;
   final bool showLabel;
+  final bool useShortLabel;
   final ValueChanged<int> onDestinationSelected;
 
   @override
@@ -1247,6 +1259,7 @@ class _NavigationListEntryWidget extends StatelessWidget {
         destination: destination.destination,
         selected: destination.index == selectedIndex,
         showLabel: showLabel,
+        useShortLabel: useShortLabel,
         onTap: () {
           onDestinationSelected(destination.index);
         },
@@ -1408,6 +1421,9 @@ bool _destinationMatchesSearch(
         destination.label,
       ).contains(normalizedQuery) ||
       _normalizeNavigationSearchText(
+        destination.shortLabel ?? '',
+      ).contains(normalizedQuery) ||
+      _normalizeNavigationSearchText(
         destination.groupLabel ?? '',
       ).contains(normalizedQuery);
 }
@@ -1421,12 +1437,14 @@ class _ShellMenuItem extends StatefulWidget {
     required this.destination,
     required this.selected,
     required this.showLabel,
+    this.useShortLabel = false,
     required this.onTap,
   });
 
   final ResponsiveShellDestination destination;
   final bool selected;
   final bool showLabel;
+  final bool useShortLabel;
   final VoidCallback onTap;
 
   @override
@@ -1454,6 +1472,9 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
         : colorScheme.onSurfaceVariant;
     final int badgeCount = widget.destination.badgeCount ?? 0;
     final bool showIconBadge = badgeCount > 0 && !widget.showLabel;
+    final String visibleLabel = widget.destination.displayLabel(
+      compact: widget.useShortLabel,
+    );
     final Widget icon = Icon(
       widget.selected
           ? widget.destination.selectedIcon
@@ -1517,7 +1538,7 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
             SizedBox(width: theme.spacing.sm),
             Expanded(
               child: Text(
-                widget.destination.label,
+                visibleLabel,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
