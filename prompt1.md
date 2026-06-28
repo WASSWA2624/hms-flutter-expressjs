@@ -1,150 +1,196 @@
-# Workspace More Actions & Notifications — UX polish
+# AppListTable — Uniform Table / List View
 
 ## Objective
 
-The **Notifications** nested submenu inside workspace **More actions** is functionally in place (see `prompt2.md`), but the current presentation is poor: the flyout detaches from its trigger, the menu feels unpolished, and the header/toolbar wastes vertical space. Refine layout, positioning, and affordances so the pattern is compact, obvious, and uniform across all module workspaces.
+Refine **`AppListTable`** so every module worklist shares one elegant, responsive data surface: **search toolbar → table (desktop) or compact list (mobile) → pagination**. The component must feel fast, scannable, and visually consistent across Patients, Lab, Emergency, OPD, and all other workspace modules.
 
-**Smoke URL:** `127.0.0.1:5201` — verify on **OPD** (primary reference), then Lab, Billing, ICU, and one operational module.
+**Smoke URL:** `127.0.0.1:5201` — verify on **Patients** (mobile ~463px + desktop), **Lab** (patient worklist), **Emergency** (empty + populated), and **OPD** (flows table).
 
 ---
 
 ## Problems observed (screenshots)
 
-### 1. Notifications submenu is visually disconnected
+### 1. Duplicate titles and descriptions
 
-When **More actions** is opened and **Notifications** is hovered/expanded, the nested flyout appears **far from the parent menu** (often centered in the worklist area) instead of hugging the trigger. This breaks the parent–child relationship and looks like a floating orphan panel over the table.
+Some screens show a worklist title/description **twice**: once on `AppWorkspace` / `AppWorkspaceDetailPanel` and again inside `AppListTable` via `title` / `description`. Others show only the search bar (correct). Patients and Lab put section copy on the parent panel; Clinical, OPD, Physiotherapy, Claims, Discharge, and Mortuary still pass `title` / `description` into `AppListTable`.
 
 | Symptom | Likely cause |
 |---------|----------------|
-| Flyout floats in the middle of the content | `SubmenuButton` / `MenuAnchor` default alignment not constrained to the overflow trigger |
-| Hard to trace which menu opened the panel | No visual anchor (shadow overlap, shared edge, or proximity) between parent and child menus |
+| "Patient lab worklist" then search bar, or "Emergency board" + description above search | `AppWorkspaceDetailPanel` **and** `AppListTable.title` / `description` both set |
+| Inconsistent vertical rhythm between modules | Mixed ownership of section headers |
 
-### 2. Menu design is not production-quality
+### 2. Table density and header legibility
 
-- Parent **Notifications** row shows **two chevrons** (duplicate trailing affordance).
-- Row density, padding, and icon alignment do not match the rest of the app chrome.
-- Submenu width (`320–360px`) may be wider than needed for short labels + counts.
-- No clear selected/active state when a notification filter is already applied to the worklist.
+Desktop tables feel loose: row padding is generous (`dataRowMinHeight` 40 / `dataRowMaxHeight` 64) while column headers use `labelMedium` and read small relative to cell content.
 
-### 3. No at-a-glance signal on the More actions trigger
+| Symptom | Likely cause |
+|---------|----------------|
+| Too much whitespace between rows | `_DesktopListTable` row height constants |
+| Headers hard to scan | `headingTextStyle` / `_DataColumnHeader` typography |
 
-Users cannot tell there are actionable queue items **before** opening the menu. The overflow trigger (`Icons.more_vert`) looks identical whether there are 0 or 20 pending notifications.
+### 3. Sort state is easy to miss
 
-### 4. No aggregate count on the Notifications parent row
+Sortable columns exist, but the active sort column and direction are not prominent enough. There is no default sort on first open.
 
-Individual notification rows show per-queue counts (`AppMenuCountBadge`), but the parent **Notifications** item does not summarize **total items needing attention**. Users must expand the submenu to discover volume.
+| Symptom | Likely cause |
+|---------|----------------|
+| User cannot tell which column is sorted | Subtle `swap_vert` vs arrow styling only |
+| Rows appear in arbitrary order until user clicks | `_sortColumnKey` starts `null` |
 
-### 5. Workspace header / toolbar uses too much vertical space
+### 4. Search feels laggy or “reloads” the table
 
-The OPD workspace header band (title + primary action + toolbar) has **excess top/bottom padding**, pushing the worklist down. The goal is maximum information density without crowding — compact but readable.
+When typing in the search field, some pages set `isLoading: state.isRefreshing*` on `AppListTable`, which swaps the entire worklist for `_DefaultListTableLoading` even though client-side filtering is synchronous.
+
+| Symptom | Likely cause |
+|---------|----------------|
+| Table disappears / skeleton while typing | `isLoading` tied to controller refresh, not initial load |
+| Perceived lag between keystroke and filtered rows | Unnecessary loading overlay on in-memory filter |
+
+### 5. Mobile list rows are too tall and noisy
+
+On `xs` / `sm` breakpoints, `AppListTable` switches to `_MobileListTable` + per-module `mobileItemBuilder`. Patient mobile rows stack hospital, MRN, age/sex, phone, visit, status, alerts, and badges — most of which belong in the detail dialog.
+
+| Symptom | Likely cause |
+|---------|----------------|
+| One patient fills most of the viewport | `AppListItemRow.details` lists every desktop column |
+| Cards feel cluttered vs desktop table | No shared mobile density contract |
 
 ---
 
 ## Target UX
 
-### A. Intelligent submenu positioning
+### A. Single shared component — toolbar only inside `AppListTable`
 
-Position nested menus **relative to available viewport space**, not a fixed offset that ignores layout.
+`AppListTable` (`frontend/lib/shared/components/app_list_table.dart`) is the **only** table/list primitive for module worklists ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc) forbids hand-rolled tables).
 
-| Viewport situation | Behavior |
-|--------------------|----------|
-| Room to the **right** of the parent menu (typical desktop) | Flyout opens **flush to the right edge** of the parent panel, vertically aligned with the **Notifications** row |
-| Insufficient space on the right | Flip flyout to the **left** of the parent menu |
-| Insufficient space below | Shift vertically so the submenu stays fully on-screen |
-| Narrow (`xs` / `sm`) | Acceptable stacked pattern, but still **anchored to the trigger** — never centered in the page body |
+**Layout contract:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ AppWorkspace / AppWorkspaceDetailPanel                      │
+│   title + description (section copy lives HERE only)        │
+├─────────────────────────────────────────────────────────────┤
+│ AppListTable                                                │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │ TOOLBAR: AppSearchBar                               │   │
+│   │   • search input (global, all visible fields)       │   │
+│   │   • filter → advanced-filter modal / filter sheet   │   │
+│   │   • settings → column-visibility dialog             │   │
+│   └─────────────────────────────────────────────────────┘   │
+│   TABLE (md+)  or  COMPACT LIST (xs/sm)                     │
+│   pagination footer                                         │
+└─────────────────────────────────────────────────────────────┘
+```
 
 **Rules:**
 
-- Parent and child menus should **share a border edge** or overlap by 1px so they read as one control.
-- Maximum gap between parent menu and flyout: **0–4 logical px** (theme `spacing.xs` or less).
-- Do **not** let `crossAxisUnconstrained` or default `MenuAnchor` placement push the flyout into the worklist center.
-- Prefer a shared helper (e.g. extend `_ToolbarOverflowMenu` or extract `AppToolbarNestedMenu`) so every workspace gets the same behavior.
+- **Remove** `title` and `description` from every `AppListTable` call site. Section titles belong on `AppWorkspace` or `AppWorkspaceDetailPanel` only.
+- Stop rendering `_ListTableTitle` in `AppListTable` (deprecate the props or ignore them with a debug assert in tests). Do not duplicate panel headers inside the table.
+- Toolbar is **only** `AppSearchBar` (via `AppListTableSearch.buildSearchBar` + column settings action). No extra headings between toolbar and data.
+- Default **five visible data columns** (plus `#` index) — already enforced by `_maxVisibleTableColumns` / `appListTableDefaultVisibleColumns`; keep this as the default, with settings dialog exposing the full `columnChoices` set.
 
-**Primary files:** `frontend/lib/shared/layout/app_workspace_toolbar.dart` (`_ToolbarOverflowMenu`, `SubmenuButton`, `MenuAnchor`).
+**Golden references:**
 
-### B. Polished menu chrome
-
-Apply existing design-system tokens — no ad-hoc colors or spacing in feature pages.
-
-| Element | Spec |
+| Pattern | File |
 |---------|------|
-| Menu panel | `colorScheme.surface`, `outlineVariant` border, `theme.radius.sm` — match current `menuStyle` but tune width to content (`min` ~240, `max` ~320 unless labels require more) |
-| Row height | Consistent `48` tap target; horizontal padding `theme.spacing.sm` |
-| Icons | `AppMenuItemLabel` with tone-colored icons (reuse `workspaceStatusToneAccentColor`) |
-| Trailing affordance | **Single** `Icons.chevron_right` on parent submenu rows — remove duplicate |
-| Active filter | When a notification filter is active, show subtle selected background (`colorScheme.secondaryContainer` or existing menu selected state) on that submenu row |
-| Hover / focus | Visible focus ring for keyboard users; pointer cursor on all interactive menu rows |
+| No duplicate table title; search toolbar only | `patient_registry_page.dart` → `_PatientList` |
+| Title/description on parent panel, not table | `lab_workspace_page.dart` → `AppWorkspaceDetailPanel` + `AppListTable` |
+| Column settings + advanced filter modal | `patient_registry_page.dart`, `lab_workspace_page.dart` |
 
-### C. More actions trigger — attention indicator
+**Migrate call sites** that still pass `title` / `description` into `AppListTable`:
 
-When `visibleWorkspaceSummaryNotifications` is non-empty, the **More actions** trigger must show a **visual pending indicator**:
+`clinical_workspace_page.dart`, `opd_workspace_page.dart`, `physiotherapy_workspace_page.dart`, `claims_workspace_page.dart`, `discharge_workspace_page.dart`, `mortuary_workspace_page.dart`, `integrations_workspace_page.dart`, and any other grep hit for `AppListTable` + `title:`.
 
-| Option | When to use |
-|--------|-------------|
-| **Red dot** (small badge, top-right of icon button) | At least one notification with `count > 0` — preferred default |
-| Dot only, no number on trigger | Keeps the ⋮ icon clean; counts live in the submenu |
+### B. Desktop table — tighter, more legible
 
-**Rules:**
+Adjust `_DesktopListTable` only (centralized — no per-module table styling):
 
-- Dot uses `theme.statusColors.error` or `colorScheme.error` — consistent with app notification badges (e.g. shell bell).
-- Dot hidden when all notification counts are zero (same visibility rule as today).
-- Accessible: `Semantics` / tooltip e.g. “More actions — N items need attention” (localized via `app_en.arb`).
-- Reuse or extend `AppButton.popupMenuTrigger` rather than one-off decoration in each workspace.
+| Token | Current | Target direction |
+|-------|---------|------------------|
+| `headingRowHeight` | 52 / 56 | Slightly shorter; headers must not dominate |
+| `dataRowMinHeight` / `dataRowMaxHeight` | 40–64 / 38–56 | Reduce vertical padding ~15–20%; rows should fit 2-line cells without excess air |
+| Header typography | `labelMedium`, w800 | Bump to `titleSmall` or `labelLarge`; active sort column uses `colorScheme.primary` + underline or weight step |
+| Cell typography | `bodyMedium`, w500 | Keep; ensure contrast with headers |
 
-### D. Notifications parent row — aggregate badge
+**Sorting:**
 
-On the **Notifications** submenu parent row, show a **total count badge** summing all visible notification `count` values:
+- On first build, default `_sortColumnKey` to the **first sortable data column** (skip `#`). If none sortable, leave unsorted.
+- Click header: toggle ascending ↔ descending on same column; switch column resets to ascending.
+- Active sort must be obvious: primary color label, directional arrow (`arrow_upward` / `arrow_downward`), `Semantics.selected`, and tooltip (`Sorted by …, ascending`).
+- Sort applies to **filtered** items before pagination (existing `_sortedItems` path).
 
-```
-[ bell icon ]  Notifications ……………………  [ 4 ]
-                                      ▸
-```
+### C. Search — instant client filter, no false loading
 
-| Rule | Detail |
-|------|--------|
-| Total | `sum` of counts for all `visibleWorkspaceSummaryNotifications` |
-| Format | `AppFormatters.compactNumber` (same as row badges) |
-| Style | Reuse `AppMenuCountBadge` with neutral or `info` tone, **or** extract `AppMenuAggregateCountBadge` if styling differs from per-row badges |
-| Zero | Parent row hidden entirely when total is 0 (existing behavior) |
+| Behavior | Spec |
+|----------|------|
+| Client-side search | `AppListTable` already filters via `ValueListenableBuilder` on `search.controller` + `matcher`. Results must update on every keystroke with **no** debounce inside the shared component. |
+| `isLoading` | Use **only** for initial page load or explicit server refresh (skeleton / `loadingBuilder`). **Never** set `isLoading` from search `onChanged` or while filtering in-memory data. |
+| `AppListTableSearch.isLoading` | Reserve for remote/search-as-you-type API calls; do not wire to routine list refresh flags. |
+| Global search | `matcher` must search across all user-meaningful fields (name, IDs, phone, status labels — not raw UUIDs). Multi-token AND matching stays (`_tableSearchTokens`). |
+| Empty search results | Show module `emptyBuilder` or a dedicated “no matches” state — not a loading spinner. |
+| Server-backed lists | Debounce **network** queries in the controller ([`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc)); keep already-fetched rows visible while refetching (subtle toolbar indicator, not full-table replacement). |
 
-### E. Compact workspace header / toolbar
+**Audit:** grep `isLoading: state.isRefreshing` on `AppListTable` and split into `isLoading` (first load) vs inline refresh indicator.
 
-Reduce wasted vertical space in `AppWorkspaceHeader` and related spacing **without** breaking touch targets on mobile.
+### D. Mobile list — compact summary rows
 
-| Area | Direction |
-|------|-----------|
-| `AppWorkspaceHeader` padding | Tighten `bottom` padding when `compact: true`; audit top padding inherited from `ResponsivePage` |
-| Title row | Keep `compactHeader: true` default; ensure title + toolbar fit on one line on `md+` |
-| Gap to filters/worklist | Use `ResponsiveSpacing.compactContentGapFor` — do not add extra `SizedBox` in feature pages |
-| Toolbar action row | Preserve minimum 44–48px hit areas; reduce **margins** and **inter-row** gaps, not tap targets |
+On `AppListTableDisplayMode.adaptive`, `xs` / `sm` → `_MobileListTable`; `md+` → `_DesktopListTable` ([`app_breakpoints.dart`](frontend/lib/core/responsive/app_breakpoints.dart)).
 
-**Primary files:** `frontend/lib/shared/layout/app_workspace.dart` (`AppWorkspaceHeader`, `AppWorkspace`), `frontend/lib/shared/layout/responsive_spacing.dart`, `frontend/lib/shared/layout/responsive_page.dart`.
+**Mobile row contract** (enforce via shared helpers, not one-off layouts):
+
+| Show on list row | Hide (detail dialog / drawer) |
+|------------------|-------------------------------|
+| Primary label (patient name, case title) | Secondary IDs beyond one display ref |
+| One identifier line (MRN / order no.) | Full ID chains (`PAT… \| ENC… \| LAB…`) |
+| Highest-priority status or alert chip | Visit history, billing, full alert breakdown |
+| Optional: one contextual badge (e.g. OPD / Emergency) | Facility name when single-facility tenant |
+
+**Implementation:**
+
+- Prefer `AppListItemRow` / `AppListItemText` from `app_list_item_text.dart` with **at most 3 `details` widgets** (excluding title/subtitle).
+- Trim `_PatientMobileRow`, lab mobile builders, OPD `_OpdMobileRow`, etc., to the contract; full data on `onRowSelected` → existing detail dialog.
+- Reduce mobile vertical padding in `_NumberedMobileListItem` if rows still feel tall after content trim.
+- Keep row tap target ≥ 48dp; chevron trailing affordance unchanged.
+
+### E. Column settings and filters (unchanged behavior, uniform placement)
+
+| Control | Behavior |
+|---------|----------|
+| **Filter** | `showAdvancedFilterButton` → module-specific filter modal (`AppDialog` / `AppSearchBar` filter sheet). Active state when `hasActiveFilters`. |
+| **Settings** | Gear icon → `_ColumnVisibilityDialog` / `AppListTableColumnVisibilityController.settingsAction`. Default visible set = first five choosable columns. `alwaysVisible` columns cannot be hidden. |
+| **Pagination** | `_AppPaginationControls` footer; disabled while client-side search narrows the current page (`disablePagination` path). |
 
 ---
 
 ## Scope & constraints
 
-- **Shared components only** — changes live in `app_workspace_toolbar.dart`, `app_workspace.dart`, `app_button.dart`, `app_menu_item_label.dart`, and shared badge helpers. Do **not** duplicate menu logic in individual `*_workspace_page.dart` files.
-- **No behavior regression** — notification taps still apply the same worklist filters; zero-count rows still hidden.
-- **Follow project rules:** `frontend/.cursor/ui-workspace.mdc`, `design-system.mdc`, `localization_i18n.mdc` (new strings in `app_en.arb`).
-- **Uniform** — OPD, Lab, Billing, ICU, and all other workspaces using `appWorkspaceToolbarWithLabels` must look identical without per-module overrides.
+- **Shared component first** — all visual/density/sort/search behavior changes live in `app_list_table.dart` (+ small shared mobile helpers). Migrate call sites only to remove duplicate titles and slim `mobileItemBuilder`s.
+- **No new table abstraction** — do not fork `DataTable` per module ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc)).
+- **No behavior regression** — pagination, selection, column persistence, filter payloads, and API queries unchanged.
+- **Follow project rules:** `frontend/.cursor/components.mdc`, `design-system.mdc`, `ui-patterns.mdc`, `ui-feedback.mdc`, `localization_i18n.mdc`.
+- **Localize** any new user-facing strings via `app_en.arb`; Emergency hard-coded strings are out of scope unless touched incidentally.
+- **Theme tokens only** — no hard-coded colors or ad-hoc `TextStyle` in feature pages.
 
 ---
 
 ## Acceptance criteria
 
-1. Opening **More actions** on OPD shows a menu anchored to the ⋮ button in the header toolbar — not floating over the table center.
-2. Hovering/expanding **Notifications** opens a flyout **immediately adjacent** to the parent menu (right or left based on space).
-3. **Notifications** parent row has exactly **one** chevron and displays the **aggregate count** badge.
-4. **More actions** ⋮ shows a **red dot** when any notification count > 0; dot disappears when all counts are zero.
-5. Workspace header is **visibly shorter** than before on desktop while remaining usable on mobile.
-6. Existing tests in `frontend/test/shared/layout/app_workspace_toolbar_test.dart` pass; add tests for dot visibility, aggregate badge, and submenu positioning where feasible.
-7. Manual smoke on `127.0.0.1:5201` across OPD + two other modules confirms uniform appearance.
+1. **Patients** (desktop): table shows search toolbar only (no inner “Patient registry” title); headers legible; default sort on first data column; active sort visually obvious.
+2. **Patients** (mobile ~463px): each row shows name + one ID + one status/alert max; tap opens detail dialog with full fields.
+3. **Lab** worklist: no duplicate panel/table titles; dense multi-line cells remain readable at reduced row height.
+4. **Emergency** board: empty state unchanged; when populated, matches toolbar + table/list contract.
+5. **Search typing** on Patients (client filter): rows filter instantly; table body **never** swaps to loading skeleton while typing.
+6. Grep: **zero** `AppListTable` call sites pass non-null `title` or `description` (section copy on parent panel only).
+7. `frontend/test/shared/components/app_list_table_test.dart` passes; add tests for default sort column, sort indicator state, and “search does not show loading overlay.”
+8. Manual smoke on `127.0.0.1:5201` at **463px**, **768px**, and **1280px** widths for Patients + Lab.
 
 ---
 
 ## Out of scope (this pass)
 
-- Changing what each notification count represents or filter logic in module controllers.
-- Reintroducing inline summary card grids.
-- Shell-level notification bell (`responsive_shell_scaffold.dart`) — only workspace toolbar More actions is in scope.
+- Replacing `DataTable` with a custom painted grid.
+- Server-side search API redesign or new backend endpoints.
+- `AppWorkspaceDetailDrawer` layout changes.
+- Emergency module localization (unless required by compile after title removal).
+- Pagination page-size preferences or user-saved column presets beyond current dialog.
+- Non-worklist tables (report previews, admin pickers, inline forms).

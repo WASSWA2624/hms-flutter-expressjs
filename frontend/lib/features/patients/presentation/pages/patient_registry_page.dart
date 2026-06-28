@@ -958,7 +958,6 @@ class _PatientList extends ConsumerWidget {
       ],
       mobileItemBuilder: (_, Patient patient) => _PatientMobileRow(
         patient: patient,
-        showFacilityLabel: showFacilityLabel,
       ),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
@@ -1268,13 +1267,9 @@ class _NextActionCell extends StatelessWidget {
 }
 
 class _PatientMobileRow extends StatelessWidget {
-  const _PatientMobileRow({
-    required this.patient,
-    required this.showFacilityLabel,
-  });
+  const _PatientMobileRow({required this.patient});
 
   final Patient patient;
-  final bool showFacilityLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1284,22 +1279,12 @@ class _PatientMobileRow extends StatelessWidget {
     return AppListItemRow(
       leadingIcon: Icons.account_circle_outlined,
       title: patient.effectiveDisplayName,
+      subtitle: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
       details: <Widget>[
-        if (showFacilityLabel && patient.facilityLabel != null)
-          Text(patient.facilityLabel!),
-        Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
-        _AgeSexText(patient: patient),
-        if (patient.primaryPhone != null || patient.primaryEmail != null)
-          Text(patient.primaryPhone ?? patient.primaryEmail!),
-        _VisitContextCell(patient: patient),
-        _patientActiveStatusText(context, patient.isActive),
-        _PatientAlertCell(patient: patient),
-        if (patient.requiresCompletion)
-          AppStatusText(
-            label: l10n.patientsRegistrationIncompleteValue,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.error_outline,
-          ),
+        if (patient.hasAllergyAlert || patient.requiresCompletion)
+          _PatientAlertCell(patient: patient)
+        else
+          _patientActiveStatusText(context, patient.isActive),
       ],
       trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
     );

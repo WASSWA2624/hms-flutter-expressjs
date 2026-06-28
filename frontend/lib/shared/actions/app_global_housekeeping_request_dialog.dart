@@ -6,10 +6,10 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 Future<void> showAppGlobalHousekeepingRequestDialog({
   required BuildContext context,
@@ -25,11 +25,10 @@ Future<void> showAppGlobalHousekeepingRequestDialog({
     );
   }
 
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(context.l10n.housekeepingRequestMaintenanceDialogTitle),
-    icon: const Icon(Icons.cleaning_services_outlined),
-    content: const _AppGlobalHousekeepingRequestDialogBody(),
+    barrierDismissible: false,
+    builder: (_) => const _AppGlobalHousekeepingRequestDialog(),
   );
 
   if (saved == true) {
@@ -42,21 +41,22 @@ Future<void> showAppGlobalHousekeepingRequestDialog({
   }
 }
 
-class _AppGlobalHousekeepingRequestDialogBody extends ConsumerStatefulWidget {
-  const _AppGlobalHousekeepingRequestDialogBody();
+class _AppGlobalHousekeepingRequestDialog extends ConsumerStatefulWidget {
+  const _AppGlobalHousekeepingRequestDialog();
 
   @override
-  ConsumerState<_AppGlobalHousekeepingRequestDialogBody> createState() =>
-      _AppGlobalHousekeepingRequestDialogBodyState();
+  ConsumerState<_AppGlobalHousekeepingRequestDialog> createState() =>
+      _AppGlobalHousekeepingRequestDialogState();
 }
 
-class _AppGlobalHousekeepingRequestDialogBodyState
-    extends ConsumerState<_AppGlobalHousekeepingRequestDialogBody> {
+class _AppGlobalHousekeepingRequestDialogState
+    extends ConsumerState<_AppGlobalHousekeepingRequestDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
   String? _facilityId;
   String? _assetId;
   bool _isSubmitting = false;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -69,45 +69,76 @@ class _AppGlobalHousekeepingRequestDialogBodyState
     final AsyncValue<Result<HousekeepingWorkspaceState>> workspace = ref.watch(
       housekeepingWorkspaceControllerProvider,
     );
+    final AppLocalizations l10n = context.l10n;
 
-    return workspace.when(
-      loading: () => AppStateView(
-        variant: AppStateViewVariant.loading,
-        title: context.l10n.housekeepingLoadingTitle,
-        body: context.l10n.housekeepingLoadingBody,
-      ),
-      error: (_, _) => AppStateView(
-        variant: AppStateViewVariant.error,
-        title: context.l10n.errorNotFoundTitle,
-        body: context.l10n.errorNotFoundMessage,
-        action: AppButton.primary(
-          label: context.l10n.commonRetryActionLabel,
-          onPressed: () {
-            ref
-                .read(housekeepingWorkspaceControllerProvider.notifier)
-                .refresh();
-          },
+    return AppDialog(
+      title: Text(l10n.housekeepingRequestMaintenanceDialogTitle),
+      icon: const Icon(Icons.cleaning_services_outlined),
+      scrollable: true,
+      closeEnabled: !_isSubmitting,
+      content: workspace.when(
+        loading: () => AppStateView(
+          variant: AppStateViewVariant.loading,
+          title: l10n.housekeepingLoadingTitle,
+          body: l10n.housekeepingLoadingBody,
         ),
-      ),
-      data: (Result<HousekeepingWorkspaceState> result) {
-        return switch (result) {
-          ResultFailure<HousekeepingWorkspaceState>() => AppStateView(
-            variant: AppStateViewVariant.error,
-            title: context.l10n.errorNotFoundTitle,
-            body: context.l10n.errorNotFoundMessage,
+        error: (_, _) => AppStateView(
+          variant: AppStateViewVariant.error,
+          title: l10n.errorNotFoundTitle,
+          body: l10n.errorNotFoundMessage,
+          action: AppButton.primary(
+            label: l10n.commonRetryActionLabel,
+            onPressed: () {
+              ref
+                  .read(housekeepingWorkspaceControllerProvider.notifier)
+                  .refresh();
+            },
           ),
-          ResultSuccess<HousekeepingWorkspaceState>(value: final state) =>
-            _buildForm(context, state),
-        };
-      },
+        ),
+        data: (Result<HousekeepingWorkspaceState> result) {
+          return switch (result) {
+            ResultFailure<HousekeepingWorkspaceState>() => AppStateView(
+              variant: AppStateViewVariant.error,
+              title: l10n.errorNotFoundTitle,
+              body: l10n.errorNotFoundMessage,
+            ),
+            ResultSuccess<HousekeepingWorkspaceState>(value: final state) =>
+              _buildForm(context, state),
+          };
+        },
+      ),
+      actions: _buildActions(context),
     );
   }
 
+  List<Widget> _buildActions(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return <Widget>[
+      AppButton.tertiary(
+        label: l10n.commonCancelActionLabel,
+        enabled: !_isSubmitting,
+        onPressed: _isSubmitting
+            ? null
+            : () => Navigator.of(context).maybePop(),
+      ),
+      AppButton.primary(
+        label: l10n.housekeepingRequestMaintenanceSubmitAction,
+        leadingIcon: Icons.build_circle_outlined,
+        isLoading: _isSubmitting,
+        onPressed: _isSubmitting ? null : _submit,
+      ),
+    ];
+  }
+
   Widget _buildForm(BuildContext context, HousekeepingWorkspaceState state) {
-    final l10n = context.l10n;
+    final AppLocalizations l10n = context.l10n;
 
     return AppFormShell(
       formKey: _formKey,
+      enabled: !_isSubmitting,
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         AppSelectField<String>.searchable(
           value: _facilityId,
@@ -133,14 +164,6 @@ class _AppGlobalHousekeepingRequestDialogBodyState
             l10n.housekeepingDescriptionRequiredMessage,
           ),
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.housekeepingRequestMaintenanceSubmitAction,
-          submitIcon: Icons.build_circle_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: _submit,
-        ),
       ],
     );
   }
@@ -150,7 +173,10 @@ class _AppGlobalHousekeepingRequestDialogBodyState
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
     final AppFailure? failure = await ref
         .read(housekeepingWorkspaceControllerProvider.notifier)
         .createMaintenanceRequest(
@@ -167,15 +193,15 @@ class _AppGlobalHousekeepingRequestDialogBodyState
       return;
     }
 
-    setState(() => _isSubmitting = false);
-    if (failure != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
-      );
+    if (failure == null) {
+      Navigator.of(context).pop(true);
       return;
     }
 
-    Navigator.of(context).pop(true);
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }
 

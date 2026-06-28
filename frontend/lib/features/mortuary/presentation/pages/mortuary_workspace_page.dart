@@ -282,7 +282,6 @@ class _MortuaryWorklist extends StatelessWidget {
           onClear: () {
             unawaited(controller.applySearch(''));
           },
-          isLoading: state.isRefreshing,
           showAdvancedFilterButton: true,
           advancedFilterButtonLabel: l10n.mortuaryFiltersLabel,
           advancedFilterTitle: l10n.mortuaryFiltersLabel,

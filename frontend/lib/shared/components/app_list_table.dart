@@ -106,6 +106,17 @@ int appListTableCompareNumber(num? left, num? right) {
   return left.compareTo(right);
 }
 
+/// Whether [AppListTable.isLoading] should replace the table body with a skeleton.
+///
+/// Keeps already-fetched rows visible during background refresh; only the initial
+/// empty load shows the full-table loading state.
+bool appListTableShowsInitialLoading({
+  required bool isLoading,
+  required List<dynamic> visibleItems,
+}) {
+  return isLoading && visibleItems.isEmpty;
+}
+
 class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
   List<AppListTableColumn<T>> _availableColumns = <AppListTableColumn<T>>[];
   Set<String> _visibleColumnKeys = <String>{};
@@ -428,7 +439,13 @@ class AppListTable<T> extends StatefulWidget {
     this.search,
     this.searchListenable,
     this.searchMatcher,
+    @Deprecated(
+      'Section titles belong on AppWorkspace or AppWorkspaceDetailPanel only.',
+    )
     this.title,
+    @Deprecated(
+      'Section descriptions belong on AppWorkspace or AppWorkspaceDetailPanel only.',
+    )
     this.description,
     this.columnVisibilityLabel,
     this.columnVisibilityTitle,
@@ -496,6 +513,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       _handleColumnVisibilityChanged,
     );
     _syncVisibleColumns();
+    _ensureDefaultSortColumn();
   }
 
   @override
@@ -515,6 +533,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         oldWidget.columnVisibilityController !=
             widget.columnVisibilityController) {
       _syncVisibleColumns();
+      _ensureDefaultSortColumn();
     }
   }
 
@@ -533,6 +552,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             false) {
       _sortColumnKey = null;
       _sortAscending = true;
+      _ensureDefaultSortColumn();
     }
     if (mounted) {
       setState(() {});
@@ -591,10 +611,20 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       disablePagination: data.disablePagination,
     );
     final Widget? toolbar = _buildToolbar(context, searchBar);
-    final Widget? title = _buildTitle(context);
     final ThemeData theme = Theme.of(context);
 
-    if (toolbar == null && title == null && footer == null) {
+    assert(() {
+      if ((widget.title?.trim().isNotEmpty ?? false) ||
+          (widget.description?.trim().isNotEmpty ?? false)) {
+        debugPrint(
+          'AppListTable title/description are deprecated. '
+          'Move section copy to AppWorkspace or AppWorkspaceDetailPanel.',
+        );
+      }
+      return true;
+    }());
+
+    if (toolbar == null && footer == null) {
       return content;
     }
 
@@ -607,10 +637,6 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (title != null) ...<Widget>[
-              title,
-              SizedBox(height: theme.spacing.xs),
-            ],
             if (toolbar != null) ...<Widget>[
               toolbar,
               SizedBox(height: theme.spacing.xs),
@@ -674,7 +700,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return widget.errorBuilder!(context, resolvedError);
     }
 
-    if (widget.isLoading) {
+    if (appListTableShowsInitialLoading(
+      isLoading: widget.isLoading,
+      visibleItems: visibleItems,
+    )) {
       return widget.loadingBuilder?.call(context) ??
           const _DefaultListTableLoading();
     }
@@ -828,17 +857,6 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     return sortedItems;
   }
 
-  Widget? _buildTitle(BuildContext context) {
-    final String? title = widget.title;
-    final String? description = widget.description;
-    if ((title == null || title.trim().isEmpty) &&
-        (description == null || description.trim().isEmpty)) {
-      return null;
-    }
-
-    return _ListTableTitle(title: title, description: description);
-  }
-
   Widget? _buildToolbar(BuildContext context, Widget? searchBar) {
     return searchBar;
   }
@@ -935,6 +953,21 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (sortColumnKey != null && !_visibleColumnKeys.contains(sortColumnKey)) {
       _sortColumnKey = null;
       _sortAscending = true;
+      _ensureDefaultSortColumn();
+    }
+  }
+
+  void _ensureDefaultSortColumn() {
+    if (_sortColumnKey != null) {
+      return;
+    }
+
+    for (final AppListTableColumn<T> column in _visibleColumns) {
+      if (column.isSortable) {
+        _sortColumnKey = column.key;
+        _sortAscending = true;
+        return;
+      }
     }
   }
 
@@ -1034,43 +1067,6 @@ List<String> _tableSearchTokens(String query) {
       .split(' ')
       .where((String token) => token.isNotEmpty)
       .toList(growable: false);
-}
-
-class _ListTableTitle extends StatelessWidget {
-  const _ListTableTitle({required this.title, required this.description});
-
-  final String? title;
-  final String? description;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String? title = this.title?.trim();
-    final String? description = this.description?.trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (title != null && title.isNotEmpty)
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        if (description != null && description.isNotEmpty)
-          Text(
-            description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 class _ColumnVisibilityDialog<T> extends StatefulWidget {
@@ -1227,8 +1223,8 @@ class _AppPaginationControls extends StatelessWidget {
             iconOnly: true,
             leadingIcon: Icons.chevron_left,
             label: previousPageLabel,
-
             semanticLabel: previousPageLabel,
+            tooltip: previousPageLabel,
             onPressed: hasPreviousPage && onPageChanged != null
                 ? () {
                     onPageChanged!(pageRequest.previous());
@@ -1239,8 +1235,8 @@ class _AppPaginationControls extends StatelessWidget {
             iconOnly: true,
             leadingIcon: Icons.chevron_right,
             label: nextPageLabel,
-
             semanticLabel: nextPageLabel,
+            tooltip: nextPageLabel,
             onPressed: hasNextPage && onPageChanged != null
                 ? () {
                     onPageChanged!(pageRequest.next());
@@ -1328,7 +1324,7 @@ class _NumberedMobileListItem extends StatelessWidget {
           width: _rowNumberColumnWidth,
           child: Padding(
             padding: EdgeInsets.only(
-              top: theme.spacing.sm,
+              top: theme.spacing.xs,
               left: theme.spacing.xs,
               right: theme.spacing.xs,
             ),
@@ -1451,19 +1447,19 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final double columnSpacing = widget.compact
         ? theme.spacing.md
         : theme.spacing.xl;
-    final double rowMinHeight = widget.compact ? 38 : 40;
-    final double rowMaxHeight = widget.compact ? 56 : 64;
+    final double rowMinHeight = widget.compact ? 32 : 34;
+    final double rowMaxHeight = widget.compact ? 48 : 52;
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
       horizontalMargin: horizontalMargin,
       columnSpacing: columnSpacing,
-      headingRowHeight: widget.compact ? 52 : 56,
+      headingRowHeight: widget.compact ? 44 : 48,
       dataRowMinHeight: rowMinHeight,
       dataRowMaxHeight: rowMaxHeight,
-      headingTextStyle: theme.textTheme.labelMedium?.copyWith(
+      headingTextStyle: theme.textTheme.labelLarge?.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
       ),
       dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
         color: colorScheme.onSurface,
@@ -1586,9 +1582,9 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double maxWidth = compact ? 132 : 164;
-    final TextStyle? headerStyle = theme.textTheme.labelMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w800,
+    final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
+      color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      fontWeight: isSorted ? FontWeight.w800 : FontWeight.w700,
     );
 
     if (!column.isSortable) {

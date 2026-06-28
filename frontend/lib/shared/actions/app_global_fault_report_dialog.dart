@@ -6,10 +6,10 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/controllers/biomedical_workspace_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 Future<void> showAppGlobalFaultReportDialog({
   required BuildContext context,
@@ -25,11 +25,10 @@ Future<void> showAppGlobalFaultReportDialog({
     );
   }
 
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(context.l10n.biomedicalFaultDialogTitle),
-    icon: const Icon(Icons.report_problem_outlined),
-    content: const _AppGlobalFaultReportDialogBody(),
+    barrierDismissible: false,
+    builder: (_) => const _AppGlobalFaultReportDialog(),
   );
 
   if (saved == true) {
@@ -42,16 +41,16 @@ Future<void> showAppGlobalFaultReportDialog({
   }
 }
 
-class _AppGlobalFaultReportDialogBody extends ConsumerStatefulWidget {
-  const _AppGlobalFaultReportDialogBody();
+class _AppGlobalFaultReportDialog extends ConsumerStatefulWidget {
+  const _AppGlobalFaultReportDialog();
 
   @override
-  ConsumerState<_AppGlobalFaultReportDialogBody> createState() =>
-      _AppGlobalFaultReportDialogBodyState();
+  ConsumerState<_AppGlobalFaultReportDialog> createState() =>
+      _AppGlobalFaultReportDialogState();
 }
 
-class _AppGlobalFaultReportDialogBodyState
-    extends ConsumerState<_AppGlobalFaultReportDialogBody> {
+class _AppGlobalFaultReportDialogState
+    extends ConsumerState<_AppGlobalFaultReportDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _reportedNameController = TextEditingController();
   final TextEditingController _symptomsController = TextEditingController();
@@ -63,6 +62,7 @@ class _AppGlobalFaultReportDialogBodyState
   String? _severity;
   bool _patientSafetyRisk = false;
   bool _isSubmitting = false;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -78,44 +78,75 @@ class _AppGlobalFaultReportDialogBodyState
     final AsyncValue<Result<BiomedicalWorkspaceState>> workspace = ref.watch(
       biomedicalWorkspaceControllerProvider,
     );
+    final AppLocalizations l10n = context.l10n;
 
-    return workspace.when(
-      loading: () => AppStateView(
-        variant: AppStateViewVariant.loading,
-        title: context.l10n.biomedicalLoadingTitle,
-        body: context.l10n.biomedicalLoadingBody,
-      ),
-      error: (_, _) => AppStateView(
-        variant: AppStateViewVariant.error,
-        title: context.l10n.errorNotFoundTitle,
-        body: context.l10n.errorNotFoundMessage,
-        action: AppButton.primary(
-          label: context.l10n.commonRetryActionLabel,
-          onPressed: () {
-            ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh();
-          },
+    return AppDialog(
+      title: Text(l10n.biomedicalFaultDialogTitle),
+      icon: const Icon(Icons.report_problem_outlined),
+      scrollable: true,
+      closeEnabled: !_isSubmitting,
+      content: workspace.when(
+        loading: () => AppStateView(
+          variant: AppStateViewVariant.loading,
+          title: l10n.biomedicalLoadingTitle,
+          body: l10n.biomedicalLoadingBody,
         ),
-      ),
-      data: (Result<BiomedicalWorkspaceState> result) {
-        return switch (result) {
-          ResultFailure<BiomedicalWorkspaceState>() => AppStateView(
-            variant: AppStateViewVariant.error,
-            title: context.l10n.errorNotFoundTitle,
-            body: context.l10n.errorNotFoundMessage,
+        error: (_, _) => AppStateView(
+          variant: AppStateViewVariant.error,
+          title: l10n.errorNotFoundTitle,
+          body: l10n.errorNotFoundMessage,
+          action: AppButton.primary(
+            label: l10n.commonRetryActionLabel,
+            onPressed: () {
+              ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh();
+            },
           ),
-          ResultSuccess<BiomedicalWorkspaceState>(value: final state) =>
-            _buildForm(context, state),
-        };
-      },
+        ),
+        data: (Result<BiomedicalWorkspaceState> result) {
+          return switch (result) {
+            ResultFailure<BiomedicalWorkspaceState>() => AppStateView(
+              variant: AppStateViewVariant.error,
+              title: l10n.errorNotFoundTitle,
+              body: l10n.errorNotFoundMessage,
+            ),
+            ResultSuccess<BiomedicalWorkspaceState>(value: final state) =>
+              _buildForm(context, state),
+          };
+        },
+      ),
+      actions: _buildActions(context),
     );
   }
 
+  List<Widget> _buildActions(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return <Widget>[
+      AppButton.tertiary(
+        label: l10n.commonCancelActionLabel,
+        enabled: !_isSubmitting,
+        onPressed: _isSubmitting
+            ? null
+            : () => Navigator.of(context).maybePop(),
+      ),
+      AppButton.primary(
+        label: l10n.biomedicalFaultDialogTitle,
+        leadingIcon: Icons.check_outlined,
+        isLoading: _isSubmitting,
+        onPressed: _isSubmitting ? null : _submit,
+      ),
+    ];
+  }
+
   Widget _buildForm(BuildContext context, BiomedicalWorkspaceState state) {
-    final l10n = context.l10n;
+    final AppLocalizations l10n = context.l10n;
     final BiomedicalLookupData lookups = state.workbench.lookups;
 
     return AppFormShell(
       formKey: _formKey,
+      enabled: !_isSubmitting,
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         AppSelectField<String>.searchable(
           value: _facilityId,
@@ -170,14 +201,6 @@ class _AppGlobalFaultReportDialogBodyState
             setState(() => _patientSafetyRisk = value);
           },
         ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.biomedicalFaultDialogTitle,
-          submitIcon: Icons.check_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: _submit,
-        ),
       ],
     );
   }
@@ -187,7 +210,10 @@ class _AppGlobalFaultReportDialogBodyState
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
     final AppFailure? failure = await ref
         .read(biomedicalWorkspaceControllerProvider.notifier)
         .createFaultReport(<String, Object?>{
@@ -208,15 +234,15 @@ class _AppGlobalFaultReportDialogBodyState
       return;
     }
 
-    setState(() => _isSubmitting = false);
-    if (failure != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
-      );
+    if (failure == null) {
+      Navigator.of(context).pop(true);
       return;
     }
 
-    Navigator.of(context).pop(true);
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }
 

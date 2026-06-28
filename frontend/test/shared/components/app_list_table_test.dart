@@ -258,6 +258,88 @@ void main() {
     expect(find.text('Noah Echo'), findsNothing);
   });
 
+  testWidgets('AppListTable applies default ascending sort on first build', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(
+      tester.getTopLeft(find.text('Alpha')).dy,
+      lessThan(tester.getTopLeft(find.text('Beta')).dy),
+    );
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+  });
+
+  testWidgets('AppListTable highlights the active sorted column', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    final Finder sortedHeader = find.ancestor(
+      of: find.text('Title'),
+      matching: find.byType(InkWell),
+    );
+    final Text titleHeader = tester.widget<Text>(
+      find.descendant(of: sortedHeader, matching: find.text('Title')),
+    );
+    final Color primary = Theme.of(
+      tester.element(find.byType(DataTable)),
+    ).colorScheme.primary;
+
+    expect(titleHeader.style?.color, primary);
+    expect(find.byTooltip('Sorted by Title, ascending'), findsOneWidget);
+  });
+
+  testWidgets('AppListTable keeps rows visible while isLoading is true', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          isLoading: true,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
   testWidgets('AppListTable toggles sortable text headers', (
     WidgetTester tester,
   ) async {
@@ -278,12 +360,18 @@ void main() {
 
     await tester.tap(find.text('Title'));
     await tester.pump();
-    await tester.tap(find.text('Title'));
-    await tester.pump();
 
     expect(
       tester.getTopLeft(find.text('Beta')).dy,
       lessThan(tester.getTopLeft(find.text('Alpha')).dy),
+    );
+
+    await tester.tap(find.text('Title'));
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.text('Alpha')).dy,
+      lessThan(tester.getTopLeft(find.text('Beta')).dy),
     );
   });
 

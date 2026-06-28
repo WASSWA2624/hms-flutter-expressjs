@@ -1130,8 +1130,15 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _PlanForm extends StatefulWidget {
-  const _PlanForm({required this.submitLabel, this.initial});
+  const _PlanForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.submitLabel,
+    this.initial,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final String submitLabel;
   final SubscriptionItem? initial;
 
@@ -1190,106 +1197,117 @@ class _PlanFormState extends State<_PlanForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _nameController,
-          labelText: _SubscriptionsText.planName,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            _SubscriptionsText.planNameRequired,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _nameController,
+            labelText: _SubscriptionsText.planName,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              _SubscriptionsText.planNameRequired,
+            ),
           ),
-        ),
-        AppTextField(
-          controller: _codeController,
-          labelText: _SubscriptionsText.planCode,
-        ),
-        AppSelectField<String>(
-          value: _tierCode,
-          labelText: _SubscriptionsText.tier,
-          options: _tierOptions(),
-          onChanged: (String? value) => setState(() => _tierCode = value),
-        ),
-        AppSelectField<String>(
-          value: _billingCycle,
-          labelText: _SubscriptionsText.billingCycle,
-          isRequired: true,
-          allowClear: false,
-          options: _billingCycleOptions(),
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _billingCycle = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _priceController,
-          labelText: _SubscriptionsText.price,
-          isRequired: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          validator: AppValidators.pattern(
-            RegExp(r'^\d+(\.\d{1,2})?$'),
-            _SubscriptionsText.amountInvalid,
-            allowEmpty: false,
+          AppTextField(
+            controller: _codeController,
+            labelText: _SubscriptionsText.planCode,
           ),
-        ),
-        AppTextField(
-          controller: _usersController,
-          labelText: _SubscriptionsText.maxUsers,
-          keyboardType: TextInputType.number,
-          validator: _optionalIntegerValidator,
-        ),
-        AppTextField(
-          controller: _facilitiesController,
-          labelText: _SubscriptionsText.maxFacilities,
-          keyboardType: TextInputType.number,
-          validator: _optionalIntegerValidator,
-        ),
-        AppTextField(
-          controller: _storageController,
-          labelText: _SubscriptionsText.maxStorage,
-          keyboardType: TextInputType.number,
-          validator: _optionalIntegerValidator,
-        ),
-        AppTextField(
-          controller: _modulesController,
-          labelText: _SubscriptionsText.maxModules,
-          keyboardType: TextInputType.number,
-          validator: _optionalIntegerValidator,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionPlanDraft(
-                name: _nameController.text.trim(),
-                code: _emptyToNull(_codeController.text),
-                tierCode: _tierCode,
-                price: _priceController.text.trim(),
-                billingCycle: _billingCycle,
-                maxUsers: _emptyToNull(_usersController.text),
-                maxFacilities: _emptyToNull(_facilitiesController.text),
-                maxStorageMb: _emptyToNull(_storageController.text),
-                maxModules: _emptyToNull(_modulesController.text),
-              ),
-            );
-          },
-        ),
-      ],
+          AppSelectField<String>(
+            value: _tierCode,
+            labelText: _SubscriptionsText.tier,
+            options: _tierOptions(),
+            onChanged: (String? value) => setState(() => _tierCode = value),
+          ),
+          AppSelectField<String>(
+            value: _billingCycle,
+            labelText: _SubscriptionsText.billingCycle,
+            isRequired: true,
+            allowClear: false,
+            options: _billingCycleOptions(),
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _billingCycle = value);
+              }
+            },
+          ),
+          AppTextField(
+            controller: _priceController,
+            labelText: _SubscriptionsText.price,
+            isRequired: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: AppValidators.pattern(
+              RegExp(r'^\d+(\.\d{1,2})?$'),
+              _SubscriptionsText.amountInvalid,
+              allowEmpty: false,
+            ),
+          ),
+          AppTextField(
+            controller: _usersController,
+            labelText: _SubscriptionsText.maxUsers,
+            keyboardType: TextInputType.number,
+            validator: _optionalIntegerValidator,
+          ),
+          AppTextField(
+            controller: _facilitiesController,
+            labelText: _SubscriptionsText.maxFacilities,
+            keyboardType: TextInputType.number,
+            validator: _optionalIntegerValidator,
+          ),
+          AppTextField(
+            controller: _storageController,
+            labelText: _SubscriptionsText.maxStorage,
+            keyboardType: TextInputType.number,
+            validator: _optionalIntegerValidator,
+          ),
+          AppTextField(
+            controller: _modulesController,
+            labelText: _SubscriptionsText.maxModules,
+            keyboardType: TextInputType.number,
+            validator: _optionalIntegerValidator,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionPlanDraft(
+              name: _nameController.text.trim(),
+              code: _emptyToNull(_codeController.text),
+              tierCode: _tierCode,
+              price: _priceController.text.trim(),
+              billingCycle: _billingCycle,
+              maxUsers: _emptyToNull(_usersController.text),
+              maxFacilities: _emptyToNull(_facilitiesController.text),
+              maxStorageMb: _emptyToNull(_storageController.text),
+              maxModules: _emptyToNull(_modulesController.text),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _SubscriptionForm extends StatefulWidget {
-  const _SubscriptionForm({required this.state});
+  const _SubscriptionForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.state,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final SubscriptionsWorkspaceState state;
 
   @override
@@ -1306,80 +1324,91 @@ class _SubscriptionFormState extends State<_SubscriptionForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _tenantId,
-          labelText: _SubscriptionsText.tenant,
-          isRequired: true,
-          options: _lookupOptions(widget.state.lookups.tenants),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.tenantRequired,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _tenantId,
+            labelText: _SubscriptionsText.tenant,
+            isRequired: true,
+            options: _lookupOptions(widget.state.lookups.tenants),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.tenantRequired,
+            ),
+            onChanged: (String? value) => setState(() => _tenantId = value),
           ),
-          onChanged: (String? value) => setState(() => _tenantId = value),
-        ),
-        AppSelectField<String>.searchable(
-          value: _planId,
-          labelText: _SubscriptionsText.plan,
-          isRequired: true,
-          options: _lookupOptions(widget.state.lookups.plans),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.planRequired,
+          AppSelectField<String>.searchable(
+            value: _planId,
+            labelText: _SubscriptionsText.plan,
+            isRequired: true,
+            options: _lookupOptions(widget.state.lookups.plans),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.planRequired,
+            ),
+            onChanged: (String? value) => setState(() => _planId = value),
           ),
-          onChanged: (String? value) => setState(() => _planId = value),
-        ),
-        AppSelectField<String>(
-          value: _status,
-          labelText: _SubscriptionsText.status,
-          allowClear: false,
-          options: _subscriptionStatusOptions(),
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.startDate,
-          value: _startDate,
-          onChanged: (DateTime? value) => setState(() => _startDate = value),
-        ),
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.endDate,
-          value: _endDate,
-          onChanged: (DateTime? value) => setState(() => _endDate = value),
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: _SubscriptionsText.activateSubscription,
-          submitIcon: Icons.play_circle_outline,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionDraft(
-                tenantId: _tenantId!,
-                planId: _planId!,
-                status: _status,
-                startDate: _datePayload(_startDate),
-                endDate: _datePayload(_endDate),
-              ),
-            );
-          },
-        ),
-      ],
+          AppSelectField<String>(
+            value: _status,
+            labelText: _SubscriptionsText.status,
+            allowClear: false,
+            options: _subscriptionStatusOptions(),
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _status = value);
+              }
+            },
+          ),
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.startDate,
+            value: _startDate,
+            onChanged: (DateTime? value) => setState(() => _startDate = value),
+          ),
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.endDate,
+            value: _endDate,
+            onChanged: (DateTime? value) => setState(() => _endDate = value),
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.activateSubscription,
+        submitIcon: Icons.play_circle_outline,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionDraft(
+              tenantId: _tenantId!,
+              planId: _planId!,
+              status: _status,
+              startDate: _datePayload(_startDate),
+              endDate: _datePayload(_endDate),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _PlanChangeForm extends StatefulWidget {
-  const _PlanChangeForm({required this.state});
+  const _PlanChangeForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.state,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final SubscriptionsWorkspaceState state;
 
   @override
@@ -1401,76 +1430,87 @@ class _PlanChangeFormState extends State<_PlanChangeForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _targetPlanId,
-          labelText: _SubscriptionsText.targetPlan,
-          isRequired: true,
-          options: _lookupOptions(widget.state.lookups.plans),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.planRequired,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _targetPlanId,
+            labelText: _SubscriptionsText.targetPlan,
+            isRequired: true,
+            options: _lookupOptions(widget.state.lookups.plans),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.planRequired,
+            ),
+            onChanged: (String? value) => setState(() => _targetPlanId = value),
           ),
-          onChanged: (String? value) => setState(() => _targetPlanId = value),
-        ),
-        AppSelectField<String>(
-          value: _changeType,
-          labelText: _SubscriptionsText.changeType,
-          allowClear: false,
-          options: const <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: _SubscriptionChangeTypes.upgrade,
-              label: _SubscriptionsText.upgrade,
-            ),
-            AppSelectOption<String>(
-              value: _SubscriptionChangeTypes.downgrade,
-              label: _SubscriptionsText.downgrade,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _changeType = value);
-            }
-          },
-        ),
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.effectiveAt,
-          value: _effectiveAt,
-          onChanged: (DateTime? value) => setState(() => _effectiveAt = value),
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: _SubscriptionsText.reason,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: _SubscriptionsText.changePlan,
-          submitIcon: Icons.swap_horiz_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionPlanChangeDraft(
-                targetPlanId: _targetPlanId!,
-                changeType: _changeType,
-                effectiveAt: _datePayload(_effectiveAt),
-                reason: _emptyToNull(_reasonController.text),
+          AppSelectField<String>(
+            value: _changeType,
+            labelText: _SubscriptionsText.changeType,
+            allowClear: false,
+            options: const <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _SubscriptionChangeTypes.upgrade,
+                label: _SubscriptionsText.upgrade,
               ),
-            );
-          },
-        ),
-      ],
+              AppSelectOption<String>(
+                value: _SubscriptionChangeTypes.downgrade,
+                label: _SubscriptionsText.downgrade,
+              ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _changeType = value);
+              }
+            },
+          ),
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.effectiveAt,
+            value: _effectiveAt,
+            onChanged: (DateTime? value) => setState(() => _effectiveAt = value),
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: _SubscriptionsText.reason,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.changePlan,
+        submitIcon: Icons.swap_horiz_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionPlanChangeDraft(
+              targetPlanId: _targetPlanId!,
+              changeType: _changeType,
+              effectiveAt: _datePayload(_effectiveAt),
+              reason: _emptyToNull(_reasonController.text),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _RenewalForm extends StatefulWidget {
-  const _RenewalForm();
+  const _RenewalForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+  });
+
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
 
   @override
   State<_RenewalForm> createState() => _RenewalFormState();
@@ -1489,45 +1529,56 @@ class _RenewalFormState extends State<_RenewalForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.newEndDate,
-          value: _endDate,
-          onChanged: (DateTime? value) => setState(() => _endDate = value),
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: _SubscriptionsText.reason,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: _SubscriptionsText.renew,
-          submitIcon: Icons.event_repeat_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionRenewalDraft(
-                endDate: _datePayload(_endDate),
-                reason: _emptyToNull(_reasonController.text),
-              ),
-            );
-          },
-        ),
-      ],
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.newEndDate,
+            value: _endDate,
+            onChanged: (DateTime? value) => setState(() => _endDate = value),
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: _SubscriptionsText.reason,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.renew,
+        submitIcon: Icons.event_repeat_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionRenewalDraft(
+              endDate: _datePayload(_endDate),
+              reason: _emptyToNull(_reasonController.text),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _ModuleSubscriptionForm extends StatefulWidget {
-  const _ModuleSubscriptionForm({required this.state});
+  const _ModuleSubscriptionForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.state,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final SubscriptionsWorkspaceState state;
 
   @override
@@ -1565,62 +1616,74 @@ class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
           ),
     ];
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _subscriptionId,
-          labelText: _SubscriptionsText.subscription,
-          isRequired: true,
-          options: _lookupOptions(subscriptions),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.subscriptionRequired,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _subscriptionId,
+            labelText: _SubscriptionsText.subscription,
+            isRequired: true,
+            options: _lookupOptions(subscriptions),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.subscriptionRequired,
+            ),
+            onChanged: (String? value) {
+              setState(() => _subscriptionId = value);
+            },
           ),
-          onChanged: (String? value) {
-            setState(() => _subscriptionId = value);
-          },
-        ),
-        AppSelectField<String>.searchable(
-          value: _moduleId,
-          labelText: _SubscriptionsText.module,
-          isRequired: true,
-          options: _lookupOptions(widget.state.lookups.modules),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.moduleRequired,
+          AppSelectField<String>.searchable(
+            value: _moduleId,
+            labelText: _SubscriptionsText.module,
+            isRequired: true,
+            options: _lookupOptions(widget.state.lookups.modules),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.moduleRequired,
+            ),
+            onChanged: (String? value) => setState(() => _moduleId = value),
           ),
-          onChanged: (String? value) => setState(() => _moduleId = value),
-        ),
-        AppCheckboxField(
-          title: _SubscriptionsText.enabled,
-          value: _isActive,
-          onChanged: (bool value) => setState(() => _isActive = value),
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: _SubscriptionsText.assignModule,
-          submitIcon: Icons.extension_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              ModuleSubscriptionDraft(
-                subscriptionId: _subscriptionId!,
-                moduleId: _moduleId!,
-                isActive: _isActive,
-              ),
-            );
-          },
-        ),
-      ],
+          AppCheckboxField(
+            title: _SubscriptionsText.enabled,
+            value: _isActive,
+            onChanged: (bool value) => setState(() => _isActive = value),
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.assignModule,
+        submitIcon: Icons.extension_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            ModuleSubscriptionDraft(
+              subscriptionId: _subscriptionId!,
+              moduleId: _moduleId!,
+              isActive: _isActive,
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _LicenseForm extends StatefulWidget {
-  const _LicenseForm({required this.state, this.initial});
+  const _LicenseForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.state,
+    this.initial,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final SubscriptionsWorkspaceState state;
   final SubscriptionItem? initial;
 
@@ -1649,83 +1712,95 @@ class _LicenseFormState extends State<_LicenseForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _tenantId,
-          labelText: _SubscriptionsText.tenant,
-          isRequired: true,
-          options: _lookupOptions(widget.state.lookups.tenants),
-          validator: AppValidators.requiredValue(
-            _SubscriptionsText.tenantRequired,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _tenantId,
+            labelText: _SubscriptionsText.tenant,
+            isRequired: true,
+            options: _lookupOptions(widget.state.lookups.tenants),
+            validator: AppValidators.requiredValue(
+              _SubscriptionsText.tenantRequired,
+            ),
+            onChanged: (String? value) => setState(() => _tenantId = value),
           ),
-          onChanged: (String? value) => setState(() => _tenantId = value),
-        ),
-        AppSelectField<String>(
-          value: _licenseType,
-          labelText: _SubscriptionsText.licenseType,
-          allowClear: false,
-          options: _licenseTypeOptions(widget.state),
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _licenseType = value);
-            }
-          },
-        ),
-        AppSelectField<String>(
-          value: _status,
-          labelText: _SubscriptionsText.status,
-          allowClear: false,
-          options: _subscriptionStatusOptions(),
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.issuedAt,
-          value: _issuedAt,
-          onChanged: (DateTime? value) => setState(() => _issuedAt = value),
-        ),
-        _subscriptionDateField(
-          context: context,
-          labelText: _SubscriptionsText.expiresAt,
-          value: _expiresAt,
-          onChanged: (DateTime? value) => setState(() => _expiresAt = value),
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.initial == null
-              ? _SubscriptionsText.addLicense
-              : _SubscriptionsText.updateLicense,
-          submitIcon: Icons.key_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              LicenseDraft(
-                tenantId: _tenantId!,
-                licenseType: _licenseType,
-                status: _status,
-                issuedAt: _datePayload(_issuedAt),
-                expiresAt: _datePayload(_expiresAt),
-              ),
-            );
-          },
-        ),
-      ],
+          AppSelectField<String>(
+            value: _licenseType,
+            labelText: _SubscriptionsText.licenseType,
+            allowClear: false,
+            options: _licenseTypeOptions(widget.state),
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _licenseType = value);
+              }
+            },
+          ),
+          AppSelectField<String>(
+            value: _status,
+            labelText: _SubscriptionsText.status,
+            allowClear: false,
+            options: _subscriptionStatusOptions(),
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _status = value);
+              }
+            },
+          ),
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.issuedAt,
+            value: _issuedAt,
+            onChanged: (DateTime? value) => setState(() => _issuedAt = value),
+          ),
+          _subscriptionDateField(
+            context: context,
+            labelText: _SubscriptionsText.expiresAt,
+            value: _expiresAt,
+            onChanged: (DateTime? value) => setState(() => _expiresAt = value),
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.initial == null
+            ? _SubscriptionsText.addLicense
+            : _SubscriptionsText.updateLicense,
+        submitIcon: Icons.key_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            LicenseDraft(
+              tenantId: _tenantId!,
+              licenseType: _licenseType,
+              status: _status,
+              issuedAt: _datePayload(_issuedAt),
+              expiresAt: _datePayload(_expiresAt),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _ReasonForm extends StatefulWidget {
-  const _ReasonForm({required this.submitLabel, required this.reasonLabel});
+  const _ReasonForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+    required this.submitLabel,
+    required this.reasonLabel,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final String submitLabel;
   final String reasonLabel;
 
@@ -1745,38 +1820,49 @@ class _ReasonFormState extends State<_ReasonForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _reasonController,
-          labelText: widget.reasonLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionActionDraft(
-                reason: _emptyToNull(_reasonController.text),
-                notes: _emptyToNull(_reasonController.text),
-              ),
-            );
-          },
-        ),
-      ],
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _reasonController,
+            labelText: widget.reasonLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionActionDraft(
+              reason: _emptyToNull(_reasonController.text),
+              notes: _emptyToNull(_reasonController.text),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _InvoiceCollectForm extends StatefulWidget {
-  const _InvoiceCollectForm();
+  const _InvoiceCollectForm({
+    required this.dialogTitle,
+    required this.dialogIcon,
+  });
+
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
 
   @override
   State<_InvoiceCollectForm> createState() => _InvoiceCollectFormState();
@@ -1795,43 +1881,48 @@ class _InvoiceCollectFormState extends State<_InvoiceCollectForm> {
 
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>(
-          value: _paymentMethod,
-          labelText: _SubscriptionsText.paymentMethod,
-          allowClear: false,
-          options: _paymentMethodOptions(),
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _paymentMethod = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: _SubscriptionsText.notes,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: _SubscriptionsText.collectInvoice,
-          submitIcon: Icons.payments_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              SubscriptionActionDraft(
-                paymentMethod: _paymentMethod,
-                notes: _emptyToNull(_notesController.text),
-              ),
-            );
-          },
-        ),
-      ],
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>(
+            value: _paymentMethod,
+            labelText: _SubscriptionsText.paymentMethod,
+            allowClear: false,
+            options: _paymentMethodOptions(),
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _paymentMethod = value);
+              }
+            },
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: _SubscriptionsText.notes,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.collectInvoice,
+        submitIcon: Icons.payments_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          if (!validateAndSaveAppForm(_formKey)) {
+            return;
+          }
+          Navigator.of(context).pop(
+            SubscriptionActionDraft(
+              paymentMethod: _paymentMethod,
+              notes: _emptyToNull(_notesController.text),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -1885,15 +1976,15 @@ Future<void> _showPlanDialog(
   WidgetRef ref, {
   SubscriptionItem? initial,
 }) async {
-  final SubscriptionPlanDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionPlanDraft? draft = await showAppDialog<SubscriptionPlanDraft>(
     context: context,
-    title: Text(
-      initial == null
-          ? _SubscriptionsText.createPlan
-          : _SubscriptionsText.editPlan,
-    ),
-    icon: const Icon(Icons.workspace_premium_outlined),
-    content: _PlanForm(
+    builder: (_) => _PlanForm(
+      dialogTitle: Text(
+        initial == null
+            ? _SubscriptionsText.createPlan
+            : _SubscriptionsText.editPlan,
+      ),
+      dialogIcon: const Icon(Icons.workspace_premium_outlined),
       submitLabel: initial == null
           ? _SubscriptionsText.createPlan
           : _SubscriptionsText.savePlan,
@@ -1920,11 +2011,13 @@ Future<void> _showSubscriptionDialog(
   WidgetRef ref,
   SubscriptionsWorkspaceState state,
 ) async {
-  final SubscriptionDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionDraft? draft = await showAppDialog<SubscriptionDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.activateSubscription),
-    icon: const Icon(Icons.play_circle_outline),
-    content: _SubscriptionForm(state: state),
+    builder: (_) => _SubscriptionForm(
+      dialogTitle: const Text(_SubscriptionsText.activateSubscription),
+      dialogIcon: const Icon(Icons.play_circle_outline),
+      state: state,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1942,11 +2035,14 @@ Future<void> _showPlanChangeDialog(
   WidgetRef ref,
   SubscriptionsWorkspaceState state,
 ) async {
-  final SubscriptionPlanChangeDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionPlanChangeDraft? draft =
+      await showAppDialog<SubscriptionPlanChangeDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.changePlan),
-    icon: const Icon(Icons.swap_horiz_outlined),
-    content: _PlanChangeForm(state: state),
+    builder: (_) => _PlanChangeForm(
+      dialogTitle: const Text(_SubscriptionsText.changePlan),
+      dialogIcon: const Icon(Icons.swap_horiz_outlined),
+      state: state,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1960,11 +2056,13 @@ Future<void> _showPlanChangeDialog(
 }
 
 Future<void> _showRenewalDialog(BuildContext context, WidgetRef ref) async {
-  final SubscriptionRenewalDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionRenewalDraft? draft =
+      await showAppDialog<SubscriptionRenewalDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.renew),
-    icon: const Icon(Icons.event_repeat_outlined),
-    content: const _RenewalForm(),
+    builder: (_) => const _RenewalForm(
+      dialogTitle: Text(_SubscriptionsText.renew),
+      dialogIcon: Icon(Icons.event_repeat_outlined),
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1982,11 +2080,14 @@ Future<void> _showModuleSubscriptionDialog(
   WidgetRef ref,
   SubscriptionsWorkspaceState state,
 ) async {
-  final ModuleSubscriptionDraft? draft = await showAppWorkspaceActionDialog(
+  final ModuleSubscriptionDraft? draft =
+      await showAppDialog<ModuleSubscriptionDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.assignModule),
-    icon: const Icon(Icons.extension_outlined),
-    content: _ModuleSubscriptionForm(state: state),
+    builder: (_) => _ModuleSubscriptionForm(
+      dialogTitle: const Text(_SubscriptionsText.assignModule),
+      dialogIcon: const Icon(Icons.extension_outlined),
+      state: state,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -2005,15 +2106,18 @@ Future<void> _showLicenseDialog(
   SubscriptionsWorkspaceState state, {
   SubscriptionItem? initial,
 }) async {
-  final LicenseDraft? draft = await showAppWorkspaceActionDialog(
+  final LicenseDraft? draft = await showAppDialog<LicenseDraft>(
     context: context,
-    title: Text(
-      initial == null
-          ? _SubscriptionsText.addLicense
-          : _SubscriptionsText.updateLicense,
+    builder: (_) => _LicenseForm(
+      dialogTitle: Text(
+        initial == null
+            ? _SubscriptionsText.addLicense
+            : _SubscriptionsText.updateLicense,
+      ),
+      dialogIcon: const Icon(Icons.key_outlined),
+      state: state,
+      initial: initial,
     ),
-    icon: const Icon(Icons.key_outlined),
-    content: _LicenseForm(state: state, initial: initial),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -2035,15 +2139,16 @@ Future<void> _showToggleModuleDialog(
   WidgetRef ref,
   SubscriptionItem item,
 ) async {
-  final SubscriptionActionDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionActionDraft? draft =
+      await showAppDialog<SubscriptionActionDraft>(
     context: context,
-    title: Text(
-      item.isActive == true
-          ? _SubscriptionsText.disableModule
-          : _SubscriptionsText.enableModule,
-    ),
-    icon: const Icon(Icons.extension_outlined),
-    content: _ReasonForm(
+    builder: (_) => _ReasonForm(
+      dialogTitle: Text(
+        item.isActive == true
+            ? _SubscriptionsText.disableModule
+            : _SubscriptionsText.enableModule,
+      ),
+      dialogIcon: const Icon(Icons.extension_outlined),
       submitLabel: item.isActive == true
           ? _SubscriptionsText.disableModule
           : _SubscriptionsText.enableModule,
@@ -2065,11 +2170,12 @@ Future<void> _showCancelSubscriptionDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final SubscriptionActionDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionActionDraft? draft =
+      await showAppDialog<SubscriptionActionDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.cancelSubscription),
-    icon: const Icon(Icons.block_outlined),
-    content: const _ReasonForm(
+    builder: (_) => const _ReasonForm(
+      dialogTitle: Text(_SubscriptionsText.cancelSubscription),
+      dialogIcon: Icon(Icons.block_outlined),
       submitLabel: _SubscriptionsText.cancelSubscription,
       reasonLabel: _SubscriptionsText.reason,
     ),
@@ -2089,11 +2195,13 @@ Future<void> _showCollectInvoiceDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final SubscriptionActionDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionActionDraft? draft =
+      await showAppDialog<SubscriptionActionDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.collectInvoice),
-    icon: const Icon(Icons.payments_outlined),
-    content: const _InvoiceCollectForm(),
+    builder: (_) => const _InvoiceCollectForm(
+      dialogTitle: Text(_SubscriptionsText.collectInvoice),
+      dialogIcon: Icon(Icons.payments_outlined),
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -2110,11 +2218,12 @@ Future<void> _showRetryInvoiceDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final SubscriptionActionDraft? draft = await showAppWorkspaceActionDialog(
+  final SubscriptionActionDraft? draft =
+      await showAppDialog<SubscriptionActionDraft>(
     context: context,
-    title: const Text(_SubscriptionsText.retryInvoice),
-    icon: const Icon(Icons.replay_outlined),
-    content: const _ReasonForm(
+    builder: (_) => const _ReasonForm(
+      dialogTitle: Text(_SubscriptionsText.retryInvoice),
+      dialogIcon: Icon(Icons.replay_outlined),
       submitLabel: _SubscriptionsText.retryInvoice,
       reasonLabel: _SubscriptionsText.retryReason,
     ),

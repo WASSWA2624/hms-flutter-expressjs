@@ -304,7 +304,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           controller: searchController,
           semanticLabel: l10n.radiologySearchLabel,
           hintText: l10n.radiologySearchHint,
-          isLoading: state.isRefreshing,
           matcher: (_, _) => true,
           onChanged: onSearchChanged,
           onSubmitted: onSearchSubmitted,
@@ -2433,13 +2432,9 @@ class _TimelineNode extends StatelessWidget {
 }
 
 Future<void> _showCreateOrderDialog(BuildContext context, WidgetRef ref) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyCreateOrderDialogTitle),
-    content: const _CreateOrderForm(),
-    icon: const Icon(Icons.add_a_photo_outlined),
-    maxWidth: 640,
+    builder: (_) => const _CreateOrderForm(),
   );
 
   if (payload == null || !context.mounted) {
@@ -2456,6 +2451,10 @@ Future<void> _showCreateOrderDialog(BuildContext context, WidgetRef ref) async {
 
 class _CreateOrderForm extends ConsumerStatefulWidget {
   const _CreateOrderForm();
+
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyCreateOrderDialogTitle;
+  static const IconData dialogIcon = Icons.add_a_photo_outlined;
 
   @override
   ConsumerState<_CreateOrderForm> createState() => _CreateOrderFormState();
@@ -2495,153 +2494,160 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
               })
               .toList(growable: false);
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: AppTextField(
-                controller: _searchController,
-                labelText: l10n.radiologyReferenceSearchOptionalLabel,
-                hintText: l10n.radiologyReferenceSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                textInputAction: TextInputAction.search,
-                onFieldSubmitted: _searchReferences,
-              ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.xs),
-              child: AppButton.secondary(
-                label: l10n.radiologySearchReferenceAction,
-                leadingIcon: Icons.manage_search,
-                isLoading: state?.isRefreshing ?? false,
-                onPressed: () => _searchReferences(_searchController.text),
-              ),
-            ),
-          ],
-        ),
-        AppSelectField<String>.searchable(
-          value: _patientId,
-          labelText: l10n.radiologyPatientLabel,
-          isRequired: true,
-          options: _referenceOptions(references.patients),
-          validator: AppValidators.requiredValue(
-            l10n.radiologyFieldRequiredLabel(l10n.radiologyPatientLabel),
-          ),
-          onChanged: (String? value) {
-            setState(() {
-              _patientId = value;
-              if (!encounterOptions.any(
-                (RadiologyReferenceOption option) =>
-                    option.value == _encounterId,
-              )) {
-                _encounterId = null;
-              }
-            });
-          },
-        ),
-        AppSelectField<String>.searchable(
-          value: _encounterId,
-          labelText: l10n.radiologyEncounterLabel,
-          options: _referenceOptions(encounterOptions),
-          onChanged: (String? value) => setState(() => _encounterId = value),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyClinicalNotesLabel,
-          maxLines: 4,
-        ),
-        AppSectionPanel(
-          title: l10n.clinicalRadiologyRequestSelectedTitle,
-          description: _requests.isEmpty
-              ? l10n.clinicalRadiologyRequestNoSelection
-              : l10n.clinicalRadiologyRequestSelectedCount(_requests.length),
-          leadingIcon: Icons.image_search_outlined,
-          children: <Widget>[
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                AppButton.secondary(
-                  label: l10n.radiologySelectImagingTestsAction,
-                  leadingIcon: Icons.playlist_add_outlined,
-                  onPressed: () => _openSharedRadiologySelector(state),
+    return AppDialog(
+      title: Text(_CreateOrderForm.dialogTitle(l10n)),
+      icon: const Icon(_CreateOrderForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 640,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: AppTextField(
+                  controller: _searchController,
+                  labelText: l10n.radiologyReferenceSearchOptionalLabel,
+                  hintText: l10n.radiologyReferenceSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  textInputAction: TextInputAction.search,
+                  onFieldSubmitted: _searchReferences,
                 ),
-                if (_requests.isNotEmpty)
-                  AppButton.tertiary(
-                    label: l10n.radiologyClearSelectedTestsAction,
-                    leadingIcon: Icons.clear_all_outlined,
-                    onPressed: () => setState(() => _requests.clear()),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Padding(
+                padding: EdgeInsets.only(top: theme.spacing.xs),
+                child: AppButton.secondary(
+                  label: l10n.radiologySearchReferenceAction,
+                  leadingIcon: Icons.manage_search,
+                  isLoading: state?.isRefreshing ?? false,
+                  onPressed: () => _searchReferences(_searchController.text),
+                ),
+              ),
+            ],
+          ),
+          AppSelectField<String>.searchable(
+            value: _patientId,
+            labelText: l10n.radiologyPatientLabel,
+            isRequired: true,
+            options: _referenceOptions(references.patients),
+            validator: AppValidators.requiredValue(
+              l10n.radiologyFieldRequiredLabel(l10n.radiologyPatientLabel),
+            ),
+            onChanged: (String? value) {
+              setState(() {
+                _patientId = value;
+                if (!encounterOptions.any(
+                  (RadiologyReferenceOption option) =>
+                      option.value == _encounterId,
+                )) {
+                  _encounterId = null;
+                }
+              });
+            },
+          ),
+          AppSelectField<String>.searchable(
+            value: _encounterId,
+            labelText: l10n.radiologyEncounterLabel,
+            options: _referenceOptions(encounterOptions),
+            onChanged: (String? value) => setState(() => _encounterId = value),
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyClinicalNotesLabel,
+            maxLines: 4,
+          ),
+          AppSectionPanel(
+            title: l10n.clinicalRadiologyRequestSelectedTitle,
+            description: _requests.isEmpty
+                ? l10n.clinicalRadiologyRequestNoSelection
+                : l10n.clinicalRadiologyRequestSelectedCount(_requests.length),
+            leadingIcon: Icons.image_search_outlined,
+            children: <Widget>[
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  AppButton.secondary(
+                    label: l10n.radiologySelectImagingTestsAction,
+                    leadingIcon: Icons.playlist_add_outlined,
+                    onPressed: () => _openSharedRadiologySelector(state),
+                  ),
+                  if (_requests.isNotEmpty)
+                    AppButton.tertiary(
+                      label: l10n.radiologyClearSelectedTestsAction,
+                      leadingIcon: Icons.clear_all_outlined,
+                      onPressed: () => setState(() => _requests.clear()),
+                    ),
+                ],
+              ),
+              if (_selectionTouched && _requests.isEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Text(
+                  l10n.radiologySelectAtLeastOneTestMessage,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+              if (_requests.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                for (final ClinicalActionRadiologyRequest request in _requests)
+                  _SelectedRadiologyRequestSummary(
+                    title: _radiologyRequestTitle(state, request),
+                    request: request,
+                    onRemove: () => setState(() => _requests.remove(request)),
                   ),
               ],
-            ),
-            if (_selectionTouched && _requests.isEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Text(
-                l10n.radiologySelectAtLeastOneTestMessage,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
             ],
-            if (_requests.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              for (final ClinicalActionRadiologyRequest request in _requests)
-                _SelectedRadiologyRequestSummary(
-                  title: _radiologyRequestTitle(state, request),
-                  request: request,
-                  onRemove: () => setState(() => _requests.remove(request)),
-                ),
-            ],
-          ],
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologyRequestImagingAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            setState(() => _selectionTouched = true);
-            if (!validateAndSaveAppForm(_formKey) || _requests.isEmpty) {
-              return;
-            }
-            final String sharedNote = _notesController.text.trim();
-            Navigator.of(context).pop(<String, Object?>{
-              'patient_id': _patientId,
-              'encounter_id': _encounterId,
-              'ordered_at': DateTime.now().toUtc().toIso8601String(),
-              'notes': sharedNote,
-              'requested_tests': <Map<String, Object?>>[
-                for (final ClinicalActionRadiologyRequest request in _requests)
-                  <String, Object?>{
-                    'radiology_test_id': request.radiologyTestId,
-                    'clinical_note': (request.clinicalNote ?? '').trim().isEmpty
-                        ? sharedNote
-                        : request.clinicalNote,
-                    'request_details':
-                        mergeClinicalRequestBillingIntoRequestDetails(
-                          <String, Object?>{
-                            'modality': request.modality,
-                            'body_region': request.bodyRegion,
-                            'laterality': request.laterality,
-                            'priority': request.priority,
-                          },
-                          _billingSubmit,
-                          lineAmount: clinicalRequestBillingLineAmount(
-                            _billingSubmit,
-                            request.radiologyTestId,
-                          ),
-                        ),
-                  },
-              ],
-            });
-          },
-        ),
-      ],
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyRequestImagingAction,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    setState(() => _selectionTouched = true);
+    if (!validateAndSaveAppForm(_formKey) || _requests.isEmpty) {
+      return;
+    }
+    final String sharedNote = _notesController.text.trim();
+    Navigator.of(context).pop(<String, Object?>{
+      'patient_id': _patientId,
+      'encounter_id': _encounterId,
+      'ordered_at': DateTime.now().toUtc().toIso8601String(),
+      'notes': sharedNote,
+      'requested_tests': <Map<String, Object?>>[
+        for (final ClinicalActionRadiologyRequest request in _requests)
+          <String, Object?>{
+            'radiology_test_id': request.radiologyTestId,
+            'clinical_note': (request.clinicalNote ?? '').trim().isEmpty
+                ? sharedNote
+                : request.clinicalNote,
+            'request_details': mergeClinicalRequestBillingIntoRequestDetails(
+              <String, Object?>{
+                'modality': request.modality,
+                'body_region': request.bodyRegion,
+                'laterality': request.laterality,
+                'priority': request.priority,
+              },
+              _billingSubmit,
+              lineAmount: clinicalRequestBillingLineAmount(
+                _billingSubmit,
+                request.radiologyTestId,
+              ),
+            ),
+          },
+      ],
+    });
   }
 
   void _searchReferences(String value) {
@@ -2782,6 +2788,10 @@ Future<void> _showRadiologyConfigurationsDialog(
 class _AssignForm extends ConsumerStatefulWidget {
   const _AssignForm();
 
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyAssignDialogTitle;
+  static const IconData dialogIcon = Icons.person_add_alt_outlined;
+
   @override
   ConsumerState<_AssignForm> createState() => _AssignFormState();
 }
@@ -2802,38 +2812,46 @@ class _AssignFormState extends ConsumerState<_AssignForm> {
     final AppLocalizations l10n = context.l10n;
     final RadiologyWorkspaceState? state = _watchState(ref);
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _assigneeUserId,
-          labelText: l10n.radiologyAssigneeLabel,
-          options: _referenceOptions(
-            state?.references.assignees ?? const <RadiologyReferenceOption>[],
+    return AppDialog(
+      title: Text(_AssignForm.dialogTitle(l10n)),
+      icon: const Icon(_AssignForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _assigneeUserId,
+            labelText: l10n.radiologyAssigneeLabel,
+            options: _referenceOptions(
+              state?.references.assignees ?? const <RadiologyReferenceOption>[],
+            ),
+            onChanged: (String? value) {
+              setState(() => _assigneeUserId = value);
+            },
           ),
-          onChanged: (String? value) {
-            setState(() => _assigneeUserId = value);
-          },
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologyAssignAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'assignee_user_id': _assigneeUserId,
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyAssignAction,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(<String, Object?>{
+      'assignee_user_id': _assigneeUserId,
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
@@ -2842,13 +2860,9 @@ Future<void> _showStudyDialog(
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyPerformStudyDialogTitle),
-    content: _StudyForm(order: order),
-    icon: const Icon(Icons.add_a_photo_outlined),
-    maxWidth: 520,
+    builder: (_) => _StudyForm(order: order),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -2865,6 +2879,10 @@ class _StudyForm extends StatefulWidget {
   const _StudyForm({required this.order});
 
   final RadiologyOrder order;
+
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyPerformStudyDialogTitle;
+  static const IconData dialogIcon = Icons.add_a_photo_outlined;
 
   @override
   State<_StudyForm> createState() => _StudyFormState();
@@ -2900,58 +2918,66 @@ class _StudyFormState extends State<_StudyForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        Text(
-          l10n.radiologyStudyFormHelper,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return AppDialog(
+      title: Text(_StudyForm.dialogTitle(l10n)),
+      icon: const Icon(_StudyForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          Text(
+            l10n.radiologyStudyFormHelper,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        if (!_modalityMatchesOrder)
-          AppSelectField<String>(
-            value: _modality,
-            labelText: l10n.radiologyModalityLabel,
-            options: <AppSelectOption<String>>[
-              for (final String modality in radiologyModalities)
-                AppSelectOption<String>(
-                  value: modality,
-                  label: _modalityLabel(l10n, modality),
-                  leadingIcon: Icon(_radiologyModalityIcon(modality)),
-                ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _modality = value);
-              }
-            },
+          if (!_modalityMatchesOrder)
+            AppSelectField<String>(
+              value: _modality,
+              labelText: l10n.radiologyModalityLabel,
+              options: <AppSelectOption<String>>[
+                for (final String modality in radiologyModalities)
+                  AppSelectOption<String>(
+                    value: modality,
+                    label: _modalityLabel(l10n, modality),
+                    leadingIcon: Icon(_radiologyModalityIcon(modality)),
+                  ),
+              ],
+              onChanged: (String? value) {
+                if (value != null) {
+                  setState(() => _modality = value);
+                }
+              },
+            ),
+          AppTextField(
+            controller: _performedAtController,
+            labelText: l10n.radiologyPerformedAtLabel,
+            hintText: l10n.radiologyDateTimeHint,
           ),
-        AppTextField(
-          controller: _performedAtController,
-          labelText: l10n.radiologyPerformedAtLabel,
-          hintText: l10n.radiologyDateTimeHint,
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologyPerformStudyAction,
-          submitIcon: Icons.add_a_photo_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'modality': _modality,
-              'performed_at': _performedAtController.text.trim(),
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyPerformStudyAction,
+        submitIcon: Icons.add_a_photo_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(<String, Object?>{
+      'modality': _modality,
+      'performed_at': _performedAtController.text.trim(),
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
@@ -3293,12 +3319,12 @@ Future<void> _showFinalizationNoteDialog(
   String submitLabel,
   _RadiologyResultMutation submit,
 ) async {
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(title),
-    content: _FinalizationNoteForm(submitLabel: submitLabel),
-    icon: const Icon(Icons.how_to_reg_outlined),
-    maxWidth: 560,
+    builder: (_) => _FinalizationNoteForm(
+      dialogTitle: title,
+      submitLabel: submitLabel,
+    ),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -3310,9 +3336,14 @@ Future<void> _showFinalizationNoteDialog(
 }
 
 class _FinalizationNoteForm extends StatefulWidget {
-  const _FinalizationNoteForm({required this.submitLabel});
+  const _FinalizationNoteForm({
+    required this.dialogTitle,
+    required this.submitLabel,
+  });
 
+  final String dialogTitle;
   final String submitLabel;
+  static const IconData dialogIcon = Icons.how_to_reg_outlined;
 
   @override
   State<_FinalizationNoteForm> createState() => _FinalizationNoteFormState();
@@ -3336,38 +3367,46 @@ class _FinalizationNoteFormState extends State<_FinalizationNoteForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _statementController,
-          labelText: l10n.radiologyFinalizationStatementLabel,
-          maxLines: 3,
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: l10n.radiologyFinalizationReasonLabel,
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'statement': _statementController.text.trim(),
-              'reason': _reasonController.text.trim(),
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+    return AppDialog(
+      title: Text(widget.dialogTitle),
+      icon: const Icon(_FinalizationNoteForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 560,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _statementController,
+            labelText: l10n.radiologyFinalizationStatementLabel,
+            maxLines: 3,
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: l10n.radiologyFinalizationReasonLabel,
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(<String, Object?>{
+      'statement': _statementController.text.trim(),
+      'reason': _reasonController.text.trim(),
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
@@ -3376,13 +3415,9 @@ Future<void> _showAddendumDialog(
   WidgetRef ref,
   RadiologyResult result,
 ) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyAddendumDialogTitle),
-    content: const _AddendumForm(),
-    icon: const Icon(Icons.post_add_outlined),
-    maxWidth: 560,
+    builder: (_) => const _AddendumForm(),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -3397,6 +3432,10 @@ Future<void> _showAddendumDialog(
 
 class _AddendumForm extends StatefulWidget {
   const _AddendumForm();
+
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyAddendumDialogTitle;
+  static const IconData dialogIcon = Icons.post_add_outlined;
 
   @override
   State<_AddendumForm> createState() => _AddendumFormState();
@@ -3418,51 +3457,55 @@ class _AddendumFormState extends State<_AddendumForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _addendumController,
-          labelText: l10n.radiologyAddendumTextLabel,
-          isRequired: true,
-          maxLines: 5,
-          validator: AppValidators.requiredText(
-            l10n.radiologyFieldRequiredLabel(l10n.radiologyAddendumTextLabel),
+    return AppDialog(
+      title: Text(_AddendumForm.dialogTitle(l10n)),
+      icon: const Icon(_AddendumForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 560,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _addendumController,
+            labelText: l10n.radiologyAddendumTextLabel,
+            isRequired: true,
+            maxLines: 5,
+            validator: AppValidators.requiredText(
+              l10n.radiologyFieldRequiredLabel(l10n.radiologyAddendumTextLabel),
+            ),
           ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologyAddendumAction,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'addendum_text': _addendumController.text.trim(),
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyAddendumAction,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(<String, Object?>{
+      'addendum_text': _addendumController.text.trim(),
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
 Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyCancelDialogTitle),
-    content: const _CancelForm(),
-    icon: const Icon(Icons.cancel_outlined),
-    maxWidth: 520,
+    builder: (_) => const _CancelForm(),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -3477,6 +3520,10 @@ Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
 
 class _CancelForm extends StatefulWidget {
   const _CancelForm();
+
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyCancelDialogTitle;
+  static const IconData dialogIcon = Icons.cancel_outlined;
 
   @override
   State<_CancelForm> createState() => _CancelFormState();
@@ -3498,41 +3545,49 @@ class _CancelFormState extends State<_CancelForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _reasonController,
-          labelText: l10n.radiologyCancellationReasonLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.radiologyFieldRequiredLabel(
-              l10n.radiologyCancellationReasonLabel,
+    return AppDialog(
+      title: Text(_CancelForm.dialogTitle(l10n)),
+      icon: const Icon(_CancelForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _reasonController,
+            labelText: l10n.radiologyCancellationReasonLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              l10n.radiologyFieldRequiredLabel(
+                l10n.radiologyCancellationReasonLabel,
+              ),
             ),
           ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologyCancelOrderAction,
-          submitIcon: Icons.cancel_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'reason': _reasonController.text.trim(),
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologyCancelOrderAction,
+        submitIcon: Icons.cancel_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(<String, Object?>{
+      'reason': _reasonController.text.trim(),
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
@@ -3541,13 +3596,9 @@ Future<void> _showPacsSyncDialog(
   WidgetRef ref,
   ImagingStudy study,
 ) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyPacsSyncDialogTitle),
-    content: const _PacsSyncForm(),
-    icon: const Icon(Icons.cloud_sync_outlined),
-    maxWidth: 520,
+    builder: (_) => const _PacsSyncForm(),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -3563,11 +3614,16 @@ Future<void> _showPacsSyncDialog(
 class _PacsSyncForm extends StatefulWidget {
   const _PacsSyncForm();
 
+  static String dialogTitle(AppLocalizations l10n) =>
+      l10n.radiologyPacsSyncDialogTitle;
+  static const IconData dialogIcon = Icons.cloud_sync_outlined;
+
   @override
   State<_PacsSyncForm> createState() => _PacsSyncFormState();
 }
 
 class _PacsSyncFormState extends State<_PacsSyncForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _studyUidController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
@@ -3581,34 +3637,40 @@ class _PacsSyncFormState extends State<_PacsSyncForm> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
-    return AppFormShell(
-      formKey: formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _studyUidController,
-          labelText: l10n.radiologyStudyUidLabel,
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.radiologyNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.radiologySyncPacsAction,
-          submitIcon: Icons.cloud_sync_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'study_uid': _studyUidController.text.trim(),
-              'notes': _notesController.text.trim(),
-            });
-          },
-        ),
-      ],
+    return AppDialog(
+      title: Text(_PacsSyncForm.dialogTitle(l10n)),
+      icon: const Icon(_PacsSyncForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _studyUidController,
+            labelText: l10n.radiologyStudyUidLabel,
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.radiologyNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.radiologySyncPacsAction,
+        submitIcon: Icons.cloud_sync_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(<String, Object?>{
+      'study_uid': _studyUidController.text.trim(),
+      'notes': _notesController.text.trim(),
+    });
   }
 }
 
@@ -3619,12 +3681,13 @@ Future<void> _submitNotesOnly({
   required String submitLabel,
   required Future<AppFailure?> Function(Map<String, Object?> payload) submit,
 }) async {
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(title),
-    content: _NotesOnlyForm(notesLabel: notesLabel, submitLabel: submitLabel),
-    icon: const Icon(Icons.edit_note_outlined),
-    maxWidth: 520,
+    builder: (_) => _NotesOnlyForm(
+      dialogTitle: title,
+      notesLabel: notesLabel,
+      submitLabel: submitLabel,
+    ),
   );
   if (payload == null || !context.mounted) {
     return;
@@ -3636,10 +3699,16 @@ Future<void> _submitNotesOnly({
 }
 
 class _NotesOnlyForm extends StatefulWidget {
-  const _NotesOnlyForm({required this.notesLabel, required this.submitLabel});
+  const _NotesOnlyForm({
+    required this.dialogTitle,
+    required this.notesLabel,
+    required this.submitLabel,
+  });
 
+  final String dialogTitle;
   final String notesLabel;
   final String submitLabel;
+  static const IconData dialogIcon = Icons.edit_note_outlined;
 
   @override
   State<_NotesOnlyForm> createState() => _NotesOnlyFormState();
@@ -3659,27 +3728,35 @@ class _NotesOnlyFormState extends State<_NotesOnlyForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _notesController,
-          labelText: widget.notesLabel,
-          maxLines: 4,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(
-              context,
-            ).pop(<String, Object?>{'notes': _notesController.text.trim()});
-          },
-        ),
-      ],
+    return AppDialog(
+      title: Text(widget.dialogTitle),
+      icon: const Icon(_NotesOnlyForm.dialogIcon),
+      scrollable: true,
+      maxWidth: 520,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _notesController,
+            labelText: widget.notesLabel,
+            maxLines: 4,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
+  }
+
+  void _submit() {
+    Navigator.of(
+      context,
+    ).pop(<String, Object?>{'notes': _notesController.text.trim()});
   }
 }
 

@@ -3,6 +3,30 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 
+/// Standard Cancel + primary actions for [AppDialog.actions] footers.
+List<Widget> buildAppDialogFormActions({
+  required String cancelLabel,
+  required String submitLabel,
+  required VoidCallback? onSubmit,
+  VoidCallback? onCancel,
+  IconData? submitIcon,
+  bool isSubmitting = false,
+}) {
+  return <Widget>[
+    AppButton.tertiary(
+      label: cancelLabel,
+      enabled: !isSubmitting,
+      onPressed: isSubmitting ? null : onCancel,
+    ),
+    AppButton.primary(
+      label: submitLabel,
+      leadingIcon: submitIcon,
+      isLoading: isSubmitting,
+      onPressed: isSubmitting ? null : onSubmit,
+    ),
+  ];
+}
+
 class AppFormShell extends StatelessWidget {
   const AppFormShell({
     required this.formKey,
@@ -54,6 +78,10 @@ class AppFormShell extends StatelessWidget {
   }
 }
 
+/// Inline form action row (Cancel + primary submit).
+///
+/// For modal dialogs, use [AppDialog.actions] or [showAppWorkspaceMutationDialog]
+/// — not [AppFormActions].
 class AppFormActions extends StatelessWidget {
   const AppFormActions({
     required this.cancelLabel,

@@ -283,7 +283,7 @@ class _AppDialogState extends State<AppDialog> {
       _preMaximizeSize = currentSize;
       _preMaximizeDragOffset = _dragOffset;
       _isMaximized = true;
-      _desktopSize = Size(viewport.width, viewport.height);
+      _desktopSize = Size(availableWidth, availableHeight);
       _dragOffset = Offset.zero;
     });
   }
@@ -317,10 +317,16 @@ class _AppDialogState extends State<AppDialog> {
     setState(() {
       final double nextWidth = axis == Axis.vertical
           ? current.width
-          : math.max(_desktopMinWidth, current.width + details.delta.dx);
+          : math.min(
+              availableWidth,
+              math.max(_desktopMinWidth, current.width + details.delta.dx),
+            );
       final double nextHeight = axis == Axis.horizontal
           ? current.height
-          : math.max(_desktopMinHeight, current.height + details.delta.dy);
+          : math.min(
+              availableHeight,
+              math.max(_desktopMinHeight, current.height + details.delta.dy),
+            );
       _desktopSize = Size(nextWidth, nextHeight);
     });
   }

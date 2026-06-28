@@ -534,8 +534,14 @@ class _TwoLineCell extends StatelessWidget {
 }
 
 class _PaymentForm extends StatefulWidget {
-  const _PaymentForm({required this.item});
+  const _PaymentForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.item,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final BillingWorkItem item;
 
   @override
@@ -566,98 +572,111 @@ class _PaymentFormState extends State<_PaymentForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      BillingPaymentDraft(
+        amount: _amountController.text,
+        method: _method,
+        reference: billingEmptyToNull(_referenceController.text),
+        payer: billingEmptyToNull(_payerController.text),
+        issueReceipt: _issueReceipt,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppReportSummaryGrid(
-          records: <AppReportSummaryItem>[
-            AppReportSummaryItem(
-              label: context.l10n.billingInvoiceLabel,
-              value: widget.item.effectiveDisplayId,
-              icon: Icons.receipt_long_outlined,
-            ),
-            AppReportSummaryItem(
-              label: context.l10n.billingDueLabel,
-              value: billingMoney(
-                context,
-                widget.item.balanceDue,
-                widget.item.currency,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppReportSummaryGrid(
+            records: <AppReportSummaryItem>[
+              AppReportSummaryItem(
+                label: context.l10n.billingInvoiceLabel,
+                value: widget.item.effectiveDisplayId,
+                icon: Icons.receipt_long_outlined,
               ),
-              icon: Icons.account_balance_wallet_outlined,
-            ),
-          ],
-        ),
-        AppCurrencyAmountField(
-          amountController: _amountController,
-          currency: widget.item.currency ?? appDefaultCurrencyCode,
-          onCurrencyChanged: (_) {},
-          amountLabelText: context.l10n.billingAmountReceivedLabel,
-          currencyLabelText: context.l10n.billingCurrencyLabel,
-          isRequired: true,
-          allowZero: false,
-          maxAmount: widget.item.balanceDue,
-        ),
-        AppSelectField<String>(
-          value: _method,
-          labelText: context.l10n.billingPaymentMethodLabel,
-          options: <AppSelectOption<String>>[
-            for (final String method in billingPaymentMethods)
-              AppSelectOption<String>(
-                value: method,
-                label: billingApiLabel(context, method),
+              AppReportSummaryItem(
+                label: context.l10n.billingDueLabel,
+                value: billingMoney(
+                  context,
+                  widget.item.balanceDue,
+                  widget.item.currency,
+                ),
+                icon: Icons.account_balance_wallet_outlined,
               ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _method = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _referenceController,
-          labelText: context.l10n.billingReferenceLabel,
-          hintText: context.l10n.billingPaymentReferenceHint,
-        ),
-        AppTextField(
-          controller: _payerController,
-          labelText: context.l10n.billingPayerLabel,
-          hintText: context.l10n.billingPayerHint,
-        ),
-        AppCheckboxField(
-          title: context.l10n.billingGenerateReceiptLabel,
-          value: _issueReceipt,
-          onChanged: (bool value) => setState(() => _issueReceipt = value),
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: context.l10n.billingReceivePayment,
-          submitIcon: Icons.point_of_sale,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              BillingPaymentDraft(
-                amount: _amountController.text,
-                method: _method,
-                reference: billingEmptyToNull(_referenceController.text),
-                payer: billingEmptyToNull(_payerController.text),
-                issueReceipt: _issueReceipt,
-              ),
-            );
-          },
-        ),
-      ],
+            ],
+          ),
+          AppCurrencyAmountField(
+            amountController: _amountController,
+            currency: widget.item.currency ?? appDefaultCurrencyCode,
+            onCurrencyChanged: (_) {},
+            amountLabelText: context.l10n.billingAmountReceivedLabel,
+            currencyLabelText: context.l10n.billingCurrencyLabel,
+            isRequired: true,
+            allowZero: false,
+            maxAmount: widget.item.balanceDue,
+          ),
+          AppSelectField<String>(
+            value: _method,
+            labelText: context.l10n.billingPaymentMethodLabel,
+            options: <AppSelectOption<String>>[
+              for (final String method in billingPaymentMethods)
+                AppSelectOption<String>(
+                  value: method,
+                  label: billingApiLabel(context, method),
+                ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _method = value);
+              }
+            },
+          ),
+          AppTextField(
+            controller: _referenceController,
+            labelText: context.l10n.billingReferenceLabel,
+            hintText: context.l10n.billingPaymentReferenceHint,
+          ),
+          AppTextField(
+            controller: _payerController,
+            labelText: context.l10n.billingPayerLabel,
+            hintText: context.l10n.billingPayerHint,
+          ),
+          AppCheckboxField(
+            title: context.l10n.billingGenerateReceiptLabel,
+            value: _issueReceipt,
+            onChanged: (bool value) => setState(() => _issueReceipt = value),
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: context.l10n.billingReceivePayment,
+        submitIcon: Icons.point_of_sale,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
 
 class _RefundForm extends StatefulWidget {
-  const _RefundForm({required this.item});
+  const _RefundForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.item,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final BillingWorkItem item;
 
   @override
@@ -689,80 +708,97 @@ class _RefundFormState extends State<_RefundForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      BillingRefundDraft(
+        paymentId: _paymentId,
+        amount: _amountController.text,
+        reason: _reasonController.text.trim(),
+        notes: billingEmptyToNull(_notesController.text),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>(
-          value: _paymentId,
-          labelText: context.l10n.billingPaymentLabel,
-          options: <AppSelectOption<String>>[
-            for (final BillingPayment payment in widget.item.payments)
-              if (payment.isRefundable)
-                AppSelectOption<String>(
-                  value: payment.id,
-                  label: billingJoinDisplay(<String?>[
-                    payment.effectiveDisplayId,
-                    billingMoney(context, payment.amount, widget.item.currency),
-                  ]),
-                ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _paymentId = value);
-            }
-          },
-        ),
-        AppCurrencyAmountField(
-          amountController: _amountController,
-          currency: widget.item.currency ?? appDefaultCurrencyCode,
-          onCurrencyChanged: (_) {},
-          amountLabelText: context.l10n.billingRefundAmountLabel,
-          currencyLabelText: context.l10n.billingCurrencyLabel,
-          isRequired: true,
-          allowZero: false,
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: context.l10n.billingReasonLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            context.l10n.billingRefundReasonValidation,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>(
+            value: _paymentId,
+            labelText: context.l10n.billingPaymentLabel,
+            options: <AppSelectOption<String>>[
+              for (final BillingPayment payment in widget.item.payments)
+                if (payment.isRefundable)
+                  AppSelectOption<String>(
+                    value: payment.id,
+                    label: billingJoinDisplay(<String?>[
+                      payment.effectiveDisplayId,
+                      billingMoney(
+                        context,
+                        payment.amount,
+                        widget.item.currency,
+                      ),
+                    ]),
+                  ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _paymentId = value);
+              }
+            },
           ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: context.l10n.billingNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: context.l10n.billingRequestRefund,
-          submitIcon: Icons.assignment_return_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              BillingRefundDraft(
-                paymentId: _paymentId,
-                amount: _amountController.text,
-                reason: _reasonController.text.trim(),
-                notes: billingEmptyToNull(_notesController.text),
-              ),
-            );
-          },
-        ),
-      ],
+          AppCurrencyAmountField(
+            amountController: _amountController,
+            currency: widget.item.currency ?? appDefaultCurrencyCode,
+            onCurrencyChanged: (_) {},
+            amountLabelText: context.l10n.billingRefundAmountLabel,
+            currencyLabelText: context.l10n.billingCurrencyLabel,
+            isRequired: true,
+            allowZero: false,
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: context.l10n.billingReasonLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              context.l10n.billingRefundReasonValidation,
+            ),
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: context.l10n.billingNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: context.l10n.billingRequestRefund,
+        submitIcon: Icons.assignment_return_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
 
 class _AdjustmentForm extends StatefulWidget {
-  const _AdjustmentForm({required this.item});
+  const _AdjustmentForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.item,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final BillingWorkItem item;
 
   @override
@@ -784,91 +820,105 @@ class _AdjustmentFormState extends State<_AdjustmentForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      BillingAdjustmentDraft(
+        amount: _amountController.text,
+        reason: _reasonController.text.trim(),
+        status: _status,
+        notes: billingEmptyToNull(_notesController.text),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _amountController,
-          labelText: context.l10n.billingAdjustmentAmountLabel,
-          isRequired: true,
-          validator: (String? value) {
-            final String normalized = value?.replaceAll(',', '').trim() ?? '';
-            if (!RegExp(r'^-?\d+(\.\d{1,2})?$').hasMatch(normalized)) {
-              return context.l10n.billingAdjustmentAmountValidation;
-            }
-            return null;
-          },
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-        AppSelectField<String>(
-          value: _status,
-          labelText: context.l10n.billingAppliedStatusLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'ISSUED',
-              label: context.l10n.billingStatusIssued,
-            ),
-            AppSelectOption<String>(
-              value: 'PARTIAL',
-              label: context.l10n.billingStatusPartial,
-            ),
-            AppSelectOption<String>(
-              value: 'PAID',
-              label: context.l10n.billingStatusPaid,
-            ),
-            AppSelectOption<String>(
-              value: 'DRAFT',
-              label: context.l10n.billingStatusDraft,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: context.l10n.billingReasonLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            context.l10n.billingAdjustmentReasonValidation,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _amountController,
+            labelText: context.l10n.billingAdjustmentAmountLabel,
+            isRequired: true,
+            validator: (String? value) {
+              final String normalized = value?.replaceAll(',', '').trim() ?? '';
+              if (!RegExp(r'^-?\d+(\.\d{1,2})?$').hasMatch(normalized)) {
+                return context.l10n.billingAdjustmentAmountValidation;
+              }
+              return null;
+            },
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: context.l10n.billingNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: context.l10n.billingRequestAdjustment,
-          submitIcon: Icons.tune,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              BillingAdjustmentDraft(
-                amount: _amountController.text,
-                reason: _reasonController.text.trim(),
-                status: _status,
-                notes: billingEmptyToNull(_notesController.text),
+          AppSelectField<String>(
+            value: _status,
+            labelText: context.l10n.billingAppliedStatusLabel,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'ISSUED',
+                label: context.l10n.billingStatusIssued,
               ),
-            );
-          },
-        ),
-      ],
+              AppSelectOption<String>(
+                value: 'PARTIAL',
+                label: context.l10n.billingStatusPartial,
+              ),
+              AppSelectOption<String>(
+                value: 'PAID',
+                label: context.l10n.billingStatusPaid,
+              ),
+              AppSelectOption<String>(
+                value: 'DRAFT',
+                label: context.l10n.billingStatusDraft,
+              ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _status = value);
+              }
+            },
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: context.l10n.billingReasonLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              context.l10n.billingAdjustmentReasonValidation,
+            ),
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: context.l10n.billingNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: context.l10n.billingRequestAdjustment,
+        submitIcon: Icons.tune,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
 
 class _ReasonForm extends StatefulWidget {
-  const _ReasonForm({required this.submitLabel, required this.reasonLabel});
+  const _ReasonForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.submitLabel,
+    required this.reasonLabel,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final String submitLabel;
   final String reasonLabel;
 
@@ -888,47 +938,61 @@ class _ReasonFormState extends State<_ReasonForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(<String, String?>{
+      'reason': _reasonController.text.trim(),
+      'notes': billingEmptyToNull(_notesController.text),
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _reasonController,
-          labelText: widget.reasonLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            context.l10n.billingReasonValidation,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _reasonController,
+            labelText: widget.reasonLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              context.l10n.billingReasonValidation,
+            ),
           ),
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: context.l10n.billingNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(<String, String?>{
-              'reason': _reasonController.text.trim(),
-              'notes': billingEmptyToNull(_notesController.text),
-            });
-          },
-        ),
-      ],
+          AppTextField(
+            controller: _notesController,
+            labelText: context.l10n.billingNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
 
 class _NotesForm extends StatefulWidget {
-  const _NotesForm({required this.submitLabel, this.email = false});
+  const _NotesForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.submitLabel,
+    this.email = false,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final String submitLabel;
   final bool email;
 
@@ -946,39 +1010,53 @@ class _NotesFormState extends State<_NotesForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(billingEmptyToNull(_controller.text));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _controller,
-          labelText: widget.email
-              ? context.l10n.billingRecipientEmailLabel
-              : context.l10n.billingNotesLabel,
-          keyboardType: widget.email ? TextInputType.emailAddress : null,
-          maxLines: widget.email ? 1 : 3,
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.save_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(billingEmptyToNull(_controller.text));
-          },
-        ),
-      ],
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _controller,
+            labelText: widget.email
+                ? context.l10n.billingRecipientEmailLabel
+                : context.l10n.billingNotesLabel,
+            keyboardType: widget.email ? TextInputType.emailAddress : null,
+            maxLines: widget.email ? 1 : 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.submitLabel,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
 
 class _CloseForm extends StatefulWidget {
-  const _CloseForm({required this.title, required this.shiftClose});
+  const _CloseForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+    required this.title,
+    required this.shiftClose,
+  });
 
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
   final String title;
   final bool shiftClose;
 
@@ -991,7 +1069,7 @@ class _CloseFormState extends State<_CloseForm> {
   final TextEditingController _expectedController = TextEditingController();
   final TextEditingController _actualController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  bool _submit = true;
+  bool _submitForApproval = true;
 
   @override
   void dispose() {
@@ -1001,57 +1079,65 @@ class _CloseFormState extends State<_CloseForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      BillingCloseDraft(
+        expectedAmount: billingEmptyToNull(_expectedController.text),
+        actualAmount: billingEmptyToNull(_actualController.text),
+        notes: billingEmptyToNull(_notesController.text),
+        submit: _submitForApproval,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        if (widget.shiftClose) ...<Widget>[
-          AppCurrencyAmountField(
-            amountController: _expectedController,
-            currency: appDefaultCurrencyCode,
-            onCurrencyChanged: (_) {},
-            amountLabelText: context.l10n.billingExpectedAmountLabel,
-            currencyLabelText: context.l10n.billingCurrencyLabel,
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          if (widget.shiftClose) ...<Widget>[
+            AppCurrencyAmountField(
+              amountController: _expectedController,
+              currency: appDefaultCurrencyCode,
+              onCurrencyChanged: (_) {},
+              amountLabelText: context.l10n.billingExpectedAmountLabel,
+              currencyLabelText: context.l10n.billingCurrencyLabel,
+            ),
+            AppCurrencyAmountField(
+              amountController: _actualController,
+              currency: appDefaultCurrencyCode,
+              onCurrencyChanged: (_) {},
+              amountLabelText: context.l10n.billingActualAmountLabel,
+              currencyLabelText: context.l10n.billingCurrencyLabel,
+            ),
+          ],
+          AppTextField(
+            controller: _notesController,
+            labelText: context.l10n.billingNotesLabel,
+            maxLines: 3,
           ),
-          AppCurrencyAmountField(
-            amountController: _actualController,
-            currency: appDefaultCurrencyCode,
-            onCurrencyChanged: (_) {},
-            amountLabelText: context.l10n.billingActualAmountLabel,
-            currencyLabelText: context.l10n.billingCurrencyLabel,
+          AppCheckboxField(
+            title: context.l10n.billingSubmitForApprovalLabel,
+            value: _submitForApproval,
+            onChanged: (bool value) =>
+                setState(() => _submitForApproval = value),
           ),
         ],
-        AppTextField(
-          controller: _notesController,
-          labelText: context.l10n.billingNotesLabel,
-          maxLines: 3,
-        ),
-        AppCheckboxField(
-          title: context.l10n.billingSubmitForApprovalLabel,
-          value: _submit,
-          onChanged: (bool value) => setState(() => _submit = value),
-        ),
-        AppFormActions(
-          cancelLabel: context.l10n.commonCancelActionLabel,
-          submitLabel: widget.title,
-          submitIcon: Icons.task_alt_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              BillingCloseDraft(
-                expectedAmount: billingEmptyToNull(_expectedController.text),
-                actualAmount: billingEmptyToNull(_actualController.text),
-                notes: billingEmptyToNull(_notesController.text),
-                submit: _submit,
-              ),
-            );
-          },
-        ),
-      ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: widget.title,
+        submitIcon: Icons.task_alt_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }
@@ -1061,11 +1147,14 @@ Future<void> _showPaymentDialog(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
-  final BillingPaymentDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingPaymentDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingReceivePayment),
-    icon: const Icon(Icons.point_of_sale),
-    content: _PaymentForm(item: item),
+    barrierDismissible: false,
+    builder: (_) => _PaymentForm(
+      dialogTitle: Text(context.l10n.billingReceivePayment),
+      dialogIcon: const Icon(Icons.point_of_sale),
+      item: item,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1084,11 +1173,14 @@ Future<void> _showRefundDialog(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
-  final BillingRefundDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingRefundDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingRequestRefund),
-    icon: const Icon(Icons.assignment_return_outlined),
-    content: _RefundForm(item: item),
+    barrierDismissible: false,
+    builder: (_) => _RefundForm(
+      dialogTitle: Text(context.l10n.billingRequestRefund),
+      dialogIcon: const Icon(Icons.assignment_return_outlined),
+      item: item,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1107,11 +1199,14 @@ Future<void> _showAdjustmentDialog(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
-  final BillingAdjustmentDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingAdjustmentDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingRequestAdjustment),
-    icon: const Icon(Icons.tune),
-    content: _AdjustmentForm(item: item),
+    barrierDismissible: false,
+    builder: (_) => _AdjustmentForm(
+      dialogTitle: Text(context.l10n.billingRequestAdjustment),
+      dialogIcon: const Icon(Icons.tune),
+      item: item,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1126,11 +1221,12 @@ Future<void> _showAdjustmentDialog(
 }
 
 Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
-  final Map<String, String?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, String?>? payload = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingVoidInvoice),
-    icon: const Icon(Icons.block_outlined),
-    content: _ReasonForm(
+    barrierDismissible: false,
+    builder: (_) => _ReasonForm(
+      dialogTitle: Text(context.l10n.billingVoidInvoice),
+      dialogIcon: const Icon(Icons.block_outlined),
       submitLabel: context.l10n.billingRequestVoidAction,
       reasonLabel: context.l10n.billingVoidReasonLabel,
     ),
@@ -1151,11 +1247,14 @@ Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
-  final String? notes = await showAppWorkspaceActionDialog(
+  final String? notes = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingIssueInvoice),
-    icon: const Icon(Icons.outbox_outlined),
-    content: _NotesForm(submitLabel: context.l10n.billingIssueAction),
+    barrierDismissible: false,
+    builder: (_) => _NotesForm(
+      dialogTitle: Text(context.l10n.billingIssueInvoice),
+      dialogIcon: const Icon(Icons.outbox_outlined),
+      submitLabel: context.l10n.billingIssueAction,
+    ),
   );
   if (!context.mounted) {
     return;
@@ -1170,11 +1269,12 @@ Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
-  final String? recipientEmail = await showAppWorkspaceActionDialog(
+  final String? recipientEmail = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingSendInvoice),
-    icon: const Icon(Icons.send_outlined),
-    content: _NotesForm(
+    barrierDismissible: false,
+    builder: (_) => _NotesForm(
+      dialogTitle: Text(context.l10n.billingSendInvoice),
+      dialogIcon: const Icon(Icons.send_outlined),
       submitLabel: context.l10n.billingSendAction,
       email: true,
     ),
@@ -1192,11 +1292,12 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
-  final BillingCloseDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingCloseDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingCloseShift),
-    icon: const Icon(Icons.schedule_send_outlined),
-    content: _CloseForm(
+    barrierDismissible: false,
+    builder: (_) => _CloseForm(
+      dialogTitle: Text(context.l10n.billingCloseShift),
+      dialogIcon: const Icon(Icons.schedule_send_outlined),
       title: context.l10n.billingCloseShift,
       shiftClose: true,
     ),
@@ -1214,11 +1315,15 @@ Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showDayCloseDialog(BuildContext context, WidgetRef ref) async {
-  final BillingCloseDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingCloseDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingCloseDay),
-    icon: const Icon(Icons.today_outlined),
-    content: _CloseForm(title: context.l10n.billingCloseDay, shiftClose: false),
+    barrierDismissible: false,
+    builder: (_) => _CloseForm(
+      dialogTitle: Text(context.l10n.billingCloseDay),
+      dialogIcon: const Icon(Icons.today_outlined),
+      title: context.l10n.billingCloseDay,
+      shiftClose: false,
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1328,11 +1433,14 @@ Future<bool> _saveInvoicePdf(
 }
 
 Future<void> _showApproveDialog(BuildContext context, WidgetRef ref) async {
-  final String? notes = await showAppWorkspaceActionDialog(
+  final String? notes = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingApproveAction),
-    icon: const Icon(Icons.check_circle_outline),
-    content: _NotesForm(submitLabel: context.l10n.billingApproveAction),
+    barrierDismissible: false,
+    builder: (_) => _NotesForm(
+      dialogTitle: Text(context.l10n.billingApproveAction),
+      dialogIcon: const Icon(Icons.check_circle_outline),
+      submitLabel: context.l10n.billingApproveAction,
+    ),
   );
   if (!context.mounted) {
     return;
@@ -1349,11 +1457,12 @@ Future<void> _showApproveDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showRejectDialog(BuildContext context, WidgetRef ref) async {
-  final Map<String, String?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, String?>? payload = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingRejectAction),
-    icon: const Icon(Icons.cancel_outlined),
-    content: _ReasonForm(
+    barrierDismissible: false,
+    builder: (_) => _ReasonForm(
+      dialogTitle: Text(context.l10n.billingRejectAction),
+      dialogIcon: const Icon(Icons.cancel_outlined),
       submitLabel: context.l10n.billingRejectAction,
       reasonLabel: context.l10n.billingReasonLabel,
     ),
@@ -1376,11 +1485,14 @@ Future<void> _showRejectDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _showSubmitClaimDialog(BuildContext context, WidgetRef ref) async {
-  final String? notes = await showAppWorkspaceActionDialog(
+  final String? notes = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingSubmitClaimAction),
-    icon: const Icon(Icons.upload_outlined),
-    content: _NotesForm(submitLabel: context.l10n.billingSubmitClaimAction),
+    barrierDismissible: false,
+    builder: (_) => _NotesForm(
+      dialogTitle: Text(context.l10n.billingSubmitClaimAction),
+      dialogIcon: const Icon(Icons.upload_outlined),
+      submitLabel: context.l10n.billingSubmitClaimAction,
+    ),
   );
   if (!context.mounted) {
     return;
@@ -1398,11 +1510,13 @@ Future<void> _showReconcileClaimDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final BillingClaimActionDraft? draft = await showAppWorkspaceActionDialog(
+  final BillingClaimActionDraft? draft = await showAppDialog(
     context: context,
-    title: Text(context.l10n.billingReconcileClaimAction),
-    icon: const Icon(Icons.fact_check_outlined),
-    content: const _ClaimReconcileForm(),
+    barrierDismissible: false,
+    builder: (_) => _ClaimReconcileForm(
+      dialogTitle: Text(context.l10n.billingReconcileClaimAction),
+      dialogIcon: const Icon(Icons.fact_check_outlined),
+    ),
   );
   if (draft == null || !context.mounted) {
     return;
@@ -1422,17 +1536,20 @@ Future<void> _showPreAuthStatusDialog(
   required String status,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final String? notes = await showAppWorkspaceActionDialog(
+  final String? notes = await showAppDialog(
     context: context,
-    title: Text(
-      status == 'APPROVED'
-          ? l10n.billingPreAuthApproveAction
-          : l10n.billingPreAuthDenyAction,
-    ),
-    icon: Icon(
-      status == 'APPROVED' ? Icons.check_circle_outline : Icons.cancel_outlined,
-    ),
-    content: _NotesForm(
+    barrierDismissible: false,
+    builder: (_) => _NotesForm(
+      dialogTitle: Text(
+        status == 'APPROVED'
+            ? l10n.billingPreAuthApproveAction
+            : l10n.billingPreAuthDenyAction,
+      ),
+      dialogIcon: Icon(
+        status == 'APPROVED'
+            ? Icons.check_circle_outline
+            : Icons.cancel_outlined,
+      ),
       submitLabel: status == 'APPROVED'
           ? l10n.billingPreAuthApproveAction
           : l10n.billingPreAuthDenyAction,
@@ -1519,7 +1636,13 @@ List<AppSearchBarFilterChoice> _billingQueueFilterChoices(
 }
 
 class _ClaimReconcileForm extends StatefulWidget {
-  const _ClaimReconcileForm();
+  const _ClaimReconcileForm({
+    required this.dialogTitle,
+    this.dialogIcon,
+  });
+
+  final Widget dialogTitle;
+  final Widget? dialogIcon;
 
   @override
   State<_ClaimReconcileForm> createState() => _ClaimReconcileFormState();
@@ -1536,58 +1659,65 @@ class _ClaimReconcileFormState extends State<_ClaimReconcileForm> {
     super.dispose();
   }
 
+  void _submit() {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    Navigator.of(context).pop(
+      BillingClaimActionDraft(
+        status: _status,
+        notes: billingEmptyToNull(_notesController.text),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppSelectField<String>(
-          value: _status,
-          labelText: l10n.billingStatusColumn,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'APPROVED',
-              label: l10n.billingClaimStatusApproved,
-            ),
-            AppSelectOption<String>(
-              value: 'REJECTED',
-              label: l10n.billingClaimStatusRejected,
-            ),
-            AppSelectOption<String>(
-              value: 'PAID',
-              label: l10n.billingClaimStatusPaid,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.billingNotesLabel,
-          maxLines: 3,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.billingReconcileClaimAction,
-          submitIcon: Icons.fact_check_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              BillingClaimActionDraft(
-                status: _status,
-                notes: billingEmptyToNull(_notesController.text),
+    return AppDialog(
+      title: widget.dialogTitle,
+      icon: widget.dialogIcon,
+      scrollable: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppSelectField<String>(
+            value: _status,
+            labelText: l10n.billingStatusColumn,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'APPROVED',
+                label: l10n.billingClaimStatusApproved,
               ),
-            );
-          },
-        ),
-      ],
+              AppSelectOption<String>(
+                value: 'REJECTED',
+                label: l10n.billingClaimStatusRejected,
+              ),
+              AppSelectOption<String>(
+                value: 'PAID',
+                label: l10n.billingClaimStatusPaid,
+              ),
+            ],
+            onChanged: (String? value) {
+              if (value != null) {
+                setState(() => _status = value);
+              }
+            },
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.billingNotesLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.billingReconcileClaimAction,
+        submitIcon: Icons.fact_check_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: _submit,
+      ),
     );
   }
 }

@@ -443,51 +443,17 @@ class _LabWorklistPanel extends ConsumerWidget {
               ),
             ],
             mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
-              final ThemeData theme = Theme.of(context);
-              final bool ordersView =
-                  state.query.view == LabWorkbenchView.orders;
-              return Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.sm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    if (ordersView) ...<Widget>[
-                      _LabOrderIdentifier(order: item),
-                      SizedBox(height: theme.spacing.xs),
-                      _LabOrderIdentity(order: item),
-                    ] else ...<Widget>[
-                      _LabOrderIdentity(order: item),
-                      SizedBox(height: theme.spacing.xs),
-                      _LabOrderIdentifier(order: item),
-                    ],
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      item.testsLabel ?? l10n.profileUnknownValue,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    Wrap(
-                      spacing: theme.spacing.xs,
-                      runSpacing: theme.spacing.xs,
-                      children: <Widget>[
-                        AppWorkspaceStatusBadge(
-                          status: _orderStatus(context, item.status),
-                        ),
-                        AppWorkspaceStatusBadge(
-                          status: _entryStatus(context, item),
-                        ),
-                        AppWorkspaceStatusBadge(
-                          status: _resultStatus(context, item),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              return AppListItemRow(
+                title: item.displayTitle,
+                subtitle: item.isPatientGroup
+                    ? item.patientId
+                    : item.apiId,
+                details: <Widget>[
+                  AppWorkspaceStatusBadge(
+                    status: _orderStatus(context, item.status),
+                  ),
+                ],
+                trailing: const Icon(Icons.chevron_right),
               );
             },
           ),

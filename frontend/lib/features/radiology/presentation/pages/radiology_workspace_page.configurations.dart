@@ -556,13 +556,9 @@ class _RadiologyTestConfigurationDialogState
 }
 
 Future<void> _showAssignDialog(BuildContext context, WidgetRef ref) async {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
     context: context,
-    title: Text(l10n.radiologyAssignDialogTitle),
-    content: const _AssignForm(),
-    icon: const Icon(Icons.person_add_alt_outlined),
-    maxWidth: 520,
+    builder: (_) => const _AssignForm(),
   );
   if (payload == null || !context.mounted) {
     return;

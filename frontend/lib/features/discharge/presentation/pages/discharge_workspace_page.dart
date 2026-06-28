@@ -314,7 +314,6 @@ class _DischargeQueuePanel extends ConsumerWidget {
             controller: searchController,
             semanticLabel: l10n.dischargeQueueSearchLabel,
             hintText: l10n.dischargeQueueSearchHint,
-            isLoading: state.isRefreshing,
             matcher: (_, _) => true,
             onSubmitted: (String value) async {
               final AppFailure? failure = await controller.applySearch(value);

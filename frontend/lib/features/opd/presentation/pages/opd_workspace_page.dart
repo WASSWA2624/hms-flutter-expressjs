@@ -2022,10 +2022,11 @@ class _OpdMainTable extends ConsumerWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: AppListTable<_OpdTableItem>(
-        page: page,
+      child: AppWorkspaceDetailPanel(
         title: l10n.opdFlowsTitle,
         description: l10n.opdTableDescription,
+        child: AppListTable<_OpdTableItem>(
+        page: page,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: isLoading,
         shrinkWrap: true,
@@ -2098,6 +2099,7 @@ class _OpdMainTable extends ConsumerWidget {
         itemKeyBuilder: (_OpdTableItem item) =>
             ValueKey<String>('opd-${item.stableKey}'),
         rowColorBuilder: _opdTableRowColor,
+        ),
       ),
     );
   }
@@ -2139,19 +2141,13 @@ class _OpdTableMobileRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppListItemRow(
       title: item.title,
-      subtitle: _joinDisplay(<String?>[
-        item.subtitle,
-        item.visitType,
-        item.queue,
-        opdStageDisplayLabel(context.l10n, item.status),
-        item.billing,
-        _waitingTimeLabel(context, item),
-        item.provider,
-        item.ownerRole,
-        _nextStepLabel(context, item),
-        _formatDateTime(context, item.time),
-      ]),
-      subtitleMaxLines: 3,
+      subtitle: item.subtitle,
+      details: <Widget>[
+        if (item.category == _opdCategoryTriage)
+          _opdTriageStatusText(context, item.status)
+        else
+          _opdStatusText(context, item.status),
+      ],
       trailing: const Icon(Icons.chevron_right),
     );
   }

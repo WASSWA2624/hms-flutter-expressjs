@@ -431,7 +431,6 @@ class _NursingWorklistPanel extends ConsumerWidget {
           },
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
-          isLoading: state.isRefreshing,
           showAdvancedFilterButton: true,
           advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
           advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,

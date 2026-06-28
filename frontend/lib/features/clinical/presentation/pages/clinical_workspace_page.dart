@@ -332,10 +332,11 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     return _ClinicalWorklistSurface(
-      child: AppListTable<ClinicalWorklistEntry>(
-        page: state.worklist,
+      child: AppWorkspaceDetailPanel(
         title: l10n.clinicalWorklistTitle,
         description: l10n.clinicalWorklistDescription,
+        child: AppListTable<ClinicalWorklistEntry>(
+        page: state.worklist,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -369,6 +370,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
         itemKeyBuilder: _clinicalWorklistItemKey,
         rowColorBuilder: _clinicalRowColor,
+        ),
       ),
     );
   }
@@ -611,30 +613,16 @@ Widget _clinicalWorklistMobileItemBuilder(
   return Padding(
     padding: EdgeInsets.symmetric(
       horizontal: theme.spacing.sm,
-      vertical: theme.spacing.sm,
+      vertical: theme.spacing.xs,
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _ClinicalPatientCell(item: item),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            _ClinicalQueueCell(item: item),
-            _ClinicalStatusCell(item: item),
-            Text(
-              _joinDisplay(<String?>[
-                item.providerDisplayName,
-                _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
-              ]),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
+    child: AppListItemRow(
+      title: item.displayTitle,
+      subtitle: item.patientPublicId ?? item.encounterPublicId,
+      padding: EdgeInsets.zero,
+      details: <Widget>[
+        _ClinicalStatusCell(item: item),
       ],
+      trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
     ),
   );
 }

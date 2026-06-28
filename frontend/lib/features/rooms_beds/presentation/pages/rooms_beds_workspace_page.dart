@@ -325,7 +325,6 @@ class _BedBoardPanel extends ConsumerWidget {
             semanticLabel: l10n.roomsBedsSearchLabel,
             hintText: l10n.roomsBedsSearchHint,
             matcher: (_, _) => true,
-            isLoading: state.isRefreshing,
             onSubmitted: (String value) async {
               final AppFailure? failure = await controller.applySearch(value);
               if (context.mounted) {

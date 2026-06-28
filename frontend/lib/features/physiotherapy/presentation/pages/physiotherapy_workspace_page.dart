@@ -316,11 +316,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       state.query,
     );
 
-    return AppListTable<TherapyWorkItem>(
-      page: state.worklist,
-      isLoading: state.isRefreshing,
+    return AppWorkspaceDetailPanel(
       title: l10n.physiotherapyWorklistTitle,
       description: l10n.physiotherapyWorklistDescription,
+      child: AppListTable<TherapyWorkItem>(
+      page: state.worklist,
+      isLoading: state.isRefreshing,
       columns: _columns(context, locale),
       columnChoices: _optionalColumns(context, locale),
       columnVisibilityController: columnVisibilityController,
@@ -360,7 +361,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         onClear: () {
           controller.applySearch('');
         },
-        isLoading: state.isRefreshing,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.physiotherapyFiltersLabel,
         advancedFilterTitle: l10n.physiotherapyFiltersLabel,
@@ -394,6 +394,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             filters: _filtersFromValue(value),
           );
         },
+      ),
       ),
     );
   }
@@ -660,16 +661,6 @@ class _TherapyWorklistMobileItem extends StatelessWidget {
       trailing: AppWorkspaceStatusBadge(
         status: _workspaceStatusForStatus(l10n, item.status),
       ),
-      details: <Widget>[
-        AppInlineMetaText(
-          icon: Icons.event_available_outlined,
-          label: _formatDateTime(context, item.sessionAt, l10n),
-        ),
-        AppInlineMetaText(
-          icon: Icons.route_outlined,
-          label: _nextActionLabel(l10n, item.status),
-        ),
-      ],
     );
   }
 }
