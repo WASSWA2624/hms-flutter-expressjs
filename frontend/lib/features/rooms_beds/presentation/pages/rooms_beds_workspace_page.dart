@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entiti
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -165,7 +166,42 @@ class _RoomsBedsWorkspaceContentState
       ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        primary: canAdminBeds
+            ? AppButton.primary(
+                label: l10n.tenantFacilityAddRoomAction,
+                leadingIcon: Icons.meeting_room_outlined,
+                semanticLabel: l10n.tenantFacilityAddRoomAction,
+                tooltip: l10n.tenantFacilityAddRoomAction,
+                enabled: !state.isSaving,
+                onPressed: () async {
+                  await showTenantFacilityRoomFormDialog(
+                    context,
+                    state.referenceData.snapshot,
+                  );
+                  if (context.mounted) {
+                    await controller.refresh();
+                  }
+                },
+              )
+            : null,
         secondary: <Widget>[
+          if (canAdminBeds)
+            AppButton.secondary(
+              label: l10n.tenantFacilityAddBedAction,
+              leadingIcon: Icons.bed_outlined,
+              semanticLabel: l10n.tenantFacilityAddBedAction,
+              tooltip: l10n.tenantFacilityAddBedAction,
+              enabled: !state.isSaving,
+              onPressed: () async {
+                await showTenantFacilityBedFormDialog(
+                  context,
+                  state.referenceData.snapshot,
+                );
+                if (context.mounted) {
+                  await controller.refresh();
+                }
+              },
+            ),
           if (canAdminBeds)
             AppButton.secondary(
               label: l10n.roomsBedsManageCatalogAction,
@@ -177,7 +213,8 @@ class _RoomsBedsWorkspaceContentState
           AppButton.tertiary(
             label: l10n.navigationSetupLabel,
             leadingIcon: Icons.settings_outlined,
-            onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+            onPressed: () =>
+                context.go(AppRoutes.tenantFacilitySetup.location()),
           ),
         ],
         onRefresh: () async {

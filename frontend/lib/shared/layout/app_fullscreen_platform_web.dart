@@ -24,8 +24,9 @@ Future<void> appFullscreenToggle() async {
 void appFullscreenAddChangeListener(VoidCallback listener) {
   _fullscreenChangeListeners.add(listener);
   _documentFullscreenListener ??= ((web.Event _) {
-    for (final VoidCallback callback
-        in _fullscreenChangeListeners.toList(growable: false)) {
+    for (final VoidCallback callback in _fullscreenChangeListeners.toList(
+      growable: false,
+    )) {
       callback();
     }
   }).toJS;
@@ -37,7 +38,8 @@ void appFullscreenAddChangeListener(VoidCallback listener) {
 
 void appFullscreenRemoveChangeListener(VoidCallback listener) {
   _fullscreenChangeListeners.remove(listener);
-  if (_fullscreenChangeListeners.isEmpty && _documentFullscreenListener != null) {
+  if (_fullscreenChangeListeners.isEmpty &&
+      _documentFullscreenListener != null) {
     web.document.removeEventListener(
       'fullscreenchange',
       _documentFullscreenListener!,

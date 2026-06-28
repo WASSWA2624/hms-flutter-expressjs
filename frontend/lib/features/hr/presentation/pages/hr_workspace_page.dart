@@ -176,6 +176,8 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
             leadingIcon: Icons.pending_actions_outlined,
+            semanticLabel: l10n.hrWorkQueuesTitle,
+            tooltip: l10n.hrWorkQueuesTitle,
             onPressed: state.isRefreshing
                 ? null
                 : () => _showWorkQueueDialog(context),
@@ -183,6 +185,8 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           AppButton.secondary(
             label: l10n.hrActivityTitle,
             leadingIcon: Icons.timeline_outlined,
+            semanticLabel: l10n.hrActivityTitle,
+            tooltip: l10n.hrActivityTitle,
             onPressed: state.isRefreshing
                 ? null
                 : () => _showActivityDialog(context),

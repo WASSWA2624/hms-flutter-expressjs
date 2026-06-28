@@ -156,6 +156,12 @@ class _RadiologyWorkspaceContentState
                 ? l10n.radiologyOrdersViewAction
                 : l10n.radiologyPatientsViewAction,
             leadingIcon: Icons.swap_horiz_outlined,
+            semanticLabel: state.query.view == RadiologyWorkbenchView.patients
+                ? l10n.radiologyOrdersViewAction
+                : l10n.radiologyPatientsViewAction,
+            tooltip: state.query.view == RadiologyWorkbenchView.patients
+                ? l10n.radiologyOrdersViewAction
+                : l10n.radiologyPatientsViewAction,
             onPressed: state.isMutating
                 ? null
                 : () => controller.applyView(
@@ -168,6 +174,8 @@ class _RadiologyWorkspaceContentState
             AppButton.secondary(
               label: l10n.radiologyConfigurationsAction,
               leadingIcon: Icons.tune_outlined,
+              semanticLabel: l10n.radiologyConfigurationsAction,
+              tooltip: l10n.radiologyConfigurationsAction,
               enabled: !state.isMutating,
               onPressed: state.isMutating
                   ? null
@@ -182,6 +190,8 @@ class _RadiologyWorkspaceContentState
             ? AppButton.primary(
                 label: l10n.radiologyRequestImagingAction,
                 leadingIcon: Icons.add,
+                semanticLabel: l10n.radiologyRequestImagingAction,
+                tooltip: l10n.radiologyRequestImagingAction,
                 enabled: !state.isMutating,
                 onPressed: () => _showCreateOrderDialog(context, ref),
               )
@@ -1132,7 +1142,8 @@ class _WorkflowProgressSection extends StatelessWidget {
       title: l10n.radiologyWorkflowProgressTitle,
       actions: canCollapse
           ? <Widget>[
-              AppButton(iconOnly: true, 
+              AppButton(
+                iconOnly: true,
                 leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
                 label: l10n.radiologyWorkflowProgressTitle,
 
@@ -1326,7 +1337,8 @@ class _RequestSection extends ConsumerWidget {
     return _DetailSection(
       title: l10n.radiologyRequestDetailsTitle,
       actions: <Widget>[
-        AppButton(iconOnly: true, 
+        AppButton(
+          iconOnly: true,
           leadingIcon: Icons.edit_outlined,
           label: l10n.radiologyEditRequestDetailsAction,
 
@@ -2137,10 +2149,11 @@ class _PendingStudyAssetTile extends StatelessWidget {
               onChanged: onCaptionChanged,
             ),
           ),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.delete_outline,
             label: l10n.radiologyRemoveAssetAction,
-      semanticLabel: l10n.radiologyRemoveAssetAction,
+            semanticLabel: l10n.radiologyRemoveAssetAction,
             tooltip: l10n.radiologyRemoveAssetAction,
             onPressed: enabled ? onRemove : null,
           ),
@@ -2195,7 +2208,8 @@ class _StudyAssetTile extends StatelessWidget {
             ),
           ),
           if (canEdit)
-            AppButton(iconOnly: true, 
+            AppButton(
+              iconOnly: true,
               leadingIcon: Icons.delete_outline,
               label: l10n.radiologyRemoveAssetAction,
 
@@ -2742,7 +2756,8 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
               ]),
             ),
           ),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.close,
             label: l10n.clinicalRadiologyDeleteSelectionAction,
 

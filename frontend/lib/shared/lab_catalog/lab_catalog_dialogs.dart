@@ -1866,7 +1866,8 @@ class _SelectedPanelTestRow extends StatelessWidget {
               ],
             ),
           ),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.close,
             label: l10n.commonRemoveActionLabel,
 

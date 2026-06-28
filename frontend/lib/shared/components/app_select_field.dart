@@ -558,7 +558,9 @@ class _SelectTrailingIcon extends StatelessWidget {
               iconOnly: true,
               leadingIcon: Icons.close,
               label: MaterialLocalizations.of(context).clearButtonTooltip,
-              semanticLabel: MaterialLocalizations.of(context).clearButtonTooltip,
+              semanticLabel: MaterialLocalizations.of(
+                context,
+              ).clearButtonTooltip,
               tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
               onPressed: onClear,
             ),

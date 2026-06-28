@@ -123,6 +123,12 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                 ? l10n.labOrdersViewAction
                 : l10n.labPatientsViewAction,
             icon: Icons.swap_horiz_outlined,
+            semanticLabel: state.query.view == LabWorkbenchView.patients
+                ? l10n.labOrdersViewAction
+                : l10n.labPatientsViewAction,
+            tooltip: state.query.view == LabWorkbenchView.patients
+                ? l10n.labOrdersViewAction
+                : l10n.labPatientsViewAction,
             onPressed: () => controller.applyView(
               state.query.view == LabWorkbenchView.patients
                   ? LabWorkbenchView.orders
@@ -133,6 +139,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
             AppButton.secondary(
               label: l10n.labReferenceRangesAction,
               leadingIcon: Icons.tune_outlined,
+              semanticLabel: l10n.labReferenceRangesAction,
+              tooltip: l10n.labReferenceRangesAction,
               onPressed: () =>
                   _openLabConfigurationsDialog(context, state, policy.tenantId),
             ),
@@ -141,6 +149,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
             ? AppButton.primary(
                 label: l10n.labCreateAction,
                 leadingIcon: Icons.add_circle_outline,
+                semanticLabel: l10n.labCreateAction,
+                tooltip: l10n.labCreateAction,
                 enabled: !state.isSaving,
                 onPressed: () => _openCreateLabOrderDialog(context, state),
               )

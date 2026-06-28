@@ -1223,7 +1223,8 @@ class _AppPaginationControls extends StatelessWidget {
             ),
           ),
           SizedBox(width: theme.spacing.sm),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.chevron_left,
             label: previousPageLabel,
 
@@ -1234,7 +1235,8 @@ class _AppPaginationControls extends StatelessWidget {
                   }
                 : null,
           ),
-          AppButton(iconOnly: true, 
+          AppButton(
+            iconOnly: true,
             leadingIcon: Icons.chevron_right,
             label: nextPageLabel,
 

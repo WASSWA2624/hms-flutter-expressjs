@@ -97,8 +97,35 @@ class _ClinicalWorkspaceContent extends ConsumerStatefulWidget {
 class _ClinicalWorkspaceContentState
     extends ConsumerState<_ClinicalWorkspaceContent> {
   static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalWrite,
+      AppPermissions.systemAdmin,
+    ],
     activeModules: <String>['encounters-vitals'],
+  );
+
+  static const AccessRequirement _labOrderRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalWrite,
+      AppPermissions.systemAdmin,
+    ],
+    activeModules: <String>['encounters-vitals', 'lab-workflows'],
+  );
+
+  static const AccessRequirement _prescribeRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalWrite,
+      AppPermissions.systemAdmin,
+    ],
+    activeModules: <String>['encounters-vitals', 'pharmacy-dispensing'],
+  );
+
+  static const AccessRequirement _radiologyOrderRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalWrite,
+      AppPermissions.systemAdmin,
+    ],
+    activeModules: <String>['encounters-vitals', 'radiology-workflows'],
   );
 
   late final TextEditingController _searchController;
@@ -126,6 +153,38 @@ class _ClinicalWorkspaceContentState
     super.dispose();
   }
 
+  Widget _clinicalToolbarButton({
+    required AccessRequirement requirement,
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    final ClinicalWorkspaceState state = widget.state;
+    final bool hasSelection = state.selectedBundle != null;
+
+    return AppAccessActionGate(
+      requirement: requirement,
+      builder: (BuildContext context, bool isAllowed) {
+        final bool enabled = isAllowed && hasSelection && !state.isSaving;
+        final String tooltip = !isAllowed
+            ? l10n.tenantFacilityPermissionDenied
+            : !hasSelection
+            ? l10n.clinicalNoSelectionTitle
+            : label;
+
+        return AppButton.secondary(
+          label: label,
+          leadingIcon: icon,
+          semanticLabel: label,
+          tooltip: tooltip,
+          enabled: enabled,
+          onPressed: enabled ? onPressed : null,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -146,65 +205,35 @@ class _ClinicalWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[
-          AppAccessActionGate(
-            requirement: _ClinicalWorkspaceContentState._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              final bool hasSelection = state.selectedBundle != null;
-              return AppButton.secondary(
-                label: l10n.clinicalAddNoteAction,
-                leadingIcon: Icons.note_add_outlined,
-                enabled: isAllowed && hasSelection && !state.isSaving,
-                onPressed: () => _openNoteDialog(context, controller),
-              );
-            },
+          _clinicalToolbarButton(
+            requirement: _writeRequirement,
+            label: l10n.clinicalAddNoteAction,
+            icon: Icons.note_add_outlined,
+            onPressed: () => _openNoteDialog(context, controller),
           ),
-          AppAccessActionGate(
-            requirement: _ClinicalWorkspaceContentState._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              final bool hasSelection = state.selectedBundle != null;
-              return AppButton.secondary(
-                label: l10n.clinicalRequestLabAction,
-                leadingIcon: Icons.science_outlined,
-                enabled: isAllowed && hasSelection && !state.isSaving,
-                onPressed: () => _openLabDialog(
-                  context,
-                  controller,
-                  state.referenceData,
-                ),
-              );
-            },
+          _clinicalToolbarButton(
+            requirement: _labOrderRequirement,
+            label: l10n.clinicalRequestLabAction,
+            icon: Icons.science_outlined,
+            onPressed: () =>
+                _openLabDialog(context, controller, state.referenceData),
           ),
-          AppAccessActionGate(
-            requirement: _ClinicalWorkspaceContentState._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              final bool hasSelection = state.selectedBundle != null;
-              return AppButton.secondary(
-                label: l10n.clinicalPrescribeAction,
-                leadingIcon: Icons.medication_outlined,
-                enabled: isAllowed && hasSelection && !state.isSaving,
-                onPressed: () => _openPrescriptionDialog(
-                  context,
-                  controller,
-                  state.referenceData,
-                ),
-              );
-            },
+          _clinicalToolbarButton(
+            requirement: _prescribeRequirement,
+            label: l10n.clinicalPrescribeAction,
+            icon: Icons.medication_outlined,
+            onPressed: () => _openPrescriptionDialog(
+              context,
+              controller,
+              state.referenceData,
+            ),
           ),
-          AppAccessActionGate(
-            requirement: _ClinicalWorkspaceContentState._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              final bool hasSelection = state.selectedBundle != null;
-              return AppButton.secondary(
-                label: l10n.clinicalRequestRadiologyAction,
-                leadingIcon: Icons.biotech_outlined,
-                enabled: isAllowed && hasSelection && !state.isSaving,
-                onPressed: () => _openRadiologyDialog(
-                  context,
-                  controller,
-                  state.referenceData,
-                ),
-              );
-            },
+          _clinicalToolbarButton(
+            requirement: _radiologyOrderRequirement,
+            label: l10n.clinicalRequestRadiologyAction,
+            icon: Icons.biotech_outlined,
+            onPressed: () =>
+                _openRadiologyDialog(context, controller, state.referenceData),
           ),
         ],
         onRefresh: () async {
@@ -1507,7 +1536,8 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.edit_outlined,
                     label: l10n.clinicalEditLabOrderAction,
 
@@ -1521,7 +1551,8 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                       existingOrder: order,
                     ),
                   ),
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.block_outlined,
                     label: l10n.clinicalCancelLabOrderAction,
 
@@ -1536,7 +1567,8 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                       action: () => controller.cancelLabOrder(order.id),
                     ),
                   ),
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.delete_outline,
                     label: l10n.clinicalDeleteLabOrderAction,
 
@@ -2030,7 +2062,8 @@ class _ClinicalRadiologyOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.block_outlined,
                     label: l10n.clinicalCancelRadiologyOrderAction,
 
@@ -2045,7 +2078,8 @@ class _ClinicalRadiologyOrderRow extends ConsumerWidget {
                       action: () => controller.cancelRadiologyOrder(record.id),
                     ),
                   ),
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.delete_outline,
                     label: l10n.clinicalDeleteRadiologyOrderAction,
 
@@ -2221,7 +2255,8 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.block_outlined,
                     label: l10n.clinicalCancelPharmacyOrderAction,
 
@@ -2236,7 +2271,8 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                       action: () => controller.cancelPharmacyOrder(record.id),
                     ),
                   ),
-                  AppButton(iconOnly: true, 
+                  AppButton(
+                    iconOnly: true,
                     leadingIcon: Icons.delete_outline,
                     label: l10n.clinicalDeletePharmacyOrderAction,
 

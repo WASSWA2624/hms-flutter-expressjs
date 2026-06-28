@@ -664,8 +664,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       return;
     }
     Navigator.of(context).pop(true);
-    final String encounterTarget =
-        flow.publicId?.trim().isNotEmpty == true ? flow.publicId! : flow.id;
+    final String encounterTarget = flow.publicId?.trim().isNotEmpty == true
+        ? flow.publicId!
+        : flow.id;
     context.go(
       AppRoutes.physiotherapy.location(
         queryParameters: <String, String>{'encounterId': encounterTarget},

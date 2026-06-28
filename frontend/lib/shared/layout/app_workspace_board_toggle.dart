@@ -24,18 +24,21 @@ class AppWorkspaceBoardToggle<T extends Object> extends StatelessWidget {
       showSelectedIcon: false,
       segments: segments,
       selected: <T>{value},
-      style: SegmentedButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: borderRadius),
-      ).copyWith(
-        side: WidgetStateProperty.resolveWith<BorderSide?>((Set<WidgetState> states) {
-          return BorderSide(
-            color: theme.colorScheme.outlineVariant,
-            width: states.contains(WidgetState.selected) ? 1.25 : 1,
-          );
-        }),
-      ),
+      style:
+          SegmentedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+          ).copyWith(
+            side: WidgetStateProperty.resolveWith<BorderSide?>((
+              Set<WidgetState> states,
+            ) {
+              return BorderSide(
+                color: theme.colorScheme.outlineVariant,
+                width: states.contains(WidgetState.selected) ? 1.25 : 1,
+              );
+            }),
+          ),
       onSelectionChanged: (Set<T> selection) {
         if (selection.isNotEmpty) {
           onChanged(selection.first);

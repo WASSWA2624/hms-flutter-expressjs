@@ -67,7 +67,8 @@ class _AppFullscreenToggleState extends State<AppFullscreenToggle> {
       });
     }
 
-    return AppButton(iconOnly: true, 
+    return AppButton(
+      iconOnly: true,
       icon: icon,
       label: label,
       semanticLabel: label,

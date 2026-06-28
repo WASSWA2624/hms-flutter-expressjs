@@ -289,9 +289,10 @@ class _AppTextFieldState extends State<AppTextField> {
         ? widget.showObscuredTextLabel!
         : widget.hideObscuredTextLabel!;
 
-    return AppButton(iconOnly: true, 
+    return AppButton(
+      iconOnly: true,
       label: label,
- 
+
       semanticLabel: label,
       tooltip: label,
       onPressed: canEdit

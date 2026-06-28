@@ -8,6 +8,8 @@ class AppWorkspaceViewToggle extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.enabled = true,
+    this.semanticLabel,
+    this.tooltip,
     super.key,
   });
 
@@ -15,12 +17,16 @@ class AppWorkspaceViewToggle extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final bool enabled;
+  final String? semanticLabel;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     return AppButton.secondary(
       label: label,
       leadingIcon: icon,
+      semanticLabel: semanticLabel ?? label,
+      tooltip: tooltip ?? label,
       enabled: enabled,
       onPressed: onPressed,
     );

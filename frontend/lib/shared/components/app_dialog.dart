@@ -495,9 +495,13 @@ class _DialogHeader extends StatelessWidget {
             if (showMaximizeButton)
               AppButton(
                 iconOnly: true,
-                leadingIcon: isMaximized ? Icons.fullscreen_exit : Icons.fullscreen,
+                leadingIcon: isMaximized
+                    ? Icons.fullscreen_exit
+                    : Icons.fullscreen,
                 label: isMaximized ? 'Restore dialog' : 'Maximize dialog',
-                semanticLabel: isMaximized ? 'Restore dialog' : 'Maximize dialog',
+                semanticLabel: isMaximized
+                    ? 'Restore dialog'
+                    : 'Maximize dialog',
                 tooltip: isMaximized ? 'Restore dialog' : 'Maximize dialog',
                 onPressed: onMaximizeToggle,
               ),
@@ -506,7 +510,9 @@ class _DialogHeader extends StatelessWidget {
                 iconOnly: true,
                 leadingIcon: Icons.close,
                 label: MaterialLocalizations.of(context).closeButtonTooltip,
-                semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+                semanticLabel: MaterialLocalizations.of(
+                  context,
+                ).closeButtonTooltip,
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 enabled: closeEnabled,
                 onPressed: closeEnabled

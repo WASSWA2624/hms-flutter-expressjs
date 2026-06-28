@@ -13,10 +13,8 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_view_toggle.dart';
 
-typedef AppToolbarOverflowCallback = void Function(
-  BuildContext context,
-  WidgetRef ref,
-);
+typedef AppToolbarOverflowCallback =
+    void Function(BuildContext context, WidgetRef ref);
 
 @immutable
 final class AppToolbarOverflowEntry {
@@ -133,18 +131,21 @@ AppToolbarOverflowEntry? _resolveAction(Widget action, WidgetRef ref) {
 List<AppToolbarOverflowEntry> _boardToggleEntries(
   AppWorkspaceBoardToggle<Object> toggle,
 ) {
-  return toggle.segments.map((ButtonSegment<Object> segment) {
-    final String label = _segmentLabel(segment.label);
-    final IconData icon = _segmentIcon(segment.icon) ?? Icons.view_module_outlined;
-    final bool isSelected = toggle.value == segment.value;
+  return toggle.segments
+      .map((ButtonSegment<Object> segment) {
+        final String label = _segmentLabel(segment.label);
+        final IconData icon =
+            _segmentIcon(segment.icon) ?? Icons.view_module_outlined;
+        final bool isSelected = toggle.value == segment.value;
 
-    return AppToolbarOverflowEntry(
-      icon: icon,
-      label: label,
-      enabled: !isSelected,
-      onSelected: (_, _) => toggle.onChanged(segment.value),
-    );
-  }).toList(growable: false);
+        return AppToolbarOverflowEntry(
+          icon: icon,
+          label: label,
+          enabled: !isSelected,
+          onSelected: (_, _) => toggle.onChanged(segment.value),
+        );
+      })
+      .toList(growable: false);
 }
 
 String _segmentLabel(Widget? labelWidget) {
@@ -165,7 +166,8 @@ AppToolbarOverflowEntry _resolveAppButton(AppButton action) {
   final String label = action.semanticLabel ?? action.label;
   final bool canPress =
       action.enabled && !action.isLoading && action.onPressed != null;
-  final IconData icon = action.leadingIcon ??
+  final IconData icon =
+      action.leadingIcon ??
       switch (action.variant) {
         AppButtonVariant.primary => Icons.add,
         AppButtonVariant.secondary ||

@@ -63,6 +63,8 @@ class AppWorkspaceToolbar extends ConsumerWidget {
   static const double _iconActionWidth = 72;
   static const double _labeledActionWidth = 212;
   static const double _longLabeledActionWidth = 248;
+  static const double _toolbarActionEstimateWidth = 280;
+  static const double _toolbarLayoutSafetyMargin = 24;
   static const double _boardToggleWidth = 280;
   static const double _viewToggleWidth = 196;
   static const double _moreButtonWidth = 56;
@@ -71,8 +73,8 @@ class AppWorkspaceToolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool showLabels = breakpoint != AppBreakpoint.xs &&
-        breakpoint != AppBreakpoint.sm;
+    final bool showLabels =
+        breakpoint != AppBreakpoint.xs && breakpoint != AppBreakpoint.sm;
 
     final List<Widget> screenActions = _screenActions(config);
     final List<Widget> globalActions = _globalActions(context);
@@ -86,10 +88,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
             return _ToolbarActionRow(
               spacing: theme.spacing.xs,
               providerContainer: ProviderScope.containerOf(context),
-              inlineActions: <Widget>[
-                ...screenActions,
-                ...globalActions,
-              ],
+              inlineActions: <Widget>[...screenActions, ...globalActions],
             );
           }
 
@@ -133,8 +132,9 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     List<Widget> inlineScreen = screenActions
         .take(maxVisibleScreenActions.clamp(0, screenActions.length))
         .toList();
-    final List<Widget> overflowScreen =
-        screenActions.skip(inlineScreen.length).toList();
+    final List<Widget> overflowScreen = screenActions
+        .skip(inlineScreen.length)
+        .toList();
     List<Widget> inlineGlobal = List<Widget>.from(globalActions);
     final List<Widget> overflowGlobal = <Widget>[];
 
@@ -201,7 +201,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     if (overflowCount > 0) {
       width += spacing + _moreButtonWidth;
     }
-    return width <= maxWidth;
+    return width <= maxWidth - _toolbarLayoutSafetyMargin;
   }
 
   static double _rowWidth(
@@ -223,7 +223,10 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     return total;
   }
 
-  static double _estimateActionWidth(Widget action, {required bool showLabels}) {
+  static double _estimateActionWidth(
+    Widget action, {
+    required bool showLabels,
+  }) {
     if (action is AppWorkspaceBoardToggle<Object>) {
       return showLabels ? _boardToggleWidth : 96;
     }
@@ -237,7 +240,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     if (action is AppWorkspaceRefreshAction) {
       return showLabels ? _labeledActionWidth : _iconActionWidth;
     }
-    return showLabels ? _labeledActionWidth : _iconActionWidth;
+    return showLabels ? _toolbarActionEstimateWidth : _iconActionWidth;
   }
 
   List<Widget> _globalActions(BuildContext context) {
@@ -260,8 +263,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     if (config.showHousekeepingRequest) {
       actions.add(
         AppGlobalHousekeepingRequestAction(
-          label:
-              config.housekeepingRequestLabel ?? 'Request maintenance',
+          label: config.housekeepingRequestLabel ?? 'Request maintenance',
         ),
       );
     }
@@ -352,21 +354,28 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       return;
     }
 
-    final RenderBox? renderBox =
-        _rowKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null || !renderBox.hasSize) {
-      return;
-    }
+    final double estimatedWidth = AppWorkspaceToolbar._rowWidth(
+          _layout.inlineActions,
+          showLabels: widget.showLabels,
+          spacing: widget.spacing,
+        ) +
+        (_layout.overflowActions.isNotEmpty
+            ? widget.spacing + AppWorkspaceToolbar._moreButtonWidth
+            : 0);
 
-    if (renderBox.size.width <= widget.maxWidth + 0.5 ||
+    if (estimatedWidth <=
+            widget.maxWidth - AppWorkspaceToolbar._toolbarLayoutSafetyMargin ||
         _layout.inlineActions.isEmpty) {
       return;
     }
 
     setState(() {
-      final List<Widget> inlineActions = List<Widget>.from(_layout.inlineActions);
-      final List<Widget> overflowActions =
-          List<Widget>.from(_layout.overflowActions);
+      final List<Widget> inlineActions = List<Widget>.from(
+        _layout.inlineActions,
+      );
+      final List<Widget> overflowActions = List<Widget>.from(
+        _layout.overflowActions,
+      );
       overflowActions.insert(0, inlineActions.removeLast());
       _layout = _ToolbarLayout(
         inlineActions: inlineActions,
@@ -468,8 +477,10 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final List<AppToolbarOverflowEntry> entries =
-        resolveToolbarOverflowEntries(actions, ref);
+    final List<AppToolbarOverflowEntry> entries = resolveToolbarOverflowEntries(
+      actions,
+      ref,
+    );
 
     if (entries.isEmpty) {
       return const SizedBox.shrink();

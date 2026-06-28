@@ -398,9 +398,10 @@ class AppMenuBar extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
           child: Row(
             children: <Widget>[
-              AppButton(iconOnly: true, 
+              AppButton(
+                iconOnly: true,
                 label: toggleTooltip,
- 
+
                 semanticLabel: toggleTooltip,
                 tooltip: toggleTooltip,
                 leadingIcon: Icons.menu,
@@ -457,9 +458,7 @@ class AppMenuBar extends StatelessWidget {
                   onSettingsSelected: onSettingsSelected,
                   onChangePasswordSelected: onChangePasswordSelected,
                   onLogoutSelected: onLogoutSelected,
-                  child: _UserAvatar(
-                    profile: userProfile,
-                  ),
+                  child: _UserAvatar(profile: userProfile),
                 ),
               ],
             ],
@@ -997,9 +996,10 @@ class _MobileShellDrawer extends StatelessWidget {
                         ),
                       ),
                     ),
-                    AppButton(iconOnly: true, 
+                    AppButton(
+                      iconOnly: true,
                       label: closeTooltip,
- 
+
                       semanticLabel: closeTooltip,
                       tooltip: closeTooltip,
                       leadingIcon: Icons.close,

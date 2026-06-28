@@ -3,11 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
 /// Icon + label row used in popup menus (user menu, toolbar overflow, etc.).
 class AppMenuItemLabel extends StatelessWidget {
-  const AppMenuItemLabel({
-    required this.icon,
-    required this.label,
-    super.key,
-  });
+  const AppMenuItemLabel({required this.icon, required this.label, super.key});
 
   final IconData icon;
   final String label;

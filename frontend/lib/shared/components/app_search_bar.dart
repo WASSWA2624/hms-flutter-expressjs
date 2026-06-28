@@ -408,7 +408,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (canClear)
-            AppButton(iconOnly: true, 
+            AppButton(
+              iconOnly: true,
               leadingIcon: Icons.close,
               label: clearLabel,
 

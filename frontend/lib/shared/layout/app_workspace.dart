@@ -227,7 +227,8 @@ class AppWorkspaceHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final AppWorkspaceToolbarConfig? effectiveToolbar = toolbar ??
+    final AppWorkspaceToolbarConfig? effectiveToolbar =
+        toolbar ??
         (primaryAction != null || secondaryActions.isNotEmpty
             ? AppWorkspaceToolbarConfig(
                 primary: primaryAction,
@@ -2361,7 +2362,9 @@ class _WorkspaceDrawerHeader extends StatelessWidget {
                 iconOnly: true,
                 leadingIcon: Icons.close,
                 label: MaterialLocalizations.of(context).closeButtonTooltip,
-                semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+                semanticLabel: MaterialLocalizations.of(
+                  context,
+                ).closeButtonTooltip,
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 enabled: closeEnabled,
                 onPressed: closeEnabled
@@ -2579,7 +2582,8 @@ class _CleanFilterBar extends StatelessWidget {
     final String dialogTitle = title == null || title!.trim().isEmpty
         ? 'Filters'
         : title!;
-    final Widget filterButton = AppButton(iconOnly: true, 
+    final Widget filterButton = AppButton(
+      iconOnly: true,
       leadingIcon: Icons.tune,
       label: dialogTitle,
 

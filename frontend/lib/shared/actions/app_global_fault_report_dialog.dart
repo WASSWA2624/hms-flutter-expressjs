@@ -20,7 +20,9 @@ Future<void> showAppGlobalFaultReportDialog({
     biomedicalWorkspaceControllerProvider,
   );
   if (workspace.isLoading || workspace.hasError) {
-    unawaited(ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh());
+    unawaited(
+      ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh(),
+    );
   }
 
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
@@ -51,8 +53,7 @@ class _AppGlobalFaultReportDialogBody extends ConsumerStatefulWidget {
 class _AppGlobalFaultReportDialogBodyState
     extends ConsumerState<_AppGlobalFaultReportDialogBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _reportedNameController =
-      TextEditingController();
+  final TextEditingController _reportedNameController = TextEditingController();
   final TextEditingController _symptomsController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
@@ -224,9 +225,6 @@ List<AppSelectOption<String>> _lookupOptions(
 ) {
   return <AppSelectOption<String>>[
     for (final BiomedicalLookupOption option in options)
-      AppSelectOption<String>(
-        value: option.id,
-        label: option.displayLabel,
-      ),
+      AppSelectOption<String>(value: option.id, label: option.displayLabel),
   ];
 }

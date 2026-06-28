@@ -90,7 +90,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         onRefresh: () async {
-          await ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
+          await ref
+              .read(tenantFacilitySetupControllerProvider.notifier)
+              .refresh();
         },
         isRefreshing: isRefreshing,
       ),
@@ -1631,7 +1633,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           hintText: widget.searchHint,
           prefixIcon: const Icon(Icons.search),
           suffixIcon: isSearching
-              ? AppButton(iconOnly: true, 
+              ? AppButton(
+                  iconOnly: true,
                   leadingIcon: Icons.close,
                   label: l10n.tenantFacilityClearSearchAction,
 
@@ -1811,17 +1814,19 @@ class _EntityRow extends StatelessWidget {
           ),
           if (canEdit) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
-            AppButton(iconOnly: true, 
+            AppButton(
+              iconOnly: true,
               leadingIcon: Icons.edit_outlined,
               label: l10n.tenantFacilityEditAction,
 
               semanticLabel: l10n.tenantFacilityEditAction,
               onPressed: onEdit,
             ),
-            AppButton(iconOnly: true, 
+            AppButton(
+              iconOnly: true,
               icon: Icons.delete_outline,
               label: l10n.tenantFacilityDeleteAction,
-      semanticLabel: l10n.tenantFacilityDeleteAction,
+              semanticLabel: l10n.tenantFacilityDeleteAction,
               onPressed: onDelete,
               color: theme.statusColors.error,
             ),
@@ -3204,4 +3209,22 @@ void _showSaved(BuildContext context) {
     ..showSnackBar(
       SnackBar(content: Text(context.l10n.tenantFacilitySavedMessage)),
     );
+}
+
+/// Shared room create/edit dialog for facility setup and rooms & beds workspace.
+Future<void> showTenantFacilityRoomFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  RoomProfile? room,
+}) {
+  return _openRoomDialog(context, snapshot, room: room);
+}
+
+/// Shared bed create/edit dialog for facility setup and rooms & beds workspace.
+Future<void> showTenantFacilityBedFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  BedProfile? bed,
+}) {
+  return _openBedDialog(context, snapshot, bed: bed);
 }
