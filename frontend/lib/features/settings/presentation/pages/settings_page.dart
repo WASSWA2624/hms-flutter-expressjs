@@ -40,6 +40,9 @@ class SettingsPage extends ConsumerWidget {
           return action.requirement?.isAllowed(accessPolicy) ?? true;
         })
         .toList(growable: false);
+    final bool showSettingsWorkspace = _settingsWorkspaceRequirement.isAllowed(
+      accessPolicy,
+    );
 
     return AppWorkspace(
       title: l10n.settingsTitle,
@@ -212,7 +215,7 @@ class SettingsPage extends ConsumerWidget {
                 ),
             ],
           ),
-          if (adminActions.isNotEmpty) ...<Widget>[
+          if (showSettingsWorkspace) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.md),
             const SettingsWorkspaceSection(),
           ],
@@ -396,15 +399,28 @@ const AccessRequirement _accessAdminRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
-    AppPermissions.hrWrite,
     AppPermissions.systemAdmin,
   ],
   anyRoles: <AppRole>[
     AppRole.superAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
-    AppRole.hr,
     AppRole.operations,
+  ],
+  requiresTenantContext: true,
+);
+
+/// Matches backend [SETTINGS_WORKSPACE_ROLES]: super/tenant/facility admins only.
+const AccessRequirement _settingsWorkspaceRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.facilityAdmin,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
   ],
   requiresTenantContext: true,
 );

@@ -389,6 +389,196 @@ final class HrRepositoryImpl implements HrRepository {
     );
   }
 
+  @override
+  Future<Result<AppPage<HrAccessUser>>> listAccessUsers(HrAccessQuery query) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<HrAccessUser>>(
+      ApiEndpoints.collection(HmsApiResource.users),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'tenant_id': query.tenantId,
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) =>
+          HrAccessUserPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<AppPage<HrAccessRole>>> listAccessRoles(HrAccessQuery query) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<HrAccessRole>>(
+      ApiEndpoints.collection(HmsApiResource.roles),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'tenant_id': query.tenantId,
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) =>
+          HrAccessRolePageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<AppPage<HrAccessPermission>>> listAccessPermissions(
+    HrAccessQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<HrAccessPermission>>(
+      ApiEndpoints.collection(HmsApiResource.permissions),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'tenant_id': query.tenantId,
+        'sort_by': 'created_at',
+        'order': 'desc',
+      }),
+      decoder: (Object? data) =>
+          HrAccessPermissionPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<Object?>> updateUserAccount(
+    String userId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.users, userId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<Object?>> createRole(Map<String, Object?> payload) {
+    return _postCollection(HmsApiResource.roles, payload);
+  }
+
+  @override
+  Future<Result<Object?>> updateRole(
+    String roleId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.roles, roleId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteRole(String roleId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.roles, roleId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<Object?>> createPermission(Map<String, Object?> payload) {
+    return _postCollection(HmsApiResource.permissions, payload);
+  }
+
+  @override
+  Future<Result<Object?>> updatePermission(
+    String permissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.permissions, permissionId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<void>> deletePermission(String permissionId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.permissions, permissionId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> assignRolePermission({
+    required String roleId,
+    required String permissionId,
+  }) {
+    return _apiClient.post<void>(
+      ApiEndpoints.collection(HmsApiResource.rolePermissions),
+      data: <String, Object?>{'role_id': roleId, 'permission_id': permissionId},
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> revokeRolePermission(String rolePermissionId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.rolePermissions, rolePermissionId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<AppPage<HrOption>>> listRolePermissions(String roleId) {
+    const AppPageRequest request = AppPageRequest(pageSize: 200);
+    return _apiClient.get<AppPage<HrOption>>(
+      ApiEndpoints.collection(HmsApiResource.rolePermissions),
+      queryParameters: <String, Object?>{
+        'role_id': roleId,
+        'page': 1,
+        'limit': request.pageSize,
+      },
+      decoder: (Object? data) {
+        final Map<String, Object?> response = data is Map<String, Object?>
+            ? data
+            : <String, Object?>{};
+        final List<Object?> rows = response['data'] is List<Object?>
+            ? response['data']! as List<Object?>
+            : const <Object?>[];
+        final List<HrOption> items = rows
+            .whereType<Map<String, Object?>>()
+            .map((Map<String, Object?> entry) {
+              final Map<String, Object?> permission =
+                  entry['permission'] is Map<String, Object?>
+                  ? entry['permission']! as Map<String, Object?>
+                  : <String, Object?>{};
+              final String permissionId =
+                  permission['human_friendly_id']?.toString() ??
+                  permission['id']?.toString() ??
+                  entry['permission_id']?.toString() ??
+                  '';
+              final String permissionName =
+                  permission['name']?.toString() ?? permissionId;
+              final String assignmentId =
+                  entry['human_friendly_id']?.toString() ??
+                  entry['id']?.toString() ??
+                  '';
+              return HrOption(
+                value: permissionId,
+                label: permissionName,
+                displayId: assignmentId,
+              );
+            })
+            .where((HrOption item) => item.value.isNotEmpty)
+            .toList(growable: false);
+        return AppPage<HrOption>(
+          items: items,
+          request: request,
+          totalItemCount: items.length,
+        );
+      },
+    );
+  }
+
   Future<HrStaffAccessSummary?> _loadStaffAccessSummaryOrEmpty(
     String staffProfileId,
   ) async {

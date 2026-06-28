@@ -851,3 +851,111 @@ String _joinDisplay(Iterable<String?> values) {
       .where((String value) => value.isNotEmpty)
       .join(' | ');
 }
+
+enum HrAccessPanel {
+  users('users'),
+  roles('roles'),
+  permissions('permissions');
+
+  const HrAccessPanel(this.serverValue);
+
+  final String serverValue;
+}
+
+@immutable
+final class HrAccessQuery {
+  const HrAccessQuery({
+    this.panel = HrAccessPanel.users,
+    this.search = '',
+    this.tenantId,
+    this.pageRequest = const AppPageRequest(pageSize: 12),
+  });
+
+  final HrAccessPanel panel;
+  final String search;
+  final String? tenantId;
+  final AppPageRequest pageRequest;
+
+  HrAccessQuery copyWith({
+    HrAccessPanel? panel,
+    String? search,
+    Object? tenantId = _hrAccessUnset,
+    AppPageRequest? pageRequest,
+  }) {
+    return HrAccessQuery(
+      panel: panel ?? this.panel,
+      search: search ?? this.search,
+      tenantId: identical(tenantId, _hrAccessUnset)
+          ? this.tenantId
+          : tenantId as String?,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+
+  static const Object _hrAccessUnset = Object();
+}
+
+@immutable
+final class HrAccessUser {
+  const HrAccessUser({
+    required this.id,
+    this.displayId,
+    this.email,
+    this.status,
+    this.profileName,
+    this.roleNames = const <String>[],
+    this.staffProfileId,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? email;
+  final String? status;
+  final String? profileName;
+  final List<String> roleNames;
+  final String? staffProfileId;
+
+  String get effectiveId => displayId ?? id;
+}
+
+@immutable
+final class HrAccessRole {
+  const HrAccessRole({
+    required this.id,
+    this.displayId,
+    this.name,
+    this.description,
+    this.permissionCount = 0,
+    this.userCount = 0,
+    this.isSystemCritical = false,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? name;
+  final String? description;
+  final int permissionCount;
+  final int userCount;
+  final bool isSystemCritical;
+
+  String get effectiveId => displayId ?? id;
+}
+
+@immutable
+final class HrAccessPermission {
+  const HrAccessPermission({
+    required this.id,
+    this.displayId,
+    this.name,
+    this.description,
+    this.roleCount = 0,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? name;
+  final String? description;
+  final int roleCount;
+
+  String get effectiveId => displayId ?? id;
+}

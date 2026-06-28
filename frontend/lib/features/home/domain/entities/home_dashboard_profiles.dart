@@ -521,6 +521,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>[
       'add_staff_profile',
+      'manage_staff_access',
       'review_leave',
       'create_shift',
       'publish_roster',

@@ -1,143 +1,208 @@
-# Task: HR workspace dialog UX polish
+# Task: Enforce access boundaries — Settings vs HR vs Platform Access Admin
 
 ## Goal
 
-Polish the Human Resources workspace dialogs so they are clean, non-redundant, and stable at every dialog size. Users should see one clear title, switch work queues without the modal feeling like it reloads, and never hit layout overflow in the default (non-maximized) dialog size.
+Correct **permission boundaries** so HR users (e.g. NHRA demo account) see only **personal settings** on `/settings`, while **staff user, role, and permission management** lives entirely inside the **Human Resources** workspace (`/hr`). Platform-level access administration (`/admin/access`) must remain visible only to tenant/facility/platform administrators — not HR.
 
-**Prerequisite:** Land [prompt2.md](./prompt2.md) first so `AppDialog` resize and true viewport maximize behave correctly.
+**Prerequisite:** HR workspace scaffold and staff-detail dialogs already exist (`hr_workspace_page.dart`, `hr_enhanced_dialogs.dart`).
+
+---
 
 ## Context
 
-HR workspace lives at `/hr` (`frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`). Toolbar actions open modal dialogs via `showAppDialog` + `AppDialog`:
-
-| Toolbar action | Dialog | Key files |
+| Actor | Expected Settings view | Expected access-management home |
 | --- | --- | --- |
-| Work queues | Queue switcher + paginated table | `hr_workspace_page.dart` (`_showWorkQueueDialog`, `_HrWorkQueuePanel`), `hr_queue_switcher.dart` |
-| Schedule templates | Manage list + nested create/edit form | `hr_enhanced_dialogs.dart` (`showHrManageScheduleTemplatesDialog`, `showHrShiftTemplateDialog`) |
-| HR activity | Timeline feed | `hr_workspace_page.dart` (`_showActivityDialog`, `_HrActivityPanel`) |
+| **HR user** (`AppRole.hr`, `hrWrite`) | Preferences, Accessibility, Account and security (Profile, Change password) only | `/hr` — users, roles, permissions for clinical/operational staff |
+| **Tenant / facility / platform admin** | Above + Administration boundaries (deep links) + Administrative setup workspace | `/admin/access` — full access admin including demo accounts and module entitlements |
 
-Queue data is driven by `HrWorkspaceController.applyQueue` / `changeWorkItemsPage` (`hr_workspace_controller.dart`), which set `isRefreshingWorkItems` and refetch the current page.
+**Repro (observed at `127.0.0.1:5201`, NHRA account):**
 
-Shared layout primitives:
+1. Open **Settings** (`/settings`).
+2. HR user incorrectly sees **Administration boundaries** with **Users and access** and **User and security settings** — both route to `/admin/access`.
+3. HR user also sees **Administrative setup workspace** rendered as a locked empty state: *"Settings workspace unavailable — You do not have permission."* This section must **not render at all** for unauthorized users (never show a forbidden placeholder).
+4. On `/admin/access`, HR can reach tabs they should not use: Overview, User directory, Roles, Permissions, **Module entitlements**, **Demo accounts** — with empty states such as *"No access records found"*.
 
-- `AppDialog` — `frontend/lib/shared/components/app_dialog.dart`
-- `AppWorkspaceDetailPanel` — `frontend/lib/shared/layout/app_workspace.dart` (title, optional description, actions row, child)
-- `AppListTable` — table + pagination + empty/loading states
+**Reference screenshots (current UI):**
 
-Design references: `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
+- Settings: Preferences + Accessibility visible (correct); Administration boundaries + locked Administrative setup workspace visible (incorrect for HR).
+- `/admin/access` → Module entitlements tab empty (HR should never reach this route).
 
-## Problems (observed at `127.0.0.1:5201/hr`)
+**Related prompts:** [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md) (platform access admin), [prompts/06-settings-profile-module-prompt.md](./prompts/06-settings-profile-module-prompt.md) (personal settings hub), [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) (HR workspace — update permission-editing guidance per this task).
 
-### 1. Redundant labels in Work queues dialog
+**Root cause (frontend):** `_accessAdminRequirement` in `settings_page.dart` includes `AppPermissions.hrWrite` and `AppRole.hr`, which keeps Administration-boundary rows and `SettingsWorkspaceSection` visible for HR. Backend `SETTINGS_WORKSPACE_ROLES` correctly excludes HR, producing the forbidden empty state.
 
-The dialog header already shows **"Work queues"**. Inside the content, `AppWorkspaceDetailPanel` repeats information:
+**Root cause (product gap):** HR has partial access hooks (assign role dialog, create-user dialog, read-only module-access preview with link to Access Admin) but lacks a complete in-HR workspace for directory-level user/role/permission CRUD.
 
-- `title` = active queue name (e.g. **"Swap requests"**)
-- `description` = **"Work queues"** again
-- `actions` = `HrQueueSwitcher` tabs, with the selected tab already highlighted
+---
 
-This triple labeling adds noise and wastes horizontal space.
+## Problems
 
-### 2. Layout overflow at default dialog size
+### 1. Settings exposes platform admin surfaces to HR
 
-When the Work queues dialog is **not** maximized (default ~980px width or after manual resize), the panel header `Row` (title column + `HrQueueSwitcher` `Wrap`) overflows:
+`settings_page.dart` gates Administration-boundary actions with `_accessAdminRequirement` that treats HR like an access administrator. When any admin action passes the filter, `SettingsWorkspaceSection` is also rendered — even when the user lacks backend authorization for the settings workspace API.
 
-- Flutter debug banner: **"RIGHT OVERFLOWED BY 158 PIXELS"**
-- Queue title text wraps one character per line on the left (**"Swap requests Wor"** stacked vertically)
+### 2. Locked “Administrative setup workspace” should never appear
 
-Maximized/full-viewport mode looks acceptable; the broken layout is in the normal dialog size users see first.
+Forbidden UI (lock icon + *"You do not have permission"*) must not be shown as a teaser. Hide the entire section unless the user satisfies a **dedicated** requirement aligned with backend `SETTINGS_WORKSPACE_ROLES` (`superAdmin`, `tenantAdmin`, `facilityAdmin`).
 
-### 3. Queue tab switch feels like a full modal reload
+### 3. HR is routed to the wrong module for access management
 
-Clicking **Leave requests**, **Swap requests**, **Roster drafts**, **Unassigned shifts**, or **Payroll drafts** should only refresh the table for the selected queue. Today the entire dialog content appears to reload (header/panel chrome flashes, scroll position may reset), which hurts UX even though `applyQueue` does not close the route.
+`/admin/access` is a **platform/tenant administration** workspace. HR must not navigate there from Settings, staff-detail dialogs, or sidebar. All HR-owned access flows belong under `/hr`.
 
-Expected: dialog shell, queue tabs, and pagination chrome stay stable; only the table body shows a loading state, then new rows or the empty state.
+### 4. HR access capabilities are incomplete
 
-### 4. Redundant footer dismiss actions
+HR needs full CRUD for **tenant-scoped** staff access within HR boundaries:
 
-Several HR dialogs expose both a header **✕** and a footer **Close** or **Cancel** button. Footer dismiss is redundant and clutters mutation footers (e.g. Schedule template create form shows **Cancel** + **Create template**).
+| Capability | HR | Platform Access Admin |
+| --- | --- | --- |
+| Create / edit / deactivate staff user accounts | Yes | Yes |
+| Assign **multiple roles** per user | Yes | Yes |
+| Create / edit / delete **roles** (tenant-wide) | Yes | Yes |
+| Create / edit / delete **permissions** | Yes | Yes |
+| Assign roles — one-by-one or **batch** | Yes | Yes |
+| Assign permissions — one-by-one or **batch** | Yes | Yes |
+| **Module entitlements** (subscription flags) | No | Yes |
+| **Demo accounts** | No | Yes |
+| API keys, break-glass, system-critical roles | No | Yes (safeguarded) |
+
+Roles define the primary access level; effective permissions must be previewed before save.
+
+---
 
 ## Requirements
 
-### 1. Work queues — single source of truth for labeling
+### A. Settings page — tighten visibility (`settings_page.dart`)
 
-- Keep **"Work queues"** only in the `AppDialog` title (and toolbar button label).
-- Remove the duplicate `AppWorkspaceDetailPanel` `description` (`l10n.hrWorkQueuesTitle`) and the per-queue `title` (`hrQueueLabel(...)`) from `_HrWorkQueuePanel`.
-- Rely on `HrQueueSwitcher` as the sole in-dialog indicator of the active queue (selected tab styling + label on md+).
-- Do **not** remove the **Queue** column from the table — that column labels each row, not the panel chrome.
+1. **Remove HR from access-admin settings gates.** Update `_accessAdminRequirement` (and any shared constant) so **Users and access** and **User and security settings** require tenant/facility/platform admin roles or permissions — **not** `hrWrite` / `AppRole.hr`.
 
-### 2. Work queues — responsive layout without overflow
+2. **Split Administration boundaries from Administrative setup workspace.**
 
-Restructure `_HrWorkQueuePanel` so queue tabs and table never compete for width in one `Row`:
+   | Section | Show when |
+   | --- | --- |
+   | Administration boundaries (`AppScreenSection` with deep-link rows) | User passes **platform admin** requirement (tenant/facility/subscriptions/access-admin boundaries — each row keeps its own requirement) |
+   | Administrative setup workspace (`SettingsWorkspaceSection`) | User passes **`_settingsWorkspaceRequirement`** matching backend `SETTINGS_WORKSPACE_ROLES` only |
 
-- Place `HrQueueSwitcher` in its own full-width row **above** the table (below the dialog header), with adequate horizontal padding.
-- On compact widths, preserve existing icon-only tabs; on md+, keep icon + label tabs.
-- Ensure no horizontal overflow from tab `Wrap`, table columns, or pagination at `maxWidth: 980` and at minimum resizable width (~360px per `AppDialog` mins).
-- Maximized layout should continue to look balanced (tabs may use a single row with more breathing room).
+3. **Never render forbidden placeholders.** If the user fails `_settingsWorkspaceRequirement`, omit `SettingsWorkspaceSection` entirely — no API call, no locked empty state.
 
-Suggested approach: stop using `AppWorkspaceDetailPanel` for work queues, or use it with an empty/minimal header and move the switcher outside the title `Row`. Prefer the pattern that matches other workspace modules (e.g. Subscriptions filters above table).
+4. **HR Settings layout** must contain only:
 
-### 3. Work queues — localized tab updates only
+   - **Preferences** — app language, app theme
+   - **Accessibility** — reduce motion, bold text, text size
+   - **Account and security** — Profile, Change password
 
-- `HrQueueSwitcher` → `controller.applyQueue(queue)` must **not** close or re-open the dialog.
-- When the queue changes, update only:
-  - `AppListTable` data (`state.workItems`)
-  - `isLoading` on the table (`state.isRefreshingWorkItems`)
-  - empty state copy (unchanged strings)
-- Preserve dialog scroll offset where possible (avoid rebuilding the entire `AppDialog` subtree when only `workItemsQuery.queue` changes).
-- Disable only the non-selected queue tabs while loading (`enabled: !state.isRefreshingWorkItems` is fine); do not disable the whole dialog.
-- Verify notification deep-links that call `_applyQueueAndShow` still open the dialog once with the correct queue pre-selected.
+5. Add/adjust widget tests asserting an HR policy sees the three personal sections and **does not** find Administration boundaries or Administrative setup workspace labels.
 
-### 4. Remove redundant footer Close/Cancel on HR dialogs
+### B. Access Admin route — block HR entry (`/admin/access`)
 
-Remove footer dismiss buttons where the header **✕** already closes the dialog. Keep primary/destructive workflow actions in the footer.
+1. Gate `AccessAdminWorkspacePage` (router or page-level `AccessGate`) with a requirement that **excludes** `AppRole.hr` unless the user also holds tenant/facility/platform admin privileges.
 
-| Dialog | Remove | Keep |
-| --- | --- | --- |
-| Work queues | (none today) | — |
-| Work item detail (`_showWorkItemDialog`) | `commonCloseActionLabel` | Approve/reject/etc. actions if present |
-| HR activity | footer Close if present | — |
-| Staff detail | footer Close if present | — |
-| Schedule templates manage | — | **+ Create template** |
-| Schedule template create/edit (`showHrShiftTemplateDialog`) | `commonCancelActionLabel` | **Create template** / save action |
+2. Backend `access-admin-workspace` routes: align `canWriteAccess` / authorize middleware with the same boundary — HR should receive **403** if they deep-link to `/admin/access`.
 
-For `showAppWorkspaceMutationDialog` usages in HR, pass an empty/no-op cancel path or extend the shared helper with `showCancelButton: false` **only if needed** — prefer the smallest change that removes the visible Cancel button while header ✕ remains enabled (except during submit).
+3. Remove or hide HR-facing escape hatches:
 
-### 5. Regression checks on related HR surfaces
+   - `hrOpenAccessAdminAction` button in `showHrModuleAccessDialog` (`hr_enhanced_dialogs.dart`)
+   - Any Settings or nav links that send HR to `/admin/access`
 
-After Work queues changes, smoke-test without new features:
+### C. HR workspace — own user/role/permission administration
 
-- Toolbar order unchanged: **Work queues → Schedule templates → HR activity**
-- Schedule templates manage dialog: list, create nested dialog, edit/delete still work
-- Staff directory row → detail dialog still opens; maximize/resize per prompt2.md
-- Queue pagination (`changeWorkItemsPage`) still works per tab
+Implement (or extend) an **Access** area inside `/hr` — toolbar tab, work-queue panel, or dedicated sub-panel — without new shell routes. All mutations stay **modal-first** (nested modals where needed).
+
+#### C1. User directory (HR scope)
+
+- List staff-linked and standalone user accounts relevant to the tenant (doctors, nurses, reception, billing, etc.).
+- Search/filter consistent with existing HR workspace patterns.
+- **Create user** — extend `showHrCreateUserDialog` to support optional initial role(s) and permission batch.
+- **Edit user** — email, status (activate/deactivate), link/unlink staff profile.
+- **Assign multiple roles** — multi-select or repeated assign with facility/department scope where applicable.
+- **Revoke roles** — per assignment, with confirmation modal.
+
+#### C2. Role management (tenant-wide)
+
+- List tenant roles HR may manage (exclude system-critical roles such as `SUPER_ADMIN` — mirror backend safeguards in `access-admin-workspace.service.js`).
+- **Create role** modal — name, description.
+- **Edit / delete role** modal — block delete when assignments exist; show effective-permission preview.
+- **Assign permissions to role** — grouped permission matrix inside modal; support selecting all in a group (batch).
+
+#### C3. Permission management
+
+- List permissions HR may assign (respect backend allow-list if one exists; otherwise tenant-scoped non-system permissions).
+- **Create permission** modal.
+- **Edit / delete permission** modal — safeguard when attached to roles.
+- **Direct user permissions** (if supported by API) — assign/revoke individually or in batch via nested modal from user detail.
+
+#### C4. Staff detail integration
+
+- Keep per-staff **Assign role**, **Create user**, and access summary in the staff-detail dialog Actions section.
+- Replace read-only module-access dialog link to Access Admin with in-HR modals (role assign, permission preview, batch assign).
+- Show linked user’s **roles** (plural) and effective permissions in the staff detail overview/info sheet.
+
+#### C5. Explicitly out of scope for HR UI
+
+- Module entitlements tab/panel
+- Demo accounts tab/panel
+- Settings Administrative setup workspace
+- Subscriptions, tenant/facility setup shortcuts (remain Settings/platform admin only)
+
+### D. Backend alignment
+
+1. Add or extend **HR-scoped APIs** under `hr-workspace` (preferred) or tighten existing `user`, `role`, `permission`, `user-role`, `role-permission` endpoints so HR can CRUD within tenant scope while platform-only resources stay blocked.
+
+2. Enforce authorization server-side:
+
+   - HR: tenant-scoped user/role/permission CRUD; deny demo-users, module-entitlements, api-key mutations.
+   - Platform admin: unchanged full access-admin workspace.
+
+3. Return clear `403` for HR on disallowed resources — frontend gates are not sufficient alone.
+
+### E. Global UX rules
+
+- **Modal-first:** every create/edit/assign/revoke/delete action uses `AppDialog` / `AppWorkspaceMutationDialog`; batch flows may use nested modals or a second step inside the same dialog.
+- **Access gating:** `AccessGate` / `AppAccessActionGate` on every action; mirror backend permissions.
+- **Copy:** hospital workflow language in `app_en.arb` — no raw enum names or UUIDs in UI.
+- **Theming / i18n / responsive:** follow `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
+
+---
+
+## Files to touch (starting points)
+
+| Area | Path |
+| --- | --- |
+| Settings visibility | `frontend/lib/features/settings/presentation/pages/settings_page.dart` |
+| Settings workspace section | `frontend/lib/features/settings/presentation/widgets/settings_workspace_section.dart` |
+| Access admin page gate | `frontend/lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart`, `frontend/lib/app/router/app_router.dart` |
+| HR dialogs & actions | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart`, `hr_staff_detail_actions.dart`, `hr_workspace_page.dart` |
+| HR controller / repository | `frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart`, `hr_repository_impl.dart` |
+| Backend HR / access | `backend/src/modules/hr-workspace/`, `backend/src/modules/access-admin-workspace/services/access-admin-workspace.service.js` |
+| Localization | `frontend/lib/l10n/app_en.arb` |
+| Tests | `frontend/test/features/settings/`, `frontend/test/features/hr/`, targeted backend tests |
+
+---
 
 ## Acceptance criteria
 
-1. Open Work queues at default size: no overflow stripes, no vertically stacked title characters.
-2. Dialog shows **"Work queues"** once (header only); active queue is clear from the selected tab, not a second heading.
-3. Switching queue tabs updates the table/empty state with a brief loading indicator; dialog does not flash/rebuild as if closed and reopened.
-4. Maximize dialog: layout remains clean; restore returns to prior size without layout regression.
-5. HR dialogs listed above have no redundant footer Close/Cancel; header ✕ dismisses read-only dialogs; mutation dialogs retain submit action only.
-6. `flutter analyze` and `flutter test` pass; add or update widget tests for `_HrWorkQueuePanel` / `HrQueueSwitcher` layout at narrow and wide constraints if practical.
+- [ ] NHRA (HR) account on `/settings` sees **only** Preferences, Accessibility, and Account and security — no Administration boundaries, no Administrative setup workspace (locked or otherwise).
+- [ ] NHRA cannot open `/admin/access` from UI; direct URL returns forbidden / access-denied scaffold.
+- [ ] NHRA manages users, roles, and permissions entirely from `/hr` via modals (create, edit, assign single/batch, revoke, delete where allowed).
+- [ ] User creation supports **multiple roles**; role creation is **tenant-wide**; permissions assignable individually or in batch.
+- [ ] Module entitlements and Demo accounts are **absent** from HR UI and blocked by backend for HR role.
+- [ ] Tenant/facility/platform admin retains Settings administration links and full `/admin/access` workspace unchanged.
+- [ ] `flutter analyze` and `flutter test` pass; targeted backend tests pass for touched authorization paths.
 
-## Out of scope
+---
 
-- Backend or API changes for queue data
-- New queue types or workflow logic (approve/reject handlers)
-- Full schedule-template CRUD beyond footer cleanup
-- Staff detail field reorganization (separate follow-up unless needed to remove footer Close)
-- `AppDialog` sizing/maximize fixes (owned by prompt2.md)
+## Quality gate
 
-## Key files
+From `frontend/`:
 
+```bash
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test
 ```
-frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart
-frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart
-frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart
-frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart
-frontend/lib/shared/layout/app_workspace.dart          # AppWorkspaceDetailPanel
-frontend/lib/shared/components/app_dialog.dart
-frontend/lib/shared/layout/app_workspace_mutation_dialog.dart
-frontend/test/features/hr/                            # add/update as needed
+
+From `backend/` (touched modules):
+
+```bash
+npm test -- --testPathPattern="hr-workspace|access-admin"
 ```

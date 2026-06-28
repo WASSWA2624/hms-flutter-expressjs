@@ -13481,6 +13481,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrOpenAccessAdminAction => 'Open in Users/Roles';
 
   @override
+  String get hrManageAccessAction => 'Manage users and roles';
+
+  @override
+  String get hrAccessWorkspaceTitle => 'Staff access';
+
+  @override
+  String get hrAccessWorkspaceDescription =>
+      'Manage staff user accounts, roles, and permissions for your organization.';
+
+  @override
+  String get hrAccessPanelUsers => 'Users';
+
+  @override
+  String get hrAccessPanelRoles => 'Roles';
+
+  @override
+  String get hrAccessPanelPermissions => 'Permissions';
+
+  @override
+  String get hrAccessSearchLabel => 'Search';
+
+  @override
+  String get hrAccessEmptyUsersLabel =>
+      'No staff user accounts match your search.';
+
+  @override
+  String get hrAccessEmptyRolesLabel => 'No roles match your search.';
+
+  @override
+  String get hrAccessEmptyPermissionsLabel =>
+      'No permissions match your search.';
+
+  @override
+  String get hrAccessCreateRoleAction => 'Create role';
+
+  @override
+  String get hrAccessCreatePermissionAction => 'Create permission';
+
+  @override
+  String get hrAccessEditUserAction => 'Edit user';
+
+  @override
+  String get hrAccessEditRoleAction => 'Edit role';
+
+  @override
+  String get hrAccessEditPermissionAction => 'Edit permission';
+
+  @override
+  String get hrAccessAssignPermissionsAction => 'Assign permissions';
+
+  @override
+  String get hrAccessRoleNameLabel => 'Role name';
+
+  @override
+  String get hrAccessRoleDescriptionLabel => 'Description';
+
+  @override
+  String get hrAccessPermissionNameLabel => 'Permission name';
+
+  @override
+  String get hrAccessPermissionDescriptionLabel => 'Description';
+
+  @override
+  String get hrAccessPositionTitleLabel => 'Position title';
+
+  @override
+  String get hrAccessInitialRolesLabel => 'Initial roles';
+
+  @override
+  String hrAccessRoleSummary(int permissionCount, int userCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      permissionCount,
+      locale: localeName,
+      other: '$permissionCount permissions',
+      zero: 'No permissions',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      userCount,
+      locale: localeName,
+      other: '$userCount assignments',
+      zero: 'No assignments',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String hrAccessPermissionRoleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count roles',
+      zero: 'no roles',
+    );
+    return 'Used by $_temp0';
+  }
+
+  @override
   String get hrPrimaryAssignmentLabel => 'Primary';
 
   @override

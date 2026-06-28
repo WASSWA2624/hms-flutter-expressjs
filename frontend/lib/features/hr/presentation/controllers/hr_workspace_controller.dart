@@ -483,7 +483,155 @@ final class HrWorkspaceController
     );
   }
 
-  Future<AppFailure?> createUserAndLinkStaff(Map<String, Object?> payload) async {
+  Future<Result<AppPage<HrAccessUser>>> loadAccessUsers(HrAccessQuery query) {
+    return _repository.listAccessUsers(query);
+  }
+
+  Future<Result<AppPage<HrAccessRole>>> loadAccessRoles(HrAccessQuery query) {
+    return _repository.listAccessRoles(query);
+  }
+
+  Future<Result<AppPage<HrAccessPermission>>> loadAccessPermissions(
+    HrAccessQuery query,
+  ) {
+    return _repository.listAccessPermissions(query);
+  }
+
+  Future<AppFailure?> updateAccessUser(
+    String userId,
+    Map<String, Object?> payload, {
+    bool refreshReferences = true,
+  }) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.updateUserAccount(userId, payload),
+      refreshReferencesAfter: refreshReferences,
+    );
+  }
+
+  Future<AppFailure?> createAccessRole(Map<String, Object?> payload) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.createRole(payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> updateAccessRole(
+    String roleId,
+    Map<String, Object?> payload,
+  ) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.updateRole(roleId, payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> deleteAccessRole(String roleId) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.deleteRole(roleId),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> createAccessPermission(
+    Map<String, Object?> payload,
+  ) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.createPermission(payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> updateAccessPermission(
+    String permissionId,
+    Map<String, Object?> payload,
+  ) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.updatePermission(permissionId, payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> deleteAccessPermission(String permissionId) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.deletePermission(permissionId),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> assignRolePermissionsBatch({
+    required String roleId,
+    required List<String> permissionIds,
+  }) async {
+    AppFailure? lastFailure;
+    for (final String permissionId in permissionIds) {
+      final Result<void> result = await _repository.assignRolePermission(
+        roleId: roleId,
+        permissionId: permissionId,
+      );
+      lastFailure ??= _failureOrNull(result);
+    }
+    unawaited(_refreshReferences());
+    return lastFailure;
+  }
+
+  Future<AppFailure?> assignUserRolesBatch({
+    required String userId,
+    required String tenantId,
+    required List<String> roleIds,
+    String? facilityId,
+  }) async {
+    AppFailure? lastFailure;
+    for (final String roleId in roleIds) {
+      final Result<void> result = await _repository.assignUserRole(
+        userId: userId,
+        roleId: roleId,
+        tenantId: tenantId,
+        facilityId: facilityId,
+      );
+      lastFailure ??= _failureOrNull(result);
+    }
+    unawaited(_refreshReferences());
+    return lastFailure;
+  }
+
+  Future<AppFailure?> createUserAndLinkStaff(
+    Map<String, Object?> payload,
+  ) async {
     final HrWorkspaceState? current = _currentState;
     if (current == null) {
       return AppFailure.validation();
@@ -507,8 +655,12 @@ final class HrWorkspaceController
     final String? createdUserId = _extractCreatedUserId(userResult);
     final Map<String, Object?> staffPayload = <String, Object?>{
       for (final MapEntry<String, Object?> entry in payload.entries)
-        if (!<String>{'password', 'phone', 'status', 'permission_ids'}
-            .contains(entry.key))
+        if (!<String>{
+          'password',
+          'phone',
+          'status',
+          'permission_ids',
+        }.contains(entry.key))
           entry.key: entry.value,
       'user_id': ?createdUserId,
     };

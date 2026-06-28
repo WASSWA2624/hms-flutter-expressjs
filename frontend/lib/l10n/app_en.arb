@@ -17480,6 +17480,115 @@
   "@hrOpenAccessAdminAction": {
     "description": "Deep link to access admin for advanced permission editing."
   },
+  "hrManageAccessAction": "Manage users and roles",
+  "@hrManageAccessAction": {
+    "description": "Opens the in-HR access management workspace."
+  },
+  "hrAccessWorkspaceTitle": "Staff access",
+  "@hrAccessWorkspaceTitle": {
+    "description": "Title for the HR access management dialog."
+  },
+  "hrAccessWorkspaceDescription": "Manage staff user accounts, roles, and permissions for your organization.",
+  "@hrAccessWorkspaceDescription": {
+    "description": "Body text for the HR access management dialog."
+  },
+  "hrAccessPanelUsers": "Users",
+  "@hrAccessPanelUsers": {
+    "description": "Users tab in HR access workspace."
+  },
+  "hrAccessPanelRoles": "Roles",
+  "@hrAccessPanelRoles": {
+    "description": "Roles tab in HR access workspace."
+  },
+  "hrAccessPanelPermissions": "Permissions",
+  "@hrAccessPanelPermissions": {
+    "description": "Permissions tab in HR access workspace."
+  },
+  "hrAccessSearchLabel": "Search",
+  "@hrAccessSearchLabel": {
+    "description": "Search field label in HR access workspace."
+  },
+  "hrAccessEmptyUsersLabel": "No staff user accounts match your search.",
+  "@hrAccessEmptyUsersLabel": {
+    "description": "Empty state for HR user directory."
+  },
+  "hrAccessEmptyRolesLabel": "No roles match your search.",
+  "@hrAccessEmptyRolesLabel": {
+    "description": "Empty state for HR role list."
+  },
+  "hrAccessEmptyPermissionsLabel": "No permissions match your search.",
+  "@hrAccessEmptyPermissionsLabel": {
+    "description": "Empty state for HR permission list."
+  },
+  "hrAccessCreateRoleAction": "Create role",
+  "@hrAccessCreateRoleAction": {
+    "description": "Create role action in HR access workspace."
+  },
+  "hrAccessCreatePermissionAction": "Create permission",
+  "@hrAccessCreatePermissionAction": {
+    "description": "Create permission action in HR access workspace."
+  },
+  "hrAccessEditUserAction": "Edit user",
+  "@hrAccessEditUserAction": {
+    "description": "Edit user action in HR access workspace."
+  },
+  "hrAccessEditRoleAction": "Edit role",
+  "@hrAccessEditRoleAction": {
+    "description": "Edit role action in HR access workspace."
+  },
+  "hrAccessEditPermissionAction": "Edit permission",
+  "@hrAccessEditPermissionAction": {
+    "description": "Edit permission action in HR access workspace."
+  },
+  "hrAccessAssignPermissionsAction": "Assign permissions",
+  "@hrAccessAssignPermissionsAction": {
+    "description": "Batch assign permissions to a role."
+  },
+  "hrAccessRoleNameLabel": "Role name",
+  "@hrAccessRoleNameLabel": {
+    "description": "Role name field label."
+  },
+  "hrAccessRoleDescriptionLabel": "Description",
+  "@hrAccessRoleDescriptionLabel": {
+    "description": "Role description field label."
+  },
+  "hrAccessPermissionNameLabel": "Permission name",
+  "@hrAccessPermissionNameLabel": {
+    "description": "Permission name field label."
+  },
+  "hrAccessPermissionDescriptionLabel": "Description",
+  "@hrAccessPermissionDescriptionLabel": {
+    "description": "Permission description field label."
+  },
+  "hrAccessPositionTitleLabel": "Position title",
+  "@hrAccessPositionTitleLabel": {
+    "description": "Position title when creating a user."
+  },
+  "hrAccessInitialRolesLabel": "Initial roles",
+  "@hrAccessInitialRolesLabel": {
+    "description": "Section label for assigning roles during user creation."
+  },
+  "hrAccessRoleSummary": "{permissionCount, plural, =0{No permissions} other{{permissionCount} permissions}} · {userCount, plural, =0{No assignments} other{{userCount} assignments}}",
+  "@hrAccessRoleSummary": {
+    "description": "Summary line for a role row.",
+    "placeholders": {
+      "permissionCount": {
+        "type": "int"
+      },
+      "userCount": {
+        "type": "int"
+      }
+    }
+  },
+  "hrAccessPermissionRoleCount": "Used by {count, plural, =0{no roles} other{{count} roles}}",
+  "@hrAccessPermissionRoleCount": {
+    "description": "How many roles use a permission.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "hrPrimaryAssignmentLabel": "Primary",
   "@hrPrimaryAssignmentLabel": {
     "description": "Badge for primary department assignment."

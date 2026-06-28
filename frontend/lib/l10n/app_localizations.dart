@@ -25377,6 +25377,150 @@ abstract class AppLocalizations {
   /// **'Open in Users/Roles'**
   String get hrOpenAccessAdminAction;
 
+  /// Opens the in-HR access management workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage users and roles'**
+  String get hrManageAccessAction;
+
+  /// Title for the HR access management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff access'**
+  String get hrAccessWorkspaceTitle;
+
+  /// Body text for the HR access management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage staff user accounts, roles, and permissions for your organization.'**
+  String get hrAccessWorkspaceDescription;
+
+  /// Users tab in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get hrAccessPanelUsers;
+
+  /// Roles tab in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get hrAccessPanelRoles;
+
+  /// Permissions tab in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get hrAccessPanelPermissions;
+
+  /// Search field label in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get hrAccessSearchLabel;
+
+  /// Empty state for HR user directory.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff user accounts match your search.'**
+  String get hrAccessEmptyUsersLabel;
+
+  /// Empty state for HR role list.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles match your search.'**
+  String get hrAccessEmptyRolesLabel;
+
+  /// Empty state for HR permission list.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions match your search.'**
+  String get hrAccessEmptyPermissionsLabel;
+
+  /// Create role action in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Create role'**
+  String get hrAccessCreateRoleAction;
+
+  /// Create permission action in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Create permission'**
+  String get hrAccessCreatePermissionAction;
+
+  /// Edit user action in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit user'**
+  String get hrAccessEditUserAction;
+
+  /// Edit role action in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit role'**
+  String get hrAccessEditRoleAction;
+
+  /// Edit permission action in HR access workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit permission'**
+  String get hrAccessEditPermissionAction;
+
+  /// Batch assign permissions to a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign permissions'**
+  String get hrAccessAssignPermissionsAction;
+
+  /// Role name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Role name'**
+  String get hrAccessRoleNameLabel;
+
+  /// Role description field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get hrAccessRoleDescriptionLabel;
+
+  /// Permission name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission name'**
+  String get hrAccessPermissionNameLabel;
+
+  /// Permission description field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get hrAccessPermissionDescriptionLabel;
+
+  /// Position title when creating a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Position title'**
+  String get hrAccessPositionTitleLabel;
+
+  /// Section label for assigning roles during user creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial roles'**
+  String get hrAccessInitialRolesLabel;
+
+  /// Summary line for a role row.
+  ///
+  /// In en, this message translates to:
+  /// **'{permissionCount, plural, =0{No permissions} other{{permissionCount} permissions}} · {userCount, plural, =0{No assignments} other{{userCount} assignments}}'**
+  String hrAccessRoleSummary(int permissionCount, int userCount);
+
+  /// How many roles use a permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by {count, plural, =0{no roles} other{{count} roles}}'**
+  String hrAccessPermissionRoleCount(int count);
+
   /// Badge for primary department assignment.
   ///
   /// In en, this message translates to:

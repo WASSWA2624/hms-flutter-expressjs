@@ -19,7 +19,7 @@ const {
   listUsersQuerySchema
 } = require('@validations/user/user.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS'];
+const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
 
 /**
  * @description List users with pagination and filters

@@ -105,4 +105,44 @@ abstract interface class HrRepository {
     String rosterId, {
     bool replaceExistingAssignments = true,
   });
+
+  Future<Result<AppPage<HrAccessUser>>> listAccessUsers(HrAccessQuery query);
+
+  Future<Result<AppPage<HrAccessRole>>> listAccessRoles(HrAccessQuery query);
+
+  Future<Result<AppPage<HrAccessPermission>>> listAccessPermissions(
+    HrAccessQuery query,
+  );
+
+  Future<Result<Object?>> updateUserAccount(
+    String userId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<Object?>> createRole(Map<String, Object?> payload);
+
+  Future<Result<Object?>> updateRole(
+    String roleId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteRole(String roleId);
+
+  Future<Result<Object?>> createPermission(Map<String, Object?> payload);
+
+  Future<Result<Object?>> updatePermission(
+    String permissionId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deletePermission(String permissionId);
+
+  Future<Result<void>> assignRolePermission({
+    required String roleId,
+    required String permissionId,
+  });
+
+  Future<Result<void>> revokeRolePermission(String rolePermissionId);
+
+  Future<Result<AppPage<HrOption>>> listRolePermissions(String roleId);
 }

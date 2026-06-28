@@ -71,9 +71,8 @@ void _stubInitialLoad(_MockHrRepository repository) {
     ),
   );
   when(() => repository.loadStaffAccessSummary(any())).thenAnswer(
-    (_) async => const Result<HrStaffAccessSummary>.success(
-      HrStaffAccessSummary(),
-    ),
+    (_) async =>
+        const Result<HrStaffAccessSummary>.success(HrStaffAccessSummary()),
   );
   when(
     () => repository.assignUserRole(
@@ -83,31 +82,30 @@ void _stubInitialLoad(_MockHrRepository repository) {
       facilityId: any(named: 'facilityId'),
     ),
   ).thenAnswer((_) async => const Result<void>.success(null));
-  when(() => repository.revokeUserRole(any())).thenAnswer(
-    (_) async => const Result<void>.success(null),
-  );
-  when(() => repository.createUserAccount(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
-  when(() => repository.updateStaffAssignment(any(), any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
-  when(() => repository.createShiftTemplate(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
-  when(() => repository.updateShiftTemplate(any(), any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
-  when(() => repository.deleteShiftTemplate(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
+  when(
+    () => repository.revokeUserRole(any()),
+  ).thenAnswer((_) async => const Result<void>.success(null));
+  when(
+    () => repository.createUserAccount(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
+  when(
+    () => repository.updateStaffAssignment(any(), any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
+  when(
+    () => repository.createShiftTemplate(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
+  when(
+    () => repository.updateShiftTemplate(any(), any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
+  when(
+    () => repository.deleteShiftTemplate(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
   when(() => repository.previewPayrollRun(any())).thenAnswer(
     (_) async => const Result<HrPayrollPreview>.success(HrPayrollPreview()),
   );
   when(() => repository.generateRosterPreview(any())).thenAnswer(
-    (_) async => const Result<HrRosterGenerateResult>.success(
-      HrRosterGenerateResult(),
-    ),
+    (_) async =>
+        const Result<HrRosterGenerateResult>.success(HrRosterGenerateResult()),
   );
 }
 

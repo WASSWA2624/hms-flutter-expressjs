@@ -76,10 +76,7 @@ class HrStaffDetailOverview extends StatelessWidget {
         copyable: true,
       ),
       if ((profile.position ?? '').trim().isNotEmpty)
-        AppInfoSheetItem(
-          label: l10n.hrPositionLabel,
-          value: profile.position,
-        ),
+        AppInfoSheetItem(label: l10n.hrPositionLabel, value: profile.position),
       if ((profile.practitionerType ?? '').trim().isNotEmpty)
         AppInfoSheetItem(
           label: l10n.hrPractitionerTypeLabel,
@@ -102,10 +99,7 @@ class HrStaffDetailOverview extends StatelessWidget {
   ) {
     return <AppInfoSheetItem>[
       if ((profile.userEmail ?? '').trim().isNotEmpty)
-        AppInfoSheetItem(
-          label: l10n.hrEmailLabel,
-          value: profile.userEmail,
-        ),
+        AppInfoSheetItem(label: l10n.hrEmailLabel, value: profile.userEmail),
       if ((profile.userDisplayId ?? profile.userId ?? '').trim().isNotEmpty)
         AppInfoSheetItem(
           label: l10n.hrUserIdLabel,

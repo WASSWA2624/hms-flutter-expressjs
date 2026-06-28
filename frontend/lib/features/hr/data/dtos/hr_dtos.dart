@@ -695,6 +695,150 @@ final class HrOptionDto {
   }
 }
 
+final class HrAccessUserPageDto {
+  const HrAccessUserPageDto({required this.page});
+
+  final AppPage<HrAccessUser> page;
+
+  factory HrAccessUserPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final HrJsonMap response = _expectMap(responseData);
+    final List<HrAccessUser> items = _list(response['data'])
+        .map(HrAccessUserDto.new)
+        .map((HrAccessUserDto dto) => dto.toEntity())
+        .where((HrAccessUser item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return HrAccessUserPageDto(
+      page: AppPage<HrAccessUser>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+}
+
+final class HrAccessUserDto {
+  const HrAccessUserDto(this.json);
+
+  final HrJsonMap json;
+
+  HrAccessUser toEntity() {
+    final HrJsonMap staffProfile = _map(json['staff_profile']);
+    final List<String> roleNames = _list(json['roles'])
+        .map((HrJsonMap entry) {
+          final HrJsonMap role = _map(entry['role']);
+          return _string(role['name']) ?? _string(entry['name']);
+        })
+        .whereType<String>()
+        .toList(growable: false);
+
+    return HrAccessUser(
+      id: _string(json['display_id']) ?? _string(json['id']) ?? '',
+      displayId: _string(json['display_id']),
+      email: _string(json['email']),
+      status: _string(json['status']),
+      profileName: _string(json['profile_name']),
+      roleNames: roleNames,
+      staffProfileId:
+          _string(staffProfile['display_id']) ??
+          _string(staffProfile['human_friendly_id']) ??
+          _string(json['staff_profile_id']),
+    );
+  }
+}
+
+final class HrAccessRolePageDto {
+  const HrAccessRolePageDto({required this.page});
+
+  final AppPage<HrAccessRole> page;
+
+  factory HrAccessRolePageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final HrJsonMap response = _expectMap(responseData);
+    final List<HrAccessRole> items = _list(response['data'])
+        .map(HrAccessRoleDto.new)
+        .map((HrAccessRoleDto dto) => dto.toEntity())
+        .where((HrAccessRole item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return HrAccessRolePageDto(
+      page: AppPage<HrAccessRole>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+}
+
+final class HrAccessRoleDto {
+  const HrAccessRoleDto(this.json);
+
+  final HrJsonMap json;
+
+  HrAccessRole toEntity() {
+    return HrAccessRole(
+      id: _string(json['display_id']) ?? _string(json['id']) ?? '',
+      displayId: _string(json['display_id']),
+      name: _string(json['name']),
+      description: _string(json['description']),
+      permissionCount: _int(json['permission_count']) ?? 0,
+      userCount:
+          _int(json['user_count']) ?? _int(_map(json['_count'])['users']) ?? 0,
+      isSystemCritical: json['is_system_critical'] == true,
+    );
+  }
+}
+
+final class HrAccessPermissionPageDto {
+  const HrAccessPermissionPageDto({required this.page});
+
+  final AppPage<HrAccessPermission> page;
+
+  factory HrAccessPermissionPageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final HrJsonMap response = _expectMap(responseData);
+    final List<HrAccessPermission> items = _list(response['data'])
+        .map(HrAccessPermissionDto.new)
+        .map((HrAccessPermissionDto dto) => dto.toEntity())
+        .where((HrAccessPermission item) => item.id.isNotEmpty)
+        .toList(growable: false);
+
+    return HrAccessPermissionPageDto(
+      page: AppPage<HrAccessPermission>(
+        items: items,
+        request: request,
+        totalItemCount: _int(_map(response['pagination'])['total']),
+      ),
+    );
+  }
+}
+
+final class HrAccessPermissionDto {
+  const HrAccessPermissionDto(this.json);
+
+  final HrJsonMap json;
+
+  HrAccessPermission toEntity() {
+    return HrAccessPermission(
+      id: _string(json['display_id']) ?? _string(json['id']) ?? '',
+      displayId: _string(json['display_id']),
+      name: _string(json['name']),
+      description: _string(json['description']),
+      roleCount:
+          _int(json['role_count']) ?? _int(_map(json['_count'])['roles']) ?? 0,
+    );
+  }
+}
+
 HrJsonMap _expectMap(Object? value) {
   if (value is HrJsonMap) {
     return value;

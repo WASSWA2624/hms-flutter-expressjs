@@ -31,8 +31,8 @@ class HrQueueSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool showLabels = AppBreakpoints.of(context).index >=
-        AppBreakpoint.md.index;
+    final bool showLabels =
+        AppBreakpoints.of(context).index >= AppBreakpoint.md.index;
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );

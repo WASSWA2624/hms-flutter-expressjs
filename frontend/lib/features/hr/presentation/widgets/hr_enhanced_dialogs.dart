@@ -1,7 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -57,16 +58,16 @@ Future<void> showHrAssignRoleDialog(
           AppSelectField<String>.searchable(
             value: facilityId,
             labelText: l10n.hrDepartmentLabel,
-            options: _selectOptions(state?.referenceData.facilities ?? const []),
+            options: _selectOptions(
+              state?.referenceData.facilities ?? const [],
+            ),
             onChanged: (String? value) => facilityId = value,
           ),
         ],
       );
     },
-    onSubmit: () => controller.assignUserRole(
-      roleId: roleId ?? '',
-      facilityId: facilityId,
-    ),
+    onSubmit: () =>
+        controller.assignUserRole(roleId: roleId ?? '', facilityId: facilityId),
   );
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
@@ -75,6 +76,7 @@ Future<void> showHrAssignRoleDialog(
 
 Future<void> showHrModuleAccessDialog(
   BuildContext context,
+  WidgetRef ref,
   HrStaffAccessSummary? access,
 ) async {
   final AppLocalizations l10n = context.l10n;
@@ -132,17 +134,10 @@ Future<void> showHrModuleAccessDialog(
       ),
       actions: <Widget>[
         AppButton.secondary(
-          label: l10n.hrOpenAccessAdminAction,
+          label: l10n.hrManageAccessAction,
           onPressed: () {
             Navigator.of(context).maybePop();
-            context.go(
-              AppRoutes.accessAdmin.location(
-                queryParameters: <String, String>{
-                  if ((access?.linkedUserDisplayId ?? '').isNotEmpty)
-                    'userId': access!.linkedUserDisplayId!,
-                },
-              ),
-            );
+            unawaited(showHrAccessWorkspaceDialog(context, ref));
           },
         ),
       ],
@@ -344,7 +339,9 @@ Future<void> showHrShiftTemplateDialog(
             value: shiftType,
             labelText: l10n.hrShiftTypeLabel,
             isRequired: true,
-            options: _selectOptions(state?.referenceData.shiftTypes ?? const []),
+            options: _selectOptions(
+              state?.referenceData.shiftTypes ?? const [],
+            ),
             validator: AppValidators.requiredValue(
               l10n.hrFieldRequiredLabel(l10n.hrShiftTypeLabel),
             ),
@@ -353,7 +350,9 @@ Future<void> showHrShiftTemplateDialog(
           AppSelectField<String>.searchable(
             value: facilityId,
             labelText: l10n.hrDepartmentLabel,
-            options: _selectOptions(state?.referenceData.facilities ?? const []),
+            options: _selectOptions(
+              state?.referenceData.facilities ?? const [],
+            ),
             onChanged: (String? value) => facilityId = value,
           ),
           AppTextField(
@@ -582,8 +581,9 @@ List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
 String _dateRange(BuildContext context, DateTime? from, DateTime? to) {
   final AppLocalizations l10n = context.l10n;
   final Locale locale = Localizations.localeOf(context);
-  final String? start =
-      from == null ? null : AppFormatters.shortDate(from, locale);
+  final String? start = from == null
+      ? null
+      : AppFormatters.shortDate(from, locale);
   final String? end = to == null ? null : AppFormatters.shortDate(to, locale);
   if (start != null && end != null) {
     return '$start - $end';

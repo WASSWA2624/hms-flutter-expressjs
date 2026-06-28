@@ -11,27 +11,17 @@ import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 
-typedef HrStaffDetailActionCallback = void Function(
-  BuildContext context,
-  WidgetRef ref,
-);
+typedef HrStaffDetailActionCallback =
+    void Function(BuildContext context, WidgetRef ref);
 
-typedef HrStaffDetailProfileActionCallback = void Function(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffProfile profile,
-);
+typedef HrStaffDetailProfileActionCallback =
+    void Function(BuildContext context, WidgetRef ref, HrStaffProfile profile);
 
-typedef HrStaffDetailAccessActionCallback = void Function(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffDetail detail,
-);
+typedef HrStaffDetailAccessActionCallback =
+    void Function(BuildContext context, WidgetRef ref, HrStaffDetail detail);
 
-typedef HrStaffDetailModuleAccessCallback = void Function(
-  BuildContext context,
-  HrStaffDetail detail,
-);
+typedef HrStaffDetailModuleAccessCallback =
+    void Function(BuildContext context, HrStaffDetail detail);
 
 /// Unified staff mutation actions for the staff detail dialog.
 class HrStaffDetailActions extends ConsumerWidget {

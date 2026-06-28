@@ -22,9 +22,8 @@ Future<void> _pumpSwitcher(
 }) async {
   final _MockHrRepository repository = _MockHrRepository();
   when(() => repository.loadOverview()).thenAnswer(
-    (_) async => const Result<HrWorkspaceOverview>.success(
-      HrWorkspaceOverview(),
-    ),
+    (_) async =>
+        const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
     (_) async => const Result<AppPage<HrStaffProfile>>.success(
@@ -130,8 +129,8 @@ void main() {
     final Finder swapTab = find.byTooltip('Swap requests');
     expect(swapTab, findsOneWidget);
     final Element swapElement = tester.element(swapTab);
-    final Widget swapWidget = swapElement.findAncestorWidgetOfExactType<
-        ElevatedButton>() ??
+    final Widget swapWidget =
+        swapElement.findAncestorWidgetOfExactType<ElevatedButton>() ??
         swapElement.widget;
     expect(swapWidget, isNotNull);
     expect(tester.takeException(), isNull);

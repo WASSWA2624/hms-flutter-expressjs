@@ -80,7 +80,6 @@ const canWriteAccess = (user = {}) => {
     ROLES.TENANT_ADMIN,
     ROLES.FACILITY_ADMIN,
     ROLES.OPERATIONS,
-    ROLES.HR,
   ]);
   return roleList(user).some((entry) => writeRoles.has(entry));
 };

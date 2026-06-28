@@ -441,14 +441,12 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
-      AppPermissions.hrWrite,
       AppPermissions.systemAdmin,
     ],
     requiredAnyRoles: <AppRole>[
       AppRole.superAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
-      AppRole.hr,
       AppRole.operations,
     ],
     requiresTenantContext: true,

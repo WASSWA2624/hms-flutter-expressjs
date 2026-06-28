@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
@@ -181,6 +182,15 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             onPressed: state.isRefreshing
                 ? null
                 : () => _showWorkQueueDialog(context),
+          ),
+          AppButton.secondary(
+            label: l10n.hrManageAccessAction,
+            leadingIcon: Icons.manage_accounts_outlined,
+            semanticLabel: l10n.hrManageAccessAction,
+            tooltip: l10n.hrManageAccessAction,
+            onPressed: state.isRefreshing
+                ? null
+                : () => showHrAccessWorkspaceDialog(context, ref),
           ),
           AppButton.secondary(
             label: l10n.hrManageScheduleTemplatesTitle,
@@ -637,7 +647,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
             rows: <_RecordLine>[
               for (final HrUserRole role in detail.accessSummary!.userRoles)
                 _RecordLine(
-                  title: role.roleName ?? role.roleId ?? l10n.hrRolePositionColumnLabel,
+                  title:
+                      role.roleName ??
+                      role.roleId ??
+                      l10n.hrRolePositionColumnLabel,
                   subtitle: _joinDisplay(<String?>[
                     role.facilityName,
                     role.facilityDisplayId,
@@ -673,7 +686,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           onRunPayroll: _showPayrollRunDialog,
           onAssignRole: showHrAssignRoleDialog,
           onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
-            showHrModuleAccessDialog(context, staffDetail.accessSummary);
+            showHrModuleAccessDialog(context, ref, staffDetail.accessSummary);
           },
         ),
         SizedBox(height: theme.spacing.md),
@@ -698,11 +711,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
                     ? l10n.hrEndAssignmentAction
                     : null,
                 onTrailingTap: assignment.isActive && !state.isMutating
-                    ? () => showHrEndAssignmentDialog(
-                        context,
-                        ref,
-                        assignment,
-                      )
+                    ? () => showHrEndAssignmentDialog(context, ref, assignment)
                     : null,
               ),
           ],
@@ -810,7 +819,9 @@ class _HrWorkQueueSwitcherRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ({HrQueue queue, bool isRefreshing}) queueState = ref.watch(
-      hrWorkspaceControllerProvider.select((AsyncValue<Result<HrWorkspaceState>> async) {
+      hrWorkspaceControllerProvider.select((
+        AsyncValue<Result<HrWorkspaceState>> async,
+      ) {
         final HrWorkspaceState? state = _hrStateFromAsync(async);
         return (
           queue: state?.workItemsQuery.queue ?? HrQueue.leaveRequests,
@@ -1824,7 +1835,8 @@ class _StaffProfileFields extends ConsumerStatefulWidget {
   final HrStaffProfile? staff;
 
   @override
-  ConsumerState<_StaffProfileFields> createState() => _StaffProfileFieldsState();
+  ConsumerState<_StaffProfileFields> createState() =>
+      _StaffProfileFieldsState();
 }
 
 class _StaffProfileFieldsState extends ConsumerState<_StaffProfileFields> {

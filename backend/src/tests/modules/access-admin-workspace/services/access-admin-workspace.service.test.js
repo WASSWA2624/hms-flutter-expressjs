@@ -143,4 +143,10 @@ describe('access-admin-workspace service', () => {
       service.resetDemoUserPassword('USR0001', { roles: ['TENANT_ADMIN'] })
     ).rejects.toMatchObject({ statusCode: 403 });
   });
+
+  it('denies HR write access to platform access admin mutations', async () => {
+    await expect(
+      service.resetDemoUserPassword('USR0001', { roles: ['HR'] })
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
 });

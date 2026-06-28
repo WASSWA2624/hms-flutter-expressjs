@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/route_guards.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -279,6 +280,36 @@ void main() {
           ),
         ),
         isNull,
+      );
+    });
+
+    test('blocks HR from the access admin workspace route', () {
+      final Uri targetLocation = Uri(path: AppRoutes.accessAdmin.path);
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['HR'],
+        ),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'hr-rosters'),
+        ],
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: <AppRouteData>[AppRoutes.accessAdmin],
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: targetLocation,
+            grantedPermissions: AppPermissionGrant(<AppPermission>{
+              AppPermissions.hrWrite,
+            }),
+          ),
+        ),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
       );
     });
   });
