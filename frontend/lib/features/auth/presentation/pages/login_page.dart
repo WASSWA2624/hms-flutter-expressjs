@@ -6,6 +6,8 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -42,125 +44,83 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Card(
-                elevation: 1,
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: EdgeInsets.all(theme.spacing.xl),
-                  child: AutofillGroup(
-                    child: Form(
-                      key: _formKey,
-                      autovalidateMode: _autovalidateMode,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          const Align(child: AppLogo(size: 56)),
-                          SizedBox(height: theme.spacing.lg),
-                          Text(
-                            l10n.authLoginTitle,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 24,
-                              height: 1.2,
-                            ),
-                          ),
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            l10n.authLoginBody,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                          ),
-                          SizedBox(height: theme.spacing.lg),
-                          if (state.failure != null) ...<Widget>[
-                            AuthFailureText(failure: state.failure!),
-                            SizedBox(height: theme.spacing.md),
-                          ],
-                          AppTextField(
-                            controller: _identifierController,
-                            labelText: l10n.authIdentifierLabel,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const <String>[
-                              AutofillHints.username,
-                              AutofillHints.email,
-                              AutofillHints.telephoneNumber,
-                            ],
-                            validator: AppValidators.requiredText(
-                              l10n.validationRequired,
-                            ),
-                            onChanged: (_) => _clearFormFeedback(),
-                            onFocusChanged: _handleFieldFocusChanged,
-                            focusNode: _identifierFocusNode,
-                            enabled: !state.isSubmitting,
-                          ),
-                          SizedBox(height: theme.spacing.md),
-                          AppTextField(
-                            controller: _passwordController,
-                            labelText: l10n.authPasswordLabel,
-                            obscureText: true,
-                            enableObscureTextToggle: true,
-                            showObscuredTextLabel: l10n.authShowPasswordLabel,
-                            hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const <String>[
-                              AutofillHints.password,
-                            ],
-                            validator: AppValidators.requiredText(
-                              l10n.validationRequired,
-                              trim: false,
-                            ),
-                            onChanged: (_) => _clearFormFeedback(),
-                            onFocusChanged: _handleFieldFocusChanged,
-                            focusNode: _passwordFocusNode,
-                            enabled: !state.isSubmitting,
-                            onFieldSubmitted: (_) => _submit(),
-                          ),
-                          SizedBox(height: theme.spacing.lg),
-                          AppButton.primary(
-                            label: l10n.authLoginActionLabel,
-                            leadingIcon: Icons.login,
-                            isLoading: state.isSubmitting,
-                            fullWidth: true,
-                            onPressed: _submit,
-                          ),
-                          SizedBox(height: theme.spacing.sm),
-                          AppButton.tertiary(
-                            label: l10n.authForgotPasswordActionLabel,
-                            onPressed: state.isSubmitting
-                                ? null
-                                : () => context.go(
-                                    AppRoutes.forgotPassword.location(),
-                                  ),
-                          ),
-                          SizedBox(height: theme.spacing.sm),
-                          AppButton.tertiary(
-                            label: l10n.authCreateAccountActionLabel,
-                            onPressed: state.isSubmitting
-                                ? null
-                                : () =>
-                                      context.go(AppRoutes.register.location()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+    return AuthPageFrame(
+      title: l10n.authLoginTitle,
+      subtitle: l10n.authLoginBody,
+      useCard: true,
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          autovalidateMode: _autovalidateMode,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (state.failure != null) ...<Widget>[
+                AuthFailureText(failure: state.failure!),
+                SizedBox(height: theme.spacing.md),
+              ],
+              AppTextField(
+                controller: _identifierController,
+                labelText: l10n.authIdentifierLabel,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const <String>[
+                  AutofillHints.username,
+                  AutofillHints.email,
+                  AutofillHints.telephoneNumber,
+                ],
+                validator: AppValidators.requiredText(l10n.validationRequired),
+                isRequired: true,
+                useFloatingLabel: true,
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _identifierFocusNode,
+                enabled: !state.isSubmitting,
               ),
-            ),
+              SizedBox(height: theme.spacing.md),
+              AppTextField(
+                controller: _passwordController,
+                labelText: l10n.authPasswordLabel,
+                obscureText: true,
+                enableObscureTextToggle: true,
+                showObscuredTextLabel: l10n.authShowPasswordLabel,
+                hideObscuredTextLabel: l10n.authHidePasswordLabel,
+                textInputAction: TextInputAction.done,
+                autofillHints: const <String>[AutofillHints.password],
+                validator: AppValidators.requiredText(
+                  l10n.validationRequired,
+                  trim: false,
+                ),
+                isRequired: true,
+                useFloatingLabel: true,
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _passwordFocusNode,
+                enabled: !state.isSubmitting,
+                onFieldSubmitted: (_) => _submit(),
+              ),
+              SizedBox(height: theme.spacing.lg),
+              AppButton.primary(
+                label: l10n.authLoginActionLabel,
+                leadingIcon: Icons.login,
+                isLoading: state.isSubmitting,
+                fullWidth: true,
+                onPressed: _submit,
+              ),
+              AuthTextLink(
+                label: l10n.authForgotPasswordActionLabel,
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => context.go(AppRoutes.forgotPassword.location()),
+              ),
+              AuthTextLink(
+                label: l10n.authCreateAccountActionLabel,
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => context.go(AppRoutes.register.location()),
+              ),
+            ],
           ),
         ),
       ),

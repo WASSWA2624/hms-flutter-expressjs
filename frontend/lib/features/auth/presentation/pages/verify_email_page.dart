@@ -7,6 +7,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -61,117 +63,90 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     final email = _normalizedEmail;
     final l10n = context.l10n;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: _autovalidateMode,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    const Align(child: AppLogo(size: 48)),
-                    SizedBox(height: theme.spacing.lg),
-                    Text(
-                      _isVerified
-                          ? l10n.authEmailVerifiedTitle
-                          : l10n.authVerifyEmailTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    Text(
-                      _bodyText(l10n, email),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    if (_codeResent) ...<Widget>[
-                      SizedBox(height: theme.spacing.md),
-                      Text(
-                        l10n.authVerificationCodeResentMessage,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                    if (_failure != null) ...<Widget>[
-                      SizedBox(height: theme.spacing.md),
-                      AuthFailureText(failure: _failure!),
-                    ],
-                    if (_isVerified) ...<Widget>[
-                      SizedBox(height: theme.spacing.lg),
-                      AppButton.primary(
-                        label: l10n.authLoginActionLabel,
-                        leadingIcon: Icons.login,
-                        fullWidth: true,
-                        onPressed: () => context.go(AppRoutes.login.location()),
-                      ),
-                    ] else ...<Widget>[
-                      SizedBox(height: theme.spacing.lg),
-                      AppTextField(
-                        controller: _codeController,
-                        labelText: l10n.authVerificationCodeLabel,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(6),
-                        ],
-                        validator: AppValidators.compose<String>([
-                          AppValidators.requiredText(
-                            context.l10n.validationRequired,
-                          ),
-                          AppValidators.minLength(
-                            6,
-                            l10n.authVerificationCodeInvalidMessage,
-                            allowEmpty: false,
-                          ),
-                        ]),
-                        onChanged: (_) => _clearFormFeedback(),
-                        onFocusChanged: _handleFieldFocusChanged,
-                        focusNode: _codeFocusNode,
-                        enabled: !_isSubmitting && !_isResending,
-                        onFieldSubmitted: (_) => _verifyCode(),
-                      ),
-                      SizedBox(height: theme.spacing.lg),
-                      AppButton.primary(
-                        label: l10n.authVerifyEmailActionLabel,
-                        leadingIcon: Icons.mark_email_read_outlined,
-                        isLoading: _isSubmitting,
-                        fullWidth: true,
-                        onPressed: _isResending ? null : _verifyCode,
-                      ),
-                      SizedBox(height: theme.spacing.sm),
-                      AppButton.secondary(
-                        label: l10n.authSendNewCodeActionLabel,
-                        leadingIcon: Icons.refresh,
-                        isLoading: _isResending,
-                        fullWidth: true,
-                        onPressed: email == null || _isSubmitting
-                            ? null
-                            : _resendCode,
-                      ),
-                    ],
-                    SizedBox(height: theme.spacing.sm),
-                    AppButton.tertiary(
-                      label: l10n.authBackToLoginActionLabel,
-                      onPressed: _isSubmitting || _isResending
-                          ? null
-                          : () => context.go(AppRoutes.login.location()),
-                    ),
-                  ],
+    return AuthPageFrame(
+      title: _isVerified
+          ? l10n.authEmailVerifiedTitle
+          : l10n.authVerifyEmailTitle,
+      subtitle: _bodyText(l10n, email),
+      maxWidth: 460,
+      child: Form(
+        key: _formKey,
+        autovalidateMode: _autovalidateMode,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_codeResent) ...<Widget>[
+              Text(
+                l10n.authVerificationCodeResentMessage,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.primary,
                 ),
               ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (_failure != null) ...<Widget>[
+              AuthFailureText(failure: _failure!),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (_isVerified) ...<Widget>[
+              AppButton.primary(
+                label: l10n.authLoginActionLabel,
+                leadingIcon: Icons.login,
+                fullWidth: true,
+                onPressed: () => context.go(AppRoutes.login.location()),
+              ),
+            ] else ...<Widget>[
+              AppTextField(
+                controller: _codeController,
+                labelText: l10n.authVerificationCodeLabel,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                validator: AppValidators.compose<String>([
+                  AppValidators.requiredText(l10n.validationRequired),
+                  AppValidators.minLength(
+                    6,
+                    l10n.authVerificationCodeInvalidMessage,
+                    allowEmpty: false,
+                  ),
+                ]),
+                isRequired: true,
+                useFloatingLabel: true,
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _codeFocusNode,
+                enabled: !_isSubmitting && !_isResending,
+                onFieldSubmitted: (_) => _verifyCode(),
+              ),
+              SizedBox(height: theme.spacing.lg),
+              AppButton.primary(
+                label: l10n.authVerifyEmailActionLabel,
+                leadingIcon: Icons.mark_email_read_outlined,
+                isLoading: _isSubmitting,
+                fullWidth: true,
+                onPressed: _isResending ? null : _verifyCode,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppButton.secondary(
+                label: l10n.authSendNewCodeActionLabel,
+                leadingIcon: Icons.refresh,
+                isLoading: _isResending,
+                fullWidth: true,
+                onPressed: email == null || _isSubmitting ? null : _resendCode,
+              ),
+            ],
+            AuthTextLink(
+              label: l10n.authBackToLoginActionLabel,
+              onPressed: _isSubmitting || _isResending
+                  ? null
+                  : () => context.go(AppRoutes.login.location()),
             ),
-          ),
+          ],
         ),
       ),
     );

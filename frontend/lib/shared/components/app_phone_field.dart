@@ -36,6 +36,7 @@ class AppPhoneField extends StatefulWidget {
     this.isLoading = false,
     this.isRequired = false,
     this.initialCountryCode = '+256',
+    this.useFloatingLabel = false,
     super.key,
   }) : assert(
          !isRequired || requiredMessage != null,
@@ -67,6 +68,7 @@ class AppPhoneField extends StatefulWidget {
   final bool isLoading;
   final bool isRequired;
   final String initialCountryCode;
+  final bool useFloatingLabel;
 
   @override
   State<AppPhoneField> createState() => _AppPhoneFieldState();
@@ -127,9 +129,30 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
           isEmpty: _numberController.text.isEmpty,
           decoration: InputDecoration(
             enabled: canEdit,
+            label: widget.useFloatingLabel
+                ? appFieldLabelWidget(
+                    context,
+                    widget.labelText,
+                    isRequired: widget.isRequired,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : null,
+            floatingLabelBehavior: widget.useFloatingLabel
+                ? FloatingLabelBehavior.auto
+                : FloatingLabelBehavior.never,
             helperText: widget.helperText,
             errorText: widget.errorText ?? formField.errorText,
-            contentPadding: EdgeInsets.zero,
+            contentPadding: widget.useFloatingLabel
+                ? EdgeInsets.fromLTRB(
+                    theme.spacing.md,
+                    theme.spacing.md,
+                    theme.spacing.md,
+                    theme.spacing.sm,
+                  )
+                : EdgeInsets.zero,
           ),
           child: _UnifiedPhoneInput(
             country: _country,
@@ -151,7 +174,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       },
     );
 
-    if (widget.labelText != null) {
+    if (widget.labelText != null && !widget.useFloatingLabel) {
       field = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -545,12 +568,9 @@ class _PhoneCountryButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(
-                  Icons.public_outlined,
+                _CountryFlagEmoji(
+                  isoCode: country.isoCode,
                   size: theme.appTokens.listIconSize,
-                  color: enabled
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.onSurface.withValues(alpha: 0.38),
                 ),
                 SizedBox(width: theme.spacing.xs),
                 Flexible(
@@ -669,7 +689,10 @@ class _PhoneCountryPickerDialogState extends State<_PhoneCountryPickerDialog> {
                         final bool selected = country == widget.selectedCountry;
 
                         return ListTile(
-                          leading: const Icon(Icons.public_outlined),
+                          leading: _CountryFlagEmoji(
+                            isoCode: country.isoCode,
+                            size: 28,
+                          ),
                           title: Text(country.name),
                           subtitle: Text(
                             '${country.callingCode}  ${country.isoCode.name}',
@@ -710,6 +733,37 @@ class _PhoneCountryPickerDialogState extends State<_PhoneCountryPickerDialog> {
   }
 }
 
+String isoCodeToFlagEmoji(IsoCode isoCode) {
+  final String code = isoCode.name.toUpperCase();
+  if (code.length != 2) {
+    return '';
+  }
+
+  const int regionalIndicatorBase = 0x1F1E6;
+  return String.fromCharCodes(
+    code.codeUnits.map(
+      (int unit) => regionalIndicatorBase + unit - 'A'.codeUnitAt(0),
+    ),
+  );
+}
+
+class _CountryFlagEmoji extends StatelessWidget {
+  const _CountryFlagEmoji({required this.isoCode, required this.size});
+
+  final IsoCode isoCode;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final String emoji = isoCodeToFlagEmoji(isoCode);
+    if (emoji.isEmpty) {
+      return Icon(Icons.public_outlined, size: size);
+    }
+
+    return Text(emoji, style: TextStyle(fontSize: size, height: 1));
+  }
+}
+
 @immutable
 class _PhoneCountry {
   const _PhoneCountry({
@@ -725,6 +779,8 @@ class _PhoneCountry {
   final bool isMainCountryForDialCode;
 
   String get callingCode => '+$callingCodeDigits';
+
+  String get flagEmoji => isoCodeToFlagEmoji(isoCode);
 
   @override
   bool operator ==(Object other) {

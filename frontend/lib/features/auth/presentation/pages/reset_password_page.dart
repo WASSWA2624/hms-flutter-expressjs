@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 class ResetPasswordPage extends ConsumerStatefulWidget {
-  const ResetPasswordPage({required this.token, super.key});
+  const ResetPasswordPage({this.token, this.email, super.key});
 
   final String? token;
+  final String? email;
 
   @override
   ConsumerState<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -20,19 +24,47 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _emailFocusNode = FocusNode();
+  final _codeFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
+  void initState() {
+    super.initState();
+    final initialEmail = widget.email?.trim().toLowerCase();
+    if (initialEmail != null && initialEmail.isNotEmpty) {
+      _emailController.text = initialEmail;
+    }
+    final initialToken = widget.token?.trim();
+    if (initialToken != null && RegExp(r'^\d{6}$').hasMatch(initialToken)) {
+      _codeController.text = initialToken;
+    }
+  }
+
+  @override
   void dispose() {
+    _emailController.dispose();
+    _codeController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _emailFocusNode.dispose();
+    _codeFocusNode.dispose();
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
     super.dispose();
+  }
+
+  bool get _usesLinkToken {
+    final token = widget.token?.trim();
+    return token != null &&
+        token.isNotEmpty &&
+        !RegExp(r'^\d{6}$').hasMatch(token);
   }
 
   @override
@@ -40,134 +72,158 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     final l10n = context.l10n;
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
-    final token = widget.token?.trim();
 
     if (state.passwordResetCompleted) {
-      return _CompletedScaffold(
+      return AuthPageFrame(
         title: l10n.authResetPasswordCompletedTitle,
-        body: l10n.authResetPasswordCompletedBody,
+        subtitle: l10n.authResetPasswordCompletedBody,
+        maxWidth: 460,
+        child: AppButton.primary(
+          label: l10n.authLoginActionLabel,
+          leadingIcon: Icons.login,
+          fullWidth: true,
+          onPressed: () => context.go(AppRoutes.login.location()),
+        ),
       );
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: _autovalidateMode,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Align(child: AppLogo(size: 48)),
-                    SizedBox(height: theme.spacing.lg),
-                    Text(
-                      l10n.authResetPasswordTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      l10n.authResetPasswordBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    SizedBox(height: theme.spacing.lg),
-                    if (token == null || token.isEmpty) ...<Widget>[
-                      Text(
-                        l10n.authResetPasswordMissingTokenMessage,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ] else ...<Widget>[
-                      if (state.failure != null) ...<Widget>[
-                        AuthFailureText(failure: state.failure!),
-                        SizedBox(height: theme.spacing.md),
-                      ],
-                      AppTextField(
-                        controller: _passwordController,
-                        labelText: l10n.authNewPasswordLabel,
-                        obscureText: true,
-                        enableObscureTextToggle: true,
-                        showObscuredTextLabel: l10n.authShowPasswordLabel,
-                        hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const <String>[
-                          AutofillHints.newPassword,
-                        ],
-                        validator: AppValidators.minLength(
-                          8,
-                          l10n.authPasswordMinLengthMessage,
-                          allowEmpty: false,
-                        ),
-                        onChanged: (_) => _clearFormFeedback(),
-                        onFocusChanged: _handleFieldFocusChanged,
-                        focusNode: _passwordFocusNode,
-                        enabled: !state.isSubmitting,
-                      ),
-                      SizedBox(height: theme.spacing.md),
-                      AppTextField(
-                        controller: _confirmPasswordController,
-                        labelText: l10n.authConfirmPasswordLabel,
-                        obscureText: true,
-                        enableObscureTextToggle: true,
-                        showObscuredTextLabel: l10n.authShowPasswordLabel,
-                        hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                        textInputAction: TextInputAction.done,
-                        validator: (value) {
-                          final requiredError = AppValidators.requiredText(
-                            l10n.validationRequired,
-                            trim: false,
-                          )(value);
-                          if (requiredError != null) {
-                            return requiredError;
-                          }
-
-                          return value == _passwordController.text
-                              ? null
-                              : l10n.authPasswordMismatchMessage;
-                        },
-                        onChanged: (_) => _clearFormFeedback(),
-                        onFocusChanged: _handleFieldFocusChanged,
-                        focusNode: _confirmPasswordFocusNode,
-                        enabled: !state.isSubmitting,
-                        onFieldSubmitted: (_) => _submit(token),
-                      ),
-                      SizedBox(height: theme.spacing.lg),
-                      AppButton.primary(
-                        label: l10n.authResetPasswordActionLabel,
-                        leadingIcon: Icons.lock_reset_outlined,
-                        isLoading: state.isSubmitting,
-                        fullWidth: true,
-                        onPressed: () => _submit(token),
-                      ),
-                    ],
-                    SizedBox(height: theme.spacing.sm),
-                    AppButton.tertiary(
-                      label: l10n.authBackToLoginActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () => context.go(AppRoutes.login.location()),
-                    ),
-                  ],
-                ),
+    return AuthPageFrame(
+      title: l10n.authResetPasswordTitle,
+      subtitle: _usesLinkToken
+          ? l10n.authResetPasswordBody
+          : l10n.authResetPasswordCodeModeBody,
+      maxWidth: 460,
+      child: Form(
+        key: _formKey,
+        autovalidateMode: _autovalidateMode,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (state.failure != null) ...<Widget>[
+              AuthFailureText(failure: state.failure!),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (!_usesLinkToken) ...<Widget>[
+              AppEmailField(
+                controller: _emailController,
+                labelText: l10n.authEmailLabel,
+                textInputAction: TextInputAction.next,
+                invalidEmailMessage: l10n.authEmailInvalidMessage,
+                requiredMessage: l10n.validationRequired,
+                isRequired: true,
+                useFloatingLabel: true,
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _emailFocusNode,
+                enabled: !state.isSubmitting,
               ),
+              SizedBox(height: theme.spacing.md),
+              AppTextField(
+                controller: _codeController,
+                labelText: l10n.authResetPasswordCodeLabel,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                validator: AppValidators.compose<String>([
+                  AppValidators.requiredText(l10n.validationRequired),
+                  AppValidators.minLength(
+                    6,
+                    l10n.authResetPasswordCodeInvalidMessage,
+                    allowEmpty: false,
+                  ),
+                ]),
+                isRequired: true,
+                useFloatingLabel: true,
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _codeFocusNode,
+                enabled: !state.isSubmitting,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            AppTextField(
+              controller: _passwordController,
+              labelText: l10n.authNewPasswordLabel,
+              obscureText: true,
+              enableObscureTextToggle: true,
+              showObscuredTextLabel: l10n.authShowPasswordLabel,
+              hideObscuredTextLabel: l10n.authHidePasswordLabel,
+              textInputAction: TextInputAction.next,
+              autofillHints: const <String>[AutofillHints.newPassword],
+              validator: AppValidators.minLength(
+                8,
+                l10n.authPasswordMinLengthMessage,
+                allowEmpty: false,
+              ),
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _passwordFocusNode,
+              enabled: !state.isSubmitting,
             ),
-          ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _confirmPasswordController,
+              labelText: l10n.authConfirmPasswordLabel,
+              obscureText: true,
+              enableObscureTextToggle: true,
+              showObscuredTextLabel: l10n.authShowPasswordLabel,
+              hideObscuredTextLabel: l10n.authHidePasswordLabel,
+              textInputAction: TextInputAction.done,
+              validator: (value) {
+                final requiredError = AppValidators.requiredText(
+                  l10n.validationRequired,
+                  trim: false,
+                )(value);
+                if (requiredError != null) {
+                  return requiredError;
+                }
+
+                return value == _passwordController.text
+                    ? null
+                    : l10n.authPasswordMismatchMessage;
+              },
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _confirmPasswordFocusNode,
+              enabled: !state.isSubmitting,
+              onFieldSubmitted: (_) => _submit(),
+            ),
+            SizedBox(height: theme.spacing.lg),
+            AppButton.primary(
+              label: l10n.authResetPasswordActionLabel,
+              leadingIcon: Icons.lock_reset_outlined,
+              isLoading: state.isSubmitting,
+              fullWidth: true,
+              onPressed: _submit,
+            ),
+            if (!_usesLinkToken)
+              AuthTextLink(
+                label: l10n.authForgotPasswordActionLabel,
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => context.go(AppRoutes.forgotPassword.location()),
+              ),
+            AuthTextLink(
+              label: l10n.authBackToLoginActionLabel,
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => context.go(AppRoutes.login.location()),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _submit(String token) async {
+  Future<void> _submit() async {
     ref.read(authControllerProvider.notifier).clearFailure();
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
@@ -175,10 +231,18 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       return;
     }
 
+    final token = _usesLinkToken ? widget.token!.trim() : null;
+    final code = !_usesLinkToken ? _codeController.text.trim() : null;
+    final email = !_usesLinkToken
+        ? _emailController.text.trim().toLowerCase()
+        : null;
+
     await ref
         .read(authControllerProvider.notifier)
         .resetPassword(
           token: token,
+          email: email,
+          code: code,
           newPassword: _passwordController.text,
           confirmPassword: _confirmPasswordController.text,
         );
@@ -214,57 +278,5 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       _formKey = GlobalKey<FormState>();
       _autovalidateMode = AutovalidateMode.disabled;
     });
-  }
-}
-
-class _CompletedScaffold extends StatelessWidget {
-  const _CompletedScaffold({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const AppLogo(size: 48),
-                  SizedBox(height: theme.spacing.lg),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                  Text(
-                    body,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: theme.spacing.lg),
-                  AppButton.primary(
-                    label: context.l10n.authLoginActionLabel,
-                    leadingIcon: Icons.login,
-                    fullWidth: true,
-                    onPressed: () => context.go(AppRoutes.login.location()),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

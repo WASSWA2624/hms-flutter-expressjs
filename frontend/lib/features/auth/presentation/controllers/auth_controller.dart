@@ -249,7 +249,9 @@ final class AuthController extends Notifier<AuthControllerState> {
   }
 
   Future<bool> resetPassword({
-    required String token,
+    String? token,
+    String? email,
+    String? code,
     required String newPassword,
     required String confirmPassword,
   }) async {
@@ -267,6 +269,8 @@ final class AuthController extends Notifier<AuthControllerState> {
         .read(authRepositoryProvider)
         .resetPassword(
           token: token,
+          email: email,
+          code: code,
           newPassword: newPassword,
           confirmPassword: confirmPassword,
         );

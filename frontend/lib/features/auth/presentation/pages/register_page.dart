@@ -6,6 +6,8 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -57,188 +59,166 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: _autovalidateMode,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Align(child: AppLogo(size: 48)),
-                    SizedBox(height: theme.spacing.lg),
-                    Text(
-                      l10n.authRegisterTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      l10n.authRegisterBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    SizedBox(height: theme.spacing.lg),
-                    if (state.failure != null) ...<Widget>[
-                      AuthFailureText(failure: state.failure!),
-                      SizedBox(height: theme.spacing.md),
-                    ],
-                    AppTextField(
-                      controller: _adminNameController,
-                      labelText: l10n.authAdminNameLabel,
-                      textInputAction: TextInputAction.next,
-                      validator: AppValidators.requiredText(
-                        l10n.validationRequired,
-                      ),
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _adminNameFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppEmailField(
-                      controller: _emailController,
-                      labelText: l10n.authEmailLabel,
-                      textInputAction: TextInputAction.next,
-                      invalidEmailMessage: l10n.authEmailInvalidMessage,
-                      requiredMessage: l10n.validationRequired,
-                      isRequired: true,
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _emailFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppTextField(
-                      controller: _passwordController,
-                      labelText: l10n.authPasswordLabel,
-                      obscureText: true,
-                      enableObscureTextToggle: true,
-                      showObscuredTextLabel: l10n.authShowPasswordLabel,
-                      hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const <String>[AutofillHints.newPassword],
-                      validator: AppValidators.minLength(
-                        8,
-                        l10n.authPasswordMinLengthMessage,
-                        allowEmpty: false,
-                      ),
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _passwordFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppTextField(
-                      controller: _facilityNameController,
-                      labelText: l10n.authFacilityNameLabel,
-                      textInputAction: TextInputAction.next,
-                      validator: AppValidators.requiredText(
-                        l10n.validationRequired,
-                      ),
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _facilityNameFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppSelectField<String>(
-                      value: _facilityType,
-                      labelText: l10n.authFacilityTypeLabel,
-                      enabled: !state.isSubmitting,
-                      options: <AppSelectOption<String>>[
-                        AppSelectOption<String>(
-                          value: 'HOSPITAL',
-                          label: l10n.authFacilityTypeHospital,
-                          leadingIcon: const Icon(
-                            Icons.local_hospital_outlined,
-                          ),
-                        ),
-                        AppSelectOption<String>(
-                          value: 'CLINIC',
-                          label: l10n.authFacilityTypeClinic,
-                          leadingIcon: const Icon(Icons.medical_services),
-                        ),
-                        AppSelectOption<String>(
-                          value: 'LAB',
-                          label: l10n.authFacilityTypeLab,
-                          leadingIcon: const Icon(Icons.biotech_outlined),
-                        ),
-                        AppSelectOption<String>(
-                          value: 'PHARMACY',
-                          label: l10n.authFacilityTypePharmacy,
-                          leadingIcon: const Icon(
-                            Icons.medication_liquid_outlined,
-                          ),
-                        ),
-                        AppSelectOption<String>(
-                          value: 'OTHER',
-                          label: l10n.authFacilityTypeOther,
-                          leadingIcon: const Icon(Icons.business_outlined),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          _clearFormFeedback();
-                          _resetValidationFeedback();
-                          setState(() => _facilityType = value);
-                        }
-                      },
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppPhoneField(
-                      controller: _phoneController,
-                      labelText: l10n.authPhoneOptionalLabel,
-                      countryLabelText: l10n.appPhoneCountryLabel,
-                      countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-                      countryNoResultsText: l10n.appPhoneCountryNoResults,
-                      numberLabelText: l10n.appPhoneNumberLabel,
-                      numberHintText: l10n.appPhoneNumberHint,
-                      invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                      textInputAction: TextInputAction.next,
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _phoneFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.md),
-                    AppTextField(
-                      controller: _locationController,
-                      labelText: l10n.authLocationOptionalLabel,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (_) => _clearFormFeedback(),
-                      onFocusChanged: _handleFieldFocusChanged,
-                      focusNode: _locationFocusNode,
-                      enabled: !state.isSubmitting,
-                    ),
-                    SizedBox(height: theme.spacing.lg),
-                    AppButton.primary(
-                      label: l10n.authRegisterActionLabel,
-                      leadingIcon: Icons.person_add_alt_1_outlined,
-                      isLoading: state.isSubmitting,
-                      fullWidth: true,
-                      onPressed: _submit,
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    AppButton.tertiary(
-                      label: l10n.authBackToLoginActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () => context.go(AppRoutes.login.location()),
-                    ),
-                  ],
-                ),
-              ),
+    return AuthPageFrame(
+      title: l10n.authRegisterTitle,
+      subtitle: l10n.authRegisterBody,
+      maxWidth: 520,
+      child: Form(
+        key: _formKey,
+        autovalidateMode: _autovalidateMode,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (state.failure != null) ...<Widget>[
+              AuthFailureText(failure: state.failure!),
+              SizedBox(height: theme.spacing.md),
+            ],
+            AppTextField(
+              controller: _adminNameController,
+              labelText: l10n.authAdminNameLabel,
+              textInputAction: TextInputAction.next,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _adminNameFocusNode,
+              enabled: !state.isSubmitting,
             ),
-          ),
+            SizedBox(height: theme.spacing.md),
+            AppEmailField(
+              controller: _emailController,
+              labelText: l10n.authEmailLabel,
+              textInputAction: TextInputAction.next,
+              invalidEmailMessage: l10n.authEmailInvalidMessage,
+              requiredMessage: l10n.validationRequired,
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _emailFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _passwordController,
+              labelText: l10n.authPasswordLabel,
+              obscureText: true,
+              enableObscureTextToggle: true,
+              showObscuredTextLabel: l10n.authShowPasswordLabel,
+              hideObscuredTextLabel: l10n.authHidePasswordLabel,
+              textInputAction: TextInputAction.next,
+              autofillHints: const <String>[AutofillHints.newPassword],
+              validator: AppValidators.minLength(
+                8,
+                l10n.authPasswordMinLengthMessage,
+                allowEmpty: false,
+              ),
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _passwordFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _facilityNameController,
+              labelText: l10n.authFacilityNameLabel,
+              textInputAction: TextInputAction.next,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              isRequired: true,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _facilityNameFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppSelectField<String>(
+              value: _facilityType,
+              labelText: l10n.authFacilityTypeLabel,
+              isRequired: true,
+              enabled: !state.isSubmitting,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: 'HOSPITAL',
+                  label: l10n.authFacilityTypeHospital,
+                  leadingIcon: const Icon(Icons.local_hospital_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'CLINIC',
+                  label: l10n.authFacilityTypeClinic,
+                  leadingIcon: const Icon(Icons.medical_services),
+                ),
+                AppSelectOption<String>(
+                  value: 'LAB',
+                  label: l10n.authFacilityTypeLab,
+                  leadingIcon: const Icon(Icons.biotech_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'PHARMACY',
+                  label: l10n.authFacilityTypePharmacy,
+                  leadingIcon: const Icon(Icons.medication_liquid_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'OTHER',
+                  label: l10n.authFacilityTypeOther,
+                  leadingIcon: const Icon(Icons.business_outlined),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  _clearFormFeedback();
+                  _resetValidationFeedback();
+                  setState(() => _facilityType = value);
+                }
+              },
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppPhoneField(
+              controller: _phoneController,
+              labelText: l10n.authPhoneOptionalLabel,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+              countryNoResultsText: l10n.appPhoneCountryNoResults,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              numberHintText: l10n.appPhoneNumberHint,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+              textInputAction: TextInputAction.next,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _phoneFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _locationController,
+              labelText: l10n.authLocationOptionalLabel,
+              textInputAction: TextInputAction.done,
+              useFloatingLabel: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _locationFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.lg),
+            AppButton.primary(
+              label: l10n.authRegisterActionLabel,
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              isLoading: state.isSubmitting,
+              fullWidth: true,
+              onPressed: _submit,
+            ),
+            AuthTextLink(
+              label: l10n.authBackToLoginActionLabel,
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => context.go(AppRoutes.login.location()),
+            ),
+          ],
         ),
       ),
     );

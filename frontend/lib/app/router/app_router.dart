@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
@@ -339,40 +340,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: AppRoutes.login.path,
-        name: AppRoutes.login.name,
-        builder: (_, GoRouterState state) {
-          return LoginPage(from: state.uri.queryParameters['from']);
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.register.path,
-        name: AppRoutes.register.name,
-        builder: (_, _) => const RegisterPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.verifyEmail.path,
-        name: AppRoutes.verifyEmail.name,
-        builder: (_, GoRouterState state) {
-          return VerifyEmailPage(
-            token: state.uri.queryParameters['token'],
-            email: state.uri.queryParameters['email'],
-            reason: state.uri.queryParameters['reason'],
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.forgotPassword.path,
-        name: AppRoutes.forgotPassword.name,
-        builder: (_, _) => const ForgotPasswordPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.resetPassword.path,
-        name: AppRoutes.resetPassword.name,
-        builder: (_, GoRouterState state) {
-          return ResetPasswordPage(token: state.uri.queryParameters['token']);
-        },
+      ShellRoute(
+        builder: (_, _, Widget child) => AuthShellLayout(child: child),
+        routes: <RouteBase>[
+          GoRoute(
+            path: AppRoutes.login.path,
+            name: AppRoutes.login.name,
+            builder: (_, GoRouterState state) {
+              return LoginPage(from: state.uri.queryParameters['from']);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.register.path,
+            name: AppRoutes.register.name,
+            builder: (_, _) => const RegisterPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.verifyEmail.path,
+            name: AppRoutes.verifyEmail.name,
+            builder: (_, GoRouterState state) {
+              return VerifyEmailPage(
+                token: state.uri.queryParameters['token'],
+                email: state.uri.queryParameters['email'],
+                reason: state.uri.queryParameters['reason'],
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.forgotPassword.path,
+            name: AppRoutes.forgotPassword.name,
+            builder: (_, _) => const ForgotPasswordPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.resetPassword.path,
+            name: AppRoutes.resetPassword.name,
+            builder: (_, GoRouterState state) {
+              return ResetPasswordPage(
+                token: state.uri.queryParameters['token'],
+                email: state.uri.queryParameters['email'],
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.sessionRestoring.path,

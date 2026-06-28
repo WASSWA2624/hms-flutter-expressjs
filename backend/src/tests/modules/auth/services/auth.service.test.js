@@ -1067,7 +1067,7 @@ describe('Auth Service', () => {
       const result = await authService.forgotPassword(forgotData);
 
       expect(result).toHaveProperty('message');
-      expect(authRepository.createVerificationToken).toHaveBeenCalled();
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
         to: 'test@example.com',
         subject: expect.stringContaining('Reset your')
@@ -1130,6 +1130,7 @@ describe('Auth Service', () => {
         user_id: 'user-123',
         user: {
           id: 'user-123',
+          email: 'test@example.com',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123'
         }
@@ -1138,7 +1139,7 @@ describe('Auth Service', () => {
       authRepository.findVerificationToken.mockResolvedValue(mockToken);
       hashPassword.mockResolvedValue('newhashedpassword');
       authRepository.updateUserPassword.mockResolvedValue({});
-      authRepository.markTokenAsUsed.mockResolvedValue({});
+      authRepository.deleteExpiredTokens.mockResolvedValue({});
       authRepository.revokeAllUserSessions.mockResolvedValue({});
       createAuditLog.mockResolvedValue({});
 
@@ -1146,7 +1147,7 @@ describe('Auth Service', () => {
 
       expect(result).toHaveProperty('message');
       expect(authRepository.updateUserPassword).toHaveBeenCalledWith('user-123', 'newhashedpassword');
-      expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-123');
+      expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', expect.any(String));
       expect(authRepository.revokeAllUserSessions).toHaveBeenCalledWith('user-123');
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'PASSWORD_RESET'

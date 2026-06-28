@@ -166,9 +166,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
  * @returns {Promise<void>}
  */
 const resetPassword = asyncHandler(async (req, res) => {
-  const { token, new_password } = req.body;
+  const { token, code, email, new_password } = req.body;
 
-  const result = await authService.resetPassword({ token, new_password });
+  const result = await authService.resetPassword({ token, code, email, new_password });
 
   return sendSuccess(res, 200, 'messages.auth.password_reset.success', result);
 });

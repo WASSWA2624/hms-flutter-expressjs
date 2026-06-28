@@ -75,7 +75,9 @@ const forgotPasswordBodySchema = z.object({
 
 // ==================== Reset Password ====================
 const resetPasswordBodySchema = z.object({
-  token: z.string().min(1, 'errors.validation.token.required'),
+  token: z.string().min(1, 'errors.validation.token.required').optional(),
+  code: z.string().regex(/^\d{6}$/, 'errors.validation.token.invalid').optional(),
+  email: z.string().email('errors.validation.email.format').toLowerCase().optional(),
   new_password: z.string()
     .min(8, 'errors.validation.password.min_length')
     .regex(/[A-Z]/, 'errors.validation.password.uppercase')
@@ -83,6 +85,23 @@ const resetPasswordBodySchema = z.object({
     .regex(/[0-9]/, 'errors.validation.password.number')
     .regex(/[^A-Za-z0-9]/, 'errors.validation.password.special'),
   confirm_password: z.string().min(1, 'errors.validation.field.required')
+}).superRefine((data, ctx) => {
+  const token = data.token?.trim();
+  const code = data.code?.trim();
+  if (!token && !code) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'errors.validation.token.required',
+      path: ['token']
+    });
+  }
+  if (code && !data.email) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'errors.validation.email.format',
+      path: ['email']
+    });
+  }
 }).refine((data) => data.new_password === data.confirm_password, {
   message: 'errors.validation.password.mismatch',
   path: ['confirm_password']

@@ -27,6 +27,7 @@ class AppEmailField extends StatelessWidget {
     this.isLoading = false,
     this.isRequired = false,
     this.autofillHints = const <String>[AutofillHints.email],
+    this.useFloatingLabel = false,
     super.key,
   }) : assert(
          !isRequired || requiredMessage != null,
@@ -55,6 +56,7 @@ class AppEmailField extends StatelessWidget {
   final bool isLoading;
   final bool isRequired;
   final Iterable<String>? autofillHints;
+  final bool useFloatingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +85,7 @@ class AppEmailField extends StatelessWidget {
       enabled: enabled,
       isLoading: isLoading,
       isRequired: isRequired,
+      useFloatingLabel: useFloatingLabel,
       autocorrect: false,
       enableSuggestions: false,
     );

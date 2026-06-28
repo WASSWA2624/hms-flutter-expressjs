@@ -5710,7 +5710,7 @@
   "@authForgotPasswordActionLabel": {
     "description": "Link and action label to start password reset."
   },
-  "authForgotPasswordSubmitLabel": "Send reset link",
+  "authForgotPasswordSubmitLabel": "Send reset instructions",
   "@authForgotPasswordSubmitLabel": {
     "description": "Submit action on forgot password form."
   },
@@ -5722,9 +5722,13 @@
   "@authForgotPasswordSubmittedTitle": {
     "description": "Title after forgot password request succeeds."
   },
-  "authForgotPasswordSubmittedBody": "If an account exists for that email, password reset instructions have been sent.",
+  "authForgotPasswordSubmittedBody": "If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.",
   "@authForgotPasswordSubmittedBody": {
     "description": "Body after forgot password request succeeds."
+  },
+  "authResetPasswordWithCodeActionLabel": "Enter reset code",
+  "@authResetPasswordWithCodeActionLabel": {
+    "description": "Action to open reset password page in code entry mode."
   },
   "authResetPasswordTitle": "Choose a new password",
   "@authResetPasswordTitle": {
@@ -5733,6 +5737,18 @@
   "authResetPasswordBody": "Enter a new password for your account.",
   "@authResetPasswordBody": {
     "description": "Reset password page body."
+  },
+  "authResetPasswordCodeModeBody": "Enter your email, the six-digit reset code from your email, and a new password.",
+  "@authResetPasswordCodeModeBody": {
+    "description": "Reset password page body when using code entry."
+  },
+  "authResetPasswordCodeLabel": "Reset code",
+  "@authResetPasswordCodeLabel": {
+    "description": "Label for password reset code field."
+  },
+  "authResetPasswordCodeInvalidMessage": "Enter the six-digit reset code from your email.",
+  "@authResetPasswordCodeInvalidMessage": {
+    "description": "Validation message for invalid reset code."
   },
   "authResetPasswordActionLabel": "Reset password",
   "@authResetPasswordActionLabel": {

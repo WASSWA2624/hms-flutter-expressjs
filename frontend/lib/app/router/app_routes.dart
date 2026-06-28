@@ -46,6 +46,7 @@ final class AppRouteData {
   bool get isAuthEntryRoute {
     return path == AppRoutes.login.path ||
         path == AppRoutes.register.path ||
+        path == AppRoutes.verifyEmail.path ||
         path == AppRoutes.forgotPassword.path ||
         path == AppRoutes.resetPassword.path;
   }

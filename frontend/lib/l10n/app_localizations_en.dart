@@ -4441,7 +4441,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authForgotPasswordActionLabel => 'Forgot password?';
 
   @override
-  String get authForgotPasswordSubmitLabel => 'Send reset link';
+  String get authForgotPasswordSubmitLabel => 'Send reset instructions';
 
   @override
   String get authForgotPasswordTenantPrompt =>
@@ -4452,13 +4452,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authForgotPasswordSubmittedBody =>
-      'If an account exists for that email, password reset instructions have been sent.';
+      'If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.';
+
+  @override
+  String get authResetPasswordWithCodeActionLabel => 'Enter reset code';
 
   @override
   String get authResetPasswordTitle => 'Choose a new password';
 
   @override
   String get authResetPasswordBody => 'Enter a new password for your account.';
+
+  @override
+  String get authResetPasswordCodeModeBody =>
+      'Enter your email, the six-digit reset code from your email, and a new password.';
+
+  @override
+  String get authResetPasswordCodeLabel => 'Reset code';
+
+  @override
+  String get authResetPasswordCodeInvalidMessage =>
+      'Enter the six-digit reset code from your email.';
 
   @override
   String get authResetPasswordActionLabel => 'Reset password';

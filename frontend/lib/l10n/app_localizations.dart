@@ -8341,7 +8341,7 @@ abstract class AppLocalizations {
   /// Submit action on forgot password form.
   ///
   /// In en, this message translates to:
-  /// **'Send reset link'**
+  /// **'Send reset instructions'**
   String get authForgotPasswordSubmitLabel;
 
   /// Prompt when multiple tenants match the email.
@@ -8359,8 +8359,14 @@ abstract class AppLocalizations {
   /// Body after forgot password request succeeds.
   ///
   /// In en, this message translates to:
-  /// **'If an account exists for that email, password reset instructions have been sent.'**
+  /// **'If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.'**
   String get authForgotPasswordSubmittedBody;
+
+  /// Action to open reset password page in code entry mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter reset code'**
+  String get authResetPasswordWithCodeActionLabel;
 
   /// Reset password page title.
   ///
@@ -8373,6 +8379,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a new password for your account.'**
   String get authResetPasswordBody;
+
+  /// Reset password page body when using code entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email, the six-digit reset code from your email, and a new password.'**
+  String get authResetPasswordCodeModeBody;
+
+  /// Label for password reset code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset code'**
+  String get authResetPasswordCodeLabel;
+
+  /// Validation message for invalid reset code.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the six-digit reset code from your email.'**
+  String get authResetPasswordCodeInvalidMessage;
 
   /// Reset password submit action label.
   ///

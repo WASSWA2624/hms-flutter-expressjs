@@ -365,6 +365,26 @@ describe('Auth Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate reset password data with code and email', () => {
+      const validData = {
+        code: '123456',
+        email: 'user@example.com',
+        new_password: 'NewPassword123!',
+        confirm_password: 'NewPassword123!'
+      };
+      const result = resetPasswordBodySchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject reset password data without token or code', () => {
+      const invalidData = {
+        new_password: 'NewPassword123!',
+        confirm_password: 'NewPassword123!'
+      };
+      const result = resetPasswordBodySchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
     it('should reject mismatched passwords', () => {
       const invalidData = {
         token: 'reset-token-123',

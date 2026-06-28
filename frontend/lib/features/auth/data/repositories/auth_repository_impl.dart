@@ -231,29 +231,55 @@ final class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<void>> resetPassword({
-    required String token,
+    String? token,
+    String? email,
+    String? code,
     required String newPassword,
     required String confirmPassword,
   }) {
-    final normalizedToken = token.trim();
-    if (normalizedToken.isEmpty) {
+    final normalizedToken = token?.trim();
+    final normalizedCode = code?.trim();
+    final normalizedEmail = email?.trim().toLowerCase();
+    final hasToken = normalizedToken != null && normalizedToken.isNotEmpty;
+    final hasCode = normalizedCode != null && normalizedCode.isNotEmpty;
+
+    if (!hasToken && !hasCode) {
       return Future.value(
         Result<void>.failure(
           AppFailure.validation(
             code: 'auth.reset_password.invalid_token',
-            validationFields: const <String>{'token'},
+            validationFields: const <String>{'token', 'code'},
           ),
         ),
       );
     }
 
+    if (hasCode && (normalizedEmail == null || normalizedEmail.isEmpty)) {
+      return Future.value(
+        Result<void>.failure(
+          AppFailure.validation(
+            code: 'auth.reset_password.email_required',
+            validationFields: const <String>{'email'},
+          ),
+        ),
+      );
+    }
+
+    final Map<String, Object?> payload = <String, Object?>{
+      'new_password': newPassword,
+      'confirm_password': confirmPassword,
+    };
+    if (hasToken) {
+      payload['token'] = normalizedToken;
+    }
+    if (hasCode) {
+      payload['code'] = normalizedCode;
+      payload['email'] = normalizedEmail;
+    }
+
     return _publicApiClient.post<void>(
       ApiEndpoints.auth(AuthEndpoint.resetPassword),
-      data: <String, Object?>{
-        'token': normalizedToken,
-        'new_password': newPassword,
-        'confirm_password': confirmPassword,
-      },
+      data: payload,
       decoder: (data) =>
           ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
     );

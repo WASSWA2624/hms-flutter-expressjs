@@ -41,6 +41,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.autocorrect = true,
     this.enableSuggestions = true,
+    this.useFloatingLabel = false,
     super.key,
   }) : assert(
          controller == null || initialValue == null,
@@ -91,6 +92,7 @@ class AppTextField extends StatefulWidget {
   final bool autofocus;
   final bool autocorrect;
   final bool enableSuggestions;
+  final bool useFloatingLabel;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -149,16 +151,27 @@ class _AppTextFieldState extends State<AppTextField> {
     final InputDecorationThemeData inputTheme = theme.inputDecorationTheme;
     final bool canEdit = widget.enabled && !widget.isLoading;
     final bool useRichLabel =
+        !widget.useFloatingLabel &&
         AppFieldRequirementScope.shouldShowOptionalIndicator(context) &&
         !widget.isRequired &&
         (widget.labelText?.trim().isNotEmpty ?? false);
-    final String? resolvedLabelText = useRichLabel
+    final String? resolvedLabelText = widget.useFloatingLabel || useRichLabel
         ? null
         : appFieldLabel(widget.labelText, isRequired: widget.isRequired);
     final TextStyle fieldLabelStyle =
         inputTheme.labelStyle ??
         theme.textTheme.labelLarge ??
         const TextStyle(fontWeight: FontWeight.w600);
+    final Widget? floatingLabel = widget.useFloatingLabel
+        ? appFieldLabelWidget(
+            context,
+            widget.labelText,
+            isRequired: widget.isRequired,
+            style: fieldLabelStyle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        : null;
     final Widget field = TextFormField(
       key: widget.controller == null
           ? ValueKey<String?>(widget.initialValue)
@@ -196,7 +209,11 @@ class _AppTextFieldState extends State<AppTextField> {
       ),
       decoration: InputDecoration(
         isDense: false,
-        floatingLabelBehavior: FloatingLabelBehavior.never,
+        label: floatingLabel,
+        labelText: floatingLabel == null ? resolvedLabelText : null,
+        floatingLabelBehavior: widget.useFloatingLabel
+            ? FloatingLabelBehavior.auto
+            : FloatingLabelBehavior.never,
         hintText: widget.hintText,
         helperText: widget.helperText,
         prefixIcon: widget.prefixIcon,
@@ -214,7 +231,9 @@ class _AppTextFieldState extends State<AppTextField> {
       );
     }
 
-    final Widget? externalLabel = useRichLabel
+    final Widget? externalLabel = widget.useFloatingLabel
+        ? null
+        : useRichLabel
         ? appFieldLabelWidget(
             context,
             widget.labelText,

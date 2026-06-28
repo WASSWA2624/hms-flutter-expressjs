@@ -156,6 +156,31 @@ const createEmailVerificationTokens = async (userId) => {
   return { code, expiresAt };
 };
 
+const createPasswordResetTokens = async (userId) => {
+  await authRepository.deleteExpiredTokens(userId, PASSWORD_RESET_TOKEN_TYPE);
+
+  const linkToken = crypto.randomBytes(32).toString('hex');
+  const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
+
+  await authRepository.createVerificationToken({
+    user_id: userId,
+    token_hash: hashToken(linkToken),
+    type: PASSWORD_RESET_TOKEN_TYPE,
+    expires_at: expiresAt,
+  });
+
+  await authRepository.createVerificationToken({
+    user_id: userId,
+    token_hash: hashToken(code),
+    type: PASSWORD_RESET_TOKEN_TYPE,
+    expires_at: expiresAt,
+  });
+
+  return { linkToken, code, expiresAt };
+};
+
 const escapeHtml = (value) =>
   String(value || '')
     .replace(/&/g, '&amp;')
@@ -325,6 +350,7 @@ const sendVerificationEmail = async ({
 const sendPasswordResetEmail = async ({
   email,
   resetToken,
+  resetCode,
   expiresAt,
   locale,
 }) => {
@@ -346,6 +372,7 @@ const sendPasswordResetEmail = async ({
   });
   const actionLabel = translate('messages.auth.password_reset.action', resolvedLocale);
   const fallbackLabel = translate('messages.auth.password_reset.fallback', resolvedLocale);
+  const codeIntro = translate('messages.auth.password_reset.code_intro', resolvedLocale);
   const expiryLine = translate('messages.auth.password_reset.expires_at', resolvedLocale, {
     expires_at: expiresAtLabel,
   });
@@ -357,6 +384,7 @@ const sendPasswordResetEmail = async ({
     app_name: APP_DISPLAY_NAME,
   });
   const { logoSrc, attachments } = resolveEmailLogoAsset();
+  const safeCode = escapeHtml(resetCode);
   const text = [
     subject,
     '',
@@ -365,6 +393,10 @@ const sendPasswordResetEmail = async ({
     `${actionLabel}: ${link}`,
     '',
     `${fallbackLabel}: ${link}`,
+    '',
+    codeIntro,
+    resetCode,
+    '',
     expiryLine,
     '',
     ignoreLine,
@@ -400,6 +432,8 @@ const sendPasswordResetEmail = async ({
       ${escapeHtml(fallbackLabel)}<br />
       <a href="${escapeHtml(link)}" style="color:#0b66c3;word-break:break-word;">${escapeHtml(link)}</a>
     </p>
+    <p style="margin:0 0 8px;color:#334155;font-size:14px;line-height:1.5;">${escapeHtml(codeIntro)}</p>
+    <p style="margin:0 0 16px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:28px;line-height:32px;font-weight:700;color:#0f172a;letter-spacing:0.16em;">${safeCode}</p>
     <p style="margin:0 0 10px;color:#475569;font-size:13px;">${escapeHtml(expiryLine)}</p>
     <p style="margin:0 0 18px;color:#475569;font-size:13px;">${escapeHtml(ignoreLine)}</p>
     <p style="margin:0;color:#0f172a;white-space:pre-line;">${escapeHtml(signature)}</p>
@@ -1610,24 +1644,12 @@ const forgotPassword = async (data) => {
   // Delete old password reset tokens
   await authRepository.deleteExpiredTokens(user.id, PASSWORD_RESET_TOKEN_TYPE);
 
-  // Generate reset token
-  const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = hashToken(token);
-
-  // Create token
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
-
-  await authRepository.createVerificationToken({
-    user_id: user.id,
-    token_hash: tokenHash,
-    type: PASSWORD_RESET_TOKEN_TYPE,
-    expires_at: expiresAt
-  });
+  const { linkToken, code, expiresAt } = await createPasswordResetTokens(user.id);
 
   const deliveryResult = await sendPasswordResetEmail({
     email: user.email,
-    resetToken: token,
+    resetToken: linkToken,
+    resetCode: code,
     expiresAt,
     locale: request_context?.locale,
   });
@@ -1665,10 +1687,15 @@ const forgotPassword = async (data) => {
  * @returns {Promise<Object>} Success message
  */
 const resetPassword = async (data) => {
-  const { token, new_password } = data;
+  const { token, code, email, new_password } = data;
+  const credential = String(token || code || '').trim();
 
-  // Hash token
-  const tokenHash = hashToken(token);
+  if (!credential) {
+    throw new HttpError('errors.auth.token_invalid', 400);
+  }
+
+  // Hash token or code
+  const tokenHash = hashToken(credential);
 
   // Find token
   const resetToken = await authRepository.findVerificationToken(
@@ -1680,14 +1707,21 @@ const resetPassword = async (data) => {
     throw new HttpError('errors.auth.token_invalid', 400);
   }
 
+  if (code && email) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (resetToken.user.email !== normalizedEmail) {
+      throw new HttpError('errors.auth.token_invalid', 400);
+    }
+  }
+
   // Hash new password
   const new_password_hash = await hashPassword(new_password);
 
   // Update password
   await authRepository.updateUserPassword(resetToken.user_id, new_password_hash);
 
-  // Mark token as used
-  await authRepository.markTokenAsUsed(resetToken.id);
+  // Invalidate all password reset tokens for this user
+  await authRepository.deleteExpiredTokens(resetToken.user_id, PASSWORD_RESET_TOKEN_TYPE);
 
   // Revoke all sessions (force re-login)
   await authRepository.revokeAllUserSessions(resetToken.user_id);
@@ -1700,7 +1734,7 @@ const resetPassword = async (data) => {
     user_id: resetToken.user_id,
     tenant_id: resetToken.user.tenant_id,
     facility_id: resetToken.user.facility_id,
-    details: { sessions_revoked: true }
+    details: { sessions_revoked: true, used_code: Boolean(code) }
   });
 
   return { message: 'messages.auth.password_reset.success' };
