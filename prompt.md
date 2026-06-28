@@ -1,285 +1,322 @@
-# Auth Layout, Branding, and Forms — Implementation Prompt
+# UI Layout Unification — HOSSPI HMS
 
-## Objective
+Unify the app shell, page headers, toolbars, and action buttons so every module workspace feels consistent, responsive, and polished. Implement shared behavior once in `frontend/lib/shared/`, then migrate each applicable screen to use it.
 
-Refine **all unauthenticated auth screens** in HOSSPI HMS so branding, layout, form controls, and password-reset delivery are consistent, responsive, and polished across every device and screen size.
-
-**Scope:** shared auth shell + form UX on login, register, forgot password, reset password, and verify email.
-
-**Source of truth:**
-
-1. [prompts/01-auth-module-prompt.md](./prompts/01-auth-module-prompt.md) — auth module boundaries and full-page auth exception
-2. [frontend/.cursor/layouts.mdc](./frontend/.cursor/layouts.mdc) — breakpoints and responsive rules
-3. [frontend/.cursor/design-system.mdc](./frontend/.cursor/design-system.mdc), [components.mdc](./frontend/.cursor/components.mdc), [ui-patterns.mdc](./frontend/.cursor/ui-patterns.mdc)
+**Reference contract:** `frontend/.cursor/ui-workspace.mdc`  
+**Primary shared widgets:** `AppWorkspace`, `AppWorkspaceHeader`, `ResponsiveAppShell`, `AppScreen`, `AppListTable`, `AppButton`, `AppIconButton`, `AppDialog`
 
 ---
 
-## Problem Statement (current gaps)
+## Goal
 
-From the live auth screens:
+One predictable layout system across clinical, operational, and admin screens:
 
-| Issue | Current behavior | Target behavior |
-| ----- | ---------------- | --------------- |
-| Branding placement | `AppLogo` is duplicated inside each page/form card | Logo + app name live in a **shared auth shell**, not inside the form |
-| Layout consistency | Each page builds its own `Scaffold` + centered column | One reusable **auth layout** wraps all auth routes |
-| Field labels | External labels above inputs (`AppTextField` uses `FloatingLabelBehavior.never`) | **Floating labels** inside inputs to reduce vertical space |
-| Secondary actions | “Forgot password?”, “Create account”, “Back to sign in” use `AppButton.tertiary` | Styled as **standard text links** (primary/link color, underline on hover for web) |
-| Required fields | Asterisks inconsistent; some required fields lack `isRequired: true` | Every required field shows `*`; optional fields show “(optional)” where appropriate |
-| Password reset email | Sends **link only** (`sendPasswordResetEmail` in `auth.service.js`) | Send **link + short code** (same dual-path pattern as email verification) |
-| Reset password UI | Requires URL `token` query param; no manual code entry | User can reset via **link** or by entering **email + code** on `/reset-password` |
-| Phone field | Country picker shows `Icons.public_outlined` + dial code — **no flags** | Country **flag** visible in picker trigger and list rows |
-| Responsiveness | Single centered card at fixed max width | Adaptive layout for `xs` through `xxl` breakpoints |
+1. **App shell** — logo, connectivity, notifications, account, optional full-screen toggle.
+2. **Page header** — module icon, title, live/sync status.
+3. **Toolbar** — page-specific actions on the **left**, global/common actions on the **right**.
+4. **Content stack** — summary cards → search/filter bar → worklist/table → detail panel (when applicable).
+
+Users should not notice layout differences when moving between OPD, IPD, Lab, Billing, etc.
 
 ---
 
-## Global Implementation Standards
+## In scope
 
-| Area | Requirement |
-| ---- | ----------- |
-| Product scope | Auth entry screens remain **full-page routes** (exception to modal-first). Post-login actions stay modal. |
-| UI/UX | Modern, minimal, hospital workflow language. Reuse `frontend/lib/shared/*` before new widgets. Responsive on Android, iOS, web, Windows, macOS, Linux. |
-| Theming and i18n | Light/dark/system themes. All user-visible strings in `app_en.arb` — no hardcoded labels. |
-| Architecture | Widgets → Riverpod controllers → repository → API. No API calls from widgets. |
-| Quality gate | From `frontend/`: `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`. From `backend/`: targeted `npm test` for touched auth modules. |
+Migrate every screen that uses `AppWorkspace`, `AppWorkspaceHeader`, or `AppScreen` as its page root:
 
----
+| Group | Screens (`*_workspace_page.dart` / registry) |
+|---|---|
+| Overview | Dashboard (`home_page.dart`) |
+| Patient access | Patients, OPD, Emergency |
+| Inpatient care | IPD, Rooms and beds, ICU, Nursing, Discharge |
+| Clinical services | Clinical, Physiotherapy, Theater |
+| Diagnostics & medication | Lab, Radiology, Pharmacy |
+| Revenue cycle | Billing, Claims, Subscriptions |
+| Facility operations | Operations, Housekeeping, Biomedical |
+| People & comms | HR, Communications |
+| Platform | Integrations, Reports, Access admin, Tenant/facility setup |
+| Other modules | Mortuary |
+| Configuration | Settings (`settings_page.dart` via `AppScreen`) |
 
-## 1. Shared Auth Shell (layout + branding)
-
-### Create `AuthShellLayout` (or equivalent)
-
-**Location:** `frontend/lib/features/auth/presentation/widgets/` or `frontend/lib/shared/layout/`
-
-Wrap all auth routes in a single shell via `go_router` `ShellRoute` (preferred) or a shared widget used by every auth page.
-
-**Routes in scope:**
-
-- `/login`
-- `/register`
-- `/verify-email`
-- `/forgot-password`
-- `/reset-password`
-
-Reference: `AppRouteData.isAuthEntryRoute` in `app_routes.dart` — extend to include `verifyEmail` if missing.
-
-### Branding rules
-
-Branding comes from app config / l10n, **not** from individual forms:
-
-| Source | Usage |
-| ------ | ----- |
-| `AppConfig.appName` / `l10n.appTitle` | Full app name on large screens |
-| `l10n.appShortTitle` | Short name on small screens (e.g. “HOSSPI HMS”) |
-| `AppLogo` | Logo from `AppConfig.appLogoUrl` |
-
-**Remove** per-page `AppLogo` from form/card content. The shell owns branding.
-
-### Responsive layout
-
-Follow [layouts.mdc](./frontend/.cursor/layouts.mdc) breakpoints:
-
-| Breakpoint | Shell layout |
-| ---------- | ------------ |
-| `≥ lg` (840px+) | **Horizontal brand bar:** logo on the left, full app name immediately to its right. Form/content area below or beside (centered, readable max width). |
-| `< lg` | **Stacked brand header:** logo, then short app name (`appShortTitle`), then page title + subtitle, then form fields. |
-| All sizes | SafeArea, scroll when content overflows, sensible horizontal padding from `theme.spacing`. |
-
-### Page content structure (inside shell)
-
-Each auth page supplies only:
-
-1. **Page title** (e.g. “Sign in”, “Create facility account”, “Reset your password”)
-2. **Optional subtitle/body** (one short line)
-3. **Form fields + primary action**
-4. **Secondary links** (not buttons)
-
-Do **not** repeat logo or full app name inside the form card.
+**Out of scope:** Auth pages, profile, change-password flows, and one-off wizards that are not module work queues.
 
 ---
 
-## 2. Form fields — floating labels and validation
+## Known inconsistencies (fix these)
 
-### Floating labels
+Observed across current UI — do not preserve these patterns:
 
-Update shared form components so auth screens use **Material floating labels** consistently:
-
-| Component | File | Change |
-| --------- | ---- | ------ |
-| `AppTextField` | `shared/components/app_text_field.dart` | Add opt-in `useFloatingLabel` (default `false` globally; **enable in auth** or flip default after auditing non-auth usage). When enabled: use `labelText` on `InputDecoration`, set `floatingLabelBehavior: FloatingLabelBehavior.auto`, remove external `AppFieldLabel` above the field. |
-| `AppEmailField` | `shared/forms/` | Same floating-label behavior |
-| `AppSelectField` | `shared/forms/` | Match floating-label pattern (already partially similar on register) |
-| `AppPhoneField` | `shared/components/app_phone_field.dart` | Floating label for the number input; country selector aligned with field height |
-
-**Required field indicator:** show asterisk on the floating label (via `appFieldLabelWidget` / `isRequired: true`), not as a separate row above the field.
-
-### Validation
-
-Keep existing `AppValidators` patterns. Ensure:
-
-- Required fields: `isRequired: true` + validator
-- Email: format validation via `AppEmailField`
-- Password: min length 8 on register/reset
-- Confirm password: match validator on reset
-- Phone (optional on register): validate format when non-empty
-- Submit triggers `AutovalidateMode.onUserInteraction` after first failed submit (existing pattern)
-
-### Auth pages to update
-
-| Page | File |
-| ---- | ---- |
-| Login | `features/auth/presentation/pages/login_page.dart` |
-| Register | `features/auth/presentation/pages/register_page.dart` |
-| Forgot password | `features/auth/presentation/pages/forgot_password_page.dart` |
-| Reset password | `features/auth/presentation/pages/reset_password_page.dart` |
-| Verify email | `features/auth/presentation/pages/verify_email_page.dart` |
+| Area | Problem | Target behavior |
+|---|---|---|
+| Refresh control | Mix of `AppIconButton` and `AppButton.secondary` with label | One shared refresh action widget; same placement (right cluster, last item before overflow) |
+| Primary actions | Some modules use `primaryAction`, others put create/add in `secondaryActions` | One primary create/start action per screen; use `primaryAction` slot |
+| Action order | Refresh, config, view-toggle, and add buttons appear in different orders | Standard order (see Toolbar spec) |
+| Status label | "Live sync", "Live board", "Live", "Discharge desk active", etc. | Standard status copy via `app_en.arb` keys |
+| Connectivity | Green dot + "Online" text; on small screens dot also on avatar | Windows-style network icon; dedicated indicator on all breakpoints |
+| Summary cards | Different card counts, borders, and filter behavior | Shared `AppWorkspaceSummaryCard`; cards filter worklist, never open duplicate modals |
+| View toggles | Patient board / bed board styled differently on IPD vs ICU | Shared toggle component, same size and selected state |
+| Inline auth blocks | "Sign-in required" between summary cards and table (Theater, Radiology) | Use `AsyncStateScaffold` / session gate at page level; never break the content stack |
+| Settings | Uses `AppScreen` with different header action pattern | Align header/toolbar with workspace screens where practical |
 
 ---
 
-## 3. Link styling for secondary actions
+## Canonical page layout stack
 
-Replace `AppButton.tertiary` for navigation-style actions with a shared **`AuthTextLink`** (or `AppTextLink`) widget:
-
-| Screen | Actions |
-| ------ | ------- |
-| Login | “Forgot password?”, “Create account” |
-| Register | “Back to sign in” |
-| Forgot password | “Back to sign in” |
-| Reset password | “Back to sign in” |
-| Verify email | “Back to sign in”, resend link (if present) |
-
-**Style:**
-
-- Color: `theme.colorScheme.primary` (or design-system link token)
-- Font: `bodyMedium`, normal weight
-- Web/desktop: underline on hover
-- Adequate tap target on mobile (min 48dp height via padding)
-- Disabled while `isSubmitting`
-
----
-
-## 4. Password reset — link **and** code (backend + frontend)
-
-### Current behavior
-
-- **Email verification (register):** sends a **6-digit code** (`buildVerificationEmailMessage`)
-- **Password reset:** sends **link only** (`sendPasswordResetEmail` → `buildResetPasswordLink`)
-
-### Target behavior
-
-Password reset should mirror verification: email contains **both**:
-
-1. **Reset link** — `{baseUrl}/reset-password?token={token}&email={email}`
-2. **Reset code** — 6-digit numeric code (same format/storage pattern as email verification)
-
-User can complete reset by either path:
-
-| Path | Flow |
-| ---- | ---- |
-| Link | Open link → `/reset-password?token=…` → enter new password |
-| Code | Go to `/reset-password` (or `/forgot-password` success state) → enter email + code + new password |
-
-### Backend (`backend/src/modules/auth/`)
-
-1. When creating password-reset token, also generate/store a **6-digit code** (reuse verification token model if it supports `code`, or extend schema if needed).
-2. Update `sendPasswordResetEmail` HTML/text templates to include the code prominently (match verification email styling).
-3. Add or extend API: `POST /auth/reset-password` accepts `{ token, new_password }` **or** `{ email, code, new_password, tenant_id? }`.
-4. Add i18n keys under `messages.auth.password_reset.*` for code copy.
-5. Keep generic “email sent” response (no account enumeration).
-
-### Frontend
-
-1. **Forgot password submitted state:** tell user to check email for **link or code**.
-2. **Reset password page:** support both modes:
-   - Token from query param (existing)
-   - Manual entry: email + code fields when no token (similar to `VerifyEmailPage`)
-3. Update `auth_controller`, repository, and DTOs for code-based reset.
-4. Localize all new strings in `app_en.arb`.
-
-### Register / verify email
-
-Registration already sends a verification **code**. Confirm the verify-email page and success copy mention the code clearly. Optionally add a verification **link** in the registration email (same dual-path UX as password reset) if not already present — align both flows for consistency.
-
----
-
-## 5. Phone field — country flags
-
-**File:** `frontend/lib/shared/components/app_phone_field.dart`
-
-**Problem:** `_PhoneCountryButton` and picker rows use `Icons.public_outlined` instead of country flags.
-
-**Fix:**
-
-1. Render ISO country flags in the country selector button and picker list (e.g. emoji flags from `IsoCode`, or a small flag asset/icon package if already in `pubspec.yaml` — prefer zero new dependencies if emoji works on all targets).
-2. Verify flags render on **web, Android, iOS, and desktop** (test Windows specifically — common emoji/font gap).
-3. Keep calling code visible alongside the flag.
-4. Ensure picker search still works by country name, ISO code, and dial code.
-
----
-
-## 6. Router integration
-
-Use a **`ShellRoute`** in `app_router.dart` for auth paths so the shell persists across navigation:
+Every module work queue must follow this stack (from `ui-workspace.mdc`):
 
 ```
-AuthShellLayout
-├── /login
-├── /register
-├── /verify-email
-├── /forgot-password
-└── /reset-password
+AsyncStateScaffold
+└── ResponsivePage
+    └── AppWorkspace (or AppScreen for settings-style pages)
+        ├── AppWorkspaceHeader  — title, status, toolbar
+        ├── AppWorkspaceSummaryGrid (optional; hide zero-value cards when pattern expects it)
+        ├── AppWorkspaceFilterBar / search row (filter + settings icons)
+        ├── AppListTable or module body
+        └── AppWorkspaceDetailPanel (optional)
 ```
 
-Child routes render in the shell’s content slot. Branding does not remount on route change.
+**Rules:**
 
-Update `isAuthEntryRoute` (or add `isAuthShellRoute`) to include `verifyEmail`.
-
----
-
-## 7. Responsive form card
-
-| Breakpoint | Form container |
-| ---------- | -------------- |
-| `< md` | Full width minus padding; optional subtle card or flat surface |
-| `md–lg` | `maxWidth: 480–520` centered |
-| `≥ lg` | `maxWidth: 420–480`; brand bar spans full width above form |
-
-Login may keep a card on large screens; register may use slightly wider max width. Both share the same shell branding.
+- Import from `shared/layout/layout.dart`, `shared/components/components.dart`, `shared/actions/actions.dart` — no feature-local header/toolbar clones.
+- Summary cards **filter** the current worklist; they must not open modal lists of the same data.
+- Use hospital workflow language in labels — never raw enum/API codes in UI.
+- Show display IDs and patient names only — no raw UUIDs.
+- Gate actions with `AppAccessActionGate` / `AppPermissionActionButton`.
+- After modal mutations, refresh the affected row, detail panel, summary counts, and nav badges.
 
 ---
 
-## Acceptance Criteria
+## 1. App shell header (top bar)
 
-- [ ] All five auth routes share one shell; logo + app name never appear inside the form card.
-- [ ] Large screens: logo left, full app name right of logo in shell header.
-- [ ] Small screens: logo → short app name → page title → fields.
-- [ ] All auth inputs use floating labels with correct required `*` indicators.
-- [ ] Secondary navigation uses blue/link styling, not tertiary buttons.
-- [ ] Password reset email includes link **and** 6-digit code; reset page supports both paths.
-- [ ] Register/verify flow copy and UX aligned with dual-path pattern where applicable.
-- [ ] Phone field shows country flags in selector and picker on all platforms.
-- [ ] Forms validate correctly; loading/disabled states during submit.
-- [ ] Light/dark themes; all strings localized.
-- [ ] `flutter analyze` and `flutter test` pass; backend auth tests pass for reset changes.
+**File:** `frontend/lib/shared/layout/responsive_shell_scaffold.dart` (and related shell widgets)
+
+### Large screens (md+)
+
+Keep current structure: sidebar | logo + app name | … | connectivity | notifications | account.
+
+### Connectivity indicator
+
+Replace the current dot + "Online"/"Offline" pill with a **network-style icon** (similar to Windows 10 taskbar):
+
+- **Online:** green icon (wifi or signal bars).
+- **Offline:** muted/red icon, visually distinct.
+- Keep accessible text label (`onlineLabel` / `offlineLabel`) for screen readers.
+- Tooltip on hover showing connection state.
+
+### Small screens (xs–sm)
+
+- Show connectivity as its **own control** in the top bar — not as a dot on the account avatar.
+- Remove `showStatusDot` on `_UserAvatar` for compact breakpoints (or gate it off entirely once the dedicated indicator exists).
+
+### Notifications & account
+
+- Notifications button: unchanged; navigates to communications/notifications.
+- Account menu: unchanged.
+
+### Full-screen toggle (new)
+
+Add a global control in the app shell header (right cluster, before notifications):
+
+- Toggles browser/app full-screen via `fullscreen` API on web and platform equivalent elsewhere.
+- Icon-only on small screens; icon + "Full screen" label on large screens.
+- Persist nothing — toggle is session-only.
 
 ---
 
-## Files to touch (starting points)
+## 2. Page header & toolbar
 
-| Area | Paths |
-| ---- | ----- |
-| Auth shell (new) | `frontend/lib/features/auth/presentation/widgets/auth_shell_layout.dart` |
-| Auth pages | `frontend/lib/features/auth/presentation/pages/*.dart` |
-| Router | `frontend/lib/app/router/app_router.dart`, `app_routes.dart` |
-| Form components | `frontend/lib/shared/components/app_text_field.dart`, `app_phone_field.dart`, `shared/forms/*` |
-| Link widget (new) | `frontend/lib/features/auth/presentation/widgets/auth_text_link.dart` or `shared/components/` |
-| Backend reset | `backend/src/modules/auth/services/auth.service.js`, routes, schemas, i18n messages |
-| Localization | `frontend/lib/l10n/app_en.arb` |
-| Tests | `frontend/test/features/auth/**`, `frontend/test/shared/components/app_phone_field_test.dart`, backend auth tests |
+**Implement in shared code** — extend `AppWorkspace` / `AppWorkspaceHeader` (or add `AppWorkspaceToolbar`) so pages declare actions declaratively instead of assembling raw widget lists.
+
+### Header content
+
+| Element | Large screens | Small screens (xs–sm) |
+|---|---|---|
+| Leading | Module icon (`AppWorkspaceTitleIcon`) | Module icon only |
+| Title | Module title (`titleLarge` / compact header style) | **Hidden** — icon carries meaning |
+| Status | `AppWorkspaceStatusBadge` e.g. "Live sync" | **Hidden** on xs; optional compact badge on sm |
+| Toolbar | Full row below header when stacked | Dedicated toolbar row below icon row |
+
+On small screens, the page title and status text currently overflow and push actions down — fix by hiding title/status and moving all actions into a single toolbar row.
+
+### Toolbar layout
+
+```
+[ Page-specific actions …………………… Global actions | ⋮ overflow ]
+     LEFT (start)                              RIGHT (end)
+```
+
+**Page-specific (left → right):**
+
+1. View/mode toggles (patient board / bed board, orders/patients view, etc.)
+2. Secondary module actions (config, catalog, reports, shift controls)
+3. **Primary module action** — one per screen (Add patient, Start OPD, Schedule case, etc.)
+
+**Global (right → left, rightmost first):**
+
+1. **Refresh** (always present on workspace screens)
+2. **Request housekeeping / maintenance**
+3. **Report equipment fault**
+4. *(App shell only)* Full-screen toggle
+
+Use `AppButton.primary` for the single primary module action. Use `AppButton.secondary` (icon + label) or `AppIconButton` consistently via `AppActionLabelScope`:
+
+- **Large screens:** icon left, label right.
+- **Small screens:** icon only (`forceIconOnly: true`).
+
+### Overflow menu
+
+When actions do not fit the available width, collapse excess actions into a **⋮ overflow menu** (`PopupMenuButton`):
+
+- Each overflow item shows **icon + label**.
+- Prefer collapsing secondary/global actions before the primary module action.
+- Never hide refresh entirely — keep it visible or as the first overflow item.
+
+### Shared refresh action
+
+Create `AppWorkspaceRefreshAction` (or equivalent) used by every workspace:
+
+- `AppIconButton` with `Icons.refresh`, loading state, shared tooltip (`commonRefreshActionLabel`).
+- Wired to each controller's `refresh()` method.
 
 ---
 
-## Out of scope
+## 3. Global actions (every workspace page)
 
-- MFA, OAuth, or phone-SMS verification
-- Authenticated shell / workspace layout changes
-- Post-login change-password dialog (already modal)
+### Report equipment fault
+
+- Available on nearly every in-scope page (respect permissions where biomedical write is required).
+- Opens shared `AppDialog` / existing biomedical fault form.
+- Fields: photo capture/upload, description, location, optional asset/equipment reference, routing hint (operations, biomedical, plumbing, etc.).
+- Reuse biomedical fault dialog if it exists; do not duplicate forms per module.
+
+### Request housekeeping / maintenance
+
+- Available on every in-scope page.
+- Opens shared dialog for cleaning/maintenance requests (dirty room, linen, spill, etc.).
+- Routes to housekeeping module; request visible to responsible staff.
+
+### Refresh
+
+- Always in the global (right) cluster via shared widget.
+
+Wire global actions through a shared provider or callback passed into `AppWorkspace` so individual pages do not reimplement dialogs.
+
+---
+
+## 4. Per-screen action registry
+
+Use this registry when migrating each page. **Primary** = one `AppButton.primary`. Everything else = secondary (left) or global (right).
+
+| Screen | Primary action | Page-specific secondary actions |
+|---|---|---|
+| **Dashboard** | — | Role quick actions stay in dashboard body; header: refresh only |
+| **Patients** | Add patient | Emergency registration |
+| **OPD** | Start OPD encounter | — |
+| **Emergency** | Quick arrival | — |
+| **IPD** | Start admission | Patient board / bed board toggle |
+| **Rooms and beds** | Set up (if permitted) | Manage layout/grid toggle |
+| **ICU** | — | Patient board / bed board toggle |
+| **Nursing** | — | Shift key, ward context (if applicable) |
+| **Discharge** | — | — |
+| **Clinical** | — | — |
+| **Physiotherapy** | — | — |
+| **Theater** | Schedule case | — |
+| **Lab** | Create lab order | Orders/patients view toggle, lab configuration |
+| **Radiology** | Request imaging | Orders/patients view toggle, radiology configuration |
+| **Pharmacy** | — | Catalog and store |
+| **Billing** | — | Code shift, close day |
+| **Claims** | Prepare claim | Request authorization |
+| **Subscriptions** | Activate subscription | — |
+| **Operations** | Create request | Report |
+| **Housekeeping** | Create task | Create schedule, request maintenance, report |
+| **Biomedical** | Register asset | Investigate/fix action that currently shows "This action isn't available" |
+| **HR** | — | Work requests, HR activity |
+| **Communications** | — | — |
+| **Integrations** | Create integration | Create API, create webhook |
+| **Reports** | — | — |
+| **Settings** | — | Setup/deep links as today; align refresh with shared pattern |
+| **Access admin** | Primary admin action as today | — |
+| **Tenant/facility setup** | — | — |
+| **Mortuary** | — | — |
+
+**Patient board / bed board:** Use one shared `AppWorkspaceBoardToggle` on IPD, ICU, and any future screen that needs it — same visual design and semantics.
+
+**Modals:** Adding a patient, starting an admission, or creating an order must use the **same dialog flow** wherever that action appears (including cross-module deep links).
+
+---
+
+## 5. Worklist & filter bar (unchanged but enforce)
+
+Below the toolbar, keep the existing unified pattern already visible on most screens:
+
+- Section title + one-line description ("OPD encounters", "Ward worklist", etc.)
+- Full-width search with magnifying glass
+- Filter (funnel) and column settings (gear) on the right
+- `AppListTable` with sortable columns, zebra rows, pagination footer
+
+Do not regress table styling when refactoring headers.
+
+---
+
+## 6. Status badge standardization
+
+Add or reuse `app_en.arb` keys:
+
+| State | Label | Tone |
+|---|---|---|
+| Idle / subscribed | Live sync | success |
+| Saving / mutating | Saving | warning |
+| Module-specific desk active | Use module-specific key only when clinically meaningful (e.g. discharge desk) | success |
+
+Avoid one-off variants ("Live board", bare "Live") unless the module contract requires distinct meaning.
+
+---
+
+## 7. Implementation order
+
+1. **Shared layer**
+   - Network-style connectivity badge in shell.
+   - Full-screen toggle in shell.
+   - `AppWorkspaceToolbar` (or extend `AppWorkspaceHeader`) with left/right clusters, responsive labels, overflow.
+   - `AppWorkspaceRefreshAction`, global fault report, global housekeeping request.
+   - `AppWorkspaceBoardToggle` for IPD/ICU.
+
+2. **Pilot migration** — OPD, IPD, Lab (representative patterns).
+
+3. **Roll out** — remaining screens in the registry table.
+
+4. **Dashboard & settings** — align headers/toolbars without breaking custom dashboard layouts.
+
+5. **Verification** — manual pass at `127.0.0.1:5201` on xs, sm, md, lg breakpoints for every in-scope route.
+
+---
+
+## 8. Acceptance criteria
+
+- [ ] All in-scope screens use the shared toolbar; no page builds ad-hoc `Row`/`Wrap` of mixed button types for header actions.
+- [ ] Refresh looks and behaves identically everywhere (icon, tooltip, loading spinner).
+- [ ] Primary action is visually distinct and consistently placed (left cluster, last secondary before globals, or dedicated primary slot).
+- [ ] Global actions (refresh, fault report, housekeeping request) appear on every workspace page in the right cluster.
+- [ ] Small screens: page title/status hidden; icon + toolbar only; no action wrapping that pushes content down.
+- [ ] Overflow menu appears when actions exceed width; no clipped buttons.
+- [ ] Connectivity uses network icon; small screens show dedicated indicator, not avatar dot.
+- [ ] Full-screen toggle works on web.
+- [ ] Patient/bed board toggles match between IPD and ICU.
+- [ ] No inline "Sign-in required" blocks breaking the summary → table flow.
+- [ ] All new strings in `app_en.arb`; no hard-coded colors/spacing in feature presentation code.
+- [ ] Biomedical unavailable action investigated and either wired or removed.
+
+---
+
+## 9. Do not
+
+- Add feature-local `_ModuleText` string classes — use localization.
+- Create duplicate table/list components when `AppListTable` suffices.
+- Change business logic, permissions, or API contracts — this is a **layout and action presentation** pass.
+- Block urgent fixes on full extraction of large pages; migrate incrementally but always via shared widgets.
+
+---
+
+## Overall outcome
+
+The header, page toolbar, and actions should feel like one system. A clinician moving from Emergency → OPD → Lab → Discharge should recognize every control immediately, on any screen size.
