@@ -1,159 +1,125 @@
-# Workspace toolbar & shell polish — implementation prompt
+# Global workspace toolbar & overflow menu polish
+
+Apply this **app-wide** to every screen that uses `AppWorkspace`, `AppWorkspaceToolbar`, or the shell header actions. The issues below appear on multiple modules (OPD, Billing, Lab, etc.); fix the shared components once rather than per screen.
+
+---
 
 ## Goal
 
-Finish the workspace toolbar rollout so every module screen behaves uniformly: no header overflow, a predictable **3 visible screen-specific actions + More** pattern, correct global actions, a working fullscreen toggle label, and cleaner summary-card chrome.
-
-Most screens already use `AppWorkspace` + `appWorkspaceToolbarWithLabels`. This task closes the remaining gaps called out during manual QA.
+Unify all workspace header actions into a **ghost / text action** style (icon + label only, no filled background, no outline border) that reads cleanly on every theme and header color. Replace the current **More actions** bottom sheet with a **dropdown popup** styled like the user profile menu.
 
 ---
 
-## 1. Fix fullscreen toggle label/icon inversion
+## Problems to fix
 
-**Problem:** `AppFullscreenToggle` shows **“Exit full screen”** when not in fullscreen (and vice versa). Toggle works, but the affordance describes the wrong next action.
-
-**Root cause (likely):** `_isFullscreen` is only updated after a local tap. It is not synced when fullscreen changes externally (Esc key, browser chrome, initial mount race).
-
-**Files:**
-- `frontend/lib/shared/layout/app_fullscreen_toggle.dart`
-- `frontend/lib/shared/layout/app_fullscreen_platform_web.dart`
-- `frontend/lib/shared/layout/app_fullscreen_platform_stub.dart`
-
-**Requirements:**
-- Listen for the platform fullscreen-change event on web (`fullscreenchange`) and call `setState` with `appFullscreenIsActive()`.
-- On build, label and icon must always describe the **next** action:
-  - Not fullscreen → label `workspaceFullscreenEnterLabel`, icon `Icons.fullscreen`
-  - In fullscreen → label `workspaceFullscreenExitLabel`, icon `Icons.fullscreen_exit`
-- Add/adjust widget tests (mirror `app_dialog_test.dart` fullscreen expectations).
+1. **Toolbar actions look like bordered buttons** — Screen-specific actions, Refresh, Report fault, Request maintenance, and the More (`more_vert`) trigger render as `AppButton.secondary` / `OutlinedButton` (visible border + hover fill). They should look like lightweight icon+label controls, not boxed buttons.
+2. **More actions opens a bottom sheet** — `_ToolbarOverflowMenu` in `app_workspace_toolbar.dart` uses `showModalBottomSheet`, so the menu is pushed to the bottom of the screen. It should anchor under the More button like `_UserMenuButton` (`PopupMenuButton`, `PopupMenuPosition.under`).
+3. **Overflow items render as full buttons** — `_OverflowActionRow` embeds the original toolbar widgets inside the sheet, so overflow entries still appear as bordered buttons. They should be **list rows**: leading icon, label text, row hover/focus, same tap behavior as the inline action.
+4. **Fullscreen toggle still shows a labeled bordered button on wide breakpoints** — `AppFullscreenToggle` switches to `AppButton.secondary` when not on xs/sm. It should stay **icon-only** (no label, no border, no background) at all breakpoints, matching the desired shell action style.
+5. **Inconsistent styling vs user menu** — The user profile dropdown (`responsive_shell_scaffold.dart` → `_UserMenuButton`, `_UserMenuItemLabel`) is the visual reference. Overflow menu items must match that list-item pattern.
 
 ---
 
-## 2. Redesign toolbar overflow (“More actions”) behavior
+## Visual spec — ghost toolbar actions
 
-**Problem:** On many screens the title-bar action row overflows. The **More** menu opens a bottom sheet that lays items out in a **horizontal `Wrap`**, so actions clip or hide instead of appearing as a vertical list.
+Create or reuse a single shared style for **toolbar/header actions** (not primary page CTAs):
 
-**Files:**
-- `frontend/lib/shared/layout/app_workspace_toolbar.dart` (primary change)
-- `frontend/lib/shared/layout/app_workspace.dart` (`AppWorkspaceHeader` layout constraints)
-- `frontend/test/shared/layout/app_workspace_toolbar_test.dart`
+| Property | Requirement |
+|----------|-------------|
+| Background | Always transparent (default, hover, pressed) |
+| Border | None |
+| Content | Leading icon + label when `AppActionLabelScope.showLabels == true`; icon-only when `forceIconOnly == true` |
+| Colors | Use `colorScheme.onSurfaceVariant` (or existing token) so actions work on light, dark, and tinted headers |
+| Hover / focus / pressed | Subtle overlay only (reuse `AppIconButton` overlay alphas or equivalent) — no box fill |
+| Typography | `theme.textTheme.labelLarge`, semibold if that matches existing shell actions |
+| Spacing | Compact; preserve minimum tap target (`appTokens.minInteractiveDimension`) |
 
-### 2a. Visible action budget
+**Applies to:** `AppIconButton` when used inside `AppActionLabelScope` with labels, global actions (`AppWorkspaceRefreshAction`, `AppGlobalFaultReportAction`, `AppGlobalHousekeepingRequestAction`), screen-specific toolbar widgets passed via `AppWorkspaceToolbarConfig.primary` / `.secondary`, and the More trigger.
 
-Implement a single, shared rule in `AppWorkspaceToolbar`:
-
-| Cluster | Rule |
-|--------|------|
-| **Screen-specific** (`secondary` + `primary`) | Show **at most 3** inline. If more exist, put the remainder behind **More actions**. |
-| **Global** (refresh, request maintenance, report equipment fault) | Keep visible on the right when space allows. On very narrow widths they may collapse into More **after** screen-specific items are handled. |
-| **More actions** | Always a dropdown/sheet with a **vertical** list (`Column` / `ListView` of full-width tappable rows), never a horizontal wrap. |
-
-**Ordering inside More:** screen-specific overflow first (priority order preserved), then global actions if they did not fit inline.
-
-### 2b. Overflow detection
-
-Do **not** rely only on `constraints.maxWidth < AppBreakpoints.md`. Use available width in the header row (title + actions) so wide screens with many buttons (board toggles, billing close actions, etc.) still collapse correctly.
-
-Suggested approach:
-- Extend `AppWorkspaceToolbarConfig` with optional `maxVisibleScreenActions` (default `3`).
-- Flatten `secondary` then `primary` into one ordered screen-specific list before splitting visible vs overflow.
-- Treat `AppWorkspaceBoardToggle` / `AppWorkspaceViewToggle` as **one** screen-specific slot (they are wide).
-
-### 2c. More menu UX
-
-- Vertical list; each item uses the same action widgets (`AppButton`, `AppIconButton`, gated actions) at full row width.
-- Sheet title = localized `workspaceToolbarOverflowLabel`.
-- Accessible semantics (`button`, label per row).
-- Update tests: opening More shows hidden labels; layout is vertical (no horizontal `Wrap` in sheet).
-
-### 2d. Header overflow
-
-In `AppWorkspaceHeader`, ensure the action bar never paints outside the header:
-- `Flexible` / `Expanded` + `clipBehavior` or intrinsic measurement so title and actions share space without yellow/black overflow stripes.
-- Board-toggle segments must not break layout (ICU/IPD separator rendering called out in QA).
+**Does not change:** Primary filled CTAs (`AppButton.primary`) used for the main screen action (e.g. “Post payment”, “Start walk-in”) unless a screen incorrectly uses secondary for its primary CTA.
 
 ---
 
-## 3. Uniform screen-specific action sets (per module)
+## Layout rules — inline vs overflow
 
-For **every** workspace page, audit toolbar config and ensure the **top 3 most-used module actions** are inline; everything else goes under More.
+Keep existing responsive budget logic in `AppWorkspaceToolbar`, but ensure behavior is:
 
-Use existing `AppActionItem` / dialog helpers in each feature where actions already exist in detail panels — surface the important ones in the toolbar.
-
-### Screen audit checklist
-
-| Screen | Current gap | Expected top inline actions (examples — use l10n + permission gates) |
-|--------|-------------|---------------------------------------------------------------------|
-| **Dashboard** (`home_page.dart`) | OK baseline | Refresh only (no module actions) |
-| **Patients** | Verify icon-only pattern | Add patient, emergency register, (+ 1 more if exists) |
-| **OPD** | OK | Start walk-in / encounter (+ module actions as added) |
-| **Emergency** | Overflow | Triage / register / board actions — pick top 3 |
-| **IPD** | Overflow (board toggle + admission) | Board toggle (1 slot), start admission, + 1 key action |
-| **Rooms & beds** | Overflow | Manage catalog, setup, + 1 |
-| **ICU** | Board toggle separator ugly; **no ICU actions in toolbar** | Board toggle (1 slot), start stay, record vitals/observation; rest in More |
-| **Nursing** | Only shift-context icon | Shift context, record vitals, handover (+ rest in More) |
-| **Clinical** (“critical”) | Overflow | Top 3 queue/encounter actions |
-| **Physiotherapy** | Overflow + empty toolbar | Schedule session, referrals view, + 1 |
-| **Theater** | Overflow | Schedule case (+ 2 module actions) |
-| **Lab** | Overflow | View toggle (1 slot), create order, reference ranges |
-| **Radiology** | Overflow | Top 3 imaging actions |
-| **Pharmacy** | Overflow; More broken | Catalog, dispense/queue action, + 1 |
-| **Billing** | Overflow | Close shift, close day (+ primary billing action) |
-| **Housekeeping** | More menu layout only | Keep actions; fix More presentation |
-| **Biomedical** | Reference | Register asset + module actions |
-| **Subscriptions / Operations** | More menu layout | Fix More; keep refresh + admin actions |
-| **Mortuary / HR / Communications / Integrations / Reports** | Verify | Top 3 per module |
-| **Settings** (`settings_page.dart`) | **Skipped migration** — uses `AppScreen` + legacy `headerActions` | Migrate to `AppWorkspace` + `appWorkspaceToolbarWithLabels` with refresh (+ admin shortcuts in More if needed) |
-| **Tenant facility setup** | Verify | Refresh + setup actions |
-
-**ICU & Nursing specifically:** toolbar actions should mirror the highest-priority items from `_IcuActionPanel` / `_NursingActionBar`, wired through existing controllers and `AppAccessActionGate`.
+1. **Up to 3 screen-specific actions** (`secondary` + `primary`, in that order) stay **inline** first (`maxVisibleScreenActions`, default 3).
+2. **Global actions** (Refresh, fault report, housekeeping) sit inline when width allows; overflow to More when narrow (existing `_resolveLayout` behavior).
+3. **More button** (`Icons.more_vert`) appears when any action overflows; it uses the same ghost icon-only style (no border/background).
+4. Width estimation constants in `_AdaptiveToolbarLayout` may need updating after ghost actions shrink — verify no header overflow at **1280×800** and on **360px** widths.
 
 ---
 
-## 4. Summary card / chrome styling
+## Overflow / More menu spec
 
-**Problem:** Summary cards and toolbar backgrounds look boxy; borders feel heavy.
+Replace `_ToolbarOverflowMenu` bottom sheet with a anchored popup:
 
-**Files:** `frontend/lib/shared/layout/app_workspace.dart` (`AppWorkspaceSummaryCard`, header `DecoratedBox`)
+| Property | Requirement |
+|----------|-------------|
+| Widget | `PopupMenuButton` (or shared wrapper), `position: PopupMenuPosition.under` |
+| Panel | Same surface treatment as user menu: `colorScheme.surface`, outline border via `RoundedRectangleBorder`, sensible min/max width (~320–360) |
+| Items | One `PopupMenuItem` (or custom entry) per overflow action — **not** embedded `AppButton` widgets |
+| Row layout | Extract or share `_UserMenuItemLabel` pattern: fixed-width icon slot + label (`Row`, icon `onSurfaceVariant`, ellipsized text) |
+| Interaction | Selecting a row runs the action’s `onPressed` / callback; disabled actions respect `enabled` state |
+| Metadata | Each overflow entry must expose **icon + label** even if the inline widget was icon-only — add a small adapter or action descriptor if needed |
+| Mobile | On xs/sm, popup-under is still preferred over bottom sheet; only use bottom sheet if popup genuinely cannot fit (avoid unless necessary) |
 
-**Requirements:**
-- Reduce visual noise: prefer subtle elevation or `surfaceContainerLow` fill over hard `Border.all` on compact summary cards.
-- Keep selected/active state obvious (tone color, not thick border).
-- Header bottom divider (`outlineVariant`) is fine; do not add extra borders around action clusters.
-- Match existing theme tokens (`theme.spacing`, `theme.radius`, `colorScheme`).
-
----
-
-## 5. Implementation constraints
-
-- Reuse `appWorkspaceToolbarWithLabels` — do not invent per-page overflow logic.
-- Respect `AppAccessActionGate` / `AccessRequirement` on every action.
-- Use existing l10n keys; add ARB entries only when missing.
-- Keep `showFaultReport` / `showHousekeepingRequest` overrides (e.g. biomedical hides fault report).
-- No new dependencies.
-- Follow patterns in `opd_workspace_page.dart` and `patient_registry_page.dart` for gated toolbar buttons.
+Refactor `_OverflowActionRow` away; overflow rendering should not reuse bordered toolbar widgets.
 
 ---
 
-## 6. Acceptance criteria
+## Fullscreen toggle
 
-1. Fullscreen button always shows the **next** action label/icon; Esc exit updates the button without a page reload.
-2. No render overflow in workspace headers on QA screens at 1280×800 and 1024×768.
-3. Every module workspace uses `appWorkspaceToolbarWithLabels` (including **Settings**).
-4. Toolbar shows ≤ 3 screen-specific actions inline; additional module actions appear under **More** in a **vertical** list.
-5. Global refresh / maintenance / fault actions use the shared action components (`AppWorkspaceRefreshAction`, etc.), not legacy one-offs.
-6. ICU and Nursing toolbars expose module-relevant actions, not only board toggle / shift icon.
-7. More menu never lays out actions in a horizontal wrap.
-8. Widget tests cover: 3+ screen actions → More appears; sheet is vertical; fullscreen label sync.
-9. `flutter test frontend/test/shared/layout/app_workspace_toolbar_test.dart` passes; run analyzer clean on touched files.
+In `app_fullscreen_toggle.dart`:
+
+- Always render `AppIconButton` (icon-only) at **all** breakpoints.
+- Remove the `AppButton.secondary` branch for md+ widths.
+- No label, no border, no background.
 
 ---
 
-## 7. Suggested work order
+## Files to touch (starting points)
 
-1. Fullscreen toggle fix + test  
-2. `AppWorkspaceToolbar` overflow refactor (config, More sheet, width logic)  
-3. `AppWorkspaceHeader` layout hardening  
-4. Settings migration to `AppWorkspace`  
-5. Per-module toolbar audits (ICU, Nursing, Pharmacy, Billing, IPD, Rooms & beds first — highest overflow reports)  
-6. Summary card border polish  
-7. Full test pass + spot-check in browser at `.\tool\run_web_5201.ps1`
+| File | Change |
+|------|--------|
+| `frontend/lib/shared/components/app_icon_button.dart` | Labeled mode: ghost row instead of `AppButton.secondary` |
+| `frontend/lib/shared/components/app_button.dart` | Optional: add `AppButton.ghost` / toolbar variant if cleaner than special-casing `AppIconButton` |
+| `frontend/lib/shared/layout/app_workspace_toolbar.dart` | Popup overflow menu; list-item rows; width estimates |
+| `frontend/lib/shared/layout/app_fullscreen_toggle.dart` | Icon-only at all breakpoints |
+| `frontend/lib/shared/layout/responsive_shell_scaffold.dart` | Consider extracting `_UserMenuItemLabel` to a shared component reused by overflow menu |
+| `frontend/lib/shared/actions/*.dart` | Ensure global actions work with new ghost + overflow metadata |
+| `frontend/test/shared/layout/app_workspace_toolbar_test.dart` | Update/add tests for popup menu, ghost styling, layout |
+
+Audit workspace pages only if they pass custom toolbar widgets that bypass shared components.
+
+---
+
+## Acceptance criteria
+
+- [ ] Every workspace screen: inline toolbar actions show **icon + label** (or icon-only on xs/sm) with **no visible border or button background** on default state.
+- [ ] Refresh, Report fault, Request maintenance, More, and Fullscreen match the same ghost action family.
+- [ ] Fullscreen is **icon-only on all breakpoints**.
+- [ ] Tapping More opens a **dropdown under the button**, not a bottom sheet, on desktop and typical mobile widths.
+- [ ] Each overflow item is a **list row** (icon left, label right) with hover/focus feedback — visually aligned with the user profile menu.
+- [ ] Overflow items retain full functionality (refresh, dialogs, navigation, etc.).
+- [ ] First **3 screen-specific** actions remain inline; additional screen actions appear only in More.
+- [ ] No `RenderFlex overflow` at 1280×800 with a busy toolbar (billing-style: primary + 2 secondary + globals).
+- [ ] Looks correct in **light and dark** themes and on **tinted workspace headers**.
+- [ ] Widget tests in `app_workspace_toolbar_test.dart` pass; add coverage for popup overflow and ghost labeled actions.
+
+---
+
+## Out of scope
+
+- Changing primary CTA styling (`AppButton.primary` filled buttons for main screen actions).
+- Reworking board/view toggles unless they also show unwanted borders (leave as-is unless visibly broken).
+- Per-module toolbar one-offs — fix shared layout/components instead.
+
+---
+
+## Verification
+
+1. Run `flutter test frontend/test/shared/layout/app_workspace_toolbar_test.dart`.
+2. Manually spot-check at least 3 modules with different toolbar densities (e.g. OPD, Billing, Lab) at 1280×800 and 360×640.
+3. Confirm More menu and user profile menu look like the same design system.
