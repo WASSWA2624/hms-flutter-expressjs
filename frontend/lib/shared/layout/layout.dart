@@ -10,3 +10,4 @@ export 'app_workspace_view_toggle.dart';
 export 'responsive_page.dart';
 export 'responsive_shell_scaffold.dart';
 export 'responsive_spacing.dart';
+export 'shell_navigation_loading.dart';

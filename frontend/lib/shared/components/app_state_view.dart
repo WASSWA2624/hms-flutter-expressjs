@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
 enum AppStateViewVariant {
   loading,
@@ -245,6 +246,7 @@ class AsyncStateScaffold<T> extends StatelessWidget {
     this.centerVertically = true,
     this.scrollable = true,
     this.safeArea = true,
+    this.deferLoadingToShell,
     super.key,
   }) : assert(
          emptyPredicate == null || (emptyTitle != null && emptyBody != null),
@@ -268,63 +270,99 @@ class AsyncStateScaffold<T> extends StatelessWidget {
   final bool scrollable;
   final bool safeArea;
 
+  /// When true, initial load shows the shell bar instead of a full-page spinner.
+  /// Defaults to [ShellNavigationScope.deferLoadingToShellOf] when null.
+  final bool? deferLoadingToShell;
+
+  bool _shouldDeferLoadingToShell(BuildContext context) {
+    return deferLoadingToShell ??
+        ShellNavigationScope.deferLoadingToShellOf(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return value.when(
-      data: (result) {
-        return result.when(
-          success: (data) {
-            if (emptyPredicate?.call(data) ?? false) {
-              return AppStateScaffold(
-                appBarTitle: appBarTitle,
-                variant: AppStateViewVariant.empty,
-                title: emptyTitle!,
-                body: emptyBody!,
-                action: emptyAction,
-                semanticLabel: emptySemanticLabel,
-                maxWidth: maxWidth,
-                centerVertically: centerVertically,
-                scrollable: scrollable,
-                safeArea: safeArea,
-              );
-            }
+    if (value.isLoading && !value.hasValue) {
+      if (_shouldDeferLoadingToShell(context)) {
+        return const ShellLoadingReporter(
+          isLoading: true,
+          child: SizedBox.shrink(),
+        );
+      }
 
-            return dataBuilder(context, data);
-          },
-          failure: (failure) => AppFailureStateScaffold(
+      return AppStateScaffold(
+        appBarTitle: appBarTitle,
+        variant: AppStateViewVariant.loading,
+        title: loadingTitle,
+        body: loadingBody,
+        maxWidth: maxWidth,
+        centerVertically: centerVertically,
+        scrollable: scrollable,
+        safeArea: safeArea,
+      );
+    }
+
+    return ShellLoadingReporter(
+      isLoading: false,
+      child: value.when(
+        data: (result) {
+          return result.when(
+            success: (data) {
+              if (emptyPredicate?.call(data) ?? false) {
+                return AppStateScaffold(
+                  appBarTitle: appBarTitle,
+                  variant: AppStateViewVariant.empty,
+                  title: emptyTitle!,
+                  body: emptyBody!,
+                  action: emptyAction,
+                  semanticLabel: emptySemanticLabel,
+                  maxWidth: maxWidth,
+                  centerVertically: centerVertically,
+                  scrollable: scrollable,
+                  safeArea: safeArea,
+                );
+              }
+
+              return dataBuilder(context, data);
+            },
+            failure: (failure) => AppFailureStateScaffold(
+              appBarTitle: appBarTitle,
+              failure: failure,
+              onRetry: onRetry,
+              maxWidth: maxWidth,
+              centerVertically: centerVertically,
+              scrollable: scrollable,
+              safeArea: safeArea,
+            ),
+          );
+        },
+        error: (error, stackTrace) {
+          return AppFailureStateScaffold(
             appBarTitle: appBarTitle,
-            failure: failure,
+            failure: failureMapper(error, stackTrace),
             onRetry: onRetry,
             maxWidth: maxWidth,
             centerVertically: centerVertically,
             scrollable: scrollable,
             safeArea: safeArea,
-          ),
-        );
-      },
-      error: (error, stackTrace) {
-        return AppFailureStateScaffold(
-          appBarTitle: appBarTitle,
-          failure: failureMapper(error, stackTrace),
-          onRetry: onRetry,
-          maxWidth: maxWidth,
-          centerVertically: centerVertically,
-          scrollable: scrollable,
-          safeArea: safeArea,
-        );
-      },
-      loading: () {
-        return AppStateScaffold(
-          appBarTitle: appBarTitle,
-          variant: AppStateViewVariant.loading,
-          title: loadingTitle,
-          body: loadingBody,
-          maxWidth: maxWidth,
-          centerVertically: centerVertically,
-          scrollable: scrollable,
-          safeArea: safeArea,
-        );
-      },
+          );
+        },
+        loading: () {
+          if (_shouldDeferLoadingToShell(context)) {
+            return const SizedBox.shrink();
+          }
+
+          return AppStateScaffold(
+            appBarTitle: appBarTitle,
+            variant: AppStateViewVariant.loading,
+            title: loadingTitle,
+            body: loadingBody,
+            maxWidth: maxWidth,
+            centerVertically: centerVertically,
+            scrollable: scrollable,
+            safeArea: safeArea,
+          );
+        },
+      ),
     );
   }
 }

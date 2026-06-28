@@ -79,10 +79,7 @@ class IcuBedBoardPanel extends ConsumerWidget {
           ),
           SizedBox(height: theme.spacing.md),
           if (state.isRefreshingBeds && beds.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const LinearProgressIndicator(minHeight: 2)
           else if (beds.isEmpty)
             AppWorkspaceStatePanel.state(
               variant: AppStateViewVariant.empty,

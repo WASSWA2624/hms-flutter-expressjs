@@ -99,6 +99,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
+import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
 final appInitialLocationProvider = Provider<String?>((ref) {
   return null;
@@ -1134,6 +1135,7 @@ class _AppShell extends ConsumerWidget {
           error: (_, _) => AppConnectivityStatus.online,
           loading: () => AppConnectivityStatus.online,
         );
+    final bool isShellLoading = ref.watch(shellNavigationLoadingProvider);
 
     return ResponsiveAppShell(
       title: l10n.appTitle,
@@ -1215,6 +1217,8 @@ class _AppShell extends ConsumerWidget {
 
         context.go(shellDestinations[index].route.location());
       },
+      isShellLoading: isShellLoading,
+      shellRouteKey: location.path,
       child: child,
     );
   }

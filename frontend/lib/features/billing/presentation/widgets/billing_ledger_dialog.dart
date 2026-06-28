@@ -64,7 +64,7 @@ class _BillingLedgerDialogState extends ConsumerState<_BillingLedgerDialog> {
               AsyncSnapshot<Result<BillingPatientLedger>> snapshot,
             ) {
               if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const LinearProgressIndicator(minHeight: 2);
               }
               return snapshot.data!.when(
                 success: (BillingPatientLedger ledger) {

@@ -607,14 +607,18 @@ class _TheaterCaseDetail extends ConsumerWidget {
               ),
             ]
           : const <Widget>[],
-      child: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _TheaterCaseDetailBody(
-              theaterCase: selected,
-              canWrite: canWrite,
-              isMutating: isMutating,
-              focusPanel: focusPanel,
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (isLoading) const LinearProgressIndicator(minHeight: 2),
+          _TheaterCaseDetailBody(
+            theaterCase: selected,
+            canWrite: canWrite,
+            isMutating: isMutating,
+            focusPanel: focusPanel,
+          ),
+        ],
+      ),
     );
   }
 }

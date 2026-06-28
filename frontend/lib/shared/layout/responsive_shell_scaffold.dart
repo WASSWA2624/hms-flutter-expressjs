@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_connectivity_indicator.dart';
 import 'package:hosspi_hms/shared/layout/app_fullscreen_toggle.dart';
+import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
 final class ResponsiveShellDestination {
   const ResponsiveShellDestination({
@@ -103,6 +104,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.onSettingsSelected,
     super.onChangePasswordSelected,
     super.onLogoutSelected,
+    super.isShellLoading = false,
+    super.shellRouteKey,
     super.key,
   });
 }
@@ -143,6 +146,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.onSettingsSelected,
     this.onChangePasswordSelected,
     this.onLogoutSelected,
+    this.isShellLoading = false,
+    this.shellRouteKey,
     super.key,
   });
 
@@ -179,6 +184,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
   final VoidCallback? onLogoutSelected;
+  final bool isShellLoading;
+  final String? shellRouteKey;
   final Widget child;
 
   @override
@@ -252,31 +259,29 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                       ? _openMobileDrawer
                       : _toggleDesktopSidebar,
                 ),
+                AppShellLoadingBar(visible: widget.isShellLoading),
                 Expanded(
-                  child: isMobile
-                      ? widget.child
-                      : Row(
-                          children: <Widget>[
-                            SideNavigation(
-                              destinations: widget.destinations,
-                              selectedIndex: effectiveSelectedIndex,
-                              collapsed: _sidebarCollapsed,
-                              width: _sidebarCollapsed
-                                  ? _collapsedSidebarWidth
-                                  : _sidebarWidth,
-                              searchLabel: widget.navigationSearchLabel,
-                              searchHint: widget.navigationSearchHint,
-                              noResultsLabel:
-                                  widget.navigationSearchNoResultsLabel,
-                              onDestinationSelected:
-                                  widget.onDestinationSelected,
-                            ),
-                            if (!_sidebarCollapsed)
-                              _SidebarResizeHandle(onDrag: _resizeSidebar),
-                            const VerticalDivider(width: _dividerWidth),
-                            Expanded(child: widget.child),
-                          ],
-                        ),
+                  child: ShellNavigationScope(
+                    deferLoadingToShell: true,
+                    child: _ShellBody(
+                      isMobile: isMobile,
+                      shellRouteKey: widget.shellRouteKey,
+                      isShellLoading: widget.isShellLoading,
+                      destinations: widget.destinations,
+                      selectedIndex: effectiveSelectedIndex,
+                      sidebarCollapsed: _sidebarCollapsed,
+                      sidebarWidth: _sidebarCollapsed
+                          ? _collapsedSidebarWidth
+                          : _sidebarWidth,
+                      navigationSearchLabel: widget.navigationSearchLabel,
+                      navigationSearchHint: widget.navigationSearchHint,
+                      navigationSearchNoResultsLabel:
+                          widget.navigationSearchNoResultsLabel,
+                      onDestinationSelected: widget.onDestinationSelected,
+                      onResizeSidebar: _resizeSidebar,
+                      child: widget.child,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -310,6 +315,71 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
     if (index != widget.selectedIndex) {
       widget.onDestinationSelected(index);
     }
+  }
+}
+
+class _ShellBody extends StatelessWidget {
+  const _ShellBody({
+    required this.isMobile,
+    required this.shellRouteKey,
+    required this.isShellLoading,
+    required this.destinations,
+    required this.selectedIndex,
+    required this.sidebarCollapsed,
+    required this.sidebarWidth,
+    required this.navigationSearchLabel,
+    required this.navigationSearchHint,
+    required this.navigationSearchNoResultsLabel,
+    required this.onDestinationSelected,
+    required this.onResizeSidebar,
+    required this.child,
+  });
+
+  final bool isMobile;
+  final String? shellRouteKey;
+  final bool isShellLoading;
+  final List<ResponsiveShellDestination> destinations;
+  final int selectedIndex;
+  final bool sidebarCollapsed;
+  final double sidebarWidth;
+  final String navigationSearchLabel;
+  final String navigationSearchHint;
+  final String navigationSearchNoResultsLabel;
+  final ValueChanged<int> onDestinationSelected;
+  final ValueChanged<double> onResizeSidebar;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget routeChild = shellRouteKey == null
+        ? child
+        : ShellRouteChildRetention(
+            routeKey: shellRouteKey!,
+            isLoading: isShellLoading,
+            child: child,
+          );
+
+    if (isMobile) {
+      return routeChild;
+    }
+
+    return Row(
+      children: <Widget>[
+        SideNavigation(
+          destinations: destinations,
+          selectedIndex: selectedIndex,
+          collapsed: sidebarCollapsed,
+          width: sidebarWidth,
+          searchLabel: navigationSearchLabel,
+          searchHint: navigationSearchHint,
+          noResultsLabel: navigationSearchNoResultsLabel,
+          onDestinationSelected: onDestinationSelected,
+        ),
+        if (!sidebarCollapsed) _SidebarResizeHandle(onDrag: onResizeSidebar),
+        const VerticalDivider(width: _dividerWidth),
+        Expanded(child: routeChild),
+      ],
+    );
   }
 }
 

@@ -622,9 +622,14 @@ class _HrStaffDetailPanel extends ConsumerWidget {
               : () => _showStaffProfileDialog(context, ref, selected.profile),
         ),
       ],
-      child: state.isRefreshingDetail
-          ? const Center(child: CircularProgressIndicator())
-          : _HrStaffDetailBody(state: state, detail: selected),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (state.isRefreshingDetail)
+            const LinearProgressIndicator(minHeight: 2),
+          _HrStaffDetailBody(state: state, detail: selected),
+        ],
+      ),
     );
   }
 }

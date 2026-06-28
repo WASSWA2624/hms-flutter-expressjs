@@ -410,13 +410,18 @@ class _OperationsDetailPanel extends ConsumerWidget {
           onPressed: () => _showRequestReportDialog(context, state, item),
         ),
       ],
-      child: state.isRefreshingDetail
-          ? const Center(child: CircularProgressIndicator())
-          : _OperationsDetailBody(
-              state: state,
-              item: item,
-              canMutate: canMutate,
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (state.isRefreshingDetail)
+            const LinearProgressIndicator(minHeight: 2),
+          _OperationsDetailBody(
+            state: state,
+            item: item,
+            canMutate: canMutate,
+          ),
+        ],
+      ),
     );
   }
 }
