@@ -155,11 +155,6 @@ class _CommunicationsWorkspaceContentState
       title: l10n.communicationsWorkspaceTitle,
       leadingIcon: AppRouteIcons.communications,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.communicationsLiveStatus,
-        savingLabel: l10n.communicationsSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         onRefresh: () async {

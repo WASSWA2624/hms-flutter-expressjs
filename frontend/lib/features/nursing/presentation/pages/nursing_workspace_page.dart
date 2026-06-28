@@ -192,11 +192,6 @@ class _NursingWorkspaceContentState
       title: l10n.nursingTitle,
       leadingIcon: AppRouteIcons.nursing,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.nursingLiveStatus,
-        savingLabel: l10n.nursingSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

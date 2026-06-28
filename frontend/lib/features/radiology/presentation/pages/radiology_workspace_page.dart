@@ -143,11 +143,6 @@ class _RadiologyWorkspaceContentState
     return AppWorkspace(
       title: l10n.radiologyTitle,
       leadingIcon: AppRouteIcons.radiology,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isMutating,
-        liveLabel: l10n.radiologyLiveStatus,
-        savingLabel: l10n.radiologySavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

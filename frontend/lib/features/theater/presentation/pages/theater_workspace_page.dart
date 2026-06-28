@@ -201,11 +201,6 @@ class _TheaterWorkspaceContentState
     return AppWorkspace(
       title: l10n.theaterTitle,
       leadingIcon: AppRouteIcons.theater,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isMutating,
-        liveLabel: l10n.theaterLiveStatus,
-        savingLabel: l10n.theaterSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: canWrite

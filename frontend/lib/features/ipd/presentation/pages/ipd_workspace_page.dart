@@ -224,11 +224,6 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       title: l10n.ipdTitle,
       leadingIcon: AppRouteIcons.ipd,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.ipdLiveStatus,
-        savingLabel: l10n.ipdSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

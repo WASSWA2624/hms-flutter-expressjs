@@ -136,11 +136,6 @@ class _AccessAdminWorkspaceContentState
     return AppWorkspace(
       title: context.l10n.accessAdminTitle,
       leadingIcon: Icons.manage_accounts_outlined,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: context.l10n.accessAdminLiveStatus,
-        savingLabel: context.l10n.accessAdminSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         context.l10n,
         primary: _primaryAction(context, state, canWrite, controller),

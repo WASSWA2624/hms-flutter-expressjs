@@ -71,21 +71,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final bool isRefreshing = ref.watch(tenantFacilitySetupRefreshProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
-    final bool setupComplete = snapshot.completedChecklistItems == 4;
     return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
       leadingIcon: AppRouteIcons.setup,
-      status: AppWorkspaceStatus(
-        label: setupComplete
-            ? l10n.tenantFacilitySummaryConfigured
-            : l10n.tenantFacilitySummaryNeedsSetup,
-        tone: setupComplete
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.warning,
-        icon: setupComplete
-            ? Icons.task_alt_outlined
-            : Icons.pending_actions_outlined,
-      ),
       maxWidth: PageMaxWidth.dashboard,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,

@@ -111,11 +111,6 @@ class _PharmacyWorkspaceContentState
       title: l10n.pharmacyTitle,
       leadingIcon: AppRouteIcons.pharmacy,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.pharmacyStatusLiveSync,
-        savingLabel: l10n.pharmacyStatusSaving,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

@@ -175,11 +175,6 @@ class _EmergencyWorkspaceContentState
       title: 'Emergency',
       leadingIcon: AppRouteIcons.emergency,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: 'Live sync',
-        savingLabel: 'Saving',
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: AppAccessActionGate(

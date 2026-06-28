@@ -113,11 +113,6 @@ class _ReportsWorkspaceContentState
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.reportsLiveStatus,
-        savingLabel: l10n.reportsSavingStatus,
-      ),
       compactSummaryCards: true,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,

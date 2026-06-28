@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -9,48 +10,45 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import '../components/component_test_app.dart';
 
 void main() {
-  testWidgets('AppWorkspace renders header, status, actions, and sections', (
+  testWidgets('AppWorkspace renders header, actions, and sections', (
     WidgetTester tester,
   ) async {
     var actionCount = 0;
 
     await pumpComponent(
       tester,
-      AppWorkspace(
-        title: 'Admissions',
-        status: const AppWorkspaceStatus(
-          label: 'Operational',
-          tone: AppWorkspaceStatusTone.success,
-        ),
-        primaryAction: AppButton.primary(
-          label: 'Create',
-          onPressed: () {
-            actionCount += 1;
-          },
-        ),
-        summaryCards: const <Widget>[
-          AppWorkspaceSummaryCard(label: 'Waiting', value: '12'),
-        ],
-        filters: const AppWorkspaceFilterBar(
-          search: Text('Search'),
-          filters: <Widget>[Text('Status filter')],
-        ),
-        body: const Text('Workspace body'),
-        activity: const AppWorkspaceActivityList(
-          title: 'Activity',
-          items: <AppWorkspaceActivityItem>[
-            AppWorkspaceActivityItem(
-              title: 'Patient admitted',
-              subtitle: 'Today 08:30',
-            ),
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Admissions',
+          primaryAction: AppButton.primary(
+            label: 'Create',
+            onPressed: () {
+              actionCount += 1;
+            },
+          ),
+          summaryCards: const <Widget>[
+            AppWorkspaceSummaryCard(label: 'Waiting', value: '12'),
           ],
+          filters: const AppWorkspaceFilterBar(
+            search: Text('Search'),
+            filters: <Widget>[Text('Status filter')],
+          ),
+          body: const Text('Workspace body'),
+          activity: const AppWorkspaceActivityList(
+            title: 'Activity',
+            items: <AppWorkspaceActivityItem>[
+              AppWorkspaceActivityItem(
+                title: 'Patient admitted',
+                subtitle: 'Today 08:30',
+              ),
+            ],
+          ),
         ),
       ),
       size: const Size(1000, 800),
     );
 
     expect(find.text('Admissions'), findsOneWidget);
-    expect(find.text('Operational'), findsOneWidget);
     expect(find.text('Waiting'), findsOneWidget);
     expect(find.text('Search'), findsOneWidget);
     expect(find.text('Workspace body'), findsOneWidget);

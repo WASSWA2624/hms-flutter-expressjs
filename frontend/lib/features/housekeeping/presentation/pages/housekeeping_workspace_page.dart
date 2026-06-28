@@ -104,11 +104,6 @@ class _HousekeepingWorkspaceContentState
     return AppWorkspace(
       title: l10n.housekeepingTitle,
       leadingIcon: AppRouteIcons.housekeeping,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.housekeepingLiveStatus,
-        savingLabel: l10n.housekeepingSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         showHousekeepingRequest: false,

@@ -135,11 +135,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       body: AppWorkspace(
         title: l10n.physiotherapyTitle,
         leadingIcon: Icons.accessibility_new_outlined,
-        status: AppWorkspaceLiveStatus.fromSavingState(
-          isSaving: state.isSaving,
-          liveLabel: l10n.physiotherapyLiveStatus,
-          savingLabel: l10n.physiotherapySavingStatus,
-        ),
         toolbar: appWorkspaceToolbarWithLabels(
           l10n,
           secondary: <Widget>[

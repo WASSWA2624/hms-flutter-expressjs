@@ -190,11 +190,6 @@ class _SubscriptionsWorkspaceContentState
     return AppWorkspace(
       title: _SubscriptionsText.title,
       leadingIcon: AppRouteIcons.subscriptions,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: _SubscriptionsText.liveStatus,
-        savingLabel: _SubscriptionsText.savingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         context.l10n,
         primary: _primaryAction(context, canWrite, state),
@@ -2845,8 +2840,6 @@ abstract final class _SubscriptionsText {
   static const String loadingTitle = 'Loading subscriptions';
   static const String loadingBody =
       'Fetching plans, subscriptions, modules, licenses, and invoices.';
-  static const String liveStatus = 'Live';
-  static const String savingStatus = 'Saving';
   static const String savedMessage = 'Subscription workspace updated.';
   static const String overview = 'Overview';
   static const String overviewDescription =

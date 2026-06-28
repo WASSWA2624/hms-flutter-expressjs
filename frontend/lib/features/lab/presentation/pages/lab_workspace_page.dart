@@ -110,11 +110,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       title: l10n.labTitle,
       leadingIcon: AppRouteIcons.lab,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.labLiveStatus,
-        savingLabel: l10n.labSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

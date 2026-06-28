@@ -144,14 +144,6 @@ class _ClaimsWorkspaceContentState
     return AppWorkspace(
       title: l10n.claimsWorkspaceTitle,
       leadingIcon: AppRouteIcons.claims,
-      status: AppWorkspaceStatus(
-        label: state.lastFailure == null
-            ? l10n.claimsOperationalStatusLabel
-            : l10n.claimsNeedsAttentionStatusLabel,
-        tone: state.lastFailure == null
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.warning,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: AppButton.primary(

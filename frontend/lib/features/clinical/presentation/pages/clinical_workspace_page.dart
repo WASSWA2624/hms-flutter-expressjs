@@ -197,11 +197,6 @@ class _ClinicalWorkspaceContentState
       title: l10n.clinicalTitle,
       leadingIcon: AppRouteIcons.clinical,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.clinicalLiveStatus,
-        savingLabel: l10n.clinicalSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

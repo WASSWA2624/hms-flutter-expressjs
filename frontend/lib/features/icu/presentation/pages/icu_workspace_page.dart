@@ -165,11 +165,6 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       title: l10n.navigationIcuLabel,
       leadingIcon: AppRouteIcons.icu,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.icuLiveSyncLabel,
-        savingLabel: l10n.icuSavingLabel,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

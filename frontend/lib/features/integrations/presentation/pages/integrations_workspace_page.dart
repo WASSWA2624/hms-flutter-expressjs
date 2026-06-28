@@ -141,25 +141,10 @@ class _IntegrationsWorkspaceContentState
       accessPolicy,
     );
     final int totalCount = state.workItems.length;
-    final AppWorkspaceStatus workspaceStatus = state.failedCount > 0
-        ? AppWorkspaceStatus(
-            label: l10n.integrationsFailedStatusLabel,
-            tone: AppWorkspaceStatusTone.error,
-          )
-        : state.warningCount > 0
-        ? AppWorkspaceStatus(
-            label: l10n.integrationsWarningStatusLabel,
-            tone: AppWorkspaceStatusTone.warning,
-          )
-        : AppWorkspaceStatus(
-            label: l10n.integrationsOperationalStatusLabel,
-            tone: AppWorkspaceStatusTone.success,
-          );
 
     return AppWorkspace(
       title: l10n.integrationsWorkspaceTitle,
       leadingIcon: AppRouteIcons.integrations,
-      status: workspaceStatus,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

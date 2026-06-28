@@ -122,11 +122,6 @@ class _BiomedicalWorkspaceContentState
       title: l10n.biomedicalTitle,
       leadingIcon: AppRouteIcons.biomedical,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isMutating,
-        liveLabel: l10n.biomedicalLiveStatus,
-        savingLabel: l10n.biomedicalSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         showFaultReport: false,

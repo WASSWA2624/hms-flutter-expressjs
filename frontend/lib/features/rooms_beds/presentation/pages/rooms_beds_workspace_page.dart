@@ -159,11 +159,6 @@ class _RoomsBedsWorkspaceContentState
     return AppWorkspace(
       title: l10n.roomsBedsTitle,
       leadingIcon: AppRouteIcons.roomsBeds,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.roomsBedsLiveStatus,
-        savingLabel: l10n.roomsBedsSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: canAdminBeds

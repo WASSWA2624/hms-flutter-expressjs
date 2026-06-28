@@ -87,10 +87,6 @@ class _HomeDashboardContent extends ConsumerWidget {
                 icon: _profileIcon(dashboard.profile.role),
                 semanticLabel: dashboard.profile.homeTitle,
               ),
-              status: AppWorkspaceStatus(
-                label: dashboard.profile.roleLabel,
-                tone: _profileStatusTone(dashboard),
-              ),
               toolbar: appWorkspaceToolbarWithLabels(
                 context.l10n,
                 onRefresh: () async {
@@ -2576,16 +2572,6 @@ String _formatToken(String value) {
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
-}
-
-AppWorkspaceStatusTone _profileStatusTone(HomeDashboard dashboard) {
-  if (dashboard.isTenantContextRequired) {
-    return AppWorkspaceStatusTone.warning;
-  }
-  if (dashboard.usesFallbackData) {
-    return AppWorkspaceStatusTone.info;
-  }
-  return AppWorkspaceStatusTone.success;
 }
 
 AppWorkspaceStatusTone _metricTone(HomeStatusCard card) {

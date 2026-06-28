@@ -119,11 +119,6 @@ class _BillingWorkspaceContentState
     return AppWorkspace(
       title: l10n.billingWorkspaceTitle,
       leadingIcon: AppRouteIcons.billing,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.billingStatusLive,
-        savingLabel: l10n.billingStatusPosting,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

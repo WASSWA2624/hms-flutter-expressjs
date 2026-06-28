@@ -310,4 +310,73 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('AppWorkspace header keeps title visible on narrow screens', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Laboratory',
+          leadingIcon: Icons.science_outlined,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(label: 'Create', onPressed: () {}),
+            onRefresh: () async {},
+            showFaultReport: false,
+            showHousekeepingRequest: false,
+            overflowLabel: 'More actions',
+            refreshLabel: 'Refresh',
+          ),
+          body: const Text('Workspace body'),
+        ),
+      ),
+      size: const Size(258, 600),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Laboratory'), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final Offset titleTop = tester.getTopLeft(find.text('Laboratory'));
+    final Offset overflowTop = tester.getTopLeft(find.byIcon(Icons.more_vert));
+    expect(overflowTop.dy, closeTo(titleTop.dy, 12));
+  });
+
+  testWidgets('AppWorkspace header stays on one row at medium width', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Laboratory',
+          leadingIcon: Icons.science_outlined,
+          toolbar: AppWorkspaceToolbarConfig(
+            secondary: <Widget>[
+              AppButton.secondary(label: 'Configure', onPressed: () {}),
+            ],
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+            refreshLabel: 'Refresh',
+            showFaultReport: false,
+            showHousekeepingRequest: false,
+          ),
+          body: const Text('Workspace body'),
+        ),
+      ),
+      size: const Size(626, 600),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Laboratory'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final Offset titleTop = tester.getTopLeft(find.text('Laboratory'));
+    final Offset overflowTop = tester.getTopLeft(find.byIcon(Icons.more_vert));
+    expect(overflowTop.dy, closeTo(titleTop.dy, 12));
+  });
 }

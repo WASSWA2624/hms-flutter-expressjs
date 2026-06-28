@@ -165,11 +165,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     return AppWorkspace(
       title: l10n.hrTitle,
       leadingIcon: AppRouteIcons.hr,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isMutating,
-        liveLabel: l10n.hrLiveStatus,
-        savingLabel: l10n.hrSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

@@ -108,11 +108,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       title: l10n.opdTitle,
       leadingIcon: AppRouteIcons.opd,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isSaving,
-        liveLabel: l10n.opdLiveStatus,
-        savingLabel: l10n.opdSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: AppAccessActionGate(

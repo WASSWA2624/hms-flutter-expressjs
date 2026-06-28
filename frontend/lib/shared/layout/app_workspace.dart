@@ -81,7 +81,6 @@ class AppWorkspace extends StatelessWidget {
   const AppWorkspace({
     required this.title,
     required this.body,
-    this.status,
     this.leading,
     this.leadingIcon,
     this.primaryAction,
@@ -101,7 +100,6 @@ class AppWorkspace extends StatelessWidget {
   });
 
   final String title;
-  final AppWorkspaceStatus? status;
   final Widget? leading;
   final IconData? leadingIcon;
   final Widget? primaryAction;
@@ -141,7 +139,6 @@ class AppWorkspace extends StatelessWidget {
     final List<Widget> children = <Widget>[
       AppWorkspaceHeader(
         title: title,
-        status: status,
         leading: effectiveLeading,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
@@ -205,7 +202,6 @@ class AppWorkspace extends StatelessWidget {
 class AppWorkspaceHeader extends StatelessWidget {
   const AppWorkspaceHeader({
     required this.title,
-    this.status,
     this.leading,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
@@ -215,7 +211,6 @@ class AppWorkspaceHeader extends StatelessWidget {
   });
 
   final String title;
-  final AppWorkspaceStatus? status;
   final Widget? leading;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
@@ -226,7 +221,6 @@ class AppWorkspaceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final AppWorkspaceToolbarConfig? effectiveToolbar =
         toolbar ??
         (primaryAction != null || secondaryActions.isNotEmpty
@@ -243,15 +237,6 @@ class AppWorkspaceHeader extends StatelessWidget {
               return AppWorkspaceToolbar(config: effectiveToolbar);
             },
           );
-    final Widget titleBlock = _WorkspaceHeaderTitle(
-      leading: leading,
-      title: title,
-      status: status,
-      compact: compact,
-      hideTitle: breakpoint == AppBreakpoint.xs,
-      hideStatus: breakpoint == AppBreakpoint.xs,
-    );
-
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
@@ -260,49 +245,27 @@ class AppWorkspaceHeader extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: compact ? theme.spacing.xs : theme.spacing.sm,
         ),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool stackHeader =
-                breakpoint == AppBreakpoint.xs ||
-                constraints.maxWidth < AppBreakpoints.md;
-
-            if (stackHeader) {
-              return Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  SizedBox(width: constraints.maxWidth, child: titleBlock),
-                  if (actionBar != null)
-                    SizedBox(width: constraints.maxWidth, child: actionBar),
-                ],
-              );
-            }
-
-            return Row(
-              children: <Widget>[
-                Expanded(
-                  child: ClipRect(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: titleBlock,
-                    ),
+        child: Row(
+          children: <Widget>[
+            if (leading != null) ...<Widget>[
+              leading!,
+              SizedBox(width: theme.spacing.sm),
+            ],
+            Expanded(
+              child: _WorkspaceHeaderTitle(title: title, compact: compact),
+            ),
+            if (actionBar != null) ...<Widget>[
+              SizedBox(width: theme.spacing.md),
+              Flexible(
+                child: ClipRect(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: actionBar,
                   ),
                 ),
-                if (actionBar != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.md),
-                  Flexible(
-                    child: ClipRect(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: actionBar,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            );
-          },
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -2410,21 +2373,10 @@ class _WorkspaceDrawerActions extends StatelessWidget {
 }
 
 class _WorkspaceHeaderTitle extends StatelessWidget {
-  const _WorkspaceHeaderTitle({
-    required this.title,
-    required this.status,
-    required this.leading,
-    this.compact = true,
-    this.hideTitle = false,
-    this.hideStatus = false,
-  });
+  const _WorkspaceHeaderTitle({required this.title, this.compact = true});
 
   final String title;
-  final AppWorkspaceStatus? status;
-  final Widget? leading;
   final bool compact;
-  final bool hideTitle;
-  final bool hideStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -2443,97 +2395,15 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
             AppBreakpoint.md => textTheme.titleLarge,
             _ => textTheme.headlineSmall,
           };
-    final Widget text = hideTitle && hideStatus
-        ? const SizedBox.shrink()
-        : _WorkspaceHeaderText(
-            title: hideTitle ? '' : title,
-            status: hideStatus ? null : status,
-            titleStyle: titleStyle,
-            colorScheme: colorScheme,
-          );
 
-    if (leading == null) {
-      return text;
-    }
-
-    return Row(
-      children: <Widget>[
-        leading!,
-        if (!hideTitle || !hideStatus) ...<Widget>[
-          SizedBox(width: theme.spacing.sm),
-          Expanded(child: text),
-        ],
-      ],
-    );
-  }
-}
-
-class _WorkspaceHeaderText extends StatelessWidget {
-  const _WorkspaceHeaderText({
-    required this.title,
-    required this.status,
-    required this.titleStyle,
-    required this.colorScheme,
-  });
-
-  final String title;
-  final AppWorkspaceStatus? status;
-  final TextStyle? titleStyle;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    if (title.isEmpty && status == null) {
-      return const SizedBox.shrink();
-    }
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool narrow = constraints.maxWidth < AppBreakpoints.sm;
-
-        if (narrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (title.isNotEmpty)
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              if (status != null) ...<Widget>[
-                if (title.isNotEmpty) SizedBox(height: theme.spacing.xs),
-                AppWorkspaceStatusBadge(status: status!),
-              ],
-            ],
-          );
-        }
-
-        return Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            if (title.isNotEmpty)
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            if (status != null) AppWorkspaceStatusBadge(status: status!),
-          ],
-        );
-      },
+    return Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: titleStyle?.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 }

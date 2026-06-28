@@ -108,11 +108,6 @@ class _OperationsWorkspaceContentState
       title: l10n.operationsTitle,
       leadingIcon: AppRouteIcons.operations,
       compactSummaryCards: true,
-      status: AppWorkspaceLiveStatus.fromSavingState(
-        isSaving: state.isMutating,
-        liveLabel: l10n.operationsLiveStatus,
-        savingLabel: l10n.operationsSavingStatus,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[

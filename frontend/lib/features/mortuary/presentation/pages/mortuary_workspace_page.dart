@@ -118,14 +118,6 @@ class _MortuaryWorkspaceContentState
     return AppWorkspace(
       title: l10n.mortuaryTitle,
       leadingIcon: AppRouteIcons.mortuary,
-      status: AppWorkspaceStatus(
-        label: state.lastFailure == null
-            ? l10n.mortuaryOperationalStatusLabel
-            : l10n.mortuaryAttentionStatusLabel,
-        tone: state.lastFailure == null
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.warning,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         primary: AppPermissionActionButton(

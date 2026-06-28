@@ -190,12 +190,6 @@ class _DischargeWorkspaceContentState
     return AppWorkspace(
       title: l10n.dischargeWorkspaceTitle,
       leadingIcon: AppRouteIcons.discharge,
-      status: AppWorkspaceStatus(
-        label: l10n.dischargeOperationalStatusLabel,
-        tone: state.lastFailure == null
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.warning,
-      ),
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         onRefresh: () async {
