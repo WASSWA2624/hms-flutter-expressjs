@@ -15,6 +15,8 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -624,57 +626,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          l10n.hrStaffOverviewSectionTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppInfoTileGrid(
-          emptyValue: l10n.profileUnknownValue,
-          maxColumns: 3,
-          minItemWidth: 200,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.hrStaffNumberLabel,
-              value: profile.staffNumber ?? profile.displayId,
-              icon: Icons.badge_outlined,
-              copyable: true,
-            ),
-            AppInfoTileData(
-              label: l10n.hrStaffNameLabel,
-              value: profile.displayName,
-              icon: Icons.person_outline,
-            ),
-            if ((profile.position ?? '').trim().isNotEmpty)
-              AppInfoTileData(
-                label: l10n.hrPositionLabel,
-                value: profile.position,
-                icon: Icons.work_outline,
-              ),
-            if ((profile.practitionerType ?? '').trim().isNotEmpty)
-              AppInfoTileData(
-                label: l10n.hrPractitionerTypeLabel,
-                value: _apiLabel(profile.practitionerType),
-                icon: Icons.medical_information_outlined,
-              ),
-            AppInfoTileData(
-              label: l10n.hrDepartmentLabel,
-              value: profile.departmentName ?? profile.departmentDisplayId,
-              icon: Icons.apartment_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.hrHireDateLabel,
-              value: _formatDate(context, profile.hireDate),
-              icon: Icons.event_available_outlined,
-            ),
-          ],
-        ),
-        if (_hasLinkedUser(profile)) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          _LinkedUserSummary(profile: profile),
-        ],
+        HrStaffDetailOverview(profile: profile),
         if (detail.accessSummary != null &&
             detail.accessSummary!.userRoles.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
@@ -708,7 +660,22 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ),
         ],
         SizedBox(height: theme.spacing.md),
-        ..._groupedStaffActionSections(context, ref, state, detail),
+        HrStaffDetailActions(
+          state: state,
+          detail: detail,
+          onAssignDepartment: _showAssignmentDialog,
+          onAssignPosition: _showPositionDialog,
+          onRecordAvailability: _showAvailabilityDialog,
+          onAssignShift: _showShiftAssignmentDialog,
+          onSwapShift: _showShiftSwapDialog,
+          onRequestLeave: _showLeaveDialog,
+          onCompensation: _showCompensationDialog,
+          onRunPayroll: _showPayrollRunDialog,
+          onAssignRole: showHrAssignRoleDialog,
+          onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
+            showHrModuleAccessDialog(context, staffDetail.accessSummary);
+          },
+        ),
         SizedBox(height: theme.spacing.md),
         _SmallRecordSection(
           title: l10n.hrAssignmentsSectionTitle,
@@ -806,189 +773,6 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-List<Widget> _groupedStaffActionSections(
-  BuildContext context,
-  WidgetRef ref,
-  HrWorkspaceState state,
-  HrStaffDetail detail,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final bool enabled = !state.isMutating;
-  final bool hasLinkedUser =
-      (detail.profile.userId ?? detail.profile.userDisplayId ?? '')
-          .trim()
-          .isNotEmpty;
-
-  return <Widget>[
-    AppActionSection(
-      title: l10n.hrStaffActionsPlacementTitle,
-      minItemWidth: 200,
-      permissionActions: <AppPermissionActionItem>[
-        AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
-          label: l10n.hrAssignDepartmentAction,
-          icon: Icons.account_tree_outlined,
-          enabled: enabled,
-          onPressed: () => _showAssignmentDialog(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
-          label: l10n.hrAssignPositionAction,
-          icon: Icons.work_outline,
-          enabled: enabled,
-          onPressed: () => _showPositionDialog(context, ref, detail.profile),
-        ),
-      ],
-    ),
-    SizedBox(height: Theme.of(context).spacing.md),
-    AppActionSection(
-      title: l10n.hrStaffActionsSchedulingTitle,
-      minItemWidth: 200,
-      permissionActions: <AppPermissionActionItem>[
-        AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
-          label: l10n.hrRecordAvailabilityAction,
-          icon: Icons.schedule_outlined,
-          enabled: enabled,
-          onPressed: () => _showAvailabilityDialog(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
-          label: l10n.hrAssignShiftAction,
-          icon: Icons.calendar_view_week_outlined,
-          enabled: enabled,
-          onPressed: () => _showShiftAssignmentDialog(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
-          label: l10n.hrSwapShiftAction,
-          icon: Icons.swap_horiz_outlined,
-          enabled: enabled,
-          onPressed: () => _showShiftSwapDialog(context, ref),
-        ),
-        AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
-          label: l10n.hrRequestLeaveAction,
-          icon: Icons.event_busy_outlined,
-          enabled: enabled,
-          onPressed: () => _showLeaveDialog(context, ref),
-        ),
-      ],
-    ),
-    SizedBox(height: Theme.of(context).spacing.md),
-    AppActionSection(
-      title: l10n.hrStaffActionsPayrollTitle,
-      minItemWidth: 200,
-      permissionActions: <AppPermissionActionItem>[
-        AppPermissionActionItem(
-          requirement: _payrollRequirement,
-          label: l10n.hrCompensationAction,
-          icon: Icons.price_change_outlined,
-          enabled: enabled,
-          onPressed: () => _showCompensationDialog(context, ref, detail.profile),
-        ),
-        AppPermissionActionItem(
-          requirement: _payrollRequirement,
-          label: l10n.hrRunPayrollAction,
-          icon: Icons.payments_outlined,
-          enabled: enabled,
-          onPressed: () => _showPayrollRunDialog(context, ref, detail.profile),
-        ),
-      ],
-    ),
-    if (hasLinkedUser) ...<Widget>[
-      SizedBox(height: Theme.of(context).spacing.md),
-      AppActionSection(
-        title: l10n.hrStaffActionsAccessTitle,
-        minItemWidth: 200,
-        permissionActions: <AppPermissionActionItem>[
-          AppPermissionActionItem(
-            requirement: _hrWriteRequirement,
-            label: l10n.hrAssignRoleAction,
-            icon: Icons.admin_panel_settings_outlined,
-            enabled: enabled,
-            onPressed: () => showHrAssignRoleDialog(context, ref, detail),
-          ),
-          AppPermissionActionItem(
-            requirement: _hrWriteRequirement,
-            label: l10n.hrModuleAccessAction,
-            icon: Icons.apps_outlined,
-            enabled: enabled,
-            onPressed: () =>
-                showHrModuleAccessDialog(context, detail.accessSummary),
-          ),
-        ],
-      ),
-    ],
-  ];
-}
-
-bool _hasLinkedUser(HrStaffProfile profile) {
-  return (profile.userFullName ?? profile.userEmail ?? profile.userDisplayId ??
-          profile.userId ??
-          '')
-      .trim()
-      .isNotEmpty;
-}
-
-class _LinkedUserSummary extends StatelessWidget {
-  const _LinkedUserSummary({required this.profile});
-
-  final HrStaffProfile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return AppContentPanel(
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(
-                Icons.link_outlined,
-                size: theme.appTokens.listIconSize,
-                color: colorScheme.primary,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Text(
-                l10n.hrLinkedUserLabel,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          if ((profile.userFullName ?? '').trim().isNotEmpty)
-            Text(profile.userFullName!, style: theme.textTheme.bodyMedium),
-          if ((profile.userEmail ?? '').trim().isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              profile.userEmail!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if ((profile.userDisplayId ?? profile.userId ?? '').trim().isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.xs),
-              child: AppCopyableIdentifier(
-                value: profile.userDisplayId ?? profile.userId,
-                textStyle: theme.textTheme.bodySmall,
-              ),
-            ),
-        ],
-      ),
     );
   }
 }
