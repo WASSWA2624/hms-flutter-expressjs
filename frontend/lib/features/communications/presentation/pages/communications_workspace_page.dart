@@ -1400,7 +1400,6 @@ AppListTableSearch<T> _tableSearch<T>(
     advancedFilterTitle: l10n.communicationsAdvancedFiltersTitle,
     advancedFilterApplyLabel: l10n.communicationsApplyFiltersAction,
     advancedFilterResetLabel: l10n.communicationsResetFiltersAction,
-    advancedFilterCancelLabel: l10n.commonCancelActionLabel,
     enableDateFilter: false,
     allFieldsLabel: _panelTitle(l10n, state.query.panel),
     filterGroups: _filterGroups(context, state),

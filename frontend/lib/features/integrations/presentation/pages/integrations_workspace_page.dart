@@ -374,7 +374,6 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.integrationsFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: l10n.integrationsFilterAll,
           filterGroups: <AppSearchBarFilterGroup>[

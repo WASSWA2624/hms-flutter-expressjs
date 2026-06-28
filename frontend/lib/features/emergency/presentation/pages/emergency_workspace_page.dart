@@ -308,7 +308,6 @@ class _EmergencyBoardPanel extends ConsumerWidget {
           advancedFilterTitle: 'Emergency board filters',
           advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: context.l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: _EmergencyText.active,
           filterGroups: <AppSearchBarFilterGroup>[

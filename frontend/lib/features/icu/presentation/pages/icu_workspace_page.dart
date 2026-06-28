@@ -333,7 +333,6 @@ class _IcuBoardPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.icuBoardFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: l10n.icuActiveIcuLabel,
           filterGroups: <AppSearchBarFilterGroup>[

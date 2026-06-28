@@ -313,7 +313,6 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.biomedicalFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(

@@ -328,7 +328,6 @@ class _LabWorklistPanel extends ConsumerWidget {
             columnVisibilityTitle: l10n.labTableColumnsTitle,
             columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
             columnVisibilityResetLabel: l10n.labResetColumnsAction,
-            columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
             search: AppListTableSearch<LabOrderSummary>(
               controller: searchController,
               semanticLabel: l10n.labSearchLabel,
@@ -342,7 +341,6 @@ class _LabWorklistPanel extends ConsumerWidget {
               advancedFilterTitle: l10n.labFiltersLabel,
               advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
               advancedFilterResetLabel: l10n.opdClearFiltersAction,
-              advancedFilterCancelLabel: l10n.commonCancelActionLabel,
               enableDateFilter: false,
               allFieldsLabel: l10n.labScopeAll,
               filterGroups: <AppSearchBarFilterGroup>[
@@ -849,7 +847,6 @@ class _LabConfigurationsDialogState
             columnVisibilityTitle: l10n.labTableColumnsTitle,
             columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
             columnVisibilityResetLabel: l10n.labResetColumnsAction,
-            columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
             search: AppListTableSearch<LabCatalogItem>(
               controller: _searchController,
               semanticLabel: l10n.labCatalogSearchLabel,
@@ -882,7 +879,6 @@ class _LabConfigurationsDialogState
               advancedFilterTitle: l10n.labFiltersLabel,
               advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
               advancedFilterResetLabel: l10n.opdClearFiltersAction,
-              advancedFilterCancelLabel: l10n.commonCancelActionLabel,
               enableDateFilter: false,
               allFieldsLabel: l10n.labScopeAll,
               filterGroups: <AppSearchBarFilterGroup>[

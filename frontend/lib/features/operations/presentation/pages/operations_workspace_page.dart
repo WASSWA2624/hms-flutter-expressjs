@@ -302,7 +302,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
           advancedFilterTitle: l10n.operationsFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.operationsClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           searchFieldLabel: l10n.operationsSearchFieldsLabel,
           allFieldsLabel: l10n.operationsAllFilterOption,
           searchFields: _operationsSearchFields(l10n),

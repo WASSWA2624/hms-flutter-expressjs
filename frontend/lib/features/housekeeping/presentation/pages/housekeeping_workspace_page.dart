@@ -314,7 +314,6 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.housekeepingFiltersTitle,
           advancedFilterApplyLabel: l10n.housekeepingApplyFiltersAction,
           advancedFilterResetLabel: l10n.housekeepingClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           filterGroups: _filterGroups(l10n, state),
           filterValue: _filterValue(state.query),

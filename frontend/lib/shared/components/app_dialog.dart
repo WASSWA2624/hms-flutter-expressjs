@@ -16,6 +16,7 @@ class AppDialog extends StatefulWidget {
     this.scrollable = false,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
+    this.resizable = true,
     this.closeEnabled = true,
     this.maxWidth = _defaultMaxWidth,
     super.key,
@@ -31,6 +32,7 @@ class AppDialog extends StatefulWidget {
   final bool scrollable;
   final bool showCloseButton;
   final bool showMaximizeButton;
+  final bool resizable;
   final bool closeEnabled;
   final double maxWidth;
 
@@ -83,7 +85,8 @@ class _AppDialogState extends State<AppDialog> {
           ? (desktopSize?.height ?? maxHeight)
           : maxHeight,
     );
-    final bool resizeEnabled = desktopInteractive && !_isMaximized;
+    final bool resizeEnabled =
+        desktopInteractive && !_isMaximized && widget.resizable;
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -619,13 +622,33 @@ class _DialogActions extends StatelessWidget {
       ),
       child: Padding(
         padding: padding,
-        child: OverflowBar(
-          alignment: MainAxisAlignment.end,
-          overflowAlignment: OverflowBarAlignment.end,
-          spacing: theme.spacing.sm,
-          overflowSpacing: theme.spacing.sm,
-          children: actions,
-        ),
+        child: actions.length <= 2
+            ? Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      for (int i = 0; i < actions.length; i++)
+                        Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start: i == 0 ? 0 : theme.spacing.sm,
+                          ),
+                          child: actions[i],
+                        ),
+                    ],
+                  ),
+                ),
+              )
+            : OverflowBar(
+                alignment: MainAxisAlignment.end,
+                overflowAlignment: OverflowBarAlignment.end,
+                spacing: theme.spacing.sm,
+                overflowSpacing: theme.spacing.sm,
+                children: actions,
+              ),
       ),
     );
   }

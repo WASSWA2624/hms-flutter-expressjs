@@ -565,7 +565,6 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               advancedFilterTitle: _SubscriptionsText.filters,
               advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
               advancedFilterResetLabel: _SubscriptionsText.clearFilters,
-              advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
               enableDateFilter: false,
               allFieldsLabel: _SubscriptionsText.all,
               filterGroups: _filterGroups(state),

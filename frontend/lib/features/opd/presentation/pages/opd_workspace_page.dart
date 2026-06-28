@@ -2070,7 +2070,6 @@ class _OpdMainTable extends ConsumerWidget {
           advancedFilterTitle: l10n.opdFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           searchFields: _opdTableSearchFields(context),
           searchFieldLabel: l10n.opdSearchFieldFilterLabel,
           allFieldsLabel: l10n.opdAllFieldsFilterLabel,

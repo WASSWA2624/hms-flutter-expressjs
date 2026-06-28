@@ -436,7 +436,6 @@ class _NursingWorklistPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
           advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
           advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           searchFieldLabel: l10n.nursingSearchFieldLabel,
           allFieldsLabel: l10n.nursingAllFieldsLabel,
           dateFilterLabel: l10n.nursingDateFilterLabel,

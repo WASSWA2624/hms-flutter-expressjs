@@ -459,7 +459,6 @@ class _HrStaffDirectory extends ConsumerWidget {
           advancedFilterTitle: l10n.hrFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.hrClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: l10n.opdAllFieldsFilterLabel,
           textFilters: <AppSearchBarTextFilter>[

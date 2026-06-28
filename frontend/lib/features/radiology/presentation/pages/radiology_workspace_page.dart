@@ -299,7 +299,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
         columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
         columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-        columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
         search: AppListTableSearch<RadiologyOrder>(
           controller: searchController,
           semanticLabel: l10n.radiologySearchLabel,
@@ -315,7 +314,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           advancedFilterTitle: l10n.radiologyFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
           dateFromLabel: l10n.radiologyOrderDateFilterLabel,
           dateToLabel: l10n.opdDateToLabel,

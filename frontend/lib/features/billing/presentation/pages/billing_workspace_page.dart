@@ -263,7 +263,6 @@ class _BillingQueuePanel extends ConsumerWidget {
           advancedFilterTitle: l10n.billingFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.billingClearFilters,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: billingQueueLabel(context, BillingQueueType.all),
           filterGroups: <AppSearchBarFilterGroup>[

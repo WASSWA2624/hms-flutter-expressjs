@@ -255,7 +255,6 @@ class _MortuaryWorklist extends StatelessWidget {
         columnVisibilityTitle: l10n.commonTableSettingsActionLabel,
         columnVisibilityApplyLabel: l10n.mortuaryApplyFiltersAction,
         columnVisibilityResetLabel: l10n.mortuaryResetFiltersAction,
-        columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
         isLoading: state.isRefreshing,
         itemKeyBuilder: (MortuaryWorkspaceItem item) =>
             ValueKey<String>('${item.resource}:${item.id}'),
@@ -287,7 +286,6 @@ class _MortuaryWorklist extends StatelessWidget {
           advancedFilterTitle: l10n.mortuaryFiltersLabel,
           advancedFilterApplyLabel: l10n.mortuaryApplyFiltersAction,
           advancedFilterResetLabel: l10n.mortuaryResetFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           searchFieldLabel: l10n.mortuarySearchFieldLabel,
           allFieldsLabel: l10n.mortuaryAllFieldsLabel,
           dateFilterLabel: l10n.mortuaryDateFilterLabel,

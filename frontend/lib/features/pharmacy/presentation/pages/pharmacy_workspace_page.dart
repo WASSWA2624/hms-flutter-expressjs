@@ -269,7 +269,6 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: _pharmacyOrderFilterLabel(
             l10n,
@@ -1143,7 +1142,6 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
           advancedFilterTitle: l10n.pharmacyDrugFiltersSemanticLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: l10n.opdAllFieldsFilterLabel,
           filterGroups: <AppSearchBarFilterGroup>[

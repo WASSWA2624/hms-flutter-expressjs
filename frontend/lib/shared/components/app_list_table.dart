@@ -181,7 +181,6 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     String? title,
     String? applyLabel,
     String? resetLabel,
-    String? cancelLabel,
   }) {
     final String resolvedLabel = label ?? 'Table column settings';
     return AppSearchBarAction(
@@ -195,7 +194,6 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
           title: title,
           applyLabel: applyLabel,
           resetLabel: resetLabel,
-          cancelLabel: cancelLabel,
         );
       },
     );
@@ -206,7 +204,6 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     String? title,
     String? applyLabel,
     String? resetLabel,
-    String? cancelLabel,
   }) async {
     if (!canConfigure) {
       return;
@@ -221,8 +218,6 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
         title: title ?? 'Table columns',
         applyLabel: applyLabel ?? 'Apply columns',
         resetLabel: resetLabel ?? 'Reset columns',
-        cancelLabel:
-            cancelLabel ?? MaterialLocalizations.of(context).cancelButtonLabel,
       ),
     );
     if (value == null) {
@@ -279,7 +274,6 @@ final class AppListTableSearch<T> {
     this.advancedFilterTitle,
     this.advancedFilterApplyLabel,
     this.advancedFilterResetLabel,
-    this.advancedFilterCancelLabel,
     this.searchFields = const <AppSearchBarFieldChoice>[],
     this.textFilters = const <AppSearchBarTextFilter>[],
     this.searchFieldLabel,
@@ -319,7 +313,6 @@ final class AppListTableSearch<T> {
   final String? advancedFilterTitle;
   final String? advancedFilterApplyLabel;
   final String? advancedFilterResetLabel;
-  final String? advancedFilterCancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
   final List<AppSearchBarTextFilter> textFilters;
   final String? searchFieldLabel;
@@ -362,7 +355,6 @@ final class AppListTableSearch<T> {
       advancedFilterTitle: advancedFilterTitle,
       advancedFilterApplyLabel: advancedFilterApplyLabel,
       advancedFilterResetLabel: advancedFilterResetLabel,
-      advancedFilterCancelLabel: advancedFilterCancelLabel,
       searchFields: searchFields,
       textFilters: textFilters,
       searchFieldLabel: searchFieldLabel,
@@ -451,7 +443,6 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityTitle,
     this.columnVisibilityApplyLabel,
     this.columnVisibilityResetLabel,
-    this.columnVisibilityCancelLabel,
     this.columnVisibilityController,
     super.key,
   }) : assert(
@@ -494,7 +485,6 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnVisibilityTitle;
   final String? columnVisibilityApplyLabel;
   final String? columnVisibilityResetLabel;
-  final String? columnVisibilityCancelLabel;
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
 
   @override
@@ -1007,7 +997,6 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         title: widget.columnVisibilityTitle,
         applyLabel: widget.columnVisibilityApplyLabel,
         resetLabel: widget.columnVisibilityResetLabel,
-        cancelLabel: widget.columnVisibilityCancelLabel,
       );
       return;
     }
@@ -1021,9 +1010,6 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         title: widget.columnVisibilityTitle ?? 'Table columns',
         applyLabel: widget.columnVisibilityApplyLabel ?? 'Apply columns',
         resetLabel: widget.columnVisibilityResetLabel ?? 'Reset columns',
-        cancelLabel:
-            widget.columnVisibilityCancelLabel ??
-            MaterialLocalizations.of(context).cancelButtonLabel,
       ),
     );
     if (!mounted || value == null) {
@@ -1077,7 +1063,6 @@ class _ColumnVisibilityDialog<T> extends StatefulWidget {
     required this.title,
     required this.applyLabel,
     required this.resetLabel,
-    required this.cancelLabel,
   });
 
   final List<AppListTableColumn<T>> columns;
@@ -1086,7 +1071,6 @@ class _ColumnVisibilityDialog<T> extends StatefulWidget {
   final String title;
   final String applyLabel;
   final String resetLabel;
-  final String cancelLabel;
 
   @override
   State<_ColumnVisibilityDialog<T>> createState() =>
@@ -1110,6 +1094,8 @@ class _ColumnVisibilityDialogState<T>
       icon: const Icon(Icons.settings_outlined),
       maxWidth: 480,
       scrollable: true,
+      showMaximizeButton: false,
+      resizable: false,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -1163,12 +1149,6 @@ class _ColumnVisibilityDialogState<T>
             setState(() {
               _visibleColumnKeys = Set<String>.of(widget.defaultColumnKeys);
             });
-          },
-        ),
-        AppButton.secondary(
-          label: widget.cancelLabel,
-          onPressed: () {
-            Navigator.of(context).pop();
           },
         ),
         AppButton.primary(

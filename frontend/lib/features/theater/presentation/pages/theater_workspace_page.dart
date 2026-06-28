@@ -330,7 +330,6 @@ class _TheaterCaseBoard extends ConsumerWidget {
           advancedFilterTitle: l10n.theaterFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.theaterClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
           dateFromLabel: l10n.theaterScheduleDateFilterLabel,
           dateToLabel: l10n.opdDateToLabel,

@@ -329,7 +329,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       columnVisibilityTitle: l10n.physiotherapyTableColumnsTitle,
       columnVisibilityApplyLabel: l10n.physiotherapyApplyColumnsAction,
       columnVisibilityResetLabel: l10n.physiotherapyResetColumnsAction,
-      columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
       itemKeyBuilder: (TherapyWorkItem item) => ValueKey<String>(item.id),
       onRowSelected: (TherapyWorkItem item) {
         unawaited(_openTherapyDetailDialog(context, ref, controller, item));
@@ -366,7 +365,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         advancedFilterTitle: l10n.physiotherapyFiltersLabel,
         advancedFilterApplyLabel: l10n.physiotherapyApplyFiltersAction,
         advancedFilterResetLabel: l10n.physiotherapyClearFiltersAction,
-        advancedFilterCancelLabel: l10n.commonCancelActionLabel,
         searchFields: _searchFields(l10n),
         searchFieldLabel: l10n.physiotherapySearchFieldLabel,
         allFieldsLabel: l10n.physiotherapyAllFieldsLabel,

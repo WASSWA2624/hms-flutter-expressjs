@@ -371,7 +371,6 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             advancedFilterTitle: l10n.claimsQueueFilterLabel,
             advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
             advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            advancedFilterCancelLabel: l10n.commonCancelActionLabel,
             enableDateFilter: false,
             allFieldsLabel: l10n.claimsFilterAll,
             filterGroups: <AppSearchBarFilterGroup>[

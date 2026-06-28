@@ -463,6 +463,47 @@ void main() {
     expect(find.text('Active'), findsOneWidget);
   });
 
+  testWidgets('column visibility dialog uses a two-action footer on mobile', (
+    WidgetTester tester,
+  ) async {
+    final searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columnsWithPinnedStatus,
+          search: AppListTableSearch<_RowItem>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(400, 498),
+    );
+
+    await tester.tap(find.byTooltip('Table column settings'));
+    await tester.pumpAndSettle();
+
+    final Finder resetAction = find.text('Reset columns');
+    final Finder applyAction = find.text('Apply columns');
+
+    expect(resetAction, findsOneWidget);
+    expect(applyAction, findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+    expect(
+      tester.getTopLeft(resetAction).dy,
+      tester.getTopLeft(applyAction).dy,
+    );
+  });
+
   testWidgets('AppListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {

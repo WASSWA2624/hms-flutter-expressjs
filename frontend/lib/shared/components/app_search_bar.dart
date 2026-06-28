@@ -195,7 +195,6 @@ class AppSearchBar extends StatefulWidget {
     this.advancedFilterTitle,
     this.advancedFilterApplyLabel,
     this.advancedFilterResetLabel,
-    this.advancedFilterCancelLabel,
     this.searchFields = const <AppSearchBarFieldChoice>[],
     this.textFilters = const <AppSearchBarTextFilter>[],
     this.searchFieldLabel,
@@ -235,7 +234,6 @@ class AppSearchBar extends StatefulWidget {
   final String? advancedFilterTitle;
   final String? advancedFilterApplyLabel;
   final String? advancedFilterResetLabel;
-  final String? advancedFilterCancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
   final List<AppSearchBarTextFilter> textFilters;
   final String? searchFieldLabel;
@@ -497,9 +495,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
         title: widget.advancedFilterTitle ?? 'Advanced filters',
         applyLabel: widget.advancedFilterApplyLabel ?? 'Apply filters',
         resetLabel: widget.advancedFilterResetLabel ?? 'Reset filters',
-        cancelLabel:
-            widget.advancedFilterCancelLabel ??
-            MaterialLocalizations.of(context).cancelButtonLabel,
         searchFields: widget.searchFields,
         textFilters: widget.textFilters,
         searchFieldLabel: widget.searchFieldLabel ?? 'Search in',
@@ -631,7 +626,6 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
     required this.title,
     required this.applyLabel,
     required this.resetLabel,
-    required this.cancelLabel,
     required this.searchFields,
     required this.textFilters,
     required this.searchFieldLabel,
@@ -652,7 +646,6 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
   final String title;
   final String applyLabel;
   final String resetLabel;
-  final String cancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
   final List<AppSearchBarTextFilter> textFilters;
   final String searchFieldLabel;
@@ -711,6 +704,8 @@ class _AppSearchBarFiltersDialogState
       title: Text(widget.title),
       icon: const Icon(Icons.filter_alt_outlined),
       scrollable: true,
+      showMaximizeButton: false,
+      resizable: false,
       maxWidth: 760,
       content: AppFieldRequirementScope(
         showOptionalIndicators: false,
@@ -859,12 +854,6 @@ class _AppSearchBarFiltersDialogState
           label: widget.resetLabel,
           leadingIcon: Icons.filter_alt_off_outlined,
           onPressed: _reset,
-        ),
-        AppButton.secondary(
-          label: widget.cancelLabel,
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
         ),
         AppButton.primary(
           label: widget.applyLabel,

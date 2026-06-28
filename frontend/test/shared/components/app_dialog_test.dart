@@ -178,6 +178,37 @@ void main() {
     expect(shellAfter.size.width, lessThan(widthBefore - 40));
     expect(shellAfter.size.height, greaterThan(heightBefore + 40));
   });
+
+  testWidgets('two-action footer stays on one row at narrow width', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Filters'),
+        content: SizedBox(height: 200, child: Text('Filter body')),
+        showMaximizeButton: false,
+        resizable: false,
+        actions: <Widget>[
+          AppButton.tertiary(label: 'Clear filters', onPressed: null),
+          AppButton.primary(label: 'Apply filters', onPressed: null),
+        ],
+      ),
+      size: const Size(400, 498),
+    );
+
+    final Finder clearAction = find.text('Clear filters');
+    final Finder applyAction = find.text('Apply filters');
+
+    expect(clearAction, findsOneWidget);
+    expect(applyAction, findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+
+    expect(
+      tester.getTopLeft(clearAction).dy,
+      tester.getTopLeft(applyAction).dy,
+    );
+  });
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {

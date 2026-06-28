@@ -99,7 +99,6 @@ class _RadiologyConfigurationsDialogState
       columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
       columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
       columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-      columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
       search: AppListTableSearch<RadiologyCatalogTest>(
         controller: _searchController,
         semanticLabel: l10n.radiologyConfigurationSearchLabel,

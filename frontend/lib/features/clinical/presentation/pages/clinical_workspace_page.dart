@@ -422,7 +422,6 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     advancedFilterTitle: l10n.clinicalFiltersLabel,
     advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
     advancedFilterResetLabel: l10n.opdClearFiltersAction,
-    advancedFilterCancelLabel: l10n.commonCancelActionLabel,
     textFilters: _clinicalTextFilters(l10n),
     searchFieldLabel: l10n.clinicalSearchLabel,
     allFieldsLabel: l10n.opdAllFieldsFilterLabel,

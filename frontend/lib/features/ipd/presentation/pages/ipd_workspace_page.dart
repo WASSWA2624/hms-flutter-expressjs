@@ -393,7 +393,6 @@ class _IpdBoardPanel extends ConsumerWidget {
           advancedFilterTitle: l10n.ipdFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
           enableDateFilter: false,
           allFieldsLabel: l10n.ipdAllWardsOption,
           filterGroups: <AppSearchBarFilterGroup>[
