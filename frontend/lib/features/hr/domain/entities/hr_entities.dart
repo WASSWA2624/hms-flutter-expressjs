@@ -301,6 +301,7 @@ final class HrStaffProfile {
     required this.id,
     this.displayId,
     this.tenantId,
+    this.tenantDisplayId,
     this.userId,
     this.userDisplayId,
     this.userFullName,
@@ -322,6 +323,7 @@ final class HrStaffProfile {
   final String id;
   final String? displayId;
   final String? tenantId;
+  final String? tenantDisplayId;
   final String? userId;
   final String? userDisplayId;
   final String? userFullName;
@@ -363,6 +365,7 @@ final class HrStaffProfile {
   HrStaffProfile copyWith({
     String? displayId,
     String? tenantId,
+    String? tenantDisplayId,
     String? userId,
     String? userDisplayId,
     String? userFullName,
@@ -384,6 +387,7 @@ final class HrStaffProfile {
       id: id,
       displayId: displayId ?? this.displayId,
       tenantId: tenantId ?? this.tenantId,
+      tenantDisplayId: tenantDisplayId ?? this.tenantDisplayId,
       userId: userId ?? this.userId,
       userDisplayId: userDisplayId ?? this.userDisplayId,
       userFullName: userFullName ?? this.userFullName,
@@ -901,21 +905,93 @@ final class HrAccessUser {
     required this.id,
     this.displayId,
     this.email,
+    this.phone,
+    this.positionTitle,
     this.status,
     this.profileName,
     this.roleNames = const <String>[],
+    this.roleIds = const <String>[],
+    this.directPermissionNames = const <String>[],
     this.staffProfileId,
+    this.staffProfileName,
   });
 
   final String id;
   final String? displayId;
   final String? email;
+  final String? phone;
+  final String? positionTitle;
   final String? status;
   final String? profileName;
   final List<String> roleNames;
+  final List<String> roleIds;
+  final List<String> directPermissionNames;
   final String? staffProfileId;
+  final String? staffProfileName;
 
   String get effectiveId => displayId ?? id;
+
+  String get displayLabel =>
+      profileName ?? email ?? effectiveId;
+}
+
+@immutable
+final class HrAccessUserDetail {
+  const HrAccessUserDetail({
+    required this.id,
+    this.displayId,
+    this.email,
+    this.phone,
+    this.positionTitle,
+    this.status,
+    this.profileName,
+    this.staffProfileId,
+    this.staffProfileName,
+    this.userRoles = const <HrUserRole>[],
+    this.directPermissions = const <HrAccessPermission>[],
+    this.effectivePermissionLabels = const <String>[],
+  });
+
+  final String id;
+  final String? displayId;
+  final String? email;
+  final String? phone;
+  final String? positionTitle;
+  final String? status;
+  final String? profileName;
+  final String? staffProfileId;
+  final String? staffProfileName;
+  final List<HrUserRole> userRoles;
+  final List<HrAccessPermission> directPermissions;
+  final List<String> effectivePermissionLabels;
+
+  String get effectiveId => displayId ?? id;
+
+  List<String> get roleNames =>
+      userRoles.map((HrUserRole role) => role.roleName).whereType<String>().toList(growable: false);
+
+  HrAccessUser toSummary() {
+    return HrAccessUser(
+      id: id,
+      displayId: displayId,
+      email: email,
+      phone: phone,
+      positionTitle: positionTitle,
+      status: status,
+      profileName: profileName,
+      roleNames: roleNames,
+      roleIds: userRoles
+          .map((HrUserRole role) => role.roleId)
+          .whereType<String>()
+          .toList(growable: false),
+      directPermissionNames: directPermissions
+          .map((HrAccessPermission permission) => permission.name)
+          .whereType<String>()
+          .toList(growable: false),
+      staffProfileId: staffProfileId,
+      staffProfileName: staffProfileName,
+    );
+  }
 }
 
 @immutable

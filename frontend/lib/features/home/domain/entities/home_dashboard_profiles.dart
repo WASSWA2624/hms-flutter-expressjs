@@ -522,9 +522,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>[],
     shortcutIds: <String>[],
+    emptyActionIds: <String>[],
     heroFullWidth: true,
     maxStatusCards: 8,
     showEmptyWorkspaceLink: true,
+    suppressHomeQuickActions: true,
+    suppressHomeShortcuts: true,
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'active_staff': HomeMetricRouteTarget(),
       'shifts_today': HomeMetricRouteTarget(),

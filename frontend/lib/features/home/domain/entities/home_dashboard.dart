@@ -154,6 +154,8 @@ final class HomeDashboardProfile {
     this.heroFullWidth = false,
     this.maxStatusCards = 6,
     this.showEmptyWorkspaceLink = false,
+    this.suppressHomeQuickActions = false,
+    this.suppressHomeShortcuts = false,
   });
 
   final String id;
@@ -170,6 +172,8 @@ final class HomeDashboardProfile {
   final bool heroFullWidth;
   final int maxStatusCards;
   final bool showEmptyWorkspaceLink;
+  final bool suppressHomeQuickActions;
+  final bool suppressHomeShortcuts;
 
   List<HomeStatusCard> fallbackStatusCards() {
     return statusCards

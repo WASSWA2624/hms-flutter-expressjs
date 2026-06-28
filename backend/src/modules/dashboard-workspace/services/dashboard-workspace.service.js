@@ -314,6 +314,13 @@ const hiddenReasonForAction = (action, roles, permissions, user) => {
   return null;
 };
 
+const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
+  if (packId === ROLE_PACKS.HR) {
+    return { quickActions: [], hiddenReasonMap: {} };
+  }
+  return resolveQuickActions(user, limit);
+};
+
 const resolveQuickActions = (user = {}, limit = 8) => {
   const roles = getUserRoles(user);
   const permissions = new Set(getUserPermissions({ ...user, roles }));
@@ -1746,7 +1753,7 @@ const getWorkspace = async (
   });
   const effectiveProfileId = resolveProfileId(effectiveRole);
   const effectivePackId = resolvePackId(effectiveProfileId);
-  const tenantContextQuickActions = resolveQuickActions(user, 8);
+  const tenantContextQuickActions = resolveHomeQuickActions(user, effectivePackId, 8);
 
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await dashboardWorkspaceRepository.findLookups({ scope: null, includeTenants: true });
@@ -1805,7 +1812,7 @@ const getWorkspace = async (
   });
   const packId = baseSummary.roleProfile?.pack || ROLE_PACKS.ADMIN;
   const canManageSubscriptions = ADMIN_ROLES.has(effectiveRole);
-  const quickActionResolution = resolveQuickActions(user, 8);
+  const quickActionResolution = resolveHomeQuickActions(user, packId, 8);
 
   if (packId === ROLE_PACKS.PATIENT_SAFE) {
     const facilityContext = await dashboardWorkspaceRepository.findFacilityContext(scope);

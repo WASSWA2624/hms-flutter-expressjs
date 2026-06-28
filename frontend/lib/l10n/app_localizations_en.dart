@@ -13613,6 +13613,59 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get hrAccessUserDetailTitle => 'User account';
+
+  @override
+  String get hrAccessViewUserAction => 'View';
+
+  @override
+  String get hrAccessManageRolesPermissionsAction =>
+      'Manage roles & permissions';
+
+  @override
+  String get hrAccessDirectPermissionsLabel => 'Direct permissions';
+
+  @override
+  String get hrAccessAssignedRolesLabel => 'Assigned roles';
+
+  @override
+  String get hrAccessEffectivePermissionsLabel => 'Effective permissions';
+
+  @override
+  String get hrAccessOpenStaffProfileAction => 'Open staff profile';
+
+  @override
+  String get hrAccessLinkedStaffLabel => 'Linked staff';
+
+  @override
+  String get hrAccessTenantContextRequiredTitle => 'Tenant context required';
+
+  @override
+  String get hrAccessTenantContextRequiredBody =>
+      'Select a staff member or sign in with a tenant account before managing users, roles, and permissions.';
+
+  @override
+  String get hrAccessRoleSyncSuccessMessage => 'Role permissions updated.';
+
+  @override
+  String get hrAccessSystemCriticalRoleBadge => 'System critical';
+
+  @override
+  String get hrAccessSelectAllRolesAction => 'Select all roles';
+
+  @override
+  String get hrAccessClearRolesAction => 'Clear roles';
+
+  @override
+  String get hrAccessSelectAllPermissionsAction => 'Select all permissions';
+
+  @override
+  String get hrAccessClearPermissionsAction => 'Clear permissions';
+
+  @override
+  String get hrAccessLoadMoreAction => 'Load more';
+
+  @override
   String get hrPrimaryAssignmentLabel => 'Primary';
 
   @override

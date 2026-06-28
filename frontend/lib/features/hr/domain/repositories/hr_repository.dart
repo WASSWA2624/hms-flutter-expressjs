@@ -145,4 +145,11 @@ abstract interface class HrRepository {
   Future<Result<void>> revokeRolePermission(String rolePermissionId);
 
   Future<Result<AppPage<HrOption>>> listRolePermissions(String roleId);
+
+  Future<Result<HrAccessUserDetail>> loadAccessUserDetail(String userId);
+
+  Future<Result<List<HrUserRole>>> listUserRoles({
+    required String userId,
+    String? tenantId,
+  });
 }

@@ -98,6 +98,8 @@ void main() {
       expect(profile.heroFullWidth, isTrue);
       expect(profile.maxStatusCards, 8);
       expect(profile.showEmptyWorkspaceLink, isTrue);
+      expect(profile.suppressHomeQuickActions, isTrue);
+      expect(profile.suppressHomeShortcuts, isTrue);
       expect(profile.metricRouteTargets, contains('active_staff'));
       expect(profile.metricRouteTargets['pending_leaves']?.queryParameters, {
         'queue': 'LEAVE_REQUESTS',

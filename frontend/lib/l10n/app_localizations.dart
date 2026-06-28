@@ -25581,6 +25581,108 @@ abstract class AppLocalizations {
   /// **'Used by {count, plural, =0{no roles} other{{count} roles}}'**
   String hrAccessPermissionRoleCount(int count);
 
+  /// Title for the HR staff access user detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'User account'**
+  String get hrAccessUserDetailTitle;
+
+  /// Action to open a user detail dialog from the staff access list.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get hrAccessViewUserAction;
+
+  /// Action to edit user roles and direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage roles & permissions'**
+  String get hrAccessManageRolesPermissionsAction;
+
+  /// Label for direct permission assignments on a user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct permissions'**
+  String get hrAccessDirectPermissionsLabel;
+
+  /// Label for roles assigned to a user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned roles'**
+  String get hrAccessAssignedRolesLabel;
+
+  /// Label for the effective permissions preview on a user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective permissions'**
+  String get hrAccessEffectivePermissionsLabel;
+
+  /// Action to open the linked HR staff profile from a user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Open staff profile'**
+  String get hrAccessOpenStaffProfileAction;
+
+  /// Label for the staff profile linked to a user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked staff'**
+  String get hrAccessLinkedStaffLabel;
+
+  /// Title when HR staff access cannot resolve a tenant UUID.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant context required'**
+  String get hrAccessTenantContextRequiredTitle;
+
+  /// Body when HR staff access cannot resolve a tenant UUID.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a staff member or sign in with a tenant account before managing users, roles, and permissions.'**
+  String get hrAccessTenantContextRequiredBody;
+
+  /// Snack bar after syncing role permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Role permissions updated.'**
+  String get hrAccessRoleSyncSuccessMessage;
+
+  /// Badge for roles that cannot be edited in HR staff access.
+  ///
+  /// In en, this message translates to:
+  /// **'System critical'**
+  String get hrAccessSystemCriticalRoleBadge;
+
+  /// Select all roles in a multi-select list.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all roles'**
+  String get hrAccessSelectAllRolesAction;
+
+  /// Clear selected roles in a multi-select list.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear roles'**
+  String get hrAccessClearRolesAction;
+
+  /// Select all permissions in a multi-select list.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all permissions'**
+  String get hrAccessSelectAllPermissionsAction;
+
+  /// Clear selected permissions in a multi-select list.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear permissions'**
+  String get hrAccessClearPermissionsAction;
+
+  /// Load the next page in a staff access list.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get hrAccessLoadMoreAction;
+
   /// Badge for primary department assignment.
   ///
   /// In en, this message translates to:

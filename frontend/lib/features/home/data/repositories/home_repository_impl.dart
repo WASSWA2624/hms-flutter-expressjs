@@ -127,13 +127,17 @@ final class HomeRepositoryImpl implements HomeRepository {
     final HomeDashboardProfile profile = dashboard.profile.role == AppRole.other
         ? localProfile
         : dashboard.profile;
-    final List<String> quickActionIds = dashboard.quickActionIds.isEmpty
+    final List<String> quickActionIds = localProfile.suppressHomeQuickActions
+        ? const <String>[]
+        : dashboard.quickActionIds.isEmpty
         ? mergedHomeQuickActions(_accessPolicy.roles)
         : dashboard.quickActionIds;
-    final List<String> shortcutIds = _mergeIds(<Iterable<String>>[
-      dashboard.shortcutIds,
-      mergedHomeShortcuts(_accessPolicy.roles),
-    ]);
+    final List<String> shortcutIds = localProfile.suppressHomeShortcuts
+        ? const <String>[]
+        : _mergeIds(<Iterable<String>>[
+            dashboard.shortcutIds,
+            mergedHomeShortcuts(_accessPolicy.roles),
+          ]);
 
     return dashboard.copyWith(
       profile: profile,
@@ -180,14 +184,18 @@ final class HomeRepositoryImpl implements HomeRepository {
     final Set<AppRole> roles = _accessPolicy.roles.isEmpty
         ? <AppRole>{profile.role}
         : _accessPolicy.roles;
-    final List<String> quickActions = _mergeIds(<Iterable<String>>[
-      profile.quickActionIds,
-      mergedHomeQuickActions(roles),
-    ]);
-    final List<String> shortcuts = _mergeIds(<Iterable<String>>[
-      profile.shortcutIds,
-      mergedHomeShortcuts(roles),
-    ]);
+    final List<String> quickActions = profile.suppressHomeQuickActions
+        ? const <String>[]
+        : _mergeIds(<Iterable<String>>[
+            profile.quickActionIds,
+            mergedHomeQuickActions(roles),
+          ]);
+    final List<String> shortcuts = profile.suppressHomeShortcuts
+        ? const <String>[]
+        : _mergeIds(<Iterable<String>>[
+            profile.shortcutIds,
+            mergedHomeShortcuts(roles),
+          ]);
 
     return HomeDashboard(
       state: HomeDashboardLoadState.ready,

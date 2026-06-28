@@ -86,6 +86,31 @@ void _stubInitialLoad(_MockHrRepository repository) {
     () => repository.revokeUserRole(any()),
   ).thenAnswer((_) async => const Result<void>.success(null));
   when(
+    () => repository.listUserRoles(
+      userId: any(named: 'userId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer((_) async => const Result<List<HrUserRole>>.success(<HrUserRole>[]));
+  when(
+    () => repository.listRolePermissions(any()),
+  ).thenAnswer(
+    (_) async => const Result<AppPage<HrOption>>.success(
+      AppPage<HrOption>(
+        items: <HrOption>[],
+        request: AppPageRequest(pageSize: 200),
+      ),
+    ),
+  );
+  when(
+    () => repository.assignRolePermission(
+      roleId: any(named: 'roleId'),
+      permissionId: any(named: 'permissionId'),
+    ),
+  ).thenAnswer((_) async => const Result<void>.success(null));
+  when(
+    () => repository.revokeRolePermission(any()),
+  ).thenAnswer((_) async => const Result<void>.success(null));
+  when(
     () => repository.createUserAccount(any()),
   ).thenAnswer((_) async => const Result<Object?>.success(null));
   when(
@@ -183,8 +208,89 @@ void main() {
       expect(state.isMutating, isFalse);
       expect(state.lastFailure, isNotNull);
     });
+
+    test('syncUserRoles assigns new roles and revokes removed ones', () async {
+      final _MockHrRepository repository = _MockHrRepository();
+      _stubInitialLoad(repository);
+      when(
+        () => repository.listUserRoles(
+          userId: any(named: 'userId'),
+          tenantId: any(named: 'tenantId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<HrUserRole>>.success(
+          <HrUserRole>[
+            HrUserRole(
+              id: 'UR-1',
+              backendIdentifier: 'UR-1',
+              roleId: 'ROLE-OLD',
+            ),
+          ],
+        ),
+      );
+
+      final ProviderContainer container = _createContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(hrWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(hrWorkspaceControllerProvider.notifier)
+          .syncUserRoles(
+            userId: 'USR-1',
+            tenantId: _tenantUuid,
+            roleIds: <String>['ROLE-NEW'],
+          );
+
+      expect(failure, isNull);
+      verify(() => repository.revokeUserRole('UR-1')).called(1);
+      verify(
+        () => repository.assignUserRole(
+          userId: 'USR-1',
+          roleId: 'ROLE-NEW',
+          tenantId: _tenantUuid,
+          facilityId: any(named: 'facilityId'),
+        ),
+      ).called(1);
+    });
+
+    test('syncRolePermissions assigns and revokes permission links', () async {
+      final _MockHrRepository repository = _MockHrRepository();
+      _stubInitialLoad(repository);
+      when(() => repository.listRolePermissions('ROLE-1')).thenAnswer(
+        (_) async => const Result<AppPage<HrOption>>.success(
+          AppPage<HrOption>(
+            items: <HrOption>[
+              HrOption(value: 'PERM-OLD', label: 'Old', displayId: 'RP-OLD'),
+            ],
+            request: AppPageRequest(pageSize: 200),
+          ),
+        ),
+      );
+
+      final ProviderContainer container = _createContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(hrWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(hrWorkspaceControllerProvider.notifier)
+          .syncRolePermissions(
+            roleId: 'ROLE-1',
+            permissionIds: <String>['PERM-NEW'],
+          );
+
+      expect(failure, isNull);
+      verify(() => repository.revokeRolePermission('RP-OLD')).called(1);
+      verify(
+        () => repository.assignRolePermission(
+          roleId: 'ROLE-1',
+          permissionId: 'PERM-NEW',
+        ),
+      ).called(1);
+    });
   });
 }
+
+const String _tenantUuid = '550e8400-e29b-41d4-a716-446655440000';
 
 HrWorkspaceState _readState(ProviderContainer container) {
   final Result<HrWorkspaceState> result = container

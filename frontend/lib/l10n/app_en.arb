@@ -17637,6 +17637,74 @@
       }
     }
   },
+  "hrAccessUserDetailTitle": "User account",
+  "@hrAccessUserDetailTitle": {
+    "description": "Title for the HR staff access user detail dialog."
+  },
+  "hrAccessViewUserAction": "View",
+  "@hrAccessViewUserAction": {
+    "description": "Action to open a user detail dialog from the staff access list."
+  },
+  "hrAccessManageRolesPermissionsAction": "Manage roles & permissions",
+  "@hrAccessManageRolesPermissionsAction": {
+    "description": "Action to edit user roles and direct permissions."
+  },
+  "hrAccessDirectPermissionsLabel": "Direct permissions",
+  "@hrAccessDirectPermissionsLabel": {
+    "description": "Label for direct permission assignments on a user account."
+  },
+  "hrAccessAssignedRolesLabel": "Assigned roles",
+  "@hrAccessAssignedRolesLabel": {
+    "description": "Label for roles assigned to a user account."
+  },
+  "hrAccessEffectivePermissionsLabel": "Effective permissions",
+  "@hrAccessEffectivePermissionsLabel": {
+    "description": "Label for the effective permissions preview on a user account."
+  },
+  "hrAccessOpenStaffProfileAction": "Open staff profile",
+  "@hrAccessOpenStaffProfileAction": {
+    "description": "Action to open the linked HR staff profile from a user account."
+  },
+  "hrAccessLinkedStaffLabel": "Linked staff",
+  "@hrAccessLinkedStaffLabel": {
+    "description": "Label for the staff profile linked to a user account."
+  },
+  "hrAccessTenantContextRequiredTitle": "Tenant context required",
+  "@hrAccessTenantContextRequiredTitle": {
+    "description": "Title when HR staff access cannot resolve a tenant UUID."
+  },
+  "hrAccessTenantContextRequiredBody": "Select a staff member or sign in with a tenant account before managing users, roles, and permissions.",
+  "@hrAccessTenantContextRequiredBody": {
+    "description": "Body when HR staff access cannot resolve a tenant UUID."
+  },
+  "hrAccessRoleSyncSuccessMessage": "Role permissions updated.",
+  "@hrAccessRoleSyncSuccessMessage": {
+    "description": "Snack bar after syncing role permissions."
+  },
+  "hrAccessSystemCriticalRoleBadge": "System critical",
+  "@hrAccessSystemCriticalRoleBadge": {
+    "description": "Badge for roles that cannot be edited in HR staff access."
+  },
+  "hrAccessSelectAllRolesAction": "Select all roles",
+  "@hrAccessSelectAllRolesAction": {
+    "description": "Select all roles in a multi-select list."
+  },
+  "hrAccessClearRolesAction": "Clear roles",
+  "@hrAccessClearRolesAction": {
+    "description": "Clear selected roles in a multi-select list."
+  },
+  "hrAccessSelectAllPermissionsAction": "Select all permissions",
+  "@hrAccessSelectAllPermissionsAction": {
+    "description": "Select all permissions in a multi-select list."
+  },
+  "hrAccessClearPermissionsAction": "Clear permissions",
+  "@hrAccessClearPermissionsAction": {
+    "description": "Clear selected permissions in a multi-select list."
+  },
+  "hrAccessLoadMoreAction": "Load more",
+  "@hrAccessLoadMoreAction": {
+    "description": "Load the next page in a staff access list."
+  },
   "hrPrimaryAssignmentLabel": "Primary",
   "@hrPrimaryAssignmentLabel": {
     "description": "Badge for primary department assignment."

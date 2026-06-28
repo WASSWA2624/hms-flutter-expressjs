@@ -178,8 +178,10 @@ final class HrStaffProfileDto {
           _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['staff_number']),
-      tenantId:
-          _string(json['tenant_display_id']) ?? _string(json['tenant_id']),
+      tenantId: _string(json['tenant_id']),
+      tenantDisplayId:
+          _string(json['tenant_display_id']) ??
+          _string(_map(json['tenant'])['human_friendly_id']),
       userId: _string(json['user_id']),
       userDisplayId: _string(json['user_display_id']),
       userFullName: _string(json['user_full_name']) ?? fallbackName,
@@ -556,6 +558,7 @@ final class HrUserRoleDto {
   final HrJsonMap json;
 
   HrUserRole toEntity() {
+    final HrJsonMap role = _map(json['role']);
     return HrUserRole(
       id:
           _string(json['display_id']) ??
@@ -563,9 +566,14 @@ final class HrUserRoleDto {
           _string(json['backend_identifier']) ??
           '',
       displayId: _string(json['display_id']),
-      backendIdentifier: _string(json['backend_identifier']),
-      roleId: _string(json['role_id']),
-      roleName: _string(json['role_name']),
+      backendIdentifier:
+          _string(json['backend_identifier']) ??
+          _string(json['id']),
+      roleId:
+          _string(json['role_id']) ??
+          _string(role['display_id']) ??
+          _string(role['id']),
+      roleName: _string(json['role_name']) ?? _string(role['name']),
       facilityId: _string(json['facility_id']),
       facilityName: _string(json['facility_name']),
       facilityDisplayId: _string(json['facility_display_id']),
@@ -728,10 +736,32 @@ final class HrAccessUserDto {
 
   HrAccessUser toEntity() {
     final HrJsonMap staffProfile = _map(json['staff_profile']);
-    final List<String> roleNames = _list(json['roles'])
-        .map((HrJsonMap entry) {
-          final HrJsonMap role = _map(entry['role']);
-          return _string(role['name']) ?? _string(entry['name']);
+    final List<String> roleNames = <String>[];
+    final List<String> roleIds = <String>[];
+    for (final Object? entry in _list(json['roles'])) {
+      if (entry is! Map<String, Object?>) {
+        continue;
+      }
+      final HrJsonMap role = _map(entry['role']);
+      final String? roleName = _string(role['name']) ?? _string(entry['name']);
+      final String? roleId =
+          _string(role['display_id']) ??
+          _string(role['id']) ??
+          _string(entry['role_id']);
+      if (roleName != null) {
+        roleNames.add(roleName);
+      }
+      if (roleId != null) {
+        roleIds.add(roleId);
+      }
+    }
+    final List<String> directPermissionNames = _list(json['permissions'])
+        .map((Object? entry) {
+          if (entry is! Map<String, Object?>) {
+            return null;
+          }
+          final HrJsonMap permission = _map(entry['permission']);
+          return _string(permission['name']) ?? _string(entry['name']);
         })
         .whereType<String>()
         .toList(growable: false);
@@ -740,13 +770,83 @@ final class HrAccessUserDto {
       id: _string(json['display_id']) ?? _string(json['id']) ?? '',
       displayId: _string(json['display_id']),
       email: _string(json['email']),
+      phone: _string(json['phone']),
+      positionTitle: _string(json['position_title']),
       status: _string(json['status']),
       profileName: _string(json['profile_name']),
       roleNames: roleNames,
+      roleIds: roleIds,
+      directPermissionNames: directPermissionNames,
       staffProfileId:
           _string(staffProfile['display_id']) ??
           _string(staffProfile['human_friendly_id']) ??
           _string(json['staff_profile_id']),
+      staffProfileName:
+          _string(staffProfile['display_name']) ??
+          _string(staffProfile['name']) ??
+          _string(staffProfile['staff_number']),
+    );
+  }
+}
+
+final class HrAccessUserDetailDto {
+  const HrAccessUserDetailDto(this.json);
+
+  final HrJsonMap json;
+
+  factory HrAccessUserDetailDto.fromResponse(Object? responseData) {
+    final HrJsonMap response = _expectMap(responseData);
+    return HrAccessUserDetailDto(_map(response['data']));
+  }
+
+  HrAccessUserDetail toEntity() {
+    final HrJsonMap staffProfile = _map(json['staff_profile']);
+    final List<HrAccessPermission> directPermissions = _list(json['permissions'])
+        .map((Object? entry) {
+          if (entry is! Map<String, Object?>) {
+            return null;
+          }
+          final HrJsonMap permission = _map(entry['permission']);
+          if (permission.isEmpty) {
+            return null;
+          }
+          return HrAccessPermission(
+            id:
+                _string(permission['display_id']) ??
+                _string(permission['id']) ??
+                '',
+            displayId: _string(permission['display_id']),
+            name: _string(permission['name']),
+            description: _string(permission['description']),
+          );
+        })
+        .whereType<HrAccessPermission>()
+        .where((HrAccessPermission item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final List<String> effectivePermissionLabels =
+        _list(json['effective_permissions'])
+            .map((Object? value) => _string(value))
+            .whereType<String>()
+            .toList(growable: false);
+
+    return HrAccessUserDetail(
+      id: _string(json['display_id']) ?? _string(json['id']) ?? '',
+      displayId: _string(json['display_id']),
+      email: _string(json['email']),
+      phone: _string(json['phone']),
+      positionTitle: _string(json['position_title']),
+      status: _string(json['status']),
+      profileName: _string(json['profile_name']),
+      staffProfileId:
+          _string(staffProfile['display_id']) ??
+          _string(staffProfile['human_friendly_id']) ??
+          _string(json['staff_profile_id']),
+      staffProfileName:
+          _string(staffProfile['display_name']) ??
+          _string(staffProfile['name']) ??
+          _string(staffProfile['staff_number']),
+      directPermissions: directPermissions,
+      effectivePermissionLabels: effectivePermissionLabels,
     );
   }
 }

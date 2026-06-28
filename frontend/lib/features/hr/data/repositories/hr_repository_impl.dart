@@ -553,6 +553,7 @@ final class HrRepositoryImpl implements HrRepository {
                   : <String, Object?>{};
               final String permissionId =
                   permission['human_friendly_id']?.toString() ??
+                  permission['display_id']?.toString() ??
                   permission['id']?.toString() ??
                   entry['permission_id']?.toString() ??
                   '';
@@ -560,6 +561,7 @@ final class HrRepositoryImpl implements HrRepository {
                   permission['name']?.toString() ?? permissionId;
               final String assignmentId =
                   entry['human_friendly_id']?.toString() ??
+                  entry['display_id']?.toString() ??
                   entry['id']?.toString() ??
                   '';
               return HrOption(
@@ -575,6 +577,45 @@ final class HrRepositoryImpl implements HrRepository {
           request: request,
           totalItemCount: items.length,
         );
+      },
+    );
+  }
+
+  @override
+  Future<Result<HrAccessUserDetail>> loadAccessUserDetail(String userId) {
+    return _apiClient.get<HrAccessUserDetail>(
+      ApiEndpoints.byId(HmsApiResource.users, userId),
+      decoder: (Object? data) =>
+          HrAccessUserDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<List<HrUserRole>>> listUserRoles({
+    required String userId,
+    String? tenantId,
+  }) {
+    return _apiClient.get<List<HrUserRole>>(
+      ApiEndpoints.collection(HmsApiResource.userRoles),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'user_id': userId,
+        'tenant_id': tenantId,
+        'page': 1,
+        'limit': 200,
+      }),
+      decoder: (Object? data) {
+        final Map<String, Object?> response = data is Map<String, Object?>
+            ? data
+            : <String, Object?>{};
+        final List<Object?> rows = response['data'] is List<Object?>
+            ? response['data']! as List<Object?>
+            : const <Object?>[];
+        return rows
+            .whereType<Map<String, Object?>>()
+            .map(HrUserRoleDto.new)
+            .map((HrUserRoleDto dto) => dto.toEntity())
+            .where((HrUserRole item) => item.id.isNotEmpty)
+            .toList(growable: false);
       },
     );
   }

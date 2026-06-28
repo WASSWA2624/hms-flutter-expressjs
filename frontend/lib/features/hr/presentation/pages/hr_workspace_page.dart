@@ -175,6 +175,15 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         summaryNotifications: _summaryNotifications(context, state, controller),
         secondary: <Widget>[
           AppButton.secondary(
+            label: l10n.hrAddStaffAction,
+            leadingIcon: Icons.person_add_outlined,
+            semanticLabel: l10n.hrAddStaffAction,
+            tooltip: l10n.hrAddStaffDialogTitle,
+            onPressed: state.isRefreshing
+                ? null
+                : () => _showStaffProfileDialog(context, ref),
+          ),
+          AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
             leadingIcon: Icons.pending_actions_outlined,
             semanticLabel: l10n.hrWorkQueuesTitle,

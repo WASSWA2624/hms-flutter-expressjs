@@ -596,15 +596,154 @@ final class HrWorkspaceController
   Future<AppFailure?> assignRolePermissionsBatch({
     required String roleId,
     required List<String> permissionIds,
+  }) {
+    return syncRolePermissions(roleId: roleId, permissionIds: permissionIds);
+  }
+
+  Future<Result<HrAccessUserDetail>> loadAccessUserDetail(
+    String userId, {
+    String? tenantId,
   }) async {
+    final Result<HrAccessUserDetail> detailResult = await _repository
+        .loadAccessUserDetail(userId);
+    return detailResult.when(
+      success: (HrAccessUserDetail detail) async {
+        final Result<List<HrUserRole>> rolesResult = await _repository
+            .listUserRoles(userId: userId, tenantId: tenantId);
+        return rolesResult.when(
+          success: (List<HrUserRole> userRoles) {
+            final List<String> effectiveLabels =
+                detail.effectivePermissionLabels.isNotEmpty
+                ? detail.effectivePermissionLabels
+                : <String>[
+                    ...userRoles
+                        .map((HrUserRole role) => role.roleName)
+                        .whereType<String>(),
+                    ...detail.directPermissions
+                        .map((HrAccessPermission permission) => permission.name)
+                        .whereType<String>(),
+                  ];
+            return Result<HrAccessUserDetail>.success(
+              HrAccessUserDetail(
+                id: detail.id,
+                displayId: detail.displayId,
+                email: detail.email,
+                phone: detail.phone,
+                positionTitle: detail.positionTitle,
+                status: detail.status,
+                profileName: detail.profileName,
+                staffProfileId: detail.staffProfileId,
+                staffProfileName: detail.staffProfileName,
+                userRoles: userRoles,
+                directPermissions: detail.directPermissions,
+                effectivePermissionLabels: effectiveLabels.toSet().toList()
+                  ..sort(),
+              ),
+            );
+          },
+          failure: (AppFailure failure) {
+            return Result<HrAccessUserDetail>.failure(failure);
+          },
+        );
+      },
+      failure: (AppFailure failure) {
+        return Result<HrAccessUserDetail>.failure(failure);
+      },
+    );
+  }
+
+  Future<Result<AppPage<HrOption>>> listRolePermissionOptions(String roleId) {
+    return _repository.listRolePermissions(roleId);
+  }
+
+  Future<AppFailure?> syncUserRoles({
+    required String userId,
+    required String tenantId,
+    required List<String> roleIds,
+    String? facilityId,
+  }) async {
+    final Result<List<HrUserRole>> currentResult = await _repository
+        .listUserRoles(userId: userId, tenantId: tenantId);
+    final List<HrUserRole> currentRoles = currentResult.when(
+      success: (List<HrUserRole> value) => value,
+      failure: (_) => const <HrUserRole>[],
+    );
+    final Set<String> desiredRoleIds = roleIds.toSet();
+    final Set<String> currentRoleIds = currentRoles
+        .map((HrUserRole role) => role.roleId)
+        .whereType<String>()
+        .toSet();
+
     AppFailure? lastFailure;
-    for (final String permissionId in permissionIds) {
+    for (final HrUserRole assignment in currentRoles) {
+      final String? roleId = assignment.roleId;
+      if (roleId == null || desiredRoleIds.contains(roleId)) {
+        continue;
+      }
+      final Result<void> result = await _repository.revokeUserRole(
+        assignment.backendIdentifier ?? assignment.effectiveId,
+      );
+      lastFailure ??= _failureOrNull(result);
+    }
+
+    for (final String roleId in desiredRoleIds) {
+      if (currentRoleIds.contains(roleId)) {
+        continue;
+      }
+      final Result<void> result = await _repository.assignUserRole(
+        userId: userId,
+        roleId: roleId,
+        tenantId: tenantId,
+        facilityId: facilityId,
+      );
+      lastFailure ??= _failureOrNull(result);
+    }
+
+    unawaited(_refreshReferences());
+    return lastFailure;
+  }
+
+  Future<AppFailure?> syncRolePermissions({
+    required String roleId,
+    required List<String> permissionIds,
+  }) async {
+    final Result<AppPage<HrOption>> currentResult = await _repository
+        .listRolePermissions(roleId);
+    final List<HrOption> currentAssignments = currentResult.when(
+      success: (AppPage<HrOption> page) => page.items,
+      failure: (_) => const <HrOption>[],
+    );
+    final Set<String> desiredPermissionIds = permissionIds.toSet();
+    final Set<String> currentPermissionIds = currentAssignments
+        .map((HrOption option) => option.value)
+        .toSet();
+
+    AppFailure? lastFailure;
+    for (final HrOption assignment in currentAssignments) {
+      if (desiredPermissionIds.contains(assignment.value)) {
+        continue;
+      }
+      final String? assignmentId = assignment.displayId;
+      if (assignmentId == null || assignmentId.isEmpty) {
+        continue;
+      }
+      final Result<void> result = await _repository.revokeRolePermission(
+        assignmentId,
+      );
+      lastFailure ??= _failureOrNull(result);
+    }
+
+    for (final String permissionId in desiredPermissionIds) {
+      if (currentPermissionIds.contains(permissionId)) {
+        continue;
+      }
       final Result<void> result = await _repository.assignRolePermission(
         roleId: roleId,
         permissionId: permissionId,
       );
       lastFailure ??= _failureOrNull(result);
     }
+
     unawaited(_refreshReferences());
     return lastFailure;
   }
