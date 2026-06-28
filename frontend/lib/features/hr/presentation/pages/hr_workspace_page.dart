@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -171,15 +172,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         summaryNotifications: _summaryNotifications(context, state, controller),
         secondary: <Widget>[
           AppButton.secondary(
-            label: l10n.hrShiftTemplateAction,
-            leadingIcon: Icons.view_week_outlined,
-            semanticLabel: l10n.hrShiftTemplateAction,
-            tooltip: l10n.hrShiftTemplateAction,
-            onPressed: state.isRefreshing
-                ? null
-                : () => showHrShiftTemplateDialog(context, ref),
-          ),
-          AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
             leadingIcon: Icons.pending_actions_outlined,
             semanticLabel: l10n.hrWorkQueuesTitle,
@@ -187,6 +179,15 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             onPressed: state.isRefreshing
                 ? null
                 : () => _showWorkQueueDialog(context),
+          ),
+          AppButton.secondary(
+            label: l10n.hrManageScheduleTemplatesTitle,
+            leadingIcon: Icons.view_week_outlined,
+            semanticLabel: l10n.hrManageScheduleTemplatesTitle,
+            tooltip: l10n.hrManageScheduleTemplatesTitle,
+            onPressed: state.isRefreshing
+                ? null
+                : () => showHrManageScheduleTemplatesDialog(context, ref),
           ),
           AppButton.secondary(
             label: l10n.hrActivityTitle,
@@ -270,12 +271,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             return _HrStaffDetailPanel(state: dialogState);
           },
         ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).maybePop(),
-          ),
-        ],
       ),
     );
   }
@@ -305,12 +300,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             );
           },
         ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).maybePop(),
-          ),
-        ],
       ),
     );
   }
@@ -334,12 +323,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             return _HrActivityPanel(state: dialogState);
           },
         ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).maybePop(),
-          ),
-        ],
       ),
     );
   }
@@ -369,12 +352,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final HrWorkspaceSummary summary = state.overview.summary;
 
     return <AppWorkspaceSummaryNotification>[
-      AppWorkspaceSummaryNotification(
-        label: l10n.hrTotalStaffSummaryLabel,
-        count: summary.totalStaff,
-        icon: Icons.badge_outlined,
-        onSelected: controller.clearStaffFilters,
-      ),
       AppWorkspaceSummaryNotification(
         label: l10n.hrLeaveRequestsSummaryLabel,
         count: summary.leaveRequests,
@@ -550,7 +527,7 @@ class _HrStaffDirectory extends ConsumerWidget {
               return _TwoLineCell(
                 title: item.position ?? context.l10n.profileUnknownValue,
                 subtitle: item.practitionerType == null
-                    ? context.l10n.profileUnknownValue
+                    ? null
                     : _apiLabel(item.practitionerType),
               );
             },
@@ -564,10 +541,9 @@ class _HrStaffDirectory extends ConsumerWidget {
                 ),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
               return Text(
-                _joinDisplay(<String?>[
-                  item.departmentName,
-                  item.departmentDisplayId,
-                ]).ifEmpty(context.l10n.profileUnknownValue),
+                (item.departmentName ?? '').trim().isNotEmpty
+                    ? item.departmentName!
+                    : context.l10n.profileUnknownValue,
               );
             },
           ),
@@ -582,7 +558,10 @@ class _HrStaffDirectory extends ConsumerWidget {
           AppListTableColumn<HrStaffProfile>(
             label: l10n.hrNextActionColumnLabel,
             cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return Text(_staffNextAction(context, item));
+              return AppButton.tertiary(
+                label: _staffNextAction(context, item),
+                onPressed: () => onStaffSelected(item),
+              );
             },
           ),
         ],
@@ -614,7 +593,7 @@ class _HrStaffDetailPanel extends ConsumerWidget {
     }
 
     return AppWorkspaceDetailPanel(
-      title: l10n.hrStaffDetailTitle,
+      title: selected.profile.displayName,
       description: selected.profile.effectiveId,
       actions: <Widget>[
         AppButton(
@@ -664,6 +643,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
         SizedBox(height: theme.spacing.sm),
         AppInfoTileGrid(
           emptyValue: l10n.profileUnknownValue,
+          maxColumns: 3,
+          minItemWidth: 200,
           items: <AppInfoTileData>[
             AppInfoTileData(
               label: l10n.hrStaffNumberLabel,
@@ -676,37 +657,34 @@ class _HrStaffDetailBody extends ConsumerWidget {
               value: profile.displayName,
               icon: Icons.person_outline,
             ),
-            AppInfoTileData(
-              label: l10n.hrPositionLabel,
-              value: profile.position,
-              icon: Icons.work_outline,
-            ),
+            if ((profile.position ?? '').trim().isNotEmpty)
+              AppInfoTileData(
+                label: l10n.hrPositionLabel,
+                value: profile.position,
+                icon: Icons.work_outline,
+              ),
+            if ((profile.practitionerType ?? '').trim().isNotEmpty)
+              AppInfoTileData(
+                label: l10n.hrPractitionerTypeLabel,
+                value: _apiLabel(profile.practitionerType),
+                icon: Icons.medical_information_outlined,
+              ),
             AppInfoTileData(
               label: l10n.hrDepartmentLabel,
               value: profile.departmentName ?? profile.departmentDisplayId,
               icon: Icons.apartment_outlined,
             ),
             AppInfoTileData(
-              label: l10n.hrPractitionerTypeLabel,
-              value: _apiLabel(profile.practitionerType),
-              icon: Icons.medical_information_outlined,
-            ),
-            AppInfoTileData(
               label: l10n.hrHireDateLabel,
               value: _formatDate(context, profile.hireDate),
               icon: Icons.event_available_outlined,
             ),
-            AppInfoTileData(
-              label: l10n.hrLinkedUserLabel,
-              value: _joinDisplay(<String?>[
-                profile.userFullName,
-                profile.userEmail,
-                profile.userDisplayId,
-              ]),
-              icon: Icons.link_outlined,
-            ),
           ],
         ),
+        if (_hasLinkedUser(profile)) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          _LinkedUserSummary(profile: profile),
+        ],
         if (detail.accessSummary != null &&
             detail.accessSummary!.userRoles.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
@@ -740,11 +718,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           ),
         ],
         SizedBox(height: theme.spacing.md),
-        AppActionSection(
-          title: l10n.hrStaffActionsTitle,
-          minItemWidth: 180,
-          permissionActions: _staffActions(context, ref, state, detail),
-        ),
+        ..._groupedStaffActionSections(context, ref, state, detail),
         SizedBox(height: theme.spacing.md),
         _SmallRecordSection(
           title: l10n.hrAssignmentsSectionTitle,
@@ -844,92 +818,188 @@ class _HrStaffDetailBody extends ConsumerWidget {
       ],
     );
   }
+}
 
-  List<AppPermissionActionItem> _staffActions(
-    BuildContext context,
-    WidgetRef ref,
-    HrWorkspaceState state,
-    HrStaffDetail detail,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final bool enabled = !state.isMutating;
-    return <AppPermissionActionItem>[
-      AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
-        label: l10n.hrAssignDepartmentAction,
-        icon: Icons.account_tree_outlined,
-        enabled: enabled,
-        onPressed: () => _showAssignmentDialog(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
-        label: l10n.hrAssignPositionAction,
-        icon: Icons.work_outline,
-        enabled: enabled,
-        onPressed: () => _showPositionDialog(context, ref, detail.profile),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrRecordAvailabilityAction,
-        icon: Icons.schedule_outlined,
-        enabled: enabled,
-        onPressed: () => _showAvailabilityDialog(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
-        label: l10n.hrRequestLeaveAction,
-        icon: Icons.event_busy_outlined,
-        enabled: enabled,
-        onPressed: () => _showLeaveDialog(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrAssignShiftAction,
-        icon: Icons.calendar_view_week_outlined,
-        enabled: enabled,
-        onPressed: () => _showShiftAssignmentDialog(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrSwapShiftAction,
-        icon: Icons.swap_horiz_outlined,
-        enabled: enabled,
-        onPressed: () => _showShiftSwapDialog(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _payrollRequirement,
-        label: l10n.hrCompensationAction,
-        icon: Icons.price_change_outlined,
-        enabled: enabled,
-        onPressed: () => _showCompensationDialog(context, ref, detail.profile),
-      ),
-      AppPermissionActionItem(
-        requirement: _payrollRequirement,
-        label: l10n.hrRunPayrollAction,
-        icon: Icons.payments_outlined,
-        enabled: enabled,
-        onPressed: () => _showPayrollRunDialog(context, ref, detail.profile),
-      ),
-      if ((detail.profile.userId ?? detail.profile.userDisplayId ?? '')
+List<Widget> _groupedStaffActionSections(
+  BuildContext context,
+  WidgetRef ref,
+  HrWorkspaceState state,
+  HrStaffDetail detail,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final bool enabled = !state.isMutating;
+  final bool hasLinkedUser =
+      (detail.profile.userId ?? detail.profile.userDisplayId ?? '')
           .trim()
-          .isNotEmpty) ...<AppPermissionActionItem>[
+          .isNotEmpty;
+
+  return <Widget>[
+    AppActionSection(
+      title: l10n.hrStaffActionsPlacementTitle,
+      minItemWidth: 200,
+      permissionActions: <AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: _hrWriteRequirement,
-          label: l10n.hrAssignRoleAction,
-          icon: Icons.admin_panel_settings_outlined,
+          label: l10n.hrAssignDepartmentAction,
+          icon: Icons.account_tree_outlined,
           enabled: enabled,
-          onPressed: () => showHrAssignRoleDialog(context, ref, detail),
+          onPressed: () => _showAssignmentDialog(context, ref),
         ),
         AppPermissionActionItem(
           requirement: _hrWriteRequirement,
-          label: l10n.hrModuleAccessAction,
-          icon: Icons.apps_outlined,
+          label: l10n.hrAssignPositionAction,
+          icon: Icons.work_outline,
           enabled: enabled,
-          onPressed: () =>
-              showHrModuleAccessDialog(context, detail.accessSummary),
+          onPressed: () => _showPositionDialog(context, ref, detail.profile),
         ),
       ],
-    ];
+    ),
+    SizedBox(height: Theme.of(context).spacing.md),
+    AppActionSection(
+      title: l10n.hrStaffActionsSchedulingTitle,
+      minItemWidth: 200,
+      permissionActions: <AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrRecordAvailabilityAction,
+          icon: Icons.schedule_outlined,
+          enabled: enabled,
+          onPressed: () => _showAvailabilityDialog(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrAssignShiftAction,
+          icon: Icons.calendar_view_week_outlined,
+          enabled: enabled,
+          onPressed: () => _showShiftAssignmentDialog(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrSwapShiftAction,
+          icon: Icons.swap_horiz_outlined,
+          enabled: enabled,
+          onPressed: () => _showShiftSwapDialog(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrRequestLeaveAction,
+          icon: Icons.event_busy_outlined,
+          enabled: enabled,
+          onPressed: () => _showLeaveDialog(context, ref),
+        ),
+      ],
+    ),
+    SizedBox(height: Theme.of(context).spacing.md),
+    AppActionSection(
+      title: l10n.hrStaffActionsPayrollTitle,
+      minItemWidth: 200,
+      permissionActions: <AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: _payrollRequirement,
+          label: l10n.hrCompensationAction,
+          icon: Icons.price_change_outlined,
+          enabled: enabled,
+          onPressed: () => _showCompensationDialog(context, ref, detail.profile),
+        ),
+        AppPermissionActionItem(
+          requirement: _payrollRequirement,
+          label: l10n.hrRunPayrollAction,
+          icon: Icons.payments_outlined,
+          enabled: enabled,
+          onPressed: () => _showPayrollRunDialog(context, ref, detail.profile),
+        ),
+      ],
+    ),
+    if (hasLinkedUser) ...<Widget>[
+      SizedBox(height: Theme.of(context).spacing.md),
+      AppActionSection(
+        title: l10n.hrStaffActionsAccessTitle,
+        minItemWidth: 200,
+        permissionActions: <AppPermissionActionItem>[
+          AppPermissionActionItem(
+            requirement: _hrWriteRequirement,
+            label: l10n.hrAssignRoleAction,
+            icon: Icons.admin_panel_settings_outlined,
+            enabled: enabled,
+            onPressed: () => showHrAssignRoleDialog(context, ref, detail),
+          ),
+          AppPermissionActionItem(
+            requirement: _hrWriteRequirement,
+            label: l10n.hrModuleAccessAction,
+            icon: Icons.apps_outlined,
+            enabled: enabled,
+            onPressed: () =>
+                showHrModuleAccessDialog(context, detail.accessSummary),
+          ),
+        ],
+      ),
+    ],
+  ];
+}
+
+bool _hasLinkedUser(HrStaffProfile profile) {
+  return (profile.userFullName ?? profile.userEmail ?? profile.userDisplayId ??
+          profile.userId ??
+          '')
+      .trim()
+      .isNotEmpty;
+}
+
+class _LinkedUserSummary extends StatelessWidget {
+  const _LinkedUserSummary({required this.profile});
+
+  final HrStaffProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.link_outlined,
+                size: theme.appTokens.listIconSize,
+                color: colorScheme.primary,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Text(
+                l10n.hrLinkedUserLabel,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          if ((profile.userFullName ?? '').trim().isNotEmpty)
+            Text(profile.userFullName!, style: theme.textTheme.bodyMedium),
+          if ((profile.userEmail ?? '').trim().isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              profile.userEmail!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if ((profile.userDisplayId ?? profile.userId ?? '').trim().isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs),
+              child: AppCopyableIdentifier(
+                value: profile.userDisplayId ?? profile.userId,
+                textStyle: theme.textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -948,63 +1018,14 @@ class _HrWorkQueuePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final HrWorkspaceController controller = ref.read(
-      hrWorkspaceControllerProvider.notifier,
-    );
 
     return AppWorkspaceDetailPanel(
-      title: l10n.hrWorkQueuesTitle,
-      description: _queueLabel(l10n, state.workItemsQuery.queue),
+      title: hrQueueLabel(l10n, state.workItemsQuery.queue),
+      description: l10n.hrWorkQueuesTitle,
       actions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.event_busy_outlined,
-          label: _queueLabel(l10n, HrQueue.leaveRequests),
-          semanticLabel: _queueLabel(l10n, HrQueue.leaveRequests),
-          tooltip: _queueLabel(l10n, HrQueue.leaveRequests),
-          onPressed: state.workItemsQuery.queue == HrQueue.leaveRequests
-              ? null
-              : () => controller.applyQueue(HrQueue.leaveRequests),
-        ),
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.swap_horiz_outlined,
-          label: _queueLabel(l10n, HrQueue.swapRequests),
-          semanticLabel: _queueLabel(l10n, HrQueue.swapRequests),
-          tooltip: _queueLabel(l10n, HrQueue.swapRequests),
-          onPressed: state.workItemsQuery.queue == HrQueue.swapRequests
-              ? null
-              : () => controller.applyQueue(HrQueue.swapRequests),
-        ),
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.calendar_month_outlined,
-          label: _queueLabel(l10n, HrQueue.rosterDrafts),
-          semanticLabel: _queueLabel(l10n, HrQueue.rosterDrafts),
-          tooltip: _queueLabel(l10n, HrQueue.rosterDrafts),
-          onPressed: state.workItemsQuery.queue == HrQueue.rosterDrafts
-              ? null
-              : () => controller.applyQueue(HrQueue.rosterDrafts),
-        ),
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.pending_actions_outlined,
-          label: _queueLabel(l10n, HrQueue.unassignedShifts),
-          semanticLabel: _queueLabel(l10n, HrQueue.unassignedShifts),
-          tooltip: _queueLabel(l10n, HrQueue.unassignedShifts),
-          onPressed: state.workItemsQuery.queue == HrQueue.unassignedShifts
-              ? null
-              : () => controller.applyQueue(HrQueue.unassignedShifts),
-        ),
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.payments_outlined,
-          label: _queueLabel(l10n, HrQueue.payrollDrafts),
-          semanticLabel: _queueLabel(l10n, HrQueue.payrollDrafts),
-          tooltip: _queueLabel(l10n, HrQueue.payrollDrafts),
-          onPressed: state.workItemsQuery.queue == HrQueue.payrollDrafts
-              ? null
-              : () => controller.applyQueue(HrQueue.payrollDrafts),
+        HrQueueSwitcher(
+          selectedQueue: state.workItemsQuery.queue,
+          enabled: !state.isRefreshingWorkItems,
         ),
       ],
       child: AppListTable<HrWorkItem>(
@@ -1983,7 +2004,7 @@ Future<void> _submitSimple(
   }
 }
 
-class _StaffProfileFields extends StatefulWidget {
+class _StaffProfileFields extends ConsumerStatefulWidget {
   const _StaffProfileFields({
     required this.referenceData,
     this.staff,
@@ -1994,10 +2015,10 @@ class _StaffProfileFields extends StatefulWidget {
   final HrStaffProfile? staff;
 
   @override
-  State<_StaffProfileFields> createState() => _StaffProfileFieldsState();
+  ConsumerState<_StaffProfileFields> createState() => _StaffProfileFieldsState();
 }
 
-class _StaffProfileFieldsState extends State<_StaffProfileFields> {
+class _StaffProfileFieldsState extends ConsumerState<_StaffProfileFields> {
   late final TextEditingController _tenantController;
   late final TextEditingController _staffNumberController;
   late final TextEditingController _positionController;
@@ -2039,10 +2060,10 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
     super.dispose();
   }
 
-  Map<String, Object?> toPayload() {
+  Map<String, Object?> toPayload({bool includeUserId = true}) {
     return <String, Object?>{
       if (_isCreate) 'tenant_id': _tenantController.text.trim(),
-      if (_isCreate) 'user_id': _selectedUserId,
+      if (_isCreate && includeUserId) 'user_id': _selectedUserId,
       'staff_number': _staffNumberController.text.trim(),
       'position': _positionController.text.trim(),
       'department_id': _departmentId,
@@ -2085,6 +2106,26 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
             onChanged: (String? value) =>
                 setState(() => _selectedUserId = value),
           ),
+        if (_isCreate) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.sm),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppButton.tertiary(
+              label: l10n.hrCreateUserAction,
+              leadingIcon: Icons.person_add_outlined,
+              onPressed: () async {
+                await showHrCreateUserDialog(
+                  context,
+                  ref,
+                  staffPayload: toPayload(includeUserId: false),
+                );
+                if (context.mounted) {
+                  await Navigator.of(context).maybePop(true);
+                }
+              },
+            ),
+          ),
+        ],
         AppTextField(
           controller: _staffNumberController,
           labelText: l10n.hrStaffNumberLabel,
@@ -3375,27 +3416,10 @@ String _availabilitySlotSummary(HrStaffAvailability availability) {
   return _joinDisplay(<String?>[availability.startTime, availability.endTime]);
 }
 
-String _queueLabel(AppLocalizations l10n, HrQueue queue) {
-  return switch (queue) {
-    HrQueue.leaveRequests => l10n.hrQueueLeaveRequests,
-    HrQueue.swapRequests => l10n.hrQueueSwapRequests,
-    HrQueue.rosterDrafts => l10n.hrQueueRosterDrafts,
-    HrQueue.unassignedShifts => l10n.hrQueueUnassignedShifts,
-    HrQueue.payrollDrafts => l10n.hrQueuePayrollDrafts,
-    HrQueue.overdueShifts => l10n.hrQueueOverdueShifts,
-  };
-}
+String _queueLabel(AppLocalizations l10n, HrQueue queue) =>
+    hrQueueLabel(l10n, queue);
 
-IconData _queueIcon(HrQueue queue) {
-  return switch (queue) {
-    HrQueue.leaveRequests => Icons.event_busy_outlined,
-    HrQueue.swapRequests => Icons.swap_horiz_outlined,
-    HrQueue.rosterDrafts => Icons.calendar_month_outlined,
-    HrQueue.unassignedShifts => Icons.pending_actions_outlined,
-    HrQueue.payrollDrafts => Icons.payments_outlined,
-    HrQueue.overdueShifts => Icons.warning_amber_outlined,
-  };
-}
+IconData _queueIcon(HrQueue queue) => hrQueueIcon(queue);
 
 IconData _activityIcon(String? type) {
   return switch ((type ?? '').trim().toUpperCase()) {

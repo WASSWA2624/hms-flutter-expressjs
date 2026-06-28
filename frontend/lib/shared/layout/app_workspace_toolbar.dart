@@ -690,42 +690,33 @@ class _ToolbarNotificationsSubmenu extends StatelessWidget {
       ],
       builder:
           (BuildContext context, MenuController controller, Widget? child) {
-            return MouseRegion(
-              onEnter: (_) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted && !controller.isOpen) {
-                    controller.open();
-                  }
-                });
+            return TextButton(
+              style: buttonStyle,
+              onPressed: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
               },
-              child: TextButton(
-                style: buttonStyle,
-                onPressed: () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: AppMenuItemLabel(
-                        icon: Icons.notifications_outlined,
-                        label: label,
-                        trailing: AppMenuCountBadge(
-                          count: aggregateCount,
-                          tone: AppWorkspaceStatusTone.info,
-                        ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: AppMenuItemLabel(
+                      icon: Icons.notifications_outlined,
+                      label: label,
+                      trailing: AppMenuCountBadge(
+                        count: aggregateCount,
+                        tone: AppWorkspaceStatusTone.info,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right,
-                      size: theme.appTokens.listIconSize,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: theme.appTokens.listIconSize,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             );
           },

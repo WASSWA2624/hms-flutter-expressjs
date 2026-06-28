@@ -219,6 +219,88 @@ Future<void> showHrCreateUserDialog(
   }
 }
 
+Future<void> showHrManageScheduleTemplatesDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final AppLocalizations l10n = context.l10n;
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) => Consumer(
+      builder: (BuildContext context, WidgetRef dialogRef, _) {
+        final HrWorkspaceState? state = _readHrState(dialogRef);
+        final List<HrOption> templates =
+            state?.referenceData.shiftTemplates ?? const <HrOption>[];
+        final HrWorkspaceController controller = dialogRef.read(
+          hrWorkspaceControllerProvider.notifier,
+        );
+
+        return AppDialog(
+          title: Text(l10n.hrManageScheduleTemplatesTitle),
+          icon: const Icon(Icons.view_week_outlined),
+          scrollable: true,
+          maxWidth: 720,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                l10n.hrManageScheduleTemplatesDescription,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              if (templates.isEmpty)
+                Text(l10n.hrNoShiftTemplatesLabel)
+              else
+                for (final HrOption template in templates)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.view_week_outlined),
+                    title: Text(template.label),
+                    trailing: Wrap(
+                      spacing: 8,
+                      children: <Widget>[
+                        AppButton.secondary(
+                          label: l10n.hrEditShiftTemplateAction,
+                          onPressed: () async {
+                            await showHrShiftTemplateDialog(
+                              context,
+                              dialogRef,
+                              template,
+                            );
+                          },
+                        ),
+                        AppButton.secondary(
+                          label: l10n.hrDeleteShiftTemplateAction,
+                          onPressed: () async {
+                            final AppFailure? failure = await controller
+                                .deleteShiftTemplate(template.value);
+                            if (context.mounted) {
+                              showHrMutationSnackBar(context, failure);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+            ],
+          ),
+          actions: <Widget>[
+            AppButton.primary(
+              label: l10n.hrCreateShiftTemplateAction,
+              leadingIcon: Icons.add,
+              onPressed: () async {
+                await showHrShiftTemplateDialog(context, dialogRef);
+              },
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 Future<void> showHrShiftTemplateDialog(
   BuildContext context,
   WidgetRef ref, [

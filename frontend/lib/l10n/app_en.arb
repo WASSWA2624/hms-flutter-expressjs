@@ -16688,7 +16688,7 @@
       }
     }
   },
-  "hrActivityDescription": "Recent HR updates, approvals, and roster changes.",
+  "hrActivityDescription": "Audit-style feed of recent HR updates, roster publishes, and shift changes.",
   "@hrActivityDescription": {
     "description": "Human resources workspace text for hrActivityDescription."
   },
@@ -17288,6 +17288,34 @@
   "@hrStaffActionsTitle": {
     "description": "Human resources workspace text for hrStaffActionsTitle."
   },
+  "hrStaffActionsPlacementTitle": "Placement",
+  "@hrStaffActionsPlacementTitle": {
+    "description": "Staff action group for department and position assignments."
+  },
+  "hrStaffActionsSchedulingTitle": "Scheduling",
+  "@hrStaffActionsSchedulingTitle": {
+    "description": "Staff action group for availability, shifts, and leave."
+  },
+  "hrStaffActionsPayrollTitle": "Payroll",
+  "@hrStaffActionsPayrollTitle": {
+    "description": "Staff action group for compensation and payroll runs."
+  },
+  "hrStaffActionsAccessTitle": "Access",
+  "@hrStaffActionsAccessTitle": {
+    "description": "Staff action group for roles and module access."
+  },
+  "hrManageScheduleTemplatesTitle": "Schedule templates",
+  "@hrManageScheduleTemplatesTitle": {
+    "description": "Dialog title for managing shift schedule templates."
+  },
+  "hrManageScheduleTemplatesDescription": "Reusable shift patterns for roster generation and staff scheduling.",
+  "@hrManageScheduleTemplatesDescription": {
+    "description": "Description for the schedule templates manage dialog."
+  },
+  "hrNoShiftTemplatesLabel": "No schedule templates yet. Create one to reuse shift patterns.",
+  "@hrNoShiftTemplatesLabel": {
+    "description": "Empty state when no shift templates exist."
+  },
   "hrStaffColumnLabel": "Staff",
   "@hrStaffColumnLabel": {
     "description": "Human resources workspace text for hrStaffColumnLabel."
@@ -17464,7 +17492,7 @@
   "@hrEndAssignmentDialogTitle": {
     "description": "Dialog title for ending an assignment."
   },
-  "hrShiftTemplateAction": "Manage schedule templates",
+  "hrShiftTemplateAction": "Create schedule template",
   "@hrShiftTemplateAction": {
     "description": "Toolbar action for shift template CRUD."
   },

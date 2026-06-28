@@ -12889,7 +12889,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrActivityDescription =>
-      'Recent HR updates, approvals, and roster changes.';
+      'Audit-style feed of recent HR updates, roster publishes, and shift changes.';
 
   @override
   String get hrActivityTitle => 'HR activity';
@@ -13334,6 +13334,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffActionsTitle => 'Staff actions';
 
   @override
+  String get hrStaffActionsPlacementTitle => 'Placement';
+
+  @override
+  String get hrStaffActionsSchedulingTitle => 'Scheduling';
+
+  @override
+  String get hrStaffActionsPayrollTitle => 'Payroll';
+
+  @override
+  String get hrStaffActionsAccessTitle => 'Access';
+
+  @override
+  String get hrManageScheduleTemplatesTitle => 'Schedule templates';
+
+  @override
+  String get hrManageScheduleTemplatesDescription =>
+      'Reusable shift patterns for roster generation and staff scheduling.';
+
+  @override
+  String get hrNoShiftTemplatesLabel =>
+      'No schedule templates yet. Create one to reuse shift patterns.';
+
+  @override
   String get hrStaffColumnLabel => 'Staff';
 
   @override
@@ -13467,7 +13490,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrEndAssignmentDialogTitle => 'End assignment';
 
   @override
-  String get hrShiftTemplateAction => 'Manage schedule templates';
+  String get hrShiftTemplateAction => 'Create schedule template';
 
   @override
   String get hrShiftTemplateDialogTitle => 'Schedule template';

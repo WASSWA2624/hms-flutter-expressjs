@@ -123,13 +123,34 @@ void main() {
   ) async {
     await pumpComponent(
       tester,
-      const AppDialog(
-        maxWidth: 480,
-        title: Text('Large form'),
-        content: SizedBox(width: 320, height: 240, child: Text('Dialog body')),
+      Builder(
+        builder: (BuildContext context) {
+          return TextButton(
+            onPressed: () {
+              unawaited(
+                showAppDialog<void>(
+                  context: context,
+                  builder: (_) => const AppDialog(
+                    maxWidth: 480,
+                    title: Text('Large form'),
+                    content: SizedBox(
+                      width: 320,
+                      height: 240,
+                      child: Text('Dialog body'),
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open dialog'),
+          );
+        },
       ),
       size: const Size(1000, 700),
     );
+
+    await tester.tap(find.text('Open dialog'));
+    await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.fullscreen), findsOneWidget);
 
@@ -142,6 +163,8 @@ void main() {
 
     expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
     final RenderBox shellMaximized = _dialogShellRenderBox(tester);
+    expect(shellMaximized.size.width, closeTo(1000, 1));
+    expect(shellMaximized.size.height, closeTo(700, 1));
     expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
     expect(shellMaximized.size.height, greaterThan(heightBefore + 50));
 
@@ -177,6 +200,37 @@ void main() {
     final RenderBox shellAfter = _dialogShellRenderBox(tester);
     expect(shellAfter.size.width, lessThan(widthBefore - 40));
     expect(shellAfter.size.height, greaterThan(heightBefore + 40));
+  });
+
+  testWidgets('desktop edge resize updates width or height independently', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        maxWidth: 520,
+        title: Text('Edge resize'),
+        content: SizedBox(width: 320, height: 200, child: Text('Dialog body')),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    final RenderBox shellBefore = _dialogShellRenderBox(tester);
+    final double widthBefore = shellBefore.size.width;
+    final double heightBefore = shellBefore.size.height;
+
+    await tester.drag(find.byTooltip('Resize width'), const Offset(-120, 0));
+    await tester.pump();
+
+    final RenderBox shellAfterWidth = _dialogShellRenderBox(tester);
+    expect(shellAfterWidth.size.width, lessThan(widthBefore - 80));
+    expect(shellAfterWidth.size.height, closeTo(heightBefore, 4));
+
+    await tester.drag(find.byTooltip('Resize height'), const Offset(0, 80));
+    await tester.pump();
+
+    final RenderBox shellAfterHeight = _dialogShellRenderBox(tester);
+    expect(shellAfterHeight.size.height, greaterThan(heightBefore + 50));
   });
 
   testWidgets('two-action footer stays on one row at narrow width', (

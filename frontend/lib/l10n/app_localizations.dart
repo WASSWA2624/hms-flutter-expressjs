@@ -24216,7 +24216,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrActivityDescription.
   ///
   /// In en, this message translates to:
-  /// **'Recent HR updates, approvals, and roster changes.'**
+  /// **'Audit-style feed of recent HR updates, roster publishes, and shift changes.'**
   String get hrActivityDescription;
 
   /// Human resources workspace text for hrActivityTitle.
@@ -25089,6 +25089,48 @@ abstract class AppLocalizations {
   /// **'Staff actions'**
   String get hrStaffActionsTitle;
 
+  /// Staff action group for department and position assignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Placement'**
+  String get hrStaffActionsPlacementTitle;
+
+  /// Staff action group for availability, shifts, and leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduling'**
+  String get hrStaffActionsSchedulingTitle;
+
+  /// Staff action group for compensation and payroll runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get hrStaffActionsPayrollTitle;
+
+  /// Staff action group for roles and module access.
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get hrStaffActionsAccessTitle;
+
+  /// Dialog title for managing shift schedule templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule templates'**
+  String get hrManageScheduleTemplatesTitle;
+
+  /// Description for the schedule templates manage dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Reusable shift patterns for roster generation and staff scheduling.'**
+  String get hrManageScheduleTemplatesDescription;
+
+  /// Empty state when no shift templates exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule templates yet. Create one to reuse shift patterns.'**
+  String get hrNoShiftTemplatesLabel;
+
   /// Human resources workspace text for hrStaffColumnLabel.
   ///
   /// In en, this message translates to:
@@ -25356,7 +25398,7 @@ abstract class AppLocalizations {
   /// Toolbar action for shift template CRUD.
   ///
   /// In en, this message translates to:
-  /// **'Manage schedule templates'**
+  /// **'Create schedule template'**
   String get hrShiftTemplateAction;
 
   /// Dialog title for shift template create/edit.

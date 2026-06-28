@@ -77,16 +77,20 @@ class _AppDialogState extends State<AppDialog> {
         ? math.min(widget.maxWidth, availableWidth)
         : availableWidth;
     final Size? desktopSize = _desktopSize;
+    final double shellWidth = _isMaximized
+        ? viewport.width
+        : (desktopSize?.width ?? defaultWidth);
+    final double shellHeight = _isMaximized
+        ? viewport.height
+        : (desktopSize?.height ?? maxHeight);
     final BoxConstraints dialogConstraints = BoxConstraints(
-      maxWidth: desktopInteractive
-          ? (desktopSize?.width ?? defaultWidth)
-          : defaultWidth,
-      maxHeight: desktopInteractive
-          ? (desktopSize?.height ?? maxHeight)
-          : maxHeight,
+      maxWidth: desktopInteractive ? shellWidth : defaultWidth,
+      maxHeight: desktopInteractive ? shellHeight : maxHeight,
     );
     final bool resizeEnabled =
         desktopInteractive && !_isMaximized && widget.resizable;
+    final bool fillShellHeight =
+        desktopInteractive && (desktopSize != null || _isMaximized);
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -98,7 +102,7 @@ class _AppDialogState extends State<AppDialog> {
         actions: widget.actions,
         icon: widget.icon,
         scrollable: widget.scrollable,
-        fillHeight: desktopInteractive && desktopSize != null,
+        fillHeight: fillShellHeight,
         compact: compact,
         showCloseButton: widget.showCloseButton,
         showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
@@ -127,7 +131,7 @@ class _AppDialogState extends State<AppDialog> {
       dialogBody = SizedBox(
         key: _dialogShellKey,
         width: dialogConstraints.maxWidth,
-        height: desktopSize == null ? null : dialogConstraints.maxHeight,
+        height: fillShellHeight ? dialogConstraints.maxHeight : null,
         child: dialogBody,
       );
     }
@@ -256,17 +260,17 @@ class _AppDialogState extends State<AppDialog> {
     final Size viewport = MediaQuery.sizeOf(context);
     final ThemeData theme = Theme.of(context);
     final EdgeInsets insetPadding = _dialogInsetPadding(theme, false);
-    final double availableWidth = math.max(
+    final double insetAvailableWidth = math.max(
       _desktopMinWidth,
       viewport.width - insetPadding.horizontal,
     );
-    final double availableHeight = math.max(
+    final double insetAvailableHeight = math.max(
       _desktopMinHeight,
       viewport.height - insetPadding.vertical,
     );
     final double defaultWidth = widget.maxWidth.isFinite
-        ? math.min(widget.maxWidth, availableWidth)
-        : availableWidth;
+        ? math.min(widget.maxWidth, insetAvailableWidth)
+        : insetAvailableWidth;
 
     if (_isMaximized) {
       setState(() {
@@ -281,12 +285,16 @@ class _AppDialogState extends State<AppDialog> {
 
     final Size currentSize =
         _desktopSize ??
-        _measuredShellSize(defaultWidth, availableWidth, availableHeight);
+        _measuredShellSize(
+          defaultWidth,
+          insetAvailableWidth,
+          insetAvailableHeight,
+        );
     setState(() {
       _preMaximizeSize = currentSize;
       _preMaximizeDragOffset = _dragOffset;
       _isMaximized = true;
-      _desktopSize = Size(availableWidth, availableHeight);
+      _desktopSize = Size(viewport.width, viewport.height);
       _dragOffset = Offset.zero;
     });
   }
