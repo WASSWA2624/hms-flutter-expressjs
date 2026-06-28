@@ -1,213 +1,151 @@
-# Workspace Toolbar & Action Button Consistency — Implementation Prompt
+# Global Form Input Uniformity — Floating Labels
 
 ## Objective
 
-Eliminate inconsistent toolbar and action-button behavior across HOSSPI HMS module workspaces. Every module screen must use the same responsive action pattern: **icon + label on desktop/tablet**, and on small screens **only the More actions button** in the toolbar — every other toolbar action moves into its overflow menu, with correct hover, tooltip, permission, and accessibility behavior.
+Standardize every user-editable form input across the HMS Flutter frontend so labels use the **floating-label pattern** consistently. The app should look and behave the same whether the field appears on a page, inside a dialog, inside a drawer, or nested within another form.
 
-This is a **cross-cutting UI consistency** task. Fix shared primitives first, then migrate every affected screen, clean up legacy code, and pass the quality gate.
-
----
-
-## Source of truth
-
-| Area | Reference |
-| ---- | --------- |
-| Workspace layout | [`frontend/.cursor/ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc) |
-| Shared components | [`frontend/.cursor/components.mdc`](frontend/.cursor/components.mdc) |
-| Design tokens | [`frontend/.cursor/design-system.mdc`](frontend/.cursor/design-system.mdc) |
-| Breakpoints | [`frontend/lib/core/responsive/app_breakpoints.dart`](frontend/lib/core/responsive/app_breakpoints.dart) |
-| Toolbar shell | [`frontend/lib/shared/layout/app_workspace_toolbar.dart`](frontend/lib/shared/layout/app_workspace_toolbar.dart) |
-| Button primitive | [`frontend/lib/shared/components/app_button.dart`](frontend/lib/shared/components/app_button.dart) |
-| Label scope | [`frontend/lib/shared/components/app_action_label_scope.dart`](frontend/lib/shared/components/app_action_label_scope.dart) |
-| Overflow resolver | [`frontend/lib/shared/layout/app_toolbar_overflow_resolver.dart`](frontend/lib/shared/layout/app_toolbar_overflow_resolver.dart) |
-| Toolbar tests | [`frontend/test/shared/layout/app_workspace_toolbar_test.dart`](frontend/test/shared/layout/app_workspace_toolbar_test.dart) |
+**Reference implementation:** Auth flows already demonstrate the target UX — see `frontend/lib/features/auth/presentation/pages/login_page.dart`, `register_page.dart`, and related auth widgets where `AppTextField` is used with `useFloatingLabel: true`.
 
 ---
 
-## Target behavior (non-negotiable)
+## Scope
 
-### Desktop and tablet (`md` breakpoint and above — not `xs` or `sm`)
+### In scope
 
-- Every toolbar action shows **leading icon + visible text label**.
-- Applies to **primary**, **secondary**, **refresh**, **global actions** (fault report, housekeeping request), and module-specific actions.
-- Labels come from **`app_en.arb`** via `AppLocalizations` — no hardcoded English in feature pages.
-- Disabled actions remain visible with reduced opacity; add a **tooltip** explaining why when permission or module entitlement blocks the action.
-- Hover and focus states must match other `AppButton` controls (pointer cursor on web/desktop, visible focus ring).
+All components where the user types, selects, or edits structured data, including but not limited to:
 
-### Small screens (`xs` and `sm`) — toolbar only
+| Component | Location |
+|-----------|----------|
+| `AppTextField` | `shared/components/app_text_field.dart` |
+| `AppSelectField` | `shared/components/app_select_field.dart` |
+| `AppDateField` | `shared/components/app_date_field.dart` |
+| `AppTimeField` | `shared/components/app_time_field.dart` |
+| `AppEmailField` | `shared/components/app_email_field.dart` |
+| `AppPhoneField` | `shared/components/app_phone_field.dart` |
+| `AppCurrencyAmountField` | `shared/components/app_currency_amount_field.dart` |
+| `AppGenderField` | `shared/components/app_gender_field.dart` (if applicable) |
+| Any wrapper or composite field built on top of the above | e.g. `app_vitals_form.dart`, clinical action dialogs, workspace pages |
 
-On `xs` and `sm` breakpoints, the **workspace toolbar** must show **only the More actions button** (`Icons.more_vert`). No other toolbar buttons (primary, secondary, refresh, global actions, board toggles, etc.) may appear inline in the toolbar row.
+Applies everywhere these appear: workspace pages, setup wizards, `AppDialog` forms, action dialogs, catalog panels, and nested sub-forms.
 
-- **Hide all toolbar actions** on small screens; route **every** toolbar action into the More actions overflow menu.
-- The overflow menu lists **all** toolbar actions with **icon + label** (`AppMenuItemLabel`), including refresh, create, configure, fault report, housekeeping request, and module-specific actions.
-- The workspace header row shows **page icon**, **page title**, and **More actions** on one line — no wrapping to a second line.
-- More actions trigger must use `AppButton.popupMenuTrigger`, show a tooltip, and use a **clickable pointer cursor** on hover.
-- This rule applies **only to `AppWorkspaceToolbar`** / `AppWorkspace` header actions. It does **not** change row-level table actions, detail-panel buttons, or dialog footers.
+### Out of scope
 
-### Actions outside the main toolbar
-
-- Row-level icon actions (`AppListTable`, `AppRecordSection`) may stay icon-only on all breakpoints **only if** they always provide `semanticLabel` and `tooltip`.
-- Full-width form submit buttons use labeled `AppButton.primary` — never unexplained icon-only controls.
+- **Buttons** (`AppButton`, icon buttons, toggles that are not data-entry fields).
+- **Read-only display** widgets (`AppInfoTile`, status text, table cells showing data).
+- **Checkboxes / radio / switch** groups — keep existing label layout unless they already wrap a text/select field.
+- **Search bars used purely as list filters** (`AppSearchBar` toolbar filters) — only migrate if they contain editable text/select filters that should match form-field styling; do not redesign the search-bar UX beyond label consistency.
 
 ---
 
-## Root causes to fix first (shared layer)
+## Current gaps (known)
 
-These bugs explain most reported inconsistencies. Fix them before auditing individual modules.
+1. **`AppTextField.useFloatingLabel` defaults to `false`.** Most of the app renders an external label above the field instead of a floating label inside the decoration. Only auth pages pass `useFloatingLabel: true` explicitly.
+2. **Wrapper fields do not propagate floating labels.** `AppTimeField`, `AppEmailField`, and similar wrappers delegate to `AppTextField` without enabling floating labels.
+3. **Raw Flutter field usage bypasses shared components.** Direct `TextFormField`, `TextField`, `DropdownButtonFormField`, or hand-rolled `InputDecoration(labelText: …)` appear in:
+   - `shared/components/app_vitals_form.dart`
+   - `shared/components/app_currency_amount_field.dart`
+   - `shared/components/app_phone_field.dart` (country-code search)
+   - `shared/components/app_search_bar.dart`
+   - `features/settings/presentation/widgets/settings_workspace_section.dart`
+4. **`AppSelectField` and `AppDateField` already use floating labels** via `DropdownMenuFormField.label` and `InputDecorator` + `appFieldLabelWidget`. Treat these as the pattern to match, not rewrite.
+5. **Duplicate label rendering.** When floating labels are enabled, external/stacked labels above the field must be removed to avoid double labels.
 
-### 1. `AppButton` hides secondary labels on desktop
+---
 
-In `app_button.dart`, `showLabel` currently suppresses labels for `AppButtonVariant.secondary` when `AppActionLabelScope.showLabels == true`. That inverts the intended behavior and is why refresh, configure, shift context, and most secondary toolbar actions appear icon-only on large screens.
+## Implementation strategy
 
-**Fix:** When `forceIconOnly` is false and `iconOnly` is false, show the label for **all** variants on desktop. On `xs`/`sm`, toolbar actions are not rendered inline at all — they appear only in the More actions menu (see § Small screens). Reserve explicit `iconOnly: true` for non-toolbar compact contexts (table row actions, popup triggers).
+Work in this order. Prefer fixing shared components first so call sites inherit the behavior automatically.
 
-### 2. Global toolbar actions hard-code `iconOnly: true`
+### Phase 1 — Shared component defaults
 
-These widgets always force icon-only mode and bypass responsive label scope:
+1. **Change `AppTextField` default:** set `useFloatingLabel = true`.
+   - Preserve rich required/optional indicators via `appFieldLabelWidget` inside the decoration (already implemented when `useFloatingLabel` is true).
+   - Keep `FloatingLabelBehavior.auto` for text fields.
+   - Remove or guard the external label column so it never renders when floating labels are active.
 
-- [`app_workspace_refresh_action.dart`](frontend/lib/shared/actions/app_workspace_refresh_action.dart)
-- [`app_global_fault_report_action.dart`](frontend/lib/shared/actions/app_global_fault_report_action.dart)
-- [`app_global_housekeeping_request_action.dart`](frontend/lib/shared/actions/app_global_housekeeping_request_action.dart)
+2. **Update field wrappers** to either remove their own `useFloatingLabel` parameter (inherit default) or default it to `true`:
+   - `AppEmailField`
+   - `AppPhoneField` (including any internal sub-fields)
+   - `AppTimeField`
+   - `AppCurrencyAmountField`
 
-**Fix:** Remove `iconOnly: true`. Pass `leadingIcon`, `label`, `semanticLabel`, and `tooltip`. Let `AppActionLabelScope` from `AppWorkspaceToolbar` control compact vs labeled rendering.
+3. **Align composite fields:**
+   - `AppDateField` — already compliant; verify sub-part hints (DD/MM/YYYY) do not conflict visually.
+   - `AppSelectField` — already compliant; verify sizing/padding matches `AppTextField`.
+   - `AppVitalsForm` — replace raw `DropdownButtonFormField` + `InputDecoration(labelText: …)` with `AppSelectField` or apply the same floating-label decoration pattern.
 
-### 3. Feature pages bypass `AppWorkspaceToolbar`
+4. **Remove redundant per-call-site `useFloatingLabel: true`** in auth pages once the default is true (optional cleanup).
 
-Any screen that hand-rolls `Row`/`Wrap` of `AppButton(iconOnly: true, …)` in the header must migrate to:
+### Phase 2 — Audit and migrate call sites
 
-```dart
-toolbar: appWorkspaceToolbarWithLabels(
-  l10n,
-  primary: AppButton.primary(...),
-  secondary: <Widget>[...],
-  onRefresh: controller.refresh,
-  isRefreshing: state.isRefreshing,
-),
+Run a repo-wide audit under `frontend/lib/`:
+
+```bash
+# Raw Flutter inputs (should be zero outside shared components after migration)
+rg "TextFormField\(|TextField\(|DropdownButtonFormField\(|InputDecoration\(" frontend/lib --glob "*.dart"
+
+# External-label mode still explicitly disabled (review each)
+rg "useFloatingLabel:\s*false" frontend/lib --glob "*.dart"
+
+# Legacy stacked labels above fields (manual review)
+rg "labelText:" frontend/lib --glob "*.dart"
 ```
 
-Use `AppWorkspaceToolbarConfig` — not legacy `primaryAction` / `secondaryActions` on `AppWorkspace` unless the screen is intentionally toolbar-free.
+For every hit outside `shared/components/`:
 
-### 4. `AppWorkspaceBoardToggle` styling
+- Replace raw inputs with the appropriate `App*` component.
+- Pass `labelText`, `hintText`, `isRequired`, validators, and controllers as today — do not drop accessibility or validation behavior.
+- Do **not** add a separate `Text` label above the field when the shared component already renders a floating label.
 
-IPD/ICU **Patient board / Bed board** toggles use `SegmentedButton` with default Material rounding that looks overly pill-shaped.
+### Phase 3 — Visual and UX consistency
 
-**Fix:** Apply design-system border radius (`8–12px` per `components.mdc`) via `SegmentedButton.styleFrom` / theme override in [`app_workspace_board_toggle.dart`](frontend/lib/shared/layout/app_workspace_board_toggle.dart). Keep icon + label segments on desktop. On `xs`/`sm`, include board-toggle options in the More actions overflow menu instead of rendering inline.
+Ensure all form inputs share:
 
-### 5. Small-screen toolbar shows inline actions instead of More-only
+- **Height** — respect `theme.inputDecorationTheme.constraints` (min height ~48).
+- **Typography** — body text `bodyLarge`, label `labelLarge` / field label style from theme.
+- **Spacing** — use `theme.spacing.*` between fields (typically `md`), consistent with auth forms.
+- **Required / optional markers** — use `isRequired: true` and `(optional)` suffix parsing via `app_field_label.dart`; never hard-code `*` in l10n strings unless already standardized.
+- **Error / helper text** — render through the shared component's `errorText` / `helperText`, not a separate widget below unless the component requires it.
 
-[`app_workspace_toolbar.dart`](frontend/lib/shared/layout/app_workspace_toolbar.dart) currently keeps some actions inline on narrow widths and only overflows extras. On `xs`/`sm`, **all** toolbar actions must be in the overflow menu — the inline action list must be empty and only `_ToolbarOverflowMenu` renders.
+Use `AppFormShell`, `AppFormSection`, and `AppResponsiveFieldRow` (`shared/forms/`) for layout — do not introduce one-off column/wrap spacing for forms.
 
-**Fix:** When `showLabels == false` (i.e. `xs` or `sm`), skip inline rendering entirely; pass the full `screenActions` + `globalActions` list to the overflow menu.
+### Phase 4 — Cleanup
 
-### 6. Overflow resolver dead code
-
-[`app_toolbar_overflow_resolver.dart`](frontend/lib/shared/layout/app_toolbar_overflow_resolver.dart) has unreachable duplicate `AppButton` handling after an early return. Clean up while touching the file.
-
----
-
-## Module audit checklist
-
-Work through **every** workspace below. For each screen, verify desktop labels, small-screen More-only toolbar, tooltips, permissions, and that create/edit flows use existing dialogs — not new routes.
-
-| Module | Route / page | Known issues to resolve |
-| ------ | ------------ | ----------------------- |
-| **Home / Dashboard** | `home_page.dart` | Refresh icon-only on desktop |
-| **Patients** | `patient_registry_page.dart` | Emergency registration, Add patient — icon-only |
-| **OPD** | `opd_workspace_page.dart` | Start encounter labeled; request action icon-only |
-| **Emergency** | `emergency_workspace_page.dart` | Quick arrival labeled; refresh icon-only |
-| **IPD** | IPD workspace | Board toggle over-rounded; verify toolbar actions |
-| **ICU** | `icu_workspace_page.dart`, `icu_bed_board_panel.dart` | Bed/board layout polish; toolbar consistency |
-| **Rooms & Beds** | `rooms_beds_workspace_page.dart` | Admin/setup navigation button lacks label; add **Create room** and **Create bed** actions wired to **existing** mutation dialogs/models |
-| **Nursing** | `nursing_workspace_page.dart` | Shift context, record vitals — icon-only |
-| **Clinical** | `clinical_workspace_page.dart` | Two inactive toolbar buttons for platform admin — fix `AccessRequirement` / module entitlement so super-admin can use them; ensure labeled design |
-| **Physiotherapy** | `physiotherapy_workspace_page.dart` | All toolbar actions icon-only except overflow |
-| **Theater** | `theater_workspace_page.dart` | Schedule view refresh icon-only; left-side actions lack labels and hover/tooltips |
-| **Lab** | `lab_workspace_page.dart` | Toolbar actions icon-only |
-| **Radiology** | `radiology_workspace_page.dart` | Toolbar actions icon-only |
-| **Pharmacy** | `pharmacy_workspace_page.dart` | Toolbar actions icon-only |
-| **Billing** | `billing_workspace_page.dart` | Toolbar actions icon-only |
-| **Claims** | claims workspace | One action icon-only; request authorization is labeled — align both |
-| **Subscriptions** | `subscriptions_workspace_page.dart` | Activate labeled; refresh icon-only |
-| **Operations** | `operations_workspace_page.dart` | Unlabeled action (likely operations report) — add clear label |
-| **Housekeeping** | `housekeeping_workspace_page.dart` | Create cleaning schedule unavailable (module/permission); request maintenance icon-only |
-| **Biomedical** | biomedical workspace | Register asset labeled; refresh icon-only; unexplained inactive action — label and gate correctly |
-| **HR** | `hr_workspace_page.dart` | Work queues and HR actions icon-only |
-| **Communications** | `communications_workspace_page.dart` | Refresh icon-only |
-| **Integrations** | `integrations_workspace_page.dart` | Create API key, create webhook — icon-only |
-| **Reports** | `reports_workspace_page.dart` | Refresh icon-only |
-| **Settings** | settings workspace | Refresh icon-only |
-| **Setup / Tenant** | `tenant_facility_setup_page.dart` | Verify consistency (reported as OK for refresh) |
-| **Discharge, Mortuary, Triage, Dental, Access Admin** | respective workspace pages | Audit and align with standard toolbar pattern |
-
-### Permission and inactive-action rules
-
-- Platform / super-admin roles must not see **enabled-looking but dead** toolbar buttons. Either enable the action for that role or hide/disable with an explanatory tooltip.
-- Housekeeping and biomedical actions must respect module entitlements (`activeModules`) — surface **why** an action is disabled instead of silent no-ops.
-- Reuse `AppAccessActionGate` and existing `AccessRequirement` constants; do not invent per-page permission checks.
-
-### Rooms & beds — functional gap
-
-- Add toolbar **Create room** and **Create bed** primary/secondary actions.
-- Wire them to the **existing** room/bed mutation dialogs and repository methods already defined in the feature — do not duplicate forms or models.
+- Delete dead helpers, duplicate field widgets, or legacy decoration builders that exist only to support the old external-label pattern.
+- Remove unused imports after migrations.
+- Do not leave both an old and new field implementation for the same use case.
 
 ---
 
-## Implementation steps (in order)
+## Acceptance criteria
 
-1. **Fix shared primitives** — `AppButton` label logic, global action widgets, board toggle styling, overflow resolver cleanup.
-2. **Extend toolbar tests** — update [`app_workspace_toolbar_test.dart`](frontend/test/shared/layout/app_workspace_toolbar_test.dart) so secondary and refresh actions assert visible labels at `1200×800`; at `360×600` assert **no inline toolbar buttons** except More actions, with all actions reachable from the overflow menu.
-3. **Migrate module toolbars** — replace hand-rolled action rows with `appWorkspaceToolbarWithLabels`; add missing `leadingIcon` + localized `label` on every `AppButton`.
-4. **Fix permission gaps** — clinical inactive buttons, housekeeping module availability, biomedical mystery action.
-5. **Row-level actions** — ensure table/record icon buttons always set `tooltip` and `semanticLabel`.
-6. **Localization** — add missing keys to `app_en.arb`; run codegen if needed.
-7. **Clean up legacy code** — see cleanup section below.
-8. **Quality gate** — see verification section below.
-
----
-
-## Cleanup tasks
-
-| Task | Details |
-| ---- | ------- |
-| Remove `AppIconButton` | Migrate remaining usages to `AppButton` via [`frontend/tool/migrate_icon_button.py`](frontend/tool/migrate_icon_button.py) and [`fix_icon_button_labels.py`](frontend/tool/fix_icon_button_labels.py); delete [`app_icon_button.dart`](frontend/lib/shared/components/app_icon_button.dart) once unused |
-| Remove stray `iconOnly: true` in toolbars | Toolbar actions should rely on `AppActionLabelScope`, not hard-coded icon-only |
-| Update `platform-behavior.mdc` doc | Replace `AppIconButton` references with `AppButton` |
-| Delete obsolete migration scripts | After migration completes, remove one-off scripts from `frontend/tool/` or document them in [`tool/README.md`](frontend/tool/README.md) |
-| Format touched files | `dart format` on all changed Dart files |
-| Fix analyzer warnings | Resolve all `flutter analyze` issues introduced or exposed by this work — no `// ignore` unless justified |
+- [ ] Every editable form field in `frontend/lib/` uses a shared `App*` input component (or a composite built exclusively from them).
+- [ ] No field shows **both** an external label and a floating label.
+- [ ] `AppTextField` (and wrappers) default to floating labels; auth and non-auth screens look identical in label behavior.
+- [ ] `AppSelectField`, `AppDateField`, `AppTextField`, and currency/phone/email/time fields have matching height, border radius, and label animation.
+- [ ] Raw `TextFormField` / `TextField` / `DropdownButtonFormField` usage is confined to shared component internals (grep audit passes).
+- [ ] Existing tests pass; update widget tests if they assert on external label widgets or label text placement.
+- [ ] Run `dart analyze` on touched files with no new issues.
 
 ---
 
-## Verification (quality gate)
+## Verification
 
-Run from `frontend/`:
-
-```sh
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/shared/layout/app_workspace_toolbar_test.dart
-flutter test
-```
-
-Manual smoke test at **`1280×800`** (desktop) and **`360×640`** (mobile):
-
-- [ ] Every module workspace toolbar action shows icon + label on desktop.
-- [ ] Refresh, More actions, and global actions match module-specific actions visually.
-- [ ] Narrow width (`xs`/`sm`): toolbar shows **only** More actions — no inline primary, secondary, refresh, or global buttons.
-- [ ] Narrow width: page icon + title + More actions stay on one line; overflow menu lists **all** toolbar actions with icon + label.
-- [ ] More actions button shows pointer cursor and tooltip on hover (web/desktop).
-- [ ] No unexplained disabled toolbar buttons for platform admin.
-- [ ] Rooms & beds: create room/bed opens existing dialogs.
-- [ ] IPD/ICU board toggles use consistent, subtler corner radius.
+1. **Automated:** run existing frontend tests, especially component and dialog tests under `frontend/test/shared/components/`.
+2. **Manual smoke test** these surfaces (forms in dialogs and full pages):
+   - Auth (login, register, forgot/reset password)
+   - Tenant/facility setup
+   - Patient registry create/edit
+   - Lab catalog dialogs
+   - HR, billing, and clinical action dialogs
+   - Settings workspace filters (if migrated)
+3. **Visual check:** empty, focused, filled, error, and disabled states for text, select, date, and currency fields at desktop and compact widths.
 
 ---
 
-## Definition of done
+## Constraints
 
-- Shared toolbar/button behavior is correct and covered by passing widget tests.
-- All module workspaces in the audit table use `AppWorkspaceToolbar` / `appWorkspaceToolbarWithLabels` with consistent labeled desktop actions.
-- On `xs`/`sm`, every module toolbar renders **only** the More actions button; all toolbar actions are in the overflow menu.
-- No remaining `AppIconButton` usages; no toolbar `AppButton(iconOnly: true)` except popup menu triggers and intentional compact row actions.
-- `flutter analyze` and `flutter test` pass with no new lint debt.
-- User-visible strings are localized in `app_en.arb`.
+- **Minimize diff scope per file** — change only what is required for label uniformity; do not refactor unrelated logic.
+- **Preserve behavior** — validation, autofill, focus order, restoration IDs, and semantics must remain intact.
+- **Follow existing conventions** — match naming, imports (`shared/components/components.dart`), and l10n usage already in the codebase.
+- **No new dependencies.**

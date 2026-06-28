@@ -883,34 +883,14 @@ class _VitalUnitSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? valueStyle = theme.textTheme.bodyLarge?.copyWith(
-      color: enabled
-          ? theme.colorScheme.onSurface
-          : theme.colorScheme.onSurface.withValues(alpha: 0.62),
-      fontWeight: FontWeight.w500,
-    );
-
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      menuMaxHeight: 144,
-      icon: const Icon(Icons.arrow_drop_down),
-      style: valueStyle,
-      decoration: InputDecoration(labelText: labelText),
-      onChanged: enabled ? onChanged : null,
-      items: <DropdownMenuItem<String>>[
-        for (final AppSelectOption<String> option in options)
-          DropdownMenuItem<String>(
-            value: option.value,
-            enabled: option.enabled,
-            child: Text(
-              option.label,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-            ),
-          ),
-      ],
+    return AppSelectField<String>(
+      value: value,
+      labelText: labelText,
+      enabled: enabled,
+      allowClear: false,
+      menuHeight: 144,
+      options: options,
+      onChanged: onChanged,
     );
   }
 }

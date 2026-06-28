@@ -41,7 +41,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.autocorrect = true,
     this.enableSuggestions = true,
-    this.useFloatingLabel = false,
+    this.useFloatingLabel = true,
     super.key,
   }) : assert(
          controller == null || initialValue == null,

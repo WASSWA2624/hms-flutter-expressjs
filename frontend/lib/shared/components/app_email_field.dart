@@ -27,7 +27,7 @@ class AppEmailField extends StatelessWidget {
     this.isLoading = false,
     this.isRequired = false,
     this.autofillHints = const <String>[AutofillHints.email],
-    this.useFloatingLabel = false,
+    this.useFloatingLabel = true,
     super.key,
   }) : assert(
          !isRequired || requiredMessage != null,

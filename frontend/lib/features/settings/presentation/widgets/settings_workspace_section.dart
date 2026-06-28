@@ -311,13 +311,12 @@ class _SettingsWorkspaceFilters extends ConsumerWidget {
           children: <Widget>[
             SizedBox(
               width: 260,
-              child: TextFormField(
+              child: AppTextField(
                 initialValue: state.query.search,
-                decoration: InputDecoration(
-                  labelText: l10n.settingsWorkspaceSearchLabel,
-                  hintText: l10n.settingsWorkspaceSearchHint,
-                  prefixIcon: const Icon(Icons.search),
-                ),
+                labelText: l10n.settingsWorkspaceSearchLabel,
+                hintText: l10n.settingsWorkspaceSearchHint,
+                prefixIcon: const Icon(Icons.search),
+                textInputAction: TextInputAction.search,
                 onFieldSubmitted: (String value) =>
                     unawaited(controller.applySearch(value)),
               ),

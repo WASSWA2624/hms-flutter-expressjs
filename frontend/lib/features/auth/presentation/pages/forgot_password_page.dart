@@ -88,7 +88,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               invalidEmailMessage: l10n.authEmailInvalidMessage,
               requiredMessage: l10n.validationRequired,
               isRequired: true,
-              useFloatingLabel: true,
               onChanged: (_) => _clearFormFeedback(),
               onFocusChanged: _handleFieldFocusChanged,
               focusNode: _emailFocusNode,

@@ -116,7 +116,6 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                   ),
                 ]),
                 isRequired: true,
-                useFloatingLabel: true,
                 onChanged: (_) => _clearFormFeedback(),
                 onFocusChanged: _handleFieldFocusChanged,
                 focusNode: _codeFocusNode,

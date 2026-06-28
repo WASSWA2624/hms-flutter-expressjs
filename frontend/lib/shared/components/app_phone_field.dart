@@ -36,7 +36,7 @@ class AppPhoneField extends StatefulWidget {
     this.isLoading = false,
     this.isRequired = false,
     this.initialCountryCode = '+256',
-    this.useFloatingLabel = false,
+    this.useFloatingLabel = true,
     super.key,
   }) : assert(
          !isRequired || requiredMessage != null,

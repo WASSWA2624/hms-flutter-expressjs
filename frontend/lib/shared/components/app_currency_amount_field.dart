@@ -166,7 +166,7 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
               widget.amountLabelText,
               isRequired: widget.isRequired,
             ),
-            floatingLabelBehavior: FloatingLabelBehavior.always,
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
             helperText: widget.helperText,
             errorText: widget.errorText ?? formField.errorText,
             contentPadding: EdgeInsets.zero,

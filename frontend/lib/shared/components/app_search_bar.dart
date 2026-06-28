@@ -6,6 +6,7 @@ import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
 @immutable
 final class AppSearchBarFieldChoice {
@@ -758,18 +759,16 @@ class _AppSearchBarFiltersDialogState
                   children: <Widget>[
                     for (final AppSearchBarTextFilter filter
                         in widget.textFilters)
-                      TextFormField(
+                      AppTextField(
                         controller: _textControllers[filter.key],
+                        labelText: filter.label,
+                        hintText: filter.hintText,
+                        prefixIcon: filter.icon == null
+                            ? null
+                            : Icon(filter.icon),
                         keyboardType: filter.keyboardType,
                         textInputAction:
                             filter.textInputAction ?? TextInputAction.next,
-                        decoration: InputDecoration(
-                          labelText: filter.label,
-                          hintText: filter.hintText,
-                          prefixIcon: filter.icon == null
-                              ? null
-                              : Icon(filter.icon),
-                        ),
                       ),
                   ],
                 ),
