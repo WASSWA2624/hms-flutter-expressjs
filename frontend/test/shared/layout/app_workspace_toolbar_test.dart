@@ -84,7 +84,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Four'), findsOneWidget);
-    expect(find.byType(Wrap), findsNothing);
+    expect(find.byType(PopupMenuButton<int>), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
   });
 
   testWidgets('AppWorkspaceToolbar moves global actions to More on narrow widths', (
@@ -142,6 +143,36 @@ void main() {
 
     expect(find.text('Hidden label'), findsNothing);
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+  });
+
+  testWidgets('AppWorkspaceToolbar uses ghost secondary actions without outlines', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspaceToolbar(
+          config: AppWorkspaceToolbarConfig(
+            secondary: <Widget>[
+              AppButton.secondary(
+                label: 'Configure',
+                leadingIcon: Icons.settings_outlined,
+                onPressed: () {},
+              ),
+            ],
+            onRefresh: () async {},
+            showFaultReport: false,
+            showHousekeepingRequest: false,
+            refreshLabel: 'Refresh',
+          ),
+        ),
+      ),
+      size: const Size(1200, 600),
+    );
+
+    expect(find.byType(OutlinedButton), findsNothing);
+    expect(find.text('Configure'), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsWidgets);
   });
 
   testWidgets('AppWorkspace header toolbar lays out in wide shell row', (

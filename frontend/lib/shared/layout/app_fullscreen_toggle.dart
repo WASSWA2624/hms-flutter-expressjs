@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
-import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/layout/app_fullscreen_platform_stub.dart'
     if (dart.library.html) 'package:hosspi_hms/shared/layout/app_fullscreen_platform_web.dart';
@@ -55,9 +52,6 @@ class _AppFullscreenToggleState extends State<AppFullscreenToggle> {
       return const SizedBox.shrink();
     }
 
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool iconOnly =
-        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
     final String label = _isFullscreen ? widget.exitLabel : widget.enterLabel;
     final IconData icon = _isFullscreen
         ? Icons.fullscreen_exit
@@ -73,25 +67,11 @@ class _AppFullscreenToggleState extends State<AppFullscreenToggle> {
       });
     }
 
-    if (iconOnly) {
-      return AppIconButton(
-        icon: icon,
-        semanticLabel: label,
-        tooltip: label,
-        onPressed: toggle,
-      );
-    }
-
-    return AppActionLabelScope(
-      showLabels: true,
-      forceIconOnly: false,
-      child: AppButton.secondary(
-        label: label,
-        leadingIcon: icon,
-        semanticLabel: label,
-        tooltip: label,
-        onPressed: toggle,
-      ),
+    return AppIconButton(
+      icon: icon,
+      semanticLabel: label,
+      tooltip: label,
+      onPressed: toggle,
     );
   }
 }

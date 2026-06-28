@@ -9,7 +9,9 @@ import 'package:hosspi_hms/shared/actions/app_global_fault_report_action.dart';
 import 'package:hosspi_hms/shared/actions/app_global_housekeeping_request_action.dart';
 import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_ghost_action_button.dart';
+import 'package:hosspi_hms/shared/components/app_menu_item_label.dart';
+import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_resolver.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_view_toggle.dart';
 
@@ -444,7 +446,7 @@ class _ToolbarActionRow extends StatelessWidget {
   }
 }
 
-class _ToolbarOverflowMenu extends StatelessWidget {
+class _ToolbarOverflowMenu extends ConsumerWidget {
   const _ToolbarOverflowMenu({
     required this.label,
     required this.actions,
@@ -456,69 +458,49 @@ class _ToolbarOverflowMenu extends StatelessWidget {
   final ProviderContainer container;
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: AppIconButton(
-        icon: Icons.more_vert,
-        semanticLabel: label,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<AppToolbarOverflowEntry> entries =
+        resolveToolbarOverflowEntries(actions, ref);
+
+    if (entries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return UncontrolledProviderScope(
+      container: container,
+      child: PopupMenuButton<int>(
         tooltip: label,
-        onPressed: () {
-          showModalBottomSheet<void>(
-            context: context,
-            showDragHandle: true,
-            isScrollControlled: true,
-            builder: (BuildContext sheetContext) {
-              final ThemeData theme = Theme.of(sheetContext);
-              return UncontrolledProviderScope(
-                container: container,
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(theme.spacing.md),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          label,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        SizedBox(height: theme.spacing.md),
-                        for (var index = 0; index < actions.length; index += 1)
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: index < actions.length - 1
-                                  ? theme.spacing.sm
-                                  : 0,
-                            ),
-                            child: _OverflowActionRow(action: actions[index]),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
+        position: PopupMenuPosition.under,
+        constraints: const BoxConstraints(minWidth: 320, maxWidth: 360),
+        color: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        onSelected: (int index) {
+          entries[index].onSelected?.call(context, ref);
         },
-      ),
-    );
-  }
-}
-
-class _OverflowActionRow extends StatelessWidget {
-  const _OverflowActionRow({required this.action});
-
-  final Widget action;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: action,
+        itemBuilder: (BuildContext menuContext) {
+          return <PopupMenuEntry<int>>[
+            for (var index = 0; index < entries.length; index += 1)
+              PopupMenuItem<int>(
+                value: index,
+                enabled: entries[index].enabled,
+                padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+                child: AppMenuItemLabel(
+                  icon: entries[index].icon,
+                  label: entries[index].label,
+                ),
+              ),
+          ];
+        },
+        child: AppGhostActionButton.popupMenuTrigger(
+          context: context,
+          icon: Icons.more_vert,
+          semanticLabel: label,
+        ),
       ),
     );
   }

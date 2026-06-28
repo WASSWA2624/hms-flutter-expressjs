@@ -664,7 +664,7 @@ class _UserMenuButton extends StatelessWidget {
             value: _UserMenuAction.profile,
             enabled: onProfileSelected != null,
             padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-            child: _UserMenuItemLabel(
+            child: AppMenuItemLabel(
               icon: Icons.person_outline,
               label: profileLabel,
             ),
@@ -672,7 +672,7 @@ class _UserMenuButton extends StatelessWidget {
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.settings,
             padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-            child: _UserMenuItemLabel(
+            child: AppMenuItemLabel(
               icon: Icons.settings_outlined,
               label: settingsLabel,
             ),
@@ -681,7 +681,7 @@ class _UserMenuButton extends StatelessWidget {
             value: _UserMenuAction.changePassword,
             enabled: onChangePasswordSelected != null,
             padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-            child: _UserMenuItemLabel(
+            child: AppMenuItemLabel(
               icon: Icons.lock_reset_outlined,
               label: changePasswordLabel,
             ),
@@ -691,7 +691,7 @@ class _UserMenuButton extends StatelessWidget {
             value: _UserMenuAction.logout,
             enabled: onLogoutSelected != null,
             padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-            child: _UserMenuItemLabel(
+            child: AppMenuItemLabel(
               icon: Icons.logout_outlined,
               label: logoutLabel,
             ),
@@ -854,41 +854,6 @@ class _UserMenuChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _UserMenuItemLabel extends StatelessWidget {
-  const _UserMenuItemLabel({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 38,
-          height: 38,
-          child: Icon(
-            icon,
-            size: theme.appTokens.listIconSize,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyLarge,
-          ),
-        ),
-      ],
     );
   }
 }

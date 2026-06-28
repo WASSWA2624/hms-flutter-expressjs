@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
+import 'package:hosspi_hms/shared/components/app_ghost_action_button.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary }
 
@@ -79,6 +80,20 @@ class AppButton extends StatelessWidget {
     );
     if (labelScope?.forceIconOnly == true && leadingIcon != null) {
       return _buildIconOnlyButton(context);
+    }
+
+    if (labelScope?.showLabels == true &&
+        variant == AppButtonVariant.secondary) {
+      return AppGhostActionButton(
+        label: label,
+        icon: leadingIcon ?? Icons.touch_app_outlined,
+        enabled: enabled,
+        isLoading: isLoading,
+        semanticLabel: semanticLabel,
+        tooltip: tooltip,
+        autofocus: autofocus,
+        onPressed: onPressed,
+      );
     }
 
     final bool canPress = enabled && !isLoading && onPressed != null;

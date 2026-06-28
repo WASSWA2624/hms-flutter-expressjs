@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_ghost_action_button.dart';
 
 const Duration _iconButtonAnimationDuration = Duration(milliseconds: 140);
 const OutlinedBorder _iconButtonShape = RoundedRectangleBorder();
@@ -43,15 +43,16 @@ class AppIconButton extends StatelessWidget {
     );
 
     if (labelScope?.showLabels == true) {
-      return AppButton.secondary(
+      return AppGhostActionButton(
         label: semanticLabel,
-        leadingIcon: icon,
+        icon: icon,
         enabled: enabled,
         isLoading: isLoading,
         semanticLabel: semanticLabel,
         tooltip: tooltip,
         autofocus: autofocus,
         onPressed: onPressed,
+        color: color,
       );
     }
 
