@@ -200,10 +200,9 @@ class _NursingWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         secondary: <Widget>[
-          AppButton(iconOnly: true, 
+          AppButton.secondary(
             leadingIcon: Icons.assignment_ind_outlined,
             label: l10n.nursingShiftContextTitle,
-
             semanticLabel: l10n.nursingShiftContextTitle,
             tooltip: l10n.nursingShiftContextTitle,
             onPressed: () => _openShiftContextDialog(context),

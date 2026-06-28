@@ -141,10 +141,9 @@ class _PatientRegistryContentState
         primary: AppAccessActionGate(
           requirement: _PatientRegistryContent._writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
-            return AppButton(iconOnly: true, 
+            return AppButton.primary(
               leadingIcon: Icons.person_add_alt_1_outlined,
               label: l10n.patientsAddAction,
-
               semanticLabel: l10n.patientsAddAction,
               tooltip: l10n.patientsAddAction,
               enabled: isAllowed,
@@ -157,17 +156,17 @@ class _PatientRegistryContentState
         secondary: <Widget>[
           AppAccessActionGate(
             requirement: _PatientRegistryContent._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) => AppButton(iconOnly: true, 
-              leadingIcon: Icons.emergency_outlined,
-              label: l10n.patientsEmergencyRegisterAction,
-
-              semanticLabel: l10n.patientsEmergencyRegisterAction,
-              tooltip: l10n.patientsEmergencyRegisterAction,
-              enabled: isAllowed,
-              onPressed: () {
-                _openEmergencyRegistration(context, ref);
-              },
-            ),
+            builder: (BuildContext context, bool isAllowed) =>
+                AppButton.secondary(
+                  leadingIcon: Icons.emergency_outlined,
+                  label: l10n.patientsEmergencyRegisterAction,
+                  semanticLabel: l10n.patientsEmergencyRegisterAction,
+                  tooltip: l10n.patientsEmergencyRegisterAction,
+                  enabled: isAllowed,
+                  onPressed: () {
+                    _openEmergencyRegistration(context, ref);
+                  },
+                ),
           ),
         ],
         onRefresh: () async {

@@ -126,9 +126,7 @@ class AppButton extends StatelessWidget {
     final bool compactIconOnly =
         iconOnly ||
         (labelScope?.forceIconOnly == true && _resolvedIcon != null);
-    final bool showLabel =
-        !compactIconOnly &&
-        (labelScope?.showLabels != true || variant != AppButtonVariant.secondary);
+    final bool showLabel = !compactIconOnly;
 
     final bool canPress = enabled && !isLoading && onPressed != null;
     final Widget button = showLabel

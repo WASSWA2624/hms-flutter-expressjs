@@ -31,12 +31,11 @@ class AppGlobalFaultReportAction extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: _faultReportRequirement,
       builder: (BuildContext context, bool isAllowed) {
-        return AppButton(iconOnly: true, 
+        return AppButton.secondary(
           leadingIcon: Icons.report_problem_outlined,
           label: label,
-
           semanticLabel: label,
-          tooltip: label,
+          tooltip: isAllowed ? label : null,
           enabled: isAllowed,
           onPressed: isAllowed
               ? () {

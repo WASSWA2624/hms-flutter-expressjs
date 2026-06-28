@@ -9,7 +9,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -105,10 +104,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final OpdWorkspaceController controller = ref.read(
       opdWorkspaceControllerProvider.notifier,
     );
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool iconOnly =
-        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-
     return AppWorkspace(
       title: l10n.opdTitle,
       leadingIcon: AppRouteIcons.opd,
@@ -123,23 +118,11 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         primary: AppAccessActionGate(
           requirement: opdEncounterPermissionRequirement,
           builder: (BuildContext context, bool isAllowed) {
-            if (iconOnly) {
-              return AppButton(iconOnly: true, 
-                leadingIcon: opdEncounterIcon,
-                label: l10n.opdStartWalkInAction,
-
-                semanticLabel: l10n.opdStartWalkInAction,
-                tooltip: l10n.opdStartEncounterTooltip,
-                enabled: isAllowed,
-                onPressed: () {
-                  _openOpdEncounterDialog(context, ref);
-                },
-              );
-            }
-
             return AppButton.primary(
               label: l10n.opdStartWalkInAction,
               leadingIcon: opdEncounterIcon,
+              semanticLabel: l10n.opdStartWalkInAction,
+              tooltip: l10n.opdStartEncounterTooltip,
               enabled: isAllowed,
               onPressed: () {
                 _openOpdEncounterDialog(context, ref);

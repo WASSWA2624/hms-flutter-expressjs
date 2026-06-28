@@ -31,12 +31,11 @@ class AppGlobalHousekeepingRequestAction extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: _housekeepingRequestRequirement,
       builder: (BuildContext context, bool isAllowed) {
-        return AppButton(iconOnly: true, 
+        return AppButton.secondary(
           leadingIcon: Icons.cleaning_services_outlined,
           label: label,
-
           semanticLabel: label,
-          tooltip: label,
+          tooltip: isAllowed ? label : null,
           enabled: isAllowed,
           onPressed: isAllowed
               ? () {

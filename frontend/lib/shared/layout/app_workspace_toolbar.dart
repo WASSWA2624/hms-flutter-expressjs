@@ -123,6 +123,13 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     required bool showLabels,
     required double spacing,
   }) {
+    if (!showLabels) {
+      return _ToolbarLayout(
+        inlineActions: const <Widget>[],
+        overflowActions: <Widget>[...screenActions, ...globalActions],
+      );
+    }
+
     List<Widget> inlineScreen = screenActions
         .take(maxVisibleScreenActions.clamp(0, screenActions.length))
         .toList();

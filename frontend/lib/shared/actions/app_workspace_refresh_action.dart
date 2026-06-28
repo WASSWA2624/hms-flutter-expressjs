@@ -16,8 +16,8 @@ class AppWorkspaceRefreshAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppButton(iconOnly: true, 
-      icon: Icons.refresh,
+    return AppButton.secondary(
+      leadingIcon: Icons.refresh,
       label: label,
       semanticLabel: label,
       tooltip: label,
