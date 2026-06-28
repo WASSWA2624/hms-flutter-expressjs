@@ -540,12 +540,15 @@ class _LabOrderIdentifier extends StatelessWidget {
           : order.orderIds;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
             l10n.labActiveOrderCount(activeOrders),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (ids.isNotEmpty)
             Text(
@@ -564,7 +567,7 @@ class _LabOrderIdentifier extends StatelessWidget {
       value: order.apiId,
       tooltip: l10n.copyIdentifierAction,
       copiedMessage: l10n.identifierCopiedMessage,
-      textStyle: theme.textTheme.titleSmall?.copyWith(
+      textStyle: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w700,
       ),
     );
@@ -590,117 +593,34 @@ class _LabOrderIdentity extends StatelessWidget {
             ),
           ])
         : order.displaySubtitle;
+    final String detailLine = _joinNonEmpty(<String?>[
+      subtitle,
+      order.encounterSourceLabel,
+      order.encounterLocationLabel,
+    ]);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
           order.displayTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        if (subtitle != null && subtitle.isNotEmpty)
+        if (detailLine.isNotEmpty)
           Text(
-            subtitle,
+            detailLine,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        _LabEncounterContextLine(order: order),
       ],
-    );
-  }
-}
-
-class _LabEncounterContextLine extends StatelessWidget {
-  const _LabEncounterContextLine({required this.order});
-
-  final LabOrderSummary order;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String? source = order.encounterSourceLabel;
-    final String? location = order.encounterLocationLabel;
-    if ((source == null || source.isEmpty) &&
-        (location == null || location.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-
-    final bool isInpatient =
-        order.isInpatient ||
-        (source != null && (source == 'IPD' || source == 'INPATIENT'));
-    final Color sourceColor = isInpatient
-        ? theme.colorScheme.tertiary
-        : theme.colorScheme.primary;
-
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs),
-      child: Wrap(
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          if (source != null && source.isNotEmpty)
-            _LabContextPill(
-              icon: isInpatient
-                  ? Icons.local_hotel_outlined
-                  : Icons.directions_walk_outlined,
-              label: source,
-              color: sourceColor,
-            ),
-          if (location != null && location.isNotEmpty)
-            _LabContextPill(
-              icon: Icons.bed_outlined,
-              label: location,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabContextPill extends StatelessWidget {
-  const _LabContextPill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(theme.spacing.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 2),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

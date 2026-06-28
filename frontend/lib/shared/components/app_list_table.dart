@@ -1448,7 +1448,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         ? theme.spacing.md
         : theme.spacing.xl;
     final double rowMinHeight = widget.compact ? 32 : 34;
-    final double rowMaxHeight = widget.compact ? 48 : 52;
+    final double rowMaxHeight = widget.compact ? 50 : 56;
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
