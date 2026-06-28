@@ -1,244 +1,143 @@
-# Task: HR Workspace UI/UX Polish — Toolbar, Dialogs, Staff Detail, and Work Queues
+# Task: HR workspace dialog UX polish
 
-## Objective
+## Goal
 
-Improve the **Human Resources** workspace at `/hr` so toolbar actions, work-queue navigation, notifications submenu, and staff-detail dialogs are clear, professional, and easy to use on desktop/web. This pass focuses on **UI structure, labeling, dialog behavior, and layout** — not re-wiring staff-action business logic (that is a follow-up phase).
+Polish the Human Resources workspace dialogs so they are clean, non-redundant, and stable at every dialog size. Users should see one clear title, switch work queues without the modal feeling like it reloads, and never hit layout overflow in the default (non-maximized) dialog size.
 
-**Companion context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) (module scope), [prompt2.md](./prompt2.md) (`AppDialog` resize/maximize fix).
+**Prerequisite:** Land [prompt2.md](./prompt2.md) first so `AppDialog` resize and true viewport maximize behave correctly.
 
----
+## Context
 
-## Current State
+HR workspace lives at `/hr` (`frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`). Toolbar actions open modal dialogs via `showAppDialog` + `AppDialog`:
 
-| Area | Location | Notes |
-|------|----------|-------|
-| HR workspace page | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` | Staff directory, dialogs, work-queue panel, staff detail body |
-| HR dialogs/widgets | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` | Shift template, role assign, roster preview, etc. |
-| Controller | `frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart` | Queue filters, staff selection, mutations |
-| Shared dialog shell | `frontend/lib/shared/components/app_dialog.dart` | Resize, maximize, footer actions |
-| Workspace toolbar | `frontend/lib/shared/layout/app_workspace_toolbar.dart` | Overflow menu, notifications submenu |
-| Action sections | `frontend/lib/shared/actions/app_action_panel.dart` | `AppActionSection`, `AppPermissionActionList` |
-| Info tiles | `frontend/lib/shared/components/app_info_tile.dart` | `AppInfoTileGrid` used in staff overview |
-| Strings | `frontend/lib/l10n/app_en.arb` | All labels via l10n — no hardcoded text |
+| Toolbar action | Dialog | Key files |
+| --- | --- | --- |
+| Work queues | Queue switcher + paginated table | `hr_workspace_page.dart` (`_showWorkQueueDialog`, `_HrWorkQueuePanel`), `hr_queue_switcher.dart` |
+| Schedule templates | Manage list + nested create/edit form | `hr_enhanced_dialogs.dart` (`showHrManageScheduleTemplatesDialog`, `showHrShiftTemplateDialog`) |
+| HR activity | Timeline feed | `hr_workspace_page.dart` (`_showActivityDialog`, `_HrActivityPanel`) |
 
-**Toolbar today (secondary actions):**
+Queue data is driven by `HrWorkspaceController.applyQueue` / `changeWorkItemsPage` (`hr_workspace_controller.dart`), which set `isRefreshingWorkItems` and refetch the current page.
 
-1. `hrShiftTemplateAction` → "Manage schedule templates" → opens **create-only** shift-template mutation dialog
-2. `hrWorkQueuesTitle` → opens work-queues `AppDialog`
-3. `hrActivityTitle` → opens HR activity timeline dialog
+Shared layout primitives:
 
-Overflow (⋮) menu also exposes Refresh, global maintenance actions, and a **Notifications** submenu with summary counts (total staff, leave requests, roster drafts, unassigned shifts, payroll drafts).
+- `AppDialog` — `frontend/lib/shared/components/app_dialog.dart`
+- `AppWorkspaceDetailPanel` — `frontend/lib/shared/layout/app_workspace.dart` (title, optional description, actions row, child)
+- `AppListTable` — table + pagination + empty/loading states
 
-**Staff detail flow:** selecting a staff row calls `selectStaff`, then opens `_openSelectedStaffDialog` — an `AppDialog` (`maxWidth: 980`, `scrollable: true`) containing `_HrStaffDetailPanel` → `_HrStaffDetailBody` (overview `AppInfoTileGrid`, `AppActionSection`, record sections).
+Design references: `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
 
-**Work-queue dialog:** `_HrWorkQueuePanel` uses `AppWorkspaceDetailPanel` with **icon-only** queue switcher buttons (leave, swap, roster drafts, unassigned shifts, payroll drafts) and an `AppListTable` bound to `state.workItems`.
+## Problems (observed at `127.0.0.1:5201/hr`)
 
----
+### 1. Redundant labels in Work queues dialog
 
-## Problems Observed (from QA at `127.0.0.1:5201/hr`)
+The dialog header already shows **"Work queues"**. Inside the content, `AppWorkspaceDetailPanel` repeats information:
 
-### Toolbar and navigation
+- `title` = active queue name (e.g. **"Swap requests"**)
+- `description` = **"Work queues"** again
+- `actions` = `HrQueueSwitcher` tabs, with the selected tab already highlighted
 
-1. **Misleading schedule-template action** — Button reads "Manage schedule templates" but only opens a **create template** form. Users expect list/manage or at minimum a create-oriented label.
-2. **Work queues buried or unclear** — Work queues should be a **primary toolbar action** (visible label on large screens), not only reachable via overflow. Queue switcher inside the dialog uses unlabeled icons; purpose is unclear without hovering tooltips.
-3. **Notifications submenu hard to use** — Hovering "Notifications" in the overflow menu opens a flyout, but moving the pointer to select an item often closes the submenu (`_ToolbarNotificationsSubmenu` hover-only open, no safe bridge between parent menu and child).
-4. **Overflow menu noise** — Items like "Request maintenance" and "Report equipment fault" feel out of place in HR; acceptable if global, but must not crowd HR-specific actions.
+This triple labeling adds noise and wastes horizontal space.
 
-### Staff directory table
+### 2. Layout overflow at default dialog size
 
-5. **Truncated next-action column** — "Review profile" clips to "Review profi…" on typical widths.
-6. **Noisy department column** — Shows `Department | DEP-XXXXXXXX` inline; department name alone is enough for scan; IDs belong in detail/copy affordances.
-7. **Summary card overlap** — "Total staff" notification/summary can float over table content and obscure rows.
+When the Work queues dialog is **not** maximized (default ~980px width or after manual resize), the panel header `Row` (title column + `HrQueueSwitcher` `Wrap`) overflows:
 
-### Staff detail dialog
+- Flutter debug banner: **"RIGHT OVERFLOWED BY 158 PIXELS"**
+- Queue title text wraps one character per line on the left (**"Swap requests Wor"** stacked vertically)
 
-8. **Maximize/resize broken** — Fullscreen header control does not fill the viewport; manual resize is unreliable (see [prompt2.md](./prompt2.md)).
-9. **Redundant Close button** — Footer `Close` duplicates header ✕ on staff detail, work queues, and activity dialogs.
-10. **Overview layout weak** — `AppInfoTileGrid` reads as flat, uneven cards; linked user crams name + email + ID into one long string; empty fields show "Not available" without hierarchy.
-11. **Staff actions poorly organized** — Ten permission-gated actions (assign department, assign position, record availability, request leave, assign shift, swap shift, compensation, run payroll, assign role, view module access) render as an unstructured grid without grouping or visual priority.
-12. **Repeated titles** — "Staff detail" appears in dialog header and again inside `AppWorkspaceDetailPanel`.
+Maximized/full-viewport mode looks acceptable; the broken layout is in the normal dialog size users see first.
 
-### Work queues and activity
+### 3. Queue tab switch feels like a full modal reload
 
-13. **Queue switcher not responsive** — Icon-only on desktop; should show **text labels on large breakpoints** (md+), icons only on compact.
-14. **Queue content must stay in sync** — Clicking a queue tab must call `controller.applyQueue`, refresh `state.workItems`, update description/subtitle, highlight active queue, and show correct empty/loaded table — end-to-end from `GET /hr/work-items?queue=`.
-15. **HR activity purpose unclear** — Timeline shows sparse shift/roster events without actor, deep link, or filter. Acceptable to keep read-only, but needs a clear description or light enhancement so users understand it is an audit-style feed.
+Clicking **Leave requests**, **Swap requests**, **Roster drafts**, **Unassigned shifts**, or **Payroll drafts** should only refresh the table for the selected queue. Today the entire dialog content appears to reload (header/panel chrome flashes, scroll position may reset), which hurts UX even though `applyQueue` does not close the route.
 
----
+Expected: dialog shell, queue tabs, and pagination chrome stay stable; only the table body shows a loading state, then new rows or the empty state.
+
+### 4. Redundant footer dismiss actions
+
+Several HR dialogs expose both a header **✕** and a footer **Close** or **Cancel** button. Footer dismiss is redundant and clutters mutation footers (e.g. Schedule template create form shows **Cancel** + **Create template**).
 
 ## Requirements
 
-### 1. Toolbar actions — labels, order, and honesty
+### 1. Work queues — single source of truth for labeling
 
-- On **md+ breakpoints**, show labeled secondary toolbar buttons per `AppActionLabelScope` / `appWorkspaceToolbarWithLabels` conventions.
-- **Toolbar order (left → right among HR actions):** Work queues → Create schedule template → HR activity (adjust `maxVisibleScreenActions` so Work queues stays inline on typical desktop widths).
-- **Rename schedule-template action** to reflect actual behavior:
-  - **Phase 1 (this task):** Change `hrShiftTemplateAction` to **"Create schedule template"** (or equivalent). Keep existing create form fields unchanged.
-  - **Optional stretch:** Open a small manage dialog first (list existing templates from `referenceData.shiftTemplates` + "Create new") — only if low effort; otherwise defer to a later prompt.
-- Ensure Work queues toolbar button opens `_showWorkQueueDialog` with the **last selected queue** (or default `unassignedShifts` / first non-empty queue from summary counts).
+- Keep **"Work queues"** only in the `AppDialog` title (and toolbar button label).
+- Remove the duplicate `AppWorkspaceDetailPanel` `description` (`l10n.hrWorkQueuesTitle`) and the per-queue `title` (`hrQueueLabel(...)`) from `_HrWorkQueuePanel`.
+- Rely on `HrQueueSwitcher` as the sole in-dialog indicator of the active queue (selected tab styling + label on md+).
+- Do **not** remove the **Queue** column from the table — that column labels each row, not the panel chrome.
 
-### 2. Notifications submenu — clickable, not hover-fragile
+### 2. Work queues — responsive layout without overflow
 
-In `app_workspace_toolbar.dart` (`_ToolbarNotificationsSubmenu`):
+Restructure `_HrWorkQueuePanel` so queue tabs and table never compete for width in one `Row`:
 
-- Replace hover-only open with **click-to-open** (or click + stable hover bridge).
-- Keep submenu open while pointer travels from parent overflow item to child items (use `MenuAnchor` parent/child linkage or a single merged menu level).
-- Each notification row must be easy to tap/click on web and desktop; minimum 48px row height preserved.
-- Selecting an item runs existing `onSelected` (e.g. `_applyQueueAndShow`) and closes menus.
-- Do not regress mobile overflow behavior.
+- Place `HrQueueSwitcher` in its own full-width row **above** the table (below the dialog header), with adequate horizontal padding.
+- On compact widths, preserve existing icon-only tabs; on md+, keep icon + label tabs.
+- Ensure no horizontal overflow from tab `Wrap`, table columns, or pagination at `maxWidth: 980` and at minimum resizable width (~360px per `AppDialog` mins).
+- Maximized layout should continue to look balanced (tabs may use a single row with more breathing room).
 
-### 3. Work queues dialog — labeled switcher and live content
+Suggested approach: stop using `AppWorkspaceDetailPanel` for work queues, or use it with an empty/minimal header and move the switcher outside the title `Row`. Prefer the pattern that matches other workspace modules (e.g. Subscriptions filters above table).
 
-In `_HrWorkQueuePanel`:
+### 3. Work queues — localized tab updates only
 
-- Extract queue switcher into a reusable widget (e.g. `hr_queue_switcher.dart` under `presentation/widgets/`).
-- **Large screens (md+):** show icon **+ label** buttons (or segmented control) for:
-  - Leave requests
-  - Swap requests
-  - Roster drafts
-  - Unassigned shifts
-  - Payroll drafts
-- **Compact screens:** icon-only with tooltips/semantics.
-- Active queue visually distinct (selected tone, disabled press on current queue).
-- On queue change: `controller.applyQueue(queue)` → table shows loading → renders items or empty state for **that** queue; panel `description` updates to queue name.
-- Remove redundant footer **Close** button; rely on header ✕ (same for activity dialog).
-- Wire row actions and empty states per queue type (existing `_workItemActions`); verify backend data for demo seed so at least one queue can show items in dev.
+- `HrQueueSwitcher` → `controller.applyQueue(queue)` must **not** close or re-open the dialog.
+- When the queue changes, update only:
+  - `AppListTable` data (`state.workItems`)
+  - `isLoading` on the table (`state.isRefreshingWorkItems`)
+  - empty state copy (unchanged strings)
+- Preserve dialog scroll offset where possible (avoid rebuilding the entire `AppDialog` subtree when only `workItemsQuery.queue` changes).
+- Disable only the non-selected queue tabs while loading (`enabled: !state.isRefreshingWorkItems` is fine); do not disable the whole dialog.
+- Verify notification deep-links that call `_applyQueueAndShow` still open the dialog once with the correct queue pre-selected.
 
-### 4. Staff directory table polish
+### 4. Remove redundant footer Close/Cancel on HR dialogs
 
-- Fix **Next action** column: prefer `AppButton.tertiary` link style, flexible width, or `overflow: visible` / wider min width so "Review profile" is not clipped.
-- **Department column:** show `departmentName` only; move `departmentDisplayId` to staff detail or copy chip on hover.
-- **Role / position column:** hide "Not available" subtitle when practitioner type is null — show primary position only.
-- Ensure summary notification UI does **not** overlay the table (summary belongs in toolbar notifications submenu or a dedicated summary strip, not floating over rows).
+Remove footer dismiss buttons where the header **✕** already closes the dialog. Keep primary/destructive workflow actions in the footer.
 
-### 5. Staff detail dialog — layout, maximize, and actions (UI only)
+| Dialog | Remove | Keep |
+| --- | --- | --- |
+| Work queues | (none today) | — |
+| Work item detail (`_showWorkItemDialog`) | `commonCloseActionLabel` | Approve/reject/etc. actions if present |
+| HR activity | footer Close if present | — |
+| Staff detail | footer Close if present | — |
+| Schedule templates manage | — | **+ Create template** |
+| Schedule template create/edit (`showHrShiftTemplateDialog`) | `commonCancelActionLabel` | **Create template** / save action |
 
-**Dialog shell ([prompt2.md](./prompt2.md)):**
+For `showAppWorkspaceMutationDialog` usages in HR, pass an empty/no-op cancel path or extend the shared helper with `showCancelButton: false` **only if needed** — prefer the smallest change that removes the visible Cancel button while header ✕ remains enabled (except during submit).
 
-- Fix `AppDialog` so maximize fills viewport and resize works on desktop.
-- Staff detail dialog: `scrollable: true`, `maxWidth: 980`, allow vertical/horizontal resize.
-- **Remove footer Close** from staff detail, work queues, and HR activity dialogs.
+### 5. Regression checks on related HR surfaces
 
-**Header / structure:**
+After Work queues changes, smoke-test without new features:
 
-- Single clear title in `AppDialog` header; avoid repeating the same title inside `AppWorkspaceDetailPanel` (use description for staff display ID only).
-- Keep edit (pencil) action in panel header.
+- Toolbar order unchanged: **Work queues → Schedule templates → HR activity**
+- Schedule templates manage dialog: list, create nested dialog, edit/delete still work
+- Staff directory row → detail dialog still opens; maximize/resize per prompt2.md
+- Queue pagination (`changeWorkItemsPage`) still works per tab
 
-**Overview section:**
+## Acceptance criteria
 
-- Reorganize `_HrStaffDetailBody` overview using design-system patterns from peer modules (Communications, Mortuary, Emergency use `AppInfoTileGrid` well).
-- Group fields logically:
-  - **Identity:** staff number, name
-  - **Role:** position, practitioner type (omit tile when empty)
-  - **Placement:** department
-  - **Dates:** hire date
-  - **Account:** linked user as structured sub-lines (name, email, copyable user ID) — not one pipe-separated string
-- Tune `maxColumns` / `minItemWidth` for balanced grid; use `borderedTiles` consistently with admin workspaces.
+1. Open Work queues at default size: no overflow stripes, no vertically stacked title characters.
+2. Dialog shows **"Work queues"** once (header only); active queue is clear from the selected tab, not a second heading.
+3. Switching queue tabs updates the table/empty state with a brief loading indicator; dialog does not flash/rebuild as if closed and reopened.
+4. Maximize dialog: layout remains clean; restore returns to prior size without layout regression.
+5. HR dialogs listed above have no redundant footer Close/Cancel; header ✕ dismisses read-only dialogs; mutation dialogs retain submit action only.
+6. `flutter analyze` and `flutter test` pass; add or update widget tests for `_HrWorkQueuePanel` / `HrQueueSwitcher` layout at narrow and wide constraints if practical.
 
-**Staff actions section (organize, do not rewire handlers):**
+## Out of scope
 
-- Keep existing `onPressed` callbacks and permission gates unchanged in this phase.
-- Group actions under clear subheadings inside one `AppActionSection` or multiple titled sections:
-  - **Placement:** Assign department, Assign position
-  - **Scheduling:** Record availability, Assign shift, Swap shift, Request leave
-  - **Payroll:** Compensation, Run payroll
-  - **Access:** Assign role, View module access (only when user linked)
-- Use `AppPermissionActionList` with consistent `AppButton.secondary` (or tertiary link) styling, aligned grid, `minItemWidth` ~200, `maxColumns` 3 on desktop / 2 on tablet / 1 on mobile.
-- Actions remain visible but disabled when `state.isMutating` — no behavior change.
+- Backend or API changes for queue data
+- New queue types or workflow logic (approve/reject handlers)
+- Full schedule-template CRUD beyond footer cleanup
+- Staff detail field reorganization (separate follow-up unless needed to remove footer Close)
+- `AppDialog` sizing/maximize fixes (owned by prompt2.md)
 
-**Record sections below actions** (assignments, leave, availability, shifts, compensation): keep `_SmallRecordSection` titles; ensure spacing matches overview (`theme.spacing.md` between sections).
-
-### 6. HR activity dialog — clarify purpose
-
-- Keep read-only timeline for this pass.
-- Ensure `hrActivityDescription` explains: *recent HR updates, roster publishes, and shift changes*.
-- Optional: add actor name and tap-to-open related entity if IDs exist in `HrTimelineItem` — only if data is already in API response.
-- Remove footer Close; header ✕ only.
-
-### 7. Global standards (mandatory)
-
-- All new/changed strings in `app_en.arb`; run codegen.
-- Follow `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
-- Reuse `frontend/lib/shared/*` — no one-off dialog chrome.
-- Full theme support (light/dark).
-- Responsive: Android, iOS, web, Windows.
-- Modal-first: no new routes for these flows.
-- RBAC unchanged: existing `AccessRequirement` constants on actions.
-
----
-
-## Out of Scope (this task)
-
-- Rewiring staff-action mutation flows (assign department form behavior, payroll processing, etc.) — **Phase 2** after UI lands.
-- Full schedule-template CRUD/list management (unless trivial list wrapper).
-- Backend schema/API changes unless required to fix queue data not loading.
-- Patient/clinical flows.
-- `AppDialog` visual redesign beyond sizing/maximize ([prompt2.md](./prompt2.md) owns shell behavior).
-
----
-
-## Key Files
+## Key files
 
 ```
 frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart
-frontend/lib/features/hr/presentation/widgets/          — new extract targets
+frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart
+frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart
 frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart
-frontend/lib/shared/components/app_dialog.dart          — prompt2.md
-frontend/lib/shared/layout/app_workspace_toolbar.dart   — notifications submenu
-frontend/lib/shared/actions/app_action_panel.dart
-frontend/lib/shared/components/app_info_tile.dart
-frontend/lib/l10n/app_en.arb
-frontend/test/shared/components/app_dialog_test.dart
+frontend/lib/shared/layout/app_workspace.dart          # AppWorkspaceDetailPanel
+frontend/lib/shared/components/app_dialog.dart
+frontend/lib/shared/layout/app_workspace_mutation_dialog.dart
+frontend/test/features/hr/                            # add/update as needed
 ```
-
-**Reference implementations:** `communications_workspace_page.dart`, `subscriptions_workspace_page.dart` (toolbar + detail density), `mortuary_workspace_page.dart` (`AppInfoTileGrid` layout).
-
----
-
-## Acceptance Criteria
-
-### Toolbar
-- [ ] Work queues is a visible labeled toolbar button on md+ desktop.
-- [ ] Schedule-template button label matches behavior ("Create schedule template" or manage+create if implemented).
-- [ ] Notifications submenu items are reliably clickable without disappearing on pointer move.
-
-### Work queues
-- [ ] Queue switcher shows labels on large screens, icons on compact.
-- [ ] Switching queues updates title/description, loading state, table rows, and empty state correctly.
-- [ ] No duplicate Close in dialog footer.
-
-### Staff directory
-- [ ] "Review profile" not truncated on standard desktop width.
-- [ ] Department column shows name without raw DEP- ID clutter.
-- [ ] No summary card overlapping table body.
-
-### Staff detail
-- [ ] Dialog maximizes to full viewport and resizes smoothly (per prompt2.md).
-- [ ] Overview fields grouped and visually balanced; linked user readable.
-- [ ] Staff actions grouped by category with consistent button styling; handlers unchanged.
-- [ ] No duplicate Close in footer; no duplicate "Staff detail" title.
-
-### HR activity
-- [ ] Description makes purpose clear; footer Close removed.
-
-### Quality
-- [ ] `dart format`, `flutter analyze`, `flutter test` pass from `frontend/`.
-- [ ] Manual QA: `.\tool\run_web_5201.ps1` → `/hr` → toolbar → work queues (switch all tabs) → notifications → open staff → resize/maximize → scan overview and actions.
-
----
-
-## Suggested Implementation Order
-
-1. **AppDialog sizing/maximize** — land [prompt2.md](./prompt2.md) first (shared fix benefits all HR dialogs).
-2. **Toolbar** — rename create-template label, tune `maxVisibleScreenActions`, fix notifications submenu interaction.
-3. **Work queues** — extract switcher widget, responsive labels, remove footer Close, verify queue refresh.
-4. **Staff directory** — column content and next-action truncation; summary overlap fix.
-5. **Staff detail** — overview layout, action grouping, dedupe titles, remove footer Close.
-6. **HR activity** — copy tweak, footer Close removal.
-7. **L10n + tests** — arb updates, widget test for queue switcher and/or toolbar submenu if feasible.
-
----
-
-## Deliverable
-
-A focused HR workspace UI pass: honest toolbar labels, stable notifications menu, labeled work-queue navigation with live data, polished staff directory columns, and a staff-detail dialog that maximizes/resizes correctly with organized overview and grouped action buttons — ready for a follow-up phase to refine staff-action workflows.

@@ -44,6 +44,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
   Widget? icon,
   double maxWidth = 600,
   bool barrierDismissible = false,
+  bool showCancelButton = true,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -58,6 +59,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       submitLabel: submitLabel,
       submitIcon: submitIcon,
       extraActions: extraActions,
+      showCancelButton: showCancelButton,
     ),
   );
 }
@@ -73,6 +75,7 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
     this.submitIcon,
     this.extraActions = const <AppWorkspaceMutationAction>[],
     this.maxWidth = 600,
+    this.showCancelButton = true,
   });
 
   final Widget title;
@@ -89,6 +92,7 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
   final String submitLabel;
   final IconData? submitIcon;
   final List<AppWorkspaceMutationAction> extraActions;
+  final bool showCancelButton;
 
   @override
   State<_AppWorkspaceMutationDialog> createState() =>
@@ -129,13 +133,14 @@ class _AppWorkspaceMutationDialogState
 
   List<Widget> _buildActions(BuildContext context) {
     final List<Widget> actions = <Widget>[
-      AppButton.tertiary(
-        label: widget.cancelLabel,
-        enabled: !_isSubmitting,
-        onPressed: _isSubmitting
-            ? null
-            : () => Navigator.of(context).pop(false),
-      ),
+      if (widget.showCancelButton)
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          enabled: !_isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
       for (final AppWorkspaceMutationAction action in widget.extraActions)
         action.isDestructive
             ? AppButton.tertiary(

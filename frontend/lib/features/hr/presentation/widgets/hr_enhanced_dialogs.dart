@@ -145,10 +145,6 @@ Future<void> showHrModuleAccessDialog(
             );
           },
         ),
-        AppButton.secondary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
       ],
     ),
   );
@@ -332,6 +328,7 @@ Future<void> showHrShiftTemplateDialog(
         : l10n.hrEditShiftTemplateAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
+    showCancelButton: false,
     buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
       return AppFormSection(
         children: <Widget>[
@@ -461,12 +458,6 @@ Future<void> showHrPreviewPayrollDialog(
                 ),
             ],
           ),
-          actions: <Widget>[
-            AppButton.secondary(
-              label: l10n.commonCloseActionLabel,
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ],
         ),
       );
     },
@@ -519,12 +510,6 @@ Future<void> showHrPreviewRosterDialog(
               ),
             ],
           ),
-          actions: <Widget>[
-            AppButton.secondary(
-              label: l10n.commonCloseActionLabel,
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ],
         ),
       );
     },
@@ -550,10 +535,6 @@ Future<void> showHrEndAssignmentDialog(
       icon: const Icon(Icons.event_busy_outlined),
       content: Text(l10n.hrEndAssignmentAction),
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton(
           label: l10n.hrEndAssignmentAction,
           onPressed: () => Navigator.of(context).pop(true),

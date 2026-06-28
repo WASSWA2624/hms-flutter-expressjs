@@ -284,21 +284,11 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         icon: const Icon(Icons.pending_actions_outlined),
         scrollable: true,
         maxWidth: 980,
-        content: Consumer(
-          builder: (BuildContext context, WidgetRef dialogRef, _) {
-            final HrWorkspaceState dialogState =
-                _hrStateFromAsync(
-                  dialogRef.watch(hrWorkspaceControllerProvider),
-                ) ??
-                widget.state;
-            return _HrWorkQueuePanel(
-              state: dialogState,
-              columnVisibilityController: _queueColumnController,
-              onPageChanged: ref
-                  .read(hrWorkspaceControllerProvider.notifier)
-                  .changeWorkItemsPage,
-            );
-          },
+        content: _HrWorkQueuePanel(
+          columnVisibilityController: _queueColumnController,
+          onPageChanged: ref
+              .read(hrWorkspaceControllerProvider.notifier)
+              .changeWorkItemsPage,
         ),
       ),
     );
@@ -1005,12 +995,59 @@ class _LinkedUserSummary extends StatelessWidget {
 
 class _HrWorkQueuePanel extends ConsumerWidget {
   const _HrWorkQueuePanel({
-    required this.state,
     required this.columnVisibilityController,
     required this.onPageChanged,
   });
 
-  final HrWorkspaceState state;
+  final AppListTableColumnVisibilityController<HrWorkItem>
+  columnVisibilityController;
+  final ValueChanged<AppPageRequest> onPageChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        const _HrWorkQueueSwitcherRow(),
+        SizedBox(height: Theme.of(context).spacing.md),
+        _HrWorkQueueTable(
+          columnVisibilityController: columnVisibilityController,
+          onPageChanged: onPageChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _HrWorkQueueSwitcherRow extends ConsumerWidget {
+  const _HrWorkQueueSwitcherRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ({HrQueue queue, bool isRefreshing}) queueState = ref.watch(
+      hrWorkspaceControllerProvider.select((AsyncValue<Result<HrWorkspaceState>> async) {
+        final HrWorkspaceState? state = _hrStateFromAsync(async);
+        return (
+          queue: state?.workItemsQuery.queue ?? HrQueue.leaveRequests,
+          isRefreshing: state?.isRefreshingWorkItems ?? false,
+        );
+      }),
+    );
+
+    return HrQueueSwitcher(
+      selectedQueue: queueState.queue,
+      enabled: !queueState.isRefreshing,
+    );
+  }
+}
+
+class _HrWorkQueueTable extends ConsumerWidget {
+  const _HrWorkQueueTable({
+    required this.columnVisibilityController,
+    required this.onPageChanged,
+  });
+
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
@@ -1018,85 +1055,81 @@ class _HrWorkQueuePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final HrWorkspaceState? state = _hrStateFromAsync(
+      ref.watch(hrWorkspaceControllerProvider),
+    );
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
 
-    return AppWorkspaceDetailPanel(
-      title: hrQueueLabel(l10n, state.workItemsQuery.queue),
-      description: l10n.hrWorkQueuesTitle,
-      actions: <Widget>[
-        HrQueueSwitcher(
-          selectedQueue: state.workItemsQuery.queue,
-          enabled: !state.isRefreshingWorkItems,
+    return AppListTable<HrWorkItem>(
+      page: state.workItems,
+      isLoading: state.isRefreshingWorkItems,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
+      onRowSelected: (HrWorkItem item) =>
+          _showWorkItemDialog(context, ref, item),
+      previousPageLabel: l10n.hrPreviousQueuePageLabel,
+      nextPageLabel: l10n.hrNextQueuePageLabel,
+      pageLabelBuilder: (AppPage<HrWorkItem> page) {
+        return l10n.hrPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      onPageChanged: onPageChanged,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.hrNoQueueItemsTitle,
+        body: l10n.hrNoQueueItemsBody,
+      ),
+      columns: <AppListTableColumn<HrWorkItem>>[
+        AppListTableColumn<HrWorkItem>(
+          label: l10n.hrQueueItemColumnLabel,
+          cellBuilder: (BuildContext context, HrWorkItem item) {
+            return _CopyableIdentifierCell(
+              title: _workItemTitle(context, item),
+              identifier: item.effectiveId,
+            );
+          },
+        ),
+        AppListTableColumn<HrWorkItem>(
+          label: l10n.hrQueueColumnLabel,
+          sortComparator: (HrWorkItem left, HrWorkItem right) =>
+              appListTableCompareText(left.queue.value, right.queue.value),
+          cellBuilder: (BuildContext context, HrWorkItem item) {
+            return Text(_queueLabel(context.l10n, item.queue));
+          },
+        ),
+        AppListTableColumn<HrWorkItem>(
+          label: l10n.hrStatusColumnLabel,
+          sortComparator: (HrWorkItem left, HrWorkItem right) =>
+              appListTableCompareText(left.status, right.status),
+          cellBuilder: (BuildContext context, HrWorkItem item) {
+            return _StatusBadge(status: item.status);
+          },
+        ),
+        AppListTableColumn<HrWorkItem>(
+          label: l10n.hrPeriodColumnLabel,
+          sortComparator: (HrWorkItem left, HrWorkItem right) =>
+              appListTableCompareDateTime(left.startAt, right.startAt),
+          cellBuilder: (BuildContext context, HrWorkItem item) {
+            return Text(_workItemPeriod(context, item));
+          },
+        ),
+        AppListTableColumn<HrWorkItem>(
+          label: l10n.hrNextActionColumnLabel,
+          cellBuilder: (BuildContext context, HrWorkItem item) {
+            return Text(_workItemNextAction(context, item));
+          },
         ),
       ],
-      child: AppListTable<HrWorkItem>(
-        page: state.workItems,
-        isLoading: state.isRefreshingWorkItems,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: (HrWorkItem item) =>
-            _showWorkItemDialog(context, ref, item),
-        previousPageLabel: l10n.hrPreviousQueuePageLabel,
-        nextPageLabel: l10n.hrNextQueuePageLabel,
-        pageLabelBuilder: (AppPage<HrWorkItem> page) {
-          return l10n.hrPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.lastItemNumber,
-          );
-        },
-        onPageChanged: onPageChanged,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.hrNoQueueItemsTitle,
-          body: l10n.hrNoQueueItemsBody,
-        ),
-        columns: <AppListTableColumn<HrWorkItem>>[
-          AppListTableColumn<HrWorkItem>(
-            label: l10n.hrQueueItemColumnLabel,
-            cellBuilder: (BuildContext context, HrWorkItem item) {
-              return _CopyableIdentifierCell(
-                title: _workItemTitle(context, item),
-                identifier: item.effectiveId,
-              );
-            },
-          ),
-          AppListTableColumn<HrWorkItem>(
-            label: l10n.hrQueueColumnLabel,
-            sortComparator: (HrWorkItem left, HrWorkItem right) =>
-                appListTableCompareText(left.queue.value, right.queue.value),
-            cellBuilder: (BuildContext context, HrWorkItem item) {
-              return Text(_queueLabel(context.l10n, item.queue));
-            },
-          ),
-          AppListTableColumn<HrWorkItem>(
-            label: l10n.hrStatusColumnLabel,
-            sortComparator: (HrWorkItem left, HrWorkItem right) =>
-                appListTableCompareText(left.status, right.status),
-            cellBuilder: (BuildContext context, HrWorkItem item) {
-              return _StatusBadge(status: item.status);
-            },
-          ),
-          AppListTableColumn<HrWorkItem>(
-            label: l10n.hrPeriodColumnLabel,
-            sortComparator: (HrWorkItem left, HrWorkItem right) =>
-                appListTableCompareDateTime(left.startAt, right.startAt),
-            cellBuilder: (BuildContext context, HrWorkItem item) {
-              return Text(_workItemPeriod(context, item));
-            },
-          ),
-          AppListTableColumn<HrWorkItem>(
-            label: l10n.hrNextActionColumnLabel,
-            cellBuilder: (BuildContext context, HrWorkItem item) {
-              return Text(_workItemNextAction(context, item));
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, HrWorkItem item) {
-          return _HrWorkItemTile(item: item);
-        },
-      ),
+      mobileItemBuilder: (BuildContext context, HrWorkItem item) {
+        return _HrWorkItemTile(item: item);
+      },
     );
   }
 }
@@ -1112,7 +1145,6 @@ class _HrActivityPanel extends StatelessWidget {
     final List<HrTimelineItem> items = state.overview.timeline.take(6).toList();
 
     return AppWorkspaceActivityList(
-      title: l10n.hrActivityTitle,
       description: l10n.hrActivityDescription,
       emptyTitle: l10n.hrNoActivityTitle,
       emptyBody: l10n.hrNoActivityBody,
@@ -1666,7 +1698,6 @@ Future<void> _showWorkItemDialog(
   WidgetRef ref,
   HrWorkItem item,
 ) async {
-  final AppLocalizations l10n = context.l10n;
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
@@ -1675,12 +1706,6 @@ Future<void> _showWorkItemDialog(
       scrollable: true,
       maxWidth: 640,
       content: _WorkItemActions(item: item),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ],
     ),
   );
 }
