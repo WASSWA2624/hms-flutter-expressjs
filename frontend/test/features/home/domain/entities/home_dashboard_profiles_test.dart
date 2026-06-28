@@ -88,5 +88,36 @@ void main() {
       ]);
       expect(fallback.quickActionIds, isNot(contains('register_patient')));
     });
+
+    test('HR profile is read-only insight surface', () {
+      final profile = homeProfileForRole(AppRole.hr);
+
+      expect(profile.quickActionIds, isEmpty);
+      expect(profile.shortcutIds, isEmpty);
+      expect(profile.emptyActionIds, isEmpty);
+      expect(profile.heroFullWidth, isTrue);
+      expect(profile.maxStatusCards, 8);
+      expect(profile.showEmptyWorkspaceLink, isTrue);
+      expect(profile.metricRouteTargets, contains('active_staff'));
+      expect(profile.metricRouteTargets['pending_leaves']?.queryParameters, {
+        'queue': 'LEAVE_REQUESTS',
+      });
+      expect(
+        profile.statusCards.map((template) => template.id),
+        containsAll(<String>[
+          'on_leave_today',
+          'attended_today',
+          'missed_shifts_today',
+          'payroll_pending',
+        ]),
+      );
+    });
+
+    test('doctor profile still exposes quick actions', () {
+      final profile = homeProfileForRole(AppRole.doctor);
+
+      expect(profile.quickActionIds, isNotEmpty);
+      expect(profile.shortcutIds, isNotEmpty);
+    });
   });
 }

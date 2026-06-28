@@ -4536,6 +4536,54 @@
   "@homeLoadingBody": {
     "description": "Body shown while the home feature controller loads readiness state."
   },
+  "homeTodayAtAGlanceTitle": "Today at a glance",
+  "@homeTodayAtAGlanceTitle": {
+    "description": "Section heading for home dashboard KPI cards."
+  },
+  "homeMetricCardSemantics": "{label}: {value}. View details.",
+  "@homeMetricCardSemantics": {
+    "description": "Accessibility label for a tappable home KPI card.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "homeOpenHrWorkspaceLink": "Open HR workspace",
+  "@homeOpenHrWorkspaceLink": {
+    "description": "Tertiary link from the HR home dashboard to the HR workspace."
+  },
+  "homeViewAllAction": "View all",
+  "@homeViewAllAction": {
+    "description": "Action to open the full queue from a home dashboard panel."
+  },
+  "homeTrendLast7Days": "Last 7 days",
+  "@homeTrendLast7Days": {
+    "description": "Subtitle for HR staffing trend chart on the home dashboard."
+  },
+  "homeTrendDefaultSubtitle": "Role-focused changes over the latest reporting window.",
+  "@homeTrendDefaultSubtitle": {
+    "description": "Default subtitle for home dashboard trend charts."
+  },
+  "homeTrendEmptyMessage": "No trend data is available yet.",
+  "@homeTrendEmptyMessage": {
+    "description": "Empty state message when a home dashboard trend chart has no data."
+  },
+  "homeDistributionWorkforceMix": "Staff availability mix",
+  "@homeDistributionWorkforceMix": {
+    "description": "Subtitle for HR workforce mix donut on the home dashboard."
+  },
+  "homeDistributionDefaultSubtitle": "Live mix of the records behind this dashboard.",
+  "@homeDistributionDefaultSubtitle": {
+    "description": "Default subtitle for home dashboard distribution charts."
+  },
+  "homeDistributionEmptyMessage": "No distribution data is available yet.",
+  "@homeDistributionEmptyMessage": {
+    "description": "Empty state message when a home dashboard distribution chart has no data."
+  },
   "homeLoadErrorTitle": "Dashboard could not load",
   "@homeLoadErrorTitle": {
     "description": "Title shown when the home feature controller fails."

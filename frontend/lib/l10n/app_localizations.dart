@@ -6658,6 +6658,66 @@ abstract class AppLocalizations {
   /// **'Loading readiness.'**
   String get homeLoadingBody;
 
+  /// Section heading for home dashboard KPI cards.
+  ///
+  /// In en, this message translates to:
+  /// **'Today at a glance'**
+  String get homeTodayAtAGlanceTitle;
+
+  /// Accessibility label for a tappable home KPI card.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {value}. View details.'**
+  String homeMetricCardSemantics(String label, String value);
+
+  /// Tertiary link from the HR home dashboard to the HR workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open HR workspace'**
+  String get homeOpenHrWorkspaceLink;
+
+  /// Action to open the full queue from a home dashboard panel.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get homeViewAllAction;
+
+  /// Subtitle for HR staffing trend chart on the home dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get homeTrendLast7Days;
+
+  /// Default subtitle for home dashboard trend charts.
+  ///
+  /// In en, this message translates to:
+  /// **'Role-focused changes over the latest reporting window.'**
+  String get homeTrendDefaultSubtitle;
+
+  /// Empty state message when a home dashboard trend chart has no data.
+  ///
+  /// In en, this message translates to:
+  /// **'No trend data is available yet.'**
+  String get homeTrendEmptyMessage;
+
+  /// Subtitle for HR workforce mix donut on the home dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff availability mix'**
+  String get homeDistributionWorkforceMix;
+
+  /// Default subtitle for home dashboard distribution charts.
+  ///
+  /// In en, this message translates to:
+  /// **'Live mix of the records behind this dashboard.'**
+  String get homeDistributionDefaultSubtitle;
+
+  /// Empty state message when a home dashboard distribution chart has no data.
+  ///
+  /// In en, this message translates to:
+  /// **'No distribution data is available yet.'**
+  String get homeDistributionEmptyMessage;
+
   /// Title shown when the home feature controller fails.
   ///
   /// In en, this message translates to:

@@ -3454,6 +3454,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLoadingBody => 'Loading readiness.';
 
   @override
+  String get homeTodayAtAGlanceTitle => 'Today at a glance';
+
+  @override
+  String homeMetricCardSemantics(String label, String value) {
+    return '$label: $value. View details.';
+  }
+
+  @override
+  String get homeOpenHrWorkspaceLink => 'Open HR workspace';
+
+  @override
+  String get homeViewAllAction => 'View all';
+
+  @override
+  String get homeTrendLast7Days => 'Last 7 days';
+
+  @override
+  String get homeTrendDefaultSubtitle =>
+      'Role-focused changes over the latest reporting window.';
+
+  @override
+  String get homeTrendEmptyMessage => 'No trend data is available yet.';
+
+  @override
+  String get homeDistributionWorkforceMix => 'Staff availability mix';
+
+  @override
+  String get homeDistributionDefaultSubtitle =>
+      'Live mix of the records behind this dashboard.';
+
+  @override
+  String get homeDistributionEmptyMessage =>
+      'No distribution data is available yet.';
+
+  @override
   String get homeLoadErrorTitle => 'Dashboard could not load';
 
   @override

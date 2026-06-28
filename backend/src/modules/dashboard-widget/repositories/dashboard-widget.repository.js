@@ -825,23 +825,102 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         deleted_at: null,
         staff_profile: staffProfileWhere
       };
-      const [activeStaff, shiftsToday, pendingLeaves, staffingBacklog, unassignedShifts] = await Promise.all([
+      const shiftScope = directScope(scope, { includeTenant: true, includeFacility: true });
+      const todayEnd = shiftDays(todayStart, 1);
+      const shiftWhereToday = {
+        ...shiftScope,
+        start_time: { gte: todayStart, lt: todayEnd }
+      };
+      const payrollWhere = {
+        deleted_at: null,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+      };
+      const [
+        activeStaff,
+        shiftsToday,
+        pendingLeaves,
+        staffingBacklog,
+        unassignedShifts,
+        onLeaveToday,
+        attendedToday,
+        missedShiftsToday,
+        payrollPending,
+        payrollProcessed
+      ] = await Promise.all([
         prisma.staff_profile.count({ where: staffProfileWhere }),
-        prisma.shift.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), start_time: { gte: todayStart } } }),
+        prisma.shift.count({ where: shiftWhereToday }),
         prisma.staff_leave.count({ where: { ...leaveWhere, status: 'REQUESTED' } }),
         prisma.staff_position.count({ where: { ...staffPositionScope(scope), is_active: true } }),
-        prisma.shift.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), start_time: { gte: todayStart }, assignments: { none: { deleted_at: null } } } })
+        prisma.shift.count({
+          where: {
+            ...shiftScope,
+            status: 'SCHEDULED',
+            assignments: { none: { deleted_at: null } }
+          }
+        }),
+        prisma.staff_leave.count({
+          where: {
+            ...leaveWhere,
+            status: 'APPROVED',
+            start_date: { lte: todayEnd },
+            end_date: { gte: todayStart }
+          }
+        }),
+        prisma.shift.count({
+          where: {
+            ...shiftWhereToday,
+            assignments: { some: { deleted_at: null } }
+          }
+        }),
+        prisma.shift.count({
+          where: {
+            ...shiftWhereToday,
+            start_time: { lt: now },
+            status: 'SCHEDULED',
+            assignments: { some: { deleted_at: null } }
+          }
+        }),
+        prisma.payroll_run.count({ where: { ...payrollWhere, status: 'DRAFT' } }),
+        prisma.payroll_run.count({
+          where: {
+            ...payrollWhere,
+            status: { in: ['PROCESSED', 'PAID'] },
+            period_start: { lte: todayEnd },
+            period_end: { gte: todayStart }
+          }
+        })
       ]);
+      const availableStaff = Math.max(0, activeStaff - onLeaveToday);
+      const filledShiftsToday = attendedToday;
       const attendanceRate = shiftsToday > 0
-        ? percentOf(Math.max(0, shiftsToday - unassignedShifts), shiftsToday)
+        ? percentOf(filledShiftsToday, shiftsToday)
         : 0;
       return {
-        metrics: { activeStaff, shiftsToday, pendingLeaves, staffingBacklog, unassignedShifts, attendanceRate },
-        trendDates: await selectDateSeries(prisma.staff_leave, { ...leaveWhere, created_at: { gte: trendStart } }, 'created_at'),
-        statusCounts: await countByStatuses(prisma.staff_leave, leaveWhere, ['REQUESTED', 'APPROVED', 'REJECTED', 'CANCELLED']),
+        metrics: {
+          activeStaff,
+          shiftsToday,
+          pendingLeaves,
+          staffingBacklog,
+          unassignedShifts,
+          attendanceRate,
+          onLeaveToday,
+          attendedToday,
+          missedShiftsToday,
+          payrollPending,
+          payrollProcessed
+        },
+        trendDates: await selectDateSeries(
+          prisma.shift,
+          { ...shiftScope, start_time: { gte: trendStart } },
+          'start_time'
+        ),
+        statusCounts: {
+          ACTIVE: availableStaff,
+          ON_LEAVE: onLeaveToday
+        },
         activity: {
           staff: await prisma.staff_profile.count({ where: { ...staffProfileWhere, updated_at: { gte: window24h } } }),
-          shifts: await prisma.shift.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), updated_at: { gte: window24h } } }),
+          shifts: await prisma.shift.count({ where: { ...shiftScope, updated_at: { gte: window24h } } }),
           leaves: await prisma.staff_leave.count({ where: { ...leaveWhere, updated_at: { gte: window24h } } })
         }
       };

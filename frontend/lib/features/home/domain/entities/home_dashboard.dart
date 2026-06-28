@@ -130,6 +130,14 @@ final class HomeDashboard {
   }
 }
 
+final class HomeMetricRouteTarget {
+  const HomeMetricRouteTarget({
+    this.queryParameters = const <String, String>{},
+  });
+
+  final Map<String, String> queryParameters;
+}
+
 final class HomeDashboardProfile {
   const HomeDashboardProfile({
     required this.id,
@@ -142,6 +150,10 @@ final class HomeDashboardProfile {
     required this.quickActionIds,
     required this.shortcutIds,
     this.emptyActionIds = const <String>[],
+    this.metricRouteTargets = const <String, HomeMetricRouteTarget>{},
+    this.heroFullWidth = false,
+    this.maxStatusCards = 6,
+    this.showEmptyWorkspaceLink = false,
   });
 
   final String id;
@@ -154,6 +166,10 @@ final class HomeDashboardProfile {
   final List<String> quickActionIds;
   final List<String> shortcutIds;
   final List<String> emptyActionIds;
+  final Map<String, HomeMetricRouteTarget> metricRouteTargets;
+  final bool heroFullWidth;
+  final int maxStatusCards;
+  final bool showEmptyWorkspaceLink;
 
   List<HomeStatusCard> fallbackStatusCards() {
     return statusCards

@@ -496,7 +496,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'HR / workforce',
     homeTitle: 'Workforce dashboard',
     homeSubtitle:
-        'Manage staff profiles, leave, shifts, rosters, and staffing gaps.',
+        'Operational snapshot of staff coverage, leave, shifts, and payroll.',
     emptyMessage: 'No HR tasks are pending.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -508,28 +508,48 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'pending_leaves',
         label: 'Pending leave approvals',
       ),
-      HomeStatusCardTemplate(id: 'staffing_backlog', label: 'Staffing backlog'),
+      HomeStatusCardTemplate(id: 'on_leave_today', label: 'On leave today'),
       HomeStatusCardTemplate(
         id: 'unassigned_shifts',
         label: 'Unassigned shifts',
       ),
+      HomeStatusCardTemplate(id: 'attended_today', label: 'Attended today'),
       HomeStatusCardTemplate(
-        id: 'attendance_rate',
-        label: 'Attendance rate',
-        format: 'percent',
+        id: 'missed_shifts_today',
+        label: 'Missed shifts today',
       ),
+      HomeStatusCardTemplate(id: 'payroll_pending', label: 'Payroll pending'),
     ],
-    quickActionIds: <String>[
-      'add_staff_profile',
-      'manage_staff_access',
-      'review_leave',
-      'create_shift',
-      'publish_roster',
-      'approve_roster',
-      'run_report',
-    ],
-    shortcutIds: <String>['hr', 'reports'],
-    emptyActionIds: <String>['add_staff_profile', 'publish_roster'],
+    quickActionIds: <String>[],
+    shortcutIds: <String>[],
+    heroFullWidth: true,
+    maxStatusCards: 8,
+    showEmptyWorkspaceLink: true,
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'active_staff': HomeMetricRouteTarget(),
+      'shifts_today': HomeMetricRouteTarget(),
+      'pending_leaves': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'LEAVE_REQUESTS'},
+      ),
+      'on_leave_today': HomeMetricRouteTarget(),
+      'staffing_backlog': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'UNASSIGNED_SHIFTS'},
+      ),
+      'unassigned_shifts': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'UNASSIGNED_SHIFTS'},
+      ),
+      'attended_today': HomeMetricRouteTarget(),
+      'missed_shifts_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'OVERDUE_SHIFTS'},
+      ),
+      'attendance_rate': HomeMetricRouteTarget(),
+      'payroll_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'PAYROLL_DRAFTS'},
+      ),
+      'payroll_processed': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'PAYROLL_DRAFTS'},
+      ),
+    },
   ),
   AppRole.biomed: HomeDashboardProfile(
     id: 'biomed',

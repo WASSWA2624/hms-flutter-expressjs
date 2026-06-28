@@ -375,8 +375,11 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'active_staff', label: 'Active staff profiles', value: metrics.activeStaff || 0 },
       { id: 'shifts_today', label: 'Shifts today', value: metrics.shiftsToday || 0 },
       { id: 'pending_leaves', label: 'Pending leave approvals', value: metrics.pendingLeaves || 0 },
-      { id: 'staffing_backlog', label: 'Staffing backlog', value: metrics.staffingBacklog || 0 },
-      { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0 }
+      { id: 'on_leave_today', label: 'On leave today', value: metrics.onLeaveToday || 0 },
+      { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0 },
+      { id: 'attended_today', label: 'Attended today', value: metrics.attendedToday || 0 },
+      { id: 'missed_shifts_today', label: 'Missed shifts today', value: metrics.missedShiftsToday || 0 },
+      { id: 'payroll_pending', label: 'Payroll pending', value: metrics.payrollPending || 0 },
     ];
   }
 

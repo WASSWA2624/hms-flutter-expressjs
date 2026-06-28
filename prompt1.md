@@ -1,208 +1,224 @@
-# Task: Enforce access boundaries — Settings vs HR vs Platform Access Admin
+# Task: HR Workforce Dashboard — informative, clickable, action-free landing
 
 ## Goal
 
-Correct **permission boundaries** so HR users (e.g. NHRA demo account) see only **personal settings** on `/settings`, while **staff user, role, and permission management** lives entirely inside the **Human Resources** workspace (`/hr`). Platform-level access administration (`/admin/access`) must remain visible only to tenant/facility/platform administrators — not HR.
+Redesign the **Workforce dashboard** (home landing for `AppRole.hr`) so HR managers get a **read-only operational snapshot** at a glance: KPI figures, charts, queue preview, alerts, and activity — with **no mutation shortcuts** on the dashboard itself. Every metric and chart segment should **deep-link** into the HR workspace (`/hr`) or Reports with the correct pre-filter, not open create/edit dialogs from home.
 
-**Prerequisite:** HR workspace scaffold and staff-detail dialogs already exist (`hr_workspace_page.dart`, `hr_enhanced_dialogs.dart`).
+Mutations (add staff, approve leave, publish roster, etc.) stay in **`/hr`** — staff directory, work queues, and staff-detail modals.
 
----
+**Prerequisite:** HR workspace at `/hr` is functional ([prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md)).
 
 ## Context
 
-| Actor | Expected Settings view | Expected access-management home |
-| --- | --- | --- |
-| **HR user** (`AppRole.hr`, `hrWrite`) | Preferences, Accessibility, Account and security (Profile, Change password) only | `/hr` — users, roles, permissions for clinical/operational staff |
-| **Tenant / facility / platform admin** | Above + Administration boundaries (deep links) + Administrative setup workspace | `/admin/access` — full access admin including demo accounts and module entitlements |
+The HR dashboard is not a separate route. It is the **role-specific home profile** rendered by the shared home feature.
 
-**Repro (observed at `127.0.0.1:5201`, NHRA account):**
+| Area | Current implementation |
+| --- | --- |
+| Page shell | `frontend/lib/features/home/presentation/pages/home_page.dart` — `_HomeDashboardContent`, `_HomeHeroPanel`, `_HomeStatusStrip`, `_HomeQuickActions`, `_HomeMainGrid` |
+| HR profile config | `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` — `AppRole.hr` profile (`homeTitle: 'Workforce dashboard'`, 6 status cards, 7 quick actions, 2 shortcuts) |
+| Data | `GET /dashboard-workspace/workspace` via `home_repository_impl.dart`; HR metrics assembled in `backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js` (`ROLE_PACKS.HR`) and card templates in `backend/src/lib/dashboard/summary.js` |
+| HR deep links | `/hr?queue=LEAVE_REQUESTS`, `?queue=ROSTER_DRAFTS`, `?queue=UNASSIGNED_SHIFTS`, `?queue=PAYROLL_DRAFTS`, etc. — see `hr_workspace_page.dart` / `HrQueue` enum |
+| Design refs | `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`, [prompts/07-home-dashboard-module-prompt.md](./prompts/07-home-dashboard-module-prompt.md) |
 
-1. Open **Settings** (`/settings`).
-2. HR user incorrectly sees **Administration boundaries** with **Users and access** and **User and security settings** — both route to `/admin/access`.
-3. HR user also sees **Administrative setup workspace** rendered as a locked empty state: *"Settings workspace unavailable — You do not have permission."* This section must **not render at all** for unauthorized users (never show a forbidden placeholder).
-4. On `/admin/access`, HR can reach tabs they should not use: Overview, User directory, Roles, Permissions, **Module entitlements**, **Demo accounts** — with empty states such as *"No access records found"*.
+**Reference screenshots (current UI at `127.0.0.1:5201`, HR role):**
 
-**Reference screenshots (current UI):**
-
-- Settings: Preferences + Accessibility visible (correct); Administration boundaries + locked Administrative setup workspace visible (incorrect for HR).
-- `/admin/access` → Module entitlements tab empty (HR should never reach this route).
-
-**Related prompts:** [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md) (platform access admin), [prompts/06-settings-profile-module-prompt.md](./prompts/06-settings-profile-module-prompt.md) (personal settings hub), [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) (HR workspace — update permission-editing guidance per this task).
-
-**Root cause (frontend):** `_accessAdminRequirement` in `settings_page.dart` includes `AppPermissions.hrWrite` and `AppRole.hr`, which keeps Administration-boundary rows and `SettingsWorkspaceSection` visible for HR. Backend `SETTINGS_WORKSPACE_ROLES` correctly excludes HR, producing the forbidden empty state.
-
-**Root cause (product gap):** HR has partial access hooks (assign role dialog, create-user dialog, read-only module-access preview with link to Access Admin) but lacks a complete in-HR workspace for directory-level user/role/permission CRUD.
-
----
+1. Hero banner (“Manage staff profiles, leave, shifts, rosters, and staffing gaps”) is **narrow** (~760px) while the page is full width.
+2. **Quick actions** row (Run report, Add staff profile, Review leave, Create shift, Publish roster, Approve roster, Update my profile) **navigates away** to `/hr`, `/reports`, or `/profile` — wrong for a summary dashboard.
+3. **Today at a glance** KPI strip is good structurally but cards are **not clickable** (no navigation affordance).
+4. Charts render but show **empty/flat data** (staffing coverage trend at zero; workforce mix donut: “No distribution data is available yet”).
+5. **Workforce action queue** empty state still shows mutation buttons (“Add staff profile”, “Publish roster”).
+6. Bottom **Shortcuts** (“HR”, “Reports”) duplicate sidebar navigation.
+7. Sidebar HR badge shows **“1”** while queue panel says **“No HR tasks are pending”** — counts must align.
 
 ## Problems
 
-### 1. Settings exposes platform admin surfaces to HR
+### 1. Dashboard behaves like an action launcher, not an insight surface
 
-`settings_page.dart` gates Administration-boundary actions with `_accessAdminRequirement` that treats HR like an access administrator. When any admin action passes the filter, `SettingsWorkspaceSection` is also rendered — even when the user lacks backend authorization for the settings workspace API.
+Quick actions and empty-state buttons push HR users into workflows that belong in `/hr`. The dashboard should answer “what is happening?” not “what should I create?”.
 
-### 2. Locked “Administrative setup workspace” should never appear
+### 2. Hero context panel does not use available width
 
-Forbidden UI (lock icon + *"You do not have permission"*) must not be shown as a teaser. Hide the entire section unless the user satisfies a **dedicated** requirement aligned with backend `SETTINGS_WORKSPACE_ROLES` (`superAdmin`, `tenantAdmin`, `facilityAdmin`).
+`_HomeHeroPanel` wraps subtitle text in `ConstrainedBox(maxWidth: 760)`, leaving unused horizontal space on desktop. For HR, facility/tenant context and the “Updated …” badge should span the full content width.
 
-### 3. HR is routed to the wrong module for access management
+### 3. KPI cards are static
 
-`/admin/access` is a **platform/tenant administration** workspace. HR must not navigate there from Settings, staff-detail dialogs, or sidebar. All HR-owned access flows belong under `/hr`.
+`_HomeMetricCard` has no `onTap` / route mapping. HR expects: tap **Active staff profiles** → staff directory; tap **Shifts today** → today’s shift view; tap **Pending leave approvals** → leave queue; etc.
 
-### 4. HR access capabilities are incomplete
+### 4. Metrics are incomplete for HR operations
 
-HR needs full CRUD for **tenant-scoped** staff access within HR boundaries:
+Current six cards (`active_staff`, `shifts_today`, `pending_leaves`, `staffing_backlog`, `unassigned_shifts`, `attendance_rate`) miss insights HR routinely needs:
 
-| Capability | HR | Platform Access Admin |
-| --- | --- | --- |
-| Create / edit / deactivate staff user accounts | Yes | Yes |
-| Assign **multiple roles** per user | Yes | Yes |
-| Create / edit / delete **roles** (tenant-wide) | Yes | Yes |
-| Create / edit / delete **permissions** | Yes | Yes |
-| Assign roles — one-by-one or **batch** | Yes | Yes |
-| Assign permissions — one-by-one or **batch** | Yes | Yes |
-| **Module entitlements** (subscription flags) | No | Yes |
-| **Demo accounts** | No | Yes |
-| API keys, break-glass, system-critical roles | No | Yes (safeguarded) |
+- Staff **on leave today**
+- **Attended / checked-in** vs scheduled today
+- **Missed / no-show** shifts
+- **Payroll**: pending vs processed (current period)
 
-Roles define the primary access level; effective permissions must be previewed before save.
+Backend HR pack already computes leave trend and leave status distribution; attendance is approximated from unassigned shifts — extend deliberately where data exists.
 
----
+### 5. Too much prose, not enough visual density
+
+Section descriptions, empty-state paragraphs, and action buttons add text noise. Prefer compact figures, sparklines, and chart legends over explanatory copy.
+
+### 6. HR-specific chrome should not affect other roles
+
+Changes to quick actions, shortcuts, hero width, and metric interactivity must be **scoped to `AppRole.hr`** (or HR profile flags) so doctor, nurse, and admin dashboards keep their current quick-action patterns unless explicitly changed.
 
 ## Requirements
 
-### A. Settings page — tighten visibility (`settings_page.dart`)
+### 1. Remove action surfaces from the HR dashboard
 
-1. **Remove HR from access-admin settings gates.** Update `_accessAdminRequirement` (and any shared constant) so **Users and access** and **User and security settings** require tenant/facility/platform admin roles or permissions — **not** `hrWrite` / `AppRole.hr`.
+For `AppRole.hr` profile only:
 
-2. **Split Administration boundaries from Administrative setup workspace.**
+- Clear `quickActionIds` (or stop rendering `_HomeQuickActions` when the list is empty — verify other roles unaffected).
+- Clear `shortcutIds` so `_ShortcutsSection` does not render.
+- Clear `emptyActionIds` so `_EmptyStateInline` shows message only — **no buttons** in the workforce action queue empty state.
+- Do **not** add replacement “Quick actions” elsewhere on the HR home page.
 
-   | Section | Show when |
-   | --- | --- |
-   | Administration boundaries (`AppScreenSection` with deep-link rows) | User passes **platform admin** requirement (tenant/facility/subscriptions/access-admin boundaries — each row keeps its own requirement) |
-   | Administrative setup workspace (`SettingsWorkspaceSection`) | User passes **`_settingsWorkspaceRequirement`** matching backend `SETTINGS_WORKSPACE_ROLES` only |
+### 2. Full-width hero / context banner
 
-3. **Never render forbidden placeholders.** If the user fails `_settingsWorkspaceRequirement`, omit `SettingsWorkspaceSection` entirely — no API call, no locked empty state.
+- For HR, remove or raise the 760px constraint on `_HomeHeroPanel` so subtitle + facility line + refresh badge use the full `ResponsivePage` width.
+- Keep typography compact: one subtitle line + one context line; no extra explanatory paragraphs.
 
-4. **HR Settings layout** must contain only:
+Implementation options (pick smallest correct change):
 
-   - **Preferences** — app language, app theme
-   - **Accessibility** — reduce motion, bold text, text size
-   - **Account and security** — Profile, Change password
+- **Option A:** `HomeDashboardProfile` flag, e.g. `heroFullWidth: true`, read in `_HomeHeroPanel`.
+- **Option B:** HR-only branch in `_HomeHeroPanel` when `dashboard.profile.role == AppRole.hr`.
 
-5. Add/adjust widget tests asserting an HR policy sees the three personal sections and **does not** find Administration boundaries or Administrative setup workspace labels.
+### 3. Clickable KPI cards with HR deep links
 
-### B. Access Admin route — block HR entry (`/admin/access`)
+Make `_HomeMetricCard` tappable when the profile defines a route target for the card id.
 
-1. Gate `AccessAdminWorkspacePage` (router or page-level `AccessGate`) with a requirement that **excludes** `AppRole.hr` unless the user also holds tenant/facility/platform admin privileges.
+Add an HR metric → navigation map (frontend-only fallback; backend may later expose `route_target` per card):
 
-2. Backend `access-admin-workspace` routes: align `canWriteAccess` / authorize middleware with the same boundary — HR should receive **403** if they deep-link to `/admin/access`.
+| Card id | Label (current) | Navigate to |
+| --- | --- | --- |
+| `active_staff` | Active staff profiles | `/hr` — staff directory, active filter if supported |
+| `shifts_today` | Shifts today | `/hr` — shifts/scheduling context for today |
+| `pending_leaves` | Pending leave approvals | `/hr?queue=LEAVE_REQUESTS` |
+| `staffing_backlog` | Staffing backlog | `/hr?queue=UNASSIGNED_SHIFTS` or open positions view |
+| `unassigned_shifts` | Unassigned shifts | `/hr?queue=UNASSIGNED_SHIFTS` |
+| `attendance_rate` | Attendance rate | `/hr` — shift attendance view for today |
 
-3. Remove or hide HR-facing escape hatches:
+**UX:**
 
-   - `hrOpenAccessAdminAction` button in `showHrModuleAccessDialog` (`hr_enhanced_dialogs.dart`)
-   - Any Settings or nav links that send HR to `/admin/access`
+- Entire card is tappable (`InkWell` / `Material` ripple); show subtle hover/focus and a chevron or “View” hint on wide layouts.
+- `Semantics` button label: e.g. “Active staff profiles: 16. View staff directory.”
+- Cards with `value == 0` remain tappable (empty lists are valid destinations).
+- Respect `AppAccessPolicy` — hide navigation if user lacks `hr:read` / `hr-rosters` module.
 
-### C. HR workspace — own user/role/permission administration
+Extend with new card ids (below) using the same pattern.
 
-Implement (or extend) an **Access** area inside `/hr` — toolbar tab, work-queue panel, or dedicated sub-panel — without new shell routes. All mutations stay **modal-first** (nested modals where needed).
+### 4. Expand HR KPI set (backend + frontend)
 
-#### C1. User directory (HR scope)
+Add metrics that HR can act on from `/hr` after drilling in. Suggested additions (adjust ids/labels to match existing naming):
 
-- List staff-linked and standalone user accounts relevant to the tenant (doctors, nurses, reception, billing, etc.).
-- Search/filter consistent with existing HR workspace patterns.
-- **Create user** — extend `showHrCreateUserDialog` to support optional initial role(s) and permission batch.
-- **Edit user** — email, status (activate/deactivate), link/unlink staff profile.
-- **Assign multiple roles** — multi-select or repeated assign with facility/department scope where applicable.
-- **Revoke roles** — per assignment, with confirmation modal.
+| Proposed id | Label | Source (indicative) |
+| --- | --- | --- |
+| `on_leave_today` | On leave today | `staff_leave` where `APPROVED` and today ∈ date range |
+| `attended_today` | Attended today | shift assignments checked in / confirmed for today |
+| `missed_shifts_today` | Missed shifts today | scheduled shifts with no check-in past grace window |
+| `payroll_pending` | Payroll pending | open payroll runs / draft items in scope |
+| `payroll_processed` | Payroll processed | completed payroll runs in current period |
 
-#### C2. Role management (tenant-wide)
+**Backend:** extend `dashboard-widget.repository.js` HR pack + `summary.js` card templates; keep tenant/facility scope consistent with existing HR queries.
 
-- List tenant roles HR may manage (exclude system-critical roles such as `SUPER_ADMIN` — mirror backend safeguards in `access-admin-workspace.service.js`).
-- **Create role** modal — name, description.
-- **Edit / delete role** modal — block delete when assignments exist; show effective-permission preview.
-- **Assign permissions to role** — grouped permission matrix inside modal; support selecting all in a group (batch).
+**Frontend:** extend `HomeStatusCardTemplate` list in `home_dashboard_profiles.dart` for `AppRole.hr`. Prefer **6–8 visible cards** in the strip; use responsive columns (existing `_HomeStatusStrip` layout). Drop or merge low-value cards if the strip overflows on tablet.
 
-#### C3. Permission management
+### 5. Charts — meaningful HR visuals, minimal caption text
 
-- List permissions HR may assign (respect backend allow-list if one exists; otherwise tenant-scoped non-system permissions).
-- **Create permission** modal.
-- **Edit / delete permission** modal — safeguard when attached to roles.
-- **Direct user permissions** (if supported by API) — assign/revoke individually or in batch via nested modal from user detail.
+Keep the existing two-chart row but ensure HR data populates when backend has records:
 
-#### C4. Staff detail integration
+| Widget | Title (existing) | HR data intent |
+| --- | --- | --- |
+| `_HomeTrendPanel` | Staffing coverage trend | 7-day series: scheduled shifts, filled assignments, or leave volume — not flat zero when shifts exist |
+| `_HomeDistributionPanel` | Workforce mix donut | Status mix: active / on leave / inactive staff, or leave status breakdown |
 
-- Keep per-staff **Assign role**, **Create user**, and access summary in the staff-detail dialog Actions section.
-- Replace read-only module-access dialog link to Access Admin with in-HR modals (role assign, permission preview, batch assign).
-- Show linked user’s **roles** (plural) and effective permissions in the staff detail overview/info sheet.
+- Short subtitle only (e.g. “Last 7 days”); remove long helper sentences.
+- Empty states: single line + optional “Open HR workspace” text link to `/hr` — **not** action buttons.
+- Chart segments clickable where feasible → same deep-link targets as related KPIs.
 
-#### C5. Explicitly out of scope for HR UI
+Verify `dashboard-workspace` returns non-empty `trend` / `distribution` for seeded demo data (`DemoCare General Hospital`).
 
-- Module entitlements tab/panel
-- Demo accounts tab/panel
-- Settings Administrative setup workspace
-- Subscriptions, tenant/facility setup shortcuts (remain Settings/platform admin only)
+### 6. Informative lower panels (keep, tighten)
 
-### D. Backend alignment
+Retain for HR:
 
-1. Add or extend **HR-scoped APIs** under `hr-workspace` (preferred) or tighten existing `user`, `role`, `permission`, `user-role`, `role-permission` endpoints so HR can CRUD within tenant scope while platform-only resources stay blocked.
+- **Workforce action queue** — pending work items; rows already link via `_QueueRow` / `_goToRoute`.
+- **Alerts and insights** — risk signals (coverage gaps, overdue approvals).
+- **Recent activity** — compact timeline; icon + verb + entity + relative time; no multi-line descriptions.
 
-2. Enforce authorization server-side:
+Remove mutation CTAs from empty states (requirement 1). Optionally replace with a single tertiary “Open HR workspace” link.
 
-   - HR: tenant-scoped user/role/permission CRUD; deny demo-users, module-entitlements, api-key mutations.
-   - Platform admin: unchanged full access-admin workspace.
+### 7. Badge / queue count consistency
 
-3. Return clear `403` for HR on disallowed resources — frontend gates are not sufficient alone.
+Ensure sidebar **Human resources** nav badge count matches dashboard queue preview total (same backend source or same `hr-workspace` work-item query). Fix whichever side is stale — do not show “1” in nav and “No HR tasks are pending” on home simultaneously.
 
-### E. Global UX rules
+### 8. i18n and theming
 
-- **Modal-first:** every create/edit/assign/revoke/delete action uses `AppDialog` / `AppWorkspaceMutationDialog`; batch flows may use nested modals or a second step inside the same dialog.
-- **Access gating:** `AccessGate` / `AppAccessActionGate` on every action; mirror backend permissions.
-- **Copy:** hospital workflow language in `app_en.arb` — no raw enum names or UUIDs in UI.
-- **Theming / i18n / responsive:** follow `frontend/.cursor/design-system.mdc`, `ui-workspace.mdc`, `ui-patterns.mdc`.
+- New labels and semantics strings in `frontend/lib/l10n/app_en.arb`; run codegen.
+- Support light/dark; reuse `AppContentPanel`, `AppSectionPanel`, existing chart widgets.
+- No hardcoded English in widgets.
 
----
+### 9. Scope boundaries
 
-## Files to touch (starting points)
-
-| Area | Path |
+| In scope | Out of scope |
 | --- | --- |
-| Settings visibility | `frontend/lib/features/settings/presentation/pages/settings_page.dart` |
-| Settings workspace section | `frontend/lib/features/settings/presentation/widgets/settings_workspace_section.dart` |
-| Access admin page gate | `frontend/lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart`, `frontend/lib/app/router/app_router.dart` |
-| HR dialogs & actions | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart`, `hr_staff_detail_actions.dart`, `hr_workspace_page.dart` |
-| HR controller / repository | `frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart`, `hr_repository_impl.dart` |
-| Backend HR / access | `backend/src/modules/hr-workspace/`, `backend/src/modules/access-admin-workspace/services/access-admin-workspace.service.js` |
-| Localization | `frontend/lib/l10n/app_en.arb` |
-| Tests | `frontend/test/features/settings/`, `frontend/test/features/hr/`, targeted backend tests |
+| HR home dashboard layout, KPIs, charts, deep links | Rewriting entire `home_page.dart` for all roles |
+| HR metric queries in dashboard backend | New HR mutation flows (stay in `/hr`) |
+| HR profile config in `home_dashboard_profiles.dart` | Modal dialog route support for home quick actions (removed for HR) |
+| Tests for HR dashboard behavior | Unrelated settings or access-admin changes |
 
----
+## Implementation notes
+
+- Prefer **profile-driven** behavior (`HomeDashboardProfile` fields: `quickActionIds`, `shortcutIds`, `emptyActionIds`, optional `metricRouteTargets`, `heroFullWidth`) over hard-coded `if (role == hr)` scattered across `home_page.dart`.
+- Extract HR-specific pieces to `frontend/lib/features/home/presentation/widgets/` if `home_page.dart` grows — e.g. `home_hr_metric_routes.dart`, `home_metric_card.dart`.
+- Follow [prompts/07-home-dashboard-module-prompt.md](./prompts/07-home-dashboard-module-prompt.md): home **summarizes and routes**; `/hr` **executes** workflows.
+- Realtime: subscribe to existing HR dashboard events in `home_controller.dart`; refresh KPIs and queue after HR mutations elsewhere.
 
 ## Acceptance criteria
 
-- [ ] NHRA (HR) account on `/settings` sees **only** Preferences, Accessibility, and Account and security — no Administration boundaries, no Administrative setup workspace (locked or otherwise).
-- [ ] NHRA cannot open `/admin/access` from UI; direct URL returns forbidden / access-denied scaffold.
-- [ ] NHRA manages users, roles, and permissions entirely from `/hr` via modals (create, edit, assign single/batch, revoke, delete where allowed).
-- [ ] User creation supports **multiple roles**; role creation is **tenant-wide**; permissions assignable individually or in batch.
-- [ ] Module entitlements and Demo accounts are **absent** from HR UI and blocked by backend for HR role.
-- [ ] Tenant/facility/platform admin retains Settings administration links and full `/admin/access` workspace unchanged.
-- [ ] `flutter analyze` and `flutter test` pass; targeted backend tests pass for touched authorization paths.
-
----
+- [ ] HR user lands on **Workforce dashboard** with **no Quick actions** section and **no Shortcuts** section.
+- [ ] Hero/context banner spans **full content width** on desktop and tablet.
+- [ ] Every KPI card in “Today at a glance” is **clickable** and navigates to the correct `/hr` (or Reports) destination with sensible pre-filters.
+- [ ] Workforce action queue empty state shows **message only** — no Add staff / Publish roster buttons.
+- [ ] At least **two charts** render with non-empty demo data when shifts/leaves/staff exist in seed data.
+- [ ] New HR metrics (on leave, attendance, missed shifts, payroll summary) appear when backend supplies values; hidden gracefully when zero and no data source.
+- [ ] Sidebar HR badge count **matches** dashboard pending-work count.
+- [ ] Non-HR role dashboards unchanged (still show quick actions where configured).
+- [ ] `flutter analyze` and `flutter test` pass; backend tests updated for new HR metric fields if added.
 
 ## Quality gate
 
 From `frontend/`:
 
-```bash
+```sh
 flutter pub get
 dart format --set-exit-if-changed .
 flutter analyze
-flutter test
+flutter test test/app/app_test.dart
+flutter test test/features/home/
 ```
 
-From `backend/` (touched modules):
+From `backend/` when touching dashboard metrics:
 
-```bash
-npm test -- --testPathPattern="hr-workspace|access-admin"
+```sh
+npm test -- --testPathPattern="dashboard-widget|dashboard-workspace|dashboard/summary"
+```
+
+## Key file references
+
+```
+frontend/lib/features/home/
+  presentation/pages/home_page.dart          # layout, KPI strip, charts, queue
+  domain/entities/home_dashboard_profiles.dart  # AppRole.hr profile
+  domain/entities/home_dashboard.dart        # HomeStatusCard, trend, distribution
+  data/repositories/home_repository_impl.dart
+  presentation/controllers/home_controller.dart
+
+frontend/lib/features/hr/
+  presentation/pages/hr_workspace_page.dart  # queue deep links, HrQueue
+
+backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js
+backend/src/lib/dashboard/summary.js
+backend/src/modules/dashboard-workspace/services/dashboard-workspace.service.js
 ```
