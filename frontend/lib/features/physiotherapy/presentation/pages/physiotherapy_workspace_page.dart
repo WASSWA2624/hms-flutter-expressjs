@@ -20,8 +20,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 const AccessRequirement _therapyReadRequirement = AccessRequirement(
@@ -135,25 +134,18 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       body: AppWorkspace(
         title: l10n.physiotherapyTitle,
         leadingIcon: Icons.accessibility_new_outlined,
-        status: AppWorkspaceStatus(
-          label: state.isSaving
-              ? l10n.physiotherapySavingStatus
-              : l10n.physiotherapyLiveStatus,
-          tone: state.isSaving
-              ? AppWorkspaceStatusTone.warning
-              : AppWorkspaceStatusTone.success,
-          icon: state.isSaving ? Icons.sync : Icons.check_circle_outline,
+        status: AppWorkspaceLiveStatus.fromSavingState(
+          isSaving: state.isSaving,
+          liveLabel: l10n.physiotherapyLiveStatus,
+          savingLabel: l10n.physiotherapySavingStatus,
         ),
-        secondaryActions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonRefreshActionLabel,
-            leadingIcon: Icons.refresh,
-            isLoading: state.isRefreshing,
-            onPressed: () {
-              controller.refresh();
-            },
-          ),
-        ],
+        toolbar: appWorkspaceToolbarWithLabels(
+          l10n,
+          onRefresh: () async {
+            await controller.refresh();
+          },
+          isRefreshing: state.isRefreshing,
+        ),
         compactSummaryCards: true,
         summaryCards: _summaryCards(context, controller),
         body: _buildWorklist(context, ref, controller),

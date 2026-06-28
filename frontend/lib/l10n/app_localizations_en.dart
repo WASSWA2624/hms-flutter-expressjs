@@ -33,6 +33,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRefreshActionLabel => 'Refresh';
 
   @override
+  String get workspaceToolbarOverflowLabel => 'More actions';
+
+  @override
+  String get workspaceFullscreenEnterLabel => 'Full screen';
+
+  @override
+  String get workspaceFullscreenExitLabel => 'Exit full screen';
+
+  @override
+  String get workspaceGlobalFaultReportAction => 'Report equipment fault';
+
+  @override
+  String get workspaceGlobalHousekeepingRequestAction => 'Request maintenance';
+
+  @override
   String get commonTableSettingsActionLabel => 'Table settings';
 
   @override

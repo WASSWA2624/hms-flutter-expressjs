@@ -190,26 +190,17 @@ class _SubscriptionsWorkspaceContentState
     return AppWorkspace(
       title: _SubscriptionsText.title,
       leadingIcon: AppRouteIcons.subscriptions,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? _SubscriptionsText.savingStatus
-            : _SubscriptionsText.liveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving
-            ? Icons.sync_outlined
-            : Icons.workspace_premium_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: _SubscriptionsText.liveStatus,
+        savingLabel: _SubscriptionsText.savingStatus,
       ),
-      primaryAction: _primaryAction(context, canWrite, state),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        context.l10n,
+        primary: _primaryAction(context, canWrite, state),
+        onRefresh: controller.refresh,
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state),
       compactSummaryCards: true,
       body: Column(

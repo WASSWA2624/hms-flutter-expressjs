@@ -1141,6 +1141,8 @@ class _AppShell extends ConsumerWidget {
       connectivityStatus: connectivityStatus,
       onlineLabel: l10n.appStatusOnlineLabel,
       offlineLabel: l10n.appStatusOfflineLabel,
+      fullscreenEnterLabel: l10n.workspaceFullscreenEnterLabel,
+      fullscreenExitLabel: l10n.workspaceFullscreenExitLabel,
       openMenuTooltip: l10n.appOpenNavigationMenuTooltip,
       closeDrawerTooltip: l10n.appCloseNavigationMenuTooltip,
       toggleSidebarTooltip: l10n.appToggleSidebarTooltip,

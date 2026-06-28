@@ -113,32 +113,26 @@ class _ReportsWorkspaceContentState
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.reportsSavingStatus
-            : l10n.reportsLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.analytics_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.reportsLiveStatus,
+        savingLabel: l10n.reportsSavingStatus,
       ),
       compactSummaryCards: true,
-      secondaryActions: <Widget>[
-        if (_canWriteReports(policy) && state.selectedItem?.canRun == true)
-          AppButton.secondary(
-            label: l10n.reportsRunAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _openRunDialog(context, ref, state),
-          ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          if (_canWriteReports(policy) && state.selectedItem?.canRun == true)
+            AppButton.secondary(
+              label: l10n.reportsRunAction,
+              leadingIcon: Icons.play_arrow_outlined,
+              enabled: !state.isSaving,
+              onPressed: () => _openRunDialog(context, ref, state),
+            ),
+        ],
+        onRefresh: controller.refresh,
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

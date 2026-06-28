@@ -108,44 +108,36 @@ class _OperationsWorkspaceContentState
       title: l10n.operationsTitle,
       leadingIcon: AppRouteIcons.operations,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isMutating
-            ? l10n.operationsSavingStatus
-            : l10n.operationsLiveStatus,
-        tone: state.isMutating
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isMutating ? Icons.sync_outlined : Icons.sensors_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isMutating,
+        liveLabel: l10n.operationsLiveStatus,
+        savingLabel: l10n.operationsSavingStatus,
       ),
-      primaryAction: canMutate
-          ? AppButton.primary(
-              label: l10n.operationsCreateRequestAction,
-              leadingIcon: Icons.add,
-              enabled: !state.isMutating,
-              onPressed: () => _showCreateRequestDialog(context, ref, state),
-            )
-          : null,
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.operationsOpenReportAction,
-          leadingIcon: Icons.summarize_outlined,
-          onPressed: () => _showOperationsReportDialog(context, state),
-        ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing
-              ? null
-              : () async {
-                  final AppFailure? failure = await controller.refresh();
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.operationsOpenReportAction,
+            leadingIcon: Icons.summarize_outlined,
+            onPressed: () => _showOperationsReportDialog(context, state),
+          ),
+        ],
+        primary: canMutate
+            ? AppButton.primary(
+                label: l10n.operationsCreateRequestAction,
+                leadingIcon: Icons.add,
+                enabled: !state.isMutating,
+                onPressed: () => _showCreateRequestDialog(context, ref, state),
+              )
+            : null,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state, controller),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

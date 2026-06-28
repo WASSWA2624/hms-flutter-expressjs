@@ -152,37 +152,36 @@ class _ClaimsWorkspaceContentState
             ? AppWorkspaceStatusTone.success
             : AppWorkspaceStatusTone.warning,
       ),
-      primaryAction: AppButton.primary(
-        label: l10n.claimsRequestAuthorizationAction,
-        leadingIcon: Icons.verified_user_outlined,
-        isLoading: state.isSaving,
-        onPressed: () {
-          unawaited(
-            _openRequestAuthorizationDialog(context, controller, state),
-          );
-        },
-      ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.claimsPrepareClaimAction,
-          leadingIcon: Icons.receipt_long_outlined,
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: AppButton.primary(
+          label: l10n.claimsRequestAuthorizationAction,
+          leadingIcon: Icons.verified_user_outlined,
           isLoading: state.isSaving,
           onPressed: () {
-            unawaited(_openPrepareClaimDialog(context, controller, state));
+            unawaited(
+              _openRequestAuthorizationDialog(context, controller, state),
+            );
           },
         ),
-        AppButton.tertiary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.claimsPrepareClaimAction,
+            leadingIcon: Icons.receipt_long_outlined,
+            isLoading: state.isSaving,
+            onPressed: () {
+              unawaited(_openPrepareClaimDialog(context, controller, state));
+            },
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
         if (allCount > 0)

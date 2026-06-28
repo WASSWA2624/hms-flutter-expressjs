@@ -23,8 +23,7 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class EmergencyWorkspacePage extends ConsumerWidget {
@@ -166,6 +165,7 @@ class _EmergencyWorkspaceContentState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final EmergencyWorkspaceState state = widget.state;
     final EmergencyWorkspaceController controller = ref.read(
       emergencyWorkspaceControllerProvider.notifier,
@@ -175,37 +175,32 @@ class _EmergencyWorkspaceContentState
       title: 'Emergency',
       leadingIcon: AppRouteIcons.emergency,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving ? 'Saving' : 'Live sync',
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: 'Live sync',
+        savingLabel: 'Saving',
       ),
-      primaryAction: AppAccessActionGate(
-        requirement: _writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
-            label: _EmergencyText.quickArrival,
-            leadingIcon: Icons.add_circle_outline,
-            enabled: isAllowed,
-            onPressed: () => _openQuickArrivalDialog(context),
-          );
-        },
-      ),
-      secondaryActions: <Widget>[
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: 'Refresh emergency board',
-          tooltip: _EmergencyText.refresh,
-          isLoading: state.isRefreshingBoard,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: AppAccessActionGate(
+          requirement: _writeRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.primary(
+              label: _EmergencyText.quickArrival,
+              leadingIcon: Icons.add_circle_outline,
+              enabled: isAllowed,
+              onPressed: () => _openQuickArrivalDialog(context),
+            );
           },
         ),
-      ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshingBoard,
+      ),
       summaryCards: <Widget>[
         if (_pageTotal(state.board) > 0)
           AppWorkspaceSummaryCard(
@@ -2016,7 +2011,6 @@ abstract final class _EmergencyText {
   static const String recordHandoff = 'Record handoff';
   static const String recordTriage = 'Record triage';
   static const String referral = 'Referral';
-  static const String refresh = 'Refresh';
   static const String required = 'Required';
   static const String responded = 'Responded';
   static const String response = 'Response';

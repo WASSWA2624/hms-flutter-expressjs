@@ -142,6 +142,36 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get commonRefreshActionLabel;
 
+  /// Accessibility label for the workspace toolbar overflow menu.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get workspaceToolbarOverflowLabel;
+
+  /// Label for entering full-screen mode from the app shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen'**
+  String get workspaceFullscreenEnterLabel;
+
+  /// Label for exiting full-screen mode from the app shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit full screen'**
+  String get workspaceFullscreenExitLabel;
+
+  /// Global toolbar action to report biomedical equipment faults.
+  ///
+  /// In en, this message translates to:
+  /// **'Report equipment fault'**
+  String get workspaceGlobalFaultReportAction;
+
+  /// Global toolbar action to request housekeeping or maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Request maintenance'**
+  String get workspaceGlobalHousekeepingRequestAction;
+
   /// Label for opening a worklist table column settings dialog.
   ///
   /// In en, this message translates to:

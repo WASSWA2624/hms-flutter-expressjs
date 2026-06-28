@@ -26,8 +26,7 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class PharmacyWorkspacePage extends ConsumerWidget {
@@ -112,35 +111,30 @@ class _PharmacyWorkspaceContentState
       title: l10n.pharmacyTitle,
       leadingIcon: AppRouteIcons.pharmacy,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.pharmacyStatusSaving
-            : l10n.pharmacyStatusLiveSync,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.pharmacyStatusLiveSync,
+        savingLabel: l10n.pharmacyStatusSaving,
       ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.pharmacyCatalogPanelTitle,
-          leadingIcon: Icons.inventory_2_outlined,
-          onPressed: () {
-            unawaited(_openCatalogDialog(context, state));
-          },
-        ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshingOrders,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.pharmacyCatalogPanelTitle,
+            leadingIcon: Icons.inventory_2_outlined,
+            onPressed: () {
+              unawaited(_openCatalogDialog(context, state));
+            },
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshingOrders,
+      ),
       summaryCards: <Widget>[
         if (state.workbench.summary.totalOrders > 0)
           AppWorkspaceSummaryCard(

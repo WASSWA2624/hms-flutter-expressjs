@@ -143,57 +143,54 @@ class _RadiologyWorkspaceContentState
     return AppWorkspace(
       title: l10n.radiologyTitle,
       leadingIcon: AppRouteIcons.radiology,
-      status: AppWorkspaceStatus(
-        label: state.isMutating
-            ? l10n.radiologySavingStatus
-            : l10n.radiologyLiveStatus,
-        tone: state.isMutating
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isMutating ? Icons.sync_outlined : Icons.sensors_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isMutating,
+        liveLabel: l10n.radiologyLiveStatus,
+        savingLabel: l10n.radiologySavingStatus,
       ),
-      primaryAction: canRequest
-          ? AppButton.primary(
-              label: l10n.radiologyRequestImagingAction,
-              leadingIcon: Icons.add,
-              enabled: !state.isMutating,
-              onPressed: () => _showCreateOrderDialog(context, ref),
-            )
-          : null,
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: state.query.view == RadiologyWorkbenchView.patients
-              ? l10n.radiologyOrdersViewAction
-              : l10n.radiologyPatientsViewAction,
-          leadingIcon: Icons.swap_horiz_outlined,
-          onPressed: state.isMutating
-              ? null
-              : () => controller.applyView(
-                  state.query.view == RadiologyWorkbenchView.patients
-                      ? RadiologyWorkbenchView.orders
-                      : RadiologyWorkbenchView.patients,
-                ),
-        ),
-        if (canWork)
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
           AppButton.secondary(
-            label: l10n.radiologyConfigurationsAction,
-            leadingIcon: Icons.tune_outlined,
-            enabled: !state.isMutating,
+            label: state.query.view == RadiologyWorkbenchView.patients
+                ? l10n.radiologyOrdersViewAction
+                : l10n.radiologyPatientsViewAction,
+            leadingIcon: Icons.swap_horiz_outlined,
             onPressed: state.isMutating
                 ? null
-                : () => _showRadiologyConfigurationsDialog(
-                    context,
-                    ref,
-                    tenantId: accessPolicy.tenantId,
+                : () => controller.applyView(
+                    state.query.view == RadiologyWorkbenchView.patients
+                        ? RadiologyWorkbenchView.orders
+                        : RadiologyWorkbenchView.patients,
                   ),
           ),
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+          if (canWork)
+            AppButton.secondary(
+              label: l10n.radiologyConfigurationsAction,
+              leadingIcon: Icons.tune_outlined,
+              enabled: !state.isMutating,
+              onPressed: state.isMutating
+                  ? null
+                  : () => _showRadiologyConfigurationsDialog(
+                      context,
+                      ref,
+                      tenantId: accessPolicy.tenantId,
+                    ),
+            ),
+        ],
+        primary: canRequest
+            ? AppButton.primary(
+                label: l10n.radiologyRequestImagingAction,
+                leadingIcon: Icons.add,
+                enabled: !state.isMutating,
+                onPressed: () => _showCreateOrderDialog(context, ref),
+              )
+            : null,
+        onRefresh: () async {
+          await controller.refresh();
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
         if (state.summary.totalForView(state.query.view) > 0)

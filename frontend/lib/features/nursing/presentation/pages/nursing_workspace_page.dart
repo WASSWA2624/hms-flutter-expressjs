@@ -26,8 +26,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class NursingWorkspacePage extends ConsumerWidget {
@@ -193,34 +192,29 @@ class _NursingWorkspaceContentState
       title: l10n.nursingTitle,
       leadingIcon: AppRouteIcons.nursing,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.nursingSavingStatus
-            : l10n.nursingLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.nursingLiveStatus,
+        savingLabel: l10n.nursingSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        AppIconButton(
-          icon: Icons.assignment_ind_outlined,
-          semanticLabel: l10n.nursingShiftContextTitle,
-          tooltip: l10n.nursingShiftContextTitle,
-          onPressed: () => _openShiftContextDialog(context),
-        ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing || state.isRefreshingDetail,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppIconButton(
+            icon: Icons.assignment_ind_outlined,
+            semanticLabel: l10n.nursingShiftContextTitle,
+            tooltip: l10n.nursingShiftContextTitle,
+            onPressed: () => _openShiftContextDialog(context),
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing || state.isRefreshingDetail,
+      ),
       summaryCards: <Widget>[
         if (_pageTotal(state.worklist) > 0)
           _summaryCard(

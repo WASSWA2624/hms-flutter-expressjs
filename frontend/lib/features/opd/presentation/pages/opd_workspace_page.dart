@@ -21,8 +21,7 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
@@ -114,49 +113,50 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       title: l10n.opdTitle,
       leadingIcon: AppRouteIcons.opd,
       compactSummaryCards: true,
-      primaryAction: AppAccessActionGate(
-        requirement: opdEncounterPermissionRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          if (iconOnly) {
-            return AppIconButton(
-              icon: opdEncounterIcon,
-              semanticLabel: l10n.opdStartWalkInAction,
-              tooltip: l10n.opdStartEncounterTooltip,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.opdLiveStatus,
+        savingLabel: l10n.opdSavingStatus,
+      ),
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: AppAccessActionGate(
+          requirement: opdEncounterPermissionRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            if (iconOnly) {
+              return AppIconButton(
+                icon: opdEncounterIcon,
+                semanticLabel: l10n.opdStartWalkInAction,
+                tooltip: l10n.opdStartEncounterTooltip,
+                enabled: isAllowed,
+                onPressed: () {
+                  _openOpdEncounterDialog(context, ref);
+                },
+              );
+            }
+
+            return AppButton.primary(
+              label: l10n.opdStartWalkInAction,
+              leadingIcon: opdEncounterIcon,
               enabled: isAllowed,
               onPressed: () {
                 _openOpdEncounterDialog(context, ref);
               },
             );
-          }
-
-          return AppButton.primary(
-            label: l10n.opdStartWalkInAction,
-            leadingIcon: opdEncounterIcon,
-            enabled: isAllowed,
-            onPressed: () {
-              _openOpdEncounterDialog(context, ref);
-            },
-          );
-        },
-      ),
-      secondaryActions: <Widget>[
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading:
-              state.isRefreshingAppointments ||
-              state.isRefreshingQueue ||
-              state.isRefreshingFlows ||
-              state.isRefreshingTriageQueue,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
           },
         ),
-      ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing:
+            state.isRefreshingAppointments ||
+            state.isRefreshingQueue ||
+            state.isRefreshingFlows ||
+            state.isRefreshingTriageQueue,
+      ),
       summaryCards: <Widget>[
         ..._opdBackendSummaryCards(context, state.summaryCounts),
       ],

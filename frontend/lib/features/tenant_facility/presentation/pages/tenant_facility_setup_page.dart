@@ -72,10 +72,6 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
     final bool setupComplete = snapshot.completedChecklistItems == 4;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool useIconRefresh =
-        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-
     return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
       leadingIcon: AppRouteIcons.setup,
@@ -91,31 +87,13 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
             : Icons.pending_actions_outlined,
       ),
       maxWidth: PageMaxWidth.dashboard,
-      secondaryActions: <Widget>[
-        if (useIconRefresh)
-          AppIconButton(
-            icon: Icons.refresh,
-            semanticLabel: l10n.commonRefreshActionLabel,
-            tooltip: l10n.commonRefreshActionLabel,
-            isLoading: isRefreshing,
-            onPressed: () {
-              ref
-                  .read(tenantFacilitySetupControllerProvider.notifier)
-                  .refresh();
-            },
-          )
-        else
-          AppButton.secondary(
-            label: l10n.commonRefreshActionLabel,
-            leadingIcon: Icons.refresh,
-            isLoading: isRefreshing,
-            onPressed: () {
-              ref
-                  .read(tenantFacilitySetupControllerProvider.notifier)
-                  .refresh();
-            },
-          ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        onRefresh: () async {
+          await ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
+        },
+        isRefreshing: isRefreshing,
+      ),
       summaryCards: _setupSummaryCards(
         context,
         l10n,

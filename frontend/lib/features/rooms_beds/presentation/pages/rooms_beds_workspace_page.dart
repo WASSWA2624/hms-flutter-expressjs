@@ -158,43 +158,36 @@ class _RoomsBedsWorkspaceContentState
     return AppWorkspace(
       title: l10n.roomsBedsTitle,
       leadingIcon: AppRouteIcons.roomsBeds,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.roomsBedsSavingStatus
-            : l10n.roomsBedsLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.sensors_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.roomsBedsLiveStatus,
+        savingLabel: l10n.roomsBedsSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing
-              ? null
-              : () async {
-                  final AppFailure? failure = await controller.refresh();
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-        ),
-        if (canAdminBeds)
-          AppButton.secondary(
-            label: l10n.roomsBedsManageCatalogAction,
-            leadingIcon: Icons.apartment_outlined,
-            enabled: !state.isSaving,
-            onPressed: () =>
-                context.go(AppRoutes.tenantFacilitySetup.location()),
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          if (canAdminBeds)
+            AppButton.secondary(
+              label: l10n.roomsBedsManageCatalogAction,
+              leadingIcon: Icons.apartment_outlined,
+              enabled: !state.isSaving,
+              onPressed: () =>
+                  context.go(AppRoutes.tenantFacilitySetup.location()),
+            ),
+          AppButton.tertiary(
+            label: l10n.navigationSetupLabel,
+            leadingIcon: Icons.settings_outlined,
+            onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
           ),
-        AppButton.tertiary(
-          label: l10n.navigationSetupLabel,
-          leadingIcon: Icons.settings_outlined,
-          onPressed: () => context.go(AppRoutes.tenantFacilitySetup.location()),
-        ),
-      ],
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
         AppWorkspaceSummaryCard(

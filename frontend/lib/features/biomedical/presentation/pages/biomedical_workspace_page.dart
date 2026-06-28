@@ -20,8 +20,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class BiomedicalWorkspacePage extends ConsumerWidget {
@@ -123,58 +122,39 @@ class _BiomedicalWorkspaceContentState
       title: l10n.biomedicalTitle,
       leadingIcon: AppRouteIcons.biomedical,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isMutating
-            ? l10n.biomedicalSavingStatus
-            : l10n.biomedicalLiveStatus,
-        tone: state.isMutating
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isMutating,
+        liveLabel: l10n.biomedicalLiveStatus,
+        savingLabel: l10n.biomedicalSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalRegisterAssetAction,
-            leadingIcon: Icons.add_box_outlined,
-            onPressed: () {
-              unawaited(
-                _openActionDialog(
-                  context,
-                  ref,
-                  state,
-                  _BiomedicalActionKind.asset,
-                ),
-              );
-            },
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalReportFaultAction,
-            leadingIcon: Icons.report_problem_outlined,
-            onPressed: () {
-              unawaited(
-                _openActionDialog(
-                  context,
-                  ref,
-                  state,
-                  _BiomedicalActionKind.fault,
-                ),
-              );
-            },
-          ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        showFaultReport: false,
+        primary: canWrite
+            ? AppButton.primary(
+                label: l10n.biomedicalRegisterAssetAction,
+                leadingIcon: Icons.add_box_outlined,
+                enabled: !state.isMutating,
+                onPressed: () {
+                  unawaited(
+                    _openActionDialog(
+                      context,
+                      ref,
+                      state,
+                      _BiomedicalActionKind.asset,
+                    ),
+                  );
+                },
+              )
+            : null,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: <Widget>[
         _summaryCard(
           context,

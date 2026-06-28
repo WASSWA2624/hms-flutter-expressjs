@@ -30,8 +30,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -137,46 +136,44 @@ class _PatientRegistryContentState
       leadingIcon: AppRouteIcons.patients,
       compactSummaryCards: true,
       inlineSummaryCards: true,
-      primaryAction: AppAccessActionGate(
-        requirement: _PatientRegistryContent._writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppIconButton(
-            icon: Icons.person_add_alt_1_outlined,
-            semanticLabel: l10n.patientsAddAction,
-            tooltip: l10n.patientsAddAction,
-            enabled: isAllowed,
-            onPressed: () {
-              _openPatientForm(context, ref);
-            },
-          );
-        },
-      ),
-      secondaryActions: <Widget>[
-        AppAccessActionGate(
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: AppAccessActionGate(
           requirement: _PatientRegistryContent._writeRequirement,
-          builder: (BuildContext context, bool isAllowed) => AppIconButton(
-            icon: Icons.emergency_outlined,
-            semanticLabel: l10n.patientsEmergencyRegisterAction,
-            tooltip: l10n.patientsEmergencyRegisterAction,
-            enabled: isAllowed,
-            onPressed: () {
-              _openEmergencyRegistration(context, ref);
-            },
-          ),
-        ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: widget.state.isRefreshingList,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              await _showFailureIfNeeded(context, failure);
-            }
+          builder: (BuildContext context, bool isAllowed) {
+            return AppIconButton(
+              icon: Icons.person_add_alt_1_outlined,
+              semanticLabel: l10n.patientsAddAction,
+              tooltip: l10n.patientsAddAction,
+              enabled: isAllowed,
+              onPressed: () {
+                _openPatientForm(context, ref);
+              },
+            );
           },
         ),
-      ],
+        secondary: <Widget>[
+          AppAccessActionGate(
+            requirement: _PatientRegistryContent._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) => AppIconButton(
+              icon: Icons.emergency_outlined,
+              semanticLabel: l10n.patientsEmergencyRegisterAction,
+              tooltip: l10n.patientsEmergencyRegisterAction,
+              enabled: isAllowed,
+              onPressed: () {
+                _openEmergencyRegistration(context, ref);
+              },
+            ),
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            await _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: widget.state.isRefreshingList,
+      ),
       summaryCards: <Widget>[
         if (widget.state.overview.totalPatients > 0)
           AppWorkspaceSummaryCard(

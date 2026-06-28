@@ -21,8 +21,7 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
@@ -139,28 +138,21 @@ class _ClinicalWorkspaceContentState
       title: l10n.clinicalTitle,
       leadingIcon: AppRouteIcons.clinical,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.clinicalSavingStatus
-            : l10n.clinicalLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.clinicalLiveStatus,
+        savingLabel: l10n.clinicalSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: <Widget>[
         if (_pageTotal(state.worklist) > 0)
           AppWorkspaceSummaryCard(

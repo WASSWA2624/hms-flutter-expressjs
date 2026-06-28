@@ -119,35 +119,30 @@ class _BillingWorkspaceContentState
     return AppWorkspace(
       title: l10n.billingWorkspaceTitle,
       leadingIcon: AppRouteIcons.billing,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.billingStatusPosting
-            : l10n.billingStatusLive,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.point_of_sale,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.billingStatusLive,
+        savingLabel: l10n.billingStatusPosting,
       ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.billingCloseShift,
-          leadingIcon: Icons.schedule_send_outlined,
-          enabled: canWrite && !state.isSaving,
-          onPressed: () => _showShiftCloseDialog(context, ref),
-        ),
-        AppButton.secondary(
-          label: l10n.billingCloseDay,
-          leadingIcon: Icons.today_outlined,
-          enabled: canWrite && !state.isSaving,
-          onPressed: () => _showDayCloseDialog(context, ref),
-        ),
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.billingCloseShift,
+            leadingIcon: Icons.schedule_send_outlined,
+            enabled: canWrite && !state.isSaving,
+            onPressed: () => _showShiftCloseDialog(context, ref),
+          ),
+          AppButton.secondary(
+            label: l10n.billingCloseDay,
+            leadingIcon: Icons.today_outlined,
+            enabled: canWrite && !state.isSaving,
+            onPressed: () => _showDayCloseDialog(context, ref),
+          ),
+        ],
+        onRefresh: controller.refresh,
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, ref, state),
       compactSummaryCards: true,
       body: Column(

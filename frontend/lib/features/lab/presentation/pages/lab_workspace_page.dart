@@ -22,8 +22,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class LabWorkspacePage extends ConsumerWidget {
   const LabWorkspacePage({super.key});
@@ -111,51 +110,49 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       title: l10n.labTitle,
       leadingIcon: AppRouteIcons.lab,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving ? l10n.labSavingStatus : l10n.labLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.labLiveStatus,
+        savingLabel: l10n.labSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: state.query.view == LabWorkbenchView.patients
-              ? l10n.labOrdersViewAction
-              : l10n.labPatientsViewAction,
-          leadingIcon: Icons.swap_horiz_outlined,
-          onPressed: () => controller.applyView(
-            state.query.view == LabWorkbenchView.patients
-                ? LabWorkbenchView.orders
-                : LabWorkbenchView.patients,
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppWorkspaceViewToggle(
+            label: state.query.view == LabWorkbenchView.patients
+                ? l10n.labOrdersViewAction
+                : l10n.labPatientsViewAction,
+            icon: Icons.swap_horiz_outlined,
+            onPressed: () => controller.applyView(
+              state.query.view == LabWorkbenchView.patients
+                  ? LabWorkbenchView.orders
+                  : LabWorkbenchView.patients,
+            ),
           ),
-        ),
-        if (canMutate)
-          AppButton.secondary(
-            label: l10n.labCreateAction,
-            leadingIcon: Icons.add_circle_outline,
-            enabled: !state.isSaving,
-            onPressed: () => _openCreateLabOrderDialog(context, state),
-          ),
-        if (canMutate)
-          AppButton.secondary(
-            label: l10n.labReferenceRangesAction,
-            leadingIcon: Icons.tune_outlined,
-            onPressed: () =>
-                _openLabConfigurationsDialog(context, state, policy.tenantId),
-          ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+          if (canMutate)
+            AppButton.secondary(
+              label: l10n.labReferenceRangesAction,
+              leadingIcon: Icons.tune_outlined,
+              onPressed: () =>
+                  _openLabConfigurationsDialog(context, state, policy.tenantId),
+            ),
+        ],
+        primary: canMutate
+            ? AppButton.primary(
+                label: l10n.labCreateAction,
+                leadingIcon: Icons.add_circle_outline,
+                enabled: !state.isSaving,
+                onPressed: () => _openCreateLabOrderDialog(context, state),
+              )
+            : null,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: <Widget>[
         if (state.summary.totalForView(state.query.view) > 0)
           _summaryCard(

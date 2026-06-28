@@ -137,8 +137,9 @@ class _MortuaryWorkspaceContentState
             ? AppWorkspaceStatusTone.success
             : AppWorkspaceStatusTone.warning,
       ),
-      secondaryActions: <Widget>[
-        AppPermissionActionButton(
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: AppPermissionActionButton(
           requirement: _writeRequirement,
           label: l10n.mortuaryReceiveCaseAction,
           icon: Icons.inbox_outlined,
@@ -146,18 +147,14 @@ class _MortuaryWorkspaceContentState
           tooltip: l10n.mortuaryActionsUnavailableTooltip,
           onPressed: null,
         ),
-        AppButton.tertiary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
         for (final MortuarySummaryItem item in state.summary)

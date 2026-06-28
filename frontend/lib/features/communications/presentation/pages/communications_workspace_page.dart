@@ -155,29 +155,21 @@ class _CommunicationsWorkspaceContentState
       title: l10n.communicationsWorkspaceTitle,
       leadingIcon: AppRouteIcons.communications,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.communicationsSavingStatus
-            : l10n.communicationsLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.notifications_active,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.communicationsLiveStatus,
+        savingLabel: l10n.communicationsSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state, controller),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

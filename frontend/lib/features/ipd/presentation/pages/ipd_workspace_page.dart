@@ -27,8 +27,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const List<AppRole> _ipdAdminActionRoles = <AppRole>[
   AppRole.superAdmin,
@@ -225,37 +224,50 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       title: l10n.ipdTitle,
       leadingIcon: AppRouteIcons.ipd,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving ? l10n.ipdSavingStatus : l10n.ipdLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.ipdLiveStatus,
+        savingLabel: l10n.ipdSavingStatus,
       ),
-      secondaryActions: <Widget>[
-        _IpdBoardModeToggle(mode: _boardMode, onChanged: _selectBoardMode),
-        if (canOperate)
-          AppButton.primary(
-            label: l10n.ipdStartAdmissionAction,
-            leadingIcon: Icons.person_add_alt_1_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => unawaited(_openStartAdmissionDialog(context)),
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppWorkspaceBoardToggle<IpdBoardMode>(
+            value: _boardMode,
+            segments: <ButtonSegment<IpdBoardMode>>[
+              ButtonSegment<IpdBoardMode>(
+                value: IpdBoardMode.patientBoard,
+                label: Text(l10n.ipdPatientBoardTab),
+                icon: const Icon(Icons.people_alt_outlined),
+              ),
+              ButtonSegment<IpdBoardMode>(
+                value: IpdBoardMode.bedBoard,
+                label: Text(l10n.ipdBedBoardTab),
+                icon: const Icon(Icons.bed_outlined),
+              ),
+            ],
+            onChanged: _selectBoardMode,
           ),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (_boardMode == IpdBoardMode.bedBoard) {
-              await controller.loadBedBoard(force: true);
-            }
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+        ],
+        primary: canOperate
+            ? AppButton.primary(
+                label: l10n.ipdStartAdmissionAction,
+                leadingIcon: Icons.person_add_alt_1_outlined,
+                enabled: !state.isSaving,
+                onPressed: () => unawaited(_openStartAdmissionDialog(context)),
+              )
+            : null,
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (_boardMode == IpdBoardMode.bedBoard) {
+            await controller.loadBedBoard(force: true);
+          }
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: <Widget>[
         if (_pageTotal(state.admissions) > 0)
           AppWorkspaceSummaryCard(
@@ -350,39 +362,6 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     if (saved == true && context.mounted) {
       _showSaved(context);
     }
-  }
-}
-
-class _IpdBoardModeToggle extends StatelessWidget {
-  const _IpdBoardModeToggle({required this.mode, required this.onChanged});
-
-  final IpdBoardMode mode;
-  final ValueChanged<IpdBoardMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return SegmentedButton<IpdBoardMode>(
-      showSelectedIcon: false,
-      segments: <ButtonSegment<IpdBoardMode>>[
-        ButtonSegment<IpdBoardMode>(
-          value: IpdBoardMode.patientBoard,
-          label: Text(l10n.ipdPatientBoardTab),
-          icon: const Icon(Icons.people_alt_outlined),
-        ),
-        ButtonSegment<IpdBoardMode>(
-          value: IpdBoardMode.bedBoard,
-          label: Text(l10n.ipdBedBoardTab),
-          icon: const Icon(Icons.bed_outlined),
-        ),
-      ],
-      selected: <IpdBoardMode>{mode},
-      onSelectionChanged: (Set<IpdBoardMode> selection) {
-        if (selection.isNotEmpty) {
-          onChanged(selection.first);
-        }
-      },
-    );
   }
 }
 

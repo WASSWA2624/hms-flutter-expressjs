@@ -32,6 +32,26 @@
   "@commonRefreshActionLabel": {
     "description": "Label for actions that refresh visible data without reloading the current screen."
   },
+  "workspaceToolbarOverflowLabel": "More actions",
+  "@workspaceToolbarOverflowLabel": {
+    "description": "Accessibility label for the workspace toolbar overflow menu."
+  },
+  "workspaceFullscreenEnterLabel": "Full screen",
+  "@workspaceFullscreenEnterLabel": {
+    "description": "Label for entering full-screen mode from the app shell."
+  },
+  "workspaceFullscreenExitLabel": "Exit full screen",
+  "@workspaceFullscreenExitLabel": {
+    "description": "Label for exiting full-screen mode from the app shell."
+  },
+  "workspaceGlobalFaultReportAction": "Report equipment fault",
+  "@workspaceGlobalFaultReportAction": {
+    "description": "Global toolbar action to report biomedical equipment faults."
+  },
+  "workspaceGlobalHousekeepingRequestAction": "Request maintenance",
+  "@workspaceGlobalHousekeepingRequestAction": {
+    "description": "Global toolbar action to request housekeeping or maintenance."
+  },
   "commonTableSettingsActionLabel": "Table settings",
   "@commonTableSettingsActionLabel": {
     "description": "Label for opening a worklist table column settings dialog."

@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/settings/presentation/controllers/settings_w
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
@@ -46,9 +47,8 @@ class SettingsPage extends ConsumerWidget {
       body: l10n.settingsBody,
       leadingIcon: AppRouteIcons.settings,
       headerActions: <Widget>[
-        AppButton.secondary(
+        AppWorkspaceRefreshAction(
           label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
           onPressed: () {
             ref
               ..invalidate(appLocaleProvider)

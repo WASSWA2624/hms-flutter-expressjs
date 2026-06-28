@@ -26,8 +26,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class IcuWorkspacePage extends ConsumerStatefulWidget {
@@ -166,29 +165,41 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       title: l10n.navigationIcuLabel,
       leadingIcon: AppRouteIcons.icu,
       compactSummaryCards: true,
-      status: AppWorkspaceStatus(
-        label: state.isSaving ? l10n.icuSavingLabel : l10n.icuLiveSyncLabel,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.icuLiveSyncLabel,
+        savingLabel: l10n.icuSavingLabel,
       ),
-      secondaryActions: <Widget>[
-        _IcuViewToggle(view: state.view),
-        AppIconButton(
-          icon: Icons.refresh,
-          semanticLabel: l10n.commonRefreshActionLabel,
-          tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshingBoard || state.isRefreshingBeds,
-          onPressed: () async {
-            final AppFailure? failure = isBedView
-                ? await controller.loadBedBoard()
-                : await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppWorkspaceBoardToggle<IcuBoardView>(
+            value: state.view,
+            segments: <ButtonSegment<IcuBoardView>>[
+              ButtonSegment<IcuBoardView>(
+                value: IcuBoardView.patientBoard,
+                label: Text(l10n.icuViewPatientBoard),
+                icon: const Icon(Icons.monitor_heart_outlined),
+              ),
+              ButtonSegment<IcuBoardView>(
+                value: IcuBoardView.bedBoard,
+                label: Text(l10n.icuViewBedBoard),
+                icon: const Icon(Icons.bed_outlined),
+              ),
+            ],
+            onChanged: controller.setView,
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = isBedView
+              ? await controller.loadBedBoard()
+              : await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+        isRefreshing: state.isRefreshingBoard || state.isRefreshingBeds,
+      ),
       summaryCards: isBedView
           ? const <Widget>[]
           : <Widget>[
@@ -250,41 +261,6 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               writeRequirement: _IcuWorkspaceContent.writeRequirement,
               searchController: _searchController,
             ),
-    );
-  }
-}
-
-class _IcuViewToggle extends ConsumerWidget {
-  const _IcuViewToggle({required this.view});
-
-  final IcuBoardView view;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    return SegmentedButton<IcuBoardView>(
-      showSelectedIcon: false,
-      segments: <ButtonSegment<IcuBoardView>>[
-        ButtonSegment<IcuBoardView>(
-          value: IcuBoardView.patientBoard,
-          label: Text(l10n.icuViewPatientBoard),
-          icon: const Icon(Icons.monitor_heart_outlined),
-        ),
-        ButtonSegment<IcuBoardView>(
-          value: IcuBoardView.bedBoard,
-          label: Text(l10n.icuViewBedBoard),
-          icon: const Icon(Icons.bed_outlined),
-        ),
-      ],
-      selected: <IcuBoardView>{view},
-      onSelectionChanged: (Set<IcuBoardView> selection) {
-        if (selection.isEmpty) {
-          return;
-        }
-        ref
-            .read(icuWorkspaceControllerProvider.notifier)
-            .setView(selection.first);
-      },
     );
   }
 }

@@ -160,50 +160,49 @@ class _IntegrationsWorkspaceContentState
       title: l10n.integrationsWorkspaceTitle,
       leadingIcon: AppRouteIcons.integrations,
       status: workspaceStatus,
-      primaryAction: AppPermissionActionButton(
-        requirement: _integrationsManageRequirement,
-        label: l10n.integrationsCreateIntegrationAction,
-        icon: Icons.add_link_outlined,
-        variant: AppButtonVariant.primary,
-        isLoading: state.isSaving,
-        hideWhenDenied: true,
-        onPressed: () {
-          unawaited(_openIntegrationDialog(context, controller, state));
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppPermissionActionButton(
+            requirement: _integrationsManageRequirement,
+            label: l10n.integrationsCreateApiKeyAction,
+            icon: Icons.key_outlined,
+            isLoading: state.isSaving,
+            hideWhenDenied: true,
+            onPressed: () {
+              unawaited(_openApiKeyDialog(context, controller));
+            },
+          ),
+          AppPermissionActionButton(
+            requirement: _integrationsManageRequirement,
+            label: l10n.integrationsCreateWebhookAction,
+            icon: Icons.webhook_outlined,
+            isLoading: state.isSaving,
+            hideWhenDenied: true,
+            onPressed: () {
+              unawaited(_openWebhookDialog(context, controller, state));
+            },
+          ),
+        ],
+        primary: AppPermissionActionButton(
+          requirement: _integrationsManageRequirement,
+          label: l10n.integrationsCreateIntegrationAction,
+          icon: Icons.add_link_outlined,
+          variant: AppButtonVariant.primary,
+          isLoading: state.isSaving,
+          hideWhenDenied: true,
+          onPressed: () {
+            unawaited(_openIntegrationDialog(context, controller, state));
+          },
+        ),
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
+        isRefreshing: state.isRefreshing,
       ),
-      secondaryActions: <Widget>[
-        AppPermissionActionButton(
-          requirement: _integrationsManageRequirement,
-          label: l10n.integrationsCreateApiKeyAction,
-          icon: Icons.key_outlined,
-          isLoading: state.isSaving,
-          hideWhenDenied: true,
-          onPressed: () {
-            unawaited(_openApiKeyDialog(context, controller));
-          },
-        ),
-        AppPermissionActionButton(
-          requirement: _integrationsManageRequirement,
-          label: l10n.integrationsCreateWebhookAction,
-          icon: Icons.webhook_outlined,
-          isLoading: state.isSaving,
-          hideWhenDenied: true,
-          onPressed: () {
-            unawaited(_openWebhookDialog(context, controller, state));
-          },
-        ),
-        AppButton.tertiary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: () async {
-            final AppFailure? failure = await controller.refresh();
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-      ],
       compactSummaryCards: true,
       summaryCards: <Widget>[
         AppWorkspaceSummaryCard(

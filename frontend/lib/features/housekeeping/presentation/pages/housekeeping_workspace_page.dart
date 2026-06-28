@@ -104,54 +104,57 @@ class _HousekeepingWorkspaceContentState
     return AppWorkspace(
       title: l10n.housekeepingTitle,
       leadingIcon: AppRouteIcons.housekeeping,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? l10n.housekeepingSavingStatus
-            : l10n.housekeepingLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving ? Icons.sync_outlined : Icons.cleaning_services,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: l10n.housekeepingLiveStatus,
+        savingLabel: l10n.housekeepingSavingStatus,
       ),
-      primaryAction: AppButton.primary(
-        label: l10n.housekeepingCreateTaskAction,
-        leadingIcon: Icons.add_task_outlined,
-        enabled: capabilities.canManage && !state.isSaving,
-        onPressed: capabilities.canManage
-            ? () => _showTaskDialog(context, ref, state)
-            : null,
-      ),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.housekeepingCreateScheduleAction,
-          leadingIcon: Icons.event_repeat_outlined,
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        showHousekeepingRequest: false,
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.housekeepingCreateScheduleAction,
+            leadingIcon: Icons.event_repeat_outlined,
+            enabled: capabilities.canManage && !state.isSaving,
+            onPressed: capabilities.canManage
+                ? () => _showScheduleDialog(context, ref, state)
+                : null,
+          ),
+          AppButton.secondary(
+            label: l10n.housekeepingRequestMaintenanceAction,
+            leadingIcon: Icons.build_circle_outlined,
+            enabled: capabilities.canUpdateTasks && !state.isSaving,
+            onPressed: capabilities.canUpdateTasks
+                ? () => _showMaintenanceRequestDialog(context, ref, state)
+                : null,
+          ),
+          AppReportActionButton.preview(
+            label: l10n.housekeepingReportSummaryAction,
+            enabled: capabilities.canReport,
+            onPressed: capabilities.canReport
+                ? () => _showReportPreviewDialog(context, state)
+                : null,
+          ),
+        ],
+        primary: AppButton.primary(
+          label: l10n.housekeepingCreateTaskAction,
+          leadingIcon: Icons.add_task_outlined,
           enabled: capabilities.canManage && !state.isSaving,
           onPressed: capabilities.canManage
-              ? () => _showScheduleDialog(context, ref, state)
+              ? () => _showTaskDialog(context, ref, state)
               : null,
         ),
-        AppButton.secondary(
-          label: l10n.housekeepingRequestMaintenanceAction,
-          leadingIcon: Icons.build_circle_outlined,
-          enabled: capabilities.canUpdateTasks && !state.isSaving,
-          onPressed: capabilities.canUpdateTasks
-              ? () => _showMaintenanceRequestDialog(context, ref, state)
-              : null,
-        ),
-        AppReportActionButton.preview(
-          label: l10n.housekeepingReportSummaryAction,
-          enabled: capabilities.canReport,
-          onPressed: capabilities.canReport
-              ? () => _showReportPreviewDialog(context, state)
-              : null,
-        ),
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted && failure != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.failureMessage(failure))),
+            );
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state),
       compactSummaryCards: true,
       body: Column(

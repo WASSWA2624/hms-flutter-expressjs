@@ -196,16 +196,15 @@ class _DischargeWorkspaceContentState
             ? AppWorkspaceStatusTone.success
             : AppWorkspaceStatusTone.warning,
       ),
-      primaryAction: AppButton.primary(
-        label: l10n.commonRefreshActionLabel,
-        leadingIcon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        onPressed: () async {
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {
             _showFailureIfNeeded(context, failure);
           }
         },
+        isRefreshing: state.isRefreshing,
       ),
       compactSummaryCards: true,
       summaryCards: <Widget>[

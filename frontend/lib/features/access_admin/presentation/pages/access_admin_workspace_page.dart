@@ -136,26 +136,17 @@ class _AccessAdminWorkspaceContentState
     return AppWorkspace(
       title: context.l10n.accessAdminTitle,
       leadingIcon: Icons.manage_accounts_outlined,
-      status: AppWorkspaceStatus(
-        label: state.isSaving
-            ? context.l10n.accessAdminSavingStatus
-            : context.l10n.accessAdminLiveStatus,
-        tone: state.isSaving
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isSaving
-            ? Icons.sync_outlined
-            : Icons.admin_panel_settings_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isSaving,
+        liveLabel: context.l10n.accessAdminLiveStatus,
+        savingLabel: context.l10n.accessAdminSavingStatus,
       ),
-      primaryAction: _primaryAction(context, state, canWrite, controller),
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        context.l10n,
+        primary: _primaryAction(context, state, canWrite, controller),
+        onRefresh: controller.refresh,
+        isRefreshing: state.isRefreshing,
+      ),
       summaryCards: _summaryCards(context, state),
       compactSummaryCards: true,
       body: Column(

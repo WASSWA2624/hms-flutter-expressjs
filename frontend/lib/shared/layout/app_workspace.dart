@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -9,6 +10,7 @@ import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
 
@@ -84,6 +86,7 @@ class AppWorkspace extends StatelessWidget {
     this.leadingIcon,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
+    this.toolbar,
     this.summaryCards = const <Widget>[],
     this.filters,
     this.detail,
@@ -103,6 +106,7 @@ class AppWorkspace extends StatelessWidget {
   final IconData? leadingIcon;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
+  final AppWorkspaceToolbarConfig? toolbar;
   final List<Widget> summaryCards;
   final Widget? filters;
   final Widget body;
@@ -141,6 +145,7 @@ class AppWorkspace extends StatelessWidget {
         leading: effectiveLeading,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
+        toolbar: toolbar,
         compact: compactHeader,
       ),
     ];
@@ -204,6 +209,7 @@ class AppWorkspaceHeader extends StatelessWidget {
     this.leading,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
+    this.toolbar,
     this.compact = true,
     super.key,
   });
@@ -213,6 +219,7 @@ class AppWorkspaceHeader extends StatelessWidget {
   final Widget? leading;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
+  final AppWorkspaceToolbarConfig? toolbar;
   final bool compact;
 
   @override
@@ -220,16 +227,28 @@ class AppWorkspaceHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final List<Widget> actions = <Widget>[...secondaryActions, ?primaryAction];
+    final AppWorkspaceToolbarConfig? effectiveToolbar = toolbar ??
+        (primaryAction != null || secondaryActions.isNotEmpty
+            ? AppWorkspaceToolbarConfig(
+                primary: primaryAction,
+                secondary: secondaryActions,
+                showGlobalActions: false,
+              )
+            : null);
+    final Widget? actionBar = effectiveToolbar == null
+        ? null
+        : Consumer(
+            builder: (BuildContext context, WidgetRef ref, _) {
+              return AppWorkspaceToolbar(config: effectiveToolbar);
+            },
+          );
     final Widget titleBlock = _WorkspaceHeaderTitle(
       leading: leading,
       title: title,
       status: status,
       compact: compact,
-    );
-    final Widget actionBar = _WorkspaceHeaderActions(
-      actions: actions,
-      expandIconButtons: true,
+      hideTitle: breakpoint == AppBreakpoint.xs,
+      hideStatus: breakpoint == AppBreakpoint.xs,
     );
 
     return DecoratedBox(
@@ -253,7 +272,7 @@ class AppWorkspaceHeader extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   SizedBox(width: constraints.maxWidth, child: titleBlock),
-                  if (actions.isNotEmpty)
+                  if (actionBar != null)
                     SizedBox(width: constraints.maxWidth, child: actionBar),
                 ],
               );
@@ -262,7 +281,7 @@ class AppWorkspaceHeader extends StatelessWidget {
             return Row(
               children: <Widget>[
                 Expanded(child: titleBlock),
-                if (actions.isNotEmpty) ...<Widget>[
+                if (actionBar != null) ...<Widget>[
                   SizedBox(width: theme.spacing.md),
                   actionBar,
                 ],
@@ -2388,12 +2407,16 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
     required this.status,
     required this.leading,
     this.compact = true,
+    this.hideTitle = false,
+    this.hideStatus = false,
   });
 
   final String title;
   final AppWorkspaceStatus? status;
   final Widget? leading;
   final bool compact;
+  final bool hideTitle;
+  final bool hideStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -2412,12 +2435,14 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
             AppBreakpoint.md => textTheme.titleLarge,
             _ => textTheme.headlineSmall,
           };
-    final Widget text = _WorkspaceHeaderText(
-      title: title,
-      status: status,
-      titleStyle: titleStyle,
-      colorScheme: colorScheme,
-    );
+    final Widget text = hideTitle && hideStatus
+        ? const SizedBox.shrink()
+        : _WorkspaceHeaderText(
+            title: hideTitle ? '' : title,
+            status: hideStatus ? null : status,
+            titleStyle: titleStyle,
+            colorScheme: colorScheme,
+          );
 
     if (leading == null) {
       return text;
@@ -2427,8 +2452,10 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         leading!,
-        SizedBox(width: theme.spacing.sm),
-        Expanded(child: text),
+        if (!hideTitle || !hideStatus) ...<Widget>[
+          SizedBox(width: theme.spacing.sm),
+          Expanded(child: text),
+        ],
       ],
     );
   }
@@ -2451,6 +2478,10 @@ class _WorkspaceHeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
+    if (title.isEmpty && status == null) {
+      return const SizedBox.shrink();
+    }
+
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool narrow = constraints.maxWidth < AppBreakpoints.sm;
@@ -2459,17 +2490,18 @@ class _WorkspaceHeaderText extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
+              if (title.isNotEmpty)
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
               if (status != null) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
+                if (title.isNotEmpty) SizedBox(height: theme.spacing.xs),
                 AppWorkspaceStatusBadge(status: status!),
               ],
             ],
@@ -2481,15 +2513,16 @@ class _WorkspaceHeaderText extends StatelessWidget {
           runSpacing: theme.spacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: titleStyle?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
+            if (title.isNotEmpty)
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
             if (status != null) AppWorkspaceStatusBadge(status: status!),
           ],
         );
@@ -2499,13 +2532,9 @@ class _WorkspaceHeaderText extends StatelessWidget {
 }
 
 class _WorkspaceHeaderActions extends StatelessWidget {
-  const _WorkspaceHeaderActions({
-    required this.actions,
-    this.expandIconButtons = false,
-  });
+  const _WorkspaceHeaderActions({required this.actions});
 
   final List<Widget> actions;
-  final bool expandIconButtons;
 
   @override
   Widget build(BuildContext context) {
@@ -2519,7 +2548,7 @@ class _WorkspaceHeaderActions extends StatelessWidget {
         for (final Widget action in actions)
           AppActionLabelScope(
             showLabels: false,
-            forceIconOnly: expandIconButtons,
+            forceIconOnly: true,
             child: action,
           ),
       ],

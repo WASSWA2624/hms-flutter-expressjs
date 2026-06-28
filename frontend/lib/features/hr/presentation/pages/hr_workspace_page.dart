@@ -10,7 +10,6 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -159,8 +158,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );
-    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canCreateStaff = accessPolicy.grants(AppPermissions.hrWrite);
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
@@ -168,43 +165,39 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     return AppWorkspace(
       title: l10n.hrTitle,
       leadingIcon: AppRouteIcons.hr,
-      status: AppWorkspaceStatus(
-        label: state.isMutating ? l10n.hrSavingStatus : l10n.hrLiveStatus,
-        tone: state.isMutating
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isMutating ? Icons.sync_outlined : Icons.sensors_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isMutating,
+        liveLabel: l10n.hrLiveStatus,
+        savingLabel: l10n.hrSavingStatus,
       ),
-      primaryAction: canCreateStaff
-          ? AppButton.primary(
-              label: l10n.hrAddStaffAction,
-              leadingIcon: Icons.person_add_alt_1_outlined,
-              enabled: !state.isMutating,
-              onPressed: () => _showStaffProfileDialog(context, ref),
-            )
-          : null,
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.hrWorkQueuesTitle,
-          leadingIcon: Icons.pending_actions_outlined,
-          onPressed: state.isRefreshing
-              ? null
-              : () => _showWorkQueueDialog(context),
-        ),
-        AppButton.secondary(
-          label: l10n.hrActivityTitle,
-          leadingIcon: Icons.timeline_outlined,
-          onPressed: state.isRefreshing
-              ? null
-              : () => _showActivityDialog(context),
-        ),
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.hrWorkQueuesTitle,
+            leadingIcon: Icons.pending_actions_outlined,
+            onPressed: state.isRefreshing
+                ? null
+                : () => _showWorkQueueDialog(context),
+          ),
+          AppButton.secondary(
+            label: l10n.hrActivityTitle,
+            leadingIcon: Icons.timeline_outlined,
+            onPressed: state.isRefreshing
+                ? null
+                : () => _showActivityDialog(context),
+          ),
+        ],
+        onRefresh: () async {
+          final AppFailure? failure = await controller.refresh();
+          if (context.mounted && failure != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.failureMessage(failure))),
+            );
+          }
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: _summaryCards(context, state, controller),
       body: Column(

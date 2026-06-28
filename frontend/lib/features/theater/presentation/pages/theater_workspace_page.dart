@@ -201,38 +201,33 @@ class _TheaterWorkspaceContentState
     return AppWorkspace(
       title: l10n.theaterTitle,
       leadingIcon: AppRouteIcons.theater,
-      status: AppWorkspaceStatus(
-        label: state.isMutating
-            ? l10n.theaterSavingStatus
-            : l10n.theaterLiveStatus,
-        tone: state.isMutating
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.success,
-        icon: state.isMutating ? Icons.sync_outlined : Icons.sensors_outlined,
+      status: AppWorkspaceLiveStatus.fromSavingState(
+        isSaving: state.isMutating,
+        liveLabel: l10n.theaterLiveStatus,
+        savingLabel: l10n.theaterSavingStatus,
       ),
-      primaryAction: canWrite
-          ? AppButton.primary(
-              label: l10n.theaterScheduleCaseAction,
-              leadingIcon: Icons.add,
-              enabled: !state.isMutating,
-              onPressed: () => _showScheduleCaseDialog(
-                context,
-                ref,
-                initialPatientId: widget.initialQuery?.initialPatientId,
-                initialEncounterId: widget.initialQuery?.initialEncounterId,
-                initialEmergencyCaseId:
-                    widget.initialQuery?.initialEmergencyCaseId,
-              ),
-            )
-          : null,
-      secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing ? null : controller.refresh,
-        ),
-      ],
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        primary: canWrite
+            ? AppButton.primary(
+                label: l10n.theaterScheduleCaseAction,
+                leadingIcon: Icons.add,
+                enabled: !state.isMutating,
+                onPressed: () => _showScheduleCaseDialog(
+                  context,
+                  ref,
+                  initialPatientId: widget.initialQuery?.initialPatientId,
+                  initialEncounterId: widget.initialQuery?.initialEncounterId,
+                  initialEmergencyCaseId:
+                      widget.initialQuery?.initialEmergencyCaseId,
+                ),
+              )
+            : null,
+        onRefresh: () async {
+          await controller.refresh();
+        },
+        isRefreshing: state.isRefreshing,
+      ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
         if (_pageTotal(state.cases) > 0)

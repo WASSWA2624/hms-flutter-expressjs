@@ -13,8 +13,7 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_controlle
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 class HomePage extends ConsumerWidget {
@@ -92,14 +91,14 @@ class _HomeDashboardContent extends ConsumerWidget {
                 label: dashboard.profile.roleLabel,
                 tone: _profileStatusTone(dashboard),
               ),
-              secondaryActions: <Widget>[
-                AppIconButton(
-                  icon: Icons.refresh,
-                  semanticLabel: 'Refresh dashboard',
-                  tooltip: 'Refresh dashboard',
-                  onPressed: onRefresh,
-                ),
-              ],
+              toolbar: appWorkspaceToolbarWithLabels(
+                context.l10n,
+                onRefresh: () async {
+                  onRefresh();
+                },
+                showFaultReport: false,
+                showHousekeepingRequest: false,
+              ),
             ),
             SizedBox(height: spacing.md),
             _HomeHeroPanel(

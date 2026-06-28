@@ -4,6 +4,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_connectivity_indicator.dart';
+import 'package:hosspi_hms/shared/layout/app_fullscreen_toggle.dart';
 
 final class ResponsiveShellDestination {
   const ResponsiveShellDestination({
@@ -77,6 +79,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.compactTitle,
     super.onlineLabel,
     super.offlineLabel,
+    super.fullscreenEnterLabel,
+    super.fullscreenExitLabel,
     super.openMenuTooltip,
     super.closeDrawerTooltip,
     super.toggleSidebarTooltip,
@@ -115,6 +119,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.compactTitle,
     this.onlineLabel = 'Online',
     this.offlineLabel = 'Offline',
+    this.fullscreenEnterLabel = 'Full screen',
+    this.fullscreenExitLabel = 'Exit full screen',
     this.openMenuTooltip = 'Open navigation menu',
     this.closeDrawerTooltip = 'Close navigation menu',
     this.toggleSidebarTooltip = 'Toggle sidebar',
@@ -149,6 +155,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String? compactTitle;
   final String onlineLabel;
   final String offlineLabel;
+  final String fullscreenEnterLabel;
+  final String fullscreenExitLabel;
   final String openMenuTooltip;
   final String closeDrawerTooltip;
   final String toggleSidebarTooltip;
@@ -218,6 +226,8 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   connectivityStatus: widget.connectivityStatus,
                   onlineLabel: widget.onlineLabel,
                   offlineLabel: widget.offlineLabel,
+                  fullscreenEnterLabel: widget.fullscreenEnterLabel,
+                  fullscreenExitLabel: widget.fullscreenExitLabel,
                   showUserAvatar: widget.showUserAvatar,
                   accountTooltip: widget.accountTooltip,
                   notificationsTooltip: widget.notificationsTooltip,
@@ -310,6 +320,8 @@ class AppMenuBar extends StatelessWidget {
     required this.connectivityStatus,
     required this.onlineLabel,
     required this.offlineLabel,
+    required this.fullscreenEnterLabel,
+    required this.fullscreenExitLabel,
     required this.showUserAvatar,
     required this.accountTooltip,
     required this.notificationsTooltip,
@@ -339,6 +351,8 @@ class AppMenuBar extends StatelessWidget {
   final AppConnectivityStatus connectivityStatus;
   final String onlineLabel;
   final String offlineLabel;
+  final String fullscreenEnterLabel;
+  final String fullscreenExitLabel;
   final bool showUserAvatar;
   final String accountTooltip;
   final String notificationsTooltip;
@@ -405,16 +419,19 @@ class AppMenuBar extends StatelessWidget {
                         ),
                       ),
               ),
-              if (!isMobile)
-                _ConnectivityBadge(
-                  status: connectivityStatus,
-                  onlineLabel: onlineLabel,
-                  offlineLabel: offlineLabel,
-                ),
               if (!isMobile && systemIndicators.isNotEmpty) ...<Widget>[
                 SizedBox(width: theme.spacing.xs),
                 _SystemIndicatorsBar(indicators: systemIndicators),
               ],
+              AppConnectivityIndicator(
+                status: connectivityStatus,
+                onlineLabel: onlineLabel,
+                offlineLabel: offlineLabel,
+              ),
+              AppFullscreenToggle(
+                enterLabel: fullscreenEnterLabel,
+                exitLabel: fullscreenExitLabel,
+              ),
               SizedBox(width: theme.spacing.xs),
               if (onNotificationsSelected != null ||
                   unreadNotificationCount > 0)
@@ -439,10 +456,6 @@ class AppMenuBar extends StatelessWidget {
                   onChangePasswordSelected: onChangePasswordSelected,
                   onLogoutSelected: onLogoutSelected,
                   child: _UserAvatar(
-                    status: connectivityStatus,
-                    showStatusDot: isMobile,
-                    onlineLabel: onlineLabel,
-                    offlineLabel: offlineLabel,
                     profile: userProfile,
                   ),
                 ),
@@ -882,71 +895,9 @@ class _UserMenuItemLabel extends StatelessWidget {
 
 enum _UserMenuAction { profile, settings, changePassword, logout }
 
-class _ConnectivityBadge extends StatelessWidget {
-  const _ConnectivityBadge({
-    required this.status,
-    required this.onlineLabel,
-    required this.offlineLabel,
-  });
-
-  final AppConnectivityStatus status;
-  final String onlineLabel;
-  final String offlineLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isOnline = status.isOnline;
-    final Color foregroundColor = isOnline
-        ? theme.statusColors.success
-        : theme.statusColors.error;
-    final Color backgroundColor = isOnline
-        ? theme.statusColors.successContainer
-        : theme.statusColors.errorContainer;
-    final String label = isOnline ? onlineLabel : offlineLabel;
-
-    return Semantics(
-      label: label,
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: backgroundColor),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.circle, size: _statusDotSize, color: foregroundColor),
-              SizedBox(width: theme.spacing.xs),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: foregroundColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _UserAvatar extends StatelessWidget {
-  const _UserAvatar({
-    required this.status,
-    required this.showStatusDot,
-    required this.onlineLabel,
-    required this.offlineLabel,
-    this.profile,
-  });
+  const _UserAvatar({this.profile});
 
-  final AppConnectivityStatus status;
-  final bool showStatusDot;
-  final String onlineLabel;
-  final String offlineLabel;
   final UserMenuProfileData? profile;
 
   @override
@@ -954,7 +905,8 @@ class _UserAvatar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String initials = _avatarInitials(profile);
-    final Widget avatar = CircleAvatar(
+
+    return CircleAvatar(
       radius: _avatarRadius,
       backgroundColor: initials == '?'
           ? colorScheme.surfaceContainerHighest
@@ -963,48 +915,8 @@ class _UserAvatar extends StatelessWidget {
           ? colorScheme.onSurfaceVariant
           : colorScheme.onPrimaryContainer,
       child: initials == '?'
-          ? const Icon(Icons.person_outline, size: _avatarIconSize)
+          ? const Icon(Icons.person_outline, size: 17)
           : _AvatarInitialsText(initials: initials, size: 13),
-    );
-
-    if (!showStatusDot) {
-      return avatar;
-    }
-
-    final bool isOnline = status.isOnline;
-    final Color dotColor = isOnline
-        ? theme.statusColors.success
-        : colorScheme.outline;
-    final String statusLabel = isOnline ? onlineLabel : offlineLabel;
-
-    return Semantics(
-      label: statusLabel,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          avatar,
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(1),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: dotColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const SizedBox.square(dimension: _avatarStatusDotSize),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1723,10 +1635,7 @@ const double _maxSidebarWidth = 272;
 const double _collapsedSidebarWidth = 72;
 const double _resizeHandleWidth = 6;
 const double _dividerWidth = 1;
-const double _statusDotSize = 7;
 const double _avatarRadius = 13;
-const double _avatarIconSize = 17;
-const double _avatarStatusDotSize = 7;
 const double _selectedIndicatorWidth = 2;
 const double _focusIndicatorWidth = 2;
 const double _menuItemHeight = 36;
