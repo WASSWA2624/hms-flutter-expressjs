@@ -283,7 +283,7 @@ class AppWorkspaceHeader extends StatelessWidget {
                 Expanded(child: titleBlock),
                 if (actionBar != null) ...<Widget>[
                   SizedBox(width: theme.spacing.md),
-                  actionBar,
+                  Flexible(child: actionBar),
                 ],
               ],
             );
@@ -2449,7 +2449,6 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
     }
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         leading!,
         if (!hideTitle || !hideStatus) ...<Widget>[

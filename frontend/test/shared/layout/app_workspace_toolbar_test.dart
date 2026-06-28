@@ -100,4 +100,31 @@ void main() {
     expect(find.text('Hidden label'), findsNothing);
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
   });
+
+  testWidgets('AppWorkspace header toolbar lays out in wide shell row', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'OPD',
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(label: 'Start walk-in', onPressed: () {}),
+            onRefresh: () async {},
+            showFaultReport: false,
+            showHousekeepingRequest: false,
+            refreshLabel: 'Refresh',
+          ),
+          body: const Text('Workspace body'),
+        ),
+      ),
+      size: const Size(1280, 800),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Workspace body'), findsOneWidget);
+    expect(find.text('Start walk-in'), findsOneWidget);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
+  });
 }

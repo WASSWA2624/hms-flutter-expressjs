@@ -72,6 +72,16 @@ class AppWorkspaceToolbar extends ConsumerWidget {
       forceIconOnly: !showLabels,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          if (!constraints.hasBoundedWidth) {
+            return Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[...leftActions, ...rightActions],
+            );
+          }
+
           final bool useOverflow = constraints.maxWidth < AppBreakpoints.md &&
               leftActions.length > 1;
 
