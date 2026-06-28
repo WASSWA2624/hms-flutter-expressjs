@@ -1065,8 +1065,12 @@ class _LabConfigurationsDialogState
                               item,
                             ),
                     ),
-                    AppIconButton(
-                      icon: Icons.delete_outline,
+                    AppButton(
+                      iconOnly: true,
+                      leadingIcon: Icons.delete_outline,
+                      label: showingTests
+                          ? l10n.labDeleteTestAction
+                          : l10n.labDeletePanelAction,
                       semanticLabel: showingTests
                           ? l10n.labDeleteTestAction
                           : l10n.labDeletePanelAction,
@@ -1254,8 +1258,12 @@ class _LabConfigurationsDialogState
           spacing: Theme.of(context).spacing.xs,
           runSpacing: Theme.of(context).spacing.xs,
           children: <Widget>[
-            AppIconButton(
-              icon: Icons.edit_outlined,
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.edit_outlined,
+              label: showingTests
+                  ? l10n.labConfigureTestAction
+                  : l10n.labUpdatePanelAction,
               semanticLabel: showingTests
                   ? l10n.labConfigureTestAction
                   : l10n.labUpdatePanelAction,
@@ -1266,8 +1274,12 @@ class _LabConfigurationsDialogState
                   ? _openLabTestConfigurationDialog(context, state, item)
                   : _openLabPanelDialog(context, state, widget.tenantId, item),
             ),
-            AppIconButton(
-              icon: Icons.delete_outline,
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: showingTests
+                  ? l10n.labDeleteTestAction
+                  : l10n.labDeletePanelAction,
               semanticLabel: showingTests
                   ? l10n.labDeleteTestAction
                   : l10n.labDeletePanelAction,

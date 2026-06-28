@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 /// Standard refresh control for workspace toolbars (right cluster).
 class AppWorkspaceRefreshAction extends StatelessWidget {
@@ -16,8 +16,9 @@ class AppWorkspaceRefreshAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppIconButton(
+    return AppButton(iconOnly: true, 
       icon: Icons.refresh,
+      label: label,
       semanticLabel: label,
       tooltip: label,
       isLoading: isLoading,

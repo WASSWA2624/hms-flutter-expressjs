@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
@@ -68,7 +69,7 @@ final class LabWorkspaceController
       events: RealtimeEventGroups.lab,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<LabWorkspaceState> result = await _loadInitialState();
+    final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     if (result.isSuccess) {
       _startSync();
     }
@@ -82,7 +83,7 @@ final class LabWorkspaceController
   Future<AppFailure?> refresh() async {
     if (_currentState == null) {
       state = const AsyncLoading<Result<LabWorkspaceState>>();
-      final Result<LabWorkspaceState> result = await _loadInitialState();
+      final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
       state = AsyncData<Result<LabWorkspaceState>>(result);
       if (result.isSuccess) {
         _startSync();

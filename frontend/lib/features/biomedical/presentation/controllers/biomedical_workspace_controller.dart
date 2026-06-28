@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/biomedical/data/repositories/biomedical_repository_impl.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/domain/repositories/biomedical_repository.dart';
@@ -34,7 +35,7 @@ final class BiomedicalWorkspaceController
       events: RealtimeEventGroups.biomedical,
       onRefresh: (_) => _syncVisibleData(),
     );
-    final Result<BiomedicalWorkspaceState> result = await _loadInitialState();
+    final Result<BiomedicalWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

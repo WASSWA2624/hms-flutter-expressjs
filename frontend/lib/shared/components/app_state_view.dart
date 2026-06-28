@@ -107,9 +107,10 @@ class AppFailureStateView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final retryAction = failure.isRetryable && onRetry != null
-        ? AppButton.primary(
+        ? AppButton(
             label: l10n.commonRetryActionLabel,
             leadingIcon: Icons.refresh,
+            variant: AppButtonVariant.secondary,
             onPressed: onRetry,
           )
         : null;

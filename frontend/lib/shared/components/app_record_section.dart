@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 
 typedef AppRecordTextBuilder<T> = String Function(T item);
@@ -169,8 +169,10 @@ class _GuardedIconAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final AccessRequirement? resolvedRequirement = requirement;
     if (resolvedRequirement == null) {
-      return AppIconButton(
-        icon: icon,
+      return AppButton(
+        iconOnly: true,
+        leadingIcon: icon,
+        label: label,
         semanticLabel: label,
         tooltip: label,
         onPressed: onPressed,
@@ -179,8 +181,10 @@ class _GuardedIconAction extends StatelessWidget {
 
     return AppAccessActionGate(
       requirement: resolvedRequirement,
-      builder: (_, bool isAllowed) => AppIconButton(
-        icon: icon,
+      builder: (_, bool isAllowed) => AppButton(
+        iconOnly: true,
+        leadingIcon: icon,
+        label: label,
         semanticLabel: label,
         tooltip: label,
         onPressed: isAllowed ? onPressed : null,

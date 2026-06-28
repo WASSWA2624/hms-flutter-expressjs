@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
 class AppSelectOption<T> {
@@ -553,16 +554,12 @@ class _SelectTrailingIcon extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (showClear)
-            IconButton(
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.close,
+              label: MaterialLocalizations.of(context).clearButtonTooltip,
+              semanticLabel: MaterialLocalizations.of(context).clearButtonTooltip,
               tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-              icon: Icon(
-                Icons.close,
-                size: theme.appTokens.listIconSize * 0.82,
-                color: colorScheme.onSurfaceVariant,
-              ),
               onPressed: onClear,
             ),
           if (isLoading)

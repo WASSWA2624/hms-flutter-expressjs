@@ -141,8 +141,10 @@ class _PatientRegistryContentState
         primary: AppAccessActionGate(
           requirement: _PatientRegistryContent._writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
-            return AppIconButton(
-              icon: Icons.person_add_alt_1_outlined,
+            return AppButton(iconOnly: true, 
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: l10n.patientsAddAction,
+
               semanticLabel: l10n.patientsAddAction,
               tooltip: l10n.patientsAddAction,
               enabled: isAllowed,
@@ -155,8 +157,10 @@ class _PatientRegistryContentState
         secondary: <Widget>[
           AppAccessActionGate(
             requirement: _PatientRegistryContent._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) => AppIconButton(
-              icon: Icons.emergency_outlined,
+            builder: (BuildContext context, bool isAllowed) => AppButton(iconOnly: true, 
+              leadingIcon: Icons.emergency_outlined,
+              label: l10n.patientsEmergencyRegisterAction,
+
               semanticLabel: l10n.patientsEmergencyRegisterAction,
               tooltip: l10n.patientsEmergencyRegisterAction,
               enabled: isAllowed,

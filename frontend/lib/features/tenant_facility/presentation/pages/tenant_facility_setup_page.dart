@@ -1631,8 +1631,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           hintText: widget.searchHint,
           prefixIcon: const Icon(Icons.search),
           suffixIcon: isSearching
-              ? AppIconButton(
-                  icon: Icons.close,
+              ? AppButton(iconOnly: true, 
+                  leadingIcon: Icons.close,
+                  label: l10n.tenantFacilityClearSearchAction,
+
                   semanticLabel: l10n.tenantFacilityClearSearchAction,
                   tooltip: l10n.tenantFacilityClearSearchAction,
                   onPressed: _clearSearch,
@@ -1809,14 +1811,17 @@ class _EntityRow extends StatelessWidget {
           ),
           if (canEdit) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
-            AppIconButton(
-              icon: Icons.edit_outlined,
+            AppButton(iconOnly: true, 
+              leadingIcon: Icons.edit_outlined,
+              label: l10n.tenantFacilityEditAction,
+
               semanticLabel: l10n.tenantFacilityEditAction,
               onPressed: onEdit,
             ),
-            AppIconButton(
+            AppButton(iconOnly: true, 
               icon: Icons.delete_outline,
-              semanticLabel: l10n.tenantFacilityDeleteAction,
+              label: l10n.tenantFacilityDeleteAction,
+      semanticLabel: l10n.tenantFacilityDeleteAction,
               onPressed: onDelete,
               color: theme.statusColors.error,
             ),

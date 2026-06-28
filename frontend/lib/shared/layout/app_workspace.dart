@@ -6,9 +6,9 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
@@ -571,24 +571,21 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
         navigation ||
         (widget.compact &&
             (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm));
-    final Color accentColor = _summaryAccentColor(theme, widget.tone);
     final BorderRadius borderRadius = navigation
         ? BorderRadius.circular(theme.radius.sm)
         : iconOnlyCompact
         ? BorderRadius.zero
         : BorderRadius.circular(theme.radius.sm);
     final bool selected = widget.selected;
+    final Color accentColor = navigation
+        ? (selected
+              ? colorScheme.primary
+              : active
+              ? colorScheme.primary.withValues(alpha: 0.88)
+              : colorScheme.onSurfaceVariant)
+        : _summaryAccentColor(theme, widget.tone);
     final Color surfaceColor = navigation
-        ? Color.alphaBlend(
-            accentColor.withValues(
-              alpha: selected
-                  ? 0.14
-                  : active
-                  ? 0.08
-                  : 0.04,
-            ),
-            colorScheme.surface,
-          )
+        ? Colors.transparent
         : Color.alphaBlend(
             accentColor.withValues(
               alpha: selected
@@ -600,13 +597,7 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
             colorScheme.surfaceContainerLow,
           );
     final Color borderColor = navigation
-        ? accentColor.withValues(
-            alpha: selected
-                ? 0.42
-                : active
-                ? 0.28
-                : 0.12,
-          )
+        ? Colors.transparent
         : selected
         ? accentColor.withValues(alpha: 0.32)
         : Colors.transparent;
@@ -657,9 +648,9 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
           decoration: iconOnlyCompact && !navigation
               ? null
               : BoxDecoration(
-                  color: navigation || !iconOnlyCompact ? surfaceColor : null,
+                  color: navigation ? null : surfaceColor,
                   border: navigation
-                      ? Border.all(color: borderColor)
+                      ? null
                       : selected
                       ? Border.all(color: borderColor)
                       : null,
@@ -676,18 +667,10 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
               onTap: widget.onPressed,
               onFocusChange: _setFocused,
               onHighlightChanged: _setPressed,
-              hoverColor: navigation
-                  ? accentColor.withValues(alpha: 0.06)
-                  : Colors.transparent,
-              focusColor: navigation
-                  ? accentColor.withValues(alpha: 0.08)
-                  : Colors.transparent,
-              highlightColor: iconOnlyCompact && !navigation
-                  ? Colors.transparent
-                  : accentColor.withValues(alpha: 0.08),
-              splashColor: iconOnlyCompact && !navigation
-                  ? Colors.transparent
-                  : accentColor.withValues(alpha: 0.10),
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
               child: cardBody,
             ),
           ),
@@ -2374,17 +2357,18 @@ class _WorkspaceDrawerHeader extends StatelessWidget {
               ),
             ),
             if (showCloseButton)
-              Tooltip(
-                message: MaterialLocalizations.of(context).closeButtonTooltip,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: closeEnabled
-                      ? () {
-                          Navigator.of(context).maybePop();
-                        }
-                      : null,
-                  icon: const Icon(Icons.close),
-                ),
+              AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.close,
+                label: MaterialLocalizations.of(context).closeButtonTooltip,
+                semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                enabled: closeEnabled,
+                onPressed: closeEnabled
+                    ? () {
+                        Navigator.of(context).maybePop();
+                      }
+                    : null,
               ),
           ],
         ),
@@ -2595,8 +2579,10 @@ class _CleanFilterBar extends StatelessWidget {
     final String dialogTitle = title == null || title!.trim().isEmpty
         ? 'Filters'
         : title!;
-    final Widget filterButton = AppIconButton(
-      icon: Icons.tune,
+    final Widget filterButton = AppButton(iconOnly: true, 
+      leadingIcon: Icons.tune,
+      label: dialogTitle,
+
       semanticLabel: dialogTitle,
       tooltip: dialogTitle,
       onPressed: () {

@@ -645,13 +645,15 @@ class _QuantityStepper extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: theme.appTokens.listIconSize,
+          AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.remove,
+            label: 'Decrease quantity',
+            semanticLabel: 'Decrease quantity',
+            enabled: enabled && quantity > 1,
             onPressed: enabled && quantity > 1
                 ? () => onChanged(quantity - 1)
                 : null,
-            icon: const Icon(Icons.remove),
           ),
           Text(
             '${quantity % 1 == 0 ? quantity.toInt() : quantity}',
@@ -659,11 +661,13 @@ class _QuantityStepper extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: theme.appTokens.listIconSize,
+          AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.add,
+            label: 'Increase quantity',
+            semanticLabel: 'Increase quantity',
+            enabled: enabled,
             onPressed: enabled ? () => onChanged(quantity + 1) : null,
-            icon: const Icon(Icons.add),
           ),
         ],
       ),

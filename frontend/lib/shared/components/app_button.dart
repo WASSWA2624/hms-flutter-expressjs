@@ -1,38 +1,51 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_ghost_action_button.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary }
 
 const Duration _buttonAnimationDuration = Duration(milliseconds: 140);
 const OutlinedBorder _buttonShape = RoundedRectangleBorder();
 
+/// Borderless action button: icon + label (or icon-only in compact toolbars).
 class AppButton extends StatelessWidget {
-  const AppButton({
+  AppButton({
     required this.label,
     required this.onPressed,
     this.variant = AppButtonVariant.primary,
     this.leadingIcon,
+    this.icon,
     this.isLoading = false,
     this.enabled = true,
     this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     this.autofocus = false,
+    this.iconOnly = false,
+    this.color,
+    this.iconWidget,
     super.key,
-  });
+  }) : assert(
+         iconOnly || label.isNotEmpty,
+         'Labeled buttons require a non-empty label.',
+       );
 
   const AppButton.primary({
     required this.label,
     required this.onPressed,
     this.leadingIcon,
+    this.icon,
     this.isLoading = false,
     this.enabled = true,
     this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     this.autofocus = false,
+    this.iconOnly = false,
+    this.color,
+    this.iconWidget,
     super.key,
   }) : variant = AppButtonVariant.primary;
 
@@ -40,12 +53,16 @@ class AppButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.leadingIcon,
+    this.icon,
     this.isLoading = false,
     this.enabled = true,
     this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     this.autofocus = false,
+    this.iconOnly = false,
+    this.color,
+    this.iconWidget,
     super.key,
   }) : variant = AppButtonVariant.secondary;
 
@@ -53,12 +70,16 @@ class AppButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.leadingIcon,
+    this.icon,
     this.isLoading = false,
     this.enabled = true,
     this.fullWidth = false,
     this.semanticLabel,
     this.tooltip,
     this.autofocus = false,
+    this.iconOnly = false,
+    this.color,
+    this.iconWidget,
     super.key,
   }) : variant = AppButtonVariant.tertiary;
 
@@ -66,132 +87,131 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? leadingIcon;
+  final IconData? icon;
   final bool isLoading;
   final bool enabled;
   final bool fullWidth;
   final String? semanticLabel;
   final String? tooltip;
   final bool autofocus;
+  final bool iconOnly;
+  final Color? color;
+  final Widget? iconWidget;
+
+  IconData? get _resolvedIcon => leadingIcon ?? icon;
+
+  /// Icon-only trigger for [PopupMenuButton] children.
+  static Widget popupMenuTrigger({
+    required BuildContext context,
+    required IconData icon,
+    required String semanticLabel,
+    Color? color,
+  }) {
+    return AppButton(
+      iconOnly: true,
+      icon: icon,
+      label: semanticLabel,
+      semanticLabel: semanticLabel,
+      tooltip: semanticLabel,
+      color: color,
+      onPressed: null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
       context,
     );
-    if (labelScope?.forceIconOnly == true && leadingIcon != null) {
-      return _buildIconOnlyButton(context);
-    }
-
-    if (labelScope?.showLabels == true &&
-        variant == AppButtonVariant.secondary) {
-      return AppGhostActionButton(
-        label: label,
-        icon: leadingIcon ?? Icons.touch_app_outlined,
-        enabled: enabled,
-        isLoading: isLoading,
-        semanticLabel: semanticLabel,
-        tooltip: tooltip,
-        autofocus: autofocus,
-        onPressed: onPressed,
-      );
-    }
+    final bool compactIconOnly =
+        iconOnly ||
+        (labelScope?.forceIconOnly == true && _resolvedIcon != null);
+    final bool showLabel =
+        !compactIconOnly &&
+        (labelScope?.showLabels != true || variant != AppButtonVariant.secondary);
 
     final bool canPress = enabled && !isLoading && onPressed != null;
-    final Widget button = _buildButton(context, canPress);
+    final Widget button = showLabel
+        ? _buildLabeledButton(context, canPress)
+        : _buildIconOnlyButton(context, canPress);
     final Widget sizedButton = fullWidth
         ? SizedBox(width: double.infinity, child: button)
         : button;
+    final String resolvedLabel = semanticLabel ?? label;
+
     final Widget semanticButton = Semantics(
       button: true,
       enabled: canPress,
-      label: semanticLabel ?? label,
+      label: resolvedLabel,
       liveRegion: isLoading,
       child: sizedButton,
     );
 
-    if (tooltip == null) {
+    final String? resolvedTooltip = tooltip;
+    if (resolvedTooltip == null) {
       return semanticButton;
     }
 
-    return Tooltip(message: tooltip!, child: semanticButton);
+    return Tooltip(message: resolvedTooltip, child: semanticButton);
   }
 
-  Widget _buildIconOnlyButton(BuildContext context) {
+  Widget _buildIconOnlyButton(BuildContext context, bool canPress) {
     final ThemeData theme = Theme.of(context);
-    final bool canPress = enabled && !isLoading && onPressed != null;
-    final String label = semanticLabel ?? this.label;
     final double iconSize = theme.appTokens.listIconSize;
-    final Color foregroundColor = _buttonForegroundColor(theme, variant);
+    final Color foregroundColor = _foregroundColor(theme, variant);
 
-    return Semantics(
-      button: true,
-      enabled: canPress,
-      label: label,
-      liveRegion: isLoading,
-      child: IconButton(
-        tooltip: tooltip ?? label,
-        onPressed: canPress ? onPressed : null,
-        autofocus: autofocus,
-        style: _iconOnlyButtonStyle(context),
+    return TextButton(
+      onPressed: canPress ? onPressed : null,
+      autofocus: autofocus,
+      style: _buttonStyle(context, variant, iconOnly: true),
+      child: _ButtonGlyph(
+        icon: _resolvedIcon,
         iconSize: iconSize,
-        icon: _ButtonGlyph(
-          icon: leadingIcon,
-          iconSize: iconSize,
-          isLoading: isLoading,
-          loadingColor: foregroundColor,
-        ),
+        isLoading: isLoading,
+        loadingColor: foregroundColor,
+        iconWidget: iconWidget,
       ),
     );
   }
 
-  Widget _buildButton(BuildContext context, bool canPress) {
+  Widget _buildLabeledButton(BuildContext context, bool canPress) {
     final ThemeData theme = Theme.of(context);
-    final Widget child = _ButtonContent(
-      label: label,
-      leadingIcon: leadingIcon,
-      isLoading: isLoading,
-      loadingColor: _buttonForegroundColor(theme, variant),
-    );
-    final ButtonStyle style = _buttonStyle(context, variant);
+    final Color foregroundColor = _foregroundColor(theme, variant);
 
-    return switch (variant) {
-      AppButtonVariant.primary => FilledButton(
-        onPressed: canPress ? onPressed : null,
-        autofocus: autofocus,
-        style: style,
-        child: child,
+    return TextButton(
+      onPressed: canPress ? onPressed : null,
+      autofocus: autofocus,
+      style: _buttonStyle(context, variant, iconOnly: false),
+      child: _ButtonContent(
+        label: label,
+        leadingIcon: _resolvedIcon,
+        isLoading: isLoading,
+        loadingColor: foregroundColor,
+        iconWidget: iconWidget,
       ),
-      AppButtonVariant.secondary => OutlinedButton(
-        onPressed: canPress ? onPressed : null,
-        autofocus: autofocus,
-        style: style,
-        child: child,
-      ),
-      AppButtonVariant.tertiary => TextButton(
-        onPressed: canPress ? onPressed : null,
-        autofocus: autofocus,
-        style: style,
-        child: child,
-      ),
-    };
+    );
   }
 
-  ButtonStyle _buttonStyle(BuildContext context, AppButtonVariant variant) {
+  ButtonStyle _buttonStyle(
+    BuildContext context,
+    AppButtonVariant variant, {
+    required bool iconOnly,
+  }) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppSpacingTokens spacing = theme.spacing;
     final double viewportWidth = MediaQuery.sizeOf(context).width;
     final bool compact = viewportWidth < 360;
-    final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
-      horizontal: compact ? spacing.md : spacing.lg,
-      vertical: spacing.sm,
+    final EdgeInsetsGeometry padding = iconOnly
+        ? EdgeInsets.all(spacing.xs)
+        : EdgeInsets.symmetric(
+            horizontal: compact ? spacing.md : spacing.lg,
+            vertical: spacing.sm,
+          );
+    final double minimumDimension = math.max(
+      theme.appTokens.minInteractiveDimension,
+      theme.appTokens.listIconSize + spacing.lg,
     );
-    final Color foregroundColor = _buttonForegroundColor(theme, variant);
-    final Color overlayBaseColor = switch (variant) {
-      AppButtonVariant.primary => colorScheme.onPrimary,
-      AppButtonVariant.secondary ||
-      AppButtonVariant.tertiary => foregroundColor,
-    };
 
     return ButtonStyle(
       animationDuration: _buttonAnimationDuration,
@@ -200,7 +220,9 @@ class AppButton extends StatelessWidget {
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       alignment: Alignment.center,
       minimumSize: WidgetStatePropertyAll<Size>(
-        Size(spacing.none, theme.appTokens.minInteractiveDimension),
+        iconOnly
+            ? Size.square(minimumDimension)
+            : Size(spacing.none, theme.appTokens.minInteractiveDimension),
       ),
       padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
       shape: const WidgetStatePropertyAll<OutlinedBorder>(_buttonShape),
@@ -213,134 +235,61 @@ class AppButton extends StatelessWidget {
         if (states.contains(WidgetState.disabled)) {
           return colorScheme.onSurface.withValues(alpha: 0.38);
         }
-        return foregroundColor;
-      }),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (states.contains(WidgetState.disabled)) {
-          return switch (variant) {
-            AppButtonVariant.primary => colorScheme.onSurface.withValues(
-              alpha: 0.08,
-            ),
-            AppButtonVariant.secondary ||
-            AppButtonVariant.tertiary => Colors.transparent,
-          };
-        }
-        if (variant == AppButtonVariant.secondary &&
-            states.contains(WidgetState.hovered)) {
-          return colorScheme.primary.withValues(alpha: 0.05);
-        }
-        if (variant == AppButtonVariant.secondary &&
-            states.contains(WidgetState.pressed)) {
-          return colorScheme.primary.withValues(alpha: 0.08);
-        }
-        return switch (variant) {
-          AppButtonVariant.primary => colorScheme.primary,
-          AppButtonVariant.secondary ||
-          AppButtonVariant.tertiary => Colors.transparent,
-        };
-      }),
-      overlayColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (states.contains(WidgetState.disabled)) {
-          return null;
-        }
+        final Color base = _foregroundColor(theme, variant);
         if (states.contains(WidgetState.pressed)) {
-          return overlayBaseColor.withValues(alpha: 0.14);
+          return _emphasizedForeground(base, colorScheme, strong: true);
         }
-        if (states.contains(WidgetState.focused)) {
-          return overlayBaseColor.withValues(alpha: 0.12);
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return _emphasizedForeground(base, colorScheme, strong: false);
         }
-        if (states.contains(WidgetState.hovered)) {
-          return overlayBaseColor.withValues(alpha: 0.08);
-        }
-        return null;
+        return base;
       }),
+      backgroundColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
+      overlayColor: const WidgetStatePropertyAll<Color?>(null),
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
-        if (variant != AppButtonVariant.secondary) {
+        if (!states.contains(WidgetState.focused)) {
           return BorderSide.none;
         }
-        final bool disabled = states.contains(WidgetState.disabled);
-        final bool focused = states.contains(WidgetState.focused);
-        final bool hovered = states.contains(WidgetState.hovered);
-        final Color borderColor = disabled
-            ? colorScheme.onSurface.withValues(alpha: 0.12)
-            : focused
-            ? colorScheme.primary.withValues(alpha: 0.72)
-            : hovered
-            ? colorScheme.primary.withValues(alpha: 0.56)
-            : colorScheme.outline.withValues(alpha: 0.44);
-        return BorderSide(color: borderColor, width: focused ? 1.25 : 1);
+        return BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.72),
+          width: 1.25,
+        );
       }),
     );
   }
 
-  ButtonStyle _iconOnlyButtonStyle(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foregroundColor = _buttonForegroundColor(theme, variant);
-    // The primary variant is a high-emphasis CTA (for example "Add staff").
-    // When collapsed to icon-only inside compact action bars it must stay a
-    // clearly visible, filled control in both light and dark themes rather
-    // than fading into a low-contrast plain glyph.
-    final bool filled = variant == AppButtonVariant.primary;
-    final Color overlayBaseColor = filled
-        ? colorScheme.onPrimary
-        : foregroundColor;
+  Color _foregroundColor(ThemeData theme, AppButtonVariant variant) {
+    if (color != null) {
+      return color!;
+    }
 
-    return ButtonStyle(
-      animationDuration: _buttonAnimationDuration,
-      enableFeedback: true,
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      minimumSize: WidgetStatePropertyAll<Size>(
-        Size.square(theme.appTokens.minInteractiveDimension),
-      ),
-      padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-        EdgeInsets.all(theme.spacing.xs),
-      ),
-      shape: const WidgetStatePropertyAll<OutlinedBorder>(_buttonShape),
-      foregroundColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (states.contains(WidgetState.disabled)) {
-          return colorScheme.onSurface.withValues(alpha: 0.38);
-        }
-        return foregroundColor;
-      }),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (!filled) {
-          return Colors.transparent;
-        }
-        if (states.contains(WidgetState.disabled)) {
-          return colorScheme.onSurface.withValues(alpha: 0.08);
-        }
-        return colorScheme.primary;
-      }),
-      overlayColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (states.contains(WidgetState.disabled)) {
-          return null;
-        }
-        if (states.contains(WidgetState.pressed)) {
-          return overlayBaseColor.withValues(alpha: 0.14);
-        }
-        if (states.contains(WidgetState.focused)) {
-          return overlayBaseColor.withValues(alpha: 0.12);
-        }
-        if (states.contains(WidgetState.hovered)) {
-          return overlayBaseColor.withValues(alpha: 0.08);
-        }
-        return null;
-      }),
-    );
+    final ColorScheme colorScheme = theme.colorScheme;
+    return switch (variant) {
+      AppButtonVariant.primary => colorScheme.primary,
+      AppButtonVariant.secondary => colorScheme.onSurfaceVariant,
+      AppButtonVariant.tertiary => colorScheme.primary,
+    };
+  }
+
+  Color _emphasizedForeground(
+    Color base,
+    ColorScheme colorScheme, {
+    required bool strong,
+  }) {
+    if (base == colorScheme.onSurfaceVariant) {
+      return strong
+          ? colorScheme.primary
+          : colorScheme.primary.withValues(alpha: 0.88);
+    }
+    if (base == colorScheme.primary) {
+      return strong
+          ? colorScheme.primary
+          : colorScheme.primary.withValues(alpha: 0.88);
+    }
+    return strong ? base : base.withValues(alpha: 0.88);
   }
 }
 
@@ -350,12 +299,14 @@ class _ButtonContent extends StatelessWidget {
     required this.leadingIcon,
     required this.isLoading,
     required this.loadingColor,
+    this.iconWidget,
   });
 
   final String label;
   final IconData? leadingIcon;
   final bool isLoading;
   final Color loadingColor;
+  final Widget? iconWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -373,15 +324,12 @@ class _ButtonContent extends StatelessWidget {
       ),
     );
 
-    if (!isLoading && leadingIcon == null) {
+    if (!isLoading && leadingIcon == null && iconWidget == null) {
       return labelText;
     }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        // Only flex the label when the button has a bounded width so it can
-        // ellipsize instead of overflowing. Under unbounded constraints the
-        // label keeps its intrinsic size to avoid RenderFlex flex errors.
         final Widget label = constraints.maxWidth.isFinite
             ? Flexible(child: labelText)
             : labelText;
@@ -394,6 +342,7 @@ class _ButtonContent extends StatelessWidget {
               iconSize: iconSize,
               isLoading: isLoading,
               loadingColor: loadingColor,
+              iconWidget: iconWidget,
             ),
             SizedBox(width: spacing.sm),
             label,
@@ -410,15 +359,21 @@ class _ButtonGlyph extends StatelessWidget {
     required this.iconSize,
     required this.isLoading,
     required this.loadingColor,
+    this.iconWidget,
   });
 
   final IconData? icon;
   final double iconSize;
   final bool isLoading;
   final Color loadingColor;
+  final Widget? iconWidget;
 
   @override
   Widget build(BuildContext context) {
+    if (iconWidget != null && !isLoading) {
+      return iconWidget!;
+    }
+
     return AnimatedSwitcher(
       duration: _buttonAnimationDuration,
       switchInCurve: Curves.easeOut,
@@ -435,12 +390,4 @@ class _ButtonGlyph extends StatelessWidget {
           : Icon(icon, key: const ValueKey<String>('icon'), size: iconSize),
     );
   }
-}
-
-Color _buttonForegroundColor(ThemeData theme, AppButtonVariant variant) {
-  return switch (variant) {
-    AppButtonVariant.primary => theme.colorScheme.onPrimary,
-    AppButtonVariant.secondary ||
-    AppButtonVariant.tertiary => theme.colorScheme.primary,
-  };
 }

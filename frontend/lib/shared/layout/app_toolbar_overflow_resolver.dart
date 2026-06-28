@@ -10,7 +10,6 @@ import 'package:hosspi_hms/shared/actions/app_global_housekeeping_request_action
 import 'package:hosspi_hms/shared/actions/app_global_housekeeping_request_dialog.dart';
 import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 
 typedef AppToolbarOverflowCallback = void Function(
   BuildContext context,
@@ -110,10 +109,10 @@ AppToolbarOverflowEntry? _resolveAction(Widget action, WidgetRef ref) {
       },
     );
   }
-  if (action is AppIconButton) {
+  if (action is AppButton && action.iconOnly) {
     return AppToolbarOverflowEntry(
-      icon: action.icon,
-      label: action.semanticLabel,
+      icon: action.leadingIcon ?? action.icon ?? Icons.touch_app_outlined,
+      label: action.semanticLabel ?? action.label,
       enabled: action.enabled && !action.isLoading && action.onPressed != null,
       onSelected: (_, _) => action.onPressed?.call(),
     );

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/rooms_beds/data/repositories/rooms_beds_repository_impl.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/repositories/rooms_beds_repository.dart';
@@ -37,7 +38,10 @@ final class RoomsBedsWorkspaceController
       onRefresh: (_) => refresh(),
     );
     final String? facilityId = ref.read(appAccessPolicyProvider).facilityId;
-    return _loadState(RoomsBedsQuery(facilityId: facilityId));
+    return runWorkspaceInitialLoad(
+      ref,
+      () => _loadState(RoomsBedsQuery(facilityId: facilityId)),
+    );
   }
 
   Future<AppFailure?> applyRouteQuery(RoomsBedsQuery query) async {

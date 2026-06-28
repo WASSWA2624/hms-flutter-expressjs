@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/settings/data/repositories/settings_workspace_repository_impl.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/domain/repositories/settings_workspace_repository.dart';
@@ -27,7 +28,10 @@ final class SettingsWorkspaceController
       includeCrudMutations: true,
       onRefresh: (_) => refresh(),
     );
-    return _load(const SettingsWorkspaceQuery());
+    return runWorkspaceInitialLoad(
+      ref,
+      () => _load(const SettingsWorkspaceQuery()),
+    );
   }
 
   Future<AppFailure?> refresh() async {

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/physiotherapy/data/repositories/physiotherapy_repository_impl.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/repositories/physiotherapy_repository.dart';
@@ -36,7 +37,7 @@ final class PhysiotherapyWorkspaceController
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<PhysiotherapyWorkspaceState> result =
-        await _loadInitialState();
+        await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

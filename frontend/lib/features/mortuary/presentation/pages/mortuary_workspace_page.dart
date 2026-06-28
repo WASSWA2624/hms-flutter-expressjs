@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -23,6 +24,16 @@ import 'package:hosspi_hms/shared/printing/printing.dart';
 class MortuaryWorkspacePage extends ConsumerWidget {
   const MortuaryWorkspacePage({super.key});
 
+  static const AccessRequirement _readRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.mortuaryRead,
+      AppPermissions.mortuaryWrite,
+      AppPermissions.mortuaryApprove,
+      AppPermissions.mortuaryRelease,
+      AppPermissions.mortuaryAudit,
+    ],
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<Result<MortuaryWorkspaceState>> workspace = ref.watch(
@@ -30,49 +41,27 @@ class MortuaryWorkspacePage extends ConsumerWidget {
     );
     final AppLocalizations l10n = context.l10n;
 
-    return workspace.when(
-      data: (Result<MortuaryWorkspaceState> result) {
-        return result.when(
-          success: (MortuaryWorkspaceState state) {
-            return _MortuaryWorkspaceContent(state: state);
-          },
-          failure: (AppFailure failure) {
-            return ResponsivePage(
-              maxWidth: PageMaxWidth.form,
-              centerVertically: true,
-              child: AppFailureStateView(
-                failure: failure,
-                title: l10n.mortuaryLoadErrorTitle,
-                body: l10n.mortuaryLoadErrorBody,
-                onRetry: () {
-                  ref.invalidate(mortuaryWorkspaceControllerProvider);
-                },
-              ),
-            );
-          },
-        );
-      },
-      error: (_, _) {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppStateView(
-            variant: AppStateViewVariant.error,
-            title: l10n.mortuaryLoadErrorTitle,
-            body: l10n.errorUnexpectedMessage,
-          ),
-        );
-      },
-      loading: () {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppWorkspaceStatePanel.loading(
-            title: l10n.mortuaryLoadingTitle,
-            body: l10n.mortuaryLoadingBody,
-          ),
-        );
-      },
+    return AppAccessGate(
+      requirement: _readRequirement,
+      deniedBuilder: (_, _) => AppStateScaffold(
+        variant: AppStateViewVariant.forbidden,
+        title: l10n.routeForbiddenTitle,
+        body: l10n.routeForbiddenBody,
+      ),
+      child: AsyncStateScaffold<MortuaryWorkspaceState>(
+        value: workspace,
+        appBarTitle: l10n.mortuaryTitle,
+        loadingTitle: l10n.mortuaryLoadingTitle,
+        loadingBody: l10n.mortuaryLoadingBody,
+        maxWidth: PageMaxWidth.dataHeavy,
+        centerVertically: false,
+        onRetry: () {
+          ref.read(mortuaryWorkspaceControllerProvider.notifier).refresh();
+        },
+        dataBuilder: (BuildContext context, MortuaryWorkspaceState state) {
+          return _MortuaryWorkspaceContent(state: state);
+        },
+      ),
     );
   }
 }

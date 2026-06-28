@@ -27,6 +27,8 @@ final class SessionTokenProvider {
   SessionRefreshService get _refreshService =>
       _ref.read(sessionRefreshServiceProvider);
 
+  Future<AuthSession?>? _pendingRefresh;
+
   Future<String?> readAccessToken() async {
     final SessionTokens? tokens = await _sessionManager.readTokens();
     if (tokens == null) {
@@ -83,7 +85,22 @@ final class SessionTokenProvider {
     }
   }
 
-  Future<AuthSession?> _refreshStoredSession() async {
+  Future<AuthSession?> _refreshStoredSession() {
+    final Future<AuthSession?>? pendingRefresh = _pendingRefresh;
+    if (pendingRefresh != null) {
+      return pendingRefresh;
+    }
+
+    final Future<AuthSession?> request = _performRefreshStoredSession();
+    _pendingRefresh = request;
+    return request.whenComplete(() {
+      if (identical(_pendingRefresh, request)) {
+        _pendingRefresh = null;
+      }
+    });
+  }
+
+  Future<AuthSession?> _performRefreshStoredSession() async {
     final SessionTokens? tokens = await _sessionManager.readTokens();
     if (tokens == null || !tokens.hasRefreshToken) {
       return null;

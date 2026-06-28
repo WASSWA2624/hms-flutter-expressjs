@@ -907,21 +907,13 @@ class _ClinicalCopyableInlineValue extends StatelessWidget {
               ),
             ),
             SizedBox(width: theme.spacing.xs),
-            Tooltip(
-              message: MaterialLocalizations.of(context).copyButtonLabel,
-              child: IconButton(
-                visualDensity: VisualDensity.compact,
-                constraints: BoxConstraints.tightFor(
-                  width: theme.appTokens.minInteractiveDimension,
-                  height: theme.appTokens.minInteractiveDimension,
-                ),
-                padding: EdgeInsets.zero,
-                onPressed: onCopy,
-                icon: Icon(
-                  Icons.copy_outlined,
-                  size: theme.appTokens.listIconSize,
-                ),
-              ),
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.copy_outlined,
+              label: MaterialLocalizations.of(context).copyButtonLabel,
+              semanticLabel: MaterialLocalizations.of(context).copyButtonLabel,
+              tooltip: MaterialLocalizations.of(context).copyButtonLabel,
+              onPressed: onCopy,
             ),
           ],
         ),
@@ -1515,8 +1507,10 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppIconButton(
-                    icon: Icons.edit_outlined,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.edit_outlined,
+                    label: l10n.clinicalEditLabOrderAction,
+
                     semanticLabel: l10n.clinicalEditLabOrderAction,
                     tooltip: l10n.clinicalEditLabOrderAction,
                     enabled: isAllowed && canEdit,
@@ -1527,8 +1521,10 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                       existingOrder: order,
                     ),
                   ),
-                  AppIconButton(
-                    icon: Icons.block_outlined,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.block_outlined,
+                    label: l10n.clinicalCancelLabOrderAction,
+
                     semanticLabel: l10n.clinicalCancelLabOrderAction,
                     tooltip: l10n.clinicalCancelLabOrderAction,
                     enabled: isAllowed && canCancel,
@@ -1540,8 +1536,10 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                       action: () => controller.cancelLabOrder(order.id),
                     ),
                   ),
-                  AppIconButton(
-                    icon: Icons.delete_outline,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.clinicalDeleteLabOrderAction,
+
                     semanticLabel: l10n.clinicalDeleteLabOrderAction,
                     tooltip: l10n.clinicalDeleteLabOrderAction,
                     enabled: isAllowed && canDelete,
@@ -2032,8 +2030,10 @@ class _ClinicalRadiologyOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppIconButton(
-                    icon: Icons.block_outlined,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.block_outlined,
+                    label: l10n.clinicalCancelRadiologyOrderAction,
+
                     semanticLabel: l10n.clinicalCancelRadiologyOrderAction,
                     tooltip: l10n.clinicalCancelRadiologyOrderAction,
                     enabled: isAllowed && canCancel,
@@ -2045,8 +2045,10 @@ class _ClinicalRadiologyOrderRow extends ConsumerWidget {
                       action: () => controller.cancelRadiologyOrder(record.id),
                     ),
                   ),
-                  AppIconButton(
-                    icon: Icons.delete_outline,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.clinicalDeleteRadiologyOrderAction,
+
                     semanticLabel: l10n.clinicalDeleteRadiologyOrderAction,
                     tooltip: l10n.clinicalDeleteRadiologyOrderAction,
                     enabled: isAllowed && canDelete,
@@ -2219,8 +2221,10 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
-                  AppIconButton(
-                    icon: Icons.block_outlined,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.block_outlined,
+                    label: l10n.clinicalCancelPharmacyOrderAction,
+
                     semanticLabel: l10n.clinicalCancelPharmacyOrderAction,
                     tooltip: l10n.clinicalCancelPharmacyOrderAction,
                     enabled: isAllowed && canCancel,
@@ -2232,8 +2236,10 @@ class _ClinicalPharmacyOrderRow extends ConsumerWidget {
                       action: () => controller.cancelPharmacyOrder(record.id),
                     ),
                   ),
-                  AppIconButton(
-                    icon: Icons.delete_outline,
+                  AppButton(iconOnly: true, 
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.clinicalDeletePharmacyOrderAction,
+
                     semanticLabel: l10n.clinicalDeletePharmacyOrderAction,
                     tooltip: l10n.clinicalDeletePharmacyOrderAction,
                     enabled: isAllowed && canDelete,

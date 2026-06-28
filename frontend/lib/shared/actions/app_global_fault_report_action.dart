@@ -5,7 +5,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/shared/actions/app_global_fault_report_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 const _faultReportRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
@@ -31,8 +31,10 @@ class AppGlobalFaultReportAction extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: _faultReportRequirement,
       builder: (BuildContext context, bool isAllowed) {
-        return AppIconButton(
-          icon: Icons.report_problem_outlined,
+        return AppButton(iconOnly: true, 
+          leadingIcon: Icons.report_problem_outlined,
+          label: label,
+
           semanticLabel: label,
           tooltip: label,
           enabled: isAllowed,

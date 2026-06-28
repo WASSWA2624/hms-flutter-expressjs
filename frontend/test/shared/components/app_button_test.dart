@@ -47,18 +47,18 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(taps, 0);
     });
-  });
 
-  group('AppIconButton', () {
-    testWidgets('requires and exposes an icon semantic label', (
+    testWidgets('icon-only mode requires and exposes a semantic label', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
 
       await pumpComponent(
         tester,
-        AppIconButton(
-          icon: Icons.refresh,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.refresh,
+          label: 'Refresh data',
           semanticLabel: 'Refresh data',
           onPressed: () {},
         ),
@@ -67,6 +67,24 @@ void main() {
       expect(find.bySemanticsLabel('Refresh data'), findsWidgets);
 
       semantics.dispose();
+    });
+
+    testWidgets('uses transparent button styling for primary variant', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        AppButton.primary(
+          label: 'Try again',
+          leadingIcon: Icons.refresh,
+          onPressed: () {},
+        ),
+      );
+
+      final TextButton button = tester.widget<TextButton>(find.byType(TextButton));
+      final ButtonStyle style = button.style!;
+      expect(style.backgroundColor?.resolve(<WidgetState>{}), Colors.transparent);
+      expect(style.overlayColor?.resolve(<WidgetState>{}), isNull);
     });
   });
 }

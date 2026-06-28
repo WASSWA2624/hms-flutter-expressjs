@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
@@ -37,7 +38,7 @@ final class PatientRegistryController
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<PatientRegistryState> result = await _loadInitialState();
+    final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startVisibleDataSync();
     return result;
   }
@@ -53,7 +54,7 @@ final class PatientRegistryController
   Future<AppFailure?> refresh() async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {
-      final Result<PatientRegistryState> result = await _loadInitialState();
+      final Result<PatientRegistryState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
       state = AsyncData<Result<PatientRegistryState>>(result);
       return _failureOrNull(result);
     }
@@ -467,12 +468,8 @@ final class PatientRegistryController
 
     final Result<PatientReferenceData> referenceResult = await _repository
         .loadReferenceData();
-    final PatientReferenceData? referenceData = _successOrNull(referenceResult);
-    if (referenceData == null) {
-      return Result<PatientRegistryState>.failure(
-        _failureOrNull(referenceResult)!,
-      );
-    }
+    final PatientReferenceData referenceData =
+        _successOrNull(referenceResult) ?? const PatientReferenceData();
 
     const PatientListQuery query = PatientListQuery();
     final Result<AppPage<Patient>> pageResult = await _repository.listPatients(

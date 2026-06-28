@@ -171,8 +171,10 @@ class _IcuBedRow extends StatelessWidget {
           ),
           if (occupied) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
-            AppIconButton(
-              icon: Icons.open_in_new_outlined,
+            AppButton(iconOnly: true, 
+              leadingIcon: Icons.open_in_new_outlined,
+              label: l10n.icuActionOpenIpd,
+
               semanticLabel: l10n.icuActionOpenIpd,
               tooltip: l10n.icuActionOpenIpd,
               onPressed: () => _openIpd(context, bed),

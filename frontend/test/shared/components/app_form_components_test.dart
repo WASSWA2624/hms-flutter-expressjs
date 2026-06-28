@@ -516,7 +516,11 @@ void main() {
     final Iterable<TextField> textFields = tester.widgetList<TextField>(
       find.byType(TextField),
     );
-    final IconButton pickerButton = tester.widget(find.byType(IconButton));
+    final Finder pickerFinder = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppButton && widget.tooltip == 'Open date picker',
+    );
+    final AppButton pickerButton = tester.widget<AppButton>(pickerFinder);
 
     expect(
       textFields.every((TextField field) => field.enabled ?? false),
@@ -573,7 +577,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(IconButton));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppButton && widget.tooltip == 'Open date picker',
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('14').hitTestable().first);
     await tester.pumpAndSettle();
@@ -657,7 +666,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(IconButton));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppButton && widget.tooltip == 'Open date picker',
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();

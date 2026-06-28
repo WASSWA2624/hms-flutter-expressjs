@@ -1132,8 +1132,10 @@ class _WorkflowProgressSection extends StatelessWidget {
       title: l10n.radiologyWorkflowProgressTitle,
       actions: canCollapse
           ? <Widget>[
-              AppIconButton(
-                icon: expanded ? Icons.unfold_less : Icons.unfold_more,
+              AppButton(iconOnly: true, 
+                leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
+                label: l10n.radiologyWorkflowProgressTitle,
+
                 semanticLabel: l10n.radiologyWorkflowProgressTitle,
                 tooltip: l10n.radiologyWorkflowProgressTitle,
                 onPressed: () => onExpandedChanged(!expanded),
@@ -1324,8 +1326,10 @@ class _RequestSection extends ConsumerWidget {
     return _DetailSection(
       title: l10n.radiologyRequestDetailsTitle,
       actions: <Widget>[
-        AppIconButton(
-          icon: Icons.edit_outlined,
+        AppButton(iconOnly: true, 
+          leadingIcon: Icons.edit_outlined,
+          label: l10n.radiologyEditRequestDetailsAction,
+
           semanticLabel: l10n.radiologyEditRequestDetailsAction,
           tooltip: l10n.radiologyEditRequestDetailsAction,
           onPressed: canEdit
@@ -2133,9 +2137,10 @@ class _PendingStudyAssetTile extends StatelessWidget {
               onChanged: onCaptionChanged,
             ),
           ),
-          AppIconButton(
-            icon: Icons.delete_outline,
-            semanticLabel: l10n.radiologyRemoveAssetAction,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.delete_outline,
+            label: l10n.radiologyRemoveAssetAction,
+      semanticLabel: l10n.radiologyRemoveAssetAction,
             tooltip: l10n.radiologyRemoveAssetAction,
             onPressed: enabled ? onRemove : null,
           ),
@@ -2190,8 +2195,10 @@ class _StudyAssetTile extends StatelessWidget {
             ),
           ),
           if (canEdit)
-            AppIconButton(
-              icon: Icons.delete_outline,
+            AppButton(iconOnly: true, 
+              leadingIcon: Icons.delete_outline,
+              label: l10n.radiologyRemoveAssetAction,
+
               semanticLabel: l10n.radiologyRemoveAssetAction,
               tooltip: l10n.radiologyRemoveAssetAction,
               onPressed: onRemove,
@@ -2735,8 +2742,10 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
               ]),
             ),
           ),
-          AppIconButton(
-            icon: Icons.close,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.close,
+            label: l10n.clinicalRadiologyDeleteSelectionAction,
+
             semanticLabel: l10n.clinicalRadiologyDeleteSelectionAction,
             tooltip: l10n.clinicalRadiologyDeleteSelectionAction,
             onPressed: onRemove,

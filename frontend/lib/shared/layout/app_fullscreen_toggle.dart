@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/app_fullscreen_platform_stub.dart'
     if (dart.library.html) 'package:hosspi_hms/shared/layout/app_fullscreen_platform_web.dart';
 
@@ -67,8 +67,9 @@ class _AppFullscreenToggleState extends State<AppFullscreenToggle> {
       });
     }
 
-    return AppIconButton(
+    return AppButton(iconOnly: true, 
       icon: icon,
+      label: label,
       semanticLabel: label,
       tooltip: label,
       onPressed: toggle,

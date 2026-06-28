@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -50,7 +51,7 @@ final class NursingWorkspaceController
       events: RealtimeEventGroups.nursing,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<NursingWorkspaceState> result = await _loadInitialState();
+    final Result<NursingWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

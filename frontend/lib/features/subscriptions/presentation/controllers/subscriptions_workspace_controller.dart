@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
@@ -36,7 +37,7 @@ final class SubscriptionsWorkspaceController
         await refresh();
       },
     );
-    return _loadInitialState();
+    return runWorkspaceInitialLoad(ref, _loadInitialState);
   }
 
   Future<AppFailure?> applyRouteQuery(SubscriptionsWorkspaceQuery query) async {

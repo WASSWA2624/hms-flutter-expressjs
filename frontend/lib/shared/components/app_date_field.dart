@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
 class AppDateField extends StatefulWidget {
@@ -533,39 +534,17 @@ class _DatePickerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool enabled = onPressed != null;
-    final double buttonSize = theme.appTokens.minInteractiveDimension;
-    final Color disabledColor = theme.colorScheme.onSurface.withValues(
-      alpha: 0.38,
-    );
 
     return Padding(
       padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
-      child: Semantics(
-        button: true,
-        enabled: enabled,
+      child: AppButton(
+        iconOnly: true,
+        leadingIcon: Icons.calendar_today_outlined,
         label: label,
-        child: IconButton(
-          tooltip: label,
-          onPressed: onPressed,
-          icon: Icon(
-            Icons.calendar_today_outlined,
-            size: theme.appTokens.listIconSize,
-          ),
-          color: enabled ? theme.colorScheme.onSurfaceVariant : disabledColor,
-          style: IconButton.styleFrom(
-            backgroundColor: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: enabled ? 0.72 : 0.32),
-            disabledBackgroundColor: theme.colorScheme.onSurface.withValues(
-              alpha: 0.08,
-            ),
-            fixedSize: Size.square(buttonSize),
-            minimumSize: Size.square(buttonSize),
-            padding: EdgeInsets.zero,
-            shape: const CircleBorder(),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
+        semanticLabel: label,
+        tooltip: label,
+        enabled: enabled,
+        onPressed: onPressed,
       ),
     );
   }

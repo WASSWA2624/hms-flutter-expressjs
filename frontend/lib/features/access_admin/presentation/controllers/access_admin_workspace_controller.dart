@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
@@ -37,7 +38,7 @@ final class AccessAdminWorkspaceController
         await refresh();
       },
     );
-    return _loadInitialState();
+    return runWorkspaceInitialLoad(ref, _loadInitialState);
   }
 
   Future<AppFailure?> applyRouteQuery(AccessAdminWorkspaceQuery query) async {

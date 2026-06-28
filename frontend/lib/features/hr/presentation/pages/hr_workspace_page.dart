@@ -617,8 +617,10 @@ class _HrStaffDetailPanel extends ConsumerWidget {
       title: l10n.hrStaffDetailTitle,
       description: selected.profile.effectiveId,
       actions: <Widget>[
-        AppIconButton(
-          icon: Icons.edit_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.edit_outlined,
+          label: l10n.hrEditStaffAction,
           semanticLabel: l10n.hrEditStaffAction,
           tooltip: l10n.hrEditStaffAction,
           onPressed: state.isMutating
@@ -879,40 +881,50 @@ class _HrWorkQueuePanel extends ConsumerWidget {
       title: l10n.hrWorkQueuesTitle,
       description: _queueLabel(l10n, state.workItemsQuery.queue),
       actions: <Widget>[
-        AppIconButton(
-          icon: Icons.event_busy_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.event_busy_outlined,
+          label: _queueLabel(l10n, HrQueue.leaveRequests),
           semanticLabel: _queueLabel(l10n, HrQueue.leaveRequests),
           tooltip: _queueLabel(l10n, HrQueue.leaveRequests),
           onPressed: state.workItemsQuery.queue == HrQueue.leaveRequests
               ? null
               : () => controller.applyQueue(HrQueue.leaveRequests),
         ),
-        AppIconButton(
-          icon: Icons.swap_horiz_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.swap_horiz_outlined,
+          label: _queueLabel(l10n, HrQueue.swapRequests),
           semanticLabel: _queueLabel(l10n, HrQueue.swapRequests),
           tooltip: _queueLabel(l10n, HrQueue.swapRequests),
           onPressed: state.workItemsQuery.queue == HrQueue.swapRequests
               ? null
               : () => controller.applyQueue(HrQueue.swapRequests),
         ),
-        AppIconButton(
-          icon: Icons.calendar_month_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.calendar_month_outlined,
+          label: _queueLabel(l10n, HrQueue.rosterDrafts),
           semanticLabel: _queueLabel(l10n, HrQueue.rosterDrafts),
           tooltip: _queueLabel(l10n, HrQueue.rosterDrafts),
           onPressed: state.workItemsQuery.queue == HrQueue.rosterDrafts
               ? null
               : () => controller.applyQueue(HrQueue.rosterDrafts),
         ),
-        AppIconButton(
-          icon: Icons.pending_actions_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.pending_actions_outlined,
+          label: _queueLabel(l10n, HrQueue.unassignedShifts),
           semanticLabel: _queueLabel(l10n, HrQueue.unassignedShifts),
           tooltip: _queueLabel(l10n, HrQueue.unassignedShifts),
           onPressed: state.workItemsQuery.queue == HrQueue.unassignedShifts
               ? null
               : () => controller.applyQueue(HrQueue.unassignedShifts),
         ),
-        AppIconButton(
-          icon: Icons.payments_outlined,
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.payments_outlined,
+          label: _queueLabel(l10n, HrQueue.payrollDrafts),
           semanticLabel: _queueLabel(l10n, HrQueue.payrollDrafts),
           tooltip: _queueLabel(l10n, HrQueue.payrollDrafts),
           onPressed: state.workItemsQuery.queue == HrQueue.payrollDrafts
@@ -2404,8 +2416,10 @@ class _AvailabilitySlotFields extends StatelessWidget {
         ),
         if (canRemove) ...<Widget>[
           SizedBox(width: theme.spacing.xs),
-          AppIconButton(
-            icon: Icons.remove_circle_outline,
+          AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.remove_circle_outline,
+            label: l10n.hrRemoveAvailabilitySlotAction,
             semanticLabel: l10n.hrRemoveAvailabilitySlotAction,
             tooltip: l10n.hrRemoveAvailabilitySlotAction,
             onPressed: onRemove,

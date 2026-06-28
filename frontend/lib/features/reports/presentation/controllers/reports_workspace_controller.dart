@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/reports/data/repositories/reports_repository_impl.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/domain/repositories/reports_repository.dart';
@@ -26,25 +27,27 @@ final class ReportsWorkspaceController
       includeCrudMutations: true,
       onRefresh: (_) => refresh(),
     );
-    const ReportsWorkspaceQuery query = ReportsWorkspaceQuery();
-    final Result<ReportsWorkspaceOverview> overviewResult =
-        await _loadReportingOverview(query);
+    return runWorkspaceInitialLoad(ref, () async {
+      const ReportsWorkspaceQuery query = ReportsWorkspaceQuery();
+      final Result<ReportsWorkspaceOverview> overviewResult =
+          await _loadReportingOverview(query);
 
-    return overviewResult.when(
-      success: (ReportsWorkspaceOverview overview) {
-        return Result<ReportsWorkspaceState>.success(
-          ReportsWorkspaceState(
-            query: query,
-            overview: overview,
-            complianceLogs: _emptyCompliancePage(query.pageRequest),
-            selectedItem: overview.items.items.firstOrNull,
-          ),
-        );
-      },
-      failure: (AppFailure failure) {
-        return Result<ReportsWorkspaceState>.failure(failure);
-      },
-    );
+      return overviewResult.when(
+        success: (ReportsWorkspaceOverview overview) {
+          return Result<ReportsWorkspaceState>.success(
+            ReportsWorkspaceState(
+              query: query,
+              overview: overview,
+              complianceLogs: _emptyCompliancePage(query.pageRequest),
+              selectedItem: overview.items.items.firstOrNull,
+            ),
+          );
+        },
+        failure: (AppFailure failure) {
+          return Result<ReportsWorkspaceState>.failure(failure);
+        },
+      );
+    });
   }
 
   Future<AppFailure?> refresh() async {

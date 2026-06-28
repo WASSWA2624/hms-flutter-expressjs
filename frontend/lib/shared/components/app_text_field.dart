@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -289,7 +289,9 @@ class _AppTextFieldState extends State<AppTextField> {
         ? widget.showObscuredTextLabel!
         : widget.hideObscuredTextLabel!;
 
-    return AppIconButton(
+    return AppButton(iconOnly: true, 
+      label: label,
+ 
       semanticLabel: label,
       tooltip: label,
       onPressed: canEdit

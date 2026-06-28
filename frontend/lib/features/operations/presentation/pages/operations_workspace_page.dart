@@ -412,8 +412,10 @@ class _OperationsDetailPanel extends ConsumerWidget {
       title: l10n.operationsDetailTitle,
       description: item.effectiveDisplayId,
       actions: <Widget>[
-        AppIconButton(
-          icon: Icons.summarize_outlined,
+        AppButton(iconOnly: true, 
+          leadingIcon: Icons.summarize_outlined,
+          label: l10n.operationsOpenReportAction,
+
           semanticLabel: l10n.operationsOpenReportAction,
           tooltip: l10n.operationsOpenReportAction,
           onPressed: () => _showRequestReportDialog(context, state, item),

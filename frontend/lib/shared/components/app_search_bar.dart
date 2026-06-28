@@ -5,7 +5,6 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 
 @immutable
@@ -409,8 +408,10 @@ class _AppSearchBarState extends State<AppSearchBar> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (canClear)
-            AppIconButton(
-              icon: Icons.close,
+            AppButton(iconOnly: true, 
+              leadingIcon: Icons.close,
+              label: clearLabel,
+
               semanticLabel: clearLabel,
               tooltip: clearLabel,
               onPressed: _clear,
@@ -557,17 +558,15 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
       child: SizedBox(
         width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
         child: Center(
-          child: Semantics(
-            button: true,
-            enabled: enabled,
+          child: AppButton(
+            iconOnly: true,
+            leadingIcon: action.icon,
             label: action.label,
-            selected: action.active,
-            child: IconButton(
-              tooltip: action.tooltip ?? action.label,
-              onPressed: enabled ? action.onPressed : null,
-              color: foreground,
-              icon: Icon(action.icon, size: theme.appTokens.listIconSize),
-            ),
+            semanticLabel: action.label,
+            tooltip: action.tooltip ?? action.label,
+            color: foreground,
+            enabled: enabled,
+            onPressed: enabled ? action.onPressed : null,
           ),
         ),
       ),
@@ -609,20 +608,15 @@ class _AttachedFilterButton extends StatelessWidget {
       child: SizedBox(
         width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
         child: Center(
-          child: Semantics(
-            button: true,
-            enabled: enabled,
+          child: AppButton(
+            iconOnly: true,
+            leadingIcon: active ? Icons.filter_alt : Icons.filter_alt_outlined,
             label: label,
-            selected: active,
-            child: IconButton(
-              tooltip: label,
-              onPressed: enabled ? onPressed : null,
-              color: foreground,
-              icon: Icon(
-                active ? Icons.filter_alt : Icons.filter_alt_outlined,
-                size: theme.appTokens.listIconSize,
-              ),
-            ),
+            semanticLabel: label,
+            tooltip: label,
+            color: foreground,
+            enabled: enabled,
+            onPressed: enabled ? onPressed : null,
           ),
         ),
       ),

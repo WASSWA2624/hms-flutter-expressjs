@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 import '../../../../helpers/test_harness.dart';
 
@@ -66,7 +67,11 @@ Future<void> _submitLogin(WidgetTester tester) async {
     'wasswawilson0001@gmail.com',
   );
   await tester.enterText(find.byType(EditableText).at(1), 'Challenger2624.');
-  await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+  await tester.tap(
+    find.byWidgetPredicate(
+      (Widget widget) => widget is AppButton && widget.label == 'Sign in',
+    ),
+  );
   await tester.pump();
   await tester.pumpAndSettle();
 }

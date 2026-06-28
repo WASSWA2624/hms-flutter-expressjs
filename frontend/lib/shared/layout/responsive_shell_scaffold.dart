@@ -398,10 +398,12 @@ class AppMenuBar extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
           child: Row(
             children: <Widget>[
-              AppIconButton(
+              AppButton(iconOnly: true, 
+                label: toggleTooltip,
+ 
                 semanticLabel: toggleTooltip,
                 tooltip: toggleTooltip,
-                icon: Icons.menu,
+                leadingIcon: Icons.menu,
                 onPressed: onToggleNavigation,
               ),
               SizedBox(width: theme.spacing.xs),
@@ -576,21 +578,20 @@ class _NotificationButton extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final bool hasUnread = unreadCount > 0;
 
-    return Semantics(
-      button: true,
+    return AppButton(
+      iconOnly: true,
       label: unreadLabel,
-      child: Tooltip(
-        message: tooltip,
-        child: IconButton(
-          onPressed: onPressed,
-          iconSize: theme.appTokens.listIconSize,
-          icon: Badge(
-            isLabelVisible: hasUnread,
-            label: Text(unreadCount > 99 ? '99+' : unreadCount.toString()),
-            backgroundColor: colorScheme.error,
-            textColor: colorScheme.onError,
-            child: const Icon(Icons.notifications_none_outlined),
-          ),
+      semanticLabel: unreadLabel,
+      tooltip: tooltip,
+      onPressed: onPressed,
+      iconWidget: Badge(
+        isLabelVisible: hasUnread,
+        label: Text(unreadCount > 99 ? '99+' : unreadCount.toString()),
+        backgroundColor: colorScheme.error,
+        textColor: colorScheme.onError,
+        child: Icon(
+          Icons.notifications_none_outlined,
+          size: theme.appTokens.listIconSize,
         ),
       ),
     );
@@ -996,10 +997,12 @@ class _MobileShellDrawer extends StatelessWidget {
                         ),
                       ),
                     ),
-                    AppIconButton(
+                    AppButton(iconOnly: true, 
+                      label: closeTooltip,
+ 
                       semanticLabel: closeTooltip,
                       tooltip: closeTooltip,
-                      icon: Icons.close,
+                      leadingIcon: Icons.close,
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
@@ -1374,11 +1377,10 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color selectedColor = colorScheme.secondaryContainer;
-    final Color hoverColor = colorScheme.surfaceContainerHighest;
-    final Color focusColor = colorScheme.primary;
     final Color foregroundColor = widget.selected
-        ? colorScheme.onSecondaryContainer
+        ? colorScheme.primary
+        : _hovered || _focused
+        ? colorScheme.primary.withValues(alpha: 0.88)
         : colorScheme.onSurfaceVariant;
     final int badgeCount = widget.destination.badgeCount ?? 0;
     final bool showIconBadge = badgeCount > 0 && !widget.showLabel;
@@ -1400,11 +1402,6 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
         horizontal: widget.showLabel ? theme.spacing.sm : theme.spacing.none,
       ),
       decoration: BoxDecoration(
-        color: widget.selected
-            ? selectedColor
-            : _hovered || _focused
-            ? hoverColor
-            : Colors.transparent,
         border: Border(
           left: BorderSide(
             color: widget.selected || _focused
@@ -1413,13 +1410,22 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
             width: _selectedIndicatorWidth,
           ),
           top: _focused
-              ? BorderSide(color: focusColor, width: _focusIndicatorWidth)
+              ? BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.72),
+                  width: _focusIndicatorWidth,
+                )
               : BorderSide.none,
           right: _focused
-              ? BorderSide(color: focusColor, width: _focusIndicatorWidth)
+              ? BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.72),
+                  width: _focusIndicatorWidth,
+                )
               : BorderSide.none,
           bottom: _focused
-              ? BorderSide(color: focusColor, width: _focusIndicatorWidth)
+              ? BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.72),
+                  width: _focusIndicatorWidth,
+                )
               : BorderSide.none,
         ),
       ),

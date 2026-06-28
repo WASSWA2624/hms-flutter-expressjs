@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
@@ -27,7 +28,7 @@ final class DischargeWorkspaceController
       onRefresh: (_) => _syncFromRealtime(),
     );
     const DischargeWorklistQuery query = DischargeWorklistQuery();
-    return _loadWorkspace(query);
+    return runWorkspaceInitialLoad(ref, () => _loadWorkspace(query));
   }
 
   Future<Result<DischargeWorkspaceState>> _loadWorkspace(

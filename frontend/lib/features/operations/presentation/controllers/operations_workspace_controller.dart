@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/operations/data/repositories/operations_repository_impl.dart';
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/domain/repositories/operations_repository.dart';
@@ -34,7 +35,7 @@ final class OperationsWorkspaceController
       events: RealtimeEventGroups.operations,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<OperationsWorkspaceState> result = await _loadInitialState();
+    final Result<OperationsWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

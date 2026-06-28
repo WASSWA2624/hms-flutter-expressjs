@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/communications/data/repositories/communications_repository_impl.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/domain/repositories/communications_repository.dart';
@@ -26,7 +27,10 @@ final class CommunicationsWorkspaceController
       events: RealtimeEventGroups.communications,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    return _repository.getWorkspace(const CommunicationsWorkspaceQuery());
+    return runWorkspaceInitialLoad(
+      ref,
+      () => _repository.getWorkspace(const CommunicationsWorkspaceQuery()),
+    );
   }
 
   Future<void> _syncFromRealtime() async {

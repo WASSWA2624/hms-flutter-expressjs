@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
@@ -29,34 +30,36 @@ final class BillingWorkspaceController
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
-    const BillingWorkspaceQuery query = BillingWorkspaceQuery();
-    final Result<BillingWorkspaceOverview> overviewResult = await _repository
-        .getWorkspace(query);
+    return runWorkspaceInitialLoad(ref, () async {
+      const BillingWorkspaceQuery query = BillingWorkspaceQuery();
+      final Result<BillingWorkspaceOverview> overviewResult = await _repository
+          .getWorkspace(query);
 
-    return overviewResult.when(
-      success: (BillingWorkspaceOverview overview) async {
-        final Result<AppPage<BillingWorkItem>> itemsResult = await _repository
-            .listWorkItems(query);
-        return itemsResult.when(
-          success: (AppPage<BillingWorkItem> workItems) {
-            return Result<BillingWorkspaceState>.success(
-              BillingWorkspaceState(
-                query: query,
-                overview: overview,
-                workItems: workItems,
-                selectedItem: workItems.items.firstOrNull,
-              ),
-            );
-          },
-          failure: (AppFailure failure) {
-            return Result<BillingWorkspaceState>.failure(failure);
-          },
-        );
-      },
-      failure: (AppFailure failure) async {
-        return Result<BillingWorkspaceState>.failure(failure);
-      },
-    );
+      return overviewResult.when(
+        success: (BillingWorkspaceOverview overview) async {
+          final Result<AppPage<BillingWorkItem>> itemsResult = await _repository
+              .listWorkItems(query);
+          return itemsResult.when(
+            success: (AppPage<BillingWorkItem> workItems) {
+              return Result<BillingWorkspaceState>.success(
+                BillingWorkspaceState(
+                  query: query,
+                  overview: overview,
+                  workItems: workItems,
+                  selectedItem: workItems.items.firstOrNull,
+                ),
+              );
+            },
+            failure: (AppFailure failure) {
+              return Result<BillingWorkspaceState>.failure(failure);
+            },
+          );
+        },
+        failure: (AppFailure failure) async {
+          return Result<BillingWorkspaceState>.failure(failure);
+        },
+      );
+    });
   }
 
   Future<void> _syncFromRealtime() async {

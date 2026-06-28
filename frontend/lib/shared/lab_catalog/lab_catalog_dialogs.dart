@@ -1866,8 +1866,10 @@ class _SelectedPanelTestRow extends StatelessWidget {
               ],
             ),
           ),
-          AppIconButton(
-            icon: Icons.close,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.close,
+            label: l10n.commonRemoveActionLabel,
+
             semanticLabel: l10n.commonRemoveActionLabel,
             tooltip: l10n.commonRemoveActionLabel,
             onPressed: enabled ? onRemove : null,
@@ -1929,10 +1931,14 @@ class _EditableValueListFieldState extends State<_EditableValueListField> {
           enabled: widget.enabled,
           prefixIcon: const Icon(Icons.search),
           options: widget.suggestions,
-          suffixIcon: IconButton(
+          suffixIcon: AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.add,
+            label: l10n.labAddValueAction,
+            semanticLabel: l10n.labAddValueAction,
             tooltip: l10n.labAddValueAction,
+            enabled: widget.enabled,
             onPressed: widget.enabled ? _addCurrentValue : null,
-            icon: const Icon(Icons.add),
           ),
           onFieldSubmitted: (_) => _addCurrentValue(),
         ),

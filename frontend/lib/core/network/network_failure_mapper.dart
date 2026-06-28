@@ -35,7 +35,9 @@ final class NetworkFailureMapper {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
       DioExceptionType.receiveTimeout => const AppFailure.timeout(),
-      DioExceptionType.connectionError => const AppFailure.offline(),
+      DioExceptionType.connectionError => const AppFailure.network(
+        code: 'network.connection_failed',
+      ),
       DioExceptionType.cancel => const AppFailure.cancelled(),
       DioExceptionType.badCertificate => const AppFailure.network(
         code: 'network.bad_certificate',

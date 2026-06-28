@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/housekeeping/data/repositories/housekeeping_repository_impl.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/repositories/housekeeping_repository.dart';
@@ -26,24 +27,26 @@ final class HousekeepingWorkspaceController
       events: RealtimeEventGroups.housekeeping,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    const HousekeepingWorkspaceQuery query = HousekeepingWorkspaceQuery();
-    final Result<HousekeepingWorkspaceLoad> loadResult = await _repository
-        .getWorkspace(query);
+    return runWorkspaceInitialLoad(ref, () async {
+      const HousekeepingWorkspaceQuery query = HousekeepingWorkspaceQuery();
+      final Result<HousekeepingWorkspaceLoad> loadResult = await _repository
+          .getWorkspace(query);
 
-    return loadResult.when(
-      success: (HousekeepingWorkspaceLoad load) {
-        return Result<HousekeepingWorkspaceState>.success(
-          HousekeepingWorkspaceState(
-            query: query,
-            overview: load.overview,
-            items: load.items,
-          ),
-        );
-      },
-      failure: (AppFailure failure) {
-        return Result<HousekeepingWorkspaceState>.failure(failure);
-      },
-    );
+      return loadResult.when(
+        success: (HousekeepingWorkspaceLoad load) {
+          return Result<HousekeepingWorkspaceState>.success(
+            HousekeepingWorkspaceState(
+              query: query,
+              overview: load.overview,
+              items: load.items,
+            ),
+          );
+        },
+        failure: (AppFailure failure) {
+          return Result<HousekeepingWorkspaceState>.failure(failure);
+        },
+      );
+    });
   }
 
   Future<void> _syncFromRealtime() async {

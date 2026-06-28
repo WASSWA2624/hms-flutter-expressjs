@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
@@ -35,7 +36,7 @@ final class PharmacyWorkspaceController
       events: RealtimeEventGroups.pharmacyWorkspace,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    final Result<PharmacyWorkspaceState> result = await _loadInitialState();
+    final Result<PharmacyWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

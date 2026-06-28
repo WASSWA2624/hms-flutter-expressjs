@@ -1057,8 +1057,10 @@ class _PermissionGrantRow extends StatelessWidget {
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
         SizedBox(width: theme.spacing.xs),
-        AppIconButton(
-          icon: Icons.remove_circle_outline,
+        AppButton(iconOnly: true, 
+          leadingIcon: Icons.remove_circle_outline,
+          label: l10n.integrationsRemovePermissionAction,
+
           semanticLabel: l10n.integrationsRemovePermissionAction,
           tooltip: l10n.integrationsRemovePermissionAction,
           onPressed: onRemove,

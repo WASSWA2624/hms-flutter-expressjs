@@ -199,15 +199,23 @@ class ClinicalRequestSelectedCatalogRow extends StatelessWidget {
               ),
             ),
             if (onEdit != null)
-              IconButton(
+              AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.edit_outlined,
+                label: l10n.clinicalLabRequestEditSelectionAction,
+                semanticLabel: l10n.clinicalLabRequestEditSelectionAction,
                 tooltip: l10n.clinicalLabRequestEditSelectionAction,
+                enabled: enabled,
                 onPressed: enabled ? onEdit : null,
-                icon: const Icon(Icons.edit_outlined),
               ),
-            IconButton(
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: l10n.clinicalLabRequestDeleteSelectionAction,
+              semanticLabel: l10n.clinicalLabRequestDeleteSelectionAction,
               tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+              enabled: enabled,
               onPressed: enabled ? onDelete : null,
-              icon: const Icon(Icons.delete_outline),
             ),
           ],
         ),

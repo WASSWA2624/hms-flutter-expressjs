@@ -351,9 +351,10 @@ class _SelectedPatientTile extends StatelessWidget {
               ),
             ),
             if (onClear != null)
-              AppIconButton(
+              AppButton(iconOnly: true, 
                 icon: Icons.close,
-                semanticLabel: context.l10n.commonCancelActionLabel,
+                label: context.l10n.commonCancelActionLabel,
+      semanticLabel: context.l10n.commonCancelActionLabel,
                 tooltip: context.l10n.commonCancelActionLabel,
                 onPressed: onClear,
               ),

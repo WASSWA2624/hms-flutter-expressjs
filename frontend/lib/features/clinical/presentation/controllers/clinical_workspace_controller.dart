@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -48,7 +49,7 @@ final class ClinicalWorkspaceController
       shouldRefresh: _clinicalRealtimeEventTouchesVisibleData,
       onRefresh: _handleClinicalRealtime,
     );
-    final Result<ClinicalWorkspaceState> result = await _loadInitialState();
+    final Result<ClinicalWorkspaceState> result = await runWorkspaceInitialLoad(ref, _loadInitialState);
     _startSync();
     return result;
   }

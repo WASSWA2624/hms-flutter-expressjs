@@ -595,16 +595,20 @@ class _TheaterCaseDetail extends ConsumerWidget {
       description: selected.displayId,
       actions: canWrite
           ? <Widget>[
-              AppIconButton(
-                icon: Icons.edit_calendar_outlined,
+              AppButton(iconOnly: true, 
+                leadingIcon: Icons.edit_calendar_outlined,
+                label: l10n.theaterRescheduleAction,
+
                 semanticLabel: l10n.theaterRescheduleAction,
                 tooltip: l10n.theaterRescheduleAction,
                 onPressed: isMutating
                     ? null
                     : () => _showRescheduleDialog(context, ref, selected),
               ),
-              AppIconButton(
-                icon: Icons.alt_route_outlined,
+              AppButton(iconOnly: true, 
+                leadingIcon: Icons.alt_route_outlined,
+                label: l10n.theaterUpdateStageAction,
+
                 semanticLabel: l10n.theaterUpdateStageAction,
                 tooltip: l10n.theaterUpdateStageAction,
                 onPressed: isMutating

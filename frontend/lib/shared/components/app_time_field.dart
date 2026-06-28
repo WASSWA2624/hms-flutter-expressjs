@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
 class AppTimeField extends StatefulWidget {
@@ -150,17 +151,17 @@ class _TimePickerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool enabled = onPressed != null;
-    final Color disabledColor = theme.colorScheme.onSurface.withValues(
-      alpha: 0.38,
-    );
 
     return Padding(
       padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
-      child: IconButton(
+      child: AppButton(
+        iconOnly: true,
+        leadingIcon: Icons.schedule_outlined,
+        label: label,
+        semanticLabel: label,
         tooltip: label,
+        enabled: enabled,
         onPressed: onPressed,
-        icon: Icon(Icons.schedule_outlined, size: theme.appTokens.listIconSize),
-        color: enabled ? theme.colorScheme.onSurfaceVariant : disabledColor,
       ),
     );
   }

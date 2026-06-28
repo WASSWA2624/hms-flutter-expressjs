@@ -29,8 +29,7 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 | `AppWorkspaceDetailPanel` | composition | selected row detail sections |
 | `AppActionPanel` / `AppActionList` | composition | grouped primary/secondary actions |
 | `AppWorkspaceMutationDialog` | `AppDialog` | consistent mutation forms from workspace |
-| `AppButton` | `FilledButton`, `OutlinedButton`, `TextButton` | primary, secondary, tertiary actions |
-| `AppIconButton` | `IconButton` | compact icon actions with semantic labels |
+| `AppButton` | `TextButton` | borderless primary, secondary, tertiary, and icon-only actions |
 | `AppTextField` | `TextFormField` | text, number, password, multiline |
 | `AppSelectField<T>` | `DropdownMenu<T>` or Material menus | searchable selection |
 | `AppRadioGroup<T>` | `RadioGroup` / `RadioListTile` | exclusive options |

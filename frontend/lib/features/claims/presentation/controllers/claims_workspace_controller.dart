@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository.dart';
@@ -25,38 +26,40 @@ final class ClaimsWorkspaceController
       events: RealtimeEventGroups.claims,
       onRefresh: (_) => _syncFromRealtime(),
     );
-    const ClaimsQueueQuery query = ClaimsQueueQuery();
-    final Result<AppPage<ClaimsQueueItem>> queueResult = await _repository
-        .listQueue(query);
+    return runWorkspaceInitialLoad(ref, () async {
+      const ClaimsQueueQuery query = ClaimsQueueQuery();
+      final Result<AppPage<ClaimsQueueItem>> queueResult = await _repository
+          .listQueue(query);
 
-    return queueResult.when(
-      success: (AppPage<ClaimsQueueItem> queue) async {
-        final ClaimsReferenceData referenceData = await _repository
-            .loadReferenceData()
-            .then(
-              (Result<ClaimsReferenceData> result) => result.when(
-                success: (ClaimsReferenceData value) => value,
-                failure: (_) => const ClaimsReferenceData(
-                  coverageUnavailable: true,
-                  invoicesUnavailable: true,
+      return queueResult.when(
+        success: (AppPage<ClaimsQueueItem> queue) async {
+          final ClaimsReferenceData referenceData = await _repository
+              .loadReferenceData()
+              .then(
+                (Result<ClaimsReferenceData> result) => result.when(
+                  success: (ClaimsReferenceData value) => value,
+                  failure: (_) => const ClaimsReferenceData(
+                    coverageUnavailable: true,
+                    invoicesUnavailable: true,
+                  ),
                 ),
-              ),
-            );
-        final ClaimsWorkspaceSummary? summary = await _loadSummary();
+              );
+          final ClaimsWorkspaceSummary? summary = await _loadSummary();
 
-        return Result<ClaimsWorkspaceState>.success(
-          ClaimsWorkspaceState(
-            query: query,
-            queue: queue,
-            referenceData: referenceData,
-            summary: summary,
-          ),
-        );
-      },
-      failure: (AppFailure failure) async {
-        return Result<ClaimsWorkspaceState>.failure(failure);
-      },
-    );
+          return Result<ClaimsWorkspaceState>.success(
+            ClaimsWorkspaceState(
+              query: query,
+              queue: queue,
+              referenceData: referenceData,
+              summary: summary,
+            ),
+          );
+        },
+        failure: (AppFailure failure) async {
+          return Result<ClaimsWorkspaceState>.failure(failure);
+        },
+      );
+    });
   }
 
   Future<ClaimsWorkspaceSummary?> _loadSummary() {

@@ -700,10 +700,14 @@ class _PrescriptionLineHeader extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
+        AppButton(
+          iconOnly: true,
+          leadingIcon: Icons.delete_outline,
+          label: l10n.clinicalPrescriptionRemoveMedicineAction,
+          semanticLabel: l10n.clinicalPrescriptionRemoveMedicineAction,
           tooltip: l10n.clinicalPrescriptionRemoveMedicineAction,
+          enabled: canRemove,
           onPressed: canRemove ? onRemove : null,
-          icon: const Icon(Icons.delete_outline),
         ),
       ],
     );

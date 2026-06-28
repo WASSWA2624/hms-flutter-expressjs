@@ -1,125 +1,145 @@
-# Global workspace toolbar & overflow menu polish
-
-Apply this **app-wide** to every screen that uses `AppWorkspace`, `AppWorkspaceToolbar`, or the shell header actions. The issues below appear on multiple modules (OPD, Billing, Lab, etc.); fix the shared components once rather than per screen.
-
----
+# HOSSPI UI — Global borderless buttons & workspace error fixes
 
 ## Goal
 
-Unify all workspace header actions into a **ghost / text action** style (icon + label only, no filled background, no outline border) that reads cleanly on every theme and header color. Replace the current **More actions** bottom sheet with a **dropdown popup** styled like the user profile menu.
+Unify every interactive button in the Flutter app behind **one** shared component with **no background and no border** in any state (default, hover, focus, pressed, selected, disabled). Buttons show **icon + label only**; hover/press feedback applies to **icon and label color/opacity**, never a container fill or overlay. Fix incorrect **“No connection”** error states on workspace screens and the **mortuary/materials workspace** load error.
 
 ---
 
-## Problems to fix
+## 1. Consolidate to a single global button
 
-1. **Toolbar actions look like bordered buttons** — Screen-specific actions, Refresh, Report fault, Request maintenance, and the More (`more_vert`) trigger render as `AppButton.secondary` / `OutlinedButton` (visible border + hover fill). They should look like lightweight icon+label controls, not boxed buttons.
-2. **More actions opens a bottom sheet** — `_ToolbarOverflowMenu` in `app_workspace_toolbar.dart` uses `showModalBottomSheet`, so the menu is pushed to the bottom of the screen. It should anchor under the More button like `_UserMenuButton` (`PopupMenuButton`, `PopupMenuPosition.under`).
-3. **Overflow items render as full buttons** — `_OverflowActionRow` embeds the original toolbar widgets inside the sheet, so overflow entries still appear as bordered buttons. They should be **list rows**: leading icon, label text, row hover/focus, same tap behavior as the inline action.
-4. **Fullscreen toggle still shows a labeled bordered button on wide breakpoints** — `AppFullscreenToggle` switches to `AppButton.secondary` when not on xs/sm. It should stay **icon-only** (no label, no border, no background) at all breakpoints, matching the desired shell action style.
-5. **Inconsistent styling vs user menu** — The user profile dropdown (`responsive_shell_scaffold.dart` → `_UserMenuButton`, `_UserMenuItemLabel`) is the visual reference. Overflow menu items must match that list-item pattern.
+**Problem:** Button styling is split across `AppButton`, `AppGhostActionButton`, and `AppIconButton`, plus raw `FilledButton` / `OutlinedButton` / `TextButton` / `IconButton` in features. This causes inconsistent filled backgrounds (e.g. blue “Try again”, Claims “Request authorization”, Subscriptions “Activate subscription”).
 
----
+**Do:**
 
-## Visual spec — ghost toolbar actions
+1. Make `frontend/lib/shared/components/app_button.dart` the **only** button widget. Extend it so all current use cases are covered via properties (not separate widgets):
+   - `label` (required for labeled actions; optional for icon-only)
+   - `icon` / `leadingIcon`
+   - `onPressed`, `enabled`, `isLoading`, `fullWidth`, `semanticLabel`, `tooltip`, `autofocus`
+   - `variant` — keep semantic names (`primary`, `secondary`, `tertiary`) for **color/emphasis only**, not fill/border
+   - `iconOnly` — compact icon-only mode (toolbar/header)
+   - `color` — optional foreground override
+2. **Remove** `AppGhostActionButton` and `AppIconButton` as separate public widgets. Migrate all call sites to `AppButton`. Keep thin deprecated aliases only if needed for a transitional PR; end state is one export from `components.dart`.
+3. Update `frontend/.cursor/components.mdc` catalog to document the single `AppButton` API.
+4. Grep and replace across `frontend/lib/`:
+   - `AppGhostActionButton` → `AppButton`
+   - `AppIconButton` → `AppButton` with `iconOnly: true`
+   - Raw `FilledButton`, `OutlinedButton`, `ElevatedButton` in feature/presentation code → `AppButton`
+   - `IconButton` in shell/toolbar/state views → `AppButton` icon-only (except non-action decorative icons)
+5. Update `frontend/test/shared/components/app_button_test.dart` (and any ghost/icon button tests) for the unified API.
 
-Create or reuse a single shared style for **toolbar/header actions** (not primary page CTAs):
+**Button style contract (all variants):**
 
-| Property | Requirement |
-|----------|-------------|
-| Background | Always transparent (default, hover, pressed) |
-| Border | None |
-| Content | Leading icon + label when `AppActionLabelScope.showLabels == true`; icon-only when `forceIconOnly == true` |
-| Colors | Use `colorScheme.onSurfaceVariant` (or existing token) so actions work on light, dark, and tinted headers |
-| Hover / focus / pressed | Subtle overlay only (reuse `AppIconButton` overlay alphas or equivalent) — no box fill |
-| Typography | `theme.textTheme.labelLarge`, semibold if that matches existing shell actions |
-| Spacing | Compact; preserve minimum tap target (`appTokens.minInteractiveDimension`) |
-
-**Applies to:** `AppIconButton` when used inside `AppActionLabelScope` with labels, global actions (`AppWorkspaceRefreshAction`, `AppGlobalFaultReportAction`, `AppGlobalHousekeepingRequestAction`), screen-specific toolbar widgets passed via `AppWorkspaceToolbarConfig.primary` / `.secondary`, and the More trigger.
-
-**Does not change:** Primary filled CTAs (`AppButton.primary`) used for the main screen action (e.g. “Post payment”, “Start walk-in”) unless a screen incorrectly uses secondary for its primary CTA.
-
----
-
-## Layout rules — inline vs overflow
-
-Keep existing responsive budget logic in `AppWorkspaceToolbar`, but ensure behavior is:
-
-1. **Up to 3 screen-specific actions** (`secondary` + `primary`, in that order) stay **inline** first (`maxVisibleScreenActions`, default 3).
-2. **Global actions** (Refresh, fault report, housekeeping) sit inline when width allows; overflow to More when narrow (existing `_resolveLayout` behavior).
-3. **More button** (`Icons.more_vert`) appears when any action overflows; it uses the same ghost icon-only style (no border/background).
-4. Width estimation constants in `_AdaptiveToolbarLayout` may need updating after ghost actions shrink — verify no header overflow at **1280×800** and on **360px** widths.
+| Property | Value |
+|---|---|
+| `backgroundColor` | Always `Colors.transparent` (all `WidgetState`s) |
+| `side` / border | Always `BorderSide.none` |
+| `overlayColor` | Always `null` (no Material splash/hover fill) |
+| Hover | Increase icon/label opacity or shift foreground color (e.g. `onSurfaceVariant` → `primary`) |
+| Press | Slightly stronger foreground emphasis + optional `AnimatedScale` (~0.98) on content |
+| Focus | Visible focus ring on icon/label or underline — **not** a background |
+| Disabled | Reduced foreground alpha; no background |
+| Layout | Icon (20–24px) + `spacing.sm` gap + label; `labelLarge` w700 |
+| Loading | Replace icon with `CircularProgressIndicator` (stroke 2); label unchanged |
 
 ---
 
-## Overflow / More menu spec
+## 2. Fix high-visibility offenders first
 
-Replace `_ToolbarOverflowMenu` bottom sheet with a anchored popup:
+These are confirmed in code and match the screenshot audit:
 
-| Property | Requirement |
-|----------|-------------|
-| Widget | `PopupMenuButton` (or shared wrapper), `position: PopupMenuPosition.under` |
-| Panel | Same surface treatment as user menu: `colorScheme.surface`, outline border via `RoundedRectangleBorder`, sensible min/max width (~320–360) |
-| Items | One `PopupMenuItem` (or custom entry) per overflow action — **not** embedded `AppButton` widgets |
-| Row layout | Extract or share `_UserMenuItemLabel` pattern: fixed-width icon slot + label (`Row`, icon `onSurfaceVariant`, ellipsized text) |
-| Interaction | Selecting a row runs the action’s `onPressed` / callback; disabled actions respect `enabled` state |
-| Metadata | Each overflow entry must expose **icon + label** even if the inline widget was icon-only — add a small adapter or action descriptor if needed |
-| Mobile | On xs/sm, popup-under is still preferred over bottom sheet; only use bottom sheet if popup genuinely cannot fit (avoid unless necessary) |
-
-Refactor `_OverflowActionRow` away; overflow rendering should not reuse bordered toolbar widgets.
+| Location | Current issue | Fix |
+|---|---|---|
+| `app_state_view.dart` — `AppFailureStateView` retry action | Uses `AppButton.primary` → filled blue “Try again” | `AppButton` with refresh icon, borderless style |
+| `responsive_shell_scaffold.dart` — `_ShellMenuItem` | `selectedColor` / `hoverColor` background on nav items | Remove `BoxDecoration.color`; selected = primary icon + label + left indicator bar only; hover = foreground color change only |
+| `app_connectivity_indicator.dart` | Raw `IconButton` may show Material overlay | `AppButton` icon-only, borderless |
+| `app_fullscreen_toggle.dart`, `app_workspace_toolbar.dart`, `app_toolbar_overflow_resolver.dart` | Header actions | All via unified borderless `AppButton` |
+| `app_button.dart` — primary/secondary variants | Filled primary, outlined secondary | All variants borderless; variant = foreground color only |
+| `app_workspace.dart` — navigation/summary cards with `navigation: true` | Background + border on hover/selected | Nav items: no background/border; selected/hover on icon+label only |
 
 ---
 
-## Fullscreen toggle
+## 3. Fix false “No connection” workspace errors
 
-In `app_fullscreen_toggle.dart`:
+**Problem:** Many module screens show `AppFailureStateView` with offline title **“No connection”** even when the app shell/header is usable. Dashboard and several modules (Rooms, Billing, Physiotherapy, Housekeeping, Communications, Integrations, Reports, Settings, Setup) do **not** show this — indicating inconsistent load/retry/connectivity handling, not a real global outage.
 
-- Always render `AppIconButton` (icon-only) at **all** breakpoints.
-- Remove the `AppButton.secondary` branch for md+ widths.
-- No label, no border, no background.
+**Screens that incorrectly show “No connection” (fix required):**
+
+Patients, OPD, Emergency, IPD, ICU, Nursing, Clinical, Theater, Lab, Radiology, Pharmacy, Subscriptions, Operations, Biomedical, HR
+
+**Screens that load correctly (use as reference):**
+
+Dashboard, Rooms & beds, Billing, Claims (content loads; button styling still wrong), Physiotherapy, Housekeeping, Communications, Integrations, Reports, Settings, Setup
+
+**Do:**
+
+1. Trace why failing workspaces return `AppFailureCategory.offline` — check `NetworkFailureMapper`, connectivity gating, and each workspace controller’s initial fetch (e.g. `patient_registry_controller`, `opd_workspace_controller`, etc.).
+2. Align failing modules with working ones: same provider init pattern, don’t treat “API unreachable on first paint” as offline when connectivity says online; distinguish **offline**, **timeout**, **server error**, and **forbidden/module inactive**.
+3. Ensure `AsyncStateScaffold` / `AppFailureStateView` `onRetry` invalidates the correct provider.
+4. Verify with backend running locally (`127.0.0.1:5201`) that listed screens load data instead of offline state.
 
 ---
 
-## Files to touch (starting points)
+## 4. Fix mortuary / materials workspace error
 
-| File | Change |
-|------|--------|
-| `frontend/lib/shared/components/app_icon_button.dart` | Labeled mode: ghost row instead of `AppButton.secondary` |
-| `frontend/lib/shared/components/app_button.dart` | Optional: add `AppButton.ghost` / toolbar variant if cleaner than special-casing `AppIconButton` |
-| `frontend/lib/shared/layout/app_workspace_toolbar.dart` | Popup overflow menu; list-item rows; width estimates |
-| `frontend/lib/shared/layout/app_fullscreen_toggle.dart` | Icon-only at all breakpoints |
-| `frontend/lib/shared/layout/responsive_shell_scaffold.dart` | Consider extracting `_UserMenuItemLabel` to a shared component reused by overflow menu |
-| `frontend/lib/shared/actions/*.dart` | Ensure global actions work with new ghost + overflow metadata |
-| `frontend/test/shared/layout/app_workspace_toolbar_test.dart` | Update/add tests for popup menu, ghost styling, layout |
+**Problem:** Mortuary (user referred to as “materials”) shows *“Mortuary workspace unavailable — Try again or contact an administrator…”* when the workspace should not attempt a failing load, or should show the correct empty/forbidden/inactive state.
 
-Audit workspace pages only if they pass custom toolbar widgets that bypass shared components.
+**Do:**
+
+1. Review `mortuary_workspace_page.dart` and `mortuary_workspace_controller` — gate load on route access, facility context, and active module (same pattern as working modules).
+2. If the user lacks facility context or module is inactive, show **forbidden** or **module inactive** state — not a generic load failure.
+3. Retry action must use borderless `AppButton` with refresh icon.
+
+---
+
+## 5. Sweep remaining modules for background buttons
+
+After core component work, verify no filled/outlined buttons remain on:
+
+- **Claims** — “Request authorization”, “Prepare claim”, toolbar actions (`claims_workspace_page.dart`, `insurance_authorization_panel.dart`)
+- **Subscriptions** — “Activate subscription”, plan/subscription CRUD actions (`subscriptions_workspace_page.dart`)
+- **All other feature `presentation/pages/*_workspace_page.dart`** — toolbar primary/secondary actions
+- **Dialogs** — `app_action_dialogs.dart`, clinical/opd/lab dialog action rows
+- **Auth pages** — login/register/submit actions (borderless but keep emphasis via color)
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Every workspace screen: inline toolbar actions show **icon + label** (or icon-only on xs/sm) with **no visible border or button background** on default state.
-- [ ] Refresh, Report fault, Request maintenance, More, and Fullscreen match the same ghost action family.
-- [ ] Fullscreen is **icon-only on all breakpoints**.
-- [ ] Tapping More opens a **dropdown under the button**, not a bottom sheet, on desktop and typical mobile widths.
-- [ ] Each overflow item is a **list row** (icon left, label right) with hover/focus feedback — visually aligned with the user profile menu.
-- [ ] Overflow items retain full functionality (refresh, dialogs, navigation, etc.).
-- [ ] First **3 screen-specific** actions remain inline; additional screen actions appear only in More.
-- [ ] No `RenderFlex overflow` at 1280×800 with a busy toolbar (billing-style: primary + 2 secondary + globals).
-- [ ] Looks correct in **light and dark** themes and on **tinted workspace headers**.
-- [ ] Widget tests in `app_workspace_toolbar_test.dart` pass; add coverage for popup overflow and ghost labeled actions.
+- [ ] **One** button component (`AppButton`) used app-wide; `AppGhostActionButton` and `AppIconButton` removed from public API
+- [ ] No button shows background, border, or Material overlay in any interaction state
+- [ ] Hover/press visibly affects **icon and label only**
+- [ ] Every action button has an appropriate **icon + label** (icon-only allowed only in compact toolbar contexts via `AppActionLabelScope`)
+- [ ] “Try again” on error/offline states is borderless (icon + label)
+- [ ] Sidebar nav selected/hover states have **no background fill**
+- [ ] Header actions (connectivity, fullscreen, notifications, profile menu trigger) are borderless
+- [ ] All 15 “No connection” screens load correctly when API is available
+- [ ] Mortuary workspace shows correct state (not spurious load error)
+- [ ] `flutter test frontend/test/shared/components/app_button_test.dart` passes
+- [ ] `flutter test frontend/test/shared/components/app_state_view_test.dart` passes
+- [ ] Manual smoke test on `127.0.0.1:5201` for every shell route in `AppRoutes.shellRoutes`
+
+---
+
+## Key files
+
+```
+frontend/lib/shared/components/app_button.dart          ← single source of truth
+frontend/lib/shared/components/app_ghost_action_button.dart  ← remove/merge
+frontend/lib/shared/components/app_icon_button.dart          ← remove/merge
+frontend/lib/shared/components/app_state_view.dart           ← retry action
+frontend/lib/shared/layout/responsive_shell_scaffold.dart    ← sidebar nav items
+frontend/lib/shared/layout/app_workspace.dart                ← nav/summary cards
+frontend/lib/app/theme/app_theme.dart                        ← global button themes
+frontend/lib/core/network/network_failure_mapper.dart        ← offline classification
+frontend/test/shared/components/app_button_test.dart
+frontend/test/shared/components/app_state_view_test.dart
+```
 
 ---
 
 ## Out of scope
 
-- Changing primary CTA styling (`AppButton.primary` filled buttons for main screen actions).
-- Reworking board/view toggles unless they also show unwanted borders (leave as-is unless visibly broken).
-- Per-module toolbar one-offs — fix shared layout/components instead.
-
----
-
-## Verification
-
-1. Run `flutter test frontend/test/shared/layout/app_workspace_toolbar_test.dart`.
-2. Manually spot-check at least 3 modules with different toolbar densities (e.g. OPD, Billing, Lab) at 1280×800 and 360×640.
-3. Confirm More menu and user profile menu look like the same design system.
+- Dropdown / popup menu styling (user confirmed dropdowns look fine)
+- `CircleAvatar` on profile (not a button)
+- Non-interactive status chips and badges

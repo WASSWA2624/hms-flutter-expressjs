@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 /// Network-style online/offline indicator for the app shell header.
 class AppConnectivityIndicator extends StatelessWidget {
@@ -25,17 +26,14 @@ class AppConnectivityIndicator extends StatelessWidget {
     final String label = isOnline ? onlineLabel : offlineLabel;
     final IconData icon = isOnline ? Icons.wifi : Icons.wifi_off_outlined;
 
-    return Semantics(
+    return AppButton(
+      iconOnly: true,
+      leadingIcon: icon,
       label: label,
-      child: Tooltip(
-        message: label,
-        child: IconButton(
-          visualDensity: VisualDensity.compact,
-          onPressed: null,
-          icon: Icon(icon, color: iconColor),
-          tooltip: label,
-        ),
-      ),
+      semanticLabel: label,
+      tooltip: label,
+      color: iconColor,
+      onPressed: null,
     );
   }
 }

@@ -248,8 +248,10 @@ class _RadiologyConfigurationsDialogState
       runSpacing: Theme.of(context).spacing.xs,
       children: <Widget>[
         if (item.isStandard)
-          AppIconButton(
-            icon: Icons.copy_outlined,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.copy_outlined,
+            label: l10n.radiologyCopyStandardTestAction,
+
             semanticLabel: l10n.radiologyCopyStandardTestAction,
             tooltip: l10n.radiologyCopyStandardTestAction,
             onPressed: isBusy
@@ -262,8 +264,10 @@ class _RadiologyConfigurationsDialogState
                   ),
           )
         else ...<Widget>[
-          AppIconButton(
-            icon: Icons.edit_outlined,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.edit_outlined,
+            label: l10n.radiologyEditImagingTestAction,
+
             semanticLabel: l10n.radiologyEditImagingTestAction,
             tooltip: l10n.radiologyEditImagingTestAction,
             onPressed: isBusy
@@ -274,8 +278,10 @@ class _RadiologyConfigurationsDialogState
                     tenantId: widget.tenantId,
                   ),
           ),
-          AppIconButton(
-            icon: Icons.delete_outline,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.delete_outline,
+            label: l10n.radiologyDeleteImagingTestAction,
+
             semanticLabel: l10n.radiologyDeleteImagingTestAction,
             tooltip: l10n.radiologyDeleteImagingTestAction,
             onPressed: isBusy

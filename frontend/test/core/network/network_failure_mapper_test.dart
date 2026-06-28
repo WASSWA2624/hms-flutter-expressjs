@@ -170,7 +170,8 @@ void main() {
         StackTrace.empty,
       );
 
-      expect(offlineFailure.category, AppFailureCategory.offline);
+      expect(offlineFailure.category, AppFailureCategory.network);
+      expect(offlineFailure.code, 'network.connection_failed');
       expect(offlineFailure.isRetryable, isTrue);
       expect(cancelledFailure.category, AppFailureCategory.cancelled);
       expect(cancelledFailure.isRetryable, isFalse);

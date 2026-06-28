@@ -181,14 +181,18 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                 builder: (BuildContext context, bool isAllowed) => Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    AppIconButton(
-                      icon: Icons.edit_outlined,
+                    AppButton(iconOnly: true, 
+                      leadingIcon: Icons.edit_outlined,
+                      label: l10n.pharmacyEditDrugAction,
+
                       semanticLabel: l10n.pharmacyEditDrugAction,
                       enabled: isAllowed,
                       onPressed: () => _openDrugDialog(context, drug: item),
                     ),
-                    AppIconButton(
-                      icon: Icons.delete_outline,
+                    AppButton(iconOnly: true, 
+                      leadingIcon: Icons.delete_outline,
+                      label: l10n.pharmacyDeleteDrugAction,
+
                       semanticLabel: l10n.pharmacyDeleteDrugAction,
                       enabled: isAllowed,
                       onPressed: () => _confirmDeleteDrug(context, item),
@@ -671,8 +675,10 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               return AppAccessActionGate(
                 requirement: widget.writeRequirement,
                 builder: (BuildContext context, bool isAllowed) =>
-                    AppIconButton(
-                      icon: Icons.tune_outlined,
+                    AppButton(iconOnly: true, 
+                      leadingIcon: Icons.tune_outlined,
+                      label: l10n.pharmacyAdjustStockAction,
+
                       semanticLabel: l10n.pharmacyAdjustStockAction,
                       enabled: isAllowed,
                       onPressed: () => _openAdjustDialog(context, item),

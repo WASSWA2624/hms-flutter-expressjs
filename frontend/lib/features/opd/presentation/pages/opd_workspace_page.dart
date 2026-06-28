@@ -124,8 +124,10 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           requirement: opdEncounterPermissionRequirement,
           builder: (BuildContext context, bool isAllowed) {
             if (iconOnly) {
-              return AppIconButton(
-                icon: opdEncounterIcon,
+              return AppButton(iconOnly: true, 
+                leadingIcon: opdEncounterIcon,
+                label: l10n.opdStartWalkInAction,
+
                 semanticLabel: l10n.opdStartWalkInAction,
                 tooltip: l10n.opdStartEncounterTooltip,
                 enabled: isAllowed,

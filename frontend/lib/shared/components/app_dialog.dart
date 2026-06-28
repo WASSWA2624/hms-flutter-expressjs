@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
 class AppDialog extends StatefulWidget {
@@ -492,28 +493,27 @@ class _DialogHeader extends StatelessWidget {
                     ),
             ),
             if (showMaximizeButton)
-              Tooltip(
-                message: isMaximized ? 'Restore dialog' : 'Maximize dialog',
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onMaximizeToggle,
-                  icon: Icon(
-                    isMaximized ? Icons.fullscreen_exit : Icons.fullscreen,
-                  ),
-                ),
+              AppButton(
+                iconOnly: true,
+                leadingIcon: isMaximized ? Icons.fullscreen_exit : Icons.fullscreen,
+                label: isMaximized ? 'Restore dialog' : 'Maximize dialog',
+                semanticLabel: isMaximized ? 'Restore dialog' : 'Maximize dialog',
+                tooltip: isMaximized ? 'Restore dialog' : 'Maximize dialog',
+                onPressed: onMaximizeToggle,
               ),
             if (showCloseButton)
-              Tooltip(
-                message: MaterialLocalizations.of(context).closeButtonTooltip,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: closeEnabled
-                      ? () {
-                          Navigator.of(context).maybePop();
-                        }
-                      : null,
-                  icon: const Icon(Icons.close),
-                ),
+              AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.close,
+                label: MaterialLocalizations.of(context).closeButtonTooltip,
+                semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                enabled: closeEnabled,
+                onPressed: closeEnabled
+                    ? () {
+                        Navigator.of(context).maybePop();
+                      }
+                    : null,
               ),
           ],
         ),

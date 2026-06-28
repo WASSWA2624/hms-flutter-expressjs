@@ -9,7 +9,7 @@ import 'package:hosspi_hms/shared/actions/app_global_fault_report_action.dart';
 import 'package:hosspi_hms/shared/actions/app_global_housekeeping_request_action.dart';
 import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
-import 'package:hosspi_hms/shared/components/app_ghost_action_button.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_menu_item_label.dart';
 import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_resolver.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
@@ -496,7 +496,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
               ),
           ];
         },
-        child: AppGhostActionButton.popupMenuTrigger(
+        child: AppButton.popupMenuTrigger(
           context: context,
           icon: Icons.more_vert,
           semanticLabel: label,

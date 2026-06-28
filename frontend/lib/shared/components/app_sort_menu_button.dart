@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 enum AppSortDirection { ascending, descending }
 
@@ -88,7 +88,14 @@ class AppSortMenuButton extends StatelessWidget {
         initialValue: value,
         onSelected: _handleSelected,
         itemBuilder: _menuItems,
-        child: _SortButtonContent(icon: icon, label: buttonLabel),
+        child: AppButton.secondary(
+          label: buttonLabel,
+          leadingIcon: icon,
+          semanticLabel: semanticLabel ?? buttonLabel,
+          tooltip: tooltip ?? semanticLabel ?? buttonLabel,
+          enabled: enabled,
+          onPressed: null,
+        ),
       ),
     );
   }
@@ -184,55 +191,6 @@ class AppSortMenuButton extends StatelessWidget {
 }
 
 const Object _clearSortValue = Object();
-
-class _SortButtonContent extends StatelessWidget {
-  const _SortButtonContent({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              icon,
-              size: theme.appTokens.listIconSize,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Icon(Icons.arrow_drop_down, color: colorScheme.onSurfaceVariant),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _SortMenuItem extends StatelessWidget {
   const _SortMenuItem({

@@ -7,7 +7,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -1224,8 +1223,10 @@ class _AppPaginationControls extends StatelessWidget {
             ),
           ),
           SizedBox(width: theme.spacing.sm),
-          AppIconButton(
-            icon: Icons.chevron_left,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.chevron_left,
+            label: previousPageLabel,
+
             semanticLabel: previousPageLabel,
             onPressed: hasPreviousPage && onPageChanged != null
                 ? () {
@@ -1233,8 +1234,10 @@ class _AppPaginationControls extends StatelessWidget {
                   }
                 : null,
           ),
-          AppIconButton(
-            icon: Icons.chevron_right,
+          AppButton(iconOnly: true, 
+            leadingIcon: Icons.chevron_right,
+            label: nextPageLabel,
+
             semanticLabel: nextPageLabel,
             onPressed: hasNextPage && onPageChanged != null
                 ? () {
