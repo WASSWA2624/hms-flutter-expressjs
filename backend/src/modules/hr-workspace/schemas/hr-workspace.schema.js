@@ -75,6 +75,10 @@ const payrollRunIdentifierParamsSchema = z.object({
   payrollRunIdentifier: uuidOrFriendlyIdentifierSchema,
 });
 
+const staffProfileIdentifierParamsSchema = z.object({
+  staffProfileIdentifier: uuidOrFriendlyIdentifierSchema,
+});
+
 const resolveLegacyParamsSchema = z.object({
   resource: z.enum([
     'staff-positions',
@@ -157,6 +161,7 @@ module.exports = {
   swapIdentifierParamsSchema,
   leaveIdentifierParamsSchema,
   payrollRunIdentifierParamsSchema,
+  staffProfileIdentifierParamsSchema,
   resolveLegacyParamsSchema,
   rosterGenerateSchema,
   rosterPublishSchema,

@@ -273,6 +273,7 @@ final class HrReferenceData {
     this.payrollRuns = const <HrOption>[],
     this.shiftTemplates = const <HrOption>[],
     this.roles = const <HrOption>[],
+    this.users = const <HrOption>[],
     this.shiftTypes = const <HrOption>[],
     this.practitionerTypes = const <HrOption>[],
     this.resourceStatuses = const <String, List<HrOption>>{},
@@ -288,6 +289,7 @@ final class HrReferenceData {
   final List<HrOption> payrollRuns;
   final List<HrOption> shiftTemplates;
   final List<HrOption> roles;
+  final List<HrOption> users;
   final List<HrOption> shiftTypes;
   final List<HrOption> practitionerTypes;
   final Map<String, List<HrOption>> resourceStatuses;
@@ -411,6 +413,7 @@ final class HrStaffDetail {
     this.availabilities = const <HrStaffAvailability>[],
     this.compensations = const <HrStaffCompensation>[],
     this.shiftAssignments = const <HrShiftAssignment>[],
+    this.accessSummary,
   });
 
   final HrStaffProfile profile;
@@ -419,6 +422,7 @@ final class HrStaffDetail {
   final List<HrStaffAvailability> availabilities;
   final List<HrStaffCompensation> compensations;
   final List<HrShiftAssignment> shiftAssignments;
+  final HrStaffAccessSummary? accessSummary;
 
   HrStaffDetail copyWith({
     HrStaffProfile? profile,
@@ -427,6 +431,8 @@ final class HrStaffDetail {
     List<HrStaffAvailability>? availabilities,
     List<HrStaffCompensation>? compensations,
     List<HrShiftAssignment>? shiftAssignments,
+    HrStaffAccessSummary? accessSummary,
+    bool clearAccessSummary = false,
   }) {
     return HrStaffDetail(
       profile: profile ?? this.profile,
@@ -435,8 +441,146 @@ final class HrStaffDetail {
       availabilities: availabilities ?? this.availabilities,
       compensations: compensations ?? this.compensations,
       shiftAssignments: shiftAssignments ?? this.shiftAssignments,
+      accessSummary: clearAccessSummary
+          ? null
+          : accessSummary ?? this.accessSummary,
     );
   }
+}
+
+@immutable
+final class HrUserRole {
+  const HrUserRole({
+    required this.id,
+    this.displayId,
+    this.backendIdentifier,
+    this.roleId,
+    this.roleName,
+    this.facilityId,
+    this.facilityName,
+    this.facilityDisplayId,
+    this.tenantId,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? backendIdentifier;
+  final String? roleId;
+  final String? roleName;
+  final String? facilityId;
+  final String? facilityName;
+  final String? facilityDisplayId;
+  final String? tenantId;
+
+  String get effectiveId => displayId ?? id;
+}
+
+@immutable
+final class HrModuleAccess {
+  const HrModuleAccess({
+    required this.slug,
+    this.label,
+    this.moduleGroup,
+    this.granted = false,
+  });
+
+  final String slug;
+  final String? label;
+  final String? moduleGroup;
+  final bool granted;
+}
+
+@immutable
+final class HrStaffAccessSummary {
+  const HrStaffAccessSummary({
+    this.staffProfileId,
+    this.linkedUserDisplayId,
+    this.linkedUserEmail,
+    this.linkedUserFullName,
+    this.userRoles = const <HrUserRole>[],
+    this.moduleAccess = const <HrModuleAccess>[],
+    this.effectivePermissions = const <String>[],
+  });
+
+  final String? staffProfileId;
+  final String? linkedUserDisplayId;
+  final String? linkedUserEmail;
+  final String? linkedUserFullName;
+  final List<HrUserRole> userRoles;
+  final List<HrModuleAccess> moduleAccess;
+  final List<String> effectivePermissions;
+
+  bool get hasLinkedUser =>
+      (linkedUserDisplayId ?? linkedUserEmail ?? '').trim().isNotEmpty;
+}
+
+@immutable
+final class HrPayrollPreviewItem {
+  const HrPayrollPreviewItem({
+    this.staffProfileId,
+    this.staffProfileDisplayId,
+    this.staffNumber,
+    this.staffName,
+    this.assignmentCount = 0,
+    this.totalHours = 0,
+    this.amount = 0,
+    this.currency,
+  });
+
+  final String? staffProfileId;
+  final String? staffProfileDisplayId;
+  final String? staffNumber;
+  final String? staffName;
+  final int assignmentCount;
+  final num totalHours;
+  final num amount;
+  final String? currency;
+}
+
+@immutable
+final class HrPayrollPreview {
+  const HrPayrollPreview({
+    this.runId,
+    this.runDisplayId,
+    this.status,
+    this.periodStart,
+    this.periodEnd,
+    this.items = const <HrPayrollPreviewItem>[],
+    this.totalAmount = 0,
+    this.totalHours = 0,
+    this.staffCount = 0,
+    this.currency,
+  });
+
+  final String? runId;
+  final String? runDisplayId;
+  final String? status;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
+  final List<HrPayrollPreviewItem> items;
+  final num totalAmount;
+  final num totalHours;
+  final int staffCount;
+  final String? currency;
+}
+
+@immutable
+final class HrRosterGenerateResult {
+  const HrRosterGenerateResult({
+    this.rosterDisplayId,
+    this.dryRun = false,
+    this.assignmentCount = 0,
+    this.coveragePercent,
+    this.gapCount = 0,
+    this.summary,
+  });
+
+  final String? rosterDisplayId;
+  final bool dryRun;
+  final int assignmentCount;
+  final num? coveragePercent;
+  final int gapCount;
+  final String? summary;
 }
 
 @immutable
@@ -446,20 +590,30 @@ final class HrStaffAssignment {
     this.displayId,
     this.staffProfileId,
     this.departmentId,
+    this.departmentName,
+    this.departmentDisplayId,
     this.unitId,
     this.roomId,
     this.startDate,
     this.endDate,
+    this.isPrimary = false,
+    this.isActive = true,
   });
 
   final String id;
   final String? displayId;
   final String? staffProfileId;
   final String? departmentId;
+  final String? departmentName;
+  final String? departmentDisplayId;
   final String? unitId;
   final String? roomId;
   final DateTime? startDate;
   final DateTime? endDate;
+  final bool isPrimary;
+  final bool isActive;
+
+  String get effectiveId => displayId ?? id;
 }
 
 @immutable

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -10,6 +12,17 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockHrRepository extends Mock implements HrRepository {}
+
+ProviderContainer _createContainer(_MockHrRepository repository) {
+  return ProviderContainer(
+    overrides: [
+      hrRepositoryProvider.overrideWithValue(repository),
+      initialSessionStateProvider.overrideWithValue(
+        const SessionState.authenticated(),
+      ),
+    ],
+  );
+}
 
 const HrStaffProfile _staff = HrStaffProfile(
   id: 'uuid-1',
@@ -57,6 +70,45 @@ void _stubInitialLoad(_MockHrRepository repository) {
       ),
     ),
   );
+  when(() => repository.loadStaffAccessSummary(any())).thenAnswer(
+    (_) async => const Result<HrStaffAccessSummary>.success(
+      HrStaffAccessSummary(),
+    ),
+  );
+  when(
+    () => repository.assignUserRole(
+      userId: any(named: 'userId'),
+      roleId: any(named: 'roleId'),
+      tenantId: any(named: 'tenantId'),
+      facilityId: any(named: 'facilityId'),
+    ),
+  ).thenAnswer((_) async => const Result<void>.success(null));
+  when(() => repository.revokeUserRole(any())).thenAnswer(
+    (_) async => const Result<void>.success(null),
+  );
+  when(() => repository.createUserAccount(any())).thenAnswer(
+    (_) async => const Result<Object?>.success(null),
+  );
+  when(() => repository.updateStaffAssignment(any(), any())).thenAnswer(
+    (_) async => const Result<Object?>.success(null),
+  );
+  when(() => repository.createShiftTemplate(any())).thenAnswer(
+    (_) async => const Result<Object?>.success(null),
+  );
+  when(() => repository.updateShiftTemplate(any(), any())).thenAnswer(
+    (_) async => const Result<Object?>.success(null),
+  );
+  when(() => repository.deleteShiftTemplate(any())).thenAnswer(
+    (_) async => const Result<Object?>.success(null),
+  );
+  when(() => repository.previewPayrollRun(any())).thenAnswer(
+    (_) async => const Result<HrPayrollPreview>.success(HrPayrollPreview()),
+  );
+  when(() => repository.generateRosterPreview(any())).thenAnswer(
+    (_) async => const Result<HrRosterGenerateResult>.success(
+      HrRosterGenerateResult(),
+    ),
+  );
 }
 
 void main() {
@@ -75,9 +127,7 @@ void main() {
             const Result<HrStaffDetail>.success(HrStaffDetail(profile: _staff)),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [hrRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _createContainer(repository);
       addTearDown(container.dispose);
       await container.read(hrWorkspaceControllerProvider.future);
 
@@ -99,9 +149,7 @@ void main() {
         () => repository.approveLeave(any(), reason: any(named: 'reason')),
       ).thenAnswer((_) async => const Result<Object?>.success(null));
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [hrRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _createContainer(repository);
       addTearDown(container.dispose);
       await container.read(hrWorkspaceControllerProvider.future);
 
@@ -124,9 +172,7 @@ void main() {
         (_) async => Result<HrStaffProfile>.failure(AppFailure.validation()),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [hrRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _createContainer(repository);
       addTearDown(container.dispose);
       await container.read(hrWorkspaceControllerProvider.future);
 

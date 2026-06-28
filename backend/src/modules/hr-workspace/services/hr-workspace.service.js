@@ -5,7 +5,7 @@ const { createAuditLog } = require('@lib/audit');
 const { normalizeIdentifier, resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { resolveIdentifierForFilter, resolveIdentifierForPayload, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { emitToUsers, HR_EVENTS } = require('@lib/websocket');
-const { ROLES } = require('@config/roles');
+const { ROLES, ROLE_VALUES } = require('@config/roles');
 const {
   buildWorkflow,
   generateRosterAssignments: generateRosterAssignmentsCore,
@@ -25,6 +25,10 @@ const HR_RECIPIENT_ROLES = Object.freeze([
   ROLES.NURSE,
   ROLES.DOCTOR,
 ]);
+
+const HR_ASSIGNABLE_ROLE_NAMES = Object.freeze(
+  ROLE_VALUES.filter((role) => ![ROLES.SUPER_ADMIN, ROLES.PATIENT, ROLES.OTHER].includes(role))
+);
 
 const WORKBENCH_PANELS = Object.freeze([
   {
@@ -979,7 +983,7 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
 const getReferenceData = async (filters = {}) => {
   const scope = await buildScope(filters);
 
-  const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles] =
+  const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles, users] =
     await Promise.all([
       prisma.facility.findMany({
         where: {
@@ -1120,10 +1124,33 @@ const getReferenceData = async (filters = {}) => {
         },
       }),
       prisma.role.findMany({
-        where: { deleted_at: null, name: { in: [ROLES.DOCTOR, ROLES.HR, ROLES.NURSE, ROLES.OPERATIONS] } },
+        where: { deleted_at: null, name: { in: HR_ASSIGNABLE_ROLE_NAMES } },
         orderBy: { name: 'asc' },
-        take: 50,
+        take: 100,
         select: { id: true, human_friendly_id: true, name: true },
+      }),
+      prisma.user.findMany({
+        where: {
+          deleted_at: null,
+          status: 'ACTIVE',
+        },
+        orderBy: { email: 'asc' },
+        take: 200,
+        select: {
+          id: true,
+          human_friendly_id: true,
+          email: true,
+          profile: {
+            select: {
+              first_name: true,
+              last_name: true,
+            },
+          },
+          staff_profile: {
+            where: { deleted_at: null },
+            select: { id: true, human_friendly_id: true },
+          },
+        },
       }),
     ]);
 
@@ -1228,6 +1255,24 @@ const getReferenceData = async (filters = {}) => {
           name: entry.name,
         })
       )
+      .filter(Boolean),
+    users: users
+      .map((entry) => {
+        const displayId = resolvePublicIdentifier(entry.human_friendly_id);
+        if (!displayId) return null;
+        const firstName = entry.profile?.first_name || '';
+        const lastName = entry.profile?.last_name || '';
+        const fullName = normalizeString(`${firstName} ${lastName}`);
+        const label = [fullName || entry.email, displayId].filter(Boolean).join(' | ');
+        return {
+          value: displayId,
+          label,
+          display_id: displayId,
+          email: entry.email || null,
+          has_staff_profile: Boolean(entry.staff_profile),
+          staff_profile_id: resolvePublicIdentifier(entry.staff_profile?.human_friendly_id),
+        };
+      })
       .filter(Boolean),
     shift_types: SHIFT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
     practitioner_types: PRACTITIONER_TYPE_OPTIONS.map((value) => ({ value, label: value })),
@@ -2158,10 +2203,172 @@ const resolveLegacyRouteIdentifier = async (resource, id) => {
   };
 };
 
+const getStaffAccessSummary = async (staffProfileIdentifier) => {
+  const staffRecord = await resolveModelRecordByIdentifier({
+    model: 'staff_profile',
+    identifier: staffProfileIdentifier,
+    where: { deleted_at: null },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      tenant_id: true,
+      user_id: true,
+      department_id: true,
+    },
+  });
+
+  if (!staffRecord?.id) {
+    throw new HttpError('errors.staff_profile.not_found', 404);
+  }
+
+  if (!staffRecord.user_id) {
+    return {
+      staff_profile_id: resolveDisplayId(staffRecord),
+      linked_user: null,
+      user_roles: [],
+      module_access: [],
+      effective_permissions: [],
+    };
+  }
+
+  const [userRoles, linkedUser, subscription] = await Promise.all([
+    prisma.user_role.findMany({
+      where: {
+        deleted_at: null,
+        user_id: staffRecord.user_id,
+      },
+      include: {
+        role: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
+        facility: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    }),
+    prisma.user.findFirst({
+      where: { id: staffRecord.user_id, deleted_at: null },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        email: true,
+        profile: {
+          select: {
+            first_name: true,
+            last_name: true,
+          },
+        },
+      },
+    }),
+    prisma.subscription.findFirst({
+      where: {
+        tenant_id: staffRecord.tenant_id,
+        deleted_at: null,
+        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+      },
+      orderBy: { updated_at: 'desc' },
+      include: {
+        module_subscriptions: {
+          where: { deleted_at: null },
+          include: {
+            module: {
+              select: {
+                id: true,
+                human_friendly_id: true,
+                name: true,
+                slug: true,
+                module_group: true,
+              },
+            },
+          },
+          orderBy: [{ is_active: 'desc' }, { updated_at: 'desc' }],
+        },
+      },
+    }),
+  ]);
+
+  const roleIds = userRoles.map((entry) => entry.role_id).filter(Boolean);
+  const rolePermissions = roleIds.length
+    ? await prisma.role_permission.findMany({
+        where: {
+          deleted_at: null,
+          role_id: { in: roleIds },
+        },
+        include: {
+          permission: {
+            select: {
+              key: true,
+              name: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const effectivePermissions = [
+    ...new Set(
+      rolePermissions
+        .map((entry) => entry.permission?.key)
+        .filter(Boolean)
+    ),
+  ].sort();
+
+  const moduleAccess = (subscription?.module_subscriptions || [])
+    .map((entry) => ({
+      slug: entry.module?.slug || null,
+      label: entry.module?.name || null,
+      module_group: entry.module?.module_group || null,
+      granted: Boolean(entry.is_active) && !Boolean(entry.entitlement_denied),
+    }))
+    .filter((entry) => entry.slug);
+
+  const mappedRoles = userRoles.map((entry) => ({
+    id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+    display_id: resolvePublicIdentifier(entry.human_friendly_id),
+    backend_identifier: entry.id,
+    role_id: resolvePublicIdentifier(entry.role?.human_friendly_id, entry.role_id),
+    role_name: entry.role?.name || null,
+    facility_id: entry.facility_id || null,
+    facility_name: entry.facility?.name || null,
+    facility_display_id: resolvePublicIdentifier(entry.facility?.human_friendly_id),
+    tenant_id: entry.tenant_id || null,
+  }));
+
+  const firstName = linkedUser?.profile?.first_name || '';
+  const lastName = linkedUser?.profile?.last_name || '';
+
+  return {
+    staff_profile_id: resolveDisplayId(staffRecord),
+    linked_user: linkedUser
+      ? {
+          id: linkedUser.id,
+          display_id: resolvePublicIdentifier(linkedUser.human_friendly_id),
+          email: linkedUser.email || null,
+          full_name:
+            normalizeString(`${firstName} ${lastName}`) || linkedUser.email || null,
+        }
+      : null,
+    user_roles: mappedRoles,
+    module_access: moduleAccess,
+    effective_permissions: effectivePermissions,
+  };
+};
+
 module.exports = {
   getWorkspace,
   getWorkItems,
   getReferenceData,
+  getStaffAccessSummary,
   getRosterWorkflow,
   generateRosterAssignments,
   publishRoster,

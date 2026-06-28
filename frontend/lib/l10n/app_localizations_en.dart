@@ -13410,6 +13410,114 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrUserIdLabel => 'User ID';
 
   @override
+  String get hrLinkedUserLabel => 'Linked user';
+
+  @override
+  String get hrSelectUserLabel => 'Link user account';
+
+  @override
+  String get hrCreateUserAction => 'Create user account';
+
+  @override
+  String get hrCreateUserDialogTitle => 'Create user account';
+
+  @override
+  String get hrAssignRoleAction => 'Assign role';
+
+  @override
+  String get hrAssignRoleDialogTitle => 'Assign role';
+
+  @override
+  String get hrRevokeRoleAction => 'Revoke role';
+
+  @override
+  String get hrRevokeRoleDialogTitle => 'Revoke role';
+
+  @override
+  String get hrRolesSectionTitle => 'Roles and access';
+
+  @override
+  String get hrNoRolesLabel => 'No roles assigned.';
+
+  @override
+  String get hrModuleAccessAction => 'View module access';
+
+  @override
+  String get hrModuleAccessDialogTitle => 'Module access';
+
+  @override
+  String get hrModuleAccessSectionTitle => 'Subscribed modules';
+
+  @override
+  String get hrEffectivePermissionsTitle => 'Effective permissions';
+
+  @override
+  String get hrNoModuleAccessLabel => 'No active module entitlements.';
+
+  @override
+  String get hrOpenAccessAdminAction => 'Open in Users/Roles';
+
+  @override
+  String get hrPrimaryAssignmentLabel => 'Primary';
+
+  @override
+  String get hrEndAssignmentAction => 'End assignment';
+
+  @override
+  String get hrEndAssignmentDialogTitle => 'End assignment';
+
+  @override
+  String get hrShiftTemplateAction => 'Manage schedule templates';
+
+  @override
+  String get hrShiftTemplateDialogTitle => 'Schedule template';
+
+  @override
+  String get hrCreateShiftTemplateAction => 'Create template';
+
+  @override
+  String get hrEditShiftTemplateAction => 'Edit template';
+
+  @override
+  String get hrDeleteShiftTemplateAction => 'Delete template';
+
+  @override
+  String get hrShiftTemplateNameLabel => 'Template name';
+
+  @override
+  String get hrShiftTypeLabel => 'Shift type';
+
+  @override
+  String get hrPreviewPayrollAction => 'Preview payroll';
+
+  @override
+  String get hrPreviewPayrollDialogTitle => 'Payroll preview';
+
+  @override
+  String get hrPreviewRosterAction => 'Preview roster generation';
+
+  @override
+  String get hrPreviewRosterDialogTitle => 'Roster generation preview';
+
+  @override
+  String get hrRosterCoverageLabel => 'Coverage';
+
+  @override
+  String get hrRosterGapsLabel => 'Staffing gaps';
+
+  @override
+  String get hrPasswordLabel => 'Temporary password';
+
+  @override
+  String get hrEmailLabel => 'Email';
+
+  @override
+  String get hrOnboardingModeExistingUser => 'Link existing user';
+
+  @override
+  String get hrOnboardingModeCreateUser => 'Create new user';
+
+  @override
   String get hrWednesdayLabel => 'Wednesday';
 
   @override

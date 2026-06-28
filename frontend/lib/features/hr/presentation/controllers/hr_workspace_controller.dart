@@ -456,6 +456,149 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> assignUserRole({
+    required String roleId,
+    String? facilityId,
+  }) {
+    final HrStaffDetail? selected = _currentState?.selectedStaff;
+    final HrStaffProfile? profile = selected?.profile;
+    if (profile == null || (profile.userId ?? '').trim().isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return _mutateSelected(
+      (_) => _repository.assignUserRole(
+        userId: profile.userId!,
+        roleId: roleId,
+        tenantId: profile.tenantId ?? '',
+        facilityId: facilityId,
+      ),
+    );
+  }
+
+  Future<AppFailure?> revokeUserRole(HrUserRole userRole) {
+    return _mutateSelected(
+      (_) => _repository.revokeUserRole(
+        userRole.backendIdentifier ?? userRole.effectiveId,
+      ),
+    );
+  }
+
+  Future<AppFailure?> createUserAndLinkStaff(Map<String, Object?> payload) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<Object?> userResult = await _repository.createUserAccount(
+      payload,
+    );
+    final AppFailure? userFailure = userResult.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+    if (userFailure != null) {
+      final HrWorkspaceState? latest = _currentState;
+      if (latest != null) {
+        _emit(latest.copyWith(isMutating: false, lastFailure: userFailure));
+      }
+      return userFailure;
+    }
+
+    final String? createdUserId = _extractCreatedUserId(userResult);
+    final Map<String, Object?> staffPayload = <String, Object?>{
+      for (final MapEntry<String, Object?> entry in payload.entries)
+        if (!<String>{'password', 'phone', 'status', 'permission_ids'}
+            .contains(entry.key))
+          entry.key: entry.value,
+      'user_id': ?createdUserId,
+    };
+
+    final Result<HrStaffProfile> staffResult = await _repository
+        .createStaffProfile(staffPayload);
+    return staffResult.when(
+      success: (HrStaffProfile profile) async {
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              staff: _replaceStaff(latest.staff, profile),
+              selectedStaff: HrStaffDetail(profile: profile),
+              isMutating: false,
+            ),
+          );
+        }
+        unawaited(_refreshOverview());
+        unawaited(_refreshReferences());
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> endAssignment(HrStaffAssignment assignment) {
+    return _mutateSelected(
+      (_) => _repository.updateStaffAssignment(
+        assignment.effectiveId,
+        <String, Object?>{'end_date': DateTime.now().toIso8601String()},
+      ),
+    );
+  }
+
+  Future<AppFailure?> createShiftTemplate(Map<String, Object?> payload) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.createShiftTemplate(payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> updateShiftTemplate(
+    String templateId,
+    Map<String, Object?> payload,
+  ) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.updateShiftTemplate(templateId, payload),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<AppFailure?> deleteShiftTemplate(String templateId) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.deleteShiftTemplate(templateId),
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<Result<HrPayrollPreview>> previewPayrollRun(HrWorkItem item) {
+    return _repository.previewPayrollRun(item.effectiveId);
+  }
+
+  Future<Result<HrRosterGenerateResult>> previewRosterGenerate(
+    HrWorkItem item,
+  ) {
+    return _repository.generateRosterPreview(item.effectiveId);
+  }
+
   Future<Result<HrWorkspaceState>> _loadInitialState() async {
     const HrStaffQuery staffQuery = HrStaffQuery();
     const HrWorkItemsQuery workItemsQuery = HrWorkItemsQuery();
@@ -893,6 +1036,26 @@ final class HrWorkspaceController
   void _emit(HrWorkspaceState nextState) {
     state = AsyncData<Result<HrWorkspaceState>>(
       Result<HrWorkspaceState>.success(nextState),
+    );
+  }
+
+  String? _extractCreatedUserId(Result<Object?> userResult) {
+    return userResult.when(
+      success: (Object? data) {
+        if (data is Map) {
+          final Object? nested = data['data'];
+          if (nested is Map) {
+            return nested['display_id']?.toString() ??
+                nested['human_friendly_id']?.toString() ??
+                nested['id']?.toString();
+          }
+          return data['display_id']?.toString() ??
+              data['human_friendly_id']?.toString() ??
+              data['id']?.toString();
+        }
+        return null;
+      },
+      failure: (_) => null,
     );
   }
 }

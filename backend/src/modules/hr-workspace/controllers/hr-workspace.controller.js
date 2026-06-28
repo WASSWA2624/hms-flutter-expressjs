@@ -26,6 +26,11 @@ const getReferenceData = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.hr_workspace.reference_data.success', data);
 });
 
+const getStaffAccessSummary = asyncHandler(async (req, res) => {
+  const data = await hrWorkspaceService.getStaffAccessSummary(req.params.staffProfileIdentifier);
+  return sendSuccess(res, 200, 'messages.hr_workspace.staff_access.success', data);
+});
+
 const getRosterWorkflow = asyncHandler(async (req, res) => {
   const data = await hrWorkspaceService.getRosterWorkflow(req.params.rosterIdentifier);
   return sendSuccess(res, 200, 'messages.hr_workspace.roster_workflow.success', data);
@@ -92,6 +97,7 @@ module.exports = {
   getWorkspace,
   getWorkItems,
   getReferenceData,
+  getStaffAccessSummary,
   getRosterWorkflow,
   generateRoster,
   publishRoster,

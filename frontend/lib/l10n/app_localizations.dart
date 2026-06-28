@@ -25239,6 +25239,222 @@ abstract class AppLocalizations {
   /// **'User ID'**
   String get hrUserIdLabel;
 
+  /// Label for the user account linked to a staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked user'**
+  String get hrLinkedUserLabel;
+
+  /// Label for selecting an existing user when onboarding staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Link user account'**
+  String get hrSelectUserLabel;
+
+  /// Action to create a new user account during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Create user account'**
+  String get hrCreateUserAction;
+
+  /// Dialog title for creating a user account from HR.
+  ///
+  /// In en, this message translates to:
+  /// **'Create user account'**
+  String get hrCreateUserDialogTitle;
+
+  /// Action to assign a role to a linked user.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign role'**
+  String get hrAssignRoleAction;
+
+  /// Dialog title for assigning a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign role'**
+  String get hrAssignRoleDialogTitle;
+
+  /// Action to revoke a role from a linked user.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke role'**
+  String get hrRevokeRoleAction;
+
+  /// Dialog title for revoking a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke role'**
+  String get hrRevokeRoleDialogTitle;
+
+  /// Section title for assigned roles on staff detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and access'**
+  String get hrRolesSectionTitle;
+
+  /// Empty state when staff has no roles.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles assigned.'**
+  String get hrNoRolesLabel;
+
+  /// Action to view effective module access.
+  ///
+  /// In en, this message translates to:
+  /// **'View module access'**
+  String get hrModuleAccessAction;
+
+  /// Dialog title for module access summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Module access'**
+  String get hrModuleAccessDialogTitle;
+
+  /// Section title for module access list.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribed modules'**
+  String get hrModuleAccessSectionTitle;
+
+  /// Section title for effective permissions preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective permissions'**
+  String get hrEffectivePermissionsTitle;
+
+  /// Empty state for module access.
+  ///
+  /// In en, this message translates to:
+  /// **'No active module entitlements.'**
+  String get hrNoModuleAccessLabel;
+
+  /// Deep link to access admin for advanced permission editing.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Users/Roles'**
+  String get hrOpenAccessAdminAction;
+
+  /// Badge for primary department assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get hrPrimaryAssignmentLabel;
+
+  /// Action to end a department assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'End assignment'**
+  String get hrEndAssignmentAction;
+
+  /// Dialog title for ending an assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'End assignment'**
+  String get hrEndAssignmentDialogTitle;
+
+  /// Toolbar action for shift template CRUD.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage schedule templates'**
+  String get hrShiftTemplateAction;
+
+  /// Dialog title for shift template create/edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule template'**
+  String get hrShiftTemplateDialogTitle;
+
+  /// Action to create a shift template.
+  ///
+  /// In en, this message translates to:
+  /// **'Create template'**
+  String get hrCreateShiftTemplateAction;
+
+  /// Action to edit a shift template.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit template'**
+  String get hrEditShiftTemplateAction;
+
+  /// Action to delete a shift template.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete template'**
+  String get hrDeleteShiftTemplateAction;
+
+  /// Label for shift template name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Template name'**
+  String get hrShiftTemplateNameLabel;
+
+  /// Label for shift type field.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift type'**
+  String get hrShiftTypeLabel;
+
+  /// Action to preview payroll line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview payroll'**
+  String get hrPreviewPayrollAction;
+
+  /// Dialog title for payroll preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll preview'**
+  String get hrPreviewPayrollDialogTitle;
+
+  /// Action to dry-run roster generation.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview roster generation'**
+  String get hrPreviewRosterAction;
+
+  /// Dialog title for roster generation preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster generation preview'**
+  String get hrPreviewRosterDialogTitle;
+
+  /// Label for roster coverage metric.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get hrRosterCoverageLabel;
+
+  /// Label for roster gap count.
+  ///
+  /// In en, this message translates to:
+  /// **'Staffing gaps'**
+  String get hrRosterGapsLabel;
+
+  /// Label for temporary password when creating a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password'**
+  String get hrPasswordLabel;
+
+  /// Label for email field in HR dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get hrEmailLabel;
+
+  /// Onboarding option to link an existing user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing user'**
+  String get hrOnboardingModeExistingUser;
+
+  /// Onboarding option to create a new user account.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new user'**
+  String get hrOnboardingModeCreateUser;
+
   /// Human resources workspace text for hrWednesdayLabel.
   ///
   /// In en, this message translates to:

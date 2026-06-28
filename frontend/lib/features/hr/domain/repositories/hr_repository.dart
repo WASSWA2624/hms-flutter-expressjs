@@ -69,4 +69,40 @@ abstract interface class HrRepository {
     bool replaceExistingItems = false,
     String? notes,
   });
+
+  Future<Result<HrStaffAccessSummary>> loadStaffAccessSummary(
+    String staffProfileId,
+  );
+
+  Future<Result<void>> assignUserRole({
+    required String userId,
+    required String roleId,
+    required String tenantId,
+    String? facilityId,
+  });
+
+  Future<Result<void>> revokeUserRole(String userRoleId);
+
+  Future<Result<Object?>> createUserAccount(Map<String, Object?> payload);
+
+  Future<Result<Object?>> updateStaffAssignment(
+    String assignmentId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<Object?>> createShiftTemplate(Map<String, Object?> payload);
+
+  Future<Result<Object?>> updateShiftTemplate(
+    String templateId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<Object?>> deleteShiftTemplate(String templateId);
+
+  Future<Result<HrPayrollPreview>> previewPayrollRun(String payrollRunId);
+
+  Future<Result<HrRosterGenerateResult>> generateRosterPreview(
+    String rosterId, {
+    bool replaceExistingAssignments = true,
+  });
 }

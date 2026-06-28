@@ -111,6 +111,7 @@ final class HrReferenceDataDto {
       payrollRuns: _options(json['payroll_runs']),
       shiftTemplates: _options(json['shift_templates']),
       roles: _options(json['roles']),
+      users: _options(json['users']),
       shiftTypes: _options(json['shift_types']),
       practitionerTypes: _options(json['practitioner_types']),
       resourceStatuses: _resourceStatuses(json['resource_statuses']),
@@ -253,6 +254,9 @@ final class HrStaffAssignmentDto {
   final HrJsonMap json;
 
   HrStaffAssignment toEntity() {
+    final HrJsonMap department = _map(json['department']);
+    final DateTime? endDate = _date(json['end_date']);
+    final bool isActive = endDate == null || endDate.isAfter(DateTime.now());
     return HrStaffAssignment(
       id:
           _string(json['display_id']) ??
@@ -263,10 +267,17 @@ final class HrStaffAssignmentDto {
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       staffProfileId: _string(json['staff_profile_id']),
       departmentId: _string(json['department_id']),
+      departmentName:
+          _string(department['name']) ?? _string(department['short_name']),
+      departmentDisplayId:
+          _string(json['department_display_id']) ??
+          _string(department['human_friendly_id']),
       unitId: _string(json['unit_id']),
       roomId: _string(json['room_id']),
       startDate: _date(json['start_date']),
-      endDate: _date(json['end_date']),
+      endDate: endDate,
+      isPrimary: json['is_primary'] == true,
+      isActive: isActive,
     );
   }
 }
@@ -502,6 +513,157 @@ Map<String, List<HrOption>> _resourceStatuses(Object? value) {
     for (final MapEntry<String, Object?> entry in source.entries)
       entry.key: _options(entry.value),
   };
+}
+
+final class HrStaffAccessSummaryDto {
+  const HrStaffAccessSummaryDto(this.json);
+
+  final HrJsonMap json;
+
+  factory HrStaffAccessSummaryDto.fromResponse(Object? responseData) {
+    final HrJsonMap response = _expectMap(responseData);
+    return HrStaffAccessSummaryDto(_map(response['data']));
+  }
+
+  HrStaffAccessSummary toEntity() {
+    final HrJsonMap linkedUser = _map(json['linked_user']);
+    return HrStaffAccessSummary(
+      staffProfileId: _string(json['staff_profile_id']),
+      linkedUserDisplayId: _string(linkedUser['display_id']),
+      linkedUserEmail: _string(linkedUser['email']),
+      linkedUserFullName: _string(linkedUser['full_name']),
+      userRoles: _list(json['user_roles'])
+          .map(HrUserRoleDto.new)
+          .map((HrUserRoleDto dto) => dto.toEntity())
+          .where((HrUserRole item) => item.id.isNotEmpty)
+          .toList(growable: false),
+      moduleAccess: _list(json['module_access'])
+          .map(HrModuleAccessDto.new)
+          .map((HrModuleAccessDto dto) => dto.toEntity())
+          .where((HrModuleAccess item) => item.slug.isNotEmpty)
+          .toList(growable: false),
+      effectivePermissions: _list(json['effective_permissions'])
+          .map((Object? value) => _string(value))
+          .whereType<String>()
+          .toList(growable: false),
+    );
+  }
+}
+
+final class HrUserRoleDto {
+  const HrUserRoleDto(this.json);
+
+  final HrJsonMap json;
+
+  HrUserRole toEntity() {
+    return HrUserRole(
+      id:
+          _string(json['display_id']) ??
+          _string(json['id']) ??
+          _string(json['backend_identifier']) ??
+          '',
+      displayId: _string(json['display_id']),
+      backendIdentifier: _string(json['backend_identifier']),
+      roleId: _string(json['role_id']),
+      roleName: _string(json['role_name']),
+      facilityId: _string(json['facility_id']),
+      facilityName: _string(json['facility_name']),
+      facilityDisplayId: _string(json['facility_display_id']),
+      tenantId: _string(json['tenant_id']),
+    );
+  }
+}
+
+final class HrModuleAccessDto {
+  const HrModuleAccessDto(this.json);
+
+  final HrJsonMap json;
+
+  HrModuleAccess toEntity() {
+    return HrModuleAccess(
+      slug: _string(json['slug']) ?? '',
+      label: _string(json['label']),
+      moduleGroup: _string(json['module_group']),
+      granted: json['granted'] == true,
+    );
+  }
+}
+
+final class HrPayrollPreviewDto {
+  const HrPayrollPreviewDto(this.json);
+
+  final HrJsonMap json;
+
+  factory HrPayrollPreviewDto.fromResponse(Object? responseData) {
+    final HrJsonMap response = _expectMap(responseData);
+    return HrPayrollPreviewDto(_map(response['data']));
+  }
+
+  HrPayrollPreview toEntity() {
+    final HrJsonMap runSummary = _map(json['run_summary']);
+    final HrJsonMap totals = _map(json['totals']);
+    return HrPayrollPreview(
+      runId: _string(runSummary['backend_identifier']),
+      runDisplayId:
+          _string(runSummary['display_id']) ?? _string(runSummary['id']),
+      status: _string(runSummary['status']),
+      periodStart: _date(runSummary['period_start']),
+      periodEnd: _date(runSummary['period_end']),
+      items: _list(json['proposed_items'])
+          .map(HrPayrollPreviewItemDto.new)
+          .map((HrPayrollPreviewItemDto dto) => dto.toEntity())
+          .toList(growable: false),
+      totalAmount: _number(totals['total_amount']) ?? 0,
+      totalHours: _number(totals['total_hours']) ?? 0,
+      staffCount: _int(totals['staff_count']) ?? 0,
+      currency: _string(totals['currency']),
+    );
+  }
+}
+
+final class HrPayrollPreviewItemDto {
+  const HrPayrollPreviewItemDto(this.json);
+
+  final HrJsonMap json;
+
+  HrPayrollPreviewItem toEntity() {
+    return HrPayrollPreviewItem(
+      staffProfileId: _string(json['staff_profile_id']),
+      staffProfileDisplayId: _string(json['staff_profile_display_id']),
+      staffNumber: _string(json['staff_number']),
+      staffName: _string(json['staff_name']),
+      assignmentCount: _int(json['assignment_count']) ?? 0,
+      totalHours: _number(json['total_hours']) ?? 0,
+      amount: _number(json['amount']) ?? 0,
+      currency: _string(json['currency']),
+    );
+  }
+}
+
+final class HrRosterGenerateResultDto {
+  const HrRosterGenerateResultDto(this.json);
+
+  final HrJsonMap json;
+
+  factory HrRosterGenerateResultDto.fromResponse(Object? responseData) {
+    final HrJsonMap response = _expectMap(responseData);
+    return HrRosterGenerateResultDto(_map(response['data']));
+  }
+
+  HrRosterGenerateResult toEntity() {
+    final HrJsonMap roster = _map(json['roster']);
+    final HrJsonMap coverage = _map(json['coverage']);
+    final List<HrJsonMap> gaps = _list(json['gaps']);
+    return HrRosterGenerateResult(
+      rosterDisplayId:
+          _string(roster['display_id']) ?? _string(roster['human_friendly_id']),
+      dryRun: json['dry_run'] == true,
+      assignmentCount: _int(json['assignment_count']) ?? 0,
+      coveragePercent: _number(coverage['coverage_percent']),
+      gapCount: gaps.length,
+      summary: _string(json['summary']),
+    );
+  }
 }
 
 final class HrOptionDto {

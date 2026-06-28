@@ -14,6 +14,7 @@ describe('hr-workspace.service contract', () => {
     prisma.payroll_run = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.shift_template = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.role = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.user = { findMany: jest.fn().mockResolvedValue([]) };
   });
 
   it('exports service methods', () => {
@@ -24,6 +25,7 @@ describe('hr-workspace.service contract', () => {
         'getWorkspace',
         'getWorkItems',
         'getReferenceData',
+        'getStaffAccessSummary',
         'getRosterWorkflow',
         'generateRosterAssignments',
         'publishRoster',

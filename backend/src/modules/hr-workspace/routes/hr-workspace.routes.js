@@ -15,6 +15,7 @@ const {
   swapIdentifierParamsSchema,
   leaveIdentifierParamsSchema,
   payrollRunIdentifierParamsSchema,
+  staffProfileIdentifierParamsSchema,
   resolveLegacyParamsSchema,
   rosterGenerateSchema,
   rosterPublishSchema,
@@ -59,6 +60,13 @@ router.get(
   validateRequest({ query: referenceDataQuerySchema }),
   authorize(HR_READ_SCOPES, 'permission'),
   hrWorkspaceController.getReferenceData
+);
+
+router.get(
+  '/staff/:staffProfileIdentifier/access-summary',
+  validateRequest({ params: staffProfileIdentifierParamsSchema }),
+  authorize(HR_READ_SCOPES, 'permission'),
+  hrWorkspaceController.getStaffAccessSummary
 );
 
 router.get(

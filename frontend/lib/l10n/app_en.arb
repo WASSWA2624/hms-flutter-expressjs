@@ -17388,6 +17388,150 @@
   "@hrUserIdLabel": {
     "description": "Human resources workspace text for hrUserIdLabel."
   },
+  "hrLinkedUserLabel": "Linked user",
+  "@hrLinkedUserLabel": {
+    "description": "Label for the user account linked to a staff profile."
+  },
+  "hrSelectUserLabel": "Link user account",
+  "@hrSelectUserLabel": {
+    "description": "Label for selecting an existing user when onboarding staff."
+  },
+  "hrCreateUserAction": "Create user account",
+  "@hrCreateUserAction": {
+    "description": "Action to create a new user account during staff onboarding."
+  },
+  "hrCreateUserDialogTitle": "Create user account",
+  "@hrCreateUserDialogTitle": {
+    "description": "Dialog title for creating a user account from HR."
+  },
+  "hrAssignRoleAction": "Assign role",
+  "@hrAssignRoleAction": {
+    "description": "Action to assign a role to a linked user."
+  },
+  "hrAssignRoleDialogTitle": "Assign role",
+  "@hrAssignRoleDialogTitle": {
+    "description": "Dialog title for assigning a role."
+  },
+  "hrRevokeRoleAction": "Revoke role",
+  "@hrRevokeRoleAction": {
+    "description": "Action to revoke a role from a linked user."
+  },
+  "hrRevokeRoleDialogTitle": "Revoke role",
+  "@hrRevokeRoleDialogTitle": {
+    "description": "Dialog title for revoking a role."
+  },
+  "hrRolesSectionTitle": "Roles and access",
+  "@hrRolesSectionTitle": {
+    "description": "Section title for assigned roles on staff detail."
+  },
+  "hrNoRolesLabel": "No roles assigned.",
+  "@hrNoRolesLabel": {
+    "description": "Empty state when staff has no roles."
+  },
+  "hrModuleAccessAction": "View module access",
+  "@hrModuleAccessAction": {
+    "description": "Action to view effective module access."
+  },
+  "hrModuleAccessDialogTitle": "Module access",
+  "@hrModuleAccessDialogTitle": {
+    "description": "Dialog title for module access summary."
+  },
+  "hrModuleAccessSectionTitle": "Subscribed modules",
+  "@hrModuleAccessSectionTitle": {
+    "description": "Section title for module access list."
+  },
+  "hrEffectivePermissionsTitle": "Effective permissions",
+  "@hrEffectivePermissionsTitle": {
+    "description": "Section title for effective permissions preview."
+  },
+  "hrNoModuleAccessLabel": "No active module entitlements.",
+  "@hrNoModuleAccessLabel": {
+    "description": "Empty state for module access."
+  },
+  "hrOpenAccessAdminAction": "Open in Users/Roles",
+  "@hrOpenAccessAdminAction": {
+    "description": "Deep link to access admin for advanced permission editing."
+  },
+  "hrPrimaryAssignmentLabel": "Primary",
+  "@hrPrimaryAssignmentLabel": {
+    "description": "Badge for primary department assignment."
+  },
+  "hrEndAssignmentAction": "End assignment",
+  "@hrEndAssignmentAction": {
+    "description": "Action to end a department assignment."
+  },
+  "hrEndAssignmentDialogTitle": "End assignment",
+  "@hrEndAssignmentDialogTitle": {
+    "description": "Dialog title for ending an assignment."
+  },
+  "hrShiftTemplateAction": "Manage schedule templates",
+  "@hrShiftTemplateAction": {
+    "description": "Toolbar action for shift template CRUD."
+  },
+  "hrShiftTemplateDialogTitle": "Schedule template",
+  "@hrShiftTemplateDialogTitle": {
+    "description": "Dialog title for shift template create/edit."
+  },
+  "hrCreateShiftTemplateAction": "Create template",
+  "@hrCreateShiftTemplateAction": {
+    "description": "Action to create a shift template."
+  },
+  "hrEditShiftTemplateAction": "Edit template",
+  "@hrEditShiftTemplateAction": {
+    "description": "Action to edit a shift template."
+  },
+  "hrDeleteShiftTemplateAction": "Delete template",
+  "@hrDeleteShiftTemplateAction": {
+    "description": "Action to delete a shift template."
+  },
+  "hrShiftTemplateNameLabel": "Template name",
+  "@hrShiftTemplateNameLabel": {
+    "description": "Label for shift template name field."
+  },
+  "hrShiftTypeLabel": "Shift type",
+  "@hrShiftTypeLabel": {
+    "description": "Label for shift type field."
+  },
+  "hrPreviewPayrollAction": "Preview payroll",
+  "@hrPreviewPayrollAction": {
+    "description": "Action to preview payroll line items."
+  },
+  "hrPreviewPayrollDialogTitle": "Payroll preview",
+  "@hrPreviewPayrollDialogTitle": {
+    "description": "Dialog title for payroll preview."
+  },
+  "hrPreviewRosterAction": "Preview roster generation",
+  "@hrPreviewRosterAction": {
+    "description": "Action to dry-run roster generation."
+  },
+  "hrPreviewRosterDialogTitle": "Roster generation preview",
+  "@hrPreviewRosterDialogTitle": {
+    "description": "Dialog title for roster generation preview."
+  },
+  "hrRosterCoverageLabel": "Coverage",
+  "@hrRosterCoverageLabel": {
+    "description": "Label for roster coverage metric."
+  },
+  "hrRosterGapsLabel": "Staffing gaps",
+  "@hrRosterGapsLabel": {
+    "description": "Label for roster gap count."
+  },
+  "hrPasswordLabel": "Temporary password",
+  "@hrPasswordLabel": {
+    "description": "Label for temporary password when creating a user."
+  },
+  "hrEmailLabel": "Email",
+  "@hrEmailLabel": {
+    "description": "Label for email field in HR dialogs."
+  },
+  "hrOnboardingModeExistingUser": "Link existing user",
+  "@hrOnboardingModeExistingUser": {
+    "description": "Onboarding option to link an existing user account."
+  },
+  "hrOnboardingModeCreateUser": "Create new user",
+  "@hrOnboardingModeCreateUser": {
+    "description": "Onboarding option to create a new user account."
+  },
   "hrWednesdayLabel": "Wednesday",
   "@hrWednesdayLabel": {
     "description": "Human resources workspace text for hrWednesdayLabel."

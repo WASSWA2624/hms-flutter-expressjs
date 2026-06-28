@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -169,6 +170,15 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         l10n,
         summaryNotifications: _summaryNotifications(context, state, controller),
         secondary: <Widget>[
+          AppButton.secondary(
+            label: l10n.hrShiftTemplateAction,
+            leadingIcon: Icons.view_week_outlined,
+            semanticLabel: l10n.hrShiftTemplateAction,
+            tooltip: l10n.hrShiftTemplateAction,
+            onPressed: state.isRefreshing
+                ? null
+                : () => showHrShiftTemplateDialog(context, ref),
+          ),
           AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
             leadingIcon: Icons.pending_actions_outlined,
@@ -686,8 +696,49 @@ class _HrStaffDetailBody extends ConsumerWidget {
               value: _formatDate(context, profile.hireDate),
               icon: Icons.event_available_outlined,
             ),
+            AppInfoTileData(
+              label: l10n.hrLinkedUserLabel,
+              value: _joinDisplay(<String?>[
+                profile.userFullName,
+                profile.userEmail,
+                profile.userDisplayId,
+              ]),
+              icon: Icons.link_outlined,
+            ),
           ],
         ),
+        if (detail.accessSummary != null &&
+            detail.accessSummary!.userRoles.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          _SmallRecordSection(
+            title: l10n.hrRolesSectionTitle,
+            icon: Icons.admin_panel_settings_outlined,
+            emptyText: l10n.hrNoRolesLabel,
+            rows: <_RecordLine>[
+              for (final HrUserRole role in detail.accessSummary!.userRoles)
+                _RecordLine(
+                  title: role.roleName ?? role.roleId ?? l10n.hrRolePositionColumnLabel,
+                  subtitle: _joinDisplay(<String?>[
+                    role.facilityName,
+                    role.facilityDisplayId,
+                  ]),
+                  trailing: l10n.hrRevokeRoleAction,
+                  onTrailingTap: state.isMutating
+                      ? null
+                      : () async {
+                          final HrWorkspaceController controller = ref.read(
+                            hrWorkspaceControllerProvider.notifier,
+                          );
+                          final AppFailure? failure = await controller
+                              .revokeUserRole(role);
+                          if (context.mounted) {
+                            showHrMutationSnackBar(context, failure);
+                          }
+                        },
+                ),
+            ],
+          ),
+        ],
         SizedBox(height: theme.spacing.md),
         AppActionSection(
           title: l10n.hrStaffActionsTitle,
@@ -703,15 +754,25 @@ class _HrStaffDetailBody extends ConsumerWidget {
             for (final HrStaffAssignment assignment in detail.assignments)
               _RecordLine(
                 title: _joinDisplay(<String?>[
+                  assignment.departmentName ?? assignment.departmentDisplayId,
                   assignment.departmentId,
-                  assignment.unitId,
-                  assignment.roomId,
+                  if (assignment.isPrimary) l10n.hrPrimaryAssignmentLabel,
                 ]).ifEmpty(l10n.hrAssignmentLabel),
                 subtitle: _dateRange(
                   context,
                   assignment.startDate,
                   assignment.endDate,
                 ),
+                trailing: assignment.isActive && !state.isMutating
+                    ? l10n.hrEndAssignmentAction
+                    : null,
+                onTrailingTap: assignment.isActive && !state.isMutating
+                    ? () => showHrEndAssignmentDialog(
+                        context,
+                        ref,
+                        assignment,
+                      )
+                    : null,
               ),
           ],
         ),
@@ -849,6 +910,25 @@ class _HrStaffDetailBody extends ConsumerWidget {
         enabled: enabled,
         onPressed: () => _showPayrollRunDialog(context, ref, detail.profile),
       ),
+      if ((detail.profile.userId ?? detail.profile.userDisplayId ?? '')
+          .trim()
+          .isNotEmpty) ...<AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrAssignRoleAction,
+          icon: Icons.admin_panel_settings_outlined,
+          enabled: enabled,
+          onPressed: () => showHrAssignRoleDialog(context, ref, detail),
+        ),
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrModuleAccessAction,
+          icon: Icons.apps_outlined,
+          enabled: enabled,
+          onPressed: () =>
+              showHrModuleAccessDialog(context, detail.accessSummary),
+        ),
+      ],
     ];
   }
 }
@@ -1065,11 +1145,17 @@ class _SmallRecordSection extends StatelessWidget {
 
 @immutable
 final class _RecordLine {
-  const _RecordLine({required this.title, this.subtitle, this.trailing});
+  const _RecordLine({
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTrailingTap,
+  });
 
   final String title;
   final String? subtitle;
   final String? trailing;
+  final VoidCallback? onTrailingTap;
 }
 
 class _RecordLineTile extends StatelessWidget {
@@ -1090,7 +1176,13 @@ class _RecordLineTile extends StatelessWidget {
           ),
           if ((line.trailing ?? '').trim().isNotEmpty) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
-            Flexible(child: Text(line.trailing!)),
+            if (line.onTrailingTap != null)
+              AppButton.secondary(
+                label: line.trailing!,
+                onPressed: line.onTrailingTap,
+              )
+            else
+              Flexible(child: Text(line.trailing!)),
           ],
         ],
       ),
@@ -1696,6 +1788,13 @@ class _WorkItemActions extends ConsumerWidget {
       HrQueue.rosterDrafts => <AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: _rosterWriteRequirement,
+          label: l10n.hrPreviewRosterAction,
+          icon: Icons.visibility_outlined,
+          enabled: enabled,
+          onPressed: () => showHrPreviewRosterDialog(context, ref, item),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
           label: l10n.hrGenerateRosterAction,
           icon: Icons.auto_awesome_outlined,
           enabled: enabled,
@@ -1721,6 +1820,13 @@ class _WorkItemActions extends ConsumerWidget {
         ),
       ],
       HrQueue.payrollDrafts => <AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: _payrollRequirement,
+          label: l10n.hrPreviewPayrollAction,
+          icon: Icons.receipt_long_outlined,
+          enabled: enabled,
+          onPressed: () => showHrPreviewPayrollDialog(context, ref, item),
+        ),
         AppPermissionActionItem(
           requirement: _payrollRequirement,
           label: l10n.hrProcessPayrollAction,
@@ -1893,13 +1999,13 @@ class _StaffProfileFields extends StatefulWidget {
 
 class _StaffProfileFieldsState extends State<_StaffProfileFields> {
   late final TextEditingController _tenantController;
-  late final TextEditingController _userController;
   late final TextEditingController _staffNumberController;
   late final TextEditingController _positionController;
   late final TextEditingController _feeController;
   late final TextEditingController _currencyController;
   String? _departmentId;
   String? _practitionerType;
+  String? _selectedUserId;
   DateTime? _hireDate;
 
   bool get _isCreate => widget.staff == null;
@@ -1909,9 +2015,7 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
     super.initState();
     final HrStaffProfile? staff = widget.staff;
     _tenantController = TextEditingController(text: staff?.tenantId);
-    _userController = TextEditingController(
-      text: staff?.userDisplayId ?? staff?.userId,
-    );
+    _selectedUserId = staff?.userDisplayId ?? staff?.userId;
     _staffNumberController = TextEditingController(text: staff?.staffNumber);
     _positionController = TextEditingController(text: staff?.position);
     _feeController = TextEditingController(
@@ -1928,7 +2032,6 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
   @override
   void dispose() {
     _tenantController.dispose();
-    _userController.dispose();
     _staffNumberController.dispose();
     _positionController.dispose();
     _feeController.dispose();
@@ -1939,7 +2042,7 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
   Map<String, Object?> toPayload() {
     return <String, Object?>{
       if (_isCreate) 'tenant_id': _tenantController.text.trim(),
-      if (_isCreate) 'user_id': _userController.text.trim(),
+      if (_isCreate) 'user_id': _selectedUserId,
       'staff_number': _staffNumberController.text.trim(),
       'position': _positionController.text.trim(),
       'department_id': _departmentId,
@@ -1965,13 +2068,22 @@ class _StaffProfileFieldsState extends State<_StaffProfileFields> {
             ),
           ),
         if (_isCreate)
-          AppTextField(
-            controller: _userController,
-            labelText: l10n.hrUserIdLabel,
+          AppSelectField<String>.searchable(
+            value: _selectedUserId,
+            labelText: l10n.hrSelectUserLabel,
             isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrUserIdLabel),
+            options: _selectOptions(
+              widget.referenceData.users
+                  .where(
+                    (HrOption user) => user.extra['has_staff_profile'] != true,
+                  )
+                  .toList(growable: false),
             ),
+            validator: AppValidators.requiredValue(
+              l10n.hrFieldRequiredLabel(l10n.hrSelectUserLabel),
+            ),
+            onChanged: (String? value) =>
+                setState(() => _selectedUserId = value),
           ),
         AppTextField(
           controller: _staffNumberController,

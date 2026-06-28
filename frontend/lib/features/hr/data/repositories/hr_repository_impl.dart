@@ -81,21 +81,28 @@ final class HrRepositoryImpl implements HrRepository {
 
     return profileResult.when(
       success: (HrStaffProfile detail) async {
-        final results = await Future.wait<Object>(<Future<Object>>[
-          _loadStaffAssignments(detail.effectiveId),
-          _loadStaffLeaves(detail.effectiveId),
-          _loadStaffAvailabilities(detail.effectiveId),
-          _loadShiftAssignments(detail.effectiveId),
-        ]);
+        final List<HrStaffAssignment> assignments = await _loadStaffAssignments(
+          detail.effectiveId,
+        );
+        final List<HrStaffLeave> leaves = await _loadStaffLeaves(
+          detail.effectiveId,
+        );
+        final List<HrStaffAvailability> availabilities =
+            await _loadStaffAvailabilities(detail.effectiveId);
+        final List<HrShiftAssignment> shiftAssignments =
+            await _loadShiftAssignments(detail.effectiveId);
+        final HrStaffAccessSummary? accessSummary =
+            await _loadStaffAccessSummaryOrEmpty(detail.effectiveId);
 
         return Result<HrStaffDetail>.success(
           HrStaffDetail(
             profile: detail,
-            assignments: results[0] as List<HrStaffAssignment>,
-            leaves: results[1] as List<HrStaffLeave>,
-            availabilities: results[2] as List<HrStaffAvailability>,
+            assignments: assignments,
+            leaves: leaves,
+            availabilities: availabilities,
             compensations: detail.compensations,
-            shiftAssignments: results[3] as List<HrShiftAssignment>,
+            shiftAssignments: shiftAssignments,
+            accessSummary: accessSummary,
           ),
         );
       },
@@ -270,6 +277,127 @@ final class HrRepositoryImpl implements HrRepository {
         'replace_existing_items': replaceExistingItems,
         'notes': notes,
       },
+    );
+  }
+
+  @override
+  Future<Result<HrStaffAccessSummary>> loadStaffAccessSummary(
+    String staffProfileId,
+  ) {
+    return _apiClient.get<HrStaffAccessSummary>(
+      _hrEndpoint(<String>['staff', staffProfileId, 'access-summary']),
+      decoder: (Object? data) =>
+          HrStaffAccessSummaryDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<void>> assignUserRole({
+    required String userId,
+    required String roleId,
+    required String tenantId,
+    String? facilityId,
+  }) {
+    return _apiClient.post<void>(
+      ApiEndpoints.collection(HmsApiResource.userRoles),
+      data: _withoutEmpty(<String, Object?>{
+        'user_id': userId,
+        'role_id': roleId,
+        'tenant_id': tenantId,
+        'facility_id': facilityId,
+      }),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> revokeUserRole(String userRoleId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.userRoles, userRoleId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<Object?>> createUserAccount(Map<String, Object?> payload) {
+    return _apiClient.post<Object?>(
+      ApiEndpoints.collection(HmsApiResource.users),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<Object?>> updateStaffAssignment(
+    String assignmentId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.staffAssignments, assignmentId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<Object?>> createShiftTemplate(Map<String, Object?> payload) {
+    return _postCollection(HmsApiResource.shiftTemplates, payload);
+  }
+
+  @override
+  Future<Result<Object?>> updateShiftTemplate(
+    String templateId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<Object?>(
+      ApiEndpoints.byId(HmsApiResource.shiftTemplates, templateId),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
+  Future<Result<Object?>> deleteShiftTemplate(String templateId) {
+    return _apiClient.delete<Object?>(
+      ApiEndpoints.byId(HmsApiResource.shiftTemplates, templateId),
+      decoder: (_) => null,
+    );
+  }
+
+  @override
+  Future<Result<HrPayrollPreview>> previewPayrollRun(String payrollRunId) {
+    return _apiClient.get<HrPayrollPreview>(
+      _hrEndpoint(<String>['payroll-runs', payrollRunId, 'preview']),
+      decoder: (Object? data) =>
+          HrPayrollPreviewDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<HrRosterGenerateResult>> generateRosterPreview(
+    String rosterId, {
+    bool replaceExistingAssignments = true,
+  }) {
+    return _apiClient.post<HrRosterGenerateResult>(
+      _hrEndpoint(<String>['rosters', rosterId, 'generate']),
+      data: <String, Object?>{
+        'replace_existing_assignments': replaceExistingAssignments,
+        'dry_run': true,
+      },
+      decoder: (Object? data) =>
+          HrRosterGenerateResultDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  Future<HrStaffAccessSummary?> _loadStaffAccessSummaryOrEmpty(
+    String staffProfileId,
+  ) async {
+    final Result<HrStaffAccessSummary> result = await loadStaffAccessSummary(
+      staffProfileId,
+    );
+    return result.when(
+      success: (HrStaffAccessSummary value) => value,
+      failure: (_) => null,
     );
   }
 

@@ -350,7 +350,11 @@ class _HomeQuickActions extends StatelessWidget {
                 child: AppButton.secondary(
                   label: action.label,
                   leadingIcon: action.icon,
-                  onPressed: () => _goToRoute(context, action.route),
+                  onPressed: () => _goToRoute(
+                    context,
+                    action.route,
+                    queryParameters: action.routeQuery,
+                  ),
                 ),
               ),
           ],
@@ -1191,7 +1195,11 @@ class _EmptyStateInline extends StatelessWidget {
                 AppButton.secondary(
                   label: action.label,
                   leadingIcon: action.icon,
-                  onPressed: () => _goToRoute(context, action.route),
+                  onPressed: () => _goToRoute(
+                    context,
+                    action.route,
+                    queryParameters: action.routeQuery,
+                  ),
                 ),
             ],
           ),
@@ -1234,6 +1242,7 @@ final class _HomeActionDefinition {
     required this.label,
     required this.icon,
     required this.route,
+    this.routeQuery = const <String, String>{},
     this.allowedRoles = const <AppRole>[],
     this.requiredPermissions = const <AppPermission>[],
     this.requiredAnyPermissions = const <AppPermission>[],
@@ -1244,6 +1253,7 @@ final class _HomeActionDefinition {
   final String label;
   final IconData icon;
   final AppRouteData route;
+  final Map<String, String> routeQuery;
   final List<AppRole> allowedRoles;
   final List<AppPermission> requiredPermissions;
   final List<AppPermission> requiredAnyPermissions;
@@ -1555,6 +1565,7 @@ _actionLibrary = <String, _HomeActionDefinition>{
     label: 'Review leave',
     icon: Icons.approval_outlined,
     route: AppRoutes.hr,
+    routeQuery: <String, String>{'queue': 'LEAVE_REQUESTS'},
     allowedRoles: <AppRole>[
       AppRole.hr,
       AppRole.unitManager,
@@ -1592,6 +1603,7 @@ _actionLibrary = <String, _HomeActionDefinition>{
     label: 'Publish roster',
     icon: Icons.calendar_month_outlined,
     route: AppRoutes.hr,
+    routeQuery: <String, String>{'queue': 'ROSTER_DRAFTS'},
     allowedRoles: <AppRole>[
       AppRole.hr,
       AppRole.unitManager,
@@ -1607,6 +1619,7 @@ _actionLibrary = <String, _HomeActionDefinition>{
     label: 'Approve roster',
     icon: Icons.verified_outlined,
     route: AppRoutes.hr,
+    routeQuery: <String, String>{'queue': 'ROSTER_DRAFTS'},
     allowedRoles: <AppRole>[
       AppRole.hr,
       AppRole.unitManager,
@@ -2359,8 +2372,12 @@ AppRouteData? _routeForTarget(HomeRouteTarget? target) {
   };
 }
 
-void _goToRoute(BuildContext context, AppRouteData route) {
-  context.go(route.location());
+void _goToRoute(
+  BuildContext context,
+  AppRouteData route, {
+  Map<String, String> queryParameters = const <String, String>{},
+}) {
+  context.go(route.location(queryParameters: queryParameters));
 }
 
 String _contextLine(HomeDashboard dashboard) {
