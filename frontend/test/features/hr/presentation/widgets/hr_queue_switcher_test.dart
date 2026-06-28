@@ -7,7 +7,6 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
-import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -24,7 +23,7 @@ Future<void> _pumpSwitcher(
   final _MockHrRepository repository = _MockHrRepository();
   when(() => repository.loadOverview()).thenAnswer(
     (_) async => const Result<HrWorkspaceOverview>.success(
-      HrWorkspaceOverview(summary: HrWorkspaceSummary()),
+      HrWorkspaceOverview(),
     ),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
