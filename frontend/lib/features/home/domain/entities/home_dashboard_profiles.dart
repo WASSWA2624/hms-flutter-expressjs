@@ -522,7 +522,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>[],
     shortcutIds: <String>[],
-    emptyActionIds: <String>[],
     heroFullWidth: true,
     maxStatusCards: 8,
     showEmptyWorkspaceLink: true,
