@@ -153,10 +153,8 @@ class HrStaffDetailActions extends ConsumerWidget {
       children: <Widget>[
         AppPermissionActionList(
           actions: actions,
-          minItemWidth: 150,
-          maxColumns: 6,
-          spacing: Theme.of(context).spacing.sm,
-          runSpacing: Theme.of(context).spacing.sm,
+          spacing: Theme.of(context).spacing.xs,
+          runSpacing: Theme.of(context).spacing.xs,
         ),
       ],
     );

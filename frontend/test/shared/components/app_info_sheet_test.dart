@@ -27,32 +27,31 @@ void main() {
     final Finder child = find
         .descendant(
           of: find.byType(Wrap),
-          matching: find.byType(SizedBox),
+          matching: find.byType(ConstrainedBox),
         )
         .at(index);
     final RenderBox box = tester.renderObject<RenderBox>(child);
     return box.size.width;
   }
 
-  testWidgets('AppInfoSheetGrid uses one column at narrow width', (
+  testWidgets('AppInfoSheetGrid shows all fields at narrow width', (
     WidgetTester tester,
   ) async {
     await pumpGrid(tester, 360);
 
     expect(find.text('Staff number'), findsOneWidget);
-    expect(find.text('STF-001'), findsOneWidget);
-    expect(wrapChildWidth(tester, 0), greaterThan(300));
+    expect(find.text('Hire date'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('AppInfoSheetGrid uses multiple columns at wide width', (
+  testWidgets('AppInfoSheetGrid packs multiple fields per row at wide width', (
     WidgetTester tester,
   ) async {
     await pumpGrid(tester, 800);
 
     expect(find.text('Staff number'), findsOneWidget);
     expect(find.text('Hire date'), findsOneWidget);
-    expect(wrapChildWidth(tester, 0), lessThan(300));
+    expect(wrapChildWidth(tester, 0), lessThan(220));
     expect(tester.takeException(), isNull);
   });
 

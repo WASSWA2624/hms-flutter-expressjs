@@ -16,6 +16,7 @@ class HrStaffDetailOverview extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final String emptyValue = l10n.profileUnknownValue;
+    final bool hasLinkedUser = _hasLinkedUser(profile);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -29,105 +30,94 @@ class HrStaffDetailOverview extends StatelessWidget {
         SizedBox(height: theme.spacing.sm),
         AppInfoSheetGrid(
           emptyValue: emptyValue,
-          items: <AppInfoSheetItem>[
-            AppInfoSheetItem(
-              label: l10n.hrStaffNumberLabel,
-              value: profile.staffNumber ?? profile.displayId,
-              copyable: true,
-            ),
-            if ((profile.position ?? '').trim().isNotEmpty)
-              AppInfoSheetItem(
-                label: l10n.hrPositionLabel,
-                value: profile.position,
-              ),
-            if ((profile.practitionerType ?? '').trim().isNotEmpty)
-              AppInfoSheetItem(
-                label: l10n.hrPractitionerTypeLabel,
-                value: _apiLabel(profile.practitionerType),
-              ),
-            AppInfoSheetItem(
-              label: l10n.hrDepartmentLabel,
-              value: profile.departmentName ?? profile.departmentDisplayId,
-            ),
-            AppInfoSheetItem(
-              label: l10n.hrHireDateLabel,
-              value: _formatDate(context, profile.hireDate),
-            ),
-          ],
+          spacing: theme.spacing.lg,
+          runSpacing: theme.spacing.sm,
+          items: _overviewItems(l10n, context, emptyValue),
         ),
-        if (_hasLinkedUser(profile)) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          _LinkedUserSheet(profile: profile, emptyValue: emptyValue),
+        if (hasLinkedUser) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.link_outlined,
+                size: theme.appTokens.listIconSize,
+                color: theme.colorScheme.primary,
+              ),
+              SizedBox(width: theme.spacing.xs),
+              Text(
+                l10n.hrLinkedUserLabel,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          AppInfoSheetGrid(
+            emptyValue: emptyValue,
+            spacing: theme.spacing.lg,
+            runSpacing: theme.spacing.sm,
+            items: _linkedUserItems(l10n, emptyValue),
+          ),
         ],
       ],
     );
   }
-}
 
-class _LinkedUserSheet extends StatelessWidget {
-  const _LinkedUserSheet({required this.profile, required this.emptyValue});
-
-  final HrStaffProfile profile;
-  final String emptyValue;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(
-              Icons.link_outlined,
-              size: theme.appTokens.listIconSize,
-              color: colorScheme.primary,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              l10n.hrLinkedUserLabel,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+  List<AppInfoSheetItem> _overviewItems(
+    AppLocalizations l10n,
+    BuildContext context,
+    String emptyValue,
+  ) {
+    return <AppInfoSheetItem>[
+      AppInfoSheetItem(
+        label: l10n.hrStaffNumberLabel,
+        value: profile.staffNumber ?? profile.displayId,
+        copyable: true,
+      ),
+      if ((profile.position ?? '').trim().isNotEmpty)
+        AppInfoSheetItem(
+          label: l10n.hrPositionLabel,
+          value: profile.position,
         ),
-        SizedBox(height: theme.spacing.sm),
-        AppInfoSheetGrid(
-          emptyValue: emptyValue,
-          maxColumns: 2,
-          minItemWidth: 200,
-          items: <AppInfoSheetItem>[
-            if ((profile.userFullName ?? '').trim().isNotEmpty)
-              AppInfoSheetItem(
-                label: l10n.hrStaffNameLabel,
-                value: profile.userFullName,
-              ),
-            if ((profile.userEmail ?? '').trim().isNotEmpty)
-              AppInfoSheetItem(
-                label: l10n.hrEmailLabel,
-                value: profile.userEmail,
-              ),
-            if ((profile.userDisplayId ?? profile.userId ?? '').trim().isNotEmpty)
-              AppInfoSheetItem(
-                label: l10n.hrUserIdLabel,
-                value: profile.userDisplayId ?? profile.userId,
-                copyable: true,
-              ),
-          ],
+      if ((profile.practitionerType ?? '').trim().isNotEmpty)
+        AppInfoSheetItem(
+          label: l10n.hrPractitionerTypeLabel,
+          value: _apiLabel(profile.practitionerType),
         ),
-      ],
-    );
+      AppInfoSheetItem(
+        label: l10n.hrDepartmentLabel,
+        value: profile.departmentName ?? profile.departmentDisplayId,
+      ),
+      AppInfoSheetItem(
+        label: l10n.hrHireDateLabel,
+        value: _formatDate(context, profile.hireDate),
+      ),
+    ];
+  }
+
+  List<AppInfoSheetItem> _linkedUserItems(
+    AppLocalizations l10n,
+    String emptyValue,
+  ) {
+    return <AppInfoSheetItem>[
+      if ((profile.userEmail ?? '').trim().isNotEmpty)
+        AppInfoSheetItem(
+          label: l10n.hrEmailLabel,
+          value: profile.userEmail,
+        ),
+      if ((profile.userDisplayId ?? profile.userId ?? '').trim().isNotEmpty)
+        AppInfoSheetItem(
+          label: l10n.hrUserIdLabel,
+          value: profile.userDisplayId ?? profile.userId,
+          copyable: true,
+        ),
+    ];
   }
 }
 
 bool _hasLinkedUser(HrStaffProfile profile) {
-  return (profile.userFullName ?? profile.userEmail ?? profile.userDisplayId ??
-          profile.userId ??
-          '')
+  return (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
       .trim()
       .isNotEmpty;
 }

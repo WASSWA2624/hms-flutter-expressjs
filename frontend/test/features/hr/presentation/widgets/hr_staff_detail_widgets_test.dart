@@ -95,7 +95,8 @@ void main() {
     expect(find.text('Registered Nurse'), findsOneWidget);
     expect(find.text('Linked user'), findsOneWidget);
     expect(find.text('USR-1'), findsOneWidget);
-    expect(find.text('Avery Demo'), findsOneWidget);
+    expect(find.text('avery@example.com'), findsOneWidget);
+    expect(find.text('Avery Demo'), findsNothing);
     expect(find.byType(AppInfoSheetGrid), findsNWidgets(2));
     expect(tester.takeException(), isNull);
   });
@@ -176,6 +177,9 @@ void main() {
     );
 
     expect(find.byType(Wrap), findsOneWidget);
+    expect(find.textContaining('...'), findsNothing);
+    expect(find.text('Assign department'), findsOneWidget);
+    expect(find.text('View module access'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
