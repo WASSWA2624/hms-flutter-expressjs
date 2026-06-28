@@ -1,9 +1,142 @@
 # UI Layout Unification — HOSSPI HMS
 
-Unify the app shell, page headers, toolbars, and action buttons so every module workspace feels consistent, responsive, and polished. Implement shared behavior once in `frontend/lib/shared/`, then migrate each applicable screen to use it.
+Unify the app shell, page headers, toolbars, and action buttons so every module workspace feels consistent, responsive, and polished. **Implement once in shared code, reuse everywhere, delete duplicates, and comply with all applicable frontend rules.**
 
-**Reference contract:** `frontend/.cursor/ui-workspace.mdc`  
-**Primary shared widgets:** `AppWorkspace`, `AppWorkspaceHeader`, `ResponsiveAppShell`, `AppScreen`, `AppListTable`, `AppButton`, `AppIconButton`, `AppDialog`
+---
+
+## Governing principles
+
+Every change in this pass must optimize for:
+
+| Principle | Requirement |
+|---|---|
+| **Maximum reusability** | One shared widget per concern. Extend `lib/shared/` — never fork per module. |
+| **Code clean-up** | Remove dead code, duplicate widgets, private `_ModuleText` classes, and inline layout clones as screens migrate. |
+| **UI efficiency** | Fewer rebuilds, lazy lists, debounced search, targeted row refresh — no full-page reload when unnecessary. |
+| **Uniformity** | Same header, toolbar, button types, status badges, and worklist chrome on every applicable screen. |
+| **Rule compliance** | Follow all applicable `.cursor` rules listed below — no exceptions for convenience. |
+
+**Conflict order** (from `frontend/.cursor/index.mdc`): security/privacy → API contract → index/owner file → other frontend rules.
+
+---
+
+## Applicable rules (mandatory compliance)
+
+Read and follow these owner files before writing or migrating UI:
+
+### UI and UX (primary for this pass)
+
+| Rule file | Compliance requirement |
+|---|---|
+| [`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc) | Mandatory layout stack; forbidden patterns; file size limits |
+| [`components.mdc`](frontend/.cursor/components.mdc) | Use standard catalog; no parallel abstractions |
+| [`design-system.mdc`](frontend/.cursor/design-system.mdc) | Theme tokens only — no hard-coded colors, spacing, typography |
+| [`layouts.mdc`](frontend/.cursor/layouts.mdc) | Breakpoints, shell behavior, `PageMaxWidth`, responsive utilities |
+| [`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc) | Forms, tables, search debounce, pagination |
+| [`ui-feedback.mdc`](frontend/.cursor/ui-feedback.mdc) | `AsyncStateScaffold`; loading/empty/error at page root — not inline |
+| [`accessibility.mdc`](frontend/.cursor/accessibility.mdc) | Semantic labels, 48px targets, keyboard/focus, icon + text for status |
+| [`multi_platform_input.mdc`](frontend/.cursor/multi_platform_input.mdc) | Touch, keyboard, hover, focus on web/desktop |
+| [`assets_branding.mdc`](frontend/.cursor/assets_branding.mdc) | Icons and branding consistency |
+
+### Cross-cutting (apply where touched)
+
+| Rule file | Compliance requirement |
+|---|---|
+| [`localization_i18n.mdc`](frontend/.cursor/localization_i18n.mdc) | All strings in `app_en.arb`; no `_FeatureText` private copy classes |
+| [`permissions.mdc`](frontend/.cursor/permissions.mdc) | `AppAccessActionGate` / typed permissions; hide disallowed actions |
+| [`performance.mdc`](frontend/.cursor/performance.mdc) | `const` widgets, focused `ref.watch`, paginated tables, split large pages |
+| [`architecture.mdc`](frontend/.cursor/architecture.mdc) | Presentation only in this pass — no business logic in shared widgets |
+| [`coding_conventions.mdc`](frontend/.cursor/coding_conventions.mdc) | Naming, imports, file focus |
+| [`project_structure.mdc`](frontend/.cursor/project_structure.mdc) | Shared code in `lib/shared/`; feature widgets in `presentation/widgets/` |
+| [`realtime_sync.mdc`](frontend/.cursor/realtime_sync.mdc) | Preserve module realtime subscriptions after refactor |
+| [`navigation.mdc`](frontend/.cursor/navigation.mdc) | Route guards unchanged; deep links still open same shared dialogs |
+| [`checklists.mdc`](frontend/.cursor/checklists.mdc) | Per-feature and release gates before marking a screen done |
+| [`.cursor/api-contract.mdc`](.cursor/api-contract.mdc) | Pagination, display IDs, no raw UUIDs in UI |
+
+### Module flow references (UI sections only)
+
+When migrating a module, also read its flow rule if present: `opd-flow`, `ipd-flow`, `icu-flow`, `lab-flow`, `radiology-flow`, `nursing-flow`, `discharge-flow`, `theater-flow`, `pharmacy-flow`, `emergency-flow`.
+
+---
+
+## Shared component strategy (reuse first)
+
+**Before creating anything new**, search `frontend/lib/shared/` and the standard catalog in [`components.mdc`](frontend/.cursor/components.mdc).
+
+### Primary shared widgets (use — do not reimplement)
+
+| Widget | Path / barrel | Owns |
+|---|---|---|
+| `AppWorkspace` | `shared/layout/app_workspace.dart` | Page shell: header, summary, body, detail |
+| `AppWorkspaceHeader` | same | Title, status, action row |
+| `ResponsiveAppShell` | `shared/layout/responsive_shell_scaffold.dart` | App bar, sidebar, connectivity, account |
+| `AppScreen` | `shared/layout/responsive_page.dart` | Settings-style non-queue pages |
+| `AppListTable` | `shared/components/` | Worklist, pagination, mobile fallback |
+| `AppButton` / `AppIconButton` | `shared/components/` | All toolbar and form actions |
+| `AppDialog` / `AppWorkspaceMutationDialog` | `shared/components/` | All modals |
+| `AsyncStateScaffold` | `shared/components/` | Loading, error, retry |
+| `AppActionPanel` / `AppActionList` | `shared/actions/` | Grouped row/detail actions |
+| `AppWorkspaceSummaryCard` | `shared/layout/app_workspace.dart` | Summary/filter cards |
+| `AppActionLabelScope` | `shared/components/` | Responsive icon-only vs icon+label |
+
+**Import barrels:** `shared/layout/layout.dart`, `shared/components/components.dart`, `shared/actions/actions.dart`.
+
+### New shared widgets to add (once)
+
+Implement these in `lib/shared/` — every workspace consumes them; no feature-local copies:
+
+| Widget | Purpose |
+|---|---|
+| `AppConnectivityIndicator` | Network-style online/offline icon (replaces dot pill) |
+| `AppFullscreenToggle` | Shell-level full-screen control |
+| `AppWorkspaceToolbar` | Declarative left/right action clusters + overflow |
+| `AppWorkspaceRefreshAction` | Standard refresh button with loading state |
+| `AppWorkspaceBoardToggle` | Patient board / bed board (IPD, ICU, future) |
+| `AppWorkspaceViewToggle` | Orders/patients view switch (Lab, Radiology pattern) |
+| `AppGlobalFaultReportAction` | Equipment fault dialog entry point |
+| `AppGlobalHousekeepingRequestAction` | Housekeeping/maintenance request entry point |
+| `AppWorkspaceLiveStatus` | Standardized "Live sync" / "Saving" badge factory |
+
+Shared widgets accept **localized strings and callbacks from callers** — they must not embed module-specific copy or business rules.
+
+---
+
+## Code clean-up requirements
+
+As each screen migrates, clean up — do not leave old code alongside new:
+
+1. **Delete** feature-local header/toolbar widgets superseded by shared components.
+2. **Delete** private string classes (`_EmergencyText`, `_LabText`, etc.) — move keys to `app_en.arb`.
+3. **Extract** inline UI blocks from pages exceeding ~800 lines into `presentation/widgets/` ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc)).
+4. **Remove** duplicate refresh/action implementations — one `AppWorkspaceRefreshAction` per page.
+5. **Remove** hard-coded `Colors.*`, raw `TextStyle`, magic padding — use `theme.spacing`, `theme.textTheme`, `theme.colorScheme`.
+6. **Remove** inline "Sign-in required" / auth blocks from content stack — gate at `AsyncStateScaffold` level.
+7. **Consolidate** duplicate dialogs (add patient, start admission, create order) — one shared dialog widget per flow.
+8. **Fix or remove** broken actions (e.g. biomedical action showing "This action isn't available").
+9. **Run** `flutter analyze` after each module migration; fix new warnings in touched files.
+
+### File size guidance
+
+| File | Target |
+|---|---|
+| `*_workspace_page.dart` | Prefer `< 800` lines — extract widgets before adding more UI |
+| `shared/layout/*.dart` | Keep focused; split if a file grows unwieldy |
+| New feature widgets | One concern per file (summary cards, detail section, dialog) |
+
+---
+
+## UI efficiency requirements
+
+| Area | Efficient pattern | Avoid |
+|---|---|---|
+| **Rebuilds** | `ref.watch` only what the widget needs; split header/toolbar into small widgets | Watching entire workspace state in header |
+| **Lists/tables** | `AppListTable` with pagination; lazy builders | Loading full datasets; filtering huge lists in memory |
+| **Search** | Debounced remote search in controller ([`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc)) | Fetch-on-every-keystroke without debounce |
+| **Refresh** | Row/detail/summary/badge targeted refresh after modal mutation | Full `invalidate` of all providers when one row changed |
+| **Layout** | `const` constructors where possible; `LayoutBuilder` only when needed | Deep nesting of `Row`/`Column`/`Wrap` for toolbar |
+| **Responsive** | Centralized `AppBreakpoints` — one layout path | Separate duplicate screens per breakpoint |
+| **Dialogs** | Shared mutation dialogs; dismiss and refresh minimally | Full navigation reload after small edit |
+| **Summary cards** | Hide zero-value cards; cards filter query in controller | Extra API calls per card click |
 
 ---
 
@@ -11,7 +144,7 @@ Unify the app shell, page headers, toolbars, and action buttons so every module 
 
 One predictable layout system across clinical, operational, and admin screens:
 
-1. **App shell** — logo, connectivity, notifications, account, optional full-screen toggle.
+1. **App shell** — logo, connectivity, notifications, account, full-screen toggle.
 2. **Page header** — module icon, title, live/sync status.
 3. **Toolbar** — page-specific actions on the **left**, global/common actions on the **right**.
 4. **Content stack** — summary cards → search/filter bar → worklist/table → detail panel (when applicable).
@@ -48,95 +181,94 @@ Observed across current UI — do not preserve these patterns:
 
 | Area | Problem | Target behavior |
 |---|---|---|
-| Refresh control | Mix of `AppIconButton` and `AppButton.secondary` with label | One shared refresh action widget; same placement (right cluster, last item before overflow) |
-| Primary actions | Some modules use `primaryAction`, others put create/add in `secondaryActions` | One primary create/start action per screen; use `primaryAction` slot |
-| Action order | Refresh, config, view-toggle, and add buttons appear in different orders | Standard order (see Toolbar spec) |
-| Status label | "Live sync", "Live board", "Live", "Discharge desk active", etc. | Standard status copy via `app_en.arb` keys |
-| Connectivity | Green dot + "Online" text; on small screens dot also on avatar | Windows-style network icon; dedicated indicator on all breakpoints |
-| Summary cards | Different card counts, borders, and filter behavior | Shared `AppWorkspaceSummaryCard`; cards filter worklist, never open duplicate modals |
-| View toggles | Patient board / bed board styled differently on IPD vs ICU | Shared toggle component, same size and selected state |
-| Inline auth blocks | "Sign-in required" between summary cards and table (Theater, Radiology) | Use `AsyncStateScaffold` / session gate at page level; never break the content stack |
-| Settings | Uses `AppScreen` with different header action pattern | Align header/toolbar with workspace screens where practical |
+| Refresh control | Mix of `AppIconButton` and `AppButton.secondary` with label | `AppWorkspaceRefreshAction` only; right cluster |
+| Primary actions | Some use `primaryAction`, others put create/add in `secondaryActions` | One primary per screen via `AppWorkspaceToolbar` primary slot |
+| Action order | Inconsistent ordering across modules | Standard order (see Toolbar spec) |
+| Status label | "Live sync", "Live board", "Live", etc. | `AppWorkspaceLiveStatus` + `app_en.arb` keys |
+| Connectivity | Dot + text pill; avatar dot on small screens | `AppConnectivityIndicator` in shell |
+| Summary cards | Different counts, borders, filter behavior | `AppWorkspaceSummaryCard`; filter only, no duplicate modals |
+| View toggles | IPD vs ICU board toggle styled differently | `AppWorkspaceBoardToggle` |
+| Inline auth blocks | "Sign-in required" mid-page (Theater, Radiology) | `AsyncStateScaffold` / session gate at page root |
+| Settings | Different header action pattern | Align with `AppWorkspaceToolbar` where practical |
+| Duplicate toolbars | Raw `Row`/`Wrap` of mixed buttons per page | Declarative `AppWorkspaceToolbar` config |
+| Private copy classes | `_ModuleText` throughout features | `context.l10n` only |
 
 ---
 
 ## Canonical page layout stack
 
-Every module work queue must follow this stack (from `ui-workspace.mdc`):
+Every module work queue must follow this stack ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc)):
 
 ```
 AsyncStateScaffold
 └── ResponsivePage
     └── AppWorkspace (or AppScreen for settings-style pages)
-        ├── AppWorkspaceHeader  — title, status, toolbar
-        ├── AppWorkspaceSummaryGrid (optional; hide zero-value cards when pattern expects it)
-        ├── AppWorkspaceFilterBar / search row (filter + settings icons)
+        ├── AppWorkspaceHeader + AppWorkspaceToolbar
+        ├── AppWorkspaceSummaryGrid (optional; hide zero-value cards)
+        ├── AppWorkspaceFilterBar / search row
         ├── AppListTable or module body
         └── AppWorkspaceDetailPanel (optional)
 ```
 
-**Rules:**
+**Behavior rules:**
 
-- Import from `shared/layout/layout.dart`, `shared/components/components.dart`, `shared/actions/actions.dart` — no feature-local header/toolbar clones.
-- Summary cards **filter** the current worklist; they must not open modal lists of the same data.
-- Use hospital workflow language in labels — never raw enum/API codes in UI.
-- Show display IDs and patient names only — no raw UUIDs.
+- Summary cards **filter** the worklist — never open modal lists of the same data.
+- Hospital workflow language in labels — never raw enum/API codes.
+- Display IDs and patient names only — no raw UUIDs.
 - Gate actions with `AppAccessActionGate` / `AppPermissionActionButton`.
-- After modal mutations, refresh the affected row, detail panel, summary counts, and nav badges.
+- After modal mutations: refresh row, detail, summary counts, nav badges.
+- Subscribe to module `RealtimeEventGroups` where already defined.
+
+**Forbidden** ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc)):
+
+- Custom full-page `Scaffold` + hand-rolled table when `AppWorkspace` fits.
+- Duplicate status chips for the same state.
+- Hard-coded colors/spacing/`TextStyle` in feature presentation code.
+- Inline `SnackBar` success copy bypassing localization.
+- New table/list component when `AppListTable` suffices.
 
 ---
 
 ## 1. App shell header (top bar)
 
-**File:** `frontend/lib/shared/layout/responsive_shell_scaffold.dart` (and related shell widgets)
+**Implement:** `AppConnectivityIndicator`, `AppFullscreenToggle` in `responsive_shell_scaffold.dart`.
 
 ### Large screens (md+)
 
-Keep current structure: sidebar | logo + app name | … | connectivity | notifications | account.
+Sidebar | logo + app name | … | connectivity | full-screen | notifications | account.
 
-### Connectivity indicator
+### Connectivity (`AppConnectivityIndicator`)
 
-Replace the current dot + "Online"/"Offline" pill with a **network-style icon** (similar to Windows 10 taskbar):
-
-- **Online:** green icon (wifi or signal bars).
-- **Offline:** muted/red icon, visually distinct.
-- Keep accessible text label (`onlineLabel` / `offlineLabel`) for screen readers.
-- Tooltip on hover showing connection state.
+- Network-style icon (Windows 10 taskbar style): green when online, muted/red offline.
+- Accessible label via `onlineLabel` / `offlineLabel`; tooltip on hover.
+- Theme tokens only — no hard-coded colors.
 
 ### Small screens (xs–sm)
 
-- Show connectivity as its **own control** in the top bar — not as a dot on the account avatar.
-- Remove `showStatusDot` on `_UserAvatar` for compact breakpoints (or gate it off entirely once the dedicated indicator exists).
+- Dedicated connectivity control in top bar — **not** on account avatar.
+- Remove avatar status dot once indicator exists.
 
-### Notifications & account
+### Full-screen toggle (`AppFullscreenToggle`)
 
-- Notifications button: unchanged; navigates to communications/notifications.
-- Account menu: unchanged.
-
-### Full-screen toggle (new)
-
-Add a global control in the app shell header (right cluster, before notifications):
-
-- Toggles browser/app full-screen via `fullscreen` API on web and platform equivalent elsewhere.
-- Icon-only on small screens; icon + "Full screen" label on large screens.
-- Persist nothing — toggle is session-only.
+- Shell right cluster, before notifications.
+- Web: `document.documentElement.requestFullscreen()` / exit API.
+- Icon-only on xs–sm; icon + label on md+.
+- Session-only — no persistence.
 
 ---
 
 ## 2. Page header & toolbar
 
-**Implement in shared code** — extend `AppWorkspace` / `AppWorkspaceHeader` (or add `AppWorkspaceToolbar`) so pages declare actions declaratively instead of assembling raw widget lists.
+**Implement:** `AppWorkspaceToolbar` — pages pass a declarative config, not raw widget lists.
 
 ### Header content
 
 | Element | Large screens | Small screens (xs–sm) |
 |---|---|---|
-| Leading | Module icon (`AppWorkspaceTitleIcon`) | Module icon only |
-| Title | Module title (`titleLarge` / compact header style) | **Hidden** — icon carries meaning |
-| Status | `AppWorkspaceStatusBadge` e.g. "Live sync" | **Hidden** on xs; optional compact badge on sm |
-| Toolbar | Full row below header when stacked | Dedicated toolbar row below icon row |
-
-On small screens, the page title and status text currently overflow and push actions down — fix by hiding title/status and moving all actions into a single toolbar row.
+| Leading | `AppWorkspaceTitleIcon` | Icon only |
+| Title | Module title (compact header style) | **Hidden** |
+| Status | `AppWorkspaceLiveStatus` | **Hidden** on xs |
+| Toolbar | Inline or stacked via `LayoutBuilder` | Dedicated row below icon |
 
 ### Toolbar layout
 
@@ -147,176 +279,206 @@ On small screens, the page title and status text currently overflow and push act
 
 **Page-specific (left → right):**
 
-1. View/mode toggles (patient board / bed board, orders/patients view, etc.)
+1. View/mode toggles (`AppWorkspaceBoardToggle`, `AppWorkspaceViewToggle`)
 2. Secondary module actions (config, catalog, reports, shift controls)
-3. **Primary module action** — one per screen (Add patient, Start OPD, Schedule case, etc.)
+3. **Primary module action** — one `AppButton.primary` per screen
 
-**Global (right → left, rightmost first):**
+**Global (right cluster, via shared actions):**
 
-1. **Refresh** (always present on workspace screens)
-2. **Request housekeeping / maintenance**
-3. **Report equipment fault**
-4. *(App shell only)* Full-screen toggle
+1. `AppWorkspaceRefreshAction`
+2. `AppGlobalHousekeepingRequestAction`
+3. `AppGlobalFaultReportAction`
 
-Use `AppButton.primary` for the single primary module action. Use `AppButton.secondary` (icon + label) or `AppIconButton` consistently via `AppActionLabelScope`:
-
-- **Large screens:** icon left, label right.
-- **Small screens:** icon only (`forceIconOnly: true`).
+Use `AppActionLabelScope`: icon + label on md+; icon-only on xs–sm.
 
 ### Overflow menu
 
-When actions do not fit the available width, collapse excess actions into a **⋮ overflow menu** (`PopupMenuButton`):
-
-- Each overflow item shows **icon + label**.
-- Prefer collapsing secondary/global actions before the primary module action.
-- Never hide refresh entirely — keep it visible or as the first overflow item.
-
-### Shared refresh action
-
-Create `AppWorkspaceRefreshAction` (or equivalent) used by every workspace:
-
-- `AppIconButton` with `Icons.refresh`, loading state, shared tooltip (`commonRefreshActionLabel`).
-- Wired to each controller's `refresh()` method.
+- Collapse excess actions into `PopupMenuButton` (⋮).
+- Overflow items: icon + label.
+- Keep refresh visible or first in overflow.
+- Keyboard accessible ([`accessibility.mdc`](frontend/.cursor/accessibility.mdc)).
 
 ---
 
-## 3. Global actions (every workspace page)
+## 3. Global actions
 
-### Report equipment fault
+Wire through shared widgets + provider/callback on `AppWorkspace` — **zero per-module dialog copies**.
 
-- Available on nearly every in-scope page (respect permissions where biomedical write is required).
-- Opens shared `AppDialog` / existing biomedical fault form.
-- Fields: photo capture/upload, description, location, optional asset/equipment reference, routing hint (operations, biomedical, plumbing, etc.).
-- Reuse biomedical fault dialog if it exists; do not duplicate forms per module.
+| Action | Shared widget | Notes |
+|---|---|---|
+| Report equipment fault | `AppGlobalFaultReportAction` | Reuse biomedical fault dialog; photo, description, location, routing |
+| Request housekeeping | `AppGlobalHousekeepingRequestAction` | Shared maintenance/cleaning form → housekeeping module |
+| Refresh | `AppWorkspaceRefreshAction` | Every workspace page |
 
-### Request housekeeping / maintenance
-
-- Available on every in-scope page.
-- Opens shared dialog for cleaning/maintenance requests (dirty room, linen, spill, etc.).
-- Routes to housekeeping module; request visible to responsible staff.
-
-### Refresh
-
-- Always in the global (right) cluster via shared widget.
-
-Wire global actions through a shared provider or callback passed into `AppWorkspace` so individual pages do not reimplement dialogs.
+Permission-gate global actions where required ([`permissions.mdc`](frontend/.cursor/permissions.mdc)).
 
 ---
 
 ## 4. Per-screen action registry
 
-Use this registry when migrating each page. **Primary** = one `AppButton.primary`. Everything else = secondary (left) or global (right).
+**Primary** = one `AppButton.primary`. Everything else = secondary (left) or global (right).
 
 | Screen | Primary action | Page-specific secondary actions |
 |---|---|---|
-| **Dashboard** | — | Role quick actions stay in dashboard body; header: refresh only |
+| **Dashboard** | — | Quick actions in body; header: refresh only |
 | **Patients** | Add patient | Emergency registration |
 | **OPD** | Start OPD encounter | — |
 | **Emergency** | Quick arrival | — |
-| **IPD** | Start admission | Patient board / bed board toggle |
+| **IPD** | Start admission | `AppWorkspaceBoardToggle` |
 | **Rooms and beds** | Set up (if permitted) | Manage layout/grid toggle |
-| **ICU** | — | Patient board / bed board toggle |
-| **Nursing** | — | Shift key, ward context (if applicable) |
+| **ICU** | — | `AppWorkspaceBoardToggle` |
+| **Nursing** | — | Shift key, ward context |
 | **Discharge** | — | — |
 | **Clinical** | — | — |
 | **Physiotherapy** | — | — |
 | **Theater** | Schedule case | — |
-| **Lab** | Create lab order | Orders/patients view toggle, lab configuration |
-| **Radiology** | Request imaging | Orders/patients view toggle, radiology configuration |
+| **Lab** | Create lab order | `AppWorkspaceViewToggle`, lab configuration |
+| **Radiology** | Request imaging | `AppWorkspaceViewToggle`, radiology configuration |
 | **Pharmacy** | — | Catalog and store |
 | **Billing** | — | Code shift, close day |
 | **Claims** | Prepare claim | Request authorization |
 | **Subscriptions** | Activate subscription | — |
 | **Operations** | Create request | Report |
 | **Housekeeping** | Create task | Create schedule, request maintenance, report |
-| **Biomedical** | Register asset | Investigate/fix action that currently shows "This action isn't available" |
+| **Biomedical** | Register asset | Fix/remove unavailable action |
 | **HR** | — | Work requests, HR activity |
 | **Communications** | — | — |
 | **Integrations** | Create integration | Create API, create webhook |
 | **Reports** | — | — |
-| **Settings** | — | Setup/deep links as today; align refresh with shared pattern |
-| **Access admin** | Primary admin action as today | — |
+| **Settings** | — | Align refresh with shared pattern |
+| **Access admin** | Primary admin action | — |
 | **Tenant/facility setup** | — | — |
 | **Mortuary** | — | — |
 
-**Patient board / bed board:** Use one shared `AppWorkspaceBoardToggle` on IPD, ICU, and any future screen that needs it — same visual design and semantics.
-
-**Modals:** Adding a patient, starting an admission, or creating an order must use the **same dialog flow** wherever that action appears (including cross-module deep links).
+**Modals:** Same shared dialog for add patient, start admission, create order — including cross-module deep links.
 
 ---
 
-## 5. Worklist & filter bar (unchanged but enforce)
+## 5. Worklist & filter bar
 
-Below the toolbar, keep the existing unified pattern already visible on most screens:
+Enforce existing unified pattern ([`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc)):
 
-- Section title + one-line description ("OPD encounters", "Ward worklist", etc.)
-- Full-width search with magnifying glass
-- Filter (funnel) and column settings (gear) on the right
-- `AppListTable` with sortable columns, zebra rows, pagination footer
+- Section title + one-line description
+- Full-width debounced search
+- Filter (funnel) + column settings (gear) via shared filter bar
+- `AppListTable`: sortable columns, zebra rows, pagination, mobile list fallback
+- Localized empty/error states via `AsyncStateScaffold` / table empty state
 
-Do not regress table styling when refactoring headers.
+Do not regress table styling during header refactor.
 
 ---
 
 ## 6. Status badge standardization
 
-Add or reuse `app_en.arb` keys:
+Use `AppWorkspaceLiveStatus` factory + `app_en.arb`:
 
-| State | Label | Tone |
+| State | Label key pattern | Tone |
 |---|---|---|
-| Idle / subscribed | Live sync | success |
-| Saving / mutating | Saving | warning |
-| Module-specific desk active | Use module-specific key only when clinically meaningful (e.g. discharge desk) | success |
-
-Avoid one-off variants ("Live board", bare "Live") unless the module contract requires distinct meaning.
+| Idle / subscribed | `*LiveStatus` | success |
+| Saving / mutating | `*SavingStatus` | warning |
+| Clinically distinct desk | module-specific key only when required | success |
 
 ---
 
 ## 7. Implementation order
 
-1. **Shared layer**
-   - Network-style connectivity badge in shell.
-   - Full-screen toggle in shell.
-   - `AppWorkspaceToolbar` (or extend `AppWorkspaceHeader`) with left/right clusters, responsive labels, overflow.
-   - `AppWorkspaceRefreshAction`, global fault report, global housekeeping request.
-   - `AppWorkspaceBoardToggle` for IPD/ICU.
+### Phase 1 — Shared layer (no feature changes until this ships)
 
-2. **Pilot migration** — OPD, IPD, Lab (representative patterns).
+1. `AppConnectivityIndicator`, `AppFullscreenToggle`
+2. `AppWorkspaceToolbar`, `AppWorkspaceRefreshAction`
+3. `AppWorkspaceBoardToggle`, `AppWorkspaceViewToggle`
+4. `AppGlobalFaultReportAction`, `AppGlobalHousekeepingRequestAction`
+5. `AppWorkspaceLiveStatus`
+6. Wire toolbar into `AppWorkspace` / `AppWorkspaceHeader`
+7. Unit/widget tests for toolbar overflow and responsive label scope
 
-3. **Roll out** — remaining screens in the registry table.
+### Phase 2 — Pilot migration + clean-up
 
-4. **Dashboard & settings** — align headers/toolbars without breaking custom dashboard layouts.
+OPD, IPD, Lab — migrate, delete old toolbar code, remove `_ModuleText` in those features, extract widgets if pages exceed 800 lines.
 
-5. **Verification** — manual pass at `127.0.0.1:5201` on xs, sm, md, lg breakpoints for every in-scope route.
+### Phase 3 — Rollout
 
----
+Remaining registry screens — one PR per group (patient access, inpatient, clinical, diagnostics, revenue, facility, platform).
 
-## 8. Acceptance criteria
+### Phase 4 — Dashboard & settings
 
-- [ ] All in-scope screens use the shared toolbar; no page builds ad-hoc `Row`/`Wrap` of mixed button types for header actions.
-- [ ] Refresh looks and behaves identically everywhere (icon, tooltip, loading spinner).
-- [ ] Primary action is visually distinct and consistently placed (left cluster, last secondary before globals, or dedicated primary slot).
-- [ ] Global actions (refresh, fault report, housekeeping request) appear on every workspace page in the right cluster.
-- [ ] Small screens: page title/status hidden; icon + toolbar only; no action wrapping that pushes content down.
-- [ ] Overflow menu appears when actions exceed width; no clipped buttons.
-- [ ] Connectivity uses network icon; small screens show dedicated indicator, not avatar dot.
-- [ ] Full-screen toggle works on web.
-- [ ] Patient/bed board toggles match between IPD and ICU.
-- [ ] No inline "Sign-in required" blocks breaking the summary → table flow.
-- [ ] All new strings in `app_en.arb`; no hard-coded colors/spacing in feature presentation code.
-- [ ] Biomedical unavailable action investigated and either wired or removed.
+Align headers without breaking custom dashboard body layouts.
+
+### Phase 5 — Verification
+
+Manual pass at `127.0.0.1:5201` on xs, sm, md, lg, xl for every in-scope route + `flutter analyze` + affected tests.
 
 ---
 
-## 9. Do not
+## 8. Pre-migration checklist (per screen)
 
-- Add feature-local `_ModuleText` string classes — use localization.
-- Create duplicate table/list components when `AppListTable` suffices.
-- Change business logic, permissions, or API contracts — this is a **layout and action presentation** pass.
-- Block urgent fixes on full extraction of large pages; migrate incrementally but always via shared widgets.
+Before marking a screen done ([`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc) + [`checklists.mdc`](frontend/.cursor/checklists.mdc)):
+
+1. [ ] Searched `lib/shared/` — no duplicate component created
+2. [ ] Uses `AppWorkspaceToolbar` — no ad-hoc action `Row`/`Wrap`
+3. [ ] All strings in `app_en.arb`; no `_FeatureText` class remains
+4. [ ] Theme tokens only — no hard-coded colors/spacing/typography
+5. [ ] Actions permission-gated; routes still guarded
+6. [ ] Summary cards filter worklist; zero-value cards hidden when expected
+7. [ ] Refresh uses `AppWorkspaceRefreshAction`; global actions present
+8. [ ] Inline auth/error blocks removed from content stack
+9. [ ] Page ≤ 800 lines or widgets extracted to `presentation/widgets/`
+10. [ ] Dead code from old toolbar/header removed
+11. [ ] `flutter analyze` clean for touched files
+12. [ ] Realtime subscription preserved (if module had one)
+
+---
+
+## 9. Acceptance criteria
+
+### Uniformity
+
+- [ ] All in-scope screens use shared toolbar and global actions
+- [ ] Refresh identical everywhere (icon, tooltip, loading)
+- [ ] Primary action visually distinct and consistently placed
+- [ ] Patient/bed board toggles match (IPD, ICU)
+- [ ] Status badges use shared factory + l10n keys
+- [ ] Small screens: icon + toolbar only; no title overflow
+
+### Reusability & clean-up
+
+- [ ] No feature-local header/toolbar clones remain
+- [ ] No `_ModuleText` private string classes in migrated features
+- [ ] Shared dialogs used for cross-module flows (add patient, admission, orders)
+- [ ] No parallel button/table/workspace abstractions introduced
+- [ ] Biomedical unavailable action fixed or removed
+
+### Efficiency
+
+- [ ] Toolbar/header split into small widgets; no whole-state watches in chrome
+- [ ] Search debounced; tables paginated
+- [ ] Modal mutations trigger targeted refresh, not full-page reload
+- [ ] `const` used where applicable in shared chrome widgets
+
+### Compliance
+
+- [ ] [`design-system.mdc`](frontend/.cursor/design-system.mdc) — tokens only
+- [ ] [`localization_i18n.mdc`](frontend/.cursor/localization_i18n.mdc) — no hard-coded UI strings
+- [ ] [`accessibility.mdc`](frontend/.cursor/accessibility.mdc) — semantic labels, keyboard, focus
+- [ ] [`permissions.mdc`](frontend/.cursor/permissions.mdc) — gated actions
+- [ ] [`ui-feedback.mdc`](frontend/.cursor/ui-feedback.mdc) — async states at scaffold level
+- [ ] [`performance.mdc`](frontend/.cursor/performance.mdc) — lazy lists, focused rebuilds
+- [ ] `flutter analyze` and affected `flutter test` pass
+
+---
+
+## 10. Do not
+
+- Add feature-local `_ModuleText` string classes — use `app_en.arb`.
+- Create duplicate table/list/header/toolbar components when shared catalog covers the case.
+- Put business logic or module copy inside `lib/shared/` widgets.
+- Change backend API contracts, permissions model, or route guards — **layout and presentation only**.
+- Hard-code colors, spacing, or typography in feature presentation code.
+- Block urgent fixes on full page extraction — migrate incrementally via shared widgets.
+- Ship a migrated screen without deleting superseded code.
 
 ---
 
 ## Overall outcome
 
-The header, page toolbar, and actions should feel like one system. A clinician moving from Emergency → OPD → Lab → Discharge should recognize every control immediately, on any screen size.
+One shared layout system: maximum component reuse, less duplicate code, faster UI, and full compliance with project rules. A clinician moving from Emergency → OPD → Lab → Discharge should recognize every control immediately on any screen size — and the codebase should have one obvious place to change toolbar behavior app-wide.
