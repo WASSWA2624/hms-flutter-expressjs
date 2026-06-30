@@ -128,6 +128,18 @@ const updateStaffProfile = asyncHandler(async (req, res) => {
 
   const staffProfile = await staffProfileService.updateStaffProfile(id, req.body, userId, ipAddress);
 
+  publishHrWorkspaceUpdate({
+    action: 'UPDATE',
+    actorUserId: userId || null,
+    tenantId: staffProfile?.tenant_id || null,
+    panel: 'staffing',
+    resource: 'staff-profiles',
+    displayId: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
+    extra: {
+      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
+    },
+  }).catch(() => {});
+
   sendSuccess(res, 200, 'messages.staff_profile.update.success', staffProfile);
 });
 

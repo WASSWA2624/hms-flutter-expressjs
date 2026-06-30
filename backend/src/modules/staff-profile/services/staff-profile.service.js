@@ -8,6 +8,7 @@
  */
 
 const { generateStaffNumber } = require('@lib/hr/staff-number');
+const { syncStaffProfilePrimaryDepartment } = require('@lib/hr/staff-department-sync');
 const staffProfileRepository = require('@repositories/staff-profile/staff-profile.repository');
 const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
@@ -400,8 +401,21 @@ const listStaffProfiles = async (filters, page, limit, sortBy, order, userId, ip
       staffProfileRepository.count(whereClause)
     ]);
 
+    const healedProfiles = await Promise.all(
+      staffProfiles.map(async (profile) => {
+        if (profile?.department_id) {
+          return profile;
+        }
+        await syncStaffProfilePrimaryDepartment(profile.id);
+        return (
+          (await staffProfileRepository.findById(profile.id, STAFF_PROFILE_INCLUDE)) ||
+          profile
+        );
+      })
+    );
+
     return {
-      staffProfiles: staffProfiles.map(mapStaffProfileForDisplay),
+      staffProfiles: healedProfiles.map(mapStaffProfileForDisplay),
       pagination: buildPagination(page, limit, total),
     };
   } catch (error) {
@@ -424,7 +438,12 @@ const getStaffProfileById = async (id) => {
       throw new HttpError('errors.staff_profile.not_found', 404);
     }
 
-    return mapStaffProfileForDisplay(staffProfile);
+    await syncStaffProfilePrimaryDepartment(staffProfile.id);
+    const refreshedProfile =
+      (await staffProfileRepository.findById(staffProfile.id, STAFF_PROFILE_INCLUDE)) ||
+      staffProfile;
+
+    return mapStaffProfileForDisplay(refreshedProfile);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

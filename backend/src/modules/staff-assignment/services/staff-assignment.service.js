@@ -1,11 +1,76 @@
 const staffAssignmentRepository = require('@repositories/staff-assignment/staff-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { syncStaffProfilePrimaryDepartment } = require('@lib/hr/staff-department-sync');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId,
+  resolvePublicIdentifier,
 } = require('@lib/billing/identifiers');
+
+const STAFF_ASSIGNMENT_INCLUDE = {
+  department: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      short_name: true,
+    },
+  },
+  unit: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+    },
+  },
+  room: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+    },
+  },
+  staff_profile: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      staff_number: true,
+      tenant_id: true,
+    },
+  },
+};
+
+const mapStaffAssignmentForDisplay = (record) => {
+  if (!record || typeof record !== 'object') {
+    return record;
+  }
+
+  return {
+    ...record,
+    display_id: resolvePublicIdentifier(
+      record?.display_id,
+      record?.human_friendly_id,
+      record?.id
+    ),
+    department_display_id: resolvePublicIdentifier(
+      record?.department_display_id,
+      record?.department?.human_friendly_id,
+      record?.department_id
+    ),
+    staff_profile_display_id: resolvePublicIdentifier(
+      record?.staff_profile_display_id,
+      record?.staff_profile?.human_friendly_id,
+      record?.staff_profile?.staff_number,
+      record?.staff_profile_id
+    ),
+    tenant_id: record?.staff_profile?.tenant_id || record?.tenant_id || null,
+  };
+};
+
+const mapStaffAssignmentsForDisplay = (records = []) =>
+  records.map(mapStaffAssignmentForDisplay);
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -57,6 +122,11 @@ const resolveCreatePayload = async (data = {}) => ({
 
 const persistStaffAssignment = async (payload, userId, ipAddress) => {
   const staffAssignment = await staffAssignmentRepository.create(payload);
+  await syncStaffProfilePrimaryDepartment(payload.staff_profile_id);
+  const withRelations = await staffAssignmentRepository.findById(
+    staffAssignment.id,
+    STAFF_ASSIGNMENT_INCLUDE
+  );
   createAuditLog({
     user_id: userId,
     action: 'CREATE',
@@ -65,7 +135,7 @@ const persistStaffAssignment = async (payload, userId, ipAddress) => {
     diff: { after: staffAssignment },
     ip_address: ipAddress,
   }).catch(() => {});
-  return staffAssignment;
+  return mapStaffAssignmentForDisplay(withRelations || staffAssignment);
 };
 
 const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
@@ -107,12 +177,18 @@ const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
     if (roomId) whereClause.room_id = roomId;
 
     const [staffAssignments, total] = await Promise.all([
-      staffAssignmentRepository.findMany(whereClause, skip, limit, orderBy),
+      staffAssignmentRepository.findMany(
+        whereClause,
+        skip,
+        limit,
+        orderBy,
+        STAFF_ASSIGNMENT_INCLUDE
+      ),
       staffAssignmentRepository.count(whereClause),
     ]);
 
     return {
-      staffAssignments,
+      staffAssignments: mapStaffAssignmentsForDisplay(staffAssignments),
       pagination: buildPagination(page, limit, total),
     };
   } catch (error) {
@@ -128,9 +204,12 @@ const getStaffAssignmentById = async (id) => {
       identifier: id,
       where: { deleted_at: null },
     });
-    const staffAssignment = await staffAssignmentRepository.findById(resolvedId);
+    const staffAssignment = await staffAssignmentRepository.findById(
+      resolvedId,
+      STAFF_ASSIGNMENT_INCLUDE
+    );
     if (!staffAssignment) throw new HttpError('errors.staff_assignment.not_found', 404);
-    return staffAssignment;
+    return mapStaffAssignmentForDisplay(staffAssignment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -223,6 +302,11 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
     }
 
     const staffAssignment = await staffAssignmentRepository.update(before.id, payload);
+    await syncStaffProfilePrimaryDepartment(before.staff_profile_id);
+    const withRelations = await staffAssignmentRepository.findById(
+      staffAssignment.id,
+      STAFF_ASSIGNMENT_INCLUDE
+    );
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',
@@ -231,7 +315,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
       diff: { before, after: staffAssignment },
       ip_address: ipAddress,
     }).catch(() => {});
-    return staffAssignment;
+    return mapStaffAssignmentForDisplay(withRelations || staffAssignment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -249,6 +333,7 @@ const deleteStaffAssignment = async (id, userId, ipAddress) => {
     if (!before) throw new HttpError('errors.staff_assignment.not_found', 404);
 
     await staffAssignmentRepository.softDelete(before.id);
+    await syncStaffProfilePrimaryDepartment(before.staff_profile_id);
     createAuditLog({
       user_id: userId,
       action: 'DELETE',

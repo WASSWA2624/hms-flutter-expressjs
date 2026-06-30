@@ -8,9 +8,37 @@
  */
 
 const staffAssignmentService = require('@services/staff-assignment/staff-assignment.service');
+const { publishHrWorkspaceUpdate } = require('@services/hr-workspace/hr-workspace.service');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
+
+const publishAssignmentWorkspaceUpdate = ({
+  action,
+  actorUserId,
+  staffAssignment,
+}) => {
+  publishHrWorkspaceUpdate({
+    action,
+    actorUserId: actorUserId || null,
+    tenantId: staffAssignment?.tenant_id || staffAssignment?.staff_profile?.tenant_id || null,
+    panel: 'staffing',
+    resource: 'staff-assignments',
+    displayId:
+      staffAssignment?.display_id ||
+      staffAssignment?.human_friendly_id ||
+      staffAssignment?.id ||
+      null,
+    extra: {
+      staff_profile_id:
+        staffAssignment?.staff_profile_display_id ||
+        staffAssignment?.staff_profile?.human_friendly_id ||
+        staffAssignment?.staff_profile?.staff_number ||
+        staffAssignment?.staff_profile_id ||
+        null,
+    },
+  }).catch(() => {});
+};
 
 /**
  * List staff assignments with pagination
@@ -82,6 +110,12 @@ const createStaffAssignment = asyncHandler(async (req, res) => {
 
   const staffAssignment = await staffAssignmentService.createStaffAssignment(req.body, userId, ipAddress);
 
+  publishAssignmentWorkspaceUpdate({
+    action: 'CREATE',
+    actorUserId: userId,
+    staffAssignment,
+  });
+
   sendSuccess(res, 201, 'messages.staff_assignment.create.success', staffAssignment);
 });
 
@@ -98,6 +132,12 @@ const updateStaffAssignment = asyncHandler(async (req, res) => {
   const ipAddress = req.ip;
 
   const staffAssignment = await staffAssignmentService.updateStaffAssignment(id, req.body, userId, ipAddress);
+
+  publishAssignmentWorkspaceUpdate({
+    action: 'UPDATE',
+    actorUserId: userId,
+    staffAssignment,
+  });
 
   sendSuccess(res, 200, 'messages.staff_assignment.update.success', staffAssignment);
 });

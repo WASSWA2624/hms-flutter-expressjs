@@ -9,11 +9,13 @@
 const staffAssignmentService = require('@services/staff-assignment/staff-assignment.service');
 const staffAssignmentRepository = require('@repositories/staff-assignment/staff-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
+const { syncStaffProfilePrimaryDepartment } = require('@lib/hr/staff-department-sync');
 const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
 jest.mock('@repositories/staff-assignment/staff-assignment.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/hr/staff-department-sync');
 
 describe('Staff Assignment Service', () => {
   const mockUserId = 'user-123';
@@ -22,6 +24,7 @@ describe('Staff Assignment Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
+    syncStaffProfilePrimaryDepartment.mockResolvedValue(null);
   });
 
   describe('listStaffAssignments', () => {
@@ -32,7 +35,11 @@ describe('Staff Assignment Service', () => {
 
       const result = await staffAssignmentService.listStaffAssignments({}, 1, 20, 'created_at', 'desc', mockUserId, mockIpAddress);
 
-      expect(result.staffAssignments).toEqual(mockAssignments);
+      expect(result.staffAssignments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: '1', staff_profile_id: 'prof-1' }),
+        ])
+      );
       expect(result.pagination.total).toBe(1);
     });
 
@@ -54,7 +61,7 @@ describe('Staff Assignment Service', () => {
 
       const result = await staffAssignmentService.getStaffAssignmentById('123', mockUserId, mockIpAddress);
 
-      expect(result).toEqual(mockAssignment);
+      expect(result).toEqual(expect.objectContaining({ id: '123', staff_profile_id: 'prof-1' }));
     });
 
     it('should throw HttpError if staff assignment not found', async () => {
@@ -75,10 +82,12 @@ describe('Staff Assignment Service', () => {
       };
       const mockAssignment = { id: '456', ...mockData };
       staffAssignmentRepository.create.mockResolvedValue(mockAssignment);
+      staffAssignmentRepository.findById.mockResolvedValue(mockAssignment);
 
       const result = await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
 
-      expect(result).toEqual(mockAssignment);
+      expect(result).toEqual(expect.objectContaining({ id: '456' }));
+      expect(syncStaffProfilePrimaryDepartment).toHaveBeenCalledWith(mockData.staff_profile_id);
       expect(createAuditLog).toHaveBeenCalled();
     });
 
@@ -90,11 +99,12 @@ describe('Staff Assignment Service', () => {
       };
       const mockAssignment = { id: '456', ...mockData };
       staffAssignmentRepository.create.mockResolvedValue(mockAssignment);
+      staffAssignmentRepository.findById.mockResolvedValue(mockAssignment);
       createAuditLog.mockImplementation(() => Promise.reject(new Error('Audit failed')));
 
       const result = await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
 
-      expect(result).toEqual(mockAssignment);
+      expect(result).toEqual(expect.objectContaining({ id: '456' }));
     });
 
     it('should create one assignment per room when room_ids is provided', async () => {
@@ -111,14 +121,17 @@ describe('Staff Assignment Service', () => {
       staffAssignmentRepository.create
         .mockResolvedValueOnce({ id: 'room-1', ...mockData, room_id: mockData.room_ids[0] })
         .mockResolvedValueOnce({ id: 'room-2', ...mockData, room_id: mockData.room_ids[1] });
+      staffAssignmentRepository.findById
+        .mockResolvedValueOnce({ id: 'room-1', ...mockData, room_id: mockData.room_ids[0] })
+        .mockResolvedValueOnce({ id: 'room-2', ...mockData, room_id: mockData.room_ids[1] });
 
       const result = await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
 
       expect(staffAssignmentRepository.create).toHaveBeenCalledTimes(2);
       expect(result).toEqual({
         assignments: [
-          { id: 'room-1', ...mockData, room_id: mockData.room_ids[0] },
-          { id: 'room-2', ...mockData, room_id: mockData.room_ids[1] },
+          expect.objectContaining({ id: 'room-1', room_id: mockData.room_ids[0] }),
+          expect.objectContaining({ id: 'room-2', room_id: mockData.room_ids[1] }),
         ],
         count: 2,
       });
@@ -128,15 +141,26 @@ describe('Staff Assignment Service', () => {
 
   describe('updateStaffAssignment', () => {
     it('should update staff assignment and log audit', async () => {
-      const mockBefore = { id: '123', department_id: '550e8400-e29b-41d4-a716-446655440001' };
+      const mockBefore = {
+        id: '123',
+        staff_profile_id: 'prof-1',
+        department_id: '550e8400-e29b-41d4-a716-446655440001',
+      };
       const mockData = { department_id: '550e8400-e29b-41d4-a716-446655440002' };
-      const mockAfter = { id: '123', department_id: '550e8400-e29b-41d4-a716-446655440002' };
-      staffAssignmentRepository.findById.mockResolvedValue(mockBefore);
+      const mockAfter = {
+        id: '123',
+        staff_profile_id: 'prof-1',
+        department_id: '550e8400-e29b-41d4-a716-446655440002',
+      };
+      staffAssignmentRepository.findById
+        .mockResolvedValueOnce(mockBefore)
+        .mockResolvedValueOnce(mockAfter);
       staffAssignmentRepository.update.mockResolvedValue(mockAfter);
 
       const result = await staffAssignmentService.updateStaffAssignment('123', mockData, mockUserId, mockIpAddress);
 
-      expect(result).toEqual(mockAfter);
+      expect(result).toEqual(expect.objectContaining({ id: '123' }));
+      expect(syncStaffProfilePrimaryDepartment).toHaveBeenCalledWith('prof-1');
       expect(createAuditLog).toHaveBeenCalled();
     });
 
@@ -158,6 +182,7 @@ describe('Staff Assignment Service', () => {
       await staffAssignmentService.deleteStaffAssignment('123', mockUserId, mockIpAddress);
 
       expect(staffAssignmentRepository.softDelete).toHaveBeenCalledWith('123');
+      expect(syncStaffProfilePrimaryDepartment).toHaveBeenCalledWith('prof-1');
       expect(createAuditLog).toHaveBeenCalled();
     });
 

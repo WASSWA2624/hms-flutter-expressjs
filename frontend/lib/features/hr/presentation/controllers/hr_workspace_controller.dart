@@ -365,8 +365,8 @@ final class HrWorkspaceController
     );
   }
 
-  Future<AppFailure?> createAssignment(Map<String, Object?> payload) {
-    return _mutateSelected(
+  Future<AppFailure?> createAssignment(Map<String, Object?> payload) async {
+    final AppFailure? failure = await _mutateSelected(
       (HrStaffDetail selected) =>
           _repository.createStaffAssignment(<String, Object?>{
             'staff_profile_id': selected.profile.effectiveId,
@@ -374,6 +374,10 @@ final class HrWorkspaceController
           }),
       refreshReferencesAfter: true,
     );
+    if (failure == null) {
+      unawaited(_refreshStaff(showLoading: false));
+    }
+    return failure;
   }
 
   Future<AppFailure?> createAvailability(Map<String, Object?> payload) {
@@ -1013,13 +1017,17 @@ final class HrWorkspaceController
     _emit(current.copyWith(clearOpenStaffDetailAfterOnboarding: true));
   }
 
-  Future<AppFailure?> endAssignment(HrStaffAssignment assignment) {
-    return _mutateSelected(
+  Future<AppFailure?> endAssignment(HrStaffAssignment assignment) async {
+    final AppFailure? failure = await _mutateSelected(
       (_) => _repository.updateStaffAssignment(
         assignment.effectiveId,
         <String, Object?>{'end_date': DateTime.now().toIso8601String()},
       ),
     );
+    if (failure == null) {
+      unawaited(_refreshStaff(showLoading: false));
+    }
+    return failure;
   }
 
   Future<AppFailure?> createShiftTemplate(Map<String, Object?> payload) async {
