@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -47,6 +48,15 @@ final class HrWorkspaceController
 
   Future<AppFailure?> refresh() {
     return _syncVisibleData(showLoading: true, refreshReferences: true);
+  }
+
+  /// Loads facility-scoped reference data when onboarding dropdowns are empty.
+  Future<void> ensureOnboardingReferenceData({String? facilityId}) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current != null && _hasOnboardingReferenceData(current.referenceData)) {
+      return;
+    }
+    await _refreshReferences(facilityId: facilityId);
   }
 
   Future<AppFailure?> applyStaffSearch(String value) async {
@@ -1140,10 +1150,13 @@ final class HrWorkspaceController
     );
   }
 
-  Future<AppFailure?> _refreshReferences() async {
+  Future<AppFailure?> _refreshReferences({String? facilityId}) async {
     final HrWorkspaceState? current = _currentState;
     final String? departmentId = current?.staffQuery.departmentId;
+    final String? resolvedFacilityId =
+        facilityId ?? ref.read(sessionStateProvider).session?.user?.facilityId;
     final Result<HrReferenceData> result = await _repository.loadReferenceData(
+      facilityId: resolvedFacilityId,
       departmentId: departmentId,
     );
     return result.when(
@@ -1354,12 +1367,22 @@ final class HrWorkspaceController
   }
 
   Future<HrReferenceData> _loadReferenceDataOrEmpty() async {
-    final Result<HrReferenceData> result = await _repository
-        .loadReferenceData();
+    final String? facilityId =
+        ref.read(sessionStateProvider).session?.user?.facilityId;
+    final Result<HrReferenceData> result = await _repository.loadReferenceData(
+      facilityId: facilityId,
+    );
     return result.when(
       success: (HrReferenceData value) => value,
       failure: (_) => const HrReferenceData(),
     );
+  }
+
+  bool _hasOnboardingReferenceData(HrReferenceData data) {
+    return data.staffPositions.isNotEmpty ||
+        data.departments.isNotEmpty ||
+        data.practitionerTypes.isNotEmpty ||
+        data.roles.isNotEmpty;
   }
 
   Future<AppPage<HrWorkItem>> _loadWorkItemsOrEmpty(

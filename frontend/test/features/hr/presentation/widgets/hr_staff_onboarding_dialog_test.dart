@@ -139,7 +139,65 @@ void main() {
       expect(state.hireDate?.month, today.month);
       expect(state.hireDate?.day, today.day);
       expect(state.staffNumberMode, StaffNumberEntryMode.generate);
-      expect(find.text('DEMO-STF-0001'), findsOneWidget);
+      expect(find.text('Automatically generate staff number'), findsOneWidget);
+      expect(find.text('Enter staff number manually'), findsOneWidget);
+      expect(find.text('DEMO-STF-0001'), findsNothing);
+    });
+
+    testWidgets('shows staff number field only in manual mode', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Staff number'), findsNothing);
+
+      await tester.tap(
+        find.ancestor(
+          of: find.text('Enter staff number manually'),
+          matching: find.byType(RadioListTile<StaffNumberEntryMode>),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final HrStaffOnboardingFormState state =
+          tester.state<HrStaffOnboardingFormState>(
+        find.byType(HrStaffOnboardingForm),
+      );
+      expect(state.staffNumberMode, StaffNumberEntryMode.manual);
+    });
+
+    testWidgets('can add and remove roles from the assignment picker',
+        (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('No roles assigned yet'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Add role'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Add role'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nurse | ROL001').last);
+      await tester.pumpAndSettle();
+
+      final HrStaffOnboardingFormState state =
+          tester.state<HrStaffOnboardingFormState>(
+        find.byType(HrStaffOnboardingForm),
+      );
+      expect(state.selectedRoleIds, contains('role-nurse'));
+      expect(find.text('HR_READ'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Remove role'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.state<HrStaffOnboardingFormState>(
+          find.byType(HrStaffOnboardingForm),
+        ).selectedRoleIds,
+        isEmpty,
+      );
     });
 
     testWidgets('shows required validation for staff phone', (tester) async {

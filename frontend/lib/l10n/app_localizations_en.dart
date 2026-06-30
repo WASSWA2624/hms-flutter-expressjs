@@ -12988,6 +12988,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffNumberManualLabel => 'Enter manually';
 
   @override
+  String get hrStaffNumberAutoGenerateLabel =>
+      'Automatically generate staff number';
+
+  @override
+  String get hrStaffNumberManualEntryLabel => 'Enter staff number manually';
+
+  @override
   String get hrStaffGenerateNumberAction => 'Generate';
 
   @override

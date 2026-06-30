@@ -16820,6 +16820,14 @@
   "@hrStaffNumberManualLabel": {
     "description": "Segment label for manual staff number entry mode."
   },
+  "hrStaffNumberAutoGenerateLabel": "Automatically generate staff number",
+  "@hrStaffNumberAutoGenerateLabel": {
+    "description": "Radio option to let the system assign a staff number on create."
+  },
+  "hrStaffNumberManualEntryLabel": "Enter staff number manually",
+  "@hrStaffNumberManualEntryLabel": {
+    "description": "Radio option to enter a staff number manually during onboarding."
+  },
   "hrStaffGenerateNumberAction": "Generate",
   "@hrStaffGenerateNumberAction": {
     "description": "Action to generate a tenant-scoped staff number."

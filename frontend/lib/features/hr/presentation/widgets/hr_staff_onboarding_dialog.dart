@@ -48,18 +48,23 @@ Future<void> showHrStaffOnboardingDialog(
     return;
   }
 
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final GlobalKey<HrStaffOnboardingFormState> fieldsKey =
-      GlobalKey<HrStaffOnboardingFormState>();
-  final bool isEdit = staff != null;
   final String? facilityId = ref
       .read(sessionStateProvider)
       .session
       ?.user
       ?.facilityId;
+  await controller.ensureOnboardingReferenceData(facilityId: facilityId);
+  if (!context.mounted) {
+    return;
+  }
+
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
+  final GlobalKey<HrStaffOnboardingFormState> fieldsKey =
+      GlobalKey<HrStaffOnboardingFormState>();
+  final bool isEdit = staff != null;
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -145,7 +150,6 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   bool _isAddingPosition = false;
   bool _showCompensation = false;
   bool _showConsultationFee = false;
-  bool _generatingStaffNumber = false;
   final Set<String> _selectedRoleIds = <String>{};
 
   bool get isEdit => widget.staff != null;
@@ -158,6 +162,19 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   @visibleForTesting
   Set<String> get selectedRoleIds => Set<String>.unmodifiable(_selectedRoleIds);
+
+  HrReferenceData get _referenceData {
+    final HrWorkspaceState? workspaceState = readHrWorkspaceState(ref);
+    final HrReferenceData workspaceRefs =
+        workspaceState?.referenceData ?? const HrReferenceData();
+    if (workspaceRefs.staffPositions.isNotEmpty ||
+        workspaceRefs.departments.isNotEmpty ||
+        workspaceRefs.practitionerTypes.isNotEmpty ||
+        workspaceRefs.roles.isNotEmpty) {
+      return workspaceRefs;
+    }
+    return widget.referenceData;
+  }
 
   @override
   void initState() {
@@ -198,9 +215,13 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       _staffNumberMode = StaffNumberEntryMode.manual;
     }
     _recomputeClinicalSections();
-    if (!isEdit) {
-      unawaited(_generateStaffNumber());
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        ref
+            .read(hrWorkspaceControllerProvider.notifier)
+            .ensureOnboardingReferenceData(facilityId: widget.facilityId),
+      );
+    });
   }
 
   @override
@@ -273,7 +294,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   }
 
   HrOption? _roleOptionById(String roleId) {
-    for (final HrOption option in widget.referenceData.roles) {
+    for (final HrOption option in _referenceData.roles) {
       if (option.value == roleId) {
         return option;
       }
@@ -283,7 +304,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   List<AppRoleAssignmentOption> _roleAssignmentOptions() {
     return <AppRoleAssignmentOption>[
-      for (final HrOption role in widget.referenceData.roles)
+      for (final HrOption role in _referenceData.roles)
         AppRoleAssignmentOption(
           id: role.value,
           label: role.label,
@@ -307,30 +328,9 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     );
   }
 
-  Future<void> _generateStaffNumber() async {
-    setState(() => _generatingStaffNumber = true);
-    final HrWorkspaceController controller = ref.read(
-      hrWorkspaceControllerProvider.notifier,
-    );
-    final Result<String> result = await controller.generateStaffNumber(
-      tenantId: widget.tenantId,
-      facilityId: widget.facilityId,
-    );
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (String staffNumber) {
-        _staffNumberController.text = staffNumber;
-        setState(() => _generatingStaffNumber = false);
-      },
-      failure: (_) => setState(() => _generatingStaffNumber = false),
-    );
-  }
-
   List<AppSelectOption<String>> _positionOptions() {
     final Map<String, String> byLabel = <String, String>{};
-    for (final HrOption option in widget.referenceData.staffPositions) {
+    for (final HrOption option in _referenceData.staffPositions) {
       final String label = option.label.trim().isEmpty
           ? option.value.trim()
           : option.label.trim();
@@ -437,6 +437,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(hrWorkspaceControllerProvider);
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -531,17 +532,33 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       ),
                     ),
                   ],
-                  AppTextField(
-                    controller: _addressController,
-                    labelText: l10n.hrStaffOnboardingAddressLabel,
-                    maxLines: 2,
-                  ),
-                  AppTextField(
-                    controller: _passwordController,
-                    labelText: l10n.hrStaffTemporaryPasswordLabel,
-                    obscureText: true,
-                    helperText: l10n.hrStaffPasswordOptionalHint,
-                  ),
+                  if (wide)
+                    _responsivePair(
+                      left: AppTextField(
+                        controller: _addressController,
+                        labelText: l10n.hrStaffOnboardingAddressLabel,
+                        maxLines: 2,
+                      ),
+                      right: AppTextField(
+                        controller: _passwordController,
+                        labelText: l10n.hrStaffTemporaryPasswordLabel,
+                        obscureText: true,
+                        helperText: l10n.hrStaffPasswordOptionalHint,
+                      ),
+                    )
+                  else ...<Widget>[
+                    AppTextField(
+                      controller: _addressController,
+                      labelText: l10n.hrStaffOnboardingAddressLabel,
+                      maxLines: 2,
+                    ),
+                    AppTextField(
+                      controller: _passwordController,
+                      labelText: l10n.hrStaffTemporaryPasswordLabel,
+                      obscureText: true,
+                      helperText: l10n.hrStaffPasswordOptionalHint,
+                    ),
+                  ],
                 ],
               ),
               SizedBox(height: theme.spacing.lg),
@@ -549,55 +566,34 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
             AppFormSection(
               title: l10n.hrStaffOnboardingEmploymentSectionTitle,
               children: <Widget>[
-                SegmentedButton<StaffNumberEntryMode>(
-                  segments: <ButtonSegment<StaffNumberEntryMode>>[
-                    ButtonSegment<StaffNumberEntryMode>(
-                      value: StaffNumberEntryMode.generate,
-                      label: Text(l10n.hrStaffNumberGenerateLabel),
-                      icon: const Icon(Icons.auto_fix_high_outlined),
-                    ),
-                    ButtonSegment<StaffNumberEntryMode>(
-                      value: StaffNumberEntryMode.manual,
-                      label: Text(l10n.hrStaffNumberManualLabel),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                  ],
-                  selected: <StaffNumberEntryMode>{_staffNumberMode},
-                  onSelectionChanged: (Set<StaffNumberEntryMode> value) {
-                    setState(() => _staffNumberMode = value.first);
-                    if (_staffNumberMode == StaffNumberEntryMode.generate) {
-                      unawaited(_generateStaffNumber());
+                AppRadioGroup<StaffNumberEntryMode>(
+                  value: _staffNumberMode,
+                  onChanged: (StaffNumberEntryMode? value) {
+                    if (value == null) {
+                      return;
                     }
+                    setState(() => _staffNumberMode = value);
                   },
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: AppTextField(
-                        controller: _staffNumberController,
-                        labelText: l10n.hrStaffNumberLabel,
-                        readOnly:
-                            _staffNumberMode == StaffNumberEntryMode.generate,
-                        enabled: !_generatingStaffNumber,
-                      ),
+                  options: <AppRadioOption<StaffNumberEntryMode>>[
+                    AppRadioOption<StaffNumberEntryMode>(
+                      value: StaffNumberEntryMode.generate,
+                      label: l10n.hrStaffNumberAutoGenerateLabel,
                     ),
-                    if (_staffNumberMode == StaffNumberEntryMode.generate)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          left: theme.spacing.sm,
-                          top: theme.spacing.lg,
-                        ),
-                        child: AppButton.secondary(
-                          label: l10n.hrStaffGenerateNumberAction,
-                          isLoading: _generatingStaffNumber,
-                          onPressed: _generatingStaffNumber
-                              ? null
-                              : () => unawaited(_generateStaffNumber()),
-                        ),
-                      ),
+                    AppRadioOption<StaffNumberEntryMode>(
+                      value: StaffNumberEntryMode.manual,
+                      label: l10n.hrStaffNumberManualEntryLabel,
+                    ),
                   ],
                 ),
+                if (_staffNumberMode == StaffNumberEntryMode.manual)
+                  AppTextField(
+                    controller: _staffNumberController,
+                    labelText: l10n.hrStaffNumberLabel,
+                    isRequired: true,
+                    validator: AppValidators.requiredText(
+                      l10n.hrFieldRequiredLabel(l10n.hrStaffNumberLabel),
+                    ),
+                  ),
                 if (_isAddingPosition)
                   AppTextField(
                     controller: _newPositionController,
@@ -619,7 +615,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     right: AppSelectField<String>.searchable(
                       value: _departmentId,
                       labelText: l10n.hrDepartmentLabel,
-                      options: _selectOptions(widget.referenceData.departments),
+                      options: _selectOptions(_referenceData.departments),
                       onChanged: (String? value) =>
                           setState(() => _departmentId = value),
                     ),
@@ -635,7 +631,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   AppSelectField<String>.searchable(
                     value: _departmentId,
                     labelText: l10n.hrDepartmentLabel,
-                    options: _selectOptions(widget.referenceData.departments),
+                    options: _selectOptions(_referenceData.departments),
                     onChanged: (String? value) =>
                         setState(() => _departmentId = value),
                   ),
@@ -652,7 +648,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       value: _practitionerType,
                       labelText: l10n.hrPractitionerTypeLabel,
                       options: _selectOptions(
-                        widget.referenceData.practitionerTypes,
+                        _referenceData.practitionerTypes,
                       ),
                       onChanged: (String? value) {
                         setState(() => _practitionerType = value);
@@ -676,7 +672,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     value: _practitionerType,
                     labelText: l10n.hrPractitionerTypeLabel,
                     options: _selectOptions(
-                      widget.referenceData.practitionerTypes,
+                      _referenceData.practitionerTypes,
                     ),
                     onChanged: (String? value) {
                       setState(() => _practitionerType = value);

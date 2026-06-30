@@ -24399,6 +24399,18 @@ abstract class AppLocalizations {
   /// **'Enter manually'**
   String get hrStaffNumberManualLabel;
 
+  /// Radio option to let the system assign a staff number on create.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically generate staff number'**
+  String get hrStaffNumberAutoGenerateLabel;
+
+  /// Radio option to enter a staff number manually during onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter staff number manually'**
+  String get hrStaffNumberManualEntryLabel;
+
   /// Action to generate a tenant-scoped staff number.
   ///
   /// In en, this message translates to:
