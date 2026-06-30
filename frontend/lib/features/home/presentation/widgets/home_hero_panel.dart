@@ -81,7 +81,12 @@ class HomeHeroPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
-                child: Text(subtitle, style: theme.textTheme.bodyLarge),
+                child: fullWidth
+                    ? Text(subtitle, style: theme.textTheme.bodyLarge)
+                    : ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: Text(subtitle, style: theme.textTheme.bodyLarge),
+                      ),
               ),
               if (generatedLabel != null || usesFallbackData) ...<Widget>[
                 SizedBox(width: theme.spacing.md),
@@ -100,13 +105,24 @@ class HomeHeroPanel extends StatelessWidget {
           ),
           if (contextLine.trim().isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
-            Text(
-              contextLine,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            fullWidth
+                ? Text(
+                    contextLine,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Text(
+                      contextLine,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
           ],
         ],
       ),
