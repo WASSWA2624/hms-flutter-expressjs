@@ -109,6 +109,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const double _defaultMenuMaxHeight = 360.0;
   static const double _menuViewportPadding = 8.0;
   static const double _menuFieldGap = 4.0;
+  static const double _menuItemDividerThickness = 0.5;
+  static const double _menuItemDividerEndInsetFactor = 1;
 
   late final TextEditingController _controller;
   late FocusNode _focusNode;
@@ -417,11 +419,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     );
   }
 
-  ButtonStyle _menuItemStyle(
-    ThemeData theme,
-    _SelectMenuChrome chrome, {
-    required bool showDivider,
-  }) {
+  ButtonStyle _menuItemStyle(ThemeData theme, _SelectMenuChrome chrome) {
     return ButtonStyle(
       backgroundColor: WidgetStateProperty.resolveWith<Color?>((
         Set<WidgetState> states,
@@ -440,25 +438,66 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         Colors.transparent,
       ),
       elevation: const WidgetStatePropertyAll<double?>(0),
-      shape: WidgetStatePropertyAll<OutlinedBorder>(
-        RoundedRectangleBorder(
-          side: showDivider
-              ? BorderSide(
-                  color: chrome.dividerColor,
-                  width: theme.appTokens.dividerThickness,
-                )
-              : BorderSide.none,
-        ),
+      shape: const WidgetStatePropertyAll<OutlinedBorder>(
+        RoundedRectangleBorder(),
       ),
-      padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-        EdgeInsets.symmetric(
-          horizontal: theme.spacing.lg,
-          vertical: theme.spacing.sm,
-        ),
-      ),
+      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(EdgeInsets.zero),
       minimumSize: const WidgetStatePropertyAll<Size>(Size.fromHeight(48)),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: theme.visualDensity,
+    );
+  }
+
+  Widget _menuEntryLabel(
+    ThemeData theme,
+    ColorScheme colorScheme,
+    _SelectMenuChrome chrome,
+    AppSelectOption<T> option, {
+    required bool showDivider,
+  }) {
+    final TextStyle? labelStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: option.enabled
+          ? colorScheme.onSurface
+          : colorScheme.onSurface.withValues(alpha: 0.38),
+      fontWeight: FontWeight.w500,
+    );
+    final Widget label =
+        option.labelWidget ?? Text(option.label, style: labelStyle);
+    final double dividerEndInset =
+        theme.spacing.lg * _menuItemDividerEndInsetFactor;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.lg,
+        vertical: theme.spacing.sm,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              if (option.leadingIcon != null) ...<Widget>[
+                option.leadingIcon!,
+                SizedBox(width: theme.spacing.sm),
+              ],
+              Expanded(child: label),
+              if (option.trailingIcon != null) option.trailingIcon!,
+            ],
+          ),
+          if (showDivider)
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.sm),
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(end: dividerEndInset),
+                child: Container(
+                  height: _menuItemDividerThickness,
+                  color: chrome.dividerColor,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -474,15 +513,15 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         DropdownMenuEntry<T>(
           value: optionList[index].value,
           label: optionList[index].label,
-          labelWidget: optionList[index].labelWidget,
-          leadingIcon: optionList[index].leadingIcon,
-          trailingIcon: optionList[index].trailingIcon,
-          enabled: optionList[index].enabled,
-          style: _menuItemStyle(
+          labelWidget: _menuEntryLabel(
             theme,
+            colorScheme,
             chrome,
+            optionList[index],
             showDivider: index < optionList.length - 1,
           ),
+          enabled: optionList[index].enabled,
+          style: _menuItemStyle(theme, chrome),
         ),
     ];
   }
