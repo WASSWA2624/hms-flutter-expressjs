@@ -12960,6 +12960,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAddStaffDialogTitle => 'Add staff profile';
 
   @override
+  String get hrStaffOnboardingPersonSectionTitle => 'Person and access';
+
+  @override
+  String get hrStaffOnboardingEmploymentSectionTitle => 'Employment';
+
+  @override
+  String get hrStaffOnboardingCreateNewUserLabel => 'Create new user';
+
+  @override
+  String get hrStaffOnboardingLinkExistingUserLabel => 'Link existing user';
+
+  @override
+  String get hrStaffOnboardingSelectUserHint => 'Search staff by name or email';
+
+  @override
+  String get hrStaffOnboardingNoRolesWarning =>
+      'No roles assigned yet. This staff member will have limited access until roles are assigned.';
+
+  @override
+  String get hrStaffOnboardingPayTypeLabel => 'Pay type';
+
+  @override
+  String get hrStaffOnboardingDailyRateLabel => 'Daily rate';
+
+  @override
+  String get hrStaffOnboardingAddressLabel => 'Address (optional)';
+
+  @override
+  String get hrStaffOnboardingPermissionsPreviewEmpty =>
+      'Select roles above to preview effective permissions.';
+
+  @override
+  String get hrStaffOnboardingCompensationSectionTitle => 'Compensation';
+
+  @override
+  String get hrStaffOnboardingConsultationSectionTitle =>
+      'Consultation billing';
+
+  @override
   String get hrAllowPartialPublishLabel => 'Allow partial publish';
 
   @override

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel
 import 'package:hosspi_hms/features/home/presentation/widgets/home_hero_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_toolbar_actions.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -358,13 +359,13 @@ BoxDecoration _metricCardDecoration(ThemeData theme, ColorScheme colorScheme) {
   );
 }
 
-class _HomeQuickActions extends StatelessWidget {
+class _HomeQuickActions extends ConsumerWidget {
   const _HomeQuickActions({required this.actions});
 
   final List<_HomeActionDefinition> actions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
 
     if (actions.isEmpty) {
@@ -387,11 +388,7 @@ class _HomeQuickActions extends StatelessWidget {
                 child: AppButton.secondary(
                   label: action.label,
                   leadingIcon: action.icon,
-                  onPressed: () => _goToRoute(
-                    context,
-                    action.route,
-                    queryParameters: action.routeQuery,
-                  ),
+                  onPressed: () => _invokeHomeAction(context, ref, action),
                 ),
               ),
           ],
@@ -1224,14 +1221,14 @@ class _ViewAllButton extends StatelessWidget {
   }
 }
 
-class _EmptyStateInline extends StatelessWidget {
+class _EmptyStateInline extends ConsumerWidget {
   const _EmptyStateInline({required this.message, required this.actions});
 
   final String message;
   final List<_HomeActionDefinition> actions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
 
     return Column(
@@ -1248,11 +1245,7 @@ class _EmptyStateInline extends StatelessWidget {
                 AppButton.secondary(
                   label: action.label,
                   leadingIcon: action.icon,
-                  onPressed: () => _goToRoute(
-                    context,
-                    action.route,
-                    queryParameters: action.routeQuery,
-                  ),
+                  onPressed: () => _invokeHomeAction(context, ref, action),
                 ),
             ],
           ),
@@ -2442,6 +2435,22 @@ void _goToRoute(
   Map<String, String> queryParameters = const <String, String>{},
 }) {
   context.go(route.location(queryParameters: queryParameters));
+}
+
+void _invokeHomeAction(
+  BuildContext context,
+  WidgetRef ref,
+  _HomeActionDefinition action,
+) {
+  if (action.id == 'add_staff_profile' || action.id == 'staff_profile') {
+    unawaited(showHrStaffOnboardingDialog(context, ref));
+    return;
+  }
+  _goToRoute(
+    context,
+    action.route,
+    queryParameters: action.routeQuery,
+  );
 }
 
 String _trendTitle(AppRole role, String fallback) {

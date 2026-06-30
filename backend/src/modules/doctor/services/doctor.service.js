@@ -5,6 +5,7 @@
  */
 
 const doctorRepository = require('@repositories/doctor/doctor.repository');
+const staffProfileService = require('@services/staff-profile/staff-profile.service');
 const { HttpError } = require('@lib/errors');
 const { hashPassword } = require('@lib/crypto');
 const { createAuditLog } = require('@lib/audit');
@@ -735,18 +736,17 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
       'MO'
     );
 
-    await doctorRepository.createStaffProfile(
-      {
-        tenant_id: tenantId,
-        user_id: user.id,
-        position: positionCatalog?.name || data.position_title,
-        practitioner_type: normalizedStaffProfilePayload.practitioner_type,
-        consultation_fee: normalizedStaffProfilePayload.consultation_fee,
-        consultation_currency: normalizedStaffProfilePayload.consultation_currency,
-        is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden
-      },
-      tx
-    );
+    const staffProfilePayload = await staffProfileService.buildStaffProfileCreateData({
+      tenant_id: tenantId,
+      user_id: user.id,
+      position: positionCatalog?.name || data.position_title,
+      practitioner_type: normalizedStaffProfilePayload.practitioner_type,
+      consultation_fee: normalizedStaffProfilePayload.consultation_fee,
+      consultation_currency: normalizedStaffProfilePayload.consultation_currency,
+      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden,
+    });
+
+    await tx.staff_profile.create({ data: staffProfilePayload });
 
     await createSchedulesTx({
       tx,
@@ -893,13 +893,11 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
     if (existingStaffProfile) {
       await doctorRepository.updateStaffProfile(existingStaffProfile.id, staffProfileData, tx);
     } else {
-      await doctorRepository.createStaffProfile(
-        {
-          ...staffProfileData,
-          user_id: before.id
-        },
-        tx
-      );
+      const staffProfilePayload = await staffProfileService.buildStaffProfileCreateData({
+        ...staffProfileData,
+        user_id: before.id,
+      });
+      await tx.staff_profile.create({ data: staffProfilePayload });
     }
 
     if (data.recurring_schedules !== undefined) {

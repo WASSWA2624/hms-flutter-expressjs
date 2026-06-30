@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -183,7 +184,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             tooltip: l10n.hrAddStaffDialogTitle,
             onPressed: state.isRefreshing
                 ? null
-                : () => _showStaffProfileDialog(context, ref),
+                : () => showHrStaffOnboardingDialog(context, ref),
           ),
           AppButton.secondary(
             label: l10n.hrWorkQueuesTitle,
@@ -579,7 +580,7 @@ class _HrStaffDetailPanel extends ConsumerWidget {
           tooltip: l10n.hrEditStaffAction,
           onPressed: state.isMutating
               ? null
-              : () => _showStaffProfileDialog(context, ref, selected.profile),
+              : () => showHrStaffOnboardingDialog(context, ref, staff: selected.profile),
         ),
       ],
       child: Column(
@@ -1176,49 +1177,6 @@ class _HrWorkItemTile extends StatelessWidget {
   }
 }
 
-Future<void> _showStaffProfileDialog(
-  BuildContext context,
-  WidgetRef ref, [
-  HrStaffProfile? staff,
-]) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<_StaffProfileFieldsState> fieldsKey =
-      GlobalKey<_StaffProfileFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(
-      staff == null ? l10n.hrAddStaffDialogTitle : l10n.hrEditStaffDialogTitle,
-    ),
-    icon: const Icon(Icons.badge_outlined),
-    submitLabel: staff == null
-        ? l10n.hrCreateStaffAction
-        : l10n.hrSaveStaffAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
-      return _StaffProfileFields(
-        key: fieldsKey,
-        staff: staff,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      );
-    },
-    onSubmit: () {
-      final Map<String, Object?> payload =
-          fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
-      return staff == null
-          ? controller.createStaffProfile(payload)
-          : controller.updateSelectedStaffProfile(payload);
-    },
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
-}
-
 Future<void> _showPositionDialog(
   BuildContext context,
   WidgetRef ref,
@@ -1794,179 +1752,6 @@ Future<void> _submitSimple(
   final AppFailure? failure = await mutation;
   if (context.mounted) {
     _showMutationResult(context, failure);
-  }
-}
-
-class _StaffProfileFields extends ConsumerStatefulWidget {
-  const _StaffProfileFields({
-    required this.referenceData,
-    this.staff,
-    super.key,
-  });
-
-  final HrReferenceData referenceData;
-  final HrStaffProfile? staff;
-
-  @override
-  ConsumerState<_StaffProfileFields> createState() =>
-      _StaffProfileFieldsState();
-}
-
-class _StaffProfileFieldsState extends ConsumerState<_StaffProfileFields> {
-  late final TextEditingController _tenantController;
-  late final TextEditingController _staffNumberController;
-  late final TextEditingController _positionController;
-  late final TextEditingController _feeController;
-  late final TextEditingController _currencyController;
-  String? _departmentId;
-  String? _practitionerType;
-  String? _selectedUserId;
-  DateTime? _hireDate;
-
-  bool get _isCreate => widget.staff == null;
-
-  @override
-  void initState() {
-    super.initState();
-    final HrStaffProfile? staff = widget.staff;
-    _tenantController = TextEditingController(text: staff?.tenantId);
-    _selectedUserId = staff?.userDisplayId ?? staff?.userId;
-    _staffNumberController = TextEditingController(text: staff?.staffNumber);
-    _positionController = TextEditingController(text: staff?.position);
-    _feeController = TextEditingController(
-      text: staff?.consultationFee?.toString(),
-    );
-    _currencyController = TextEditingController(
-      text: staff?.consultationCurrency,
-    );
-    _departmentId = staff?.departmentDisplayId ?? staff?.departmentId;
-    _practitionerType = staff?.practitionerType;
-    _hireDate = staff?.hireDate;
-  }
-
-  @override
-  void dispose() {
-    _tenantController.dispose();
-    _staffNumberController.dispose();
-    _positionController.dispose();
-    _feeController.dispose();
-    _currencyController.dispose();
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload({bool includeUserId = true}) {
-    return <String, Object?>{
-      if (_isCreate) 'tenant_id': _tenantController.text.trim(),
-      if (_isCreate && includeUserId) 'user_id': _selectedUserId,
-      'staff_number': _staffNumberController.text.trim(),
-      'position': _positionController.text.trim(),
-      'department_id': _departmentId,
-      'practitioner_type': _practitionerType,
-      'hire_date': _datePayload(_hireDate),
-      'consultation_fee': num.tryParse(_feeController.text.trim()),
-      'consultation_currency': _currencyController.text.trim(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        if (_isCreate)
-          AppTextField(
-            controller: _tenantController,
-            labelText: l10n.hrTenantIdLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrTenantIdLabel),
-            ),
-          ),
-        if (_isCreate)
-          AppSelectField<String>.searchable(
-            value: _selectedUserId,
-            labelText: l10n.hrSelectUserLabel,
-            isRequired: true,
-            options: _selectOptions(
-              widget.referenceData.users
-                  .where(
-                    (HrOption user) => user.extra['has_staff_profile'] != true,
-                  )
-                  .toList(growable: false),
-            ),
-            validator: AppValidators.requiredValue(
-              l10n.hrFieldRequiredLabel(l10n.hrSelectUserLabel),
-            ),
-            onChanged: (String? value) =>
-                setState(() => _selectedUserId = value),
-          ),
-        if (_isCreate) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.sm),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AppButton.tertiary(
-              label: l10n.hrCreateUserAction,
-              leadingIcon: Icons.person_add_outlined,
-              onPressed: () async {
-                await showHrCreateUserDialog(
-                  context,
-                  ref,
-                  staffPayload: toPayload(includeUserId: false),
-                );
-                if (context.mounted) {
-                  await Navigator.of(context).maybePop(true);
-                }
-              },
-            ),
-          ),
-        ],
-        AppTextField(
-          controller: _staffNumberController,
-          labelText: l10n.hrStaffNumberLabel,
-        ),
-        AppTextField(
-          controller: _positionController,
-          labelText: l10n.hrPositionLabel,
-        ),
-        AppSelectField<String>.searchable(
-          value: _departmentId,
-          labelText: l10n.hrDepartmentLabel,
-          options: _selectOptions(widget.referenceData.departments),
-          onChanged: (String? value) => setState(() => _departmentId = value),
-        ),
-        AppSelectField<String>(
-          value: _practitionerType,
-          labelText: l10n.hrPractitionerTypeLabel,
-          options: _selectOptions(widget.referenceData.practitionerTypes),
-          onChanged: (String? value) {
-            setState(() => _practitionerType = value);
-          },
-        ),
-        AppDateField(
-          value: _hireDate,
-          labelText: l10n.hrHireDateLabel,
-          firstDate: DateTime(1950),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _hireDate = value),
-        ),
-        AppTextField(
-          controller: _feeController,
-          labelText: l10n.hrConsultationFeeLabel,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-        ),
-        AppTextField(
-          controller: _currencyController,
-          labelText: l10n.hrConsultationCurrencyLabel,
-          textCapitalization: TextCapitalization.characters,
-        ),
-      ],
-    );
   }
 }
 

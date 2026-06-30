@@ -28,7 +28,7 @@ const friendlyIdSchema = z
 
 const resourceIdentifierSchema = z.union([uuidSchema, friendlyIdSchema]);
 const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
-const compensationPayTypeSchema = z.enum(['PER_PROCEDURE', 'PER_HOUR', 'PER_MONTH']);
+const compensationPayTypeSchema = z.enum(['PER_PROCEDURE', 'PER_HOUR', 'PER_MONTH', 'PER_DAY']);
 const compensationInputSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema.optional(),
   pay_type: compensationPayTypeSchema,

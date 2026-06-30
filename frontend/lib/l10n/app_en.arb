@@ -16784,6 +16784,54 @@
   "@hrAddStaffDialogTitle": {
     "description": "Human resources workspace text for hrAddStaffDialogTitle."
   },
+  "hrStaffOnboardingPersonSectionTitle": "Person and access",
+  "@hrStaffOnboardingPersonSectionTitle": {
+    "description": "Section title for staff onboarding person and access fields."
+  },
+  "hrStaffOnboardingEmploymentSectionTitle": "Employment",
+  "@hrStaffOnboardingEmploymentSectionTitle": {
+    "description": "Section title for staff onboarding employment fields."
+  },
+  "hrStaffOnboardingCreateNewUserLabel": "Create new user",
+  "@hrStaffOnboardingCreateNewUserLabel": {
+    "description": "Toggle label to create a new sign-in account during staff onboarding."
+  },
+  "hrStaffOnboardingLinkExistingUserLabel": "Link existing user",
+  "@hrStaffOnboardingLinkExistingUserLabel": {
+    "description": "Toggle label to link an existing internal user during staff onboarding."
+  },
+  "hrStaffOnboardingSelectUserHint": "Search staff by name or email",
+  "@hrStaffOnboardingSelectUserHint": {
+    "description": "Hint for the facility-scoped user picker in staff onboarding."
+  },
+  "hrStaffOnboardingNoRolesWarning": "No roles assigned yet. This staff member will have limited access until roles are assigned.",
+  "@hrStaffOnboardingNoRolesWarning": {
+    "description": "Warning shown when no roles are selected during staff onboarding."
+  },
+  "hrStaffOnboardingPayTypeLabel": "Pay type",
+  "@hrStaffOnboardingPayTypeLabel": {
+    "description": "Label for compensation pay type selector in staff onboarding."
+  },
+  "hrStaffOnboardingDailyRateLabel": "Daily rate",
+  "@hrStaffOnboardingDailyRateLabel": {
+    "description": "Label for daily compensation rate in staff onboarding."
+  },
+  "hrStaffOnboardingAddressLabel": "Address (optional)",
+  "@hrStaffOnboardingAddressLabel": {
+    "description": "Optional address field label in staff onboarding."
+  },
+  "hrStaffOnboardingPermissionsPreviewEmpty": "Select roles above to preview effective permissions.",
+  "@hrStaffOnboardingPermissionsPreviewEmpty": {
+    "description": "Empty state for the read-only permissions preview in staff onboarding."
+  },
+  "hrStaffOnboardingCompensationSectionTitle": "Compensation",
+  "@hrStaffOnboardingCompensationSectionTitle": {
+    "description": "Section title for compensation fields in staff onboarding."
+  },
+  "hrStaffOnboardingConsultationSectionTitle": "Consultation billing",
+  "@hrStaffOnboardingConsultationSectionTitle": {
+    "description": "Section title for consultation fee fields shown for clinical providers."
+  },
   "hrAllowPartialPublishLabel": "Allow partial publish",
   "@hrAllowPartialPublishLabel": {
     "description": "Human resources workspace text for hrAllowPartialPublishLabel."

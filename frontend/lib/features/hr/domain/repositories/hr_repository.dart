@@ -85,6 +85,8 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> createUserAccount(Map<String, Object?> payload);
 
+  Future<Result<Object?>> createUserProfile(Map<String, Object?> payload);
+
   Future<Result<Object?>> updateStaffAssignment(
     String assignmentId,
     Map<String, Object?> payload,

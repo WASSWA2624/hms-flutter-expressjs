@@ -7,9 +7,9 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
-import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -383,7 +383,7 @@ class _HrAccessWorkspaceDialogState
             label: l10n.hrCreateUserAction,
             leadingIcon: Icons.person_add_outlined,
             onPressed: () async {
-              await showHrCreateStandaloneUserDialog(context, ref);
+              await showHrStaffOnboardingDialog(context, ref);
               if (context.mounted) {
                 unawaited(_reload(resetPage: true));
               }
@@ -896,143 +896,6 @@ class _HrAccessDetailRow extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-Future<void> showHrCreateStandaloneUserDialog(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final HrWorkspaceState? state = readHrWorkspaceState(ref);
-  final String? tenantId = resolveHrAccessTenantId(ref);
-  if (tenantId == null) {
-    _showHrAccessSnackBar(
-      context,
-      null,
-      message: l10n.hrAccessTenantContextRequiredBody,
-    );
-    return;
-  }
-
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController positionController = TextEditingController();
-  final Set<String> selectedRoleIds = <String>{};
-
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrCreateUserDialogTitle),
-    icon: const Icon(Icons.person_add_outlined),
-    submitLabel: l10n.hrCreateUserAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
-      return AppFormSection(
-        children: <Widget>[
-          AppTextField(
-            controller: emailController,
-            labelText: l10n.hrEmailLabel,
-            isRequired: true,
-            keyboardType: TextInputType.emailAddress,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrEmailLabel),
-            ),
-          ),
-          AppTextField(
-            controller: passwordController,
-            labelText: l10n.hrPasswordLabel,
-            isRequired: true,
-            obscureText: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrPasswordLabel),
-            ),
-          ),
-          AppTextField(
-            controller: phoneController,
-            labelText: l10n.profilePhoneLabel,
-            keyboardType: TextInputType.phone,
-          ),
-          AppTextField(
-            controller: positionController,
-            labelText: l10n.hrAccessPositionTitleLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrAccessPositionTitleLabel),
-            ),
-          ),
-          Text(
-            l10n.hrAccessInitialRolesLabel,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          _HrAccessMultiSelectHeader(
-            selectAllLabel: l10n.hrAccessSelectAllRolesAction,
-            clearLabel: l10n.hrAccessClearRolesAction,
-            onSelectAll: () {
-              selectedRoleIds
-                ..clear()
-                ..addAll(
-                  (state?.referenceData.roles ?? const <HrOption>[])
-                      .map((HrOption role) => role.value),
-                );
-            },
-            onClear: () => selectedRoleIds.clear(),
-          ),
-          for (final HrOption role in state?.referenceData.roles ?? const [])
-            AppCheckboxField(
-              title: role.label,
-              value: selectedRoleIds.contains(role.value),
-              onChanged: (bool checked) {
-                if (checked) {
-                  selectedRoleIds.add(role.value);
-                } else {
-                  selectedRoleIds.remove(role.value);
-                }
-              },
-            ),
-        ],
-      );
-    },
-    onSubmit: () async {
-      final Result<Object?> result = await ref
-          .read(hrRepositoryProvider)
-          .createUserAccount(<String, Object?>{
-            'tenant_id': tenantId,
-            'email': emailController.text.trim(),
-            'password': passwordController.text.trim(),
-            'phone': phoneController.text.trim(),
-            'position_title': positionController.text.trim(),
-            'status': 'ACTIVE',
-          });
-      final AppFailure? failure = result.when(
-        success: (_) => null,
-        failure: (AppFailure value) => value,
-      );
-      if (failure != null) {
-        return failure;
-      }
-      final String? userId = _extractCreatedUserId(result);
-      if (userId != null && selectedRoleIds.isNotEmpty) {
-        return controller.syncUserRoles(
-          userId: userId,
-          tenantId: tenantId,
-          roleIds: selectedRoleIds.toList(growable: false),
-        );
-      }
-      return null;
-    },
-  );
-  emailController.dispose();
-  passwordController.dispose();
-  phoneController.dispose();
-  positionController.dispose();
-  if (saved == true && context.mounted) {
-    _showHrAccessSnackBar(context, null);
   }
 }
 
@@ -1620,26 +1483,6 @@ Future<void> showHrEditPermissionDialog(
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);
   }
-}
-
-String? _extractCreatedUserId(Result<Object?> result) {
-  return result.when(
-    success: (Object? data) {
-      if (data is Map) {
-        final Object? nested = data['data'];
-        if (nested is Map) {
-          return nested['display_id']?.toString() ??
-              nested['human_friendly_id']?.toString() ??
-              nested['id']?.toString();
-        }
-        return data['display_id']?.toString() ??
-            data['human_friendly_id']?.toString() ??
-            data['id']?.toString();
-      }
-      return null;
-    },
-    failure: (_) => null,
-  );
 }
 
 void _showHrAccessSnackBar(

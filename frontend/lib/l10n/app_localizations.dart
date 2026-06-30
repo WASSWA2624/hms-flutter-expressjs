@@ -24345,6 +24345,78 @@ abstract class AppLocalizations {
   /// **'Add staff profile'**
   String get hrAddStaffDialogTitle;
 
+  /// Section title for staff onboarding person and access fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Person and access'**
+  String get hrStaffOnboardingPersonSectionTitle;
+
+  /// Section title for staff onboarding employment fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Employment'**
+  String get hrStaffOnboardingEmploymentSectionTitle;
+
+  /// Toggle label to create a new sign-in account during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new user'**
+  String get hrStaffOnboardingCreateNewUserLabel;
+
+  /// Toggle label to link an existing internal user during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing user'**
+  String get hrStaffOnboardingLinkExistingUserLabel;
+
+  /// Hint for the facility-scoped user picker in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Search staff by name or email'**
+  String get hrStaffOnboardingSelectUserHint;
+
+  /// Warning shown when no roles are selected during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles assigned yet. This staff member will have limited access until roles are assigned.'**
+  String get hrStaffOnboardingNoRolesWarning;
+
+  /// Label for compensation pay type selector in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay type'**
+  String get hrStaffOnboardingPayTypeLabel;
+
+  /// Label for daily compensation rate in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily rate'**
+  String get hrStaffOnboardingDailyRateLabel;
+
+  /// Optional address field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Address (optional)'**
+  String get hrStaffOnboardingAddressLabel;
+
+  /// Empty state for the read-only permissions preview in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Select roles above to preview effective permissions.'**
+  String get hrStaffOnboardingPermissionsPreviewEmpty;
+
+  /// Section title for compensation fields in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation'**
+  String get hrStaffOnboardingCompensationSectionTitle;
+
+  /// Section title for consultation fee fields shown for clinical providers.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation billing'**
+  String get hrStaffOnboardingConsultationSectionTitle;
+
   /// Human resources workspace text for hrAllowPartialPublishLabel.
   ///
   /// In en, this message translates to:

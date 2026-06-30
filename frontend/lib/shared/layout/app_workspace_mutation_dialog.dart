@@ -43,6 +43,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       const <AppWorkspaceMutationAction>[],
   Widget? icon,
   double maxWidth = 600,
+  bool initialMaximized = false,
   bool barrierDismissible = false,
   bool showCancelButton = true,
 }) {
@@ -53,6 +54,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       title: title,
       icon: icon,
       maxWidth: maxWidth,
+      initialMaximized: initialMaximized,
       buildFields: buildFields,
       onSubmit: onSubmit,
       cancelLabel: cancelLabel,
@@ -75,12 +77,14 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
     this.submitIcon,
     this.extraActions = const <AppWorkspaceMutationAction>[],
     this.maxWidth = 600,
+    this.initialMaximized = false,
     this.showCancelButton = true,
   });
 
   final Widget title;
   final Widget? icon;
   final double maxWidth;
+  final bool initialMaximized;
   final Widget Function(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -186,6 +190,7 @@ class _AppWorkspaceMutationDialogState
       icon: widget.icon,
       scrollable: true,
       maxWidth: widget.maxWidth,
+      initialMaximized: widget.initialMaximized,
       closeEnabled: !_isSubmitting,
       content: AppFormShell(
         formKey: _formKey,

@@ -392,6 +392,40 @@ const getStaffProfileById = async (id) => {
 };
 
 /**
+ * Build normalized Prisma create payload for staff profiles (shared onboarding path).
+ */
+const buildStaffProfileCreateData = async (data) => {
+  const tenantId = await resolveIdentifierForPayload({
+    value: data.tenant_id,
+    model: 'tenant',
+    field: 'tenant_id',
+    where: { deleted_at: null },
+  });
+  const departmentId = await resolveIdentifierForPayload({
+    value: data.department_id,
+    model: 'department',
+    field: 'department_id',
+    where: { deleted_at: null },
+    nullable: true,
+  });
+
+  const resolvedUser = await resolveUserByIdentifier(data.user_id, tenantId || null);
+  if (!resolvedUser) {
+    throw new HttpError('errors.user.not_found', 404, [{ field: 'user_id' }]);
+  }
+
+  return normalizeConsultationFeePayload(
+    {
+      ...stripNestedStaffProfilePayload(data),
+      tenant_id: tenantId,
+      department_id: departmentId,
+      user_id: resolvedUser.id,
+    },
+    { isEdit: false },
+  );
+};
+
+/**
  * Create new staff profile
  * Per prisma.mdc: Mutations must create audit logs
  *
@@ -402,35 +436,8 @@ const getStaffProfileById = async (id) => {
  */
 const createStaffProfile = async (data, userId, ipAddress) => {
   try {
-    const tenantId = await resolveIdentifierForPayload({
-      value: data.tenant_id,
-      model: 'tenant',
-      field: 'tenant_id',
-      where: { deleted_at: null },
-    });
-    const departmentId = await resolveIdentifierForPayload({
-      value: data.department_id,
-      model: 'department',
-      field: 'department_id',
-      where: { deleted_at: null },
-      nullable: true,
-    });
-
-    const resolvedUser = await resolveUserByIdentifier(data.user_id, tenantId || null);
-    if (!resolvedUser) {
-      throw new HttpError('errors.user.not_found', 404, [{ field: 'user_id' }]);
-    }
-
     const requestedCompensations = extractCompensations(data);
-    const payload = normalizeConsultationFeePayload(
-      {
-        ...stripNestedStaffProfilePayload(data),
-        tenant_id: tenantId,
-        department_id: departmentId,
-        user_id: resolvedUser.id
-      },
-      { isEdit: false }
-    );
+    const payload = await buildStaffProfileCreateData(data);
 
     const createdProfile = await staffProfileRepository.create(payload);
     await syncStaffCompensations(createdProfile.id, requestedCompensations);
@@ -549,7 +556,8 @@ const deleteStaffProfile = async (id, userId, ipAddress) => {
 module.exports = {
   listStaffProfiles,
   getStaffProfileById,
+  buildStaffProfileCreateData,
   createStaffProfile,
   updateStaffProfile,
-  deleteStaffProfile
+  deleteStaffProfile,
 };

@@ -1133,6 +1133,13 @@ const getReferenceData = async (filters = {}) => {
         where: {
           deleted_at: null,
           status: 'ACTIVE',
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+          user_roles: {
+            none: {
+              deleted_at: null,
+              role: { deleted_at: null, name: ROLES.PATIENT },
+            },
+          },
         },
         orderBy: { email: 'asc' },
         take: 200,
@@ -1140,6 +1147,7 @@ const getReferenceData = async (filters = {}) => {
           id: true,
           human_friendly_id: true,
           email: true,
+          position_title: true,
           profile: {
             select: {
               first_name: true,
@@ -1149,6 +1157,13 @@ const getReferenceData = async (filters = {}) => {
           staff_profile: {
             where: { deleted_at: null },
             select: { id: true, human_friendly_id: true },
+          },
+          user_roles: {
+            where: { deleted_at: null },
+            take: 3,
+            select: {
+              role: { select: { name: true } },
+            },
           },
         },
       }),
@@ -1263,12 +1278,20 @@ const getReferenceData = async (filters = {}) => {
         const firstName = entry.profile?.first_name || '';
         const lastName = entry.profile?.last_name || '';
         const fullName = normalizeString(`${firstName} ${lastName}`);
-        const label = [fullName || entry.email, displayId].filter(Boolean).join(' | ');
+        const roleHint = (entry.user_roles || [])
+          .map((assignment) => assignment?.role?.name)
+          .filter(Boolean)
+          .join(', ');
+        const label = [fullName || entry.email, entry.email, roleHint || entry.position_title]
+          .filter(Boolean)
+          .join(' · ');
         return {
           value: displayId,
           label,
           display_id: displayId,
           email: entry.email || null,
+          position_title: entry.position_title || null,
+          role_hint: roleHint || null,
           has_staff_profile: Boolean(entry.staff_profile),
           staff_profile_id: resolvePublicIdentifier(entry.staff_profile?.human_friendly_id),
         };

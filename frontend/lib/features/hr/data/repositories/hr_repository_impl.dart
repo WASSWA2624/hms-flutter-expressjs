@@ -330,6 +330,15 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> createUserProfile(Map<String, Object?> payload) {
+    return _apiClient.post<Object?>(
+      ApiEndpoints.collection(HmsApiResource.userProfiles),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
   Future<Result<Object?>> updateStaffAssignment(
     String assignmentId,
     Map<String, Object?> payload,

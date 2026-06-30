@@ -812,66 +812,148 @@ final class HrWorkspaceController
 
   Future<AppFailure?> createUserAndLinkStaff(
     Map<String, Object?> payload,
-  ) async {
+  ) {
+    return onboardStaff(payload);
+  }
+
+  /// Coordinated staff onboarding: user create/link, profile, roles, compensation.
+  Future<AppFailure?> onboardStaff(Map<String, Object?> payload) async {
     final HrWorkspaceState? current = _currentState;
     if (current == null) {
       return AppFailure.validation();
     }
+
+    final bool isEdit = payload['_edit'] == true;
+    final bool linkExisting = payload['_link_existing'] == true;
+    final String? tenantId = payload['tenant_id']?.toString();
+    final String? facilityId = payload['facility_id']?.toString();
+    final List<String> roleIds =
+        (payload['_role_ids'] as List<Object?>?)
+            ?.map((Object? id) => id.toString())
+            .where((String id) => id.isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
-    final Result<Object?> userResult = await _repository.createUserAccount(
-      payload,
-    );
-    final AppFailure? userFailure = userResult.when(
+
+    String? userId = payload['user_id']?.toString();
+    if (!isEdit && !linkExisting) {
+      final Result<Object?> userResult = await _repository.createUserAccount(
+        <String, Object?>{
+          'tenant_id': tenantId,
+          'facility_id': facilityId,
+          'email': payload['email'],
+          'password': payload['password'],
+          'phone': payload['phone'],
+          'position_title': payload['position_title'],
+          'status': payload['status'] ?? 'ACTIVE',
+        },
+      );
+      final AppFailure? userFailure = userResult.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+      if (userFailure != null) {
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: userFailure));
+        }
+        return userFailure;
+      }
+      userId = _extractCreatedUserId(userResult);
+
+      final String? firstName = payload['_first_name']?.toString().trim();
+      if (userId != null && firstName != null && firstName.isNotEmpty) {
+        final Result<Object?> profileResult = await _repository
+            .createUserProfile(<String, Object?>{
+              'user_id': userId,
+              'facility_id': facilityId,
+              'first_name': firstName,
+              'last_name': payload['_last_name'],
+            });
+        final AppFailure? profileFailure = profileResult.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+        if (profileFailure != null) {
+          final HrWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(
+              latest.copyWith(isMutating: false, lastFailure: profileFailure),
+            );
+          }
+          return profileFailure;
+        }
+      }
+    }
+
+    final Map<String, Object?> staffPayload = <String, Object?>{
+      if (!isEdit) 'tenant_id': tenantId,
+      if (!isEdit && userId != null) 'user_id': userId,
+      'staff_number': payload['staff_number'],
+      'position': payload['position'],
+      'department_id': payload['department_id'],
+      'practitioner_type': payload['practitioner_type'],
+      'hire_date': payload['hire_date'],
+      'consultation_fee': payload['consultation_fee'],
+      'consultation_currency': payload['consultation_currency'],
+      'compensations': payload['compensations'],
+    };
+
+    final Result<HrStaffProfile> staffResult = isEdit
+        ? await _repository.updateStaffProfile(
+            payload['_staff_profile_id']?.toString() ?? '',
+            staffPayload,
+          )
+        : await _repository.createStaffProfile(staffPayload);
+
+    final AppFailure? staffFailure = staffResult.when(
       success: (_) => null,
       failure: (AppFailure failure) => failure,
     );
-    if (userFailure != null) {
+    if (staffFailure != null) {
       final HrWorkspaceState? latest = _currentState;
       if (latest != null) {
-        _emit(latest.copyWith(isMutating: false, lastFailure: userFailure));
+        _emit(latest.copyWith(isMutating: false, lastFailure: staffFailure));
       }
-      return userFailure;
+      return staffFailure;
     }
 
-    final String? createdUserId = _extractCreatedUserId(userResult);
-    final Map<String, Object?> staffPayload = <String, Object?>{
-      for (final MapEntry<String, Object?> entry in payload.entries)
-        if (!<String>{
-          'password',
-          'phone',
-          'status',
-          'permission_ids',
-        }.contains(entry.key))
-          entry.key: entry.value,
-      'user_id': ?createdUserId,
-    };
-
-    final Result<HrStaffProfile> staffResult = await _repository
-        .createStaffProfile(staffPayload);
-    return staffResult.when(
-      success: (HrStaffProfile profile) async {
-        final HrWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(
-            latest.copyWith(
-              staff: _replaceStaff(latest.staff, profile),
-              selectedStaff: HrStaffDetail(profile: profile),
-              isMutating: false,
-            ),
-          );
-        }
-        unawaited(_refreshOverview());
-        unawaited(_refreshReferences());
-        return null;
-      },
-      failure: (AppFailure failure) {
-        final HrWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
-        }
-        return failure;
-      },
+    final HrStaffProfile profile = staffResult.when(
+      success: (HrStaffProfile value) => value,
+      failure: (_) => throw StateError('unreachable'),
     );
+    final String? effectiveUserId = userId ?? profile.userId;
+    AppFailure? roleFailure;
+    if (!isEdit &&
+        effectiveUserId != null &&
+        tenantId != null &&
+        roleIds.isNotEmpty) {
+      roleFailure = await syncUserRoles(
+        userId: effectiveUserId,
+        tenantId: tenantId,
+        roleIds: roleIds,
+        facilityId: facilityId,
+      );
+    }
+
+    final HrWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          staff: _replaceStaff(latest.staff, profile),
+          selectedStaff: HrStaffDetail(profile: profile),
+          isMutating: false,
+          lastFailure: roleFailure,
+        ),
+      );
+    }
+    unawaited(_refreshOverview());
+    unawaited(_refreshReferences());
+    if (!isEdit) {
+      unawaited(_refreshSelectedDetail(profile));
+    }
+    return roleFailure;
   }
 
   Future<AppFailure?> endAssignment(HrStaffAssignment assignment) {
