@@ -6,6 +6,7 @@ const {
   normalizeIdentifier,
 } = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { parseRecordSlots } = require('../../staff-availability/lib/availability-slots');
 
 const DEFAULT_CONSTRAINTS = Object.freeze({
   max_shifts_per_nurse: null,
@@ -420,26 +421,31 @@ const canPassAvailability = (records, shift) => {
     if (effectiveFrom && shiftEnd.getTime() < effectiveFrom.getTime()) continue;
     if (effectiveTo && shiftStart.getTime() > effectiveTo.getTime()) continue;
 
-    const recordStartMinutes = toMinutes(record.start_time);
-    const recordEndMinutes = toMinutes(record.end_time);
-    if (recordStartMinutes == null || recordEndMinutes == null) continue;
+    const slots = parseRecordSlots(record);
+    if (!slots.length) continue;
 
-    const isOverlap = shiftStartMinutes < recordEndMinutes && recordStartMinutes < shiftEndMinutes;
-    if (!isOverlap) continue;
+    for (const slot of slots) {
+      const recordStartMinutes = toMinutes(slot.start_time);
+      const recordEndMinutes = toMinutes(slot.end_time);
+      if (recordStartMinutes == null || recordEndMinutes == null) continue;
 
-    seenRelevant = true;
-    const preference = String(record.preference || '').trim().toUpperCase();
+      const isOverlap = shiftStartMinutes < recordEndMinutes && recordStartMinutes < shiftEndMinutes;
+      if (!isOverlap) continue;
 
-    if (preference === 'UNAVAILABLE') {
-      return {
-        allowed: false,
-        preferred: false,
-        reason: `availability_unavailable_${shiftDayKey || 'day'}`,
-      };
-    }
+      seenRelevant = true;
+      const preference = String(record.preference || '').trim().toUpperCase();
 
-    if (preference === 'PREFERRED') {
-      preferred = true;
+      if (preference === 'UNAVAILABLE') {
+        return {
+          allowed: false,
+          preferred: false,
+          reason: `availability_unavailable_${shiftDayKey || 'day'}`,
+        };
+      }
+
+      if (preference === 'PREFERRED') {
+        preferred = true;
+      }
     }
   }
 

@@ -77,6 +77,9 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
     (_) async =>
         const Result<HrStaffAccessSummary>.success(HrStaffAccessSummary()),
   );
+  when(() => repository.createStaffAvailabilityBatch(any())).thenAnswer(
+    (_) async => const Result<Object?>.success(<String, Object?>{}),
+  );
   when(() => repository.createStaffAvailability(any())).thenAnswer(
     (_) async => const Result<Object?>.success(<String, Object?>{}),
   );

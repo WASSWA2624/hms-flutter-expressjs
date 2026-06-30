@@ -30,6 +30,11 @@ const create = asyncHandler(async (req, res) => {
   sendSuccess(res, 201, 'messages.staff_availability.create.success', item);
 });
 
+const createBatch = asyncHandler(async (req, res) => {
+  const items = await staffAvailabilityService.createBatch(req.body, req.user?.id, req.ip);
+  sendSuccess(res, 201, 'messages.staff_availability.batch_create.success', items);
+});
+
 const update = asyncHandler(async (req, res) => {
   const item = await staffAvailabilityService.update(req.params.id, req.body, req.user?.id, req.ip);
   sendSuccess(res, 200, 'messages.staff_availability.update.success', item);
@@ -40,4 +45,4 @@ const remove = asyncHandler(async (req, res) => {
   sendNoContent(res);
 });
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, getById, create, createBatch, update, remove };

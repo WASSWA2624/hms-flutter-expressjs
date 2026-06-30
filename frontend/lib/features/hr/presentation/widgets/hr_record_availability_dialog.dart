@@ -82,7 +82,7 @@ Future<void> showHrRecordAvailabilityDialog(
         );
       }
       return controller.createAvailabilitySchedule(
-        state?.toDayPayloads() ?? const <Map<String, Object?>>[],
+        state?.toBatchPayload() ?? const <String, Object?>{},
       );
     },
   );
@@ -130,25 +130,26 @@ class _HrRecordAvailabilityFieldsState
     super.dispose();
   }
 
-  List<Map<String, Object?>> toDayPayloads() {
-    final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
+  Map<String, Object?> toBatchPayload() {
+    final List<Map<String, Object?>> days = <Map<String, Object?>>[];
     for (final int day in kAvailabilityWeekDayOrder) {
       final List<Map<String, Object?>> slots = _days[day]!.toSlotPayloads();
       if (slots.isEmpty) {
         continue;
       }
-      payloads.add(<String, Object?>{
+      days.add(<String, Object?>{
         'day_of_week': day,
         'time_slots': slots,
-        'start_time': slots.first['start_time'],
-        'end_time': slots.first['end_time'],
-        'preference': _preference,
-        'status': _preference,
-        'effective_from': _datePayload(_effectiveFrom),
-        'effective_to': _datePayload(_effectiveTo),
       });
     }
-    return payloads;
+
+    return <String, Object?>{
+      'preference': _preference,
+      'status': _preference,
+      'effective_from': _datePayload(_effectiveFrom),
+      'effective_to': _datePayload(_effectiveTo),
+      'days': days,
+    };
   }
 
   String? validateSchedule(AppLocalizations l10n) {

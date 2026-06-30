@@ -34,6 +34,10 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> createStaffAvailability(Map<String, Object?> payload);
 
+  Future<Result<Object?>> createStaffAvailabilityBatch(
+    Map<String, Object?> payload,
+  );
+
   Future<Result<List<HrStaffAvailability>>> listStaffAvailabilities(
     String staffProfileId,
   );

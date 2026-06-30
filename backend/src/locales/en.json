@@ -1286,6 +1286,7 @@
   "messages.staff_assignment.list.success": "Staff assignments retrieved successfully",
   "messages.staff_assignment.update.success": "Staff assignment updated successfully",
   "messages.staff_availability.create.success": "Staff availability created successfully",
+  "messages.staff_availability.batch_create.success": "Staff availability schedule saved successfully",
   "messages.staff_availability.get.success": "Staff availability retrieved successfully",
   "messages.staff_availability.list.success": "Staff availabilities retrieved successfully",
   "messages.staff_availability.update.success": "Staff availability updated successfully",

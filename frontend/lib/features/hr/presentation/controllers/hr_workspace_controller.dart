@@ -387,25 +387,20 @@ final class HrWorkspaceController
   }
 
   Future<AppFailure?> createAvailabilitySchedule(
-    List<Map<String, Object?>> dayPayloads,
+    Map<String, Object?> batchPayload,
   ) {
-    if (dayPayloads.isEmpty) {
+    final Object? days = batchPayload['days'];
+    if (days is! List || days.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
-    return _mutateSelected((HrStaffDetail selected) async {
-      for (final Map<String, Object?> dayPayload in dayPayloads) {
-        final Result<Object?> result = await _repository.createStaffAvailability(
-          <String, Object?>{
-            'staff_profile_id': selected.profile.effectiveId,
-            ...dayPayload,
-          },
-        );
-        if (result.isFailure) {
-          return result;
-        }
-      }
-      return const Result<Object?>.success(null);
-    });
+    return _mutateSelected(
+      (HrStaffDetail selected) => _repository.createStaffAvailabilityBatch(
+        <String, Object?>{
+          'staff_profile_id': selected.profile.effectiveId,
+          ...batchPayload,
+        },
+      ),
+    );
   }
 
   Future<Result<List<HrStaffAvailability>>> loadStaffAvailabilities(

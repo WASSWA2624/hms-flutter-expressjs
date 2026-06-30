@@ -9,6 +9,7 @@ const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   createStaffAvailabilitySchema,
+  batchCreateStaffAvailabilitySchema,
   updateStaffAvailabilitySchema,
   staffAvailabilityIdParamsSchema,
   listStaffAvailabilitiesQuerySchema
@@ -18,6 +19,7 @@ const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
 
 router.get('/', validateRequest({ query: listStaffAvailabilitiesQuerySchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffAvailabilityController.list);
+router.post('/batch', validateRequest({ body: batchCreateStaffAvailabilitySchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffAvailabilityController.createBatch);
 router.get('/:id', validateRequest({ params: staffAvailabilityIdParamsSchema }), authenticate(), authorize(HR_READ_SCOPES, 'permission'), staffAvailabilityController.getById);
 router.post('/', validateRequest({ body: createStaffAvailabilitySchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffAvailabilityController.create);
 router.put('/:id', validateRequest({ params: staffAvailabilityIdParamsSchema, body: updateStaffAvailabilitySchema }), authenticate(), authorize(HR_WRITE_SCOPES, 'permission'), staffAvailabilityController.update);

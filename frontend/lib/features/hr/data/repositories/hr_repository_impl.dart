@@ -199,6 +199,20 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> createStaffAvailabilityBatch(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<Object?>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.staffAvailabilities.path,
+        'batch',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: passthroughResponseData,
+    );
+  }
+
+  @override
   Future<Result<List<HrStaffAvailability>>> listStaffAvailabilities(
     String staffProfileId,
   ) async {
@@ -728,7 +742,7 @@ final class HrRepositoryImpl implements HrRepository {
           ApiEndpoints.collection(HmsApiResource.staffAvailabilities),
           queryParameters: <String, Object?>{
             'staff_profile_id': staffProfileId,
-            'limit': 20,
+            'limit': 50,
           },
           decoder: (Object? data) =>
               HrStaffAvailabilityPageDto.fromResponse(data).items,
