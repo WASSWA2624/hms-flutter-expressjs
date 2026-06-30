@@ -59,6 +59,11 @@ final class HrWorkspaceController
     await _refreshReferences(facilityId: facilityId, forOnboarding: true);
   }
 
+  /// Refreshes facility departments, units, and rooms before assignment dialogs.
+  Future<void> ensureAssignmentReferenceData() async {
+    await _refreshReferences(forOnboarding: true);
+  }
+
   Future<AppFailure?> applyStaffSearch(String value) async {
     final HrWorkspaceState? current = _currentState;
     if (current == null) {

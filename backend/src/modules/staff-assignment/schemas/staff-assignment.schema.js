@@ -24,6 +24,7 @@ const createStaffAssignmentSchema = z.object({
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   unit_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  room_ids: z.array(uuidOrFriendlyIdentifierSchema).optional(),
   start_date: z.coerce.date(),
   end_date: z.coerce.date().optional().nullable()
 });

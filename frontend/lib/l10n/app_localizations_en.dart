@@ -13610,6 +13610,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrUnitIdLabel => 'Unit ID';
 
   @override
+  String get hrUnitLabel => 'Unit';
+
+  @override
+  String get hrRoomsLabel => 'Rooms';
+
+  @override
+  String get hrSelectAllRoomsAction => 'Select all';
+
+  @override
+  String get hrClearRoomsAction => 'Clear';
+
+  @override
   String get hrUserIdLabel => 'User ID';
 
   @override

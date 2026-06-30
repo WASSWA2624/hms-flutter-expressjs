@@ -25605,6 +25605,30 @@ abstract class AppLocalizations {
   /// **'Unit ID'**
   String get hrUnitIdLabel;
 
+  /// Label for the facility unit selector when assigning staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get hrUnitLabel;
+
+  /// Label for multi-select room assignment within a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get hrRoomsLabel;
+
+  /// Selects every room in the assign-department dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get hrSelectAllRoomsAction;
+
+  /// Clears selected rooms in the assign-department dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get hrClearRoomsAction;
+
   /// Human resources workspace text for hrUserIdLabel.
   ///
   /// In en, this message translates to:

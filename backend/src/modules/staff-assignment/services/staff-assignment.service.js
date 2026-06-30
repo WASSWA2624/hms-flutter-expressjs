@@ -24,6 +24,50 @@ const emptyResult = (page, limit) => ({
   pagination: buildPagination(page, limit, 0),
 });
 
+const resolveCreatePayload = async (data = {}) => ({
+  ...data,
+  staff_profile_id: await resolveIdentifierForPayload({
+    value: data.staff_profile_id,
+    model: 'staff_profile',
+    field: 'staff_profile_id',
+    where: { deleted_at: null },
+  }),
+  department_id: await resolveIdentifierForPayload({
+    value: data.department_id,
+    model: 'department',
+    field: 'department_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+  unit_id: await resolveIdentifierForPayload({
+    value: data.unit_id,
+    model: 'unit',
+    field: 'unit_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+  room_id: await resolveIdentifierForPayload({
+    value: data.room_id,
+    model: 'room',
+    field: 'room_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+});
+
+const persistStaffAssignment = async (payload, userId, ipAddress) => {
+  const staffAssignment = await staffAssignmentRepository.create(payload);
+  createAuditLog({
+    user_id: userId,
+    action: 'CREATE',
+    entity: 'staff_assignment',
+    entity_id: staffAssignment.id,
+    diff: { after: staffAssignment },
+    ip_address: ipAddress,
+  }).catch(() => {});
+  return staffAssignment;
+};
+
 const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
   try {
     const skip = (page - 1) * limit;
@@ -95,47 +139,44 @@ const getStaffAssignmentById = async (id) => {
 
 const createStaffAssignment = async (data, userId, ipAddress) => {
   try {
-    const payload = {
-      ...data,
-      staff_profile_id: await resolveIdentifierForPayload({
-        value: data.staff_profile_id,
-        model: 'staff_profile',
-        field: 'staff_profile_id',
-        where: { deleted_at: null },
-      }),
-      department_id: await resolveIdentifierForPayload({
-        value: data.department_id,
-        model: 'department',
-        field: 'department_id',
-        where: { deleted_at: null },
-        nullable: true,
-      }),
-      unit_id: await resolveIdentifierForPayload({
-        value: data.unit_id,
-        model: 'unit',
-        field: 'unit_id',
-        where: { deleted_at: null },
-        nullable: true,
-      }),
-      room_id: await resolveIdentifierForPayload({
-        value: data.room_id,
-        model: 'room',
-        field: 'room_id',
-        where: { deleted_at: null },
-        nullable: true,
-      }),
-    };
+    const roomIds = Array.isArray(data.room_ids)
+      ? data.room_ids.filter((entry) => String(entry || '').trim())
+      : [];
+    const baseData = { ...data };
+    delete baseData.room_ids;
 
-    const staffAssignment = await staffAssignmentRepository.create(payload);
-    createAuditLog({
-      user_id: userId,
-      action: 'CREATE',
-      entity: 'staff_assignment',
-      entity_id: staffAssignment.id,
-      diff: { after: staffAssignment },
-      ip_address: ipAddress,
-    }).catch(() => {});
-    return staffAssignment;
+    const resolvedBase = await resolveCreatePayload(baseData);
+
+    if (roomIds.length > 0) {
+      const assignments = [];
+      for (const roomIdentifier of roomIds) {
+        const roomId = await resolveIdentifierForPayload({
+          value: roomIdentifier,
+          model: 'room',
+          field: 'room_id',
+          where: { deleted_at: null },
+          nullable: true,
+        });
+        const assignment = await persistStaffAssignment(
+          {
+            ...resolvedBase,
+            room_id: roomId,
+          },
+          userId,
+          ipAddress
+        );
+        assignments.push(assignment);
+      }
+
+      return assignments.length === 1
+        ? assignments[0]
+        : {
+            assignments,
+            count: assignments.length,
+          };
+    }
+
+    return persistStaffAssignment(resolvedBase, userId, ipAddress);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

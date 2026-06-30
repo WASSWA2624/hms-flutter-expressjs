@@ -17664,6 +17664,22 @@
   "@hrUnitIdLabel": {
     "description": "Human resources workspace text for hrUnitIdLabel."
   },
+  "hrUnitLabel": "Unit",
+  "@hrUnitLabel": {
+    "description": "Label for the facility unit selector when assigning staff."
+  },
+  "hrRoomsLabel": "Rooms",
+  "@hrRoomsLabel": {
+    "description": "Label for multi-select room assignment within a department."
+  },
+  "hrSelectAllRoomsAction": "Select all",
+  "@hrSelectAllRoomsAction": {
+    "description": "Selects every room in the assign-department dialog."
+  },
+  "hrClearRoomsAction": "Clear",
+  "@hrClearRoomsAction": {
+    "description": "Clears selected rooms in the assign-department dialog."
+  },
   "hrUserIdLabel": "User ID",
   "@hrUserIdLabel": {
     "description": "Human resources workspace text for hrUserIdLabel."

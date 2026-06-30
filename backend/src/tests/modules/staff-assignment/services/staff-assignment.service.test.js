@@ -96,6 +96,34 @@ describe('Staff Assignment Service', () => {
 
       expect(result).toEqual(mockAssignment);
     });
+
+    it('should create one assignment per room when room_ids is provided', async () => {
+      const mockData = {
+        staff_profile_id: '550e8400-e29b-41d4-a716-446655440000',
+        department_id: '550e8400-e29b-41d4-a716-446655440001',
+        unit_id: '550e8400-e29b-41d4-a716-446655440002',
+        room_ids: [
+          '550e8400-e29b-41d4-a716-446655440003',
+          '550e8400-e29b-41d4-a716-446655440004',
+        ],
+        start_date: new Date(),
+      };
+      staffAssignmentRepository.create
+        .mockResolvedValueOnce({ id: 'room-1', ...mockData, room_id: mockData.room_ids[0] })
+        .mockResolvedValueOnce({ id: 'room-2', ...mockData, room_id: mockData.room_ids[1] });
+
+      const result = await staffAssignmentService.createStaffAssignment(mockData, mockUserId, mockIpAddress);
+
+      expect(staffAssignmentRepository.create).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({
+        assignments: [
+          { id: 'room-1', ...mockData, room_id: mockData.room_ids[0] },
+          { id: 'room-2', ...mockData, room_id: mockData.room_ids[1] },
+        ],
+        count: 2,
+      });
+      expect(createAuditLog).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('updateStaffAssignment', () => {

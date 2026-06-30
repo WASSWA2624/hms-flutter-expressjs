@@ -131,6 +131,10 @@ const {
   enrichStaffPositionOption,
   staffPositionCatalogOptions,
 } = require('@lib/hr/reference-data');
+const {
+  DEFAULT_FACILITY_DEPARTMENT_NAMES,
+  inferDepartmentType,
+} = require('@lib/setup/facility-structure-catalog');
 const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
 
 const normalizeString = (value) => String(value || '').trim();
@@ -991,6 +995,7 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
 const getReferenceData = async (filters = {}) => {
   const scope = await buildScope(filters);
   await ensureDefaultStaffPositions(scope);
+  await ensureDefaultFacilityStructure(scope);
   const tenantId = await resolveTenantIdForScope(scope);
   const staffPositionWhere = tenantId
     ? {
@@ -1025,7 +1030,7 @@ const getReferenceData = async (filters = {}) => {
           ...(scope.departmentId ? { id: scope.departmentId } : {}),
         },
         orderBy: { name: 'asc' },
-        take: 200,
+        take: 500,
         select: { id: true, human_friendly_id: true, name: true, short_name: true, facility_id: true },
       }),
       prisma.unit.findMany({
@@ -1035,7 +1040,7 @@ const getReferenceData = async (filters = {}) => {
           ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
         },
         orderBy: { name: 'asc' },
-        take: 200,
+        take: 500,
         select: { id: true, human_friendly_id: true, name: true, facility_id: true, department_id: true },
       }),
       prisma.room.findMany({
@@ -1045,7 +1050,7 @@ const getReferenceData = async (filters = {}) => {
           ...(scope.departmentId ? { ward: { department_id: scope.departmentId } } : {}),
         },
         orderBy: { name: 'asc' },
-        take: 200,
+        take: 500,
         select: {
           id: true,
           human_friendly_id: true,
@@ -1390,6 +1395,46 @@ const ensureDefaultStaffPositions = async (scope) => {
       })
     )
   );
+};
+
+const ensureDefaultFacilityStructure = async (scope) => {
+  const tenantId = await resolveTenantIdForScope(scope);
+  if (!tenantId || !scope.facilityId) {
+    return;
+  }
+
+  const existingCount = await prisma.department.count({
+    where: {
+      deleted_at: null,
+      facility_id: scope.facilityId,
+    },
+  });
+  if (existingCount > 0) {
+    return;
+  }
+
+  for (const name of DEFAULT_FACILITY_DEPARTMENT_NAMES) {
+    const department = await prisma.department.create({
+      data: {
+        tenant_id: tenantId,
+        facility_id: scope.facilityId,
+        name,
+        short_name: name.slice(0, 8).toUpperCase(),
+        department_type: inferDepartmentType(name),
+        is_active: true,
+      },
+    });
+
+    await prisma.unit.create({
+      data: {
+        tenant_id: tenantId,
+        facility_id: scope.facilityId,
+        department_id: department.id,
+        name: `${name} Unit`,
+        is_active: true,
+      },
+    });
+  }
 };
 
 const generateStaffNumber = async ({ tenantId = null, facilityId = null } = {}) => {

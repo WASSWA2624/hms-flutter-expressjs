@@ -19,8 +19,15 @@ describe('hr-workspace.service contract', () => {
       findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn().mockResolvedValue({ tenant_id: 'tenant-1' }),
     };
-    prisma.department = { findMany: jest.fn().mockResolvedValue([]) };
-    prisma.unit = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.department = {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(1),
+      create: jest.fn().mockResolvedValue({ id: 'dept-1', name: 'Emergency' }),
+    };
+    prisma.unit = {
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ id: 'unit-1' }),
+    };
     prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_profile = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };
