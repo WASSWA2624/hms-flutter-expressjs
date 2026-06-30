@@ -6676,6 +6676,54 @@ abstract class AppLocalizations {
   /// **'Open HR workspace'**
   String get homeOpenHrWorkspaceLink;
 
+  /// Compact label for the active staff home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Active staff'**
+  String get homeMetricActiveStaffCompact;
+
+  /// Compact label for the shifts today home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts today'**
+  String get homeMetricShiftsTodayCompact;
+
+  /// Compact label for the pending leave home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending leave'**
+  String get homeMetricPendingLeavesCompact;
+
+  /// Compact label for the on leave today home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'On leave'**
+  String get homeMetricOnLeaveTodayCompact;
+
+  /// Compact label for the unassigned shifts home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get homeMetricUnassignedShiftsCompact;
+
+  /// Compact label for the attended today home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Attended'**
+  String get homeMetricAttendedTodayCompact;
+
+  /// Compact label for the missed shifts today home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed shifts'**
+  String get homeMetricMissedShiftsTodayCompact;
+
+  /// Compact label for the payroll pending home metric card.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll pending'**
+  String get homeMetricPayrollPendingCompact;
+
   /// Action to open the full queue from a home dashboard panel.
   ///
   /// In en, this message translates to:

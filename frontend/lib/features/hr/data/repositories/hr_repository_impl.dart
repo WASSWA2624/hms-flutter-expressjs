@@ -123,6 +123,8 @@ final class HrRepositoryImpl implements HrRepository {
         'status': query.status,
         'department_id': query.departmentId,
         'facility_id': query.facilityId,
+        if (query.from != null) 'from': query.from!.toUtc().toIso8601String(),
+        if (query.to != null) 'to': query.to!.toUtc().toIso8601String(),
       }),
       decoder: (Object? data) =>
           HrWorkItemPageDto.fromResponse(data, request).page,

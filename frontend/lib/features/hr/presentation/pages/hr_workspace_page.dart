@@ -26,6 +26,8 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+part 'hr_workspace_dialog_actions.dart';
+
 class HrWorkspacePage extends ConsumerWidget {
   const HrWorkspacePage({super.key, this.initialQuery});
 
@@ -123,13 +125,13 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       if (state?.selectedStaff == null) {
         return;
       }
-      await _openSelectedStaffDialog(context);
+      await showHrStaffDetailDialog(context, ref);
       return;
     }
 
     final HrQueue? queue = query.queue;
     if (queue != null) {
-      await _applyQueueAndShow(context, controller, queue);
+      await applyHrQueueAndShow(context, ref, queue);
       return;
     }
 
@@ -190,7 +192,11 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             tooltip: l10n.hrWorkQueuesTitle,
             onPressed: state.isRefreshing
                 ? null
-                : () => _showWorkQueueDialog(context),
+                : () => showHrWorkQueueDialog(
+                    context,
+                    ref,
+                    columnVisibilityController: _queueColumnController,
+                  ),
           ),
           AppButton.secondary(
             label: l10n.hrManageAccessAction,
@@ -270,49 +276,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       return;
     }
 
-    await _openSelectedStaffDialog(context);
-  }
-
-  Future<void> _openSelectedStaffDialog(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.hrStaffDetailTitle),
-        icon: const Icon(Icons.badge_outlined),
-        scrollable: true,
-        maxWidth: 980,
-        content: Consumer(
-          builder: (BuildContext context, WidgetRef dialogRef, _) {
-            final HrWorkspaceState dialogState =
-                _hrStateFromAsync(
-                  dialogRef.watch(hrWorkspaceControllerProvider),
-                ) ??
-                widget.state;
-            return _HrStaffDetailPanel(state: dialogState);
-          },
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showWorkQueueDialog(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    await showAppDialog<void>(
-      context: context,
-      builder: (BuildContext dialogContext) => AppDialog(
-        title: Text(l10n.hrWorkQueuesTitle),
-        icon: const Icon(Icons.pending_actions_outlined),
-        scrollable: true,
-        maxWidth: 980,
-        content: _HrWorkQueuePanel(
-          columnVisibilityController: _queueColumnController,
-          onPageChanged: ref
-              .read(hrWorkspaceControllerProvider.notifier)
-              .changeWorkItemsPage,
-        ),
-      ),
-    );
+    await showHrStaffDetailDialog(context, ref);
   }
 
   Future<void> _showActivityDialog(BuildContext context) async {
@@ -338,22 +302,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
   }
 
-  Future<void> _applyQueueAndShow(
-    BuildContext context,
-    HrWorkspaceController controller,
-    HrQueue queue,
-  ) async {
-    final AppFailure? failure = await controller.applyQueue(queue);
-    if (!context.mounted) {
-      return;
-    }
-    if (failure != null) {
-      _showMutationResult(context, failure);
-      return;
-    }
-    await _showWorkQueueDialog(context);
-  }
-
   List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     HrWorkspaceState state,
@@ -372,7 +320,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             : AppWorkspaceStatusTone.neutral,
         onSelected: () {
           unawaited(
-            _applyQueueAndShow(context, controller, HrQueue.leaveRequests),
+            applyHrQueueAndShow(context, ref, HrQueue.leaveRequests),
           );
         },
       ),
@@ -382,7 +330,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         icon: Icons.calendar_month_outlined,
         onSelected: () {
           unawaited(
-            _applyQueueAndShow(context, controller, HrQueue.rosterDrafts),
+            applyHrQueueAndShow(context, ref, HrQueue.rosterDrafts),
           );
         },
       ),
@@ -395,7 +343,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             : AppWorkspaceStatusTone.neutral,
         onSelected: () {
           unawaited(
-            _applyQueueAndShow(context, controller, HrQueue.unassignedShifts),
+            applyHrQueueAndShow(context, ref, HrQueue.unassignedShifts),
           );
         },
       ),
@@ -405,7 +353,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         icon: Icons.payments_outlined,
         onSelected: () {
           unawaited(
-            _applyQueueAndShow(context, controller, HrQueue.payrollDrafts),
+            applyHrQueueAndShow(context, ref, HrQueue.payrollDrafts),
           );
         },
       ),
@@ -420,6 +368,7 @@ class _HrStaffDirectory extends ConsumerWidget {
     required this.columnVisibilityController,
     required this.onPageChanged,
     required this.onStaffSelected,
+    this.statusFilter,
   });
 
   final HrWorkspaceState state;
@@ -428,6 +377,7 @@ class _HrStaffDirectory extends ConsumerWidget {
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<HrStaffProfile> onStaffSelected;
+  final String? statusFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -435,12 +385,26 @@ class _HrStaffDirectory extends ConsumerWidget {
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );
+    final String? normalizedStatusFilter = statusFilter?.trim().toUpperCase();
+    final AppPage<HrStaffProfile> staffPage = normalizedStatusFilter == null
+        ? state.staff
+        : AppPage<HrStaffProfile>(
+            items: state.staff.items
+                .where(
+                  (HrStaffProfile profile) =>
+                      (profile.status ?? 'ACTIVE').toUpperCase() ==
+                      normalizedStatusFilter,
+                )
+                .toList(growable: false),
+            request: state.staff.request,
+            totalItemCount: state.staff.totalItemCount,
+          );
 
     return AppWorkspaceDetailPanel(
       title: l10n.hrStaffDirectoryTitle,
       description: l10n.hrStaffDirectoryDescription,
       child: AppListTable<HrStaffProfile>(
-        page: state.staff,
+        page: staffPage,
         isLoading: state.isRefreshingStaff,
         columnVisibilityController: columnVisibilityController,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,

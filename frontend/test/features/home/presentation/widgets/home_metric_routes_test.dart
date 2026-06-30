@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
@@ -21,11 +20,11 @@ AppAccessPolicy _policyForRoles(List<String> roles) {
 
 void main() {
   group('home metric routes', () {
-    test('HR profile exposes navigation for leave and shift cards', () {
+    test('HR profile exposes modal actions for leave and shift cards', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.hr);
       final AppAccessPolicy policy = _policyForRoles(<String>['HR']);
 
-      final HomeMetricNavigation? leaveNavigation = homeMetricNavigation(
+      final HomeMetricAction? leaveAction = homeMetricAction(
         profile: profile,
         card: const HomeStatusCard(
           id: 'pending_leaves',
@@ -34,7 +33,7 @@ void main() {
         ),
         policy: policy,
       );
-      final HomeMetricNavigation? shiftNavigation = homeMetricNavigation(
+      final HomeMetricAction? shiftAction = homeMetricAction(
         profile: profile,
         card: const HomeStatusCard(
           id: 'unassigned_shifts',
@@ -44,9 +43,21 @@ void main() {
         policy: policy,
       );
 
-      expect(leaveNavigation?.route, AppRoutes.hr);
-      expect(leaveNavigation?.queryParameters['queue'], 'LEAVE_REQUESTS');
-      expect(shiftNavigation?.queryParameters['queue'], 'UNASSIGNED_SHIFTS');
+      expect(leaveAction?.target.kind, HomeMetricActionKind.hrWorkQueue);
+      expect(leaveAction?.target.hrQueue, 'LEAVE_REQUESTS');
+      expect(shiftAction?.target.hrQueue, 'UNASSIGNED_SHIFTS');
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'pending_leaves',
+            label: 'Pending leave approvals',
+            value: 2,
+          ),
+          policy: policy,
+        ),
+        isNull,
+      );
     });
 
     test('HR queue targets map to workspace deep links', () {
@@ -80,6 +91,34 @@ void main() {
         ),
         isNull,
       );
+      expect(
+        homeMetricAction(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'assigned',
+            label: 'Assigned consultations',
+            value: 3,
+          ),
+          policy: policy,
+        ),
+        isNull,
+      );
+    });
+
+    test('homeHrMetricAccessAllowed gates HR modal actions', () {
+      final AppAccessPolicy allowed = _policyForRoles(<String>['HR']);
+      final AppAccessPolicy denied = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'hr'),
+          ],
+        ),
+      );
+
+      expect(homeHrMetricAccessAllowed(allowed), isTrue);
+      expect(homeHrMetricAccessAllowed(denied), isFalse);
     });
   });
 }

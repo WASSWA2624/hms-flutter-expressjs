@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 
 void main() {
@@ -97,13 +98,17 @@ void main() {
       expect(profile.emptyActionIds, isEmpty);
       expect(profile.heroFullWidth, isTrue);
       expect(profile.maxStatusCards, 8);
-      expect(profile.showEmptyWorkspaceLink, isTrue);
+      expect(
+        profile.toolbarActionIds,
+        contains(HomeToolbarActionId.openHrWorkspace),
+      );
       expect(profile.suppressHomeQuickActions, isTrue);
       expect(profile.suppressHomeShortcuts, isTrue);
-      expect(profile.metricRouteTargets, contains('active_staff'));
-      expect(profile.metricRouteTargets['pending_leaves']?.queryParameters, {
-        'queue': 'LEAVE_REQUESTS',
-      });
+      expect(profile.metricActionTargets, contains('active_staff'));
+      expect(
+        profile.metricActionTargets['pending_leaves']?.hrQueue,
+        'LEAVE_REQUESTS',
+      );
       expect(
         profile.statusCards.map((template) => template.id),
         containsAll(<String>[

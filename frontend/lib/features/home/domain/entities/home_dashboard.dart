@@ -138,6 +138,32 @@ final class HomeMetricRouteTarget {
   final Map<String, String> queryParameters;
 }
 
+/// Typed modal action for a home KPI card (HR workforce dashboard).
+enum HomeMetricActionKind {
+  hrStaffDirectory,
+  hrWorkQueue,
+  hrTodayShifts,
+  hrOnLeaveToday,
+  hrAttendedToday,
+}
+
+final class HomeMetricActionTarget {
+  const HomeMetricActionTarget({
+    required this.kind,
+    this.hrQueue,
+    this.staffStatusFilter,
+    this.workItemStatus,
+  });
+
+  final HomeMetricActionKind kind;
+  final String? hrQueue;
+  final String? staffStatusFilter;
+  final String? workItemStatus;
+}
+
+/// Toolbar action ids resolved by [buildHomeToolbarSecondary].
+enum HomeToolbarActionId { openHrWorkspace }
+
 final class HomeDashboardProfile {
   const HomeDashboardProfile({
     required this.id,
@@ -151,6 +177,8 @@ final class HomeDashboardProfile {
     required this.shortcutIds,
     this.emptyActionIds = const <String>[],
     this.metricRouteTargets = const <String, HomeMetricRouteTarget>{},
+    this.metricActionTargets = const <String, HomeMetricActionTarget>{},
+    this.toolbarActionIds = const <HomeToolbarActionId>[],
     this.heroFullWidth = false,
     this.maxStatusCards = 6,
     this.showEmptyWorkspaceLink = false,
@@ -169,6 +197,8 @@ final class HomeDashboardProfile {
   final List<String> shortcutIds;
   final List<String> emptyActionIds;
   final Map<String, HomeMetricRouteTarget> metricRouteTargets;
+  final Map<String, HomeMetricActionTarget> metricActionTargets;
+  final List<HomeToolbarActionId> toolbarActionIds;
   final bool heroFullWidth;
   final int maxStatusCards;
   final bool showEmptyWorkspaceLink;

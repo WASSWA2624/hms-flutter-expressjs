@@ -27,6 +27,14 @@ class HrQueueSwitcher extends ConsumerWidget {
     HrQueue.payrollDrafts,
   ];
 
+  static List<HrQueue> visibleQueues(HrQueue selected) {
+    if (selected == HrQueue.overdueShifts &&
+        !workspaceQueues.contains(HrQueue.overdueShifts)) {
+      return <HrQueue>[...workspaceQueues, HrQueue.overdueShifts];
+    }
+    return workspaceQueues;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
@@ -41,7 +49,7 @@ class HrQueueSwitcher extends ConsumerWidget {
       spacing: theme.spacing.xs,
       runSpacing: theme.spacing.xs,
       children: <Widget>[
-        for (final HrQueue queue in workspaceQueues)
+        for (final HrQueue queue in visibleQueues(selectedQueue))
           _QueueTab(
             queue: queue,
             label: hrQueueLabel(l10n, queue),

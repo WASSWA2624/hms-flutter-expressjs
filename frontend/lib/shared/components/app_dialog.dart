@@ -18,6 +18,7 @@ class AppDialog extends StatefulWidget {
     this.showMaximizeButton = true,
     this.resizable = true,
     this.closeEnabled = true,
+    this.initialMaximized = false,
     this.maxWidth = _defaultMaxWidth,
     super.key,
   });
@@ -34,6 +35,7 @@ class AppDialog extends StatefulWidget {
   final bool showMaximizeButton;
   final bool resizable;
   final bool closeEnabled;
+  final bool initialMaximized;
   final double maxWidth;
 
   @override
@@ -53,6 +55,14 @@ class _AppDialogState extends State<AppDialog> {
   Size? _preMaximizeSize;
   Offset? _preMaximizeDragOffset;
   bool _isMaximized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialMaximized) {
+      _isMaximized = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -120,6 +120,8 @@ final class HrWorkItemsQuery {
     this.status,
     this.departmentId,
     this.facilityId,
+    this.from,
+    this.to,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
@@ -128,6 +130,8 @@ final class HrWorkItemsQuery {
   final String? status;
   final String? departmentId;
   final String? facilityId;
+  final DateTime? from;
+  final DateTime? to;
   final AppPageRequest pageRequest;
 
   HrWorkItemsQuery copyWith({
@@ -136,10 +140,14 @@ final class HrWorkItemsQuery {
     String? status,
     String? departmentId,
     String? facilityId,
+    DateTime? from,
+    DateTime? to,
     AppPageRequest? pageRequest,
     bool clearStatus = false,
     bool clearDepartmentId = false,
     bool clearFacilityId = false,
+    bool clearFrom = false,
+    bool clearTo = false,
   }) {
     return HrWorkItemsQuery(
       queue: queue ?? this.queue,
@@ -149,6 +157,8 @@ final class HrWorkItemsQuery {
           ? null
           : departmentId ?? this.departmentId,
       facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
+      from: clearFrom ? null : from ?? this.from,
+      to: clearTo ? null : to ?? this.to,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }

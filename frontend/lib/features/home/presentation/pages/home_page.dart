@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,10 +9,13 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_hero_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_toolbar_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -74,7 +78,10 @@ class _HomeDashboardContent extends ConsumerWidget {
       dashboard.shortcutIds,
       policy,
     );
-    final String contextLine = _contextLine(dashboard);
+    final String contextLine = homeDashboardContextLine(
+      role: dashboard.profile.role,
+      context: dashboard.context,
+    );
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -91,6 +98,12 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
               toolbar: appWorkspaceToolbarWithLabels(
                 context.l10n,
+                secondary: buildHomeToolbarSecondary(
+                  l10n: context.l10n,
+                  profile: dashboard.profile,
+                  policy: policy,
+                  context: context,
+                ),
                 onRefresh: () async {
                   onRefresh();
                 },
@@ -99,7 +112,7 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
             ),
             SizedBox(height: spacing.md),
-            _HomeHeroPanel(
+            HomeHeroPanel(
               subtitle: dashboard.profile.homeSubtitle,
               contextLine: contextLine,
               generatedAt: dashboard.generatedAt,
@@ -132,85 +145,6 @@ class _HomeDashboardContent extends ConsumerWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _HomeHeroPanel extends StatelessWidget {
-  const _HomeHeroPanel({
-    required this.subtitle,
-    required this.contextLine,
-    required this.generatedAt,
-    required this.usesFallbackData,
-    this.fullWidth = false,
-  });
-
-  final String subtitle;
-  final String contextLine;
-  final DateTime? generatedAt;
-  final bool usesFallbackData;
-  final bool fullWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String? generatedLabel = generatedAt == null
-        ? null
-        : 'Updated ${DateFormat('MMM d, HH:mm').format(generatedAt!.toLocal())}';
-
-    return AppContentPanel(
-      child: Wrap(
-        spacing: theme.spacing.lg,
-        runSpacing: theme.spacing.sm,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          if (fullWidth)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(subtitle, style: theme.textTheme.bodyLarge),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  contextLine,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            )
-          else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(subtitle, style: theme.textTheme.bodyLarge),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    contextLine,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (generatedLabel != null || usesFallbackData)
-            AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: usesFallbackData
-                    ? 'Profile view'
-                    : generatedLabel ?? 'Live dashboard',
-                tone: usesFallbackData
-                    ? AppWorkspaceStatusTone.info
-                    : AppWorkspaceStatusTone.success,
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -268,6 +202,7 @@ class _HomeStatusStrip extends StatelessWidget {
                       card: card,
                       profile: profile,
                       policy: policy,
+                      compact: constraints.maxWidth < AppBreakpoints.md,
                     ),
                   ),
               ],
@@ -279,19 +214,21 @@ class _HomeStatusStrip extends StatelessWidget {
   }
 }
 
-class _HomeMetricCard extends StatelessWidget {
+class _HomeMetricCard extends ConsumerWidget {
   const _HomeMetricCard({
     required this.card,
     required this.profile,
     required this.policy,
+    this.compact = false,
   });
 
   final HomeStatusCard card;
   final HomeDashboardProfile profile;
   final AppAccessPolicy policy;
+  final bool compact;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
@@ -303,9 +240,16 @@ class _HomeMetricCard extends StatelessWidget {
       card: card,
       policy: policy,
     );
-    final String semanticsLabel = navigation == null
-        ? '${card.label}: $value'
-        : l10n.homeMetricCardSemantics(card.label, value);
+    final HomeMetricAction? action = homeMetricAction(
+      profile: profile,
+      card: card,
+      policy: policy,
+    );
+    final bool isActionable = navigation != null || action != null;
+    final String label = homeMetricCardLabel(l10n, card, compact: compact);
+    final String semanticsLabel = isActionable
+        ? l10n.homeMetricCardSemantics(label, value)
+        : '$label: $value';
 
     final Widget cardBody = Padding(
       padding: EdgeInsets.all(theme.spacing.md),
@@ -328,8 +272,8 @@ class _HomeMetricCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  card.label,
-                  maxLines: 2,
+                  label,
+                  maxLines: compact ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -349,7 +293,7 @@ class _HomeMetricCard extends StatelessWidget {
               ],
             ),
           ),
-          if (navigation != null) ...<Widget>[
+          if (isActionable) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
             Icon(
               Icons.chevron_right,
@@ -362,28 +306,36 @@ class _HomeMetricCard extends StatelessWidget {
     );
 
     return Semantics(
-      button: navigation != null,
+      button: isActionable,
       label: semanticsLabel,
-      child: navigation == null
-          ? DecoratedBox(
-              decoration: _metricCardDecoration(theme, colorScheme),
-              child: cardBody,
-            )
-          : Material(
+      child: isActionable
+          ? Material(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(theme.radius.lg),
               child: InkWell(
-                onTap: () => _goToRoute(
-                  context,
-                  navigation.route,
-                  queryParameters: navigation.queryParameters,
-                ),
+                onTap: () {
+                  if (action != null) {
+                    unawaited(action.invoke(context, ref));
+                    return;
+                  }
+                  if (navigation != null) {
+                    _goToRoute(
+                      context,
+                      navigation.route,
+                      queryParameters: navigation.queryParameters,
+                    );
+                  }
+                },
                 borderRadius: BorderRadius.circular(theme.radius.lg),
                 child: DecoratedBox(
                   decoration: _metricCardDecoration(theme, colorScheme),
                   child: cardBody,
                 ),
               ),
+            )
+          : DecoratedBox(
+              decoration: _metricCardDecoration(theme, colorScheme),
+              child: cardBody,
             ),
     );
   }
@@ -471,12 +423,10 @@ class _HomeMainGrid extends StatelessWidget {
         final Widget trend = _HomeTrendPanel(
           role: dashboard.profile.role,
           trend: dashboard.trend,
-          readOnlyInsights: dashboard.profile.showEmptyWorkspaceLink,
         );
         final Widget distribution = _HomeDistributionPanel(
           role: dashboard.profile.role,
           distribution: dashboard.distribution,
-          readOnlyInsights: dashboard.profile.showEmptyWorkspaceLink,
         );
         final Widget charts = twoColumns
             ? Row(
@@ -504,7 +454,6 @@ class _HomeMainGrid extends StatelessWidget {
             dashboard.profile.emptyActionIds,
             actions,
           ),
-          showWorkspaceLink: dashboard.profile.showEmptyWorkspaceLink,
           usesFallbackData: dashboard.usesFallbackData,
         );
         final Widget secondary = Column(
@@ -562,7 +511,6 @@ class _PrimaryQueuePanel extends StatelessWidget {
     required this.items,
     required this.emptyMessage,
     required this.emptyActions,
-    required this.showWorkspaceLink,
     required this.usesFallbackData,
   });
 
@@ -571,14 +519,11 @@ class _PrimaryQueuePanel extends StatelessWidget {
   final List<HomeQueueItem> items;
   final String emptyMessage;
   final List<_HomeActionDefinition> emptyActions;
-  final bool showWorkspaceLink;
   final bool usesFallbackData;
 
   @override
   Widget build(BuildContext context) {
-    final String? panelDescription = showWorkspaceLink
-        ? null
-        : usesFallbackData && items.isNotEmpty
+    final String panelDescription = usesFallbackData && items.isNotEmpty
         ? '$description Profile shortcuts until live dashboard data is available.'
         : description;
 
@@ -586,20 +531,10 @@ class _PrimaryQueuePanel extends StatelessWidget {
       title: title,
       description: panelDescription,
       leadingIcon: Icons.format_list_bulleted,
-      trailing: _ViewAllButton(
-        target:
-            _firstQueueTarget(items) ??
-            (showWorkspaceLink
-                ? const HomeRouteTarget(moduleSlug: 'hr')
-                : null),
-      ),
+      trailing: _ViewAllButton(target: _firstQueueTarget(items)),
       children: <Widget>[
         if (items.isEmpty)
-          _EmptyStateInline(
-            message: emptyMessage,
-            actions: emptyActions,
-            showWorkspaceLink: showWorkspaceLink,
-          )
+          _EmptyStateInline(message: emptyMessage, actions: emptyActions)
         else
           for (final HomeQueueItem item in items.take(5)) _QueueRow(item: item),
       ],
@@ -691,23 +626,16 @@ class _ShortcutsSection extends StatelessWidget {
 }
 
 class _HomeTrendPanel extends StatelessWidget {
-  const _HomeTrendPanel({
-    required this.role,
-    required this.trend,
-    this.readOnlyInsights = false,
-  });
+  const _HomeTrendPanel({required this.role, required this.trend});
 
   final AppRole role;
   final HomeDashboardTrend trend;
-  final bool readOnlyInsights;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final String subtitle = trend.subtitle.isEmpty
-        ? (readOnlyInsights
-              ? l10n.homeTrendLast7Days
-              : l10n.homeTrendDefaultSubtitle)
+        ? l10n.homeTrendDefaultSubtitle
         : trend.subtitle;
 
     return AppSectionPanel(
@@ -716,11 +644,7 @@ class _HomeTrendPanel extends StatelessWidget {
       leadingIcon: Icons.show_chart_outlined,
       children: <Widget>[
         if (trend.points.isEmpty)
-          _QuietState(
-            message: l10n.homeTrendEmptyMessage,
-            linkLabel: readOnlyInsights ? l10n.homeOpenHrWorkspaceLink : null,
-            linkRoute: readOnlyInsights ? AppRoutes.hr : null,
-          )
+          _QuietState(message: l10n.homeTrendEmptyMessage)
         else
           _HomeTrendChart(points: trend.points),
       ],
@@ -787,20 +711,16 @@ class _HomeDistributionPanel extends StatelessWidget {
   const _HomeDistributionPanel({
     required this.role,
     required this.distribution,
-    this.readOnlyInsights = false,
   });
 
   final AppRole role;
   final HomeDashboardDistribution distribution;
-  final bool readOnlyInsights;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final String subtitle = distribution.subtitle.isEmpty
-        ? (readOnlyInsights
-              ? l10n.homeDistributionWorkforceMix
-              : l10n.homeDistributionDefaultSubtitle)
+        ? l10n.homeDistributionDefaultSubtitle
         : distribution.subtitle;
 
     return AppSectionPanel(
@@ -809,11 +729,7 @@ class _HomeDistributionPanel extends StatelessWidget {
       leadingIcon: Icons.donut_large_outlined,
       children: <Widget>[
         if (!distribution.hasData)
-          _QuietState(
-            message: l10n.homeDistributionEmptyMessage,
-            linkLabel: readOnlyInsights ? l10n.homeOpenHrWorkspaceLink : null,
-            linkRoute: readOnlyInsights ? AppRoutes.hr : null,
-          )
+          _QuietState(message: l10n.homeDistributionEmptyMessage)
         else
           _HomeDistributionChart(distribution: distribution),
       ],
@@ -1309,20 +1225,14 @@ class _ViewAllButton extends StatelessWidget {
 }
 
 class _EmptyStateInline extends StatelessWidget {
-  const _EmptyStateInline({
-    required this.message,
-    required this.actions,
-    this.showWorkspaceLink = false,
-  });
+  const _EmptyStateInline({required this.message, required this.actions});
 
   final String message;
   final List<_HomeActionDefinition> actions;
-  final bool showWorkspaceLink;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1346,13 +1256,6 @@ class _EmptyStateInline extends StatelessWidget {
                 ),
             ],
           ),
-        ] else if (showWorkspaceLink) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          AppButton.tertiary(
-            label: l10n.homeOpenHrWorkspaceLink,
-            leadingIcon: Icons.open_in_new,
-            onPressed: () => _goToRoute(context, AppRoutes.hr),
-          ),
         ],
       ],
     );
@@ -1360,34 +1263,19 @@ class _EmptyStateInline extends StatelessWidget {
 }
 
 class _QuietState extends StatelessWidget {
-  const _QuietState({required this.message, this.linkLabel, this.linkRoute});
+  const _QuietState({required this.message});
 
   final String message;
-  final String? linkLabel;
-  final AppRouteData? linkRoute;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          message,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        if (linkLabel != null && linkRoute != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          AppButton.tertiary(
-            label: linkLabel!,
-            leadingIcon: Icons.open_in_new,
-            onPressed: () => _goToRoute(context, linkRoute!),
-          ),
-        ],
-      ],
+    return Text(
+      message,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -2554,25 +2442,6 @@ void _goToRoute(
   Map<String, String> queryParameters = const <String, String>{},
 }) {
   context.go(route.location(queryParameters: queryParameters));
-}
-
-String _contextLine(HomeDashboard dashboard) {
-  final List<String> parts = <String>[
-    if (_hasText(dashboard.context.facilityName))
-      dashboard.context.facilityName!,
-    if (_hasText(dashboard.context.facilityType))
-      _formatToken(dashboard.context.facilityType!),
-    if (_hasText(dashboard.context.tenantId))
-      'Tenant ${dashboard.context.tenantId}',
-    if (_hasText(dashboard.context.branchId))
-      'Branch ${dashboard.context.branchId}',
-  ];
-
-  if (parts.isEmpty) {
-    return 'Dashboard context follows your assigned account scope.';
-  }
-
-  return parts.join(' | ');
 }
 
 String _trendTitle(AppRole role, String fallback) {

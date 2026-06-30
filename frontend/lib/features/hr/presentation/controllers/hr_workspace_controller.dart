@@ -205,6 +205,8 @@ final class HrWorkspaceController
         workItemsQuery: current.workItemsQuery.copyWith(
           queue: queue,
           clearStatus: true,
+          clearFrom: true,
+          clearTo: true,
           pageRequest: current.workItemsQuery.pageRequest.first(),
         ),
         isRefreshingWorkItems: true,
@@ -212,6 +214,46 @@ final class HrWorkspaceController
       ),
     );
     return _refreshWorkItems(showLoading: true);
+  }
+
+  Future<AppFailure?> applyWorkItemsScope({
+    required HrQueue queue,
+    String? status,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        workItemsQuery: current.workItemsQuery.copyWith(
+          queue: queue,
+          status: status,
+          from: from,
+          to: to,
+          clearStatus: status == null,
+          clearFrom: from == null,
+          clearTo: to == null,
+          pageRequest: current.workItemsQuery.pageRequest.first(),
+        ),
+        isRefreshingWorkItems: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkItems(showLoading: true);
+  }
+
+  static DateTime startOfLocalDay([DateTime? reference]) {
+    final DateTime now = (reference ?? DateTime.now()).toLocal();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  static DateTime endOfLocalDay([DateTime? reference]) {
+    final DateTime start = startOfLocalDay(reference);
+    return start.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
   }
 
   Future<AppFailure?> changeWorkItemsPage(AppPageRequest request) async {

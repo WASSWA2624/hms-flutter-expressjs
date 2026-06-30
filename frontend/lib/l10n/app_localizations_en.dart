@@ -3465,6 +3465,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenHrWorkspaceLink => 'Open HR workspace';
 
   @override
+  String get homeMetricActiveStaffCompact => 'Active staff';
+
+  @override
+  String get homeMetricShiftsTodayCompact => 'Shifts today';
+
+  @override
+  String get homeMetricPendingLeavesCompact => 'Pending leave';
+
+  @override
+  String get homeMetricOnLeaveTodayCompact => 'On leave';
+
+  @override
+  String get homeMetricUnassignedShiftsCompact => 'Unassigned';
+
+  @override
+  String get homeMetricAttendedTodayCompact => 'Attended';
+
+  @override
+  String get homeMetricMissedShiftsTodayCompact => 'Missed shifts';
+
+  @override
+  String get homeMetricPayrollPendingCompact => 'Payroll pending';
+
+  @override
   String get homeViewAllAction => 'View all';
 
   @override

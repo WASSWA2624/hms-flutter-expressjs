@@ -4556,6 +4556,38 @@
   "@homeOpenHrWorkspaceLink": {
     "description": "Tertiary link from the HR home dashboard to the HR workspace."
   },
+  "homeMetricActiveStaffCompact": "Active staff",
+  "@homeMetricActiveStaffCompact": {
+    "description": "Compact label for the active staff home metric card."
+  },
+  "homeMetricShiftsTodayCompact": "Shifts today",
+  "@homeMetricShiftsTodayCompact": {
+    "description": "Compact label for the shifts today home metric card."
+  },
+  "homeMetricPendingLeavesCompact": "Pending leave",
+  "@homeMetricPendingLeavesCompact": {
+    "description": "Compact label for the pending leave home metric card."
+  },
+  "homeMetricOnLeaveTodayCompact": "On leave",
+  "@homeMetricOnLeaveTodayCompact": {
+    "description": "Compact label for the on leave today home metric card."
+  },
+  "homeMetricUnassignedShiftsCompact": "Unassigned",
+  "@homeMetricUnassignedShiftsCompact": {
+    "description": "Compact label for the unassigned shifts home metric card."
+  },
+  "homeMetricAttendedTodayCompact": "Attended",
+  "@homeMetricAttendedTodayCompact": {
+    "description": "Compact label for the attended today home metric card."
+  },
+  "homeMetricMissedShiftsTodayCompact": "Missed shifts",
+  "@homeMetricMissedShiftsTodayCompact": {
+    "description": "Compact label for the missed shifts today home metric card."
+  },
+  "homeMetricPayrollPendingCompact": "Payroll pending",
+  "@homeMetricPayrollPendingCompact": {
+    "description": "Compact label for the payroll pending home metric card."
+  },
   "homeViewAllAction": "View all",
   "@homeViewAllAction": {
     "description": "Action to open the full queue from a home dashboard panel."

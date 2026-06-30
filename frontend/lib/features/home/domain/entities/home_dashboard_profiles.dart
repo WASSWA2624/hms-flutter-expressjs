@@ -524,32 +524,40 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     shortcutIds: <String>[],
     heroFullWidth: true,
     maxStatusCards: 8,
-    showEmptyWorkspaceLink: true,
     suppressHomeQuickActions: true,
     suppressHomeShortcuts: true,
-    metricRouteTargets: <String, HomeMetricRouteTarget>{
-      'active_staff': HomeMetricRouteTarget(),
-      'shifts_today': HomeMetricRouteTarget(),
-      'pending_leaves': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'LEAVE_REQUESTS'},
+    toolbarActionIds: <HomeToolbarActionId>[
+      HomeToolbarActionId.openHrWorkspace,
+    ],
+    metricActionTargets: <String, HomeMetricActionTarget>{
+      'active_staff': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrStaffDirectory,
+        staffStatusFilter: 'ACTIVE',
       ),
-      'on_leave_today': HomeMetricRouteTarget(),
-      'staffing_backlog': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'UNASSIGNED_SHIFTS'},
+      'shifts_today': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrTodayShifts,
       ),
-      'unassigned_shifts': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'UNASSIGNED_SHIFTS'},
+      'pending_leaves': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrWorkQueue,
+        hrQueue: 'LEAVE_REQUESTS',
       ),
-      'attended_today': HomeMetricRouteTarget(),
-      'missed_shifts_today': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'OVERDUE_SHIFTS'},
+      'on_leave_today': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrOnLeaveToday,
       ),
-      'attendance_rate': HomeMetricRouteTarget(),
-      'payroll_pending': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'PAYROLL_DRAFTS'},
+      'unassigned_shifts': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrWorkQueue,
+        hrQueue: 'UNASSIGNED_SHIFTS',
       ),
-      'payroll_processed': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'PAYROLL_DRAFTS'},
+      'attended_today': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrAttendedToday,
+      ),
+      'missed_shifts_today': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrWorkQueue,
+        hrQueue: 'OVERDUE_SHIFTS',
+      ),
+      'payroll_pending': HomeMetricActionTarget(
+        kind: HomeMetricActionKind.hrWorkQueue,
+        hrQueue: 'PAYROLL_DRAFTS',
       ),
     },
   ),
