@@ -7,6 +7,7 @@
  * Per prisma.mdc: All mutations call createAuditLog.
  */
 
+const { generateStaffNumber } = require('@lib/hr/staff-number');
 const staffProfileRepository = require('@repositories/staff-profile/staff-profile.repository');
 const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
@@ -401,6 +402,9 @@ const buildStaffProfileCreateData = async (data) => {
     field: 'tenant_id',
     where: { deleted_at: null },
   });
+  const shouldGenerateStaffNumber =
+    data.generate_staff_number === true ||
+    (data.generate_staff_number !== false && !normalizeIdentifier(data.staff_number));
   const departmentId = await resolveIdentifierForPayload({
     value: data.department_id,
     model: 'department',
@@ -414,7 +418,7 @@ const buildStaffProfileCreateData = async (data) => {
     throw new HttpError('errors.user.not_found', 404, [{ field: 'user_id' }]);
   }
 
-  return normalizeConsultationFeePayload(
+  const payload = normalizeConsultationFeePayload(
     {
       ...stripNestedStaffProfilePayload(data),
       tenant_id: tenantId,
@@ -423,6 +427,14 @@ const buildStaffProfileCreateData = async (data) => {
     },
     { isEdit: false },
   );
+
+  if (shouldGenerateStaffNumber) {
+    const generated = await generateStaffNumber({ tenantId });
+    payload.staff_number = generated.staff_number;
+  }
+
+  delete payload.generate_staff_number;
+  return payload;
 };
 
 /**

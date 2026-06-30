@@ -8,6 +8,7 @@
  */
 
 const staffProfileService = require('@services/staff-profile/staff-profile.service');
+const { publishHrWorkspaceUpdate } = require('@services/hr-workspace/hr-workspace.service');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
@@ -97,6 +98,18 @@ const createStaffProfile = asyncHandler(async (req, res) => {
   const ipAddress = req.ip;
 
   const staffProfile = await staffProfileService.createStaffProfile(req.body, userId, ipAddress);
+
+  publishHrWorkspaceUpdate({
+    action: 'CREATE',
+    actorUserId: userId || null,
+    tenantId: staffProfile?.tenant_id || null,
+    panel: 'staffing',
+    resource: 'staff-profiles',
+    displayId: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
+    extra: {
+      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
+    },
+  }).catch(() => {});
 
   sendSuccess(res, 201, 'messages.staff_profile.create.success', staffProfile);
 });

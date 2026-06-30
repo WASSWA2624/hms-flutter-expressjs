@@ -10,6 +10,11 @@ abstract interface class HrRepository {
     String? departmentId,
   });
 
+  Future<Result<String>> generateStaffNumber({
+    required String tenantId,
+    String? facilityId,
+  });
+
   Future<Result<AppPage<HrStaffProfile>>> listStaffProfiles(HrStaffQuery query);
 
   Future<Result<HrStaffDetail>> loadStaffDetail(HrStaffProfile profile);

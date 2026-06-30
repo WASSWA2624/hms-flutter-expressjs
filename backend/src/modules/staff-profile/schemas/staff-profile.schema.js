@@ -52,6 +52,7 @@ const createStaffProfileSchema = z.object({
   user_id: resourceIdentifierSchema,
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   staff_number: z.string().trim().max(80).optional().nullable(),
+  generate_staff_number: z.boolean().optional(),
   position: z.string().trim().max(120).optional().nullable(),
   practitioner_type: z.enum(PRACTITIONER_TYPE_VALUES).optional().nullable(),
   consultation_fee: decimalInputSchema.optional().nullable(),
@@ -70,6 +71,7 @@ const createStaffProfileSchema = z.object({
 const updateStaffProfileSchema = z.object({
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   staff_number: z.string().trim().max(80).optional().nullable(),
+  generate_staff_number: z.boolean().optional(),
   position: z.string().trim().max(120).optional().nullable(),
   practitioner_type: z.enum(PRACTITIONER_TYPE_VALUES).optional().nullable(),
   consultation_fee: decimalInputSchema.optional().nullable(),

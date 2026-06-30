@@ -24348,8 +24348,98 @@ abstract class AppLocalizations {
   /// Section title for staff onboarding person and access fields.
   ///
   /// In en, this message translates to:
-  /// **'Person and access'**
+  /// **'Staff details and access'**
   String get hrStaffOnboardingPersonSectionTitle;
+
+  /// First name field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff first name'**
+  String get hrStaffFirstNameLabel;
+
+  /// Last name field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff last name'**
+  String get hrStaffLastNameLabel;
+
+  /// Email field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff email'**
+  String get hrStaffEmailLabel;
+
+  /// Phone field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff phone'**
+  String get hrStaffPhoneLabel;
+
+  /// Optional temporary password field label in staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password (optional)'**
+  String get hrStaffTemporaryPasswordLabel;
+
+  /// Helper text for optional password during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to auto-generate a secure password.'**
+  String get hrStaffPasswordOptionalHint;
+
+  /// Segment label for system-generated staff number mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get hrStaffNumberGenerateLabel;
+
+  /// Segment label for manual staff number entry mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter manually'**
+  String get hrStaffNumberManualLabel;
+
+  /// Action to generate a tenant-scoped staff number.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get hrStaffGenerateNumberAction;
+
+  /// Section title for role assignment during staff onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and access'**
+  String get hrStaffOnboardingRolesSectionTitle;
+
+  /// Helper text for compensation section when editing an existing staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update compensation for this staff member. New staff can set pay later from staff detail.'**
+  String get hrStaffOnboardingCompensationEditHint;
+
+  /// Search field label in the reusable role assignment picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search roles'**
+  String get hrRoleAssignmentSearchLabel;
+
+  /// Dropdown label to add a role in the role assignment picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add role'**
+  String get hrRoleAssignmentAddRoleLabel;
+
+  /// Empty state when no roles are selected in the role assignment picker.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles selected yet.'**
+  String get hrRoleAssignmentEmptySelectedLabel;
+
+  /// Tooltip for removing a selected role from the assignment picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove role'**
+  String get hrRoleAssignmentRemoveRoleAction;
 
   /// Section title for staff onboarding employment fields.
   ///

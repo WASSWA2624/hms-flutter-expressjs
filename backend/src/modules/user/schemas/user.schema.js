@@ -32,9 +32,6 @@ const createUserSchema = z.object({
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema,
   permission_ids: permissionIdsSchema,
-}).refine((value) => Boolean(value.password || value.password_hash), {
-  message: 'errors.validation.field.required',
-  path: ['password'],
 });
 
 /**

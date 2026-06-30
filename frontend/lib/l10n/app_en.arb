@@ -16784,9 +16784,69 @@
   "@hrAddStaffDialogTitle": {
     "description": "Human resources workspace text for hrAddStaffDialogTitle."
   },
-  "hrStaffOnboardingPersonSectionTitle": "Person and access",
+  "hrStaffOnboardingPersonSectionTitle": "Staff details and access",
   "@hrStaffOnboardingPersonSectionTitle": {
     "description": "Section title for staff onboarding person and access fields."
+  },
+  "hrStaffFirstNameLabel": "Staff first name",
+  "@hrStaffFirstNameLabel": {
+    "description": "First name field label in staff onboarding."
+  },
+  "hrStaffLastNameLabel": "Staff last name",
+  "@hrStaffLastNameLabel": {
+    "description": "Last name field label in staff onboarding."
+  },
+  "hrStaffEmailLabel": "Staff email",
+  "@hrStaffEmailLabel": {
+    "description": "Email field label in staff onboarding."
+  },
+  "hrStaffPhoneLabel": "Staff phone",
+  "@hrStaffPhoneLabel": {
+    "description": "Phone field label in staff onboarding."
+  },
+  "hrStaffTemporaryPasswordLabel": "Temporary password (optional)",
+  "@hrStaffTemporaryPasswordLabel": {
+    "description": "Optional temporary password field label in staff onboarding."
+  },
+  "hrStaffPasswordOptionalHint": "Leave blank to auto-generate a secure password.",
+  "@hrStaffPasswordOptionalHint": {
+    "description": "Helper text for optional password during staff onboarding."
+  },
+  "hrStaffNumberGenerateLabel": "Generate",
+  "@hrStaffNumberGenerateLabel": {
+    "description": "Segment label for system-generated staff number mode."
+  },
+  "hrStaffNumberManualLabel": "Enter manually",
+  "@hrStaffNumberManualLabel": {
+    "description": "Segment label for manual staff number entry mode."
+  },
+  "hrStaffGenerateNumberAction": "Generate",
+  "@hrStaffGenerateNumberAction": {
+    "description": "Action to generate a tenant-scoped staff number."
+  },
+  "hrStaffOnboardingRolesSectionTitle": "Roles and access",
+  "@hrStaffOnboardingRolesSectionTitle": {
+    "description": "Section title for role assignment during staff onboarding."
+  },
+  "hrStaffOnboardingCompensationEditHint": "Update compensation for this staff member. New staff can set pay later from staff detail.",
+  "@hrStaffOnboardingCompensationEditHint": {
+    "description": "Helper text for compensation section when editing an existing staff profile."
+  },
+  "hrRoleAssignmentSearchLabel": "Search roles",
+  "@hrRoleAssignmentSearchLabel": {
+    "description": "Search field label in the reusable role assignment picker."
+  },
+  "hrRoleAssignmentAddRoleLabel": "Add role",
+  "@hrRoleAssignmentAddRoleLabel": {
+    "description": "Dropdown label to add a role in the role assignment picker."
+  },
+  "hrRoleAssignmentEmptySelectedLabel": "No roles selected yet.",
+  "@hrRoleAssignmentEmptySelectedLabel": {
+    "description": "Empty state when no roles are selected in the role assignment picker."
+  },
+  "hrRoleAssignmentRemoveRoleAction": "Remove role",
+  "@hrRoleAssignmentRemoveRoleAction": {
+    "description": "Tooltip for removing a selected role from the assignment picker."
   },
   "hrStaffOnboardingEmploymentSectionTitle": "Employment",
   "@hrStaffOnboardingEmploymentSectionTitle": {

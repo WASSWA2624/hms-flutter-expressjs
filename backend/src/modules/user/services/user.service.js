@@ -7,6 +7,7 @@
  * Per prisma.mdc: All mutations call createAuditLog.
  */
 
+const crypto = require('crypto');
 const userRepository = require('@repositories/user/user.repository');
 const { createAuditLog } = require('@lib/audit');
 const { hashPassword } = require('@lib/crypto');
@@ -94,7 +95,7 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
       ? providedHash
       : await hashPassword(providedHash);
   } else if (!isUpdate) {
-    throw new HttpError('errors.validation.field.required', 400, [{ field: 'password' }]);
+    next.password_hash = await hashPassword(crypto.randomBytes(16).toString('hex'));
   }
 
   if (permissionIds !== undefined) {

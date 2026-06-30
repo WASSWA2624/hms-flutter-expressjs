@@ -12960,7 +12960,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAddStaffDialogTitle => 'Add staff profile';
 
   @override
-  String get hrStaffOnboardingPersonSectionTitle => 'Person and access';
+  String get hrStaffOnboardingPersonSectionTitle => 'Staff details and access';
+
+  @override
+  String get hrStaffFirstNameLabel => 'Staff first name';
+
+  @override
+  String get hrStaffLastNameLabel => 'Staff last name';
+
+  @override
+  String get hrStaffEmailLabel => 'Staff email';
+
+  @override
+  String get hrStaffPhoneLabel => 'Staff phone';
+
+  @override
+  String get hrStaffTemporaryPasswordLabel => 'Temporary password (optional)';
+
+  @override
+  String get hrStaffPasswordOptionalHint =>
+      'Leave blank to auto-generate a secure password.';
+
+  @override
+  String get hrStaffNumberGenerateLabel => 'Generate';
+
+  @override
+  String get hrStaffNumberManualLabel => 'Enter manually';
+
+  @override
+  String get hrStaffGenerateNumberAction => 'Generate';
+
+  @override
+  String get hrStaffOnboardingRolesSectionTitle => 'Roles and access';
+
+  @override
+  String get hrStaffOnboardingCompensationEditHint =>
+      'Update compensation for this staff member. New staff can set pay later from staff detail.';
+
+  @override
+  String get hrRoleAssignmentSearchLabel => 'Search roles';
+
+  @override
+  String get hrRoleAssignmentAddRoleLabel => 'Add role';
+
+  @override
+  String get hrRoleAssignmentEmptySelectedLabel => 'No roles selected yet.';
+
+  @override
+  String get hrRoleAssignmentRemoveRoleAction => 'Remove role';
 
   @override
   String get hrStaffOnboardingEmploymentSectionTitle => 'Employment';

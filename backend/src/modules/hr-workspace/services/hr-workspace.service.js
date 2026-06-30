@@ -6,6 +6,7 @@ const { normalizeIdentifier, resolveModelRecordByIdentifier } = require('@lib/id
 const { resolveIdentifierForFilter, resolveIdentifierForPayload, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { emitToUsers, HR_EVENTS } = require('@lib/websocket');
 const { ROLES, ROLE_VALUES } = require('@config/roles');
+const { generateStaffNumber: generateStaffNumberCore } = require('@lib/hr/staff-number');
 const {
   buildWorkflow,
   generateRosterAssignments: generateRosterAssignmentsCore,
@@ -124,6 +125,17 @@ const RESOURCE_STATUS_ENUMS = Object.freeze({
 
 const SHIFT_TYPE_OPTIONS = Object.freeze(['DAY', 'NIGHT', 'SWING', 'ON_CALL']);
 const PRACTITIONER_TYPE_OPTIONS = Object.freeze(['MO', 'SPECIALIST']);
+const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
+const DEFAULT_STAFF_POSITION_NAMES = Object.freeze([
+  'Nurse',
+  'Doctor',
+  'Pharmacist',
+  'Radiologist',
+  'Lab Technologist',
+  'Receptionist',
+  'HR Officer',
+  'Administrator',
+]);
 
 const normalizeString = (value) => String(value || '').trim();
 const normalizeDate = (value) => {
@@ -982,6 +994,7 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
 
 const getReferenceData = async (filters = {}) => {
   const scope = await buildScope(filters);
+  await ensureDefaultStaffPositions(scope);
 
   const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles, users] =
     await Promise.all([
@@ -1127,7 +1140,15 @@ const getReferenceData = async (filters = {}) => {
         where: { deleted_at: null, name: { in: HR_ASSIGNABLE_ROLE_NAMES } },
         orderBy: { name: 'asc' },
         take: 100,
-        select: { id: true, human_friendly_id: true, name: true },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true,
+          permissions: {
+            where: { deleted_at: null },
+            select: { permission_id: true },
+          },
+        },
       }),
       prisma.user.findMany({
         where: {
@@ -1265,11 +1286,18 @@ const getReferenceData = async (filters = {}) => {
       )
       .filter(Boolean),
     roles: roles
-      .map((entry) =>
-        toOption(entry, [entry.name, resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '), {
-          name: entry.name,
-        })
-      )
+      .map((entry) => {
+        const roleName = normalizeString(entry.name).toUpperCase();
+        return toOption(
+          entry,
+          [entry.name, resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '),
+          {
+            name: entry.name,
+            permission_count: Array.isArray(entry.permissions) ? entry.permissions.length : 0,
+            is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName),
+          }
+        );
+      })
       .filter(Boolean),
     users: users
       .map((entry) => {
@@ -1306,6 +1334,78 @@ const getReferenceData = async (filters = {}) => {
       ])
     ),
   };
+};
+
+const shouldSeedReferenceData = () => process.env.NODE_ENV !== 'production';
+
+const resolveTenantIdForScope = async (scope) => {
+  if (!scope.facilityId) {
+    return null;
+  }
+  const facility = await prisma.facility.findFirst({
+    where: { id: scope.facilityId, deleted_at: null },
+    select: { tenant_id: true },
+  });
+  return facility?.tenant_id || null;
+};
+
+const ensureDefaultStaffPositions = async (scope) => {
+  if (!shouldSeedReferenceData()) {
+    return;
+  }
+
+  const existingCount = await prisma.staff_position.count({
+    where: {
+      deleted_at: null,
+      ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+      ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+    },
+  });
+  if (existingCount > 0) {
+    return;
+  }
+
+  const tenantId = await resolveTenantIdForScope(scope);
+  if (!tenantId) {
+    return;
+  }
+
+  await Promise.all(
+    DEFAULT_STAFF_POSITION_NAMES.map((name) =>
+      prisma.staff_position.create({
+        data: {
+          tenant_id: tenantId,
+          facility_id: scope.facilityId || null,
+          name,
+          is_active: true,
+        },
+      })
+    )
+  );
+};
+
+const generateStaffNumber = async ({ tenantId = null, facilityId = null } = {}) => {
+  const resolvedTenantId = tenantId
+    ? await resolveIdentifierForPayload({
+        value: tenantId,
+        model: 'tenant',
+        field: 'tenant_id',
+        where: { deleted_at: null },
+        nullable: true,
+      })
+    : null;
+  const resolvedFacilityId = facilityId
+    ? await resolveIdentifierForFilter({
+        value: facilityId,
+        model: 'facility',
+        where: { deleted_at: null },
+      })
+    : null;
+
+  return generateStaffNumberCore({
+    tenantId: resolvedTenantId,
+    facilityId: resolvedFacilityId,
+  });
 };
 
 const getRosterWorkflow = async (rosterIdentifier) => buildWorkflow(rosterIdentifier);
@@ -2393,6 +2493,8 @@ module.exports = {
   getReferenceData,
   getStaffAccessSummary,
   getRosterWorkflow,
+  generateStaffNumber,
+  publishHrWorkspaceUpdate,
   generateRosterAssignments,
   publishRoster,
   overrideShiftAssignment,

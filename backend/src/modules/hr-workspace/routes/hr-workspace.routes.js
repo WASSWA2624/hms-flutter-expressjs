@@ -26,6 +26,7 @@ const {
   leaveRejectSchema,
   payrollPreviewQuerySchema,
   payrollProcessSchema,
+  generateStaffNumberSchema,
 } = require('@validations/hr-workspace/hr-workspace.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
@@ -60,6 +61,13 @@ router.get(
   validateRequest({ query: referenceDataQuerySchema }),
   authorize(HR_READ_SCOPES, 'permission'),
   hrWorkspaceController.getReferenceData
+);
+
+router.post(
+  '/staff/generate-number',
+  validateRequest({ body: generateStaffNumberSchema }),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  hrWorkspaceController.generateStaffNumber
 );
 
 router.get(

@@ -25,6 +25,7 @@ describe('hr-workspace.service contract', () => {
         'getWorkspace',
         'getWorkItems',
         'getReferenceData',
+        'generateStaffNumber',
         'getStaffAccessSummary',
         'getRosterWorkflow',
         'generateRosterAssignments',

@@ -824,7 +824,6 @@ final class HrWorkspaceController
     }
 
     final bool isEdit = payload['_edit'] == true;
-    final bool linkExisting = payload['_link_existing'] == true;
     final String? tenantId = payload['tenant_id']?.toString();
     final String? facilityId = payload['facility_id']?.toString();
     final List<String> roleIds =
@@ -837,7 +836,7 @@ final class HrWorkspaceController
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
 
     String? userId = payload['user_id']?.toString();
-    if (!isEdit && !linkExisting) {
+    if (!isEdit) {
       final Result<Object?> userResult = await _repository.createUserAccount(
         <String, Object?>{
           'tenant_id': tenantId,
@@ -890,6 +889,8 @@ final class HrWorkspaceController
     final Map<String, Object?> staffPayload = <String, Object?>{
       if (!isEdit) 'tenant_id': tenantId,
       if (!isEdit && userId != null) 'user_id': userId,
+      if (payload['generate_staff_number'] == true)
+        'generate_staff_number': true,
       'staff_number': payload['staff_number'],
       'position': payload['position'],
       'department_id': payload['department_id'],
@@ -1012,6 +1013,16 @@ final class HrWorkspaceController
     HrWorkItem item,
   ) {
     return _repository.generateRosterPreview(item.effectiveId);
+  }
+
+  Future<Result<String>> generateStaffNumber({
+    required String tenantId,
+    String? facilityId,
+  }) {
+    return _repository.generateStaffNumber(
+      tenantId: tenantId,
+      facilityId: facilityId,
+    );
   }
 
   Future<Result<HrWorkspaceState>> _loadInitialState() async {

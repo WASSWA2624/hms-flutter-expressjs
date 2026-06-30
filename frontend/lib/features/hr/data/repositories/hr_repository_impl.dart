@@ -49,6 +49,36 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<String>> generateStaffNumber({
+    required String tenantId,
+    String? facilityId,
+  }) {
+    return _apiClient.post<String>(
+      _hrEndpoint(<String>['staff', 'generate-number']),
+      data: _withoutEmpty(<String, Object?>{
+        'tenant_id': tenantId,
+        'facility_id': facilityId,
+      }),
+      decoder: (Object? responseData) {
+        if (responseData is Map) {
+          final Object? payload = responseData['data'];
+          if (payload is Map) {
+            final Object? staffNumber = payload['staff_number'];
+            if (staffNumber != null) {
+              return staffNumber.toString();
+            }
+          }
+          final Object? staffNumber = responseData['staff_number'];
+          if (staffNumber != null) {
+            return staffNumber.toString();
+          }
+        }
+        return '';
+      },
+    );
+  }
+
+  @override
   Future<Result<AppPage<HrStaffProfile>>> listStaffProfiles(
     HrStaffQuery query,
   ) {

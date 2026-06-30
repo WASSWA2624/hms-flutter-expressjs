@@ -17,15 +17,17 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-enum _StaffIdentityMode { createNew, linkExisting }
-
-enum _CompensationPayType { monthly, daily, hourly, perVisit }
+const double _kOnboardingTwoColumnBreakpoint = 900;
 
 const Set<String> _clinicalRoleNames = <String>{
   'DOCTOR',
   'NURSE',
   'SPECIALIST',
 };
+
+enum StaffNumberEntryMode { generate, manual }
+
+enum _CompensationPayType { monthly, daily, hourly, perVisit }
 
 /// Opens the canonical HR staff onboarding dialog (create or edit).
 Future<void> showHrStaffOnboardingDialog(
@@ -50,8 +52,8 @@ Future<void> showHrStaffOnboardingDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final GlobalKey<_HrStaffOnboardingFieldsState> fieldsKey =
-      GlobalKey<_HrStaffOnboardingFieldsState>();
+  final GlobalKey<HrStaffOnboardingFormState> fieldsKey =
+      GlobalKey<HrStaffOnboardingFormState>();
   final bool isEdit = staff != null;
   final String? facilityId = ref
       .read(sessionStateProvider)
@@ -71,7 +73,7 @@ Future<void> showHrStaffOnboardingDialog(
     maxWidth: 980,
     initialMaximized: true,
     buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
-      return _HrStaffOnboardingFields(
+      return HrStaffOnboardingForm(
         key: fieldsKey,
         staff: staff,
         referenceData: state?.referenceData ?? const HrReferenceData(),
@@ -99,8 +101,9 @@ Future<void> showHrStaffOnboardingDialog(
   }
 }
 
-class _HrStaffOnboardingFields extends ConsumerStatefulWidget {
-  const _HrStaffOnboardingFields({
+/// Staff onboarding form fields used by [showHrStaffOnboardingDialog].
+class HrStaffOnboardingForm extends ConsumerStatefulWidget {
+  const HrStaffOnboardingForm({
     required this.referenceData,
     required this.tenantId,
     this.staff,
@@ -114,12 +117,11 @@ class _HrStaffOnboardingFields extends ConsumerStatefulWidget {
   final String? facilityId;
 
   @override
-  ConsumerState<_HrStaffOnboardingFields> createState() =>
-      _HrStaffOnboardingFieldsState();
+  ConsumerState<HrStaffOnboardingForm> createState() =>
+      HrStaffOnboardingFormState();
 }
 
-class _HrStaffOnboardingFieldsState
-    extends ConsumerState<_HrStaffOnboardingFields> {
+class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
@@ -133,9 +135,8 @@ class _HrStaffOnboardingFieldsState
   late final TextEditingController _feeController;
   late final TextEditingController _feeCurrencyController;
 
-  _StaffIdentityMode _identityMode = _StaffIdentityMode.createNew;
+  StaffNumberEntryMode _staffNumberMode = StaffNumberEntryMode.generate;
   _CompensationPayType _payType = _CompensationPayType.monthly;
-  String? _linkedUserId;
   String? _position;
   String? _departmentId;
   String? _practitionerType;
@@ -144,11 +145,19 @@ class _HrStaffOnboardingFieldsState
   bool _isAddingPosition = false;
   bool _showCompensation = false;
   bool _showConsultationFee = false;
+  bool _generatingStaffNumber = false;
   final Set<String> _selectedRoleIds = <String>{};
-  final Set<String> _previewPermissions = <String>{};
-  bool _loadingPermissions = false;
 
-  bool get _isEdit => widget.staff != null;
+  bool get isEdit => widget.staff != null;
+
+  @visibleForTesting
+  StaffNumberEntryMode get staffNumberMode => _staffNumberMode;
+
+  @visibleForTesting
+  DateTime? get hireDate => _hireDate;
+
+  @visibleForTesting
+  Set<String> get selectedRoleIds => Set<String>.unmodifiable(_selectedRoleIds);
 
   @override
   void initState() {
@@ -177,7 +186,7 @@ class _HrStaffOnboardingFieldsState
     _position = (staff?.position ?? '').trim().isEmpty ? null : staff!.position;
     _departmentId = staff?.departmentDisplayId ?? staff?.departmentId;
     _practitionerType = staff?.practitionerType;
-    _hireDate = staff?.hireDate;
+    _hireDate = staff?.hireDate ?? DateTime.now();
     if (staff != null && staff.compensations.isNotEmpty) {
       final HrStaffCompensation compensation = staff.compensations.first;
       _compensationRateController.text = compensation.rate?.toString() ?? '';
@@ -185,7 +194,13 @@ class _HrStaffOnboardingFieldsState
       _compensationEffectiveFrom = compensation.effectiveFrom ?? DateTime.now();
       _showCompensation = compensation.rate != null;
     }
+    if (staff?.staffNumber != null && staff!.staffNumber!.isNotEmpty) {
+      _staffNumberMode = StaffNumberEntryMode.manual;
+    }
     _recomputeClinicalSections();
+    if (!isEdit) {
+      unawaited(_generateStaffNumber());
+    }
   }
 
   @override
@@ -240,13 +255,7 @@ class _HrStaffOnboardingFieldsState
       return true;
     }
     for (final String roleId in _selectedRoleIds) {
-      HrOption? role;
-      for (final HrOption option in widget.referenceData.roles) {
-        if (option.value == roleId) {
-          role = option;
-          break;
-        }
-      }
+      final HrOption? role = _roleOptionById(roleId);
       if (role == null) {
         continue;
       }
@@ -263,75 +272,60 @@ class _HrStaffOnboardingFieldsState
     return false;
   }
 
-  Future<void> _refreshPermissionPreview() async {
-    if (_selectedRoleIds.isEmpty) {
-      setState(() {
-        _previewPermissions.clear();
-        _loadingPermissions = false;
-      });
-      return;
+  HrOption? _roleOptionById(String roleId) {
+    for (final HrOption option in widget.referenceData.roles) {
+      if (option.value == roleId) {
+        return option;
+      }
     }
-    setState(() => _loadingPermissions = true);
-    final HrWorkspaceController controller = ref.read(
-      hrWorkspaceControllerProvider.notifier,
-    );
-    final Set<String> permissions = <String>{};
-    for (final String roleId in _selectedRoleIds) {
-      final Result<AppPage<HrOption>> result = await controller
-          .listRolePermissionOptions(roleId);
-      result.when(
-        success: (AppPage<HrOption> page) {
-          for (final HrOption permission in page.items) {
-            permissions.add(permission.label);
-          }
-        },
-        failure: (_) {},
-      );
-    }
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _previewPermissions
-        ..clear()
-        ..addAll(permissions);
-      _loadingPermissions = false;
-    });
+    return null;
   }
 
-  List<AppSelectOption<String>> _linkableUserOptions() {
-    return <AppSelectOption<String>>[
-      for (final HrOption user in widget.referenceData.users)
-        if (user.extra['has_staff_profile'] != true)
-          AppSelectOption<String>(
-            value: user.value,
-            label: _formatUserOptionLabel(user),
-          ),
+  List<AppRoleAssignmentOption> _roleAssignmentOptions() {
+    return <AppRoleAssignmentOption>[
+      for (final HrOption role in widget.referenceData.roles)
+        AppRoleAssignmentOption(
+          id: role.value,
+          label: role.label,
+          permissionCount: (role.extra['permission_count'] as int?) ?? 0,
+          isSystemCritical: role.extra['is_system_critical'] == true,
+        ),
     ];
   }
 
-  String _formatUserOptionLabel(HrOption user) {
-    final String email = user.extra['email']?.toString() ?? '';
-    final String roleHint = user.extra['role_hint']?.toString() ?? '';
-    final List<String> parts = user.label.split(' · ');
-    final String name = parts.isNotEmpty ? parts.first.trim() : '';
-    final StringBuffer buffer = StringBuffer();
-    if (name.isNotEmpty) {
-      buffer.write(name);
+  Future<Set<String>> _loadRolePermissions(String roleId) async {
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final Result<AppPage<HrOption>> result = await controller
+        .listRolePermissionOptions(roleId);
+    return result.when(
+      success: (AppPage<HrOption> page) => page.items
+          .map((HrOption permission) => permission.label)
+          .toSet(),
+      failure: (_) => <String>{},
+    );
+  }
+
+  Future<void> _generateStaffNumber() async {
+    setState(() => _generatingStaffNumber = true);
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final Result<String> result = await controller.generateStaffNumber(
+      tenantId: widget.tenantId,
+      facilityId: widget.facilityId,
+    );
+    if (!mounted) {
+      return;
     }
-    if (email.isNotEmpty && email != name) {
-      if (buffer.isNotEmpty) {
-        buffer.write(' · ');
-      }
-      buffer.write(email);
-    }
-    if (roleHint.isNotEmpty) {
-      if (buffer.isNotEmpty) {
-        buffer.write(' · ');
-      }
-      buffer.write(roleHint);
-    }
-    return buffer.isEmpty ? user.label : buffer.toString();
+    result.when(
+      success: (String staffNumber) {
+        _staffNumberController.text = staffNumber;
+        setState(() => _generatingStaffNumber = false);
+      },
+      failure: (_) => setState(() => _generatingStaffNumber = false),
+    );
   }
 
   List<AppSelectOption<String>> _positionOptions() {
@@ -401,13 +395,14 @@ class _HrStaffOnboardingFieldsState
       }
     }
 
+    final bool useGeneratedStaffNumber =
+        !isEdit && _staffNumberMode == StaffNumberEntryMode.generate;
+
     return <String, Object?>{
-      if (!_isEdit) '_link_existing': _identityMode == _StaffIdentityMode.linkExisting,
-      if (!_isEdit && _identityMode == _StaffIdentityMode.linkExisting)
-        'user_id': _linkedUserId,
-      if (!_isEdit && _identityMode == _StaffIdentityMode.createNew) ...<String, Object?>{
+      if (!isEdit) ...<String, Object?>{
         'email': _emailController.text.trim(),
-        'password': _passwordController.text.trim(),
+        if (_passwordController.text.trim().isNotEmpty)
+          'password': _passwordController.text.trim(),
         'phone': _phoneController.text.trim(),
         'position_title': position.isNotEmpty ? position : 'Staff',
         'status': 'ACTIVE',
@@ -415,7 +410,10 @@ class _HrStaffOnboardingFieldsState
         '_last_name': _lastNameController.text.trim(),
       },
       '_role_ids': _selectedRoleIds.toList(growable: false),
-      'staff_number': _staffNumberController.text.trim(),
+      if (useGeneratedStaffNumber)
+        'generate_staff_number': true
+      else
+        'staff_number': _staffNumberController.text.trim(),
       'position': position,
       'department_id': _departmentId,
       'practitioner_type': _practitionerType,
@@ -428,350 +426,401 @@ class _HrStaffOnboardingFieldsState
     };
   }
 
+  Widget _responsivePair({required Widget left, required Widget right}) {
+    return AppResponsiveFieldRow.two(
+      left: left,
+      right: right,
+      breakpoint: _kOnboardingTwoColumnBreakpoint,
+      gap: AppResponsiveFieldRowGap.form,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (!_isEdit) ...<Widget>[
-          Text(
-            l10n.hrStaffOnboardingPersonSectionTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          SegmentedButton<_StaffIdentityMode>(
-            segments: <ButtonSegment<_StaffIdentityMode>>[
-              ButtonSegment<_StaffIdentityMode>(
-                value: _StaffIdentityMode.createNew,
-                label: Text(l10n.hrStaffOnboardingCreateNewUserLabel),
-                icon: const Icon(Icons.person_add_outlined),
-              ),
-              ButtonSegment<_StaffIdentityMode>(
-                value: _StaffIdentityMode.linkExisting,
-                label: Text(l10n.hrStaffOnboardingLinkExistingUserLabel),
-                icon: const Icon(Icons.link_outlined),
-              ),
-            ],
-            selected: <_StaffIdentityMode>{_identityMode},
-            onSelectionChanged: (Set<_StaffIdentityMode> value) {
-              setState(() => _identityMode = value.first);
-            },
-          ),
-          SizedBox(height: theme.spacing.md),
-          if (_identityMode == _StaffIdentityMode.createNew)
-            AppFormSection(
-              children: <Widget>[
-                AppTextField(
-                  controller: _firstNameController,
-                  labelText: l10n.profileEditFirstNameLabel,
-                  isRequired: true,
-                  validator: AppValidators.requiredText(
-                    l10n.hrFieldRequiredLabel(l10n.profileEditFirstNameLabel),
-                  ),
-                ),
-                AppTextField(
-                  controller: _lastNameController,
-                  labelText: l10n.profileEditLastNameLabel,
-                  isRequired: true,
-                  validator: AppValidators.requiredText(
-                    l10n.hrFieldRequiredLabel(l10n.profileEditLastNameLabel),
-                  ),
-                ),
-                AppTextField(
-                  controller: _emailController,
-                  labelText: l10n.hrEmailLabel,
-                  isRequired: true,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: AppValidators.requiredText(
-                    l10n.hrFieldRequiredLabel(l10n.hrEmailLabel),
-                  ),
-                ),
-                AppTextField(
-                  controller: _phoneController,
-                  labelText: l10n.profilePhoneLabel,
-                  keyboardType: TextInputType.phone,
-                ),
-                AppTextField(
-                  controller: _addressController,
-                  labelText: l10n.hrStaffOnboardingAddressLabel,
-                  maxLines: 2,
-                ),
-                AppTextField(
-                  controller: _passwordController,
-                  labelText: l10n.hrPasswordLabel,
-                  isRequired: true,
-                  obscureText: true,
-                  validator: AppValidators.requiredText(
-                    l10n.hrFieldRequiredLabel(l10n.hrPasswordLabel),
-                  ),
-                ),
-              ],
-            )
-          else
-            AppSelectField<String>.searchable(
-              value: _linkedUserId,
-              labelText: l10n.hrSelectUserLabel,
-              isRequired: true,
-              options: _linkableUserOptions(),
-              validator: AppValidators.requiredValue(
-                l10n.hrFieldRequiredLabel(l10n.hrSelectUserLabel),
-              ),
-              onChanged: (String? value) =>
-                  setState(() => _linkedUserId = value),
-            ),
-          SizedBox(height: theme.spacing.lg),
-        ],
-        Text(
-          l10n.hrStaffOnboardingEmploymentSectionTitle,
-          style: theme.textTheme.titleSmall,
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppFormSection(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool wide =
+            constraints.hasBoundedWidth &&
+            constraints.maxWidth >= _kOnboardingTwoColumnBreakpoint;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppTextField(
-              controller: _staffNumberController,
-              labelText: l10n.hrStaffNumberLabel,
-            ),
-            if (_isAddingPosition)
-              AppTextField(
-                controller: _newPositionController,
-                labelText: l10n.hrNewPositionLabel,
-                isRequired: true,
-                validator: AppValidators.requiredText(
-                  l10n.hrFieldRequiredLabel(l10n.hrNewPositionLabel),
-                ),
-              )
-            else
-              AppSelectField<String>.searchable(
-                value: _position,
-                labelText: l10n.hrPositionLabel,
-                options: _positionOptions(),
-                onChanged: (String? value) => setState(() => _position = value),
-              ),
-            AppCheckboxField(
-              title: l10n.hrAddNewPositionLabel,
-              value: _isAddingPosition,
-              onChanged: (bool value) => setState(() => _isAddingPosition = value),
-            ),
-            AppSelectField<String>.searchable(
-              value: _departmentId,
-              labelText: l10n.hrDepartmentLabel,
-              options: _selectOptions(widget.referenceData.departments),
-              onChanged: (String? value) =>
-                  setState(() => _departmentId = value),
-            ),
-            AppSelectField<String>(
-              value: _practitionerType,
-              labelText: l10n.hrPractitionerTypeLabel,
-              options: _selectOptions(widget.referenceData.practitionerTypes),
-              onChanged: (String? value) {
-                setState(() => _practitionerType = value);
-                _recomputeClinicalSections();
-              },
-            ),
-            AppDateField(
-              value: _hireDate,
-              labelText: l10n.hrHireDateLabel,
-              firstDate: DateTime(1950),
-              lastDate: DateTime(2100),
-              currentDate: DateTime.now(),
-              pickerButtonLabel: l10n.hrPickDateAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              onChanged: (DateTime? value) => setState(() => _hireDate = value),
-            ),
-          ],
-        ),
-        if (!_isEdit) ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.hrRolesSectionTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          if (_selectedRoleIds.isEmpty)
-            Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.sm),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            if (!isEdit) ...<Widget>[
+              AppFormSection(
+                title: l10n.hrStaffOnboardingPersonSectionTitle,
                 children: <Widget>[
-                  Icon(
-                    Icons.warning_amber_outlined,
-                    color: theme.colorScheme.error,
-                    size: 20,
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Text(
-                      l10n.hrStaffOnboardingNoRolesWarning,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
+                  if (wide)
+                    _responsivePair(
+                      left: AppTextField(
+                        controller: _firstNameController,
+                        labelText: l10n.hrStaffFirstNameLabel,
+                        isRequired: true,
+                        validator: AppValidators.requiredText(
+                          l10n.hrFieldRequiredLabel(l10n.hrStaffFirstNameLabel),
+                        ),
+                      ),
+                      right: AppTextField(
+                        controller: _lastNameController,
+                        labelText: l10n.hrStaffLastNameLabel,
+                        isRequired: true,
+                        validator: AppValidators.requiredText(
+                          l10n.hrFieldRequiredLabel(l10n.hrStaffLastNameLabel),
+                        ),
+                      ),
+                    )
+                  else ...<Widget>[
+                    AppTextField(
+                      controller: _firstNameController,
+                      labelText: l10n.hrStaffFirstNameLabel,
+                      isRequired: true,
+                      validator: AppValidators.requiredText(
+                        l10n.hrFieldRequiredLabel(l10n.hrStaffFirstNameLabel),
                       ),
                     ),
+                    AppTextField(
+                      controller: _lastNameController,
+                      labelText: l10n.hrStaffLastNameLabel,
+                      isRequired: true,
+                      validator: AppValidators.requiredText(
+                        l10n.hrFieldRequiredLabel(l10n.hrStaffLastNameLabel),
+                      ),
+                    ),
+                  ],
+                  if (wide)
+                    _responsivePair(
+                      left: AppTextField(
+                        controller: _emailController,
+                        labelText: l10n.hrStaffEmailLabel,
+                        isRequired: true,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: AppValidators.requiredText(
+                          l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
+                        ),
+                      ),
+                      right: AppTextField(
+                        controller: _phoneController,
+                        labelText: l10n.hrStaffPhoneLabel,
+                        isRequired: true,
+                        keyboardType: TextInputType.phone,
+                        validator: AppValidators.requiredText(
+                          l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
+                        ),
+                      ),
+                    )
+                  else ...<Widget>[
+                    AppTextField(
+                      controller: _emailController,
+                      labelText: l10n.hrStaffEmailLabel,
+                      isRequired: true,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: AppValidators.requiredText(
+                        l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
+                      ),
+                    ),
+                    AppTextField(
+                      controller: _phoneController,
+                      labelText: l10n.hrStaffPhoneLabel,
+                      isRequired: true,
+                      keyboardType: TextInputType.phone,
+                      validator: AppValidators.requiredText(
+                        l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
+                      ),
+                    ),
+                  ],
+                  AppTextField(
+                    controller: _addressController,
+                    labelText: l10n.hrStaffOnboardingAddressLabel,
+                    maxLines: 2,
+                  ),
+                  AppTextField(
+                    controller: _passwordController,
+                    labelText: l10n.hrStaffTemporaryPasswordLabel,
+                    obscureText: true,
+                    helperText: l10n.hrStaffPasswordOptionalHint,
                   ),
                 ],
               ),
+              SizedBox(height: theme.spacing.lg),
+            ],
+            AppFormSection(
+              title: l10n.hrStaffOnboardingEmploymentSectionTitle,
+              children: <Widget>[
+                SegmentedButton<StaffNumberEntryMode>(
+                  segments: <ButtonSegment<StaffNumberEntryMode>>[
+                    ButtonSegment<StaffNumberEntryMode>(
+                      value: StaffNumberEntryMode.generate,
+                      label: Text(l10n.hrStaffNumberGenerateLabel),
+                      icon: const Icon(Icons.auto_fix_high_outlined),
+                    ),
+                    ButtonSegment<StaffNumberEntryMode>(
+                      value: StaffNumberEntryMode.manual,
+                      label: Text(l10n.hrStaffNumberManualLabel),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                  ],
+                  selected: <StaffNumberEntryMode>{_staffNumberMode},
+                  onSelectionChanged: (Set<StaffNumberEntryMode> value) {
+                    setState(() => _staffNumberMode = value.first);
+                    if (_staffNumberMode == StaffNumberEntryMode.generate) {
+                      unawaited(_generateStaffNumber());
+                    }
+                  },
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: AppTextField(
+                        controller: _staffNumberController,
+                        labelText: l10n.hrStaffNumberLabel,
+                        readOnly:
+                            _staffNumberMode == StaffNumberEntryMode.generate,
+                        enabled: !_generatingStaffNumber,
+                      ),
+                    ),
+                    if (_staffNumberMode == StaffNumberEntryMode.generate)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: theme.spacing.sm,
+                          top: theme.spacing.lg,
+                        ),
+                        child: AppButton.secondary(
+                          label: l10n.hrStaffGenerateNumberAction,
+                          isLoading: _generatingStaffNumber,
+                          onPressed: _generatingStaffNumber
+                              ? null
+                              : () => unawaited(_generateStaffNumber()),
+                        ),
+                      ),
+                  ],
+                ),
+                if (_isAddingPosition)
+                  AppTextField(
+                    controller: _newPositionController,
+                    labelText: l10n.hrNewPositionLabel,
+                    isRequired: true,
+                    validator: AppValidators.requiredText(
+                      l10n.hrFieldRequiredLabel(l10n.hrNewPositionLabel),
+                    ),
+                  )
+                else if (wide)
+                  _responsivePair(
+                    left: AppSelectField<String>.searchable(
+                      value: _position,
+                      labelText: l10n.hrPositionLabel,
+                      options: _positionOptions(),
+                      onChanged: (String? value) =>
+                          setState(() => _position = value),
+                    ),
+                    right: AppSelectField<String>.searchable(
+                      value: _departmentId,
+                      labelText: l10n.hrDepartmentLabel,
+                      options: _selectOptions(widget.referenceData.departments),
+                      onChanged: (String? value) =>
+                          setState(() => _departmentId = value),
+                    ),
+                  )
+                else ...<Widget>[
+                  AppSelectField<String>.searchable(
+                    value: _position,
+                    labelText: l10n.hrPositionLabel,
+                    options: _positionOptions(),
+                    onChanged: (String? value) =>
+                        setState(() => _position = value),
+                  ),
+                  AppSelectField<String>.searchable(
+                    value: _departmentId,
+                    labelText: l10n.hrDepartmentLabel,
+                    options: _selectOptions(widget.referenceData.departments),
+                    onChanged: (String? value) =>
+                        setState(() => _departmentId = value),
+                  ),
+                ],
+                AppCheckboxField(
+                  title: l10n.hrAddNewPositionLabel,
+                  value: _isAddingPosition,
+                  onChanged: (bool value) =>
+                      setState(() => _isAddingPosition = value),
+                ),
+                if (wide)
+                  _responsivePair(
+                    left: AppSelectField<String>(
+                      value: _practitionerType,
+                      labelText: l10n.hrPractitionerTypeLabel,
+                      options: _selectOptions(
+                        widget.referenceData.practitionerTypes,
+                      ),
+                      onChanged: (String? value) {
+                        setState(() => _practitionerType = value);
+                        _recomputeClinicalSections();
+                      },
+                    ),
+                    right: AppDateField(
+                      value: _hireDate,
+                      labelText: l10n.hrHireDateLabel,
+                      firstDate: DateTime(1950),
+                      lastDate: DateTime(2100),
+                      currentDate: DateTime.now(),
+                      pickerButtonLabel: l10n.hrPickDateAction,
+                      invalidDateMessage: l10n.appDateInvalidMessage,
+                      onChanged: (DateTime? value) =>
+                          setState(() => _hireDate = value),
+                    ),
+                  )
+                else ...<Widget>[
+                  AppSelectField<String>(
+                    value: _practitionerType,
+                    labelText: l10n.hrPractitionerTypeLabel,
+                    options: _selectOptions(
+                      widget.referenceData.practitionerTypes,
+                    ),
+                    onChanged: (String? value) {
+                      setState(() => _practitionerType = value);
+                      _recomputeClinicalSections();
+                    },
+                  ),
+                  AppDateField(
+                    value: _hireDate,
+                    labelText: l10n.hrHireDateLabel,
+                    firstDate: DateTime(1950),
+                    lastDate: DateTime(2100),
+                    currentDate: DateTime.now(),
+                    pickerButtonLabel: l10n.hrPickDateAction,
+                    invalidDateMessage: l10n.appDateInvalidMessage,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _hireDate = value),
+                  ),
+                ],
+              ],
             ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              AppButton.secondary(
-                label: l10n.hrAccessSelectAllRolesAction,
-                onPressed: () {
+            if (!isEdit) ...<Widget>[
+              SizedBox(height: theme.spacing.lg),
+              Text(
+                l10n.hrStaffOnboardingRolesSectionTitle,
+                style: theme.textTheme.titleSmall,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppRoleAssignmentPicker(
+                roles: _roleAssignmentOptions(),
+                selectedRoleIds: _selectedRoleIds,
+                loadRolePermissions: _loadRolePermissions,
+                onSelectionChanged: (Set<String> value) {
                   setState(() {
                     _selectedRoleIds
                       ..clear()
-                      ..addAll(
-                        widget.referenceData.roles
-                            .map((HrOption role) => role.value),
-                      );
+                      ..addAll(value);
                   });
                   _recomputeClinicalSections();
-                  unawaited(_refreshPermissionPreview());
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.hrAccessClearRolesAction,
-                onPressed: () {
-                  setState(_selectedRoleIds.clear);
-                  _recomputeClinicalSections();
-                  unawaited(_refreshPermissionPreview());
                 },
               ),
             ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          for (final HrOption role in widget.referenceData.roles)
-            AppCheckboxField(
-              title: role.label,
-              value: _selectedRoleIds.contains(role.value),
-              onChanged: (bool checked) {
-                setState(() {
-                  if (checked) {
-                    _selectedRoleIds.add(role.value);
-                  } else {
-                    _selectedRoleIds.remove(role.value);
-                  }
-                });
-                _recomputeClinicalSections();
-                unawaited(_refreshPermissionPreview());
-              },
-            ),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            l10n.hrEffectivePermissionsTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          if (_loadingPermissions)
-            const LinearProgressIndicator(minHeight: 2)
-          else if (_previewPermissions.isEmpty)
-            Text(
-              l10n.hrStaffOnboardingPermissionsPreviewEmpty,
-              style: theme.textTheme.bodySmall,
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _previewPermissions
-                  .take(32)
-                  .map((String permission) => Chip(label: Text(permission)))
-                  .toList(growable: false),
-            ),
-        ],
-        SizedBox(height: theme.spacing.lg),
-        Text(
-          l10n.hrStaffOnboardingCompensationSectionTitle,
-          style: theme.textTheme.titleSmall,
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppFormSection(
-          children: <Widget>[
-            AppCheckboxField(
-              title: l10n.hrCompensationSectionTitle,
-              value: _showCompensation,
-              onChanged: (bool value) => setState(() => _showCompensation = value),
-            ),
-            if (_showCompensation) ...<Widget>[
-              AppSelectField<String>(
-                value: _payType.name,
-                labelText: l10n.hrStaffOnboardingPayTypeLabel,
-                options: _payTypeOptions(l10n),
-                onChanged: (String? value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(
-                    () => _payType = _CompensationPayType.values.byName(value),
-                  );
-                },
-              ),
-              AppTextField(
-                controller: _compensationRateController,
-                labelText: switch (_payType) {
-                  _CompensationPayType.monthly =>
-                    l10n.hrCompensationMonthlyRateLabel,
-                  _CompensationPayType.daily =>
-                    l10n.hrStaffOnboardingDailyRateLabel,
-                  _CompensationPayType.hourly =>
-                    l10n.hrCompensationHourlyRateLabel,
-                  _CompensationPayType.perVisit =>
-                    l10n.hrCompensationProcedureRateLabel,
-                },
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            if (isEdit && _showCompensation) ...<Widget>[
+              SizedBox(height: theme.spacing.lg),
+              AppFormSection(
+                title: l10n.hrStaffOnboardingCompensationSectionTitle,
+                description: l10n.hrStaffOnboardingCompensationEditHint,
+                children: <Widget>[
+                  AppSelectField<String>(
+                    value: _payType.name,
+                    labelText: l10n.hrStaffOnboardingPayTypeLabel,
+                    options: _payTypeOptions(l10n),
+                    onChanged: (String? value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(
+                        () => _payType = _CompensationPayType.values.byName(value),
+                      );
+                    },
+                  ),
+                  AppTextField(
+                    controller: _compensationRateController,
+                    labelText: switch (_payType) {
+                      _CompensationPayType.monthly =>
+                        l10n.hrCompensationMonthlyRateLabel,
+                      _CompensationPayType.daily =>
+                        l10n.hrStaffOnboardingDailyRateLabel,
+                      _CompensationPayType.hourly =>
+                        l10n.hrCompensationHourlyRateLabel,
+                      _CompensationPayType.perVisit =>
+                        l10n.hrCompensationProcedureRateLabel,
+                    },
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                  ),
+                  AppTextField(
+                    controller: _compensationCurrencyController,
+                    labelText: l10n.hrConsultationCurrencyLabel,
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                  AppDateField(
+                    value: _compensationEffectiveFrom,
+                    labelText: l10n.hrEffectiveFromLabel,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    currentDate: DateTime.now(),
+                    pickerButtonLabel: l10n.hrPickDateAction,
+                    invalidDateMessage: l10n.appDateInvalidMessage,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _compensationEffectiveFrom = value),
+                  ),
                 ],
               ),
-              AppTextField(
-                controller: _compensationCurrencyController,
-                labelText: l10n.hrConsultationCurrencyLabel,
-                textCapitalization: TextCapitalization.characters,
-              ),
-              AppDateField(
-                value: _compensationEffectiveFrom,
-                labelText: l10n.hrEffectiveFromLabel,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-                currentDate: DateTime.now(),
-                pickerButtonLabel: l10n.hrPickDateAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
-                onChanged: (DateTime? value) =>
-                    setState(() => _compensationEffectiveFrom = value),
+            ],
+            if (_showConsultationFee) ...<Widget>[
+              SizedBox(height: theme.spacing.lg),
+              AppFormSection(
+                title: l10n.hrStaffOnboardingConsultationSectionTitle,
+                children: <Widget>[
+                  if (wide)
+                    _responsivePair(
+                      left: AppTextField(
+                        controller: _feeController,
+                        labelText: l10n.hrConsultationFeeLabel,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                        ],
+                      ),
+                      right: AppTextField(
+                        controller: _feeCurrencyController,
+                        labelText: l10n.hrConsultationCurrencyLabel,
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                    )
+                  else ...<Widget>[
+                    AppTextField(
+                      controller: _feeController,
+                      labelText: l10n.hrConsultationFeeLabel,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                    ),
+                    AppTextField(
+                      controller: _feeCurrencyController,
+                      labelText: l10n.hrConsultationCurrencyLabel,
+                      textCapitalization: TextCapitalization.characters,
+                    ),
+                  ],
+                ],
               ),
             ],
           ],
-        ),
-        if (_showConsultationFee) ...<Widget>[
-          SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.hrStaffOnboardingConsultationSectionTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppFormSection(
-            children: <Widget>[
-              AppTextField(
-                controller: _feeController,
-                labelText: l10n.hrConsultationFeeLabel,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                ],
-              ),
-              AppTextField(
-                controller: _feeCurrencyController,
-                labelText: l10n.hrConsultationCurrencyLabel,
-                textCapitalization: TextCapitalization.characters,
-              ),
-            ],
-          ),
-        ],
-      ],
+        );
+      },
     );
   }
 }
