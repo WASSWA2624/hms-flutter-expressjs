@@ -5,7 +5,8 @@ Future<void> showHrWorkQueueDialog(
   BuildContext context,
   WidgetRef ref, {
   bool maximize = false,
-  AppListTableColumnVisibilityController<HrWorkItem>? columnVisibilityController,
+  AppListTableColumnVisibilityController<HrWorkItem>?
+  columnVisibilityController,
 }) async {
   final AppLocalizations l10n = context.l10n;
   final AppListTableColumnVisibilityController<HrWorkItem> columns =
@@ -121,7 +122,10 @@ Future<void> _openStaffDetailFromDialog(
 }
 
 /// Opens the selected staff detail dialog.
-Future<void> showHrStaffDetailDialog(BuildContext context, WidgetRef ref) async {
+Future<void> showHrStaffDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
   await showAppDialog<void>(
@@ -149,7 +153,10 @@ Future<void> showHrStaffDetailDialog(BuildContext context, WidgetRef ref) async 
 }
 
 /// Shifts scheduled for today.
-Future<void> showHrTodayShiftsDialog(BuildContext context, WidgetRef ref) async {
+Future<void> showHrTodayShiftsDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final DateTime from = HrWorkspaceController.startOfLocalDay();
   final DateTime to = HrWorkspaceController.endOfLocalDay();
   await applyHrQueueAndShow(

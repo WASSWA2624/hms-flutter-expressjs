@@ -568,8 +568,7 @@ final class HrUserRoleDto {
           '',
       displayId: _string(json['display_id']),
       backendIdentifier:
-          _string(json['backend_identifier']) ??
-          _string(json['id']),
+          _string(json['backend_identifier']) ?? _string(json['id']),
       roleId:
           _string(json['role_id']) ??
           _string(role['display_id']) ??
@@ -804,28 +803,29 @@ final class HrAccessUserDetailDto {
 
   HrAccessUserDetail toEntity() {
     final HrJsonMap staffProfile = _map(json['staff_profile']);
-    final List<HrAccessPermission> directPermissions = _list(json['permissions'])
-        .map((Object? entry) {
-          if (entry is! Map<String, Object?>) {
-            return null;
-          }
-          final HrJsonMap permission = _map(entry['permission']);
-          if (permission.isEmpty) {
-            return null;
-          }
-          return HrAccessPermission(
-            id:
-                _string(permission['display_id']) ??
-                _string(permission['id']) ??
-                '',
-            displayId: _string(permission['display_id']),
-            name: _string(permission['name']),
-            description: _string(permission['description']),
-          );
-        })
-        .whereType<HrAccessPermission>()
-        .where((HrAccessPermission item) => item.id.isNotEmpty)
-        .toList(growable: false);
+    final List<HrAccessPermission> directPermissions =
+        _list(json['permissions'])
+            .map((Object? entry) {
+              if (entry is! Map<String, Object?>) {
+                return null;
+              }
+              final HrJsonMap permission = _map(entry['permission']);
+              if (permission.isEmpty) {
+                return null;
+              }
+              return HrAccessPermission(
+                id:
+                    _string(permission['display_id']) ??
+                    _string(permission['id']) ??
+                    '',
+                displayId: _string(permission['display_id']),
+                name: _string(permission['name']),
+                description: _string(permission['description']),
+              );
+            })
+            .whereType<HrAccessPermission>()
+            .where((HrAccessPermission item) => item.id.isNotEmpty)
+            .toList(growable: false);
     final List<String> effectivePermissionLabels =
         _list(json['effective_permissions'])
             .map((Object? value) => _string(value))

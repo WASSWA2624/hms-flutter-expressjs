@@ -227,8 +227,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     if (staff != null && staff.compensations.isNotEmpty) {
       final HrStaffCompensation compensation = staff.compensations.first;
       _compensationRateController.text = compensation.rate?.toString() ?? '';
-      _compensationCurrency =
-          compensation.currency ?? appDefaultCurrencyCode;
+      _compensationCurrency = compensation.currency ?? appDefaultCurrencyCode;
       _payType = _payTypeFromApi(compensation.payType);
       _compensationEffectiveFrom = compensation.effectiveFrom ?? DateTime.now();
     }
@@ -311,7 +310,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     final AppLocalizations l10n = context.l10n;
     final bool showPractitioner = isEdit || _isClinicalPrescriberRoleSelected();
     final String? practitioner = _practitionerType?.toUpperCase();
-    final bool showFee = showPractitioner &&
+    final bool showFee =
+        showPractitioner &&
         practitioner != null &&
         l10n.isConsultationFeePractitionerType(practitioner);
     setState(() {
@@ -355,9 +355,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     final Result<AppPage<HrOption>> result = await controller
         .listRolePermissionOptions(roleId);
     return result.when(
-      success: (AppPage<HrOption> page) => page.items
-          .map((HrOption permission) => permission.label)
-          .toSet(),
+      success: (AppPage<HrOption> page) =>
+          page.items.map((HrOption permission) => permission.label).toSet(),
       failure: (_) => <String>{},
     );
   }
@@ -446,22 +445,21 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
           fallback: l10n.hrCompensationConsultationRateLabel,
         ),
       _CompensationPayType.monthly => l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_MONTH',
-          fallback: l10n.hrCompensationMonthlyRateLabel,
-        ),
+        'PER_MONTH',
+        fallback: l10n.hrCompensationMonthlyRateLabel,
+      ),
       _CompensationPayType.daily => l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_DAY',
-          fallback: l10n.hrStaffOnboardingDailyRateLabel,
-        ),
+        'PER_DAY',
+        fallback: l10n.hrStaffOnboardingDailyRateLabel,
+      ),
       _CompensationPayType.hourly => l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_HOUR',
-          fallback: l10n.hrCompensationHourlyRateLabel,
-        ),
-      _CompensationPayType.perVisit =>
-        l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_PROCEDURE',
-          fallback: l10n.hrCompensationProcedureRateLabel,
-        ),
+        'PER_HOUR',
+        fallback: l10n.hrCompensationHourlyRateLabel,
+      ),
+      _CompensationPayType.perVisit => l10n.hrReferenceCompensationPayTypeLabel(
+        'PER_PROCEDURE',
+        fallback: l10n.hrCompensationProcedureRateLabel,
+      ),
     };
   }
 
@@ -503,7 +501,9 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       'hire_date': _datePayload(_hireDate),
       if (_showConsultationFee) ...<String, Object?>{
         'consultation_fee': num.tryParse(_feeController.text.trim()),
-        'consultation_currency': _feeCurrencyController.text.trim().toUpperCase(),
+        'consultation_currency': _feeCurrencyController.text
+            .trim()
+            .toUpperCase(),
       },
       if (compensations.isNotEmpty) 'compensations': compensations,
     };
@@ -667,10 +667,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       left: _emailField(l10n),
                       right: _phoneField(l10n),
                     )
-                  else ...<Widget>[
-                    _emailField(l10n),
-                    _phoneField(l10n),
-                  ],
+                  else ...<Widget>[_emailField(l10n), _phoneField(l10n)],
                   _addressField(l10n),
                   _passwordField(l10n),
                 ],
@@ -769,7 +766,10 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   AppSelectField<String>.searchable(
                     value: _practitionerType,
                     labelText: l10n.hrPractitionerTypeLabel,
-                    options: _selectOptions(_referenceData.practitionerTypes, l10n),
+                    options: _selectOptions(
+                      _referenceData.practitionerTypes,
+                      l10n,
+                    ),
                     onChanged: (String? value) {
                       setState(() => _practitionerType = value);
                       _recomputeClinicalSections();
@@ -794,7 +794,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       return;
                     }
                     setState(
-                      () => _payType = _CompensationPayType.values.byName(value),
+                      () =>
+                          _payType = _CompensationPayType.values.byName(value),
                     );
                   },
                 ),

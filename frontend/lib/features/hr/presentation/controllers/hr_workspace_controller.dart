@@ -263,7 +263,9 @@ final class HrWorkspaceController
 
   static DateTime endOfLocalDay([DateTime? reference]) {
     final DateTime start = startOfLocalDay(reference);
-    return start.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
+    return start
+        .add(const Duration(days: 1))
+        .subtract(const Duration(microseconds: 1));
   }
 
   Future<AppFailure?> changeWorkItemsPage(AppPageRequest request) async {
@@ -820,9 +822,7 @@ final class HrWorkspaceController
     return lastFailure;
   }
 
-  Future<AppFailure?> createUserAndLinkStaff(
-    Map<String, Object?> payload,
-  ) {
+  Future<AppFailure?> createUserAndLinkStaff(Map<String, Object?> payload) {
     return onboardStaff(payload);
   }
 
@@ -847,17 +847,16 @@ final class HrWorkspaceController
 
     String? userId = payload['user_id']?.toString();
     if (!isEdit) {
-      final Result<Object?> userResult = await _repository.createUserAccount(
-        <String, Object?>{
-          'tenant_id': tenantId,
-          'facility_id': facilityId,
-          'email': payload['email'],
-          'password': payload['password'],
-          'phone': payload['phone'],
-          'position_title': payload['position_title'],
-          'status': payload['status'] ?? 'ACTIVE',
-        },
-      );
+      final Result<Object?> userResult = await _repository
+          .createUserAccount(<String, Object?>{
+            'tenant_id': tenantId,
+            'facility_id': facilityId,
+            'email': payload['email'],
+            'password': payload['password'],
+            'phone': payload['phone'],
+            'position_title': payload['position_title'],
+            'status': payload['status'] ?? 'ACTIVE',
+          });
       final AppFailure? userFailure = userResult.when(
         success: (_) => null,
         failure: (AppFailure failure) => failure,
@@ -1368,8 +1367,11 @@ final class HrWorkspaceController
   }
 
   Future<HrReferenceData> _loadReferenceDataOrEmpty() async {
-    final String? facilityId =
-        ref.read(sessionStateProvider).session?.user?.facilityId;
+    final String? facilityId = ref
+        .read(sessionStateProvider)
+        .session
+        ?.user
+        ?.facilityId;
     final Result<HrReferenceData> result = await _repository.loadReferenceData(
       facilityId: facilityId,
     );

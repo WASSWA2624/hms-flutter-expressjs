@@ -90,10 +90,10 @@ void _stubInitialLoad(_MockHrRepository repository) {
       userId: any(named: 'userId'),
       tenantId: any(named: 'tenantId'),
     ),
-  ).thenAnswer((_) async => const Result<List<HrUserRole>>.success(<HrUserRole>[]));
-  when(
-    () => repository.listRolePermissions(any()),
   ).thenAnswer(
+    (_) async => const Result<List<HrUserRole>>.success(<HrUserRole>[]),
+  );
+  when(() => repository.listRolePermissions(any())).thenAnswer(
     (_) async => const Result<AppPage<HrOption>>.success(
       AppPage<HrOption>(
         items: <HrOption>[],
@@ -218,15 +218,9 @@ void main() {
           tenantId: any(named: 'tenantId'),
         ),
       ).thenAnswer(
-        (_) async => const Result<List<HrUserRole>>.success(
-          <HrUserRole>[
-            HrUserRole(
-              id: 'UR-1',
-              backendIdentifier: 'UR-1',
-              roleId: 'ROLE-OLD',
-            ),
-          ],
-        ),
+        (_) async => const Result<List<HrUserRole>>.success(<HrUserRole>[
+          HrUserRole(id: 'UR-1', backendIdentifier: 'UR-1', roleId: 'ROLE-OLD'),
+        ]),
       );
 
       final ProviderContainer container = _createContainer(repository);

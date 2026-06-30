@@ -376,9 +376,13 @@ class _HrAccessWorkspaceDialogState
         AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
-          onPressed: _loading ? null : () => unawaited(_reload(resetPage: true)),
+          onPressed: _loading
+              ? null
+              : () => unawaited(_reload(resetPage: true)),
         ),
-        if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.users)
+        if (_canWrite &&
+            !_tenantContextRequired &&
+            _panel == HrAccessPanel.users)
           AppButton.primary(
             label: l10n.hrCreateUserAction,
             leadingIcon: Icons.person_add_outlined,
@@ -389,7 +393,9 @@ class _HrAccessWorkspaceDialogState
               }
             },
           ),
-        if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.roles)
+        if (_canWrite &&
+            !_tenantContextRequired &&
+            _panel == HrAccessPanel.roles)
           AppButton.primary(
             label: l10n.hrAccessCreateRoleAction,
             leadingIcon: Icons.add_moderator_outlined,
@@ -444,11 +450,7 @@ class _HrAccessWorkspaceDialogState
               );
             },
             onEdit: () async {
-              await showHrEditAccessUserDialog(
-                context,
-                ref,
-                user,
-              );
+              await showHrEditAccessUserDialog(context, ref, user);
               if (context.mounted) {
                 unawaited(_reload(resetPage: true));
               }
@@ -483,10 +485,7 @@ class _HrAccessWorkspaceDialogState
             subtitle: Text(
               <String>[
                 if ((role.description ?? '').isNotEmpty) role.description!,
-                l10n.hrAccessRoleSummary(
-                  role.permissionCount,
-                  role.userCount,
-                ),
+                l10n.hrAccessRoleSummary(role.permissionCount, role.userCount),
               ].join(' · '),
             ),
             trailing: Wrap(
@@ -594,10 +593,7 @@ class _HrAccessUserRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      user.displayLabel,
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text(user.displayLabel, style: theme.textTheme.titleSmall),
                     if ((user.email ?? '').isNotEmpty)
                       Text(user.email!, style: theme.textTheme.bodySmall),
                     if (user.roleNames.isNotEmpty) ...<Widget>[
@@ -677,9 +673,7 @@ bool isHrAccessTenantUuid(String? value) {
 }
 
 bool canWriteHrAccess(WidgetRef ref) {
-  return ref
-      .read(appAccessPolicyProvider)
-      .grants(AppPermissions.hrWrite);
+  return ref.read(appAccessPolicyProvider).grants(AppPermissions.hrWrite);
 }
 
 HrWorkspaceState? readHrWorkspaceState(WidgetRef ref) {
@@ -848,8 +842,9 @@ class _HrAccessUserDetailContent extends StatelessWidget {
             runSpacing: 4,
             children: detail.directPermissions
                 .map(
-                  (HrAccessPermission permission) =>
-                      Chip(label: Text(permission.name ?? permission.effectiveId)),
+                  (HrAccessPermission permission) => Chip(
+                    label: Text(permission.name ?? permission.effectiveId),
+                  ),
                 )
                 .toList(growable: false),
           ),
@@ -1037,14 +1032,16 @@ Future<void> showHrEditAccessUserDialog(
                     selectedRoleIds
                       ..clear()
                       ..addAll(
-                        (state?.referenceData.roles ?? const <HrOption>[])
-                            .map((HrOption role) => role.value),
+                        (state?.referenceData.roles ?? const <HrOption>[]).map(
+                          (HrOption role) => role.value,
+                        ),
                       );
                   });
                 },
                 onClear: () => setState(selectedRoleIds.clear),
               ),
-              for (final HrOption role in state?.referenceData.roles ?? const [])
+              for (final HrOption role
+                  in state?.referenceData.roles ?? const [])
                 AppCheckboxField(
                   title: role.label,
                   value: selectedRoleIds.contains(role.value),
@@ -1105,17 +1102,14 @@ Future<void> showHrEditAccessUserDialog(
       );
     },
     onSubmit: () async {
-      final AppFailure? profileFailure = await controller.updateAccessUser(
-        user.effectiveId,
-        <String, Object?>{
-          'email': emailController.text.trim(),
-          'phone': phoneController.text.trim(),
-          'position_title': positionController.text.trim(),
-          'status': status,
-          'permission_ids': selectedPermissionIds.toList(growable: false),
-        },
-        refreshReferences: false,
-      );
+      final AppFailure? profileFailure = await controller
+          .updateAccessUser(user.effectiveId, <String, Object?>{
+            'email': emailController.text.trim(),
+            'phone': phoneController.text.trim(),
+            'position_title': positionController.text.trim(),
+            'status': status,
+            'permission_ids': selectedPermissionIds.toList(growable: false),
+          }, refreshReferences: false);
       if (profileFailure != null) {
         return profileFailure;
       }
@@ -1498,7 +1492,9 @@ void _showHrAccessSnackBar(
     SnackBar(
       content: Text(
         message ??
-            (failure == null ? l10n.hrSavedMessage : l10n.failureMessage(failure)),
+            (failure == null
+                ? l10n.hrSavedMessage
+                : l10n.failureMessage(failure)),
       ),
     ),
   );

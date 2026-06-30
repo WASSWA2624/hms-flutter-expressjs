@@ -6,4 +6,4 @@ ALTER TABLE `procedure`
   ADD COLUMN `billing_snapshot` JSON NULL AFTER `performed_at`;
 
 ALTER TABLE `theatre_case`
-  ADD COLUMN `billing_snapshot` JSON NULL AFTER `stage_notes`;
+  ADD COLUMN `billing_snapshot` JSON NULL;

@@ -945,8 +945,7 @@ final class HrAccessUser {
 
   String get effectiveId => displayId ?? id;
 
-  String get displayLabel =>
-      profileName ?? email ?? effectiveId;
+  String get displayLabel => profileName ?? email ?? effectiveId;
 }
 
 @immutable
@@ -981,8 +980,10 @@ final class HrAccessUserDetail {
 
   String get effectiveId => displayId ?? id;
 
-  List<String> get roleNames =>
-      userRoles.map((HrUserRole role) => role.roleName).whereType<String>().toList(growable: false);
+  List<String> get roleNames => userRoles
+      .map((HrUserRole role) => role.roleName)
+      .whereType<String>()
+      .toList(growable: false);
 
   HrAccessUser toSummary() {
     return HrAccessUser(

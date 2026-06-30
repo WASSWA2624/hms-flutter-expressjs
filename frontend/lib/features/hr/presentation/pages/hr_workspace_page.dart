@@ -321,9 +321,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
         onSelected: () {
-          unawaited(
-            applyHrQueueAndShow(context, ref, HrQueue.leaveRequests),
-          );
+          unawaited(applyHrQueueAndShow(context, ref, HrQueue.leaveRequests));
         },
       ),
       AppWorkspaceSummaryNotification(
@@ -331,9 +329,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         count: summary.draftRosters,
         icon: Icons.calendar_month_outlined,
         onSelected: () {
-          unawaited(
-            applyHrQueueAndShow(context, ref, HrQueue.rosterDrafts),
-          );
+          unawaited(applyHrQueueAndShow(context, ref, HrQueue.rosterDrafts));
         },
       ),
       AppWorkspaceSummaryNotification(
@@ -354,9 +350,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         count: summary.payrollDraftRuns,
         icon: Icons.payments_outlined,
         onSelected: () {
-          unawaited(
-            applyHrQueueAndShow(context, ref, HrQueue.payrollDrafts),
-          );
+          unawaited(applyHrQueueAndShow(context, ref, HrQueue.payrollDrafts));
         },
       ),
     ];
@@ -505,7 +499,7 @@ class _HrStaffDirectory extends ConsumerWidget {
                 title: item.position ?? context.l10n.profileUnknownValue,
                 subtitle: item.practitionerType == null
                     ? null
-                    : _apiLabel(context,item.practitionerType),
+                    : _apiLabel(context, item.practitionerType),
               );
             },
           ),
@@ -581,7 +575,11 @@ class _HrStaffDetailPanel extends ConsumerWidget {
           tooltip: l10n.hrEditStaffAction,
           onPressed: state.isMutating
               ? null
-              : () => showHrStaffOnboardingDialog(context, ref, staff: selected.profile),
+              : () => showHrStaffOnboardingDialog(
+                  context,
+                  ref,
+                  staff: selected.profile,
+                ),
         ),
       ],
       child: Column(
@@ -699,7 +697,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
           rows: <_RecordLine>[
             for (final HrStaffLeave leave in detail.leaves)
               _RecordLine(
-                title: _apiLabel(context,leave.status).ifEmpty(l10n.hrLeaveLabel),
+                title: _apiLabel(
+                  context,
+                  leave.status,
+                ).ifEmpty(l10n.hrLeaveLabel),
                 subtitle: _dateRange(context, leave.startDate, leave.endDate),
                 trailing: leave.reason,
               ),
@@ -717,7 +718,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
                 title: _dayLabel(l10n, availability.dayOfWeek),
                 subtitle: _joinDisplay(<String?>[
                   _availabilitySlotSummary(availability),
-                  _apiLabel(context,availability.status ?? availability.preference),
+                  _apiLabel(
+                    context,
+                    availability.status ?? availability.preference,
+                  ),
                 ]),
               ),
           ],
@@ -744,7 +748,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
             for (final HrStaffCompensation compensation in detail.compensations)
               _RecordLine(
                 title: _joinDisplay(<String?>[
-                  _apiLabel(context,compensation.payType),
+                  _apiLabel(context, compensation.payType),
                   compensation.rate?.toString(),
                   compensation.currency,
                 ]).ifEmpty(l10n.hrCompensationLabel),
@@ -922,12 +926,12 @@ class _HrActivityPanel extends StatelessWidget {
         for (final HrTimelineItem item in items)
           AppWorkspaceActivityItem(
             title: _joinDisplay(<String?>[
-              _apiLabel(context,item.type),
+              _apiLabel(context, item.type),
               item.id,
             ]).ifEmpty(item.id),
             subtitle: _joinDisplay(<String?>[
-              _apiLabel(context,item.action),
-              _apiLabel(context,item.status),
+              _apiLabel(context, item.action),
+              _apiLabel(context, item.status),
               _formatDateTime(context, item.at),
             ]),
             icon: _activityIcon(item.type),
@@ -1105,7 +1109,10 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppWorkspaceStatusBadge(
       status: AppWorkspaceStatus(
-        label: _apiLabel(context,status).ifEmpty(context.l10n.profileUnknownValue),
+        label: _apiLabel(
+          context,
+          status,
+        ).ifEmpty(context.l10n.profileUnknownValue),
         tone: _statusTone(status),
       ),
     );
@@ -1468,7 +1475,7 @@ class _WorkItemActions extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.hrStatusColumnLabel,
-              value: _apiLabel(context,item.status),
+              value: _apiLabel(context, item.status),
               icon: Icons.radio_button_checked,
             ),
             AppInfoTileData(
@@ -2945,7 +2952,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.reason,
     ]).ifEmpty(l10n.hrLeaveRequestTitle),
     HrQueue.swapRequests => _joinDisplay(<String?>[
-      item.shiftType == null ? null : _apiLabel(context,item.shiftType),
+      item.shiftType == null ? null : _apiLabel(context, item.shiftType),
       item.shiftId,
       item.staffNumber,
     ]).ifEmpty(l10n.hrSwapRequestTitle),
@@ -2954,7 +2961,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
     HrQueue.unassignedShifts || HrQueue.overdueShifts => _joinDisplay(<String?>[
-      item.shiftType == null ? null : _apiLabel(context,item.shiftType),
+      item.shiftType == null ? null : _apiLabel(context, item.shiftType),
       item.shiftId,
     ]).ifEmpty(l10n.hrShiftQueueTitle),
     HrQueue.payrollDrafts => _joinDisplay(<String?>[

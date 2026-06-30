@@ -59,7 +59,8 @@ const HrReferenceData _referenceData = HrReferenceData(
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
   when(() => repository.loadOverview()).thenAnswer(
-    (_) async => const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
+    (_) async =>
+        const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
     (_) async => const Result<AppPage<HrStaffProfile>>.success(
@@ -99,9 +100,7 @@ void main() {
           tenantId: any(named: 'tenantId'),
           facilityId: any(named: 'facilityId'),
         ),
-      ).thenAnswer(
-        (_) async => const Result<String>.success('DEMO-STF-0001'),
-      );
+      ).thenAnswer((_) async => const Result<String>.success('DEMO-STF-0001'));
       when(() => repository.listRolePermissions(any())).thenAnswer(
         (_) async => const Result<AppPage<HrOption>>.success(
           AppPage<HrOption>(
@@ -148,28 +147,35 @@ void main() {
       );
     }
 
-    testWidgets('defaults hire date to today and uses generate staff number mode',
-        (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pump();
-      await tester.pumpAndSettle();
+    testWidgets(
+      'defaults hire date to today and uses generate staff number mode',
+      (tester) async {
+        await tester.pumpWidget(buildForm());
+        await tester.pump();
+        await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state = tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
+        final HrStaffOnboardingFormState state = tester
+            .state<HrStaffOnboardingFormState>(
+              find.byType(HrStaffOnboardingForm),
+            );
 
-      final DateTime today = DateTime.now();
-      expect(state.hireDate?.year, today.year);
-      expect(state.hireDate?.month, today.month);
-      expect(state.hireDate?.day, today.day);
-      expect(state.staffNumberMode, StaffNumberEntryMode.generate);
-      expect(find.text('Automatically generate staff number'), findsOneWidget);
-      expect(find.text('Enter staff number manually'), findsOneWidget);
-      expect(find.text('DEMO-STF-0001'), findsNothing);
-    });
+        final DateTime today = DateTime.now();
+        expect(state.hireDate?.year, today.year);
+        expect(state.hireDate?.month, today.month);
+        expect(state.hireDate?.day, today.day);
+        expect(state.staffNumberMode, StaffNumberEntryMode.generate);
+        expect(
+          find.text('Automatically generate staff number'),
+          findsOneWidget,
+        );
+        expect(find.text('Enter staff number manually'), findsOneWidget);
+        expect(find.text('DEMO-STF-0001'), findsNothing);
+      },
+    );
 
-    testWidgets('shows staff number mode radios side by side on wide layout',
-        (tester) async {
+    testWidgets('shows staff number mode radios side by side on wide layout', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -195,8 +201,9 @@ void main() {
       );
     });
 
-    testWidgets('stacks staff number mode radios on narrow layout',
-        (tester) async {
+    testWidgets('stacks staff number mode radios on narrow layout', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildForm(width: 400));
       await tester.pumpAndSettle();
 
@@ -234,15 +241,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state =
-          tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
+      final HrStaffOnboardingFormState state = tester
+          .state<HrStaffOnboardingFormState>(
+            find.byType(HrStaffOnboardingForm),
+          );
       expect(state.staffNumberMode, StaffNumberEntryMode.manual);
     });
 
-    testWidgets('can add and remove roles from the assignment picker',
-        (tester) async {
+    testWidgets('can add and remove roles from the assignment picker', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
@@ -258,10 +266,10 @@ void main() {
       await tester.tap(find.text('Nurse | ROL001').last);
       await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state =
-          tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
+      final HrStaffOnboardingFormState state = tester
+          .state<HrStaffOnboardingFormState>(
+            find.byType(HrStaffOnboardingForm),
+          );
       expect(state.selectedRoleIds, contains('role-nurse'));
       expect(find.text('HR_READ'), findsOneWidget);
 
@@ -269,9 +277,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester.state<HrStaffOnboardingFormState>(
-          find.byType(HrStaffOnboardingForm),
-        ).selectedRoleIds,
+        tester
+            .state<HrStaffOnboardingFormState>(
+              find.byType(HrStaffOnboardingForm),
+            )
+            .selectedRoleIds,
         isEmpty,
       );
     });
@@ -293,19 +303,21 @@ void main() {
       expect(find.text('Roles and access'), findsOneWidget);
     });
 
-    testWidgets('exposes populated position and department options on first open',
-        (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'exposes populated position and department options on first open',
+      (tester) async {
+        await tester.pumpWidget(buildForm());
+        await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state =
-          tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
-      expect(state.positionOptionCountForTest(), greaterThanOrEqualTo(2));
-      expect(state.departmentOptionCountForTest(), greaterThanOrEqualTo(2));
-      expect(find.text('Add a new position'), findsNothing);
-    });
+        final HrStaffOnboardingFormState state = tester
+            .state<HrStaffOnboardingFormState>(
+              find.byType(HrStaffOnboardingForm),
+            );
+        expect(state.positionOptionCountForTest(), greaterThanOrEqualTo(2));
+        expect(state.departmentOptionCountForTest(), greaterThanOrEqualTo(2));
+        expect(find.text('Add a new position'), findsNothing);
+      },
+    );
 
     testWidgets('shows compensation section on create', (tester) async {
       await tester.pumpWidget(buildForm());
@@ -316,15 +328,16 @@ void main() {
       expect(find.text('Monthly salary'), findsWidgets);
     });
 
-    testWidgets('shows practitioner type only after doctor role is selected',
-        (tester) async {
+    testWidgets('shows practitioner type only after doctor role is selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state =
-          tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
+      final HrStaffOnboardingFormState state = tester
+          .state<HrStaffOnboardingFormState>(
+            find.byType(HrStaffOnboardingForm),
+          );
       expect(state.showPractitionerTypeForTest, isFalse);
 
       state.setSelectedRolesForTest(<String>{'role-doctor'});
@@ -338,10 +351,10 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      final HrStaffOnboardingFormState state =
-          tester.state<HrStaffOnboardingFormState>(
-        find.byType(HrStaffOnboardingForm),
-      );
+      final HrStaffOnboardingFormState state = tester
+          .state<HrStaffOnboardingFormState>(
+            find.byType(HrStaffOnboardingForm),
+          );
       state.setPositionDraftForTest(searchText: 'Clinical Coordinator');
 
       final Map<String, Object?> payload = state.toPayload();

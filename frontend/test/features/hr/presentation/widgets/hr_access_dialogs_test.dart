@@ -35,10 +35,7 @@ SessionState _authenticatedSession({String? tenantId}) {
   return SessionState.authenticated(
     session: AuthSession(
       tokens: SessionTokens(accessToken: 'token'),
-      user: AuthUserProfile(
-        tenantId: tenantId,
-        email: 'hr.admin@example.com',
-      ),
+      user: AuthUserProfile(tenantId: tenantId, email: 'hr.admin@example.com'),
       permissions: const <AppPermission>[AppPermissions.hrWrite],
     ),
   );
@@ -46,7 +43,8 @@ SessionState _authenticatedSession({String? tenantId}) {
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
   when(() => repository.loadOverview()).thenAnswer(
-    (_) async => const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
+    (_) async =>
+        const Result<HrWorkspaceOverview>.success(HrWorkspaceOverview()),
   );
   when(() => repository.listStaffProfiles(any())).thenAnswer(
     (_) async => const Result<AppPage<HrStaffProfile>>.success(
