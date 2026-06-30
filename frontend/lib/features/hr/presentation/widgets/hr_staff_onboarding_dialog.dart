@@ -467,7 +467,6 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     return AppTextField(
       controller: _addressController,
       labelText: l10n.hrStaffOnboardingAddressLabel,
-      maxLines: 2,
       textCapitalization: TextCapitalization.words,
     );
   }
@@ -589,15 +588,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     _emailField(l10n),
                     _phoneField(l10n),
                   ],
-                  if (wide)
-                    _responsivePair(
-                      left: _addressField(l10n),
-                      right: _passwordField(l10n),
-                    )
-                  else ...<Widget>[
-                    _addressField(l10n),
-                    _passwordField(l10n),
-                  ],
+                  _addressField(l10n),
+                  _passwordField(l10n),
                 ],
               ),
               SizedBox(height: theme.spacing.lg),

@@ -124,11 +124,25 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       validator: _validatePhone,
       onSaved: (_) => widget.onSaved?.call(widget.controller.text),
       builder: (FormFieldState<String> formField) {
+        final InputDecorationThemeData inputTheme = theme.inputDecorationTheme;
+        final double inputHeight = inputTheme.constraints?.minHeight ?? 48;
+
         return InputDecorator(
           isFocused: _numberFocusNode.hasFocus || _isPickerOpen,
           isEmpty: _numberController.text.isEmpty,
           decoration: InputDecoration(
             enabled: canEdit,
+            filled: inputTheme.filled,
+            fillColor: inputTheme.fillColor,
+            hoverColor: inputTheme.hoverColor,
+            border: inputTheme.border,
+            enabledBorder: inputTheme.enabledBorder,
+            disabledBorder: inputTheme.disabledBorder,
+            focusedBorder: inputTheme.focusedBorder,
+            errorBorder: inputTheme.errorBorder,
+            focusedErrorBorder: inputTheme.focusedErrorBorder,
+            isDense: inputTheme.isDense,
+            constraints: inputTheme.constraints,
             label: widget.useFloatingLabel
                 ? appFieldLabelWidget(
                     context,
@@ -145,30 +159,26 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
                 : FloatingLabelBehavior.never,
             helperText: widget.helperText,
             errorText: widget.errorText ?? formField.errorText,
-            contentPadding: widget.useFloatingLabel
-                ? EdgeInsets.fromLTRB(
-                    theme.spacing.md,
-                    theme.spacing.md,
-                    theme.spacing.md,
-                    theme.spacing.sm,
-                  )
-                : EdgeInsets.zero,
+            contentPadding: EdgeInsets.zero,
           ),
-          child: _UnifiedPhoneInput(
-            country: _country,
-            countryLabelText: widget.countryLabelText,
-            numberHintText: widget.numberHintText ?? widget.numberLabelText,
-            numberController: _numberController,
-            numberFocusNode: _numberFocusNode,
-            canEdit: canEdit,
-            isLoading: widget.isLoading,
-            maxNationalDigits: _maxNationalDigits,
-            textInputAction: widget.textInputAction,
-            restorationId: widget.restorationId,
-            onSelectCountry: () => _selectCountry(formField),
-            onNumberChanged: (_) => _syncController(formField),
-            onFieldSubmitted: (_) =>
-                widget.onFieldSubmitted?.call(widget.controller.text),
+          child: SizedBox(
+            height: inputHeight,
+            child: _UnifiedPhoneInput(
+              country: _country,
+              countryLabelText: widget.countryLabelText,
+              numberHintText: widget.numberHintText ?? widget.numberLabelText,
+              numberController: _numberController,
+              numberFocusNode: _numberFocusNode,
+              canEdit: canEdit,
+              isLoading: widget.isLoading,
+              maxNationalDigits: _maxNationalDigits,
+              textInputAction: widget.textInputAction,
+              restorationId: widget.restorationId,
+              onSelectCountry: () => _selectCountry(formField),
+              onNumberChanged: (_) => _syncController(formField),
+              onFieldSubmitted: (_) =>
+                  widget.onFieldSubmitted?.call(widget.controller.text),
+            ),
           ),
         );
       },
@@ -453,16 +463,20 @@ class _UnifiedPhoneInput extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return LayoutBuilder(
+        return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double countryWidth = constraints.maxWidth < 360
             ? 104
             : constraints.maxWidth < 520
             ? 124
             : 148;
+        final double inputHeight = constraints.hasBoundedHeight &&
+                constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : theme.inputDecorationTheme.constraints?.minHeight ?? 48;
 
         return SizedBox(
-          height: 48,
+          height: inputHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
