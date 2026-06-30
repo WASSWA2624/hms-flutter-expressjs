@@ -104,6 +104,8 @@ describe('settings-workspace service', () => {
         facilities: expect.any(Array),
       })
     );
+  });
+
   it('returns HR-scoped modules for HR users without admin roles', async () => {
     const result = await service.getWorkspace(
       {},

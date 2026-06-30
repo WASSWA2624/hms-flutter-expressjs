@@ -242,12 +242,6 @@ const CHECKLIST_ORDER = Object.freeze([
   'permission',
 ]);
 
-const WRITE_ROLES = new Set([
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-]);
-
 const lower = (value) => text(value).toLowerCase();
 
 const roleList = (user = {}) => {
@@ -256,9 +250,6 @@ const roleList = (user = {}) => {
     .map((entry) => text(entry).toUpperCase())
     .filter(Boolean);
 };
-
-const canWriteSettings = (user = {}) =>
-  roleList(user).some((entry) => WRITE_ROLES.has(entry)) || canWriteHrFacilitySetup(user);
 
 const visibleModuleCatalog = (user = {}) => filterSetupModulesForUser(MODULE_CATALOG, user);
 
