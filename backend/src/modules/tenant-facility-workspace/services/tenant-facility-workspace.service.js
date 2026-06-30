@@ -1,6 +1,10 @@
 const repository = require('@repositories/tenant-facility-workspace/tenant-facility-workspace.repository');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
+const {
+  canWriteHrFacilitySetup,
+  isHrSetupOnlyUser,
+} = require('@lib/setup/hr-facility-setup');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { serializeSubscription } = require('@lib/subscriptions/serializers');
 
@@ -334,7 +338,9 @@ const getSetup = async (filters = {}, user = {}) => {
       permissions: {
         can_manage_tenant: canManageTenant(user),
         can_manage_facility: canManageFacility(user),
+        can_manage_hr_setup: canWriteHrFacilitySetup(user),
         can_view_subscriptions: canViewSubscriptions(user),
+        is_hr_setup_only: isHrSetupOnlyUser(user),
       },
       lookups: {
         tenants: tenants.map((entry) => ({
@@ -401,7 +407,9 @@ const getSetup = async (filters = {}, user = {}) => {
     permissions: {
       can_manage_tenant: canManageTenant(user),
       can_manage_facility: canManageFacility(user),
+      can_manage_hr_setup: canWriteHrFacilitySetup(user),
       can_view_subscriptions: canViewSubscriptions(user),
+      is_hr_setup_only: isHrSetupOnlyUser(user),
     },
     lookups: {
       tenants: tenants.map((entry) => ({

@@ -264,6 +264,22 @@ final class AppAccessPolicy {
         ]);
   }
 
+  bool canManageHrFacilitySetup() {
+    return hasRole(AppRole.hr) &&
+        grantsAny(const <AppPermission>[
+          AppPermissions.hrWrite,
+          AppPermissions.unitManage,
+        ]);
+  }
+
+  bool isHrFacilitySetupOnlyUser() {
+    return canManageHrFacilitySetup() && !canManageFacility() && !canManageTenant();
+  }
+
+  bool canEditFacilitySetupStructure() {
+    return canManageFacility() || canManageHrFacilitySetup();
+  }
+
   bool canReadBedManagement() {
     return isElevated ||
         grantsAny(const <AppPermission>[

@@ -243,6 +243,11 @@ describe('User Service', () => {
       updated_at: new Date()
     };
 
+    beforeEach(() => {
+      userRepository.findActiveByTenantEmail.mockResolvedValue(null);
+      userRepository.findActiveByTenantPhone.mockResolvedValue(null);
+    });
+
     it('should create new user', async () => {
       userRepository.create.mockResolvedValue(createdUser);
       createAuditLog.mockResolvedValue(true);
@@ -366,6 +371,42 @@ describe('User Service', () => {
       await expect(
         userService.createUser(userData, 'creator-id', '127.0.0.1')
       ).rejects.toThrow(httpError);
+    });
+
+    it('should reject duplicate email within the same tenant', async () => {
+      userRepository.findActiveByTenantEmail.mockResolvedValue({ id: 'existing-user' });
+      userRepository.findActiveByTenantPhone.mockResolvedValue(null);
+
+      await expect(
+        userService.createUser(
+          { ...userData, email: 'Existing@Example.com', phone: '783230321' },
+          'creator-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'email' })],
+      });
+      expect(userRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject duplicate phone within the same tenant', async () => {
+      userRepository.findActiveByTenantEmail.mockResolvedValue(null);
+      userRepository.findActiveByTenantPhone.mockResolvedValue({ id: 'existing-user' });
+
+      await expect(
+        userService.createUser(
+          { ...userData, phone: '+256 783 230 321' },
+          'creator-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.phone_exists_in_tenant',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'phone' })],
+      });
+      expect(userRepository.create).not.toHaveBeenCalled();
     });
   });
 

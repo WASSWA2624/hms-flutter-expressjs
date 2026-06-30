@@ -24,6 +24,17 @@ extension AppFailureLocalizations on AppLocalizations {
   }
 
   String failureMessage(AppFailure failure) {
+    return failure.displayMessage(this);
+  }
+
+  String failureDisplayMessage(AppFailure failure) {
+    if (failure.fieldMessages.isNotEmpty) {
+      return failure.fieldMessages.values.join('\n');
+    }
+    final String? detailMessage = failure.detailMessage;
+    if (detailMessage != null && detailMessage.isNotEmpty) {
+      return detailMessage;
+    }
     return switch (failure.category) {
       AppFailureCategory.network => errorNetworkMessage,
       AppFailureCategory.timeout => errorTimeoutMessage,
@@ -38,6 +49,12 @@ extension AppFailureLocalizations on AppLocalizations {
       AppFailureCategory.unexpected => errorUnexpectedMessage,
     };
   }
+}
+
+extension AppFailureDisplay on AppFailure {
+  String displayMessage(AppLocalizations l10n) => l10n.failureDisplayMessage(this);
+
+  String? messageForField(String field) => fieldMessages[field];
 }
 
 extension HosspiHmsLocalizations on AppLocalizations {

@@ -307,8 +307,9 @@ describe('User Repository', () => {
 
       await expect(userRepository.create(userData)).rejects.toThrow(HttpError);
       await expect(userRepository.create(userData)).rejects.toMatchObject({
-        messageKey: 'errors.database.unique_field',
-        statusCode: 409
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'email' })],
       });
     });
 
@@ -339,8 +340,9 @@ describe('User Repository', () => {
 
       await expect(userRepository.create(userData)).rejects.toThrow(HttpError);
       await expect(userRepository.create(userData)).rejects.toMatchObject({
-        messageKey: 'errors.database.unique_field',
-        statusCode: 409
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'email' })],
       });
     });
 
@@ -434,8 +436,9 @@ describe('User Repository', () => {
 
       await expect(userRepository.update(userId, updateData)).rejects.toThrow(HttpError);
       await expect(userRepository.update(userId, updateData)).rejects.toMatchObject({
-        messageKey: 'errors.database.unique_field',
-        statusCode: 409
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'email' })],
       });
     });
 

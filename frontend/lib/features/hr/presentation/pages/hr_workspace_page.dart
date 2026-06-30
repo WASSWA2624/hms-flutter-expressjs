@@ -1224,7 +1224,9 @@ Future<void> _showPositionDialog(
     submitLabel: l10n.hrAssignPositionAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _PositionFields(
         key: fieldsKey,
         staff: staff,
@@ -1255,7 +1257,9 @@ Future<void> _showAssignmentDialog(BuildContext context, WidgetRef ref) async {
     submitLabel: l10n.hrAssignDepartmentAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _AssignmentFields(
         key: fieldsKey,
         referenceData: state?.referenceData ?? const HrReferenceData(),
@@ -1287,7 +1291,9 @@ Future<void> _showAvailabilityDialog(
     submitLabel: l10n.hrRecordAvailabilityAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _AvailabilityFields(key: fieldsKey);
     },
     onSubmit: () => controller.createAvailability(
@@ -1312,7 +1318,9 @@ Future<void> _showLeaveDialog(BuildContext context, WidgetRef ref) async {
     submitLabel: l10n.hrRequestLeaveAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _LeaveFields(key: fieldsKey);
     },
     onSubmit: () => controller.createLeave(
@@ -1342,7 +1350,9 @@ Future<void> _showShiftAssignmentDialog(
     submitLabel: l10n.hrAssignShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _ShiftAssignmentFields(
         key: fieldsKey,
         referenceData: state?.referenceData ?? const HrReferenceData(),
@@ -1372,7 +1382,9 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
     submitLabel: l10n.hrSwapShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _ShiftSwapFields(
         key: fieldsKey,
         referenceData: state?.referenceData ?? const HrReferenceData(),
@@ -1405,7 +1417,9 @@ Future<void> _showPayrollRunDialog(
     submitLabel: l10n.hrRunPayrollAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _PayrollRunFields(key: fieldsKey, staff: staff);
     },
     onSubmit: () => controller.createPayrollRun(
@@ -1435,7 +1449,9 @@ Future<void> _showCompensationDialog(
     submitLabel: l10n.hrCompensationAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _CompensationFields(key: fieldsKey, staff: staff);
     },
     onSubmit: () => controller.updateSelectedStaffProfile(
@@ -1656,7 +1672,9 @@ Future<void> _submitReason(
     submitLabel: submitLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _ReasonFields(key: fieldsKey, requiredReason: requiredReason);
     },
     onSubmit: () => onSubmit(fieldsKey.currentState?.reason),
@@ -1681,7 +1699,9 @@ Future<void> _showRosterPublishDialog(
     submitLabel: l10n.hrPublishRosterAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.publish_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _RosterPublishFields(key: fieldsKey);
     },
     onSubmit: () {
@@ -1719,7 +1739,9 @@ Future<void> _showOverrideShiftDialog(
     submitLabel: l10n.hrOverrideShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _OverrideShiftFields(
         key: fieldsKey,
         referenceData: state?.referenceData ?? const HrReferenceData(),
@@ -1755,7 +1777,9 @@ Future<void> _showProcessPayrollDialog(
     submitLabel: l10n.hrProcessPayrollAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.price_check_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return _ProcessPayrollFields(key: fieldsKey);
     },
     onSubmit: () {

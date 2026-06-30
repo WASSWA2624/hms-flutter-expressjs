@@ -104,5 +104,21 @@ describe('settings-workspace service', () => {
         facilities: expect.any(Array),
       })
     );
+  it('returns HR-scoped modules for HR users without admin roles', async () => {
+    const result = await service.getWorkspace(
+      {},
+      { roles: ['HR'], permissions: ['hr:read', 'hr:write', 'unit:manage'] },
+    );
+
+    expect(result.state).toBe('ready');
+    expect(result.permissions.is_hr_setup_only).toBe(true);
+    expect(result.permissions.can_manage_hr_setup).toBe(true);
+
+    const moduleIds = result.module_groups
+      .flatMap((group) => group.modules)
+      .map((module) => module.module_id);
+
+    expect(moduleIds).toEqual(['department', 'unit']);
+    expect(result.stats.total_modules).toBe(2);
   });
 });

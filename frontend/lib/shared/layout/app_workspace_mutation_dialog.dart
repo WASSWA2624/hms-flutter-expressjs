@@ -32,8 +32,9 @@ Future<bool?> showAppWorkspaceMutationDialog({
   required Widget Function(
     BuildContext context,
     GlobalKey<FormState> formKey,
-    bool isSubmitting,
-  )
+    bool isSubmitting, [
+    AppFailure? failure,
+  ])
   buildFields,
   required Future<AppFailure?> Function() onSubmit,
   required String cancelLabel,
@@ -88,8 +89,9 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
   final Widget Function(
     BuildContext context,
     GlobalKey<FormState> formKey,
-    bool isSubmitting,
-  )
+    bool isSubmitting, [
+    AppFailure? failure,
+  ])
   buildFields;
   final Future<AppFailure?> Function() onSubmit;
   final String cancelLabel;
@@ -199,7 +201,7 @@ class _AppWorkspaceMutationDialogState
             ? null
             : AppFailureStateView(failure: _failure!),
         children: <Widget>[
-          widget.buildFields(context, _formKey, _isSubmitting),
+          widget.buildFields(context, _formKey, _isSubmitting, _failure),
         ],
       ),
       actions: _buildActions(context),

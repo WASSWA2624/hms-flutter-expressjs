@@ -975,7 +975,9 @@ Future<void> showHrEditAccessUserDialog(
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           final String permissionQuery = permissionSearchController.text
@@ -1181,7 +1183,9 @@ Future<void> showHrCreateRoleDialog(BuildContext context, WidgetRef ref) async {
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppTextField(
@@ -1236,7 +1240,9 @@ Future<void> showHrEditRoleDialog(
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppTextField(
@@ -1303,7 +1309,9 @@ Future<void> showHrAssignRolePermissionsDialog(
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return AppFormSection(
@@ -1395,7 +1403,9 @@ Future<void> showHrCreatePermissionDialog(
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppTextField(
@@ -1450,7 +1460,9 @@ Future<void> showHrEditPermissionDialog(
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppTextField(

@@ -427,12 +427,16 @@ abstract final class AppRoutes {
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
+      AppPermissions.hrRead,
+      AppPermissions.hrWrite,
     ],
     requiredAnyRoles: <AppRole>[
       AppRole.superAdmin,
       AppRole.tenantAdmin,
       AppRole.facilityAdmin,
+      AppRole.hr,
     ],
+    requiresFacilityContext: true,
   );
   static const AppRouteData accessAdmin = AppRouteData(
     name: 'accessAdmin',

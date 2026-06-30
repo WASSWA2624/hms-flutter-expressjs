@@ -16,6 +16,7 @@ const SETTINGS_WORKSPACE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
+  ROLES.HR,
 ];
 
 const requireSettingsWorkspaceV1 = (_req, _res, next) => {

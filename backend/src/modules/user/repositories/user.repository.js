@@ -52,6 +52,79 @@ const normalizePermissionIds = (value) => (
     : []
 );
 
+const mapUniqueConstraintField = (target) => {
+  const fields = Array.isArray(target)
+    ? target.map((entry) => String(entry))
+    : [String(target || '')];
+  if (fields.some((entry) => entry.includes('email'))) {
+    return 'email';
+  }
+  if (fields.some((entry) => entry.includes('phone'))) {
+    return 'phone';
+  }
+  return fields.find((entry) => entry && entry !== 'tenant_id') || 'field';
+};
+
+const findActiveByTenantEmail = async (tenantId, email, excludeUserId = null) => {
+  if (!tenantId || !email) {
+    return null;
+  }
+
+  return prisma.user.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      email,
+      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+    },
+    select: { id: true },
+  });
+};
+
+const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) => {
+  if (!tenantId || !phone) {
+    return null;
+  }
+
+  const normalizedDigits = String(phone).replace(/[^\d]/g, '');
+  if (!normalizedDigits) {
+    return null;
+  }
+
+  const baseWhere = {
+    tenant_id: tenantId,
+    deleted_at: null,
+    ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
+  };
+
+  const exactMatch = await prisma.user.findFirst({
+    where: {
+      ...baseWhere,
+      phone,
+    },
+    select: { id: true },
+  });
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const candidates = await prisma.user.findMany({
+    where: {
+      ...baseWhere,
+      phone: { not: null },
+    },
+    select: { id: true, phone: true },
+  });
+
+  return (
+    candidates.find(
+      (entry) =>
+        entry.phone &&
+        String(entry.phone).replace(/[^\d]/g, '') === normalizedDigits
+    ) || null
+  );
+};
+
 const syncUserPermissions = async (tx, userId, permissionIds = []) => {
   const selectedPermissionIds = normalizePermissionIds(permissionIds);
   const existingRecords = await tx.user_permission.findMany({
@@ -207,8 +280,15 @@ const create = async (data) => {
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
-      const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      const target = error.meta?.target;
+      const field = mapUniqueConstraintField(target);
+      const messageKey =
+        field === 'email'
+          ? 'errors.user.email_exists_in_tenant'
+          : field === 'phone'
+            ? 'errors.user.phone_exists_in_tenant'
+            : 'errors.database.unique_field';
+      throw new HttpError(messageKey, 409, [{ field, message: messageKey }]);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
@@ -270,8 +350,15 @@ const update = async (id, data) => {
     }
     if (error.code === 'P2002') {
       // Unique constraint violation
-      const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      const target = error.meta?.target;
+      const field = mapUniqueConstraintField(target);
+      const messageKey =
+        field === 'email'
+          ? 'errors.user.email_exists_in_tenant'
+          : field === 'phone'
+            ? 'errors.user.phone_exists_in_tenant'
+            : 'errors.database.unique_field';
+      throw new HttpError(messageKey, 409, [{ field, message: messageKey }]);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
@@ -327,5 +414,7 @@ module.exports = {
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  findActiveByTenantEmail,
+  findActiveByTenantPhone,
 };

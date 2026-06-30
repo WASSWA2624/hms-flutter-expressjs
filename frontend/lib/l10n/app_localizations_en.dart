@@ -3855,6 +3855,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading organization and facility configuration.';
 
   @override
+  String get tenantFacilityHrSetupTitle => 'Facility structure for HR';
+
+  @override
+  String get tenantFacilityHrSetupBody =>
+      'Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.';
+
+  @override
+  String get tenantFacilityHrSetupDepartmentsBody =>
+      'Departments group staff and rosters by service area.';
+
+  @override
+  String get tenantFacilityHrSetupUnitsBody =>
+      'Units refine department coverage for shift and ward assignments.';
+
+  @override
+  String get tenantFacilityHrSetupManageAction => 'Manage';
+
+  @override
   String get tenantFacilitySummaryConfigured => 'Configured';
 
   @override

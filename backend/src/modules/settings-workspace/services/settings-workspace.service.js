@@ -1,5 +1,14 @@
 const settingsWorkspaceRepository = require('@repositories/settings-workspace/settings-workspace.repository');
 const { ROLES } = require('@config/roles');
+const {
+  HR_FACILITY_SETUP_MODULE_IDS,
+  canAccessHrFacilitySetup,
+  canWriteHrFacilitySetup,
+  filterSetupModulesForUser,
+  isAdminSetupUser,
+  isHrSetupOnlyUser,
+  canWriteSetupModule,
+} = require('@lib/setup/hr-facility-setup');
 
 const text = (value) => String(value || '').trim();
 
@@ -248,7 +257,18 @@ const roleList = (user = {}) => {
     .filter(Boolean);
 };
 
-const canWriteSettings = (user = {}) => roleList(user).some((entry) => WRITE_ROLES.has(entry));
+const canWriteSettings = (user = {}) =>
+  roleList(user).some((entry) => WRITE_ROLES.has(entry)) || canWriteHrFacilitySetup(user);
+
+const visibleModuleCatalog = (user = {}) => filterSetupModulesForUser(MODULE_CATALOG, user);
+
+const visibleChecklistOrder = (user = {}) => {
+  if (!isHrSetupOnlyUser(user)) {
+    return CHECKLIST_ORDER;
+  }
+
+  return CHECKLIST_ORDER.filter((moduleId) => HR_FACILITY_SETUP_MODULE_IDS.includes(moduleId));
+};
 
 const normalizeMetric = (value = {}) => ({
   count: Number(value.count || 0),
@@ -324,8 +344,8 @@ const buildSummaryCards = (moduleStates = []) =>
     };
   });
 
-const buildChecklist = (moduleStates = []) => {
-  const items = CHECKLIST_ORDER
+const buildChecklist = (moduleStates = [], checklistOrder = CHECKLIST_ORDER) => {
+  const items = checklistOrder
     .map((moduleId, index) => {
       const moduleState = moduleStates.find((entry) => entry.module_id === moduleId);
       if (!moduleState) return null;
@@ -436,7 +456,9 @@ const buildReferenceOptions = ({ tenants = [], facilities = [] }) => ({
 
 const getWorkspace = async (filters = {}, user = {}) => {
   const scopeResult = await settingsWorkspaceRepository.resolveWorkspaceScope({ filters, user });
-  const writeAllowed = canWriteSettings(user);
+  const moduleCatalog = visibleModuleCatalog(user);
+  const checklistOrder = visibleChecklistOrder(user);
+  const writeAllowed = isAdminSetupUser(user) || canWriteHrFacilitySetup(user);
 
   if (scopeResult.state === 'tenant_context_required') {
     const referenceData = await settingsWorkspaceRepository.findReferenceData({
@@ -460,13 +482,15 @@ const getWorkspace = async (filters = {}, user = {}) => {
       },
       lookups: buildReferenceOptions(referenceData),
       stats: {
-        total_modules: MODULE_CATALOG.length,
+        total_modules: moduleCatalog.length,
         configured_modules: 0,
         attention_modules: 0,
         total_records: 0,
       },
       permissions: {
         can_write: writeAllowed,
+        can_manage_hr_setup: canAccessHrFacilitySetup(user),
+        is_hr_setup_only: isHrSetupOnlyUser(user),
       },
     };
   }
@@ -483,13 +507,17 @@ const getWorkspace = async (filters = {}, user = {}) => {
     }),
   ]);
 
-  const moduleStates = MODULE_CATALOG.map((module) =>
-    buildModuleState({ module, metricsMap: metrics, canWrite: writeAllowed })
+  const moduleStates = moduleCatalog.map((module) =>
+    buildModuleState({
+      module,
+      metricsMap: metrics,
+      canWrite: canWriteSetupModule(user, module.id),
+    })
   );
 
   const filteredModules = applyModuleFilters(moduleStates, filters);
   const summaryCards = buildSummaryCards(moduleStates);
-  const checklist = buildChecklist(moduleStates);
+  const checklist = buildChecklist(moduleStates, checklistOrder);
 
   return {
     state: 'ready',
@@ -513,13 +541,15 @@ const getWorkspace = async (filters = {}, user = {}) => {
     },
     lookups: buildReferenceOptions(referenceData),
     stats: {
-      total_modules: MODULE_CATALOG.length,
+      total_modules: moduleCatalog.length,
       configured_modules: moduleStates.filter((entry) => entry.count > 0).length,
       attention_modules: moduleStates.filter((entry) => entry.state === 'attention').length,
       total_records: moduleStates.reduce((sum, entry) => sum + Number(entry.count || 0), 0),
     },
     permissions: {
       can_write: writeAllowed,
+      can_manage_hr_setup: canAccessHrFacilitySetup(user),
+      is_hr_setup_only: isHrSetupOnlyUser(user),
     },
   };
 };

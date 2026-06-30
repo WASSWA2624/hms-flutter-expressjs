@@ -5022,6 +5022,26 @@
   "@tenantFacilitySetupLoadingBody": {
     "description": "Body while tenant and facility setup loads."
   },
+  "tenantFacilityHrSetupTitle": "Facility structure for HR",
+  "@tenantFacilityHrSetupTitle": {
+    "description": "HR-scoped facility setup screen title."
+  },
+  "tenantFacilityHrSetupBody": "Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.",
+  "@tenantFacilityHrSetupBody": {
+    "description": "HR-scoped facility setup screen body."
+  },
+  "tenantFacilityHrSetupDepartmentsBody": "Departments group staff and rosters by service area.",
+  "@tenantFacilityHrSetupDepartmentsBody": {
+    "description": "HR setup section body for departments."
+  },
+  "tenantFacilityHrSetupUnitsBody": "Units refine department coverage for shift and ward assignments.",
+  "@tenantFacilityHrSetupUnitsBody": {
+    "description": "HR setup section body for units."
+  },
+  "tenantFacilityHrSetupManageAction": "Manage",
+  "@tenantFacilityHrSetupManageAction": {
+    "description": "HR setup action to open a structure editor."
+  },
   "tenantFacilitySummaryConfigured": "Configured",
   "@tenantFacilitySummaryConfigured": {
     "description": "Configured setup summary status label."

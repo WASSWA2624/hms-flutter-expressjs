@@ -59,6 +59,8 @@ final class NetworkFailureMapper {
       return AppFailure.validation(
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
+        detailMessage: _responseDetail(response?.data),
+        fieldMessages: _validationFieldMessages(response?.data),
       );
     }
 
@@ -66,6 +68,8 @@ final class NetworkFailureMapper {
       return AppFailure.validation(
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
+        detailMessage: _responseDetail(response?.data),
+        fieldMessages: _validationFieldMessages(response?.data),
       );
     }
 
@@ -127,16 +131,64 @@ final class NetworkFailureMapper {
       return const <String>{};
     }
 
-    final errors = data['errors'];
-    if (errors is! Map<Object?, Object?>) {
-      return const <String>{};
+    final Object? errors = data['errors'];
+    if (errors is Map<Object?, Object?>) {
+      return errors.keys
+          .whereType<String>()
+          .map((field) => field.trim())
+          .where((field) => field.isNotEmpty)
+          .toSet();
     }
 
-    return errors.keys
-        .whereType<String>()
-        .map((field) => field.trim())
-        .where((field) => field.isNotEmpty)
-        .toSet();
+    if (errors is List<Object?>) {
+      return errors
+          .whereType<Map<Object?, Object?>>()
+          .map((Map<Object?, Object?> entry) => entry['field']?.toString().trim())
+          .whereType<String>()
+          .where((String field) => field.isNotEmpty)
+          .toSet();
+    }
+
+    return const <String>{};
+  }
+
+  Map<String, String> _validationFieldMessages(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return const <String, String>{};
+    }
+
+    final Object? errors = data['errors'];
+    if (errors is! List<Object?>) {
+      return const <String, String>{};
+    }
+
+    final Map<String, String> messages = <String, String>{};
+    for (final Object? entry in errors) {
+      if (entry is! Map<Object?, Object?>) {
+        continue;
+      }
+      final String? field = entry['field']?.toString().trim();
+      final String? message = entry['message']?.toString().trim();
+      if (field == null || field.isEmpty || message == null || message.isEmpty) {
+        continue;
+      }
+      messages.putIfAbsent(field, () => message);
+    }
+    return messages;
+  }
+
+  String? _responseDetail(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return null;
+    }
+
+    for (final String key in <String>['detail', 'message', 'title']) {
+      final Object? value = data[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
   }
 
   String? _responseCode(Object? data) {

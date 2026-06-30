@@ -71,23 +71,31 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final bool isRefreshing = ref.watch(tenantFacilitySetupRefreshProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
+    final bool canManageHrSetup = accessPolicy.canManageHrFacilitySetup();
+    final bool isHrSetupOnly = accessPolicy.isHrFacilitySetupOnlyUser();
     return AppWorkspace(
-      title: l10n.tenantFacilitySetupTitle,
+      title: isHrSetupOnly
+          ? l10n.tenantFacilityHrSetupTitle
+          : l10n.tenantFacilitySetupTitle,
       leadingIcon: AppRouteIcons.setup,
       maxWidth: PageMaxWidth.dashboard,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        summaryNotifications: _setupSummaryNotifications(
-          context,
-          l10n,
-          snapshot,
-          canViewSubscriptions: accessPolicy.grantsAny(const <AppPermission>[
-            AppPermissions.subscriptionsRead,
-            AppPermissions.subscriptionsWrite,
-            AppPermissions.tenantAdmin,
-            AppPermissions.systemAdmin,
-          ]),
-        ),
+        summaryNotifications: isHrSetupOnly
+            ? _hrSetupSummaryNotifications(context, l10n, snapshot)
+            : _setupSummaryNotifications(
+                context,
+                l10n,
+                snapshot,
+                canViewSubscriptions: accessPolicy.grantsAny(
+                  const <AppPermission>[
+                    AppPermissions.subscriptionsRead,
+                    AppPermissions.subscriptionsWrite,
+                    AppPermissions.tenantAdmin,
+                    AppPermissions.systemAdmin,
+                  ],
+                ),
+              ),
         onRefresh: () async {
           await ref
               .read(tenantFacilitySetupControllerProvider.notifier)
@@ -100,6 +108,8 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         snapshot: snapshot,
         canManageTenant: canManageTenant,
         canManageFacility: canManageFacility,
+        canManageHrSetup: canManageHrSetup,
+        isHrSetupOnly: isHrSetupOnly,
       ),
     );
   }
@@ -186,12 +196,41 @@ List<AppWorkspaceSummaryNotification> _setupSummaryNotifications(
   ];
 }
 
+List<AppWorkspaceSummaryNotification> _hrSetupSummaryNotifications(
+  BuildContext context,
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+) {
+  return <AppWorkspaceSummaryNotification>[
+    if (snapshot.facility?.name != null)
+      AppWorkspaceSummaryNotification(
+        label: l10n.settingsWorkspaceFacilityLabel,
+        count: 1,
+        icon: Icons.local_hospital_outlined,
+        onSelected: () {},
+      ),
+    AppWorkspaceSummaryNotification(
+      label: l10n.tenantFacilityDepartmentsListTitle,
+      count: snapshot.departments.length,
+      icon: Icons.groups_2_outlined,
+      onSelected: () => unawaited(_openDepartmentsModal(context)),
+    ),
+    AppWorkspaceSummaryNotification(
+      label: l10n.tenantFacilityUnitsListTitle,
+      count: snapshot.units.length,
+      icon: Icons.hub_outlined,
+      onSelected: () => unawaited(_openUnitsModal(context)),
+    ),
+  ];
+}
+
 typedef _SetupDetailBuilder =
     Widget Function(
       BuildContext context,
       FacilitySetupSnapshot snapshot,
       bool canManageTenant,
       bool canManageFacility,
+      bool canEditHrStructure,
     );
 
 class _SetupDetailDialog extends ConsumerWidget {
@@ -223,6 +262,7 @@ class _SetupDetailDialog extends ConsumerWidget {
             snapshot,
             accessPolicy.canManageTenant(),
             accessPolicy.canManageFacility(),
+            accessPolicy.canEditFacilitySetupStructure(),
           ),
           failure: (AppFailure failure) => AppFailureStateView(
             failure: failure,
@@ -263,6 +303,7 @@ Future<void> _openTenantProfileModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _TenantProfileForm(
             tenant: snapshot.tenant,
             canSubmit: canManageTenant,
@@ -286,6 +327,7 @@ Future<void> _openFacilityProfileModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _FacilityProfileForm(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.tenant != null,
@@ -309,6 +351,7 @@ Future<void> _openBranchesModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _BranchSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
@@ -332,9 +375,10 @@ Future<void> _openDepartmentsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _DepartmentSetupSection(
             snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
+            canSubmit: canEditHrStructure && snapshot.facility != null,
             framed: false,
           ),
     ),
@@ -355,9 +399,10 @@ Future<void> _openUnitsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _UnitSetupSection(
             snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
+            canSubmit: canEditHrStructure && snapshot.facility != null,
             framed: false,
           ),
     ),
@@ -378,6 +423,7 @@ Future<void> _openWardsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _WardSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
@@ -401,6 +447,7 @@ Future<void> _openRoomsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _RoomSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
@@ -424,6 +471,7 @@ Future<void> _openBedsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
+            bool canEditHrStructure,
           ) => _BedSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
@@ -468,14 +516,27 @@ class _SetupBody extends StatelessWidget {
     required this.snapshot,
     required this.canManageTenant,
     required this.canManageFacility,
+    required this.canManageHrSetup,
+    required this.isHrSetupOnly,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canManageTenant;
   final bool canManageFacility;
+  final bool canManageHrSetup;
+  final bool isHrSetupOnly;
+
+  bool get _canEditStructure => canManageFacility || canManageHrSetup;
 
   @override
   Widget build(BuildContext context) {
+    if (isHrSetupOnly) {
+      return _HrFacilitySetupBody(
+        snapshot: snapshot,
+        canEditStructure: _canEditStructure,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -491,6 +552,81 @@ class _SetupBody extends StatelessWidget {
             _PermissionGateSummary(
               canManageTenant: canManageTenant,
               canManageFacility: canManageFacility,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HrFacilitySetupBody extends StatelessWidget {
+  const _HrFacilitySetupBody({
+    required this.snapshot,
+    required this.canEditStructure,
+  });
+
+  final FacilitySetupSnapshot snapshot;
+  final bool canEditStructure;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.tenantFacilityHrSetupBody,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.lg),
+        _SetupGrid(
+          children: <Widget>[
+            AppScreenSection(
+              title: l10n.tenantFacilityDepartmentsListTitle,
+              body: l10n.tenantFacilityHrSetupDepartmentsBody,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  AppInfoTile(
+                    label: l10n.settingsWorkspaceRecordsLabel,
+                    value: '${snapshot.departments.length}',
+                  ),
+                  SizedBox(height: theme.spacing.md),
+                  AppButton.primary(
+                    label: l10n.tenantFacilityHrSetupManageAction,
+                    leadingIcon: Icons.groups_2_outlined,
+                    onPressed: snapshot.facility?.id == null
+                        ? null
+                        : () => unawaited(_openDepartmentsModal(context)),
+                  ),
+                ],
+              ),
+            ),
+            AppScreenSection(
+              title: l10n.tenantFacilityUnitsListTitle,
+              body: l10n.tenantFacilityHrSetupUnitsBody,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  AppInfoTile(
+                    label: l10n.settingsWorkspaceRecordsLabel,
+                    value: '${snapshot.units.length}',
+                  ),
+                  SizedBox(height: theme.spacing.md),
+                  AppButton.primary(
+                    label: l10n.tenantFacilityHrSetupManageAction,
+                    leadingIcon: Icons.hub_outlined,
+                    onPressed: snapshot.facility?.id == null
+                        ? null
+                        : () => unawaited(_openUnitsModal(context)),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

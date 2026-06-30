@@ -7360,6 +7360,36 @@ abstract class AppLocalizations {
   /// **'Loading organization and facility configuration.'**
   String get tenantFacilitySetupLoadingBody;
 
+  /// HR-scoped facility setup screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility structure for HR'**
+  String get tenantFacilityHrSetupTitle;
+
+  /// HR-scoped facility setup screen body.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.'**
+  String get tenantFacilityHrSetupBody;
+
+  /// HR setup section body for departments.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments group staff and rosters by service area.'**
+  String get tenantFacilityHrSetupDepartmentsBody;
+
+  /// HR setup section body for units.
+  ///
+  /// In en, this message translates to:
+  /// **'Units refine department coverage for shift and ward assignments.'**
+  String get tenantFacilityHrSetupUnitsBody;
+
+  /// HR setup action to open a structure editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get tenantFacilityHrSetupManageAction;
+
   /// Configured setup summary status label.
   ///
   /// In en, this message translates to:

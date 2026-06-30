@@ -42,7 +42,9 @@ Future<void> showHrAssignRoleDialog(
     submitLabel: l10n.hrAssignRoleAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppSelectField<String>.searchable(
@@ -259,7 +261,9 @@ Future<void> showHrShiftTemplateDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     showCancelButton: false,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return AppFormSection(
         children: <Widget>[
           AppTextField(

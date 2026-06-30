@@ -40,9 +40,9 @@ class SettingsPage extends ConsumerWidget {
           return action.requirement?.isAllowed(accessPolicy) ?? true;
         })
         .toList(growable: false);
-    final bool showSettingsWorkspace = _settingsWorkspaceRequirement.isAllowed(
-      accessPolicy,
-    );
+    final bool showSettingsWorkspace =
+        _settingsWorkspaceRequirement.isAllowed(accessPolicy) ||
+        _hrSettingsWorkspaceRequirement.isAllowed(accessPolicy);
 
     return AppWorkspace(
       title: l10n.settingsTitle,
@@ -377,12 +377,27 @@ const AccessRequirement _tenantFacilitySetupRequirement = AccessRequirement(
     AppPermissions.tenantAdmin,
     AppPermissions.facilityAdmin,
     AppPermissions.systemAdmin,
+    AppPermissions.hrRead,
+    AppPermissions.hrWrite,
   ],
   anyRoles: <AppRole>[
     AppRole.superAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
+    AppRole.hr,
   ],
+  requiresFacilityContext: true,
+);
+
+/// HR users with facility scope see department and unit setup modules only.
+const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.hrRead,
+    AppPermissions.hrWrite,
+  ],
+  anyRoles: <AppRole>[AppRole.hr],
+  requiresTenantContext: true,
+  requiresFacilityContext: true,
 );
 
 const AccessRequirement _subscriptionsRequirement = AccessRequirement(

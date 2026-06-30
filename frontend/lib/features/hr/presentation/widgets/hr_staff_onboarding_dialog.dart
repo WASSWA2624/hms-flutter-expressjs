@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -77,13 +78,16 @@ Future<void> showHrStaffOnboardingDialog(
     submitIcon: Icons.save_outlined,
     maxWidth: 980,
     initialMaximized: true,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _) {
+    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
+      AppFailure? failure,
+    ]) {
       return HrStaffOnboardingForm(
         key: fieldsKey,
         staff: staff,
         referenceData: state?.referenceData ?? const HrReferenceData(),
         tenantId: tenantId,
         facilityId: facilityId,
+        serverFailure: failure,
       );
     },
     onSubmit: () {
@@ -114,6 +118,7 @@ class HrStaffOnboardingForm extends ConsumerStatefulWidget {
     required this.tenantId,
     this.staff,
     this.facilityId,
+    this.serverFailure,
     super.key,
   });
 
@@ -121,6 +126,7 @@ class HrStaffOnboardingForm extends ConsumerStatefulWidget {
   final HrStaffProfile? staff;
   final String tenantId;
   final String? facilityId;
+  final AppFailure? serverFailure;
 
   @override
   ConsumerState<HrStaffOnboardingForm> createState() =>
@@ -520,6 +526,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       isRequired: true,
       invalidEmailMessage: l10n.authEmailInvalidMessage,
       requiredMessage: l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
+      errorText: widget.serverFailure?.messageForField('email'),
     );
   }
 
@@ -536,6 +543,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       invalidPhoneMessage: l10n.appPhoneInvalidMessage,
       isRequired: true,
       requiredMessage: l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
+      errorText: widget.serverFailure?.messageForField('phone'),
     );
   }
 

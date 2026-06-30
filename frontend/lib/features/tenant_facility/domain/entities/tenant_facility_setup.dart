@@ -219,12 +219,18 @@ final class FacilitySetupPermissions {
   const FacilitySetupPermissions({
     this.canManageTenant = false,
     this.canManageFacility = false,
+    this.canManageHrSetup = false,
     this.canViewSubscriptions = false,
+    this.isHrSetupOnly = false,
   });
 
   final bool canManageTenant;
   final bool canManageFacility;
+  final bool canManageHrSetup;
   final bool canViewSubscriptions;
+  final bool isHrSetupOnly;
+
+  bool get canEditStructure => canManageFacility || canManageHrSetup;
 }
 
 final class FacilitySetupSnapshot {

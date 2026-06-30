@@ -119,7 +119,7 @@ class AppFailureStateView extends StatelessWidget {
     return AppStateView(
       variant: _failureVariant(failure),
       title: title ?? l10n.failureTitle(failure),
-      body: body ?? l10n.failureMessage(failure),
+      body: body ?? failure.displayMessage(l10n),
       action: retryAction,
       semanticLabel: semanticLabel,
       crossAxisAlignment: crossAxisAlignment,

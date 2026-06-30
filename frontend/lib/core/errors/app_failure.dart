@@ -20,6 +20,8 @@ sealed class AppFailure {
     required this.isRetryable,
     this.statusCode,
     this.validationFields = const <String>{},
+    this.detailMessage,
+    this.fieldMessages = const <String, String>{},
   });
 
   const factory AppFailure.network({
@@ -46,6 +48,8 @@ sealed class AppFailure {
     String code,
     int? statusCode,
     Set<String> validationFields,
+    String? detailMessage,
+    Map<String, String> fieldMessages,
   }) = ValidationFailure;
 
   const factory AppFailure.unexpectedResponse({int? statusCode}) =
@@ -62,6 +66,8 @@ sealed class AppFailure {
   final bool isRetryable;
   final int? statusCode;
   final Set<String> validationFields;
+  final String? detailMessage;
+  final Map<String, String> fieldMessages;
 
   @override
   bool operator ==(Object other) {
@@ -72,7 +78,9 @@ sealed class AppFailure {
             other.messageKey == messageKey &&
             other.isRetryable == isRetryable &&
             other.statusCode == statusCode &&
-            _setEquals(other.validationFields, validationFields);
+            _setEquals(other.validationFields, validationFields) &&
+            other.detailMessage == detailMessage &&
+            _mapEquals(other.fieldMessages, fieldMessages);
   }
 
   @override
@@ -84,7 +92,31 @@ sealed class AppFailure {
       isRetryable,
       statusCode,
       Object.hashAllUnordered(validationFields),
+      detailMessage,
+      Object.hashAllUnordered(fieldMessages.entries),
     );
+  }
+
+  static bool _mapEquals(Map<String, String> left, Map<String, String> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (final MapEntry<String, String> entry in left.entries) {
+      if (right[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static Map<String, String> _normalizedFieldMessages(
+    Map<String, String> messages,
+  ) {
+    return Map<String, String>.unmodifiable(<String, String>{
+      for (final MapEntry<String, String> entry in messages.entries)
+        if (entry.key.trim().isNotEmpty && entry.value.trim().isNotEmpty)
+          entry.key.trim(): entry.value.trim(),
+    });
   }
 
   static Set<String> _normalizedFields(Set<String> fields) {
@@ -187,11 +219,21 @@ final class ValidationFailure extends AppFailure {
     super.code = 'validation.failed',
     super.statusCode,
     Set<String> validationFields = const <String>{},
+    String? detailMessage,
+    Map<String, String> fieldMessages = const <String, String>{},
   }) : super._(
          category: AppFailureCategory.validation,
          messageKey: 'errors.validation',
          isRetryable: false,
          validationFields: AppFailure._normalizedFields(validationFields),
+         detailMessage: () {
+           final String? trimmed = detailMessage?.trim();
+           if (trimmed == null || trimmed.isEmpty) {
+             return null;
+           }
+           return trimmed;
+         }(),
+         fieldMessages: AppFailure._normalizedFieldMessages(fieldMessages),
        );
 }
 

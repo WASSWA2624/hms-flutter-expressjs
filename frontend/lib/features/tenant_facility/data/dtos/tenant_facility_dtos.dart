@@ -436,27 +436,35 @@ final class FacilitySetupPermissionsDto {
   const FacilitySetupPermissionsDto({
     required this.canManageTenant,
     required this.canManageFacility,
+    required this.canManageHrSetup,
     required this.canViewSubscriptions,
+    required this.isHrSetupOnly,
   });
 
   factory FacilitySetupPermissionsDto.fromJson(JsonMap json) {
     return FacilitySetupPermissionsDto(
       canManageTenant: _optionalBool(json, 'can_manage_tenant') ?? false,
       canManageFacility: _optionalBool(json, 'can_manage_facility') ?? false,
+      canManageHrSetup: _optionalBool(json, 'can_manage_hr_setup') ?? false,
       canViewSubscriptions:
           _optionalBool(json, 'can_view_subscriptions') ?? false,
+      isHrSetupOnly: _optionalBool(json, 'is_hr_setup_only') ?? false,
     );
   }
 
   final bool canManageTenant;
   final bool canManageFacility;
+  final bool canManageHrSetup;
   final bool canViewSubscriptions;
+  final bool isHrSetupOnly;
 
   FacilitySetupPermissions toEntity() {
     return FacilitySetupPermissions(
       canManageTenant: canManageTenant,
       canManageFacility: canManageFacility,
+      canManageHrSetup: canManageHrSetup,
       canViewSubscriptions: canViewSubscriptions,
+      isHrSetupOnly: isHrSetupOnly,
     );
   }
 }

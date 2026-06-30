@@ -233,6 +233,41 @@ void main() {
       expect(failure.messageKey, 'errors.validation');
     });
 
+    test('maps problem+json validation arrays and detail messages', () {
+      final requestOptions = RequestOptions(path: '/users');
+      final failure = mapper.map(
+        DioException(
+          requestOptions: requestOptions,
+          response: Response<Object?>(
+            requestOptions: requestOptions,
+            statusCode: 409,
+            data: <String, Object?>{
+              'detail': 'A user with this email already exists in this tenant',
+              'errors': <Object?>[
+                <String, Object?>{
+                  'field': 'email',
+                  'message': 'A user with this email already exists in this tenant',
+                },
+              ],
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(failure.category, AppFailureCategory.validation);
+      expect(failure.validationFields, <String>{'email'});
+      expect(
+        failure.detailMessage,
+        'A user with this email already exists in this tenant',
+      );
+      expect(
+        failure.fieldMessages['email'],
+        'A user with this email already exists in this tenant',
+      );
+    });
+
     test('maps invalid decoded payloads to unexpected response failures', () {
       final failure = mapper.map(
         const FormatException('Invalid payload.'),

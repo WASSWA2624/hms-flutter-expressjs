@@ -70,6 +70,69 @@ const USER_DETAIL_INCLUDE = Object.freeze({
   },
 });
 
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+const normalizePhoneDigits = (value) => {
+  const digits = String(value || '').replace(/[^\d]/g, '');
+  return digits || null;
+};
+
+const assertTenantUserContactAvailable = async ({
+  tenantId,
+  email,
+  phone,
+  excludeUserId = null,
+}) => {
+  const resolvedTenantId = String(tenantId || '').trim();
+  if (!resolvedTenantId) {
+    return;
+  }
+
+  const normalizedEmail = email ? normalizeEmail(email) : null;
+  const normalizedPhone = phone ? normalizePhoneDigits(phone) : null;
+  const conflicts = [];
+
+  if (normalizedEmail) {
+    const existingEmail = await userRepository.findActiveByTenantEmail(
+      resolvedTenantId,
+      normalizedEmail,
+      excludeUserId
+    );
+    if (existingEmail) {
+      conflicts.push({
+        field: 'email',
+        message: 'errors.user.email_exists_in_tenant',
+      });
+    }
+  }
+
+  if (normalizedPhone) {
+    const existingPhone = await userRepository.findActiveByTenantPhone(
+      resolvedTenantId,
+      normalizedPhone,
+      excludeUserId
+    );
+    if (existingPhone) {
+      conflicts.push({
+        field: 'phone',
+        message: 'errors.user.phone_exists_in_tenant',
+      });
+    }
+  }
+
+  if (!conflicts.length) {
+    return;
+  }
+
+  throw new HttpError(
+    conflicts.length > 1
+      ? 'errors.user.contact_exists_in_tenant'
+      : conflicts[0].message,
+    409,
+    conflicts
+  );
+};
+
 const normalizeUserPayload = async (data, isUpdate = false) => {
   const next = { ...(data || {}) };
   const normalizedPositionTitle = typeof next.position_title === 'string' ? next.position_title.trim() : '';
@@ -100,6 +163,15 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
 
   if (permissionIds !== undefined) {
     next.permission_ids = permissionIds;
+  }
+
+  if (typeof next.email === 'string') {
+    next.email = normalizeEmail(next.email);
+  }
+
+  if (next.phone !== undefined && next.phone !== null) {
+    const normalizedPhone = normalizePhoneDigits(next.phone);
+    next.phone = normalizedPhone;
   }
 
   delete next.password;
@@ -212,6 +284,11 @@ const getUserById = async (id, userId, ipAddress) => {
 const createUser = async (data, userId, ipAddress) => {
   try {
     const normalizedPayload = await normalizeUserPayload(data, false);
+    await assertTenantUserContactAvailable({
+      tenantId: normalizedPayload.tenant_id,
+      email: normalizedPayload.email,
+      phone: normalizedPayload.phone,
+    });
     const user = await userRepository.create(normalizedPayload);
 
     // Create audit log (non-blocking)
@@ -251,6 +328,12 @@ const updateUser = async (id, data, userId, ipAddress) => {
     }
 
     const normalizedPayload = await normalizeUserPayload(data, true);
+    await assertTenantUserContactAvailable({
+      tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
+      email: normalizedPayload.email ?? before.email,
+      phone: normalizedPayload.phone ?? before.phone,
+      excludeUserId: id,
+    });
     const user = await userRepository.update(id, normalizedPayload);
 
     // Create audit log (non-blocking)
