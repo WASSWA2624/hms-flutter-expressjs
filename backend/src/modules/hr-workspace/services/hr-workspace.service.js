@@ -1162,7 +1162,7 @@ const getReferenceData = async (filters = {}) => {
           deleted_at: null,
           status: 'ACTIVE',
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-          user_roles: {
+          roles: {
             none: {
               deleted_at: null,
               role: { deleted_at: null, name: ROLES.PATIENT },
@@ -1186,7 +1186,7 @@ const getReferenceData = async (filters = {}) => {
             where: { deleted_at: null },
             select: { id: true, human_friendly_id: true },
           },
-          user_roles: {
+          roles: {
             where: { deleted_at: null },
             take: 3,
             select: {
@@ -1312,7 +1312,7 @@ const getReferenceData = async (filters = {}) => {
         const firstName = entry.profile?.first_name || '';
         const lastName = entry.profile?.last_name || '';
         const fullName = normalizeString(`${firstName} ${lastName}`);
-        const roleHint = (entry.user_roles || [])
+        const roleHint = (entry.roles || [])
           .map((assignment) => assignment?.role?.name)
           .filter(Boolean)
           .join(', ');
@@ -2376,13 +2376,6 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
             name: true,
           },
         },
-        facility: {
-          select: {
-            id: true,
-            human_friendly_id: true,
-            name: true,
-          },
-        },
       },
       orderBy: { created_at: 'desc' },
       take: 50,
@@ -2428,6 +2421,17 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
     }),
   ]);
 
+  const facilityIds = [
+    ...new Set(userRoles.map((entry) => entry.facility_id).filter(Boolean)),
+  ];
+  const facilities = facilityIds.length
+    ? await prisma.facility.findMany({
+        where: { id: { in: facilityIds }, deleted_at: null },
+        select: { id: true, human_friendly_id: true, name: true },
+      })
+    : [];
+  const facilityById = new Map(facilities.map((entry) => [entry.id, entry]));
+
   const roleIds = userRoles.map((entry) => entry.role_id).filter(Boolean);
   const rolePermissions = roleIds.length
     ? await prisma.role_permission.findMany({
@@ -2463,17 +2467,20 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
     }))
     .filter((entry) => entry.slug);
 
-  const mappedRoles = userRoles.map((entry) => ({
-    id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-    display_id: resolvePublicIdentifier(entry.human_friendly_id),
-    backend_identifier: entry.id,
-    role_id: resolvePublicIdentifier(entry.role?.human_friendly_id, entry.role_id),
-    role_name: entry.role?.name || null,
-    facility_id: entry.facility_id || null,
-    facility_name: entry.facility?.name || null,
-    facility_display_id: resolvePublicIdentifier(entry.facility?.human_friendly_id),
-    tenant_id: entry.tenant_id || null,
-  }));
+  const mappedRoles = userRoles.map((entry) => {
+    const facility = entry.facility_id ? facilityById.get(entry.facility_id) : null;
+    return {
+      id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+      display_id: resolvePublicIdentifier(entry.human_friendly_id),
+      backend_identifier: entry.id,
+      role_id: resolvePublicIdentifier(entry.role?.human_friendly_id, entry.role_id),
+      role_name: entry.role?.name || null,
+      facility_id: entry.facility_id || null,
+      facility_name: facility?.name || null,
+      facility_display_id: resolvePublicIdentifier(facility?.human_friendly_id),
+      tenant_id: entry.tenant_id || null,
+    };
+  });
 
   const firstName = linkedUser?.profile?.first_name || '';
   const lastName = linkedUser?.profile?.last_name || '';

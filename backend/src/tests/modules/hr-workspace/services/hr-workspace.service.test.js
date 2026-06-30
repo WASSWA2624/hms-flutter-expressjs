@@ -196,4 +196,27 @@ describe('hr-workspace.service contract', () => {
       }),
     ]);
   });
+
+  it('queries active users through the roles relation', async () => {
+    await subject.getReferenceData({ facility_id: 'facility-1' });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          roles: expect.objectContaining({
+            none: expect.objectContaining({
+              role: expect.objectContaining({ name: 'PATIENT' }),
+            }),
+          }),
+        }),
+        select: expect.objectContaining({
+          roles: expect.objectContaining({
+            select: expect.objectContaining({
+              role: expect.objectContaining({ select: { name: true } }),
+            }),
+          }),
+        }),
+      })
+    );
+  });
 });
