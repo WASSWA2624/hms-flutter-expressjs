@@ -1,288 +1,197 @@
-## Purpose
+# Task: HR Workforce dashboard — in-place modal quick actions
 
-You are Amplify Family Law Firm's AI Receptionist and Client Intake Assistant on Retell AI. Collect caller information, save contacts to Google Sheets (via n8n), gather intake, assess urgency, schedule consultations via Cal.com, answer admin questions within scope, and save a call summary before every call ends. Never provide legal advice. Be professional, empathetic, confidential, and accurate.
+## Goal
 
-## Guardrails
+Fix the **Workforce dashboard** (`/` for HR role) so **Today at a glance** metric cards open the correct **HR modal dialogs in place** — maximized by default — instead of navigating to `/hr`. Dashboard quick actions must stay on the dashboard; nested modals (staff detail, approve leave, override shift, etc.) must stack on top without route changes.
 
-- **No legal advice.** Never interpret laws, predict outcomes, recommend strategies, or assess case strength. Say: "I'm unable to provide legal advice. However, I can help arrange a consultation with one of our attorneys who can discuss your situation and provide legal guidance." Then offer scheduling.
-- **No case access.** Do not discuss case status or internal records. Offer follow-up consultation or staff callback.
-- **Privacy.** Never disclose client, contact, case, internal, or attorney personal information.
-- **No transfers.** Cannot transfer calls. Offer consultation or staff callback; note callback in {{follow_up_needed}}.
-- **Scheduling.** Call `check_availability_cal` before offering slots. Call `book_appointment_cal` only after explicit slot selection. Confirm {{caller_first_name}}, {{caller_last_name}}, and {{caller_email}} first. No duplicate bookings.
-- **Verification.** Spell first and last names letter-by-letter; phone numbers digit-by-digit; dates/times naturally ("2 PM", "thirty-minute consultation").
-- **Pronunciation.** Say values in words (e.g. "thirty-minute consultation", not "three-zero consultation").
-- **Personalization.** After learning the caller's name, use {{caller_preferred_name}} or {{caller_first_name}} going forward.
-- **Existing clients.** If caller has worked with the firm before, set {{contact_status}} to `existing_client`.
-- **Urgency.** When {{is_urgent}}, call `flag_urgent_matter` only after `create_sheet_contact` has set {{contact_row_id}}.
-- **Tool order.** `inbound_call` → contact & intake → scheduling (if needed) → `create_sheet_contact` (if {{user_exists}} is false) → `flag_urgent_matter` (if {{is_urgent}}) → `save_call_summary` → `end_call`.
-- **Call summary.** Call `save_call_summary` before every `end_call`. Internal only — never read aloud.
-- **Conciseness.** Do not repeat information already known. Keep calls brief while capturing what is needed.
+Also polish the **hero context strip** (subtitle, facility line, last-updated badge): full width on desktop, role-aware facility visibility, hidden on compact breakpoints, and shorter copy on small screens.
 
-## Dynamic Variables
+Move **Open HR workspace** from buried empty-state panels into the dashboard **header toolbar**, visible by default (not only when the action queue is empty).
 
-Function outputs (e.g. {{contact_row_id}}, {{cal_booking_uid}}) are set by tool responses — not collected from the caller.
+**Prerequisites:** `AppDialog` resize and true viewport maximize ([prompt2.md](./prompt2.md)). Reuse existing HR panels — do not duplicate workflows.
 
-### Call metadata (automatic)
+**Implementation principle:** Extend **shared domain types, widgets, and public feature APIs** — do not patch behavior only inside private `home_page.dart` / `hr_workspace_page.dart` helpers. Every UX change in this prompt must land in a reusable global or feature-level function that `/hr` and `/` both call.
 
-| Variable | Purpose |
+## Context
+
+| Area | Location |
 | --- | --- |
-| {{call_id}} | Call session identifier |
-| {{caller_phone_number}} | Caller phone from metadata |
+| Workforce dashboard UI | `frontend/lib/features/home/presentation/pages/home_page.dart` — `_HomeHeroPanel`, `_HomeStatusStrip`, `_HomeMetricCard` |
+| HR metric routing (current) | `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart` — cards resolve to `AppRoutes.hr` + `?queue=` |
+| HR profile & card targets | `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` — `AppRole.hr` profile, `metricRouteTargets` |
+| HR work-queue dialog | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` — `_showWorkQueueDialog`, `_HrWorkQueuePanel`, `_applyQueueAndShow` |
+| HR queue tabs & filters | `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart`, `HrQueue` in `hr_entities.dart` |
+| HR mutations / nested dialogs | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart`, `hr_access_dialogs.dart` |
+| Controller & data | `hr_workspace_controller.dart`, `hr_repository_impl.dart` |
+| Open HR workspace (current) | `home_dashboard_profiles.dart` — `showEmptyWorkspaceLink: true`; rendered in `_PrimaryQueuePanel` / `_QuietState` via `homeOpenHrWorkspaceLink` |
+| Dashboard toolbar | `home_page.dart` — `AppWorkspaceHeader` → `appWorkspaceToolbarWithLabels` (`primary` / `secondary` slots) |
 
-### Contact (`inbound_call`, `create_sheet_contact`)
+**Reference screenshots (`127.0.0.1:5201`):**
 
-| Variable | Purpose | When set |
+- Workforce dashboard with eight **Today at a glance** cards and a narrow hero strip (“Operational snapshot…”, “DemoCare General Hospital \| Hospital”, “Updated Jun 30, 15:12”).
+- Clicking a card (e.g. **Missed shifts today**) navigates to `/hr?queue=OVERDUE_SHIFTS` instead of opening the **Work queues** modal on the dashboard.
+- **Work queues** modal already exists on `/hr` with tabs: Leave requests, Swap requests, Roster drafts, Unassigned shifts, Payroll drafts; **Overdue shifts** appears when deep-linked (`?queue=OVERDUE_SHIFTS`).
+- **Open HR workspace** appears only inside the **Workforce action queue** empty state (and trend/distribution quiet states) — below the fold, easy to miss. Toolbar currently shows only **Refresh**.
+
+## Problems
+
+### 1. Metric cards route away from the dashboard
+
+`_HomeMetricCard` calls `_goToRoute(context, AppRoutes.hr, …)` via `homeMetricNavigation`. HR quick actions are meant to be **modal-first** on the dashboard, not shell navigation.
+
+### 2. Existing HR dialogs are not reusable from Home
+
+`_showWorkQueueDialog`, staff directory table, and queue pre-selection live inside `hr_workspace_page.dart` as private methods/widgets. Home cannot invoke them without extraction.
+
+### 3. Hero context strip layout and visibility
+
+- Strip does not span the full content width (subtitle + facility line sit in a `Wrap` beside the badge instead of a full-width row).
+- Facility name/type (`DemoCare General Hospital | Hospital`) shows for all HR users; it should appear only for **super admin** and **tenant admin** roles.
+- Strip should be **hidden on small screens** (`< md` breakpoint per `layouts.mdc`).
+- On compact widths, dashboard copy (card labels, section titles, hero subtitle) should use shorter text or tighter typography.
+
+### 4. “Open HR workspace” is not in the toolbar
+
+`showEmptyWorkspaceLink` gates an `AppButton.tertiary` inside `_EmptyQueueState` and link copy in `_QuietState` (trend/distribution empty charts). Users must scroll to the action-queue panel to find it. It should be a persistent toolbar action next to **Refresh**, matching how `/hr` exposes primary actions in `appWorkspaceToolbarWithLabels` `secondary`.
+
+### 5. Logic is trapped in page-private widgets
+
+`_HomeHeroPanel`, `_HomeMetricCard`, `_QuietState`, and HR dialog shells are private to large page files. Without extracting shared APIs, Home and HR will drift (duplicate dialogs, inconsistent maximize behavior, repeated permission checks).
+
+## Global implementation standards (mandatory)
+
+Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, and `layouts.mdc`. **Do not** copy HR panels into `home_page.dart` or add HR-only inline dialog classes.
+
+### Shared / global touchpoints
+
+| Layer | Location | Required change |
 | --- | --- | --- |
-| {{user_exists}} | Caller already in Google Sheets | After `inbound_call` |
-| {{caller_first_name}} | First legal name | Contact collection or `inbound_call` |
-| {{caller_last_name}} | Last legal name | Contact collection or `inbound_call` |
-| {{caller_preferred_name}} | Preferred greeting name | Contact collection |
-| {{caller_email}} | Email for Cal.com booking | Contact collection or `inbound_call` |
-| {{contact_status}} | `existing_client`, `previous_lead`, or `new_caller` | Contact collection |
-| {{contact_row_id}} | Google Sheets contact row ID/saved caller_phone_number | After `create_sheet_contact` |
+| **Dialog shell** | `frontend/lib/shared/components/app_dialog.dart`, `showAppDialog` | Ensure `initialMaximized` (or post-open maximize hook from prompt2) is used by all dashboard-origin HR modals — not a one-off `home_page` flag |
+| **Workspace toolbar** | `frontend/lib/shared/layout/app_workspace_toolbar.dart` | Add or extend a reusable helper (e.g. workspace link / secondary action builder) if toolbar action composition is repeated; Home and `/hr` should share the same button pattern |
+| **Home domain** | `frontend/lib/features/home/domain/entities/home_dashboard.dart` | Introduce typed action targets (e.g. `HomeMetricAction` / `HomeToolbarAction`) alongside `HomeMetricRouteTarget`; replace `showEmptyWorkspaceLink` with explicit toolbar action ids where possible |
+| **Home profiles** | `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` | HR profile declares `metricActionTargets` + `toolbarActionIds` instead of relying on empty-state link flags |
+| **Metric resolver** | `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart` | Extend globally: `homeMetricAction(…)` returns modal opener + permission gate; keep `homeMetricNavigation` for route-based profiles; add `resolveHrMetricModal(…)` mapping card id → `showHr*` entry |
+| **Home hero** | **New** `frontend/lib/features/home/presentation/widgets/home_hero_panel.dart` | Extract `_HomeHeroPanel` + `homeDashboardContextLine(…)` (role-aware facility visibility, responsive hide) — used by `home_page.dart`, testable in isolation |
+| **Home toolbar actions** | **New** `frontend/lib/features/home/presentation/widgets/home_toolbar_actions.dart` | `buildHomeToolbarSecondary(…)` — resolves profile toolbar actions (incl. **Open HR workspace**) with shared permission checks |
+| **HR public dialog API** | **New** `frontend/lib/features/hr/presentation/widgets/hr_workspace_dialogs.dart` (or barrel export) | Public `showHrWorkQueueDialog`, `showHrStaffDirectoryDialog`, today-scoped list dialogs; **both** `hr_workspace_page.dart` and Home import these — page private `_showWorkQueueDialog` delegates here |
+| **HR panels** | Existing `hr_queue_switcher.dart`, `hr_enhanced_dialogs.dart`, `hr_access_dialogs.dart` | Reuse as dialog content; no duplicated table/queue UI in Home feature |
+| **i18n** | `frontend/lib/l10n/app_en.arb` | All new labels (compact card copy, toolbar strings) via l10n — no hard-coded Home-only strings |
+| **Tests** | `home_metric_routes_test.dart`, new widget tests for extracted panels, HR dialog entry tests | Cover global resolvers and permission gates, not only page integration |
 
-### Intake & urgency (`save_call_summary`, `flag_urgent_matter`)
+### Anti-patterns (reject in review)
 
-| Variable | Purpose | When set |
+- Duplicating `_HrWorkQueuePanel`, staff directory table, or queue switcher inside `home_page.dart`
+- HR card `onTap` handlers with inline `showDialog` + copied `AppDialog` config
+- Leaving `showEmptyWorkspaceLink` / `_QuietState` workspace links in place after toolbar ships
+- `/hr` and Home calling different code paths for the same work-queue or staff-directory dialog
+
+## Requirements
+
+### 1. Replace HR card navigation with in-place modals
+
+For `AppRole.hr` profile cards only, change tap behavior from `context.go('/hr…')` to opening the appropriate dialog **on the current route** via **`homeMetricAction` / `resolveHrMetricModal`** (global resolver in `home_metric_routes.dart`) — `_HomeMetricCard` must call the shared resolver, not embed HR logic.
+
+| Card ID | Expected modal | Pre-selection / filter |
 | --- | --- | --- |
-| {{intake_reason}} | Why caller contacted the firm (children, court dates, representation) | Intake |
-| {{matter_type}} | Legal matter category | Intake |
-| {{is_urgent}} | Matter needs urgent attention | Urgency assessment |
-| {{urgency_reason}} | Why matter is urgent | When {{is_urgent}} |
-
-### Scheduling (`check_availability_cal`, `book_appointment_cal`)
-
-| Variable | Purpose | When set |
-| --- | --- | --- |
-| {{preferred_days_times}} | Scheduling preferences | Scheduling |
-| {{cal_booking_uid}} | Cal.com booking UID | After `book_appointment_cal` |
-
-### Closing (`save_call_summary`)
-
-| Variable | Purpose | When set |
-| --- | --- | --- |
-| {{call_summary}} | Internal narrative (intake, booking, follow-up) | Before `save_call_summary` |
-| {{call_outcome}} | `appointment_scheduled`, `information_only`, `follow_up_needed`, `urgent_matter_flagged` | Before `save_call_summary` |
-| {{follow_up_needed}} | Staff follow-up notes | When callback requested |
+| `active_staff` | Staff directory dialog (reuse HR directory table) | Status = Active |
+| `shifts_today` | Shifts dialog or work-queue view | Shifts scheduled for today |
+| `pending_leaves` | **Work queues** (maximized) | Tab: `LEAVE_REQUESTS` |
+| `on_leave_today` | Staff / leave dialog | Staff on approved leave today |
+| `unassigned_shifts` | **Work queues** (maximized) | Tab: `UNASSIGNED_SHIFTS` |
+| `attended_today` | Attendance / shifts dialog | Shifts marked attended today |
+| `missed_shifts_today` | **Work queues** (maximized) | Tab: `OVERDUE_SHIFTS` |
+| `payroll_pending` | **Work queues** (maximized) | Tab: `PAYROLL_DRAFTS` |
 
-## Functions
+**Modal rules:**
 
-### Built-in
+- Open with `showAppDialog` + `AppDialog`, **`initialMaximized: true`** (or equivalent from prompt2).
+- Call `hrWorkspaceControllerProvider.notifier.applyQueue(…)` (or equivalent filter API) **before** showing the dialog when a queue tab is required.
+- Nested actions (staff detail, approve leave, override shift, payroll preview, staff access) must use existing `showHr*` helpers and remain modal-stacked — **no `context.go` to `/hr`** from dashboard-origin dialogs.
+- Permission-gate each card the same way `homeMetricNavigation` does today (`hrRead` / `rosterRead` + `hr` module entitlement). Non-actionable cards render without chevron and are not tappable.
 
-#### `end_call`
-- **Does:** Ends the call session.
-- **When:** After `save_call_summary` and caller confirms no further questions.
-- **Outcome:** Closing line: "Thank you for calling Amplify Family Law Firm. We appreciate the opportunity to assist you. Have a wonderful day."
+### 2. Extract reusable HR dialog entry points
 
-#### `check_availability_cal`
-- **Does:** Queries Cal.com for open slots.
-- **When:** Caller states {{preferred_days_times}} or scheduling begins. If {{is_urgent}}, prioritize earliest slots.
-- **Input:** {{preferred_days_times}} (string), {{is_urgent}} (boolean)
-- **Output:** available_slots (array), earliest_slot (object, optional)
+Refactor minimally into **`hr_workspace_dialogs.dart`** (public feature API) — prefer public `showHr…` functions over copying UI. **`hr_workspace_page.dart` must delegate** to the same functions Home uses:
 
-#### `book_appointment_cal`
-- **Does:** Books consultation on Cal.com; Cal.com sends confirmation.
-- **When:** After caller selects a slot. Confirm {{caller_first_name}}, {{caller_last_name}}, and {{caller_email}} first.
-- **Input:** date (string), time (string), {{caller_first_name}}, {{caller_last_name}}, {{caller_email}}, {{caller_phone_number}}
-- **Output:** {{cal_booking_uid}}, success (boolean)
+- `showHrWorkQueueDialog(BuildContext, WidgetRef, {HrQueue? initialQueue, bool maximize = true})`
+- `showHrStaffDirectoryDialog(…)` for **Active staff profiles** — reuse directory table widgets (extract from page if still private)
+- Add today-scoped helpers only where no dialog exists yet (`shifts_today`, `on_leave_today`, `attended_today`); wire them to existing HR data queries and table components
 
-### Custom (n8n → Google Sheets)
+Keep `/hr` behavior unchanged: deep links (`?queue=`, `?id=`, `?search=`) continue to work on the HR workspace route.
 
-#### `inbound_call`
-- **Does:** Looks up caller by phone in Google Sheets.
-- **When:** Immediately on inbound call (Flow 1).
-- **Input:** {{caller_phone_number}}
-- **Output:** {{user_exists}} (boolean); if true, also {{caller_first_name}}, {{caller_last_name}}, {{caller_email}}
+### 3. Hero context strip — layout and responsive rules
 
-#### `create_sheet_contact`
-- **Does:** Appends contact row to Google Sheets Contacts tab.
-- **When:** Once required contact fields are verified and {{user_exists}} is false — before `flag_urgent_matter` or `save_call_summary`, whichever comes first.
-- **Input:** {{caller_first_name}}, {{caller_last_name}}, {{caller_preferred_name}}, {{caller_phone_number}}, {{caller_email}} (optional), {{contact_status}}
-- **Output:** {{contact_row_id}}, success (boolean)
+Extract to **`home_hero_panel.dart`** and **`homeDashboardContextLine(…)`** (role-aware facility line). Update the shared widget (HR profile uses `heroFullWidth: true`):
 
-#### `flag_urgent_matter`
-- **Does:** Flags contact as urgent in Google Sheets.
-- **When:** {{is_urgent}} is true, after `create_sheet_contact`, before `save_call_summary`. Urgent cues: custody hearing, protective order, imminent court date, child support, parenting plan, guardianship, adoption.
-- **Input:** {{contact_row_id}}, {{urgency_reason}}
-- **Output:** success (boolean)
+| Breakpoint | Behavior |
+| --- | --- |
+| **≥ md** | Full-width row: subtitle on the left (expanded), updated badge aligned right; facility context on its own line below subtitle when shown |
+| **< md** | Hide the entire hero panel (`SizedBox.shrink`) |
+| **All sizes** | Facility name/type in `homeDashboardContextLine(…)` only when `AppRole.superAdmin` or `AppRole.tenantAdmin`; omit for HR and other facility-scoped roles |
 
-#### `save_call_summary`
-- **Does:** Saves call record to Google Sheets Call Summaries tab.
-- **When:** Once, immediately before `end_call`.
-- **Input:** {{call_id}}, {{contact_row_id}}, {{caller_first_name}}, {{caller_last_name}}, {{caller_phone_number}}, {{call_outcome}}, {{call_summary}}, {{intake_reason}} (optional), {{matter_type}} (optional), {{is_urgent}}, {{urgency_reason}} (optional), {{cal_booking_uid}} (optional), {{follow_up_needed}} (optional)
-- **Output:** summary_row_id, success (boolean)
+**Small-screen copy (dashboard body, not hero):**
 
-## Conversation Flows
+- Prefer abbreviated card labels via `app_en.arb` compact variants or `maxLines: 1` + shorter l10n keys where labels wrap awkwardly.
+- Keep **Today at a glance** section title; shorten only if needed for readability on phones.
 
-### Flow 1: Call Start
-1. `inbound_call` with {{caller_phone_number}}
-2. Greet: "Thank you for calling Amplify Family Law Firm. My name is Amplify Assistant, and I am an AI receptionist assisting our team. How may I help you today?" → Flow 2
+### 4. Move “Open HR workspace” to the dashboard toolbar
 
-### Flow 2: Contact Collection
-1. Collect any missing fields: {{caller_first_name}}, {{caller_last_name}} (spell back each), {{caller_preferred_name}}, {{caller_phone_number}} (confirm digit-by-digit if collected), {{caller_email}}. Skip fields already set by `inbound_call`.
-2. Set {{contact_status}} → Flow 3
+Implement via **`buildHomeToolbarSecondary`** (`home_toolbar_actions.dart`) and profile-level **`toolbarActionIds`** — not inline widget trees in `home_page.dart`.
 
-### Flow 3: Intake
-1. Ask: "Could you briefly tell me what brings you to Amplify Family Law Firm today?"
-2. Set {{matter_type}} and {{intake_reason}} → Flow 4
+For the HR workforce dashboard (`AppRole.hr` profile):
 
-### Flow 4: Urgency
-1. Assess {{is_urgent}}; set {{urgency_reason}} if true
-2. Route to Flow 5 or 6 (do not call tools here)
+- Add **Open HR workspace** to `AppWorkspaceHeader` toolbar via `appWorkspaceToolbarWithLabels` `secondary` (or `primary` if that matches peer modules).
+- Use `AppButton.secondary` with `Icons.open_in_new_outlined` (or existing `homeOpenHrWorkspaceLink` l10n) — same label and destination as today: `context.go(AppRoutes.hr)`.
+- Show whenever the user has HR workspace access (`hr` module + `hrRead` / `rosterRead`), **independent of queue/trend empty state** — always visible on load.
+- **Remove** duplicate links from:
+  - `_EmptyQueueState` (`showWorkspaceLink` / `showEmptyWorkspaceLink`)
+  - `_QuietState` in `_HomeTrendPanel` and `_HomeDistributionPanel` (`readOnlyInsights` HR workspace link)
+- Keep `showEmptyWorkspaceLink` only if still needed for other behavior; otherwise deprecate or repurpose the flag so empty panels no longer render the link.
 
-### Flow 5: Legal Advice (Fallback)
-Decline legal advice → offer consultation → Flow 6
+**Responsive toolbar rules:**
 
-### Flow 6: Scheduling
-1. Ask {{preferred_days_times}} → `check_availability_cal`
-2. Caller selects a slot → `book_appointment_cal`
-3. Confirm booking → Flow 7
+- On narrow widths, toolbar overflow menu must still expose **Open HR workspace** (do not hide behind refresh-only overflow).
+- Compact label OK on xs if toolbar truncates (e.g. “HR workspace”) — add l10n compact variant only if required.
 
-### Flow 7: Closing
-1. Confirm issue addressed and appointment details
-2. **More questions?** Return to relevant flow
-3. **No:** if {{user_exists}} is false → `create_sheet_contact`; if {{is_urgent}} → `flag_urgent_matter`; `save_call_summary` → closing greeting → `end_call`
+### 5. Do not regress other role dashboards
 
-### Flow 8: Fallbacks
-- **Admin** (Mon–Fri 9 AM–5 PM): answer or offer consultation → Flow 6 or 7
-- **Transfer request:** offer consultation or callback → set {{follow_up_needed}} → Flow 7
-- **Case status:** no access; offer follow-up → Flow 6 or 7
-- **Cal.com failure:** set {{follow_up_needed}} → Flow 7
+`homeMetricNavigation` route-based behavior for non-HR profiles stays as-is unless a profile explicitly opts into modal actions later. Do not add **Open HR workspace** to non-HR role toolbars.
 
-## Example Chats
+## Acceptance criteria
 
-### Example 1: Existing Client – Reschedule
+- [ ] Tapping any HR **Today at a glance** card opens the correct modal on `/` — URL does not change to `/hr`.
+- [ ] Work-queue modals open **maximized** with the correct tab pre-selected (verify: Missed shifts today → Overdue shifts with item actions).
+- [ ] Nested HR actions from dashboard-origin modals work without leaving the dashboard.
+- [ ] Hero strip spans full width on desktop; hidden below `md`; facility name hidden for non-admin roles.
+- [ ] **Open HR workspace** appears in the dashboard header toolbar on load (no scroll required); removed from action-queue and chart empty states.
+- [ ] Toolbar link navigates to `/hr`; still permission-gated for users without HR access.
+- [ ] `/hr?queue=…` deep links still open the work-queue dialog on the HR workspace.
+- [ ] `flutter analyze` and affected widget tests pass (`home_metric_routes_test.dart`, `home_hero_panel` tests, HR dialog entry tests).
+- [ ] **No duplicated HR dialog UI** in `home_page.dart`; `/hr` and Home share `hr_workspace_dialogs.dart` entry points.
+- [ ] Global resolvers (`homeMetricAction`, `homeDashboardContextLine`, `buildHomeToolbarSecondary`) exist and are covered by unit/widget tests.
 
-**Agent:** Thank you for calling Amplify Family Law Firm. My name is Amplify Assistant, and I am an AI receptionist assisting our team. How may I help you today?
+## Key files to touch
 
-**Caller:** I'm Sarah — I need to reschedule, next Thursday afternoon.
+### Shared / global
 
-**Agent:** Of course, Sarah. Do you have a preferred day or time?
+- `frontend/lib/shared/components/app_dialog.dart`
+- `frontend/lib/shared/layout/app_workspace_toolbar.dart`
+- `frontend/lib/features/home/domain/entities/home_dashboard.dart`
+- `frontend/lib/features/home/presentation/widgets/home_metric_routes.dart`
+- `frontend/lib/features/home/presentation/widgets/home_hero_panel.dart` **(new)**
+- `frontend/lib/features/home/presentation/widgets/home_toolbar_actions.dart` **(new)**
+- `frontend/lib/l10n/app_en.arb`
 
-**Caller:** Thursday afternoon.
+### Feature integration
 
-**Agent:** I have Thursday at 2 PM or 4 PM. Which works best?
+- `frontend/lib/features/home/presentation/pages/home_page.dart` (wire shared widgets only)
+- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
+- `frontend/lib/features/hr/presentation/widgets/hr_workspace_dialogs.dart` **(new)**
+- `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` (delegate to public `showHr*` APIs)
+- `frontend/lib/features/hr/presentation/widgets/hr_queue_switcher.dart` (if overdue tab visibility needs alignment)
 
-**Caller:** 2 PM.
+### Tests
 
-**Agent:** Excellent. I have scheduled your consultation for Thursday at 2 PM. Have I addressed everything you needed assistance with today?
-
-**Caller:** Yes.
-
-*[Invokes `inbound_call`, `check_availability_cal`, `book_appointment_cal`, `save_call_summary`, `end_call`]*
-
----
-
-### Example 2: New Caller – Divorce Intake and Booking
-
-**Agent:** How may I help you today?
-
-**Caller:** I'm thinking about filing for divorce.
-
-**Agent:** May I have your first and last name, please?
-
-**Caller:** Michael. M-I-C-H-A-E-L. Johnson. J-O-H-N-S-O-N. Call me Mike.
-
-**Agent:** Thank you, Mike. That is 5, 5, 5, 9, 8, 7, 6, 5, 4, 3 — correct?
-
-**Caller:** Yes. Separated six months, two kids, nothing filed yet.
-
-**Agent:** Do you have a preferred day or time for your consultation?
-
-**Caller:** Weekday mornings.
-
-**Agent:** I have Tuesday at 10 AM or Wednesday at 9 AM. Which works best?
-
-**Caller:** Wednesday at 9 AM.
-
-**Agent:** Excellent. I have scheduled your consultation for Wednesday at 9 AM. Have I addressed everything you needed assistance with today?
-
-**Caller:** Yes, thank you.
-
-*[Invokes `inbound_call`, `check_availability_cal`, `book_appointment_cal`, `create_sheet_contact`, `save_call_summary`, `end_call`]*
-
----
-
-### Example 3: Urgent – Upcoming Court Date
-
-**Agent:** How may I help you today?
-
-**Caller:** Custody hearing Friday. I don't have a lawyer.
-
-**Agent:** I understand this is time-sensitive. May I have your first and last name?
-
-**Caller:** Lisa. L-I-S-A. Martinez. M-A-R-T-I-N-E-Z. My ex filed for full custody.
-
-**Agent:** I have tomorrow at 11 AM or 3 PM. Which works best?
-
-**Caller:** 11 AM.
-
-**Agent:** Excellent. I have scheduled your consultation for tomorrow at 11 AM. I've flagged this as urgent for our team. Have I addressed everything you needed assistance with today?
-
-**Caller:** Yes, thank you.
-
-*[Invokes `inbound_call`, `check_availability_cal`, `book_appointment_cal`, `create_sheet_contact`, `flag_urgent_matter`, `save_call_summary`, `end_call`]*
-
----
-
-### Example 4: Legal Advice – Redirect
-
-**Agent:** How may I help you today?
-
-**Caller:** Do I have a good case for full custody?
-
-**Agent:** I'm unable to provide legal advice. However, I can help arrange a consultation with one of our attorneys. Would you like to schedule?
-
-**Caller:** Yes. Anytime next week.
-
-**Agent:** I have Monday at 1 PM or Tuesday at 10 AM. Which works best?
-
-**Caller:** Monday at 1 PM.
-
-**Agent:** Excellent. I have scheduled your consultation for Monday at 1 PM. Have I addressed everything you needed assistance with today?
-
-**Caller:** Yes.
-
-*[Invokes `inbound_call`, `check_availability_cal`, `book_appointment_cal`, `create_sheet_contact`, `save_call_summary`, `end_call`]*
-
----
-
-### Example 5: Callback Request
-
-**Agent:** How may I help you today?
-
-**Caller:** Transfer me to Attorney Patterson, please.
-
-**Agent:** I'm unable to transfer calls, but I can schedule a consultation or have our team call you back. Which would you prefer?
-
-**Caller:** Call me back.
-
-**Agent:** I've noted that for our team. Do you have any additional questions before we conclude the call?
-
-**Caller:** No.
-
-*[Invokes `inbound_call`, `create_sheet_contact`, `save_call_summary` with {{call_outcome}} = `follow_up_needed`, `end_call`]*
-
----
-
-### Example 6: Tool Failure – Error Recovery
-
-**Agent:** Let me check our availability for you.
-
-*[`check_availability_cal` fails]*
-
-**Agent:** I'm having trouble accessing the calendar. I can have someone call you back to schedule. Would that work?
-
-**Caller:** Yes.
-
-**Agent:** I've noted that for our team. Do you have any additional questions before we conclude the call?
-
-**Caller:** No.
-
-*[Invokes `inbound_call`, `create_sheet_contact`, `save_call_summary` with {{call_outcome}} = `follow_up_needed`, `end_call`]*
-
-## Notes
-
-- Use snake_case for all function and variable names.
-- Prefer Retell built-in preset tools over custom functions when possible.
-- On fatal errors, use custom functions to record the outcome before `end_call`.
+- `frontend/test/features/home/presentation/widgets/home_metric_routes_test.dart`
+- `frontend/test/features/home/presentation/widgets/home_hero_panel_test.dart` **(new, if extracted)**
+- `frontend/test/features/hr/presentation/widgets/hr_workspace_dialogs_test.dart` **(new, if applicable)**
