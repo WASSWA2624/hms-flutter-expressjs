@@ -210,7 +210,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.searchable || widget.searchCallback != null;
         final MenuStyle menuStyle = _selectMenuStyle(theme, colorScheme);
         final List<DropdownMenuEntry<T>> dropdownMenuEntries =
-            _dropdownMenuEntries();
+            _dropdownMenuEntries(theme, colorScheme);
 
         return DropdownMenuFormField<T>(
           restorationId: widget.restorationId,
@@ -361,39 +361,92 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     return preferredHeight.clamp(0.0, availableHeight).toDouble();
   }
 
+  Color _fieldFillColor(ThemeData theme) {
+    return theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surface;
+  }
+
   MenuStyle _selectMenuStyle(ThemeData theme, ColorScheme colorScheme) {
+    final Color fillColor = _fieldFillColor(theme);
     return MenuStyle(
       elevation: const WidgetStatePropertyAll<double?>(0),
       shadowColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
       surfaceTintColor: const WidgetStatePropertyAll<Color?>(
         Colors.transparent,
       ),
-      backgroundColor: WidgetStatePropertyAll<Color?>(
-        colorScheme.surfaceContainer,
-      ),
+      backgroundColor: WidgetStatePropertyAll<Color?>(fillColor),
       padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
-        EdgeInsets.symmetric(vertical: 4),
+        EdgeInsets.zero,
       ),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
-          side: BorderSide(color: colorScheme.outlineVariant),
+          side: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: theme.appTokens.dividerThickness,
+          ),
         ),
       ),
       visualDensity: theme.visualDensity,
     );
   }
 
-  List<DropdownMenuEntry<T>> _dropdownMenuEntries() {
+  ButtonStyle _menuItemStyle(
+    ThemeData theme,
+    ColorScheme colorScheme, {
+    required bool showDivider,
+  }) {
+    final Color fillColor = _fieldFillColor(theme);
+    return ButtonStyle(
+      backgroundColor: WidgetStatePropertyAll<Color?>(fillColor),
+      surfaceTintColor: const WidgetStatePropertyAll<Color?>(
+        Colors.transparent,
+      ),
+      overlayColor: WidgetStatePropertyAll<Color?>(
+        colorScheme.onSurface.withValues(alpha: 0.06),
+      ),
+      elevation: const WidgetStatePropertyAll<double?>(0),
+      shape: WidgetStatePropertyAll<OutlinedBorder>(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: showDivider
+              ? BorderSide(
+                  color: colorScheme.outlineVariant,
+                  width: theme.appTokens.dividerThickness,
+                )
+              : BorderSide.none,
+        ),
+      ),
+      padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+        EdgeInsets.symmetric(
+          horizontal: theme.spacing.lg,
+          vertical: theme.spacing.sm,
+        ),
+      ),
+      minimumSize: const WidgetStatePropertyAll<Size>(Size.fromHeight(48)),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: theme.visualDensity,
+    );
+  }
+
+  List<DropdownMenuEntry<T>> _dropdownMenuEntries(
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
     final Iterable<AppSelectOption<T>> options = _menuOptions();
+    final List<AppSelectOption<T>> optionList = options.toList(growable: false);
     return <DropdownMenuEntry<T>>[
-      for (final AppSelectOption<T> option in options)
+      for (int index = 0; index < optionList.length; index++)
         DropdownMenuEntry<T>(
-          value: option.value,
-          label: option.label,
-          labelWidget: option.labelWidget,
-          leadingIcon: option.leadingIcon,
-          trailingIcon: option.trailingIcon,
-          enabled: option.enabled,
+          value: optionList[index].value,
+          label: optionList[index].label,
+          labelWidget: optionList[index].labelWidget,
+          leadingIcon: optionList[index].leadingIcon,
+          trailingIcon: optionList[index].trailingIcon,
+          enabled: optionList[index].enabled,
+          style: _menuItemStyle(
+            theme,
+            colorScheme,
+            showDivider: index < optionList.length - 1,
+          ),
         ),
     ];
   }
