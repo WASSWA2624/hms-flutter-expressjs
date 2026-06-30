@@ -2487,7 +2487,6 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
         include: {
           permission: {
             select: {
-              key: true,
               name: true,
             },
           },
@@ -2498,7 +2497,7 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
   const effectivePermissions = [
     ...new Set(
       rolePermissions
-        .map((entry) => entry.permission?.key)
+        .map((entry) => entry.permission?.name)
         .filter(Boolean)
     ),
   ].sort();
