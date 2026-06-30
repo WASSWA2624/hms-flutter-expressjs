@@ -196,12 +196,12 @@ void main() {
     verify(() => repository.listStaffAvailabilities('staff-2')).called(1);
 
     await tester.tap(find.text('Monday'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('08:00'), findsOneWidget);
-    expect(find.text('10:00'), findsOneWidget);
-    expect(find.text('14:00'), findsOneWidget);
-    expect(find.text('16:00'), findsOneWidget);
+    expect(find.text('08'), findsWidgets);
+    expect(find.text('10'), findsWidgets);
+    expect(find.text('14'), findsWidgets);
+    expect(find.text('16'), findsWidgets);
   });
 
   testWidgets('duplicate day dialog offers other weekdays as targets', (
@@ -214,7 +214,13 @@ void main() {
     await tester.tap(find.text('Monday'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Duplicate to…').first);
+    final Finder duplicateButton = find.text('Duplicate to…');
+    await tester.scrollUntilVisible(
+      duplicateButton,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(duplicateButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Duplicate schedule'), findsOneWidget);

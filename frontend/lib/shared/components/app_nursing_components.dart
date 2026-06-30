@@ -7,6 +7,7 @@ import 'package:hosspi_hms/shared/components/app_file_upload_panel.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_field.dart';
+import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
@@ -61,12 +62,12 @@ class AppMedicationAdministrationForm extends StatelessWidget {
   final TextEditingController doseController;
   final TextEditingController unitController;
   final DateTime administeredDate;
-  final TimeOfDay administeredTime;
+  final AppTimeValue administeredTime;
   final String routeValue;
   final List<AppSelectOption<String>> routeOptions;
   final bool confirmed;
   final ValueChanged<DateTime?> onAdministeredDateChanged;
-  final ValueChanged<TimeOfDay?> onAdministeredTimeChanged;
+  final ValueChanged<AppTimeValue?> onAdministeredTimeChanged;
   final ValueChanged<String?> onRouteChanged;
   final ValueChanged<bool> onConfirmedChanged;
   final String? medicationValue;
@@ -271,7 +272,7 @@ class _DateTimeFields extends StatelessWidget {
   });
 
   final DateTime date;
-  final TimeOfDay time;
+  final AppTimeValue time;
   final String dateLabel;
   final String timeLabel;
   final String datePickerLabel;
@@ -281,7 +282,7 @@ class _DateTimeFields extends StatelessWidget {
   final String requiredMessage;
   final bool enabled;
   final ValueChanged<DateTime?> onDateChanged;
-  final ValueChanged<TimeOfDay?> onTimeChanged;
+  final ValueChanged<AppTimeValue?> onTimeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +313,7 @@ class _DateTimeFields extends StatelessWidget {
             invalidTimeMessage: invalidTimeMessage,
             enabled: enabled,
             isRequired: true,
-            validator: (TimeOfDay? value) =>
+            validator: (AppTimeValue? value) =>
                 value == null ? requiredMessage : null,
             onChanged: onTimeChanged,
           ),

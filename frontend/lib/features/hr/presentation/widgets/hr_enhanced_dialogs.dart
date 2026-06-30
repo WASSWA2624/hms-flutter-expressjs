@@ -244,12 +244,8 @@ Future<void> showHrShiftTemplateDialog(
   );
   String? shiftType = template?.extra['shift_type']?.toString();
   String? facilityId;
-  final TextEditingController startController = TextEditingController(
-    text: '08:00',
-  );
-  final TextEditingController endController = TextEditingController(
-    text: '16:00',
-  );
+  AppTimeValue? startTime = AppTimeValue.parse('08:00');
+  AppTimeValue? endTime = AppTimeValue.parse('16:00');
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -294,15 +290,35 @@ Future<void> showHrShiftTemplateDialog(
             ),
             onChanged: (String? value) => facilityId = value,
           ),
-          AppTextField(
-            controller: startController,
+          AppTimeField(
+            value: startTime,
             labelText: l10n.hrStartTimeLabel,
+            hintText: l10n.hrTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.appTimeInvalidMessage,
             isRequired: true,
+            use24HourFormat: true,
+            validator: AppValidators.requiredValue<AppTimeValue>(
+              l10n.hrFieldRequiredLabel(l10n.hrStartTimeLabel),
+            ),
+            onChanged: (AppTimeValue? value) => startTime = value,
           ),
-          AppTextField(
-            controller: endController,
+          AppTimeField(
+            value: endTime,
             labelText: l10n.hrEndTimeLabel,
+            hintText: l10n.hrTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.appTimeInvalidMessage,
             isRequired: true,
+            use24HourFormat: true,
+            validator: AppValidators.requiredValue<AppTimeValue>(
+              l10n.hrFieldRequiredLabel(l10n.hrEndTimeLabel),
+            ),
+            onChanged: (AppTimeValue? value) => endTime = value,
           ),
         ],
       );
@@ -312,8 +328,8 @@ Future<void> showHrShiftTemplateDialog(
         'name': nameController.text.trim(),
         'shift_type': shiftType,
         'facility_id': facilityId,
-        'default_start_time': startController.text.trim(),
-        'default_end_time': endController.text.trim(),
+        'default_start_time': startTime?.format24(),
+        'default_end_time': endTime?.format24(),
         'is_active': true,
         if (template == null && state?.selectedStaff?.profile.tenantId != null)
           'tenant_id': state!.selectedStaff!.profile.tenantId,
@@ -325,8 +341,6 @@ Future<void> showHrShiftTemplateDialog(
     },
   );
   nameController.dispose();
-  startController.dispose();
-  endController.dispose();
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
   }

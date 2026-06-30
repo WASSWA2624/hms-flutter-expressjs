@@ -2603,7 +2603,7 @@ class _PatientAppointmentQuickDialogState
   );
   final TextEditingController _reasonController = TextEditingController();
   DateTime? _date = DateTime.now();
-  TimeOfDay? _startTime = const TimeOfDay(hour: 9, minute: 0);
+  AppTimeValue? _startTime = const AppTimeValue(hour: 9, minute: 0);
   String? _facilityId;
   String? _providerId;
   String _status = 'SCHEDULED';
@@ -2673,11 +2673,13 @@ class _PatientAppointmentQuickDialogState
                     pickerButtonLabel: l10n.appTimePickerAction,
                     invalidTimeMessage: l10n.patientsTimeInvalidMessage,
                     hintText: l10n.patientsTimeHint,
+                    hourLabelText: l10n.appTimeHourLabel,
+                    minuteLabelText: l10n.appTimeMinuteLabel,
                     enabled: !_isSaving,
                     isRequired: true,
-                    validator: (TimeOfDay? value) =>
+                    validator: (AppTimeValue? value) =>
                         value == null ? l10n.validationRequired : null,
-                    onChanged: (TimeOfDay? value) {
+                    onChanged: (AppTimeValue? value) {
                       setState(() => _startTime = value);
                     },
                   ),
@@ -2836,7 +2838,7 @@ class _PatientAppointmentQuickDialogState
     );
   }
 
-  DateTime? _combineDateAndTimeOfDay(DateTime? date, TimeOfDay? time) {
+  DateTime? _combineDateAndTimeOfDay(DateTime? date, AppTimeValue? time) {
     if (date == null || time == null) {
       return null;
     }

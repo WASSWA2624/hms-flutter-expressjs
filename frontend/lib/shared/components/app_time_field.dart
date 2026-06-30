@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_text_field.dart';
+import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_time_value.dart';
+
+enum _AppTimePeriod { am, pm }
 
 class AppTimeField extends StatefulWidget {
   const AppTimeField({
@@ -11,134 +14,499 @@ class AppTimeField extends StatefulWidget {
     this.value,
     this.onChanged,
     this.labelText,
+    this.hourLabelText = 'HH',
+    this.minuteLabelText = 'MM',
+    this.secondLabelText = 'SS',
+    this.amLabelText = 'AM',
+    this.pmLabelText = 'PM',
     this.hintText,
+    this.helperText,
+    this.errorText,
     this.semanticLabel,
     this.validator,
+    this.onSaved,
+    this.autovalidateMode = AutovalidateMode.disabled,
     this.enabled = true,
     this.isRequired = false,
+    this.showSeconds = false,
+    this.use24HourFormat,
+    this.focusNode,
+    this.restorationId,
     super.key,
   });
 
-  final TimeOfDay? value;
-  final ValueChanged<TimeOfDay?>? onChanged;
+  final AppTimeValue? value;
+  final ValueChanged<AppTimeValue?>? onChanged;
   final String pickerButtonLabel;
   final String invalidTimeMessage;
   final String? labelText;
+  final String hourLabelText;
+  final String minuteLabelText;
+  final String secondLabelText;
+  final String amLabelText;
+  final String pmLabelText;
   final String? hintText;
+  final String? helperText;
+  final String? errorText;
   final String? semanticLabel;
-  final FormFieldValidator<TimeOfDay>? validator;
+  final FormFieldValidator<AppTimeValue>? validator;
+  final FormFieldSetter<AppTimeValue>? onSaved;
+  final AutovalidateMode autovalidateMode;
   final bool enabled;
   final bool isRequired;
+  final bool showSeconds;
+  final bool? use24HourFormat;
+  final FocusNode? focusNode;
+  final String? restorationId;
 
   @override
   State<AppTimeField> createState() => _AppTimeFieldState();
 }
 
 class _AppTimeFieldState extends State<AppTimeField> {
-  late final TextEditingController _controller;
+  late final TextEditingController _hourController;
+  late final TextEditingController _minuteController;
+  late final TextEditingController _secondController;
+  late FocusNode _hourFocusNode;
+  late FocusNode _minuteFocusNode;
+  late FocusNode _secondFocusNode;
+  late bool _ownsHourFocusNode;
+  late _AppTimePeriod _period;
+  bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: _formatTime(widget.value));
+    _hourController = TextEditingController();
+    _minuteController = TextEditingController();
+    _secondController = TextEditingController();
+    _period = _periodForValue(widget.value);
+    _syncControllersFromValue(widget.value);
+    _attachFocusNodes();
   }
 
   @override
   void didUpdateWidget(covariant AppTimeField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) {
-      _controller.text = _formatTime(widget.value);
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNodes();
+      _attachFocusNodes();
+    }
+    if (oldWidget.value != widget.value && !_hasFocus) {
+      _period = _periodForValue(widget.value);
+      _syncControllersFromValue(widget.value);
+    }
+    if (oldWidget.use24HourFormat != widget.use24HourFormat && mounted) {
+      _syncControllersFromValue(_parseParts());
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _detachFocusNodes();
+    _hourController.dispose();
+    _minuteController.dispose();
+    _secondController.dispose();
     super.dispose();
   }
 
+  void _attachFocusNodes() {
+    _ownsHourFocusNode = widget.focusNode == null;
+    _hourFocusNode = widget.focusNode ?? FocusNode();
+    _minuteFocusNode = FocusNode();
+    _secondFocusNode = FocusNode();
+    _hourFocusNode.addListener(_handleFocusChanged);
+    _minuteFocusNode.addListener(_handleFocusChanged);
+    _secondFocusNode.addListener(_handleFocusChanged);
+  }
+
+  void _detachFocusNodes() {
+    _hourFocusNode.removeListener(_handleFocusChanged);
+    _minuteFocusNode.removeListener(_handleFocusChanged);
+    _secondFocusNode.removeListener(_handleFocusChanged);
+    if (_ownsHourFocusNode) {
+      _hourFocusNode.dispose();
+    }
+    _minuteFocusNode.dispose();
+    _secondFocusNode.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (!_hasFocus) {
+      final AppTimeValue? parsed = _parseParts();
+      if (parsed != null) {
+        _syncControllersFromValue(parsed);
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool get _uses24Hour =>
+      widget.use24HourFormat ?? MediaQuery.alwaysUse24HourFormatOf(context);
+
+  int get _hourMaxLength => _uses24Hour ? 2 : 2;
+
+  int get _hourMaxValue => _uses24Hour ? 23 : 12;
+
+  int get _hourMinValue => _uses24Hour ? 0 : 1;
+
   @override
   Widget build(BuildContext context) {
-    return FormField<TimeOfDay>(
+    final ThemeData theme = Theme.of(context);
+    final bool canChange = widget.enabled;
+
+    return FormField<AppTimeValue>(
       initialValue: widget.value,
-      enabled: widget.enabled,
-      validator: (_) {
-        final TimeOfDay? parsed = _parseTime(_controller.text);
-        if (_controller.text.trim().isNotEmpty && parsed == null) {
-          return widget.invalidTimeMessage;
-        }
-        return widget.validator?.call(parsed);
-      },
-      builder: (FormFieldState<TimeOfDay> field) {
-        return AppTextField(
-          controller: _controller,
-          labelText: widget.labelText,
-          hintText: widget.hintText,
-          semanticLabel: widget.semanticLabel,
-          enabled: widget.enabled,
-          isRequired: widget.isRequired,
-          keyboardType: TextInputType.datetime,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
-            LengthLimitingTextInputFormatter(5),
-          ],
-          errorText: field.errorText,
-          suffixIcon: _TimePickerButton(
-            label: widget.pickerButtonLabel,
-            onPressed: widget.enabled
-                ? () async {
-                    final TimeOfDay? selected = await showTimePicker(
-                      context: context,
-                      initialTime:
-                          _parseTime(_controller.text) ??
-                          widget.value ??
-                          TimeOfDay.now(),
-                    );
-                    if (selected == null) {
-                      return;
-                    }
-                    _controller.text = _formatTime(selected);
-                    field.didChange(selected);
-                    widget.onChanged?.call(selected);
-                  }
-                : null,
+      enabled: canChange,
+      validator: (_) => _validate(),
+      onSaved: (_) => widget.onSaved?.call(_parseParts()),
+      autovalidateMode: widget.autovalidateMode,
+      forceErrorText: widget.errorText,
+      onReset: () => _syncControllersFromValue(widget.value),
+      builder: (FormFieldState<AppTimeValue> field) {
+        Widget timeField = InputDecorator(
+          isFocused: _hasFocus,
+          isEmpty: _allPartsEmpty,
+          decoration: InputDecoration(
+            enabled: canChange,
+            label: appFieldLabelWidget(
+              context,
+              widget.labelText,
+              isRequired: widget.isRequired,
+            ),
+            helperText: widget.helperText,
+            errorText: field.errorText,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: EdgeInsetsDirectional.fromSTEB(
+              theme.spacing.md,
+              theme.spacing.md,
+              theme.spacing.xs,
+              theme.spacing.sm,
+            ),
+            suffixIcon: _TimePickerButton(
+              label: widget.pickerButtonLabel,
+              onPressed: canChange ? () => _selectTime(context, field) : null,
+            ),
+            suffixIconConstraints: BoxConstraints(
+              minWidth:
+                  theme.appTokens.minInteractiveDimension + theme.spacing.md,
+              minHeight:
+                  theme.inputDecorationTheme.constraints?.minHeight ?? 48,
+            ),
+          ).applyDefaults(theme.inputDecorationTheme),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              children: <Widget>[
+                Flexible(
+                  flex: 2,
+                  child: SizedBox(
+                    width: 30,
+                    child: _TimePartTextField(
+                      controller: _hourController,
+                      focusNode: _hourFocusNode,
+                      nextFocusNode: _minuteFocusNode,
+                      labelText: widget.hourLabelText,
+                      hintText: _partHint(0, widget.hourLabelText),
+                      maxLength: _hourMaxLength,
+                      enabled: canChange,
+                      restorationId: _partRestorationId('hour'),
+                      textInputAction: TextInputAction.next,
+                      onChanged: () => _handlePartsChanged(field),
+                    ),
+                  ),
+                ),
+                _TimePartSeparator(enabled: canChange),
+                Flexible(
+                  flex: 2,
+                  child: SizedBox(
+                    width: 30,
+                    child: _TimePartTextField(
+                      controller: _minuteController,
+                      focusNode: _minuteFocusNode,
+                      nextFocusNode: widget.showSeconds
+                          ? _secondFocusNode
+                          : (_uses24Hour ? null : _hourFocusNode),
+                      labelText: widget.minuteLabelText,
+                      hintText: _partHint(1, widget.minuteLabelText),
+                      maxLength: 2,
+                      enabled: canChange,
+                      restorationId: _partRestorationId('minute'),
+                      textInputAction: widget.showSeconds
+                          ? TextInputAction.next
+                          : TextInputAction.done,
+                      onChanged: () => _handlePartsChanged(field),
+                    ),
+                  ),
+                ),
+                if (widget.showSeconds) ...<Widget>[
+                  _TimePartSeparator(enabled: canChange),
+                  Flexible(
+                    flex: 2,
+                    child: SizedBox(
+                      width: 30,
+                      child: _TimePartTextField(
+                        controller: _secondController,
+                        focusNode: _secondFocusNode,
+                        labelText: widget.secondLabelText,
+                        hintText: _partHint(2, widget.secondLabelText),
+                        maxLength: 2,
+                        enabled: canChange,
+                        restorationId: _partRestorationId('second'),
+                        textInputAction: TextInputAction.done,
+                        onChanged: () => _handlePartsChanged(field),
+                      ),
+                    ),
+                  ),
+                ],
+                if (!_uses24Hour) ...<Widget>[
+                  SizedBox(width: theme.spacing.sm),
+                  _TimePeriodToggle(
+                    amLabel: widget.amLabelText,
+                    pmLabel: widget.pmLabelText,
+                    period: _period,
+                    enabled: canChange,
+                    onChanged: ( _AppTimePeriod value) {
+                      setState(() => _period = value);
+                      _handlePartsChanged(field);
+                    },
+                  ),
+                ],
+              ],
+            ),
           ),
-          onChanged: (String value) {
-            final TimeOfDay? parsed = _parseTime(value);
-            field.didChange(parsed);
-            if (parsed != null || value.trim().isEmpty) {
-              widget.onChanged?.call(parsed);
-            }
-          },
         );
+
+        if (widget.semanticLabel != null) {
+          timeField = Semantics(
+            textField: true,
+            enabled: canChange,
+            label: widget.semanticLabel,
+            child: timeField,
+          );
+        }
+
+        return timeField;
       },
     );
   }
 
-  String _formatTime(TimeOfDay? value) {
-    if (value == null) {
-      return '';
+  bool get _hasFocus =>
+      _hourFocusNode.hasFocus ||
+      _minuteFocusNode.hasFocus ||
+      _secondFocusNode.hasFocus;
+
+  void _handlePartsChanged(FormFieldState<AppTimeValue> field) {
+    if (_isSyncing) {
+      return;
     }
-    return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+    final _TimePartsValidationResult result = _validateParts();
+    final AppTimeValue? validTime = result.isValid ? result.time : null;
+    field.didChange(validTime);
+    widget.onChanged?.call(result.isEmpty ? null : validTime);
   }
 
-  TimeOfDay? _parseTime(String value) {
-    final List<String> parts = value.trim().split(':');
-    if (parts.length != 2) {
-      return null;
+  Future<void> _selectTime(
+    BuildContext context,
+    FormFieldState<AppTimeValue> field,
+  ) async {
+    final AppTimeValue initialTime =
+        _parseParts() ?? field.value ?? widget.value ?? AppTimeValue.now();
+
+    final TimeOfDay? selected = await showTimePicker(
+      context: context,
+      initialTime: initialTime.toTimeOfDay(),
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(alwaysUse24HourFormat: _uses24Hour),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
     }
-    final int? hour = int.tryParse(parts[0]);
-    final int? minute = int.tryParse(parts[1]);
-    if (hour == null ||
-        minute == null ||
-        hour < 0 ||
-        hour > 23 ||
-        minute < 0 ||
-        minute > 59) {
-      return null;
-    }
-    return TimeOfDay(hour: hour, minute: minute);
+
+    final AppTimeValue next = AppTimeValue(
+      hour: selected.hour,
+      minute: selected.minute,
+      second: widget.showSeconds ? initialTime.second : 0,
+    );
+    field.didChange(next);
+    _period = _periodForValue(next);
+    _syncControllersFromValue(next);
+    widget.onChanged?.call(next);
   }
+
+  String? _validate() {
+    final _TimePartsValidationResult result = _validateParts();
+    return switch (result.status) {
+      _TimePartsValidationStatus.empty => widget.validator?.call(null),
+      _TimePartsValidationStatus.valid => widget.validator?.call(result.time),
+      _ => widget.invalidTimeMessage,
+    };
+  }
+
+  AppTimeValue? _parseParts() {
+    final _TimePartsValidationResult result = _validateParts();
+    return result.isValid ? result.time : null;
+  }
+
+  _TimePartsValidationResult _validateParts() {
+    final String hourText = _hourController.text.trim();
+    final String minuteText = _minuteController.text.trim();
+    final String secondText = _secondController.text.trim();
+
+    final bool hourEmpty = hourText.isEmpty;
+    final bool minuteEmpty = minuteText.isEmpty;
+    final bool secondEmpty = secondText.isEmpty;
+
+    if (hourEmpty && minuteEmpty && (!widget.showSeconds || secondEmpty)) {
+      return const _TimePartsValidationResult.empty();
+    }
+
+    if (hourEmpty || minuteEmpty || (widget.showSeconds && secondEmpty)) {
+      return const _TimePartsValidationResult.incomplete();
+    }
+
+    final int? hourPart = int.tryParse(hourText);
+    final int? minutePart = int.tryParse(minuteText);
+    final int? secondPart = widget.showSeconds
+        ? int.tryParse(secondText)
+        : 0;
+    if (hourPart == null || minutePart == null || secondPart == null) {
+      return const _TimePartsValidationResult.invalid();
+    }
+
+    if (minutePart > 59 || secondPart > 59) {
+      return const _TimePartsValidationResult.invalid();
+    }
+
+    final int hour24 = _uses24Hour
+        ? hourPart
+        : _to24Hour(hourPart, _period);
+    if (_uses24Hour) {
+      if (hourPart < _hourMinValue || hourPart > _hourMaxValue) {
+        return const _TimePartsValidationResult.invalid();
+      }
+    } else if (hourPart < 1 || hourPart > 12) {
+      return const _TimePartsValidationResult.invalid();
+    }
+
+    if (hour24 < 0 || hour24 > 23) {
+      return const _TimePartsValidationResult.invalid();
+    }
+
+    return _TimePartsValidationResult.valid(
+      AppTimeValue(hour: hour24, minute: minutePart, second: secondPart),
+    );
+  }
+
+  int _to24Hour(int hour12, _AppTimePeriod period) {
+    if (period == _AppTimePeriod.am) {
+      return hour12 == 12 ? 0 : hour12;
+    }
+    return hour12 == 12 ? 12 : hour12 + 12;
+  }
+
+  int _to12HourDisplay(int hour24) {
+    final int remainder = hour24 % 12;
+    return remainder == 0 ? 12 : remainder;
+  }
+
+  _AppTimePeriod _periodForValue(AppTimeValue? value) {
+    if (value == null) {
+      return _AppTimePeriod.am;
+    }
+    return value.hour >= 12 ? _AppTimePeriod.pm : _AppTimePeriod.am;
+  }
+
+  void _syncControllersFromValue(AppTimeValue? value) {
+    final String hour = value == null
+        ? ''
+        : _uses24Hour
+        ? value.hour.toString().padLeft(2, '0')
+        : _to12HourDisplay(value.hour).toString().padLeft(2, '0');
+    final String minute = value == null
+        ? ''
+        : value.minute.toString().padLeft(2, '0');
+    final String second = value == null
+        ? ''
+        : value.second.toString().padLeft(2, '0');
+
+    _isSyncing = true;
+    _hourController.text = hour;
+    _minuteController.text = minute;
+    _secondController.text = second;
+    if (value != null) {
+      _period = _periodForValue(value);
+    }
+    _isSyncing = false;
+  }
+
+  bool get _allPartsEmpty =>
+      _hourController.text.trim().isEmpty &&
+      _minuteController.text.trim().isEmpty &&
+      _secondController.text.trim().isEmpty;
+
+  String? _partRestorationId(String part) {
+    final String? restorationId = widget.restorationId;
+    return restorationId == null ? null : '${restorationId}_$part';
+  }
+
+  String _partHint(int index, String fallback) {
+    final String? hintText = widget.hintText;
+    if (hintText == null || hintText.trim().isEmpty) {
+      return fallback;
+    }
+
+    final List<String> parts = hintText
+        .split(RegExp(r'[:.\s]+'))
+        .where((String part) => part.isNotEmpty)
+        .map((String part) => part.replaceAll(RegExp(r'[^A-Za-z0-9]'), ''))
+        .where((String part) => part.isNotEmpty)
+        .toList(growable: false);
+
+    if (parts.isEmpty) {
+      return fallback;
+    }
+
+    if (index < parts.length) {
+      return parts[index];
+    }
+
+    return fallback;
+  }
+}
+
+enum _TimePartsValidationStatus { empty, incomplete, invalid, valid }
+
+class _TimePartsValidationResult {
+  const _TimePartsValidationResult._(this.status, this.time);
+
+  const _TimePartsValidationResult.empty()
+    : this._(_TimePartsValidationStatus.empty, null);
+
+  const _TimePartsValidationResult.incomplete()
+    : this._(_TimePartsValidationStatus.incomplete, null);
+
+  const _TimePartsValidationResult.invalid()
+    : this._(_TimePartsValidationStatus.invalid, null);
+
+  const _TimePartsValidationResult.valid(AppTimeValue time)
+    : this._(_TimePartsValidationStatus.valid, time);
+
+  final _TimePartsValidationStatus status;
+  final AppTimeValue? time;
+
+  bool get isEmpty => status == _TimePartsValidationStatus.empty;
+
+  bool get isValid => status == _TimePartsValidationStatus.valid;
 }
 
 class _TimePickerButton extends StatelessWidget {
@@ -162,6 +530,204 @@ class _TimePickerButton extends StatelessWidget {
         tooltip: label,
         enabled: enabled,
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+class _TimePartTextField extends StatelessWidget {
+  const _TimePartTextField({
+    required this.controller,
+    required this.focusNode,
+    required this.labelText,
+    required this.maxLength,
+    required this.enabled,
+    required this.textInputAction,
+    required this.onChanged,
+    this.hintText,
+    this.nextFocusNode,
+    this.restorationId,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String labelText;
+  final String? hintText;
+  final int maxLength;
+  final bool enabled;
+  final TextInputAction textInputAction;
+  final VoidCallback onChanged;
+  final String? restorationId;
+  final FocusNode? nextFocusNode;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color textColor = enabled
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurface.withValues(alpha: 0.62);
+
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      focusNode: focusNode,
+      restorationId: restorationId,
+      keyboardType: TextInputType.number,
+      textInputAction: textInputAction,
+      maxLength: maxLength,
+      inputFormatters: <TextInputFormatter>[
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(maxLength),
+      ],
+      onChanged: (String value) {
+        onChanged();
+        if (value.length == maxLength) {
+          nextFocusNode?.requestFocus();
+        }
+      },
+      onSubmitted: (_) {
+        final FocusNode? nextNode = nextFocusNode;
+        if (nextNode == null) {
+          focusNode.unfocus();
+          return;
+        }
+        nextNode.requestFocus();
+      },
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: textColor,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        hintText: hintText ?? labelText,
+        hintStyle: theme.inputDecorationTheme.hintStyle,
+        counterText: '',
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+      ),
+    );
+  }
+}
+
+class _TimePartSeparator extends StatelessWidget {
+  const _TimePartSeparator({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color color = enabled
+        ? theme.colorScheme.onSurfaceVariant
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+      child: Text(
+        ':',
+        style: theme.textTheme.titleMedium?.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _TimePeriodToggle extends StatelessWidget {
+  const _TimePeriodToggle({
+    required this.amLabel,
+    required this.pmLabel,
+    required this.period,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String amLabel;
+  final String pmLabel;
+  final _AppTimePeriod period;
+  final bool enabled;
+  final ValueChanged<_AppTimePeriod> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: enabled
+            ? colors.surfaceContainerHighest
+            : colors.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _TimePeriodChip(
+            label: amLabel,
+            selected: period == _AppTimePeriod.am,
+            enabled: enabled,
+            onTap: () => onChanged(_AppTimePeriod.am),
+          ),
+          _TimePeriodChip(
+            label: pmLabel,
+            selected: period == _AppTimePeriod.pm,
+            enabled: enabled,
+            onTap: () => onChanged(_AppTimePeriod.pm),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimePeriodChip extends StatelessWidget {
+  const _TimePeriodChip({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final Color foreground = !enabled
+        ? colors.onSurface.withValues(alpha: 0.38)
+        : selected
+        ? colors.onPrimary
+        : colors.onSurfaceVariant;
+
+    return Material(
+      color: selected && enabled ? colors.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          ),
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1081,7 +1081,7 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
   late final TextEditingController _doseController;
   late final TextEditingController _unitController;
   late DateTime _administeredDate;
-  late TimeOfDay _administeredTime;
+  late AppTimeValue _administeredTime;
   String? _prescriptionId;
   String _route = 'ORAL';
   bool _confirm = false;
@@ -1100,7 +1100,7 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
     _doseController = TextEditingController(text: firstSuggestion?.dose ?? '');
     _unitController = TextEditingController(text: firstSuggestion?.unit ?? '');
     _administeredDate = DateTime(now.year, now.month, now.day);
-    _administeredTime = TimeOfDay.fromDateTime(now);
+    _administeredTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(now));
     _route = _supportedMedicationRoute(firstSuggestion?.route) ?? _route;
   }
 
@@ -1171,7 +1171,7 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
                   setState(() => _administeredDate = value);
                 }
               },
-              onAdministeredTimeChanged: (TimeOfDay? value) {
+              onAdministeredTimeChanged: (AppTimeValue? value) {
                 if (value != null) {
                   setState(() => _administeredTime = value);
                 }

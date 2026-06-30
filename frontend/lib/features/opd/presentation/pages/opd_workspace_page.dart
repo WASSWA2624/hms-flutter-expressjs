@@ -2770,8 +2770,8 @@ class _RescheduleAppointmentDialogState
     extends ConsumerState<RescheduleAppointmentDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late DateTime? _date;
-  late TimeOfDay? _startTime;
-  late TimeOfDay? _endTime;
+  late AppTimeValue? _startTime;
+  late AppTimeValue? _endTime;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -2785,8 +2785,8 @@ class _RescheduleAppointmentDialogState
         widget.appointment.scheduledEnd?.toLocal() ??
         start.add(const Duration(minutes: 30));
     _date = DateTime(start.year, start.month, start.day);
-    _startTime = TimeOfDay(hour: start.hour, minute: start.minute);
-    _endTime = TimeOfDay(hour: end.hour, minute: end.minute);
+    _startTime = AppTimeValue(hour: start.hour, minute: start.minute);
+    _endTime = AppTimeValue(hour: end.hour, minute: end.minute);
   }
 
   @override
@@ -2831,11 +2831,13 @@ class _RescheduleAppointmentDialogState
                   pickerButtonLabel: l10n.appTimePickerAction,
                   invalidTimeMessage: l10n.patientsTimeInvalidMessage,
                   hintText: l10n.patientsTimeHint,
+                  hourLabelText: l10n.appTimeHourLabel,
+                  minuteLabelText: l10n.appTimeMinuteLabel,
                   enabled: !_isSaving,
                   isRequired: true,
-                  validator: (TimeOfDay? value) =>
+                  validator: (AppTimeValue? value) =>
                       value == null ? l10n.validationRequired : null,
-                  onChanged: (TimeOfDay? value) {
+                  onChanged: (AppTimeValue? value) {
                     setState(() => _startTime = value);
                   },
                 ),
@@ -2848,11 +2850,13 @@ class _RescheduleAppointmentDialogState
                   pickerButtonLabel: l10n.appTimePickerAction,
                   invalidTimeMessage: l10n.patientsTimeInvalidMessage,
                   hintText: l10n.patientsTimeHint,
+                  hourLabelText: l10n.appTimeHourLabel,
+                  minuteLabelText: l10n.appTimeMinuteLabel,
                   enabled: !_isSaving,
                   isRequired: true,
-                  validator: (TimeOfDay? value) =>
+                  validator: (AppTimeValue? value) =>
                       value == null ? l10n.validationRequired : null,
-                  onChanged: (TimeOfDay? value) {
+                  onChanged: (AppTimeValue? value) {
                     setState(() => _endTime = value);
                   },
                 ),
@@ -2931,7 +2935,7 @@ class _RescheduleAppointmentDialogState
     });
   }
 
-  DateTime? _combineDateAndTime(DateTime? date, TimeOfDay? time) {
+  DateTime? _combineDateAndTime(DateTime? date, AppTimeValue? time) {
     if (date == null || time == null) {
       return null;
     }

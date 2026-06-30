@@ -1087,7 +1087,7 @@ class _ScheduleReportDialog extends ConsumerStatefulWidget {
 class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _timeController;
+  AppTimeValue? _timeOfDay;
   late final TextEditingController _retentionController;
   String _frequency = _dailyFrequency;
   String? _format;
@@ -1098,7 +1098,6 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.item.title);
-    _timeController = TextEditingController();
     _retentionController = TextEditingController();
     _format = widget.item.format;
   }
@@ -1106,7 +1105,6 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
   @override
   void dispose() {
     _nameController.dispose();
-    _timeController.dispose();
     _retentionController.dispose();
     super.dispose();
   }
@@ -1142,11 +1140,17 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
                 }
               },
             ),
-            AppTextField(
-              controller: _timeController,
+            AppTimeField(
+              value: _timeOfDay,
               labelText: l10n.reportsTimeOfDayFieldLabel,
               hintText: l10n.reportsTimeOfDayHint,
+              hourLabelText: l10n.appTimeHourLabel,
+              minuteLabelText: l10n.appTimeMinuteLabel,
+              pickerButtonLabel: l10n.appTimePickerAction,
+              invalidTimeMessage: l10n.appTimeInvalidMessage,
               enabled: !_isSaving,
+              onChanged: (AppTimeValue? value) =>
+                  setState(() => _timeOfDay = value),
             ),
             AppSelectField<String>(
               value: _format,
@@ -1192,9 +1196,7 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
       name: _nameController.text.trim(),
       frequency: _frequency,
       format: _format,
-      timeOfDay: _timeController.text.trim().isEmpty
-          ? null
-          : _timeController.text.trim(),
+      timeOfDay: _timeOfDay?.format24(),
       timezone: DateTime.now().timeZoneName,
       retentionDays: int.tryParse(_retentionController.text.trim()),
     );

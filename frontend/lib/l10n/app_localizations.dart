@@ -1102,6 +1102,36 @@ abstract class AppLocalizations {
   /// **'HH:MM'**
   String get appTimeFormatHint;
 
+  /// Label for the hour segment inside time input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'HH'**
+  String get appTimeHourLabel;
+
+  /// Label for the minute segment inside time input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'MM'**
+  String get appTimeMinuteLabel;
+
+  /// Label for the second segment inside time input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'SS'**
+  String get appTimeSecondLabel;
+
+  /// Morning period label for 12-hour time input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'AM'**
+  String get appTimeAmLabel;
+
+  /// Evening period label for 12-hour time input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'PM'**
+  String get appTimePmLabel;
+
   /// Label for the country-code selector inside phone input fields.
   ///
   /// In en, this message translates to:

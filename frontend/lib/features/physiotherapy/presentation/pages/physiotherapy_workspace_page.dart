@@ -1159,9 +1159,9 @@ class _ScheduleSessionDialogState extends State<_ScheduleSessionDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _reasonController = TextEditingController();
   late DateTime _startDate;
-  late TimeOfDay _startTime;
+  late AppTimeValue _startTime;
   late DateTime _endDate;
-  late TimeOfDay _endTime;
+  late AppTimeValue _endTime;
 
   @override
   void initState() {
@@ -1169,9 +1169,9 @@ class _ScheduleSessionDialogState extends State<_ScheduleSessionDialog> {
     final DateTime now = DateTime.now().add(const Duration(hours: 1));
     final DateTime end = now.add(const Duration(minutes: 45));
     _startDate = now;
-    _startTime = TimeOfDay.fromDateTime(now);
+    _startTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(now));
     _endDate = end;
-    _endTime = TimeOfDay.fromDateTime(end);
+    _endTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(end));
   }
 
   @override
@@ -1212,9 +1212,13 @@ class _ScheduleSessionDialogState extends State<_ScheduleSessionDialog> {
               pickerButtonLabel: l10n.appTimePickerAction,
               invalidTimeMessage: l10n.appTimeInvalidMessage,
               labelText: l10n.physiotherapyStartTimeFieldLabel,
+              hourLabelText: l10n.appTimeHourLabel,
+              minuteLabelText: l10n.appTimeMinuteLabel,
               isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (TimeOfDay? value) {
+              validator: AppValidators.requiredValue<AppTimeValue>(
+                l10n.validationRequired,
+              ),
+              onChanged: (AppTimeValue? value) {
                 if (value != null) {
                   setState(() => _startTime = value);
                 }
@@ -1243,9 +1247,13 @@ class _ScheduleSessionDialogState extends State<_ScheduleSessionDialog> {
               pickerButtonLabel: l10n.appTimePickerAction,
               invalidTimeMessage: l10n.appTimeInvalidMessage,
               labelText: l10n.physiotherapyEndTimeFieldLabel,
+              hourLabelText: l10n.appTimeHourLabel,
+              minuteLabelText: l10n.appTimeMinuteLabel,
               isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (TimeOfDay? value) {
+              validator: AppValidators.requiredValue<AppTimeValue>(
+                l10n.validationRequired,
+              ),
+              onChanged: (AppTimeValue? value) {
                 if (value != null) {
                   setState(() => _endTime = value);
                 }
@@ -1947,7 +1955,7 @@ String _value(String? value, AppLocalizations l10n) {
   return normalized.isEmpty ? l10n.physiotherapyMissingValueLabel : normalized;
 }
 
-DateTime _combineDateTime(DateTime date, TimeOfDay time) {
+DateTime _combineDateTime(DateTime date, AppTimeValue time) {
   return DateTime(date.year, date.month, date.day, time.hour, time.minute);
 }
 

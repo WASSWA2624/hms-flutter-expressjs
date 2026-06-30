@@ -540,6 +540,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTimeFormatHint => 'HH:MM';
 
   @override
+  String get appTimeHourLabel => 'HH';
+
+  @override
+  String get appTimeMinuteLabel => 'MM';
+
+  @override
+  String get appTimeSecondLabel => 'SS';
+
+  @override
+  String get appTimeAmLabel => 'AM';
+
+  @override
+  String get appTimePmLabel => 'PM';
+
+  @override
   String get appPhoneCountryLabel => 'Country code';
 
   @override

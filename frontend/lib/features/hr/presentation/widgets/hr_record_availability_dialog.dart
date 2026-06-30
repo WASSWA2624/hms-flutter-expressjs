@@ -125,7 +125,7 @@ class _HrRecordAvailabilityFieldsState
   @override
   void dispose() {
     for (final _DayScheduleDraft day in _days.values) {
-      day.dispose();
+      day.clear();
     }
     super.dispose();
   }
@@ -167,7 +167,10 @@ class _HrRecordAvailabilityFieldsState
       scheduledDayCount += 1;
 
       for (final _AvailabilitySlotDraft slot in filledSlots) {
-        if (!_isEndAfterStart(slot.start, slot.end)) {
+        if (slot.start == null || slot.end == null) {
+          continue;
+        }
+        if (!slot.end!.isAfter(slot.start!)) {
           return l10n.hrAvailabilityEndAfterStartError;
         }
       }
@@ -413,6 +416,10 @@ class _HrRecordAvailabilityFieldsState
             removeSlotLabel: l10n.hrRemoveAvailabilitySlotAction,
             startTimeLabel: l10n.hrStartTimeLabel,
             endTimeLabel: l10n.hrEndTimeLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.appTimeInvalidMessage,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
             timeHint: l10n.hrTimeHint,
             requiredFieldMessage: l10n.hrFieldRequiredLabel,
           ),
@@ -474,6 +481,10 @@ class _DayScheduleSection extends StatelessWidget {
     required this.removeSlotLabel,
     required this.startTimeLabel,
     required this.endTimeLabel,
+    required this.pickerButtonLabel,
+    required this.invalidTimeMessage,
+    required this.hourLabelText,
+    required this.minuteLabelText,
     required this.timeHint,
     required this.requiredFieldMessage,
   });
@@ -488,6 +499,10 @@ class _DayScheduleSection extends StatelessWidget {
   final String removeSlotLabel;
   final String startTimeLabel;
   final String endTimeLabel;
+  final String pickerButtonLabel;
+  final String invalidTimeMessage;
+  final String hourLabelText;
+  final String minuteLabelText;
   final String timeHint;
   final String Function(String fieldLabel) requiredFieldMessage;
 
@@ -506,7 +521,7 @@ class _DayScheduleSection extends StatelessWidget {
                 schedule.filledSlots
                     .map(
                       (_AvailabilitySlotDraft slot) =>
-                          '${slot.start.trim()}-${slot.end.trim()}',
+                          '${slot.start!.format24()}-${slot.end!.format24()}',
                     )
                     .join(', '),
               ),
@@ -536,9 +551,14 @@ class _DayScheduleSection extends StatelessWidget {
                     canRemove: schedule.slots.length > 1,
                     startTimeLabel: startTimeLabel,
                     endTimeLabel: endTimeLabel,
+                    pickerButtonLabel: pickerButtonLabel,
+                    invalidTimeMessage: invalidTimeMessage,
+                    hourLabelText: hourLabelText,
+                    minuteLabelText: minuteLabelText,
                     timeHint: timeHint,
                     removeSlotLabel: removeSlotLabel,
                     requiredFieldMessage: requiredFieldMessage,
+                    onChanged: onChanged,
                     onRemove: () {
                       schedule.removeSlotAt(index);
                       onChanged();
@@ -571,33 +591,37 @@ final class _DayScheduleDraft {
 
   List<_AvailabilitySlotDraft> get filledSlots => <_AvailabilitySlotDraft>[
     for (final _AvailabilitySlotDraft slot in slots)
-      if (slot.start.trim().isNotEmpty && slot.end.trim().isNotEmpty) slot,
+      if (slot.start != null && slot.end != null) slot,
   ];
 
   void addSlot() => slots.add(_AvailabilitySlotDraft());
 
   void removeSlotAt(int index) {
-    final _AvailabilitySlotDraft removed = slots.removeAt(index);
-    removed.dispose();
+    slots.removeAt(index);
+  }
+
+  void clear() {
+    slots.clear();
+    slots.add(_AvailabilitySlotDraft());
   }
 
   List<Map<String, Object?>> toSlotPayloads() => <Map<String, Object?>>[
     for (final _AvailabilitySlotDraft slot in filledSlots)
       <String, Object?>{
-        'start_time': slot.start.trim(),
-        'end_time': slot.end.trim(),
+        'start_time': slot.start!.format24(),
+        'end_time': slot.end!.format24(),
       },
   ];
 
   List<HrAvailabilitySlot> toEntitySlots() => <HrAvailabilitySlot>[
     for (final _AvailabilitySlotDraft slot in filledSlots)
-      HrAvailabilitySlot(startTime: slot.start.trim(), endTime: slot.end.trim()),
+      HrAvailabilitySlot(
+        startTime: slot.start!.format24(),
+        endTime: slot.end!.format24(),
+      ),
   ];
 
   void replaceSlots(List<HrAvailabilitySlot> source) {
-    for (final _AvailabilitySlotDraft slot in slots) {
-      slot.dispose();
-    }
     slots.clear();
     if (source.isEmpty) {
       slots.add(_AvailabilitySlotDraft());
@@ -605,32 +629,16 @@ final class _DayScheduleDraft {
     }
     for (final HrAvailabilitySlot slot in source) {
       final _AvailabilitySlotDraft draft = _AvailabilitySlotDraft();
-      draft.startController.text = slot.startTime;
-      draft.endController.text = slot.endTime;
+      draft.start = AppTimeValue.parse(slot.startTime);
+      draft.end = AppTimeValue.parse(slot.endTime);
       slots.add(draft);
-    }
-  }
-
-  void dispose() {
-    for (final _AvailabilitySlotDraft slot in slots) {
-      slot.dispose();
     }
   }
 }
 
 final class _AvailabilitySlotDraft {
-  _AvailabilitySlotDraft();
-
-  final TextEditingController startController = TextEditingController();
-  final TextEditingController endController = TextEditingController();
-
-  String get start => startController.text;
-  String get end => endController.text;
-
-  void dispose() {
-    startController.dispose();
-    endController.dispose();
-  }
+  AppTimeValue? start;
+  AppTimeValue? end;
 }
 
 class _AvailabilitySlotFields extends StatelessWidget {
@@ -638,8 +646,13 @@ class _AvailabilitySlotFields extends StatelessWidget {
     required this.slot,
     required this.canRemove,
     required this.onRemove,
+    required this.onChanged,
     required this.startTimeLabel,
     required this.endTimeLabel,
+    required this.pickerButtonLabel,
+    required this.invalidTimeMessage,
+    required this.hourLabelText,
+    required this.minuteLabelText,
     required this.timeHint,
     required this.removeSlotLabel,
     required this.requiredFieldMessage,
@@ -648,8 +661,13 @@ class _AvailabilitySlotFields extends StatelessWidget {
   final _AvailabilitySlotDraft slot;
   final bool canRemove;
   final VoidCallback onRemove;
+  final VoidCallback onChanged;
   final String startTimeLabel;
   final String endTimeLabel;
+  final String pickerButtonLabel;
+  final String invalidTimeMessage;
+  final String hourLabelText;
+  final String minuteLabelText;
   final String timeHint;
   final String removeSlotLabel;
   final String Function(String fieldLabel) requiredFieldMessage;
@@ -663,26 +681,44 @@ class _AvailabilitySlotFields extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: AppTextField(
-              controller: slot.startController,
+            child: AppTimeField(
+              value: slot.start,
               labelText: startTimeLabel,
               hintText: timeHint,
+              hourLabelText: hourLabelText,
+              minuteLabelText: minuteLabelText,
+              pickerButtonLabel: pickerButtonLabel,
+              invalidTimeMessage: invalidTimeMessage,
               isRequired: true,
-              validator: AppValidators.requiredText(
+              use24HourFormat: true,
+              validator: AppValidators.requiredValue<AppTimeValue>(
                 requiredFieldMessage(startTimeLabel),
               ),
+              onChanged: (AppTimeValue? value) {
+                slot.start = value;
+                onChanged();
+              },
             ),
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: AppTextField(
-              controller: slot.endController,
+            child: AppTimeField(
+              value: slot.end,
               labelText: endTimeLabel,
               hintText: timeHint,
+              hourLabelText: hourLabelText,
+              minuteLabelText: minuteLabelText,
+              pickerButtonLabel: pickerButtonLabel,
+              invalidTimeMessage: invalidTimeMessage,
               isRequired: true,
-              validator: AppValidators.requiredText(
+              use24HourFormat: true,
+              validator: AppValidators.requiredValue<AppTimeValue>(
                 requiredFieldMessage(endTimeLabel),
               ),
+              onChanged: (AppTimeValue? value) {
+                slot.end = value;
+                onChanged();
+              },
             ),
           ),
           if (canRemove) ...<Widget>[
@@ -722,24 +758,11 @@ String? _datePayload(DateTime? value) {
   return DateTime(value.year, value.month, value.day).toUtc().toIso8601String();
 }
 
-bool _isEndAfterStart(String start, String end) {
-  return _timeToMinutes(end) > _timeToMinutes(start);
-}
-
-int _timeToMinutes(String raw) {
-  final List<String> parts = raw.trim().split(':');
-  if (parts.length < 2) {
-    return 0;
-  }
-  final int hours = int.tryParse(parts[0]) ?? 0;
-  final int minutes = int.tryParse(parts[1]) ?? 0;
-  return hours * 60 + minutes;
-}
-
 bool _slotsOverlap(List<_AvailabilitySlotDraft> slots) {
   final List<List<int>> ranges = <List<int>>[
     for (final _AvailabilitySlotDraft slot in slots)
-      <int>[_timeToMinutes(slot.start), _timeToMinutes(slot.end)],
+      if (slot.start != null && slot.end != null)
+        <int>[slot.start!.totalMinutes, slot.end!.totalMinutes],
   ]..sort((List<int> a, List<int> b) => a[0].compareTo(b[0]));
 
   for (var index = 1; index < ranges.length; index += 1) {

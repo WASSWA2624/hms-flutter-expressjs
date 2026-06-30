@@ -6,6 +6,7 @@ import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_time_field.dart';
+import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 
@@ -96,7 +97,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
   late final TextEditingController _weightController;
   late final TextEditingController _heightController;
   late DateTime _recordedDate;
-  late TimeOfDay _recordedTime;
+  late AppTimeValue _recordedTime;
   String _bloodPressureUnit = AppVitalsUnits.bloodPressureMmHg;
   String _temperatureUnit = AppVitalsUnits.temperatureCelsius;
   String _weightUnit = AppVitalsUnits.weightKilograms;
@@ -122,7 +123,9 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
       initialRecordedAt.month,
       initialRecordedAt.day,
     );
-    _recordedTime = TimeOfDay.fromDateTime(initialRecordedAt);
+    _recordedTime = AppTimeValue.fromTimeOfDay(
+      TimeOfDay.fromDateTime(initialRecordedAt),
+    );
     _populateInitialValues(widget.initialValues);
   }
 
@@ -227,9 +230,9 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                     invalidTimeMessage: widget.invalidTimeMessage,
                     enabled: !_isSaving,
                     isRequired: true,
-                    validator: (TimeOfDay? value) =>
+                    validator: (AppTimeValue? value) =>
                         value == null ? widget.requiredMessage : null,
-                    onChanged: (TimeOfDay? value) {
+                    onChanged: (AppTimeValue? value) {
                       if (value != null) {
                         setState(() => _recordedTime = value);
                       }

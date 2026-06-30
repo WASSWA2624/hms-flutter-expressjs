@@ -48,7 +48,7 @@ class _ClinicalFollowUpActionDialogState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _notesController;
   late DateTime _followUpDate;
-  late TimeOfDay _followUpTime;
+  late AppTimeValue _followUpTime;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -59,7 +59,7 @@ class _ClinicalFollowUpActionDialogState
         widget.initialScheduledAt ??
         DateTime.now().add(const Duration(days: 7));
     _followUpDate = _dateOnly(defaultAt);
-    _followUpTime = TimeOfDay.fromDateTime(defaultAt);
+    _followUpTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(defaultAt));
     _notesController = TextEditingController();
   }
 
@@ -114,14 +114,16 @@ class _ClinicalFollowUpActionDialogState
                 value: _followUpTime,
                 labelText: widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
                 hintText: l10n.appTimeFormatHint,
+                hourLabelText: l10n.appTimeHourLabel,
+                minuteLabelText: l10n.appTimeMinuteLabel,
                 pickerButtonLabel: l10n.appTimePickerAction,
                 invalidTimeMessage: l10n.appTimeInvalidMessage,
                 enabled: !_isSaving,
                 isRequired: true,
-                validator: AppValidators.requiredValue<TimeOfDay>(
+                validator: AppValidators.requiredValue<AppTimeValue>(
                   l10n.validationRequired,
                 ),
-                onChanged: (TimeOfDay? value) {
+                onChanged: (AppTimeValue? value) {
                   if (value == null) {
                     return;
                   }
@@ -186,6 +188,6 @@ DateTime _dateOnly(DateTime value) {
   return DateTime(value.year, value.month, value.day);
 }
 
-DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+DateTime _combineDateAndTime(DateTime date, AppTimeValue time) {
   return DateTime(date.year, date.month, date.day, time.hour, time.minute);
 }

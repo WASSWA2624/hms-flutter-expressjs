@@ -128,7 +128,7 @@ class TheaterScheduleCaseFormState
       <ClinicalActionCatalogOption>[];
 
   late DateTime _scheduledDate;
-  late TimeOfDay _scheduledTime;
+  late AppTimeValue _scheduledTime;
   bool _isLoadingPatients = false;
   bool _isLoadingPatientContext = false;
   bool _isLoadingRooms = false;
@@ -146,7 +146,7 @@ class TheaterScheduleCaseFormState
         theaterCase?.scheduledAt ??
         DateTime.now().add(const Duration(hours: 1));
     _scheduledDate = _dateOnly(defaultAt);
-    _scheduledTime = TimeOfDay.fromDateTime(defaultAt);
+    _scheduledTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(defaultAt));
     _notesController = TextEditingController(text: theaterCase?.stageNotes);
     _selectedPatientId = _emptyToNull(
       widget.initialPatientId ?? theaterCase?.patientDisplayId,
@@ -366,15 +366,17 @@ class TheaterScheduleCaseFormState
                 value: _scheduledTime,
                 labelText: l10n.theaterScheduledTimeLabel,
                 hintText: l10n.appTimeFormatHint,
+                hourLabelText: l10n.appTimeHourLabel,
+                minuteLabelText: l10n.appTimeMinuteLabel,
                 isRequired: true,
                 pickerButtonLabel: l10n.appTimePickerAction,
                 invalidTimeMessage: l10n.appTimeInvalidMessage,
-                validator: AppValidators.requiredValue<TimeOfDay>(
+                validator: AppValidators.requiredValue<AppTimeValue>(
                   l10n.theaterFieldRequiredLabel(
                     l10n.theaterScheduledTimeLabel,
                   ),
                 ),
-                onChanged: (TimeOfDay? value) {
+                onChanged: (AppTimeValue? value) {
                   if (value == null) {
                     return;
                   }
@@ -1109,7 +1111,7 @@ DateTime _dateOnly(DateTime value) {
   return DateTime(value.year, value.month, value.day);
 }
 
-DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+DateTime _combineDateAndTime(DateTime date, AppTimeValue time) {
   return DateTime(date.year, date.month, date.day, time.hour, time.minute);
 }
 

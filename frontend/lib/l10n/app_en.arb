@@ -701,6 +701,26 @@
   "@appTimeFormatHint": {
     "description": "Hint text showing the supported manual time entry format."
   },
+  "appTimeHourLabel": "HH",
+  "@appTimeHourLabel": {
+    "description": "Label for the hour segment inside time input fields."
+  },
+  "appTimeMinuteLabel": "MM",
+  "@appTimeMinuteLabel": {
+    "description": "Label for the minute segment inside time input fields."
+  },
+  "appTimeSecondLabel": "SS",
+  "@appTimeSecondLabel": {
+    "description": "Label for the second segment inside time input fields."
+  },
+  "appTimeAmLabel": "AM",
+  "@appTimeAmLabel": {
+    "description": "Morning period label for 12-hour time input fields."
+  },
+  "appTimePmLabel": "PM",
+  "@appTimePmLabel": {
+    "description": "Evening period label for 12-hour time input fields."
+  },
   "appPhoneCountryLabel": "Country code",
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
