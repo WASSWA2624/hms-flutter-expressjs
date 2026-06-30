@@ -198,10 +198,10 @@ void main() {
     await tester.tap(find.text('Monday'));
     await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.textContaining('08:00-10:00'), findsOneWidget);
+    expect(find.textContaining('14:00-16:00'), findsOneWidget);
     expect(find.text('08'), findsWidgets);
-    expect(find.text('10'), findsWidgets);
-    expect(find.text('14'), findsWidgets);
-    expect(find.text('16'), findsWidgets);
+    expect(find.text('02'), findsWidgets);
   });
 
   testWidgets('duplicate day dialog offers other weekdays as targets', (
