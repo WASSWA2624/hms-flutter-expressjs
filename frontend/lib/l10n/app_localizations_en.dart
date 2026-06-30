@@ -13263,6 +13263,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'Auto-calculates the end date from the start date.';
 
   @override
+  String get hrLeaveTypeLabel => 'Leave type';
+
+  @override
+  String get hrLeaveHalfDayLabel => 'Half-day leave';
+
+  @override
+  String get hrLeaveHalfDayHelper =>
+      'Use for a single morning or afternoon away from work.';
+
+  @override
+  String get hrLeaveHalfDayPeriodLabel => 'Half-day period';
+
+  @override
+  String get hrLeaveHalfDaySingleDayError =>
+      'Half-day leave must start and end on the same day.';
+
+  @override
+  String hrLeaveHalfDaySummary(String period) {
+    return 'Half day ($period)';
+  }
+
+  @override
+  String get hrCoveringStaffLabel => 'Covering colleague';
+
+  @override
+  String hrCoveringStaffSummary(String name) {
+    return 'Cover: $name';
+  }
+
+  @override
+  String get hrHandoverNotesLabel => 'Handover notes';
+
+  @override
+  String get hrHandoverNotesHelper =>
+      'Tasks, patients, or shift details the covering colleague should know.';
+
+  @override
   String get hrAddNewPositionLabel => 'Add a new position';
 
   @override
@@ -15661,6 +15698,173 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrReferenceStaffPositionFacilityManager => 'Facility Manager';
 
   @override
+  String get hrReferenceRoleTenantAdmin => 'Organization Administrator';
+
+  @override
+  String get hrReferenceRoleFacilityAdmin => 'Facility Administrator';
+
+  @override
+  String get hrReferenceRoleHr => 'HR / Workforce Manager';
+
+  @override
+  String get hrReferenceRoleOperations => 'Operations Manager';
+
+  @override
+  String get hrReferenceRoleItSupport => 'IT Support Specialist';
+
+  @override
+  String get hrReferenceRoleDoctor => 'Doctor / Clinician';
+
+  @override
+  String get hrReferenceRoleAttendingPhysician => 'Attending Physician';
+
+  @override
+  String get hrReferenceRoleResidentPhysician => 'Resident Physician';
+
+  @override
+  String get hrReferenceRoleSurgeon => 'Surgeon';
+
+  @override
+  String get hrReferenceRoleAnesthesiologist => 'Anesthesiologist';
+
+  @override
+  String get hrReferenceRolePhysicianAssistant => 'Physician Assistant (PA)';
+
+  @override
+  String get hrReferenceRoleEmergencyPhysician =>
+      'Emergency Medicine Physician';
+
+  @override
+  String get hrReferenceRoleNurse => 'Registered Nurse (RN)';
+
+  @override
+  String get hrReferenceRoleLicensedPracticalNurse =>
+      'Licensed Practical Nurse (LPN)';
+
+  @override
+  String get hrReferenceRoleNursePractitioner => 'Nurse Practitioner (NP)';
+
+  @override
+  String get hrReferenceRoleTriageNurse => 'Triage Nurse';
+
+  @override
+  String get hrReferenceRoleMidwife => 'Midwife';
+
+  @override
+  String get hrReferenceRoleChargeNurse => 'Charge Nurse';
+
+  @override
+  String get hrReferenceRolePhysiotherapist =>
+      'Physiotherapist / Physical Therapist';
+
+  @override
+  String get hrReferenceRoleOccupationalTherapist => 'Occupational Therapist';
+
+  @override
+  String get hrReferenceRoleRespiratoryTherapist => 'Respiratory Therapist';
+
+  @override
+  String get hrReferenceRoleDietitian => 'Dietitian / Nutritionist';
+
+  @override
+  String get hrReferenceRoleSocialWorker => 'Medical Social Worker';
+
+  @override
+  String get hrReferenceRoleClinicalPsychologist => 'Clinical Psychologist';
+
+  @override
+  String get hrReferenceRoleLabTech => 'Laboratory Technologist';
+
+  @override
+  String get hrReferenceRoleMedicalLaboratoryScientist =>
+      'Medical Laboratory Scientist';
+
+  @override
+  String get hrReferenceRolePathologist => 'Pathologist';
+
+  @override
+  String get hrReferenceRoleRadiologyTech => 'Radiology / Imaging Technologist';
+
+  @override
+  String get hrReferenceRoleSonographer =>
+      'Sonographer / Ultrasound Technologist';
+
+  @override
+  String get hrReferenceRolePharmacist => 'Pharmacist';
+
+  @override
+  String get hrReferenceRolePharmacyTechnician => 'Pharmacy Technician';
+
+  @override
+  String get hrReferenceRoleReceptionist => 'Receptionist / Front Desk';
+
+  @override
+  String get hrReferenceRoleAdmissionsCoordinator => 'Admissions Coordinator';
+
+  @override
+  String get hrReferenceRoleMedicalRecordsClerk => 'Medical Records Clerk';
+
+  @override
+  String get hrReferenceRoleBilling => 'Billing / Cashier';
+
+  @override
+  String get hrReferenceRoleMedicalCoder => 'Medical Coder / Coding Specialist';
+
+  @override
+  String get hrReferenceRoleAmbulanceOperator => 'Ambulance Operator';
+
+  @override
+  String get hrReferenceRoleParamedic => 'Paramedic';
+
+  @override
+  String get hrReferenceRoleEmt => 'Emergency Medical Technician (EMT)';
+
+  @override
+  String get hrReferenceRoleHouseKeeper => 'Housekeeping Staff';
+
+  @override
+  String get hrReferenceRoleHousekeepingManager => 'Housekeeping Manager';
+
+  @override
+  String get hrReferenceRoleFoodServiceWorker => 'Food Service Worker';
+
+  @override
+  String get hrReferenceRolePorter => 'Porter / Orderly';
+
+  @override
+  String get hrReferenceRoleSecurityOfficer => 'Security Officer';
+
+  @override
+  String get hrReferenceRoleMaintenanceEngineer => 'Maintenance Engineer';
+
+  @override
+  String get hrReferenceRoleChaplain => 'Hospital Chaplain';
+
+  @override
+  String get hrReferenceRoleBiomed => 'Biomedical Engineer / Technician';
+
+  @override
+  String get hrReferenceRoleBiomedManager => 'Biomedical Manager';
+
+  @override
+  String get hrReferenceRoleUnitManager => 'Unit Manager';
+
+  @override
+  String get hrReferenceRoleWardManager => 'Ward Manager / Charge Nurse';
+
+  @override
+  String get hrReferenceRoleIcuManager => 'ICU Manager';
+
+  @override
+  String get hrReferenceRoleTheatreManager => 'Theatre / Perioperative Manager';
+
+  @override
+  String get hrReferenceRoleMortuaryStaff => 'Mortuary Attendant';
+
+  @override
+  String get hrReferenceRoleMortuaryManager => 'Mortuary Manager';
+
+  @override
   String get hrReferencePractitionerTypeMo => 'Medical Officer (MO)';
 
   @override
@@ -15740,4 +15944,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hrReferenceCompensationPayTypePerProcedure =>
       'Per procedure / per task';
+
+  @override
+  String get hrReferenceLeaveTypeAnnual => 'Annual leave';
+
+  @override
+  String get hrReferenceLeaveTypeSick => 'Sick leave';
+
+  @override
+  String get hrReferenceLeaveTypeMaternity => 'Maternity leave';
+
+  @override
+  String get hrReferenceLeaveTypePaternity => 'Paternity leave';
+
+  @override
+  String get hrReferenceLeaveTypeCompassionate =>
+      'Compassionate / bereavement leave';
+
+  @override
+  String get hrReferenceLeaveTypeUnpaid => 'Unpaid leave';
+
+  @override
+  String get hrReferenceLeaveTypeStudy => 'Study / training leave';
+
+  @override
+  String get hrReferenceLeaveTypeEmergency => 'Emergency leave';
+
+  @override
+  String get hrReferenceLeaveTypeOther => 'Other leave';
+
+  @override
+  String get hrReferenceLeaveHalfDayPeriodMorning => 'Morning';
+
+  @override
+  String get hrReferenceLeaveHalfDayPeriodAfternoon => 'Afternoon';
 }

@@ -114,6 +114,8 @@ final class HrReferenceDataDto {
       roles: _options(json['roles']),
       users: _options(json['users']),
       shiftTypes: _options(json['shift_types']),
+      leaveTypes: _options(json['leave_types']),
+      leaveHalfDayPeriods: _options(json['leave_half_day_periods']),
       practitionerTypes: _options(json['practitioner_types']),
       compensationPayTypes: _options(json['compensation_pay_types']),
       resourceStatuses: _resourceStatuses(json['resource_statuses']),
@@ -318,10 +320,18 @@ final class HrStaffLeaveDto {
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       staffProfileId: _string(json['staff_profile_id']),
+      leaveType: _string(json['leave_type']),
       status: _string(json['status']),
       startDate: _date(json['start_date']),
       endDate: _date(json['end_date']),
+      isHalfDay: json['is_half_day'] == true,
+      halfDayPeriod: _string(json['half_day_period']),
       reason: _string(json['reason']),
+      handoverNotes: _string(json['handover_notes']),
+      coveringStaffProfileId:
+          _string(json['covering_staff_display_id']) ??
+          _string(json['covering_staff_profile_id']),
+      coveringStaffName: _string(json['covering_staff_name']),
     );
   }
 }
@@ -477,6 +487,9 @@ final class HrWorkItemDto {
           _string(json['staff_number']) ??
           _string(json['requester_staff_number']),
       staffPosition: _string(json['staff_position']),
+      leaveType: _string(json['leave_type']),
+      isHalfDay: json['is_half_day'] == true,
+      halfDayPeriod: _string(json['half_day_period']),
       shiftId: _string(json['shift_display_id']) ?? _string(json['shift_id']),
       shiftType: _string(json['shift_type']),
       rosterId:

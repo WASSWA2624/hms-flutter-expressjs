@@ -112,6 +112,24 @@ const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { cre
             },
           },
         },
+        covering_staff_profile: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            staff_number: true,
+            user: {
+              select: {
+                email: true,
+                profile: {
+                  select: {
+                    first_name: true,
+                    last_name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       skip,
       take,

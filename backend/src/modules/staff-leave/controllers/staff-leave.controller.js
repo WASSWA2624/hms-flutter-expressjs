@@ -23,6 +23,7 @@ const listStaffLeaves = asyncHandler(async (req, res) => {
   const {
     staff_profile_id,
     status,
+    leave_type,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
@@ -31,7 +32,8 @@ const listStaffLeaves = asyncHandler(async (req, res) => {
 
   const filters = {
     staff_profile_id,
-    status
+    status,
+    leave_type
   };
 
   const userId = req.user?.id;

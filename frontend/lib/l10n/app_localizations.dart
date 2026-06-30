@@ -24915,6 +24915,66 @@ abstract class AppLocalizations {
   /// **'Auto-calculates the end date from the start date.'**
   String get hrLeaveDaysHelper;
 
+  /// Human resources workspace text for hrLeaveTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave type'**
+  String get hrLeaveTypeLabel;
+
+  /// Human resources workspace text for hrLeaveHalfDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Half-day leave'**
+  String get hrLeaveHalfDayLabel;
+
+  /// Human resources workspace text for hrLeaveHalfDayHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Use for a single morning or afternoon away from work.'**
+  String get hrLeaveHalfDayHelper;
+
+  /// Human resources workspace text for hrLeaveHalfDayPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Half-day period'**
+  String get hrLeaveHalfDayPeriodLabel;
+
+  /// Human resources workspace text for hrLeaveHalfDaySingleDayError.
+  ///
+  /// In en, this message translates to:
+  /// **'Half-day leave must start and end on the same day.'**
+  String get hrLeaveHalfDaySingleDayError;
+
+  /// Human resources workspace text for hrLeaveHalfDaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Half day ({period})'**
+  String hrLeaveHalfDaySummary(String period);
+
+  /// Human resources workspace text for hrCoveringStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Covering colleague'**
+  String get hrCoveringStaffLabel;
+
+  /// Human resources workspace text for hrCoveringStaffSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover: {name}'**
+  String hrCoveringStaffSummary(String name);
+
+  /// Human resources workspace text for hrHandoverNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover notes'**
+  String get hrHandoverNotesLabel;
+
+  /// Human resources workspace text for hrHandoverNotesHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks, patients, or shift details the covering colleague should know.'**
+  String get hrHandoverNotesHelper;
+
   /// Human resources workspace text for hrAddNewPositionLabel.
   ///
   /// In en, this message translates to:
@@ -29349,6 +29409,330 @@ abstract class AppLocalizations {
   /// **'Facility Manager'**
   String get hrReferenceStaffPositionFacilityManager;
 
+  /// Localized label for labels.hr.reference.role.tenant_admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization Administrator'**
+  String get hrReferenceRoleTenantAdmin;
+
+  /// Localized label for labels.hr.reference.role.facility_admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Administrator'**
+  String get hrReferenceRoleFacilityAdmin;
+
+  /// Localized label for labels.hr.reference.role.hr.
+  ///
+  /// In en, this message translates to:
+  /// **'HR / Workforce Manager'**
+  String get hrReferenceRoleHr;
+
+  /// Localized label for labels.hr.reference.role.operations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations Manager'**
+  String get hrReferenceRoleOperations;
+
+  /// Localized label for labels.hr.reference.role.it_support.
+  ///
+  /// In en, this message translates to:
+  /// **'IT Support Specialist'**
+  String get hrReferenceRoleItSupport;
+
+  /// Localized label for labels.hr.reference.role.doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor / Clinician'**
+  String get hrReferenceRoleDoctor;
+
+  /// Localized label for labels.hr.reference.role.attending_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Attending Physician'**
+  String get hrReferenceRoleAttendingPhysician;
+
+  /// Localized label for labels.hr.reference.role.resident_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Resident Physician'**
+  String get hrReferenceRoleResidentPhysician;
+
+  /// Localized label for labels.hr.reference.role.surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon'**
+  String get hrReferenceRoleSurgeon;
+
+  /// Localized label for labels.hr.reference.role.anesthesiologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthesiologist'**
+  String get hrReferenceRoleAnesthesiologist;
+
+  /// Localized label for labels.hr.reference.role.physician_assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Physician Assistant (PA)'**
+  String get hrReferenceRolePhysicianAssistant;
+
+  /// Localized label for labels.hr.reference.role.emergency_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Medicine Physician'**
+  String get hrReferenceRoleEmergencyPhysician;
+
+  /// Localized label for labels.hr.reference.role.nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered Nurse (RN)'**
+  String get hrReferenceRoleNurse;
+
+  /// Localized label for labels.hr.reference.role.licensed_practical_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Licensed Practical Nurse (LPN)'**
+  String get hrReferenceRoleLicensedPracticalNurse;
+
+  /// Localized label for labels.hr.reference.role.nurse_practitioner.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurse Practitioner (NP)'**
+  String get hrReferenceRoleNursePractitioner;
+
+  /// Localized label for labels.hr.reference.role.triage_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage Nurse'**
+  String get hrReferenceRoleTriageNurse;
+
+  /// Localized label for labels.hr.reference.role.midwife.
+  ///
+  /// In en, this message translates to:
+  /// **'Midwife'**
+  String get hrReferenceRoleMidwife;
+
+  /// Localized label for labels.hr.reference.role.charge_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Charge Nurse'**
+  String get hrReferenceRoleChargeNurse;
+
+  /// Localized label for labels.hr.reference.role.physiotherapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapist / Physical Therapist'**
+  String get hrReferenceRolePhysiotherapist;
+
+  /// Localized label for labels.hr.reference.role.occupational_therapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupational Therapist'**
+  String get hrReferenceRoleOccupationalTherapist;
+
+  /// Localized label for labels.hr.reference.role.respiratory_therapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Respiratory Therapist'**
+  String get hrReferenceRoleRespiratoryTherapist;
+
+  /// Localized label for labels.hr.reference.role.dietitian.
+  ///
+  /// In en, this message translates to:
+  /// **'Dietitian / Nutritionist'**
+  String get hrReferenceRoleDietitian;
+
+  /// Localized label for labels.hr.reference.role.social_worker.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Social Worker'**
+  String get hrReferenceRoleSocialWorker;
+
+  /// Localized label for labels.hr.reference.role.clinical_psychologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical Psychologist'**
+  String get hrReferenceRoleClinicalPsychologist;
+
+  /// Localized label for labels.hr.reference.role.lab_tech.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory Technologist'**
+  String get hrReferenceRoleLabTech;
+
+  /// Localized label for labels.hr.reference.role.medical_laboratory_scientist.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Laboratory Scientist'**
+  String get hrReferenceRoleMedicalLaboratoryScientist;
+
+  /// Localized label for labels.hr.reference.role.pathologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Pathologist'**
+  String get hrReferenceRolePathologist;
+
+  /// Localized label for labels.hr.reference.role.radiology_tech.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology / Imaging Technologist'**
+  String get hrReferenceRoleRadiologyTech;
+
+  /// Localized label for labels.hr.reference.role.sonographer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sonographer / Ultrasound Technologist'**
+  String get hrReferenceRoleSonographer;
+
+  /// Localized label for labels.hr.reference.role.pharmacist.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacist'**
+  String get hrReferenceRolePharmacist;
+
+  /// Localized label for labels.hr.reference.role.pharmacy_technician.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy Technician'**
+  String get hrReferenceRolePharmacyTechnician;
+
+  /// Localized label for labels.hr.reference.role.receptionist.
+  ///
+  /// In en, this message translates to:
+  /// **'Receptionist / Front Desk'**
+  String get hrReferenceRoleReceptionist;
+
+  /// Localized label for labels.hr.reference.role.admissions_coordinator.
+  ///
+  /// In en, this message translates to:
+  /// **'Admissions Coordinator'**
+  String get hrReferenceRoleAdmissionsCoordinator;
+
+  /// Localized label for labels.hr.reference.role.medical_records_clerk.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Records Clerk'**
+  String get hrReferenceRoleMedicalRecordsClerk;
+
+  /// Localized label for labels.hr.reference.role.billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing / Cashier'**
+  String get hrReferenceRoleBilling;
+
+  /// Localized label for labels.hr.reference.role.medical_coder.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Coder / Coding Specialist'**
+  String get hrReferenceRoleMedicalCoder;
+
+  /// Localized label for labels.hr.reference.role.ambulance_operator.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance Operator'**
+  String get hrReferenceRoleAmbulanceOperator;
+
+  /// Localized label for labels.hr.reference.role.paramedic.
+  ///
+  /// In en, this message translates to:
+  /// **'Paramedic'**
+  String get hrReferenceRoleParamedic;
+
+  /// Localized label for labels.hr.reference.role.emt.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Medical Technician (EMT)'**
+  String get hrReferenceRoleEmt;
+
+  /// Localized label for labels.hr.reference.role.house_keeper.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping Staff'**
+  String get hrReferenceRoleHouseKeeper;
+
+  /// Localized label for labels.hr.reference.role.housekeeping_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping Manager'**
+  String get hrReferenceRoleHousekeepingManager;
+
+  /// Localized label for labels.hr.reference.role.food_service_worker.
+  ///
+  /// In en, this message translates to:
+  /// **'Food Service Worker'**
+  String get hrReferenceRoleFoodServiceWorker;
+
+  /// Localized label for labels.hr.reference.role.porter.
+  ///
+  /// In en, this message translates to:
+  /// **'Porter / Orderly'**
+  String get hrReferenceRolePorter;
+
+  /// Localized label for labels.hr.reference.role.security_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Security Officer'**
+  String get hrReferenceRoleSecurityOfficer;
+
+  /// Localized label for labels.hr.reference.role.maintenance_engineer.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Engineer'**
+  String get hrReferenceRoleMaintenanceEngineer;
+
+  /// Localized label for labels.hr.reference.role.chaplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital Chaplain'**
+  String get hrReferenceRoleChaplain;
+
+  /// Localized label for labels.hr.reference.role.biomed.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical Engineer / Technician'**
+  String get hrReferenceRoleBiomed;
+
+  /// Localized label for labels.hr.reference.role.biomed_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical Manager'**
+  String get hrReferenceRoleBiomedManager;
+
+  /// Localized label for labels.hr.reference.role.unit_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Manager'**
+  String get hrReferenceRoleUnitManager;
+
+  /// Localized label for labels.hr.reference.role.ward_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward Manager / Charge Nurse'**
+  String get hrReferenceRoleWardManager;
+
+  /// Localized label for labels.hr.reference.role.icu_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU Manager'**
+  String get hrReferenceRoleIcuManager;
+
+  /// Localized label for labels.hr.reference.role.theatre_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Theatre / Perioperative Manager'**
+  String get hrReferenceRoleTheatreManager;
+
+  /// Localized label for labels.hr.reference.role.mortuary_staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary Attendant'**
+  String get hrReferenceRoleMortuaryStaff;
+
+  /// Localized label for labels.hr.reference.role.mortuary_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary Manager'**
+  String get hrReferenceRoleMortuaryManager;
+
   /// Localized label for labels.hr.reference.practitioner_type.mo.
   ///
   /// In en, this message translates to:
@@ -29498,6 +29882,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Per procedure / per task'**
   String get hrReferenceCompensationPayTypePerProcedure;
+
+  /// Localized label for labels.hr.reference.leave_type.annual.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual leave'**
+  String get hrReferenceLeaveTypeAnnual;
+
+  /// Localized label for labels.hr.reference.leave_type.sick.
+  ///
+  /// In en, this message translates to:
+  /// **'Sick leave'**
+  String get hrReferenceLeaveTypeSick;
+
+  /// Localized label for labels.hr.reference.leave_type.maternity.
+  ///
+  /// In en, this message translates to:
+  /// **'Maternity leave'**
+  String get hrReferenceLeaveTypeMaternity;
+
+  /// Localized label for labels.hr.reference.leave_type.paternity.
+  ///
+  /// In en, this message translates to:
+  /// **'Paternity leave'**
+  String get hrReferenceLeaveTypePaternity;
+
+  /// Localized label for labels.hr.reference.leave_type.compassionate.
+  ///
+  /// In en, this message translates to:
+  /// **'Compassionate / bereavement leave'**
+  String get hrReferenceLeaveTypeCompassionate;
+
+  /// Localized label for labels.hr.reference.leave_type.unpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid leave'**
+  String get hrReferenceLeaveTypeUnpaid;
+
+  /// Localized label for labels.hr.reference.leave_type.study.
+  ///
+  /// In en, this message translates to:
+  /// **'Study / training leave'**
+  String get hrReferenceLeaveTypeStudy;
+
+  /// Localized label for labels.hr.reference.leave_type.emergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency leave'**
+  String get hrReferenceLeaveTypeEmergency;
+
+  /// Localized label for labels.hr.reference.leave_type.other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other leave'**
+  String get hrReferenceLeaveTypeOther;
+
+  /// Localized label for labels.hr.reference.leave_half_day_period.morning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get hrReferenceLeaveHalfDayPeriodMorning;
+
+  /// Localized label for labels.hr.reference.leave_half_day_period.afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get hrReferenceLeaveHalfDayPeriodAfternoon;
 }
 
 class _AppLocalizationsDelegate

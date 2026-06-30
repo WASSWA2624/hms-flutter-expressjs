@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_d
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
@@ -643,10 +644,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
             rows: <_RecordLine>[
               for (final HrUserRole role in detail.accessSummary!.userRoles)
                 _RecordLine(
-                  title:
-                      role.roleName ??
-                      role.roleId ??
-                      l10n.hrRolePositionColumnLabel,
+                  title: l10n.hrReferenceRoleLabel(
+                    role.roleName,
+                    fallback: role.roleName ?? role.roleId,
+                  ),
                   subtitle: _joinDisplay(<String?>[
                     role.facilityName,
                     role.facilityDisplayId,
@@ -677,7 +678,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
           onRecordAvailability: showHrRecordAvailabilityDialog,
           onAssignShift: _showShiftAssignmentDialog,
           onSwapShift: _showShiftSwapDialog,
-          onRequestLeave: _showLeaveDialog,
+          onRequestLeave: (BuildContext context, WidgetRef ref) =>
+              showHrRequestLeaveDialog(context, ref),
           onCompensation: _showCompensationDialog,
           onRunPayroll: _showPayrollRunDialog,
           onAssignRole: showHrAssignRoleDialog,
@@ -720,11 +722,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
           rows: <_RecordLine>[
             for (final HrStaffLeave leave in detail.leaves)
               _RecordLine(
-                title: _apiLabel(
-                  context,
-                  leave.status,
-                ).ifEmpty(l10n.hrLeaveLabel),
-                subtitle: _dateRange(context, leave.startDate, leave.endDate),
+                title: _leaveSummaryTitle(context, leave),
+                subtitle: _leaveSummarySubtitle(context, leave),
                 trailing: leave.reason,
               ),
           ],
@@ -1208,33 +1207,6 @@ class _HrWorkItemTile extends StatelessWidget {
   }
 }
 
-Future<void> _showLeaveDialog(BuildContext context, WidgetRef ref) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<_LeaveFieldsState> fieldsKey = GlobalKey<_LeaveFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrLeaveDialogTitle),
-    icon: const Icon(Icons.event_busy_outlined),
-    submitLabel: l10n.hrRequestLeaveAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _LeaveFields(key: fieldsKey);
-    },
-    onSubmit: () => controller.createLeave(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
-}
-
 Future<void> _showShiftAssignmentDialog(
   BuildContext context,
   WidgetRef ref,
@@ -1707,141 +1679,6 @@ Future<void> _submitSimple(
   final AppFailure? failure = await mutation;
   if (context.mounted) {
     _showMutationResult(context, failure);
-  }
-}
-
-class _LeaveFields extends StatefulWidget {
-  const _LeaveFields({super.key});
-
-  @override
-  State<_LeaveFields> createState() => _LeaveFieldsState();
-}
-
-class _LeaveFieldsState extends State<_LeaveFields> {
-  final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _daysController = TextEditingController(
-    text: '1',
-  );
-  DateTime? _startDate = DateTime.now();
-  DateTime? _endDate = DateTime.now();
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    _daysController.dispose();
-    super.dispose();
-  }
-
-  /// Inclusive day count between [start] and [end] (1 means same day).
-  static int _inclusiveDays(DateTime start, DateTime end) {
-    final DateTime from = DateTime(start.year, start.month, start.day);
-    final DateTime to = DateTime(end.year, end.month, end.day);
-    return to.difference(from).inDays + 1;
-  }
-
-  int get _days {
-    final int parsed = int.tryParse(_daysController.text.trim()) ?? 1;
-    return parsed < 1 ? 1 : parsed;
-  }
-
-  void _setDaysText(int value) {
-    final String text = value.toString();
-    if (_daysController.text != text) {
-      _daysController.text = text;
-    }
-  }
-
-  void _onStartChanged(DateTime? value) {
-    setState(() {
-      _startDate = value;
-      if (value != null) {
-        // Keep the end date consistent with start + number of days.
-        _endDate = DateTime(
-          value.year,
-          value.month,
-          value.day,
-        ).add(Duration(days: _days - 1));
-      }
-    });
-  }
-
-  void _onDaysChanged(String _) {
-    final DateTime? start = _startDate;
-    if (start == null) {
-      return;
-    }
-    setState(() {
-      _endDate = DateTime(
-        start.year,
-        start.month,
-        start.day,
-      ).add(Duration(days: _days - 1));
-    });
-  }
-
-  void _onEndChanged(DateTime? value) {
-    setState(() {
-      _endDate = value;
-      final DateTime? start = _startDate;
-      if (start != null && value != null) {
-        final int days = _inclusiveDays(start, value);
-        _setDaysText(days < 1 ? 1 : days);
-      }
-    });
-  }
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'start_date': _datePayload(_startDate),
-      'end_date': _datePayload(_endDate),
-      'reason': _reasonController.text.trim(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppDateField(
-          value: _startDate,
-          labelText: l10n.hrStartDateLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: _onStartChanged,
-        ),
-        AppTextField(
-          controller: _daysController,
-          labelText: l10n.hrLeaveDaysLabel,
-          helperText: l10n.hrLeaveDaysHelper,
-          keyboardType: TextInputType.number,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-          onChanged: _onDaysChanged,
-        ),
-        AppDateField(
-          value: _endDate,
-          labelText: l10n.hrEndDateLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: _onEndChanged,
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: l10n.hrReasonLabel,
-          maxLines: 3,
-        ),
-      ],
-    );
   }
 }
 
@@ -2458,9 +2295,11 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
   final AppLocalizations l10n = context.l10n;
   return switch (item.queue) {
     HrQueue.leaveRequests => _joinDisplay(<String?>[
+      item.leaveType == null
+          ? null
+          : _apiLabel(context, item.leaveType),
       item.staffName,
       item.staffNumber,
-      item.reason,
     ]).ifEmpty(l10n.hrLeaveRequestTitle),
     HrQueue.swapRequests => _joinDisplay(<String?>[
       item.shiftType == null ? null : _apiLabel(context, item.shiftType),
@@ -2550,6 +2389,20 @@ String _apiLabel(BuildContext context, String? value) {
   if (payType.isNotEmpty && payType != normalized) {
     return payType;
   }
+  final String leaveType = l10n.hrReferenceLeaveTypeLabel(
+    normalized,
+    fallback: '',
+  );
+  if (leaveType.isNotEmpty && leaveType != normalized) {
+    return leaveType;
+  }
+  final String halfDayPeriod = l10n.hrReferenceLeaveHalfDayPeriodLabel(
+    normalized,
+    fallback: '',
+  );
+  if (halfDayPeriod.isNotEmpty && halfDayPeriod != normalized) {
+    return halfDayPeriod;
+  }
   return normalized
       .split('_')
       .where((String part) => part.isNotEmpty)
@@ -2578,6 +2431,34 @@ AppWorkspaceStatusTone _statusTone(String? status) {
     'INACTIVE' => AppWorkspaceStatusTone.error,
     _ => AppWorkspaceStatusTone.neutral,
   };
+}
+
+String _leaveSummaryTitle(BuildContext context, HrStaffLeave leave) {
+  final AppLocalizations l10n = context.l10n;
+  final String leaveType = _apiLabel(context, leave.leaveType).ifEmpty(
+    l10n.hrLeaveLabel,
+  );
+  final String status = _apiLabel(context, leave.status);
+  if (status.isEmpty) {
+    return leaveType;
+  }
+  return '$leaveType · $status';
+}
+
+String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
+  final AppLocalizations l10n = context.l10n;
+  final List<String> parts = <String>[
+    _dateRange(context, leave.startDate, leave.endDate),
+    if (leave.isHalfDay)
+      l10n.hrLeaveHalfDaySummary(
+        _apiLabel(context, leave.halfDayPeriod).ifEmpty(
+          l10n.hrLeaveHalfDayLabel,
+        ),
+      ),
+    if ((leave.coveringStaffName ?? '').trim().isNotEmpty)
+      l10n.hrCoveringStaffSummary(leave.coveringStaffName!),
+  ].where((String part) => part.trim().isNotEmpty).toList(growable: false);
+  return parts.join(' · ');
 }
 
 String _formatDate(BuildContext context, DateTime? value) {

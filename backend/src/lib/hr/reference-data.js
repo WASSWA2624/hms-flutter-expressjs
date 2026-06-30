@@ -24,6 +24,12 @@ const practitionerTypeLabelKey = (code) =>
 const compensationPayTypeLabelKey = (code) =>
   `labels.hr.reference.compensation_pay_type.${slugify(code)}`;
 
+const leaveTypeLabelKey = (code) =>
+  `labels.hr.reference.leave_type.${slugify(code)}`;
+
+const leaveHalfDayPeriodLabelKey = (code) =>
+  `labels.hr.reference.leave_half_day_period.${slugify(code)}`;
+
 /** @type {ReadonlyArray<{ code: string, defaultName: string, labelKey: string }>} */
 const STAFF_POSITION_CATALOG = Object.freeze(
   [
@@ -144,6 +150,32 @@ const COMPENSATION_PAY_TYPE_CATALOG = Object.freeze(
   }))
 );
 
+/** @type {ReadonlyArray<{ code: string, labelKey: string }>} */
+const LEAVE_TYPE_CATALOG = Object.freeze(
+  [
+    'ANNUAL',
+    'SICK',
+    'MATERNITY',
+    'PATERNITY',
+    'COMPASSIONATE',
+    'UNPAID',
+    'STUDY',
+    'EMERGENCY',
+    'OTHER',
+  ].map((code) => ({
+    code,
+    labelKey: leaveTypeLabelKey(code),
+  }))
+);
+
+/** @type {ReadonlyArray<{ code: string, labelKey: string }>} */
+const LEAVE_HALF_DAY_PERIOD_CATALOG = Object.freeze(
+  ['MORNING', 'AFTERNOON'].map((code) => ({
+    code,
+    labelKey: leaveHalfDayPeriodLabelKey(code),
+  }))
+);
+
 const CLINICAL_PRESCRIBER_ROLE_NAMES = Object.freeze(['DOCTOR', 'SPECIALIST']);
 
 const DEFAULT_STAFF_POSITION_NAMES = Object.freeze(
@@ -249,6 +281,16 @@ const compensationPayTypeOptions = (locale = DEFAULT_LOCALE) =>
     buildLocalizedOption(entry.code, entry.labelKey, entry.code, locale)
   );
 
+const leaveTypeOptions = (locale = DEFAULT_LOCALE) =>
+  LEAVE_TYPE_CATALOG.map((entry) =>
+    buildLocalizedOption(entry.code, entry.labelKey, entry.code, locale)
+  );
+
+const leaveHalfDayPeriodOptions = (locale = DEFAULT_LOCALE) =>
+  LEAVE_HALF_DAY_PERIOD_CATALOG.map((entry) =>
+    buildLocalizedOption(entry.code, entry.labelKey, entry.code, locale)
+  );
+
 const staffPositionCatalogOptions = (locale = DEFAULT_LOCALE) =>
   STAFF_POSITION_CATALOG.map((entry) =>
     buildLocalizedOption(entry.defaultName, entry.labelKey, entry.defaultName, locale)
@@ -288,6 +330,8 @@ module.exports = {
   STAFF_POSITION_CATALOG,
   PRACTITIONER_TYPE_CATALOG,
   COMPENSATION_PAY_TYPE_CATALOG,
+  LEAVE_TYPE_CATALOG,
+  LEAVE_HALF_DAY_PERIOD_CATALOG,
   CLINICAL_PRESCRIBER_ROLE_NAMES,
   DEFAULT_STAFF_POSITION_NAMES,
   PRACTITIONER_TYPE_OPTIONS,
@@ -301,6 +345,8 @@ module.exports = {
   compensationPayTypeLabel,
   practitionerTypeOptions,
   compensationPayTypeOptions,
+  leaveTypeOptions,
+  leaveHalfDayPeriodOptions,
   staffPositionCatalogOptions,
   enrichStaffPositionOption,
   isClinicalPrescriberPractitionerType,

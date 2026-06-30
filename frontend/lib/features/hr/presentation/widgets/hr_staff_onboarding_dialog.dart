@@ -24,6 +24,13 @@ const double _kOnboardingTwoColumnBreakpoint = 900;
 const Set<String> _clinicalPrescriberRoleNames = <String>{
   'DOCTOR',
   'SPECIALIST',
+  'ATTENDING_PHYSICIAN',
+  'RESIDENT_PHYSICIAN',
+  'SURGEON',
+  'ANESTHESIOLOGIST',
+  'PHYSICIAN_ASSISTANT',
+  'EMERGENCY_PHYSICIAN',
+  'NURSE_PRACTITIONER',
 };
 
 enum StaffNumberEntryMode { generate, manual }
@@ -351,7 +358,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       for (final HrOption role in _referenceData.roles)
         AppRoleAssignmentOption(
           id: role.value,
-          label: role.label,
+          label: context.l10n.hrLocalizedOptionLabel(role),
           permissionCount: (role.extra['permission_count'] as int?) ?? 0,
           isSystemCritical: role.extra['is_system_critical'] == true,
         ),

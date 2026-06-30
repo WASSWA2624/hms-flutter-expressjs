@@ -5,7 +5,8 @@ const { createAuditLog } = require('@lib/audit');
 const { normalizeIdentifier, resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { resolveIdentifierForFilter, resolveIdentifierForPayload, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { emitToUsers, HR_EVENTS } = require('@lib/websocket');
-const { ROLES, ROLE_VALUES } = require('@config/roles');
+const { ROLES } = require('@config/roles');
+const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { generateStaffNumber: generateStaffNumberCore } = require('@lib/hr/staff-number');
 const {
   buildWorkflow,
@@ -26,10 +27,6 @@ const HR_RECIPIENT_ROLES = Object.freeze([
   ROLES.NURSE,
   ROLES.DOCTOR,
 ]);
-
-const HR_ASSIGNABLE_ROLE_NAMES = Object.freeze(
-  ROLE_VALUES.filter((role) => ![ROLES.SUPER_ADMIN, ROLES.PATIENT, ROLES.OTHER].includes(role))
-);
 
 const WORKBENCH_PANELS = Object.freeze([
   {
@@ -128,9 +125,17 @@ const {
   DEFAULT_STAFF_POSITION_NAMES,
   practitionerTypeOptions,
   compensationPayTypeOptions,
+  leaveTypeOptions,
+  leaveHalfDayPeriodOptions,
   enrichStaffPositionOption,
   staffPositionCatalogOptions,
 } = require('@lib/hr/reference-data');
+const {
+  HR_ASSIGNABLE_ROLE_NAMES,
+  enrichRoleOption,
+  sortRoleRecords,
+  roleLabel,
+} = require('@lib/hr/role-catalog');
 const {
   DEFAULT_FACILITY_DEPARTMENT_NAMES,
   inferDepartmentType,
@@ -356,6 +361,7 @@ const mapLeave = (item) => ({
   queue: 'LEAVE_REQUESTS',
   display_id: resolveDisplayId(item),
   backend_identifier: item.id,
+  leave_type: item.leave_type || null,
   status: item.status,
   staff_profile_id: item.staff_profile_id,
   staff_profile_display_id: resolveDisplayId(item.staff_profile || {}),
@@ -366,7 +372,15 @@ const mapLeave = (item) => ({
   staff_position: item.staff_profile?.position || null,
   start_date: item.start_date,
   end_date: item.end_date,
+  is_half_day: item.is_half_day === true,
+  half_day_period: item.half_day_period || null,
   reason: item.reason || null,
+  handover_notes: item.handover_notes || null,
+  covering_staff_profile_id: item.covering_staff_profile_id || null,
+  covering_staff_display_id: resolveDisplayId(item.covering_staff_profile || {}),
+  covering_staff_name: normalizeString(
+    `${item.covering_staff_profile?.user?.profile?.first_name || ''} ${item.covering_staff_profile?.user?.profile?.last_name || ''}`
+  ) || item.covering_staff_profile?.user?.email || null,
   timeline_at: item.updated_at || item.created_at,
   target_path: buildWorkbenchPath({
     panel: 'staffing',
@@ -1024,6 +1038,7 @@ const getReferenceData = async (filters = {}) => {
   await ensureDefaultStaffPositions(scope);
   await ensureDefaultFacilityStructure(scope);
   const tenantId = await resolveTenantIdForScope(scope);
+  await ensureAssignableRoles(scope, tenantId);
   const staffPositionWhere = tenantId
     ? {
         deleted_at: null,
@@ -1218,9 +1233,14 @@ const getReferenceData = async (filters = {}) => {
         },
       }),
       prisma.role.findMany({
-        where: { deleted_at: null, name: { in: HR_ASSIGNABLE_ROLE_NAMES } },
+        where: {
+          deleted_at: null,
+          name: { in: [...HR_ASSIGNABLE_ROLE_NAMES] },
+          ...(tenantId ? { tenant_id: tenantId } : {}),
+          facility_id: null,
+        },
         orderBy: { name: 'asc' },
-        take: 100,
+        take: 200,
         select: {
           id: true,
           human_friendly_id: true,
@@ -1381,18 +1401,26 @@ const getReferenceData = async (filters = {}) => {
         })
       )
       .filter(Boolean),
-    roles: roles
+    roles: sortRoleRecords(roles)
       .map((entry) => {
         const roleName = normalizeString(entry.name).toUpperCase();
-        return toOption(
-          entry,
-          [entry.name, resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '),
+        const enriched = enrichRoleOption(
           {
-            name: entry.name,
-            permission_count: Array.isArray(entry.permissions) ? entry.permissions.length : 0,
+            ...entry,
             is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName),
           }
         );
+        if (!enriched) return null;
+        return {
+          value: enriched.value,
+          label: enriched.label,
+          label_key: enriched.label_key,
+          display_id: enriched.display_id,
+          name: enriched.name,
+          category: enriched.category,
+          permission_count: enriched.permission_count,
+          is_system_critical: enriched.is_system_critical,
+        };
       })
       .filter(Boolean),
     users: users
@@ -1422,6 +1450,8 @@ const getReferenceData = async (filters = {}) => {
       })
       .filter(Boolean),
     shift_types: SHIFT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
+    leave_types: leaveTypeOptions(),
+    leave_half_day_periods: leaveHalfDayPeriodOptions(),
     practitioner_types: practitionerTypeOptions(),
     compensation_pay_types: compensationPayTypeOptions(),
     resource_statuses: Object.fromEntries(
@@ -1454,6 +1484,67 @@ const buildStaffPositionCatalogWhere = (scope, tenantId) => ({
       }
     : { facility_id: null }),
 });
+
+const ensureAssignableRoles = async (scope, tenantId = null) => {
+  const resolvedTenantId = tenantId || (await resolveTenantIdForScope(scope));
+  if (!resolvedTenantId) {
+    return;
+  }
+
+  const existingRoles = await prisma.role.findMany({
+    where: {
+      tenant_id: resolvedTenantId,
+      deleted_at: null,
+      facility_id: null,
+      name: { in: [...HR_ASSIGNABLE_ROLE_NAMES] },
+    },
+    select: { id: true, name: true },
+  });
+  const existingNames = new Set(
+    existingRoles.map((entry) => normalizeString(entry.name).toUpperCase()).filter(Boolean)
+  );
+  const missingRoleNames = HR_ASSIGNABLE_ROLE_NAMES.filter((name) => !existingNames.has(name));
+  if (missingRoleNames.length === 0) {
+    return;
+  }
+
+  const permissions = await prisma.permission.findMany({
+    where: {
+      tenant_id: resolvedTenantId,
+      deleted_at: null,
+    },
+    select: { id: true, name: true },
+  });
+  const permissionIdByName = new Map(
+    permissions.map((entry) => [normalizeString(entry.name), entry.id]).filter(([name]) => Boolean(name))
+  );
+
+  for (const roleName of missingRoleNames) {
+    const role = await prisma.role.create({
+      data: {
+        tenant_id: resolvedTenantId,
+        facility_id: null,
+        name: roleName,
+        description: roleLabel(roleName),
+      },
+      select: { id: true, name: true },
+    });
+
+    const permissionNames = ROLE_PERMISSIONS[roleName] || [];
+    for (const permissionName of permissionNames) {
+      const permissionId = permissionIdByName.get(permissionName);
+      if (!permissionId) {
+        continue;
+      }
+      await prisma.role_permission.create({
+        data: {
+          role_id: role.id,
+          permission_id: permissionId,
+        },
+      });
+    }
+  }
+};
 
 const ensureDefaultStaffPositions = async (scope) => {
   const tenantId = await resolveTenantIdForScope(scope);

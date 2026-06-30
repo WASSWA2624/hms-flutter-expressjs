@@ -187,7 +187,9 @@ final class AppAccessPolicy {
     final AuthUserProfile? user = session?.user;
     final roles = _rolesFrom(user?.roles ?? const <String>[]);
     final explicitPermissions = session?.permissions ?? const <AppPermission>{};
-    final rolePermissions = roles.expand(_permissionsForRole).toSet();
+    final rolePermissions = (user?.roles ?? const <String>[])
+        .expand(_permissionsForRoleCode)
+        .toSet();
 
     return AppAccessPolicy._(
       roles: roles,
@@ -309,6 +311,57 @@ final class AppAccessPolicy {
 
   static Set<AppRole> _rolesFrom(Iterable<String> values) {
     return values.map(_normalizeRole).whereType<AppRole>().toSet();
+  }
+
+  static const Map<String, AppRole> _extendedRolePermissionParents =
+      <String, AppRole>{
+    'ATTENDING_PHYSICIAN': AppRole.doctor,
+    'RESIDENT_PHYSICIAN': AppRole.doctor,
+    'SURGEON': AppRole.doctor,
+    'ANESTHESIOLOGIST': AppRole.doctor,
+    'PHYSICIAN_ASSISTANT': AppRole.doctor,
+    'EMERGENCY_PHYSICIAN': AppRole.doctor,
+    'NURSE_PRACTITIONER': AppRole.doctor,
+    'LICENSED_PRACTICAL_NURSE': AppRole.nurse,
+    'TRIAGE_NURSE': AppRole.nurse,
+    'MIDWIFE': AppRole.nurse,
+    'CHARGE_NURSE': AppRole.wardManager,
+    'PHYSIOTHERAPIST': AppRole.nurse,
+    'OCCUPATIONAL_THERAPIST': AppRole.nurse,
+    'RESPIRATORY_THERAPIST': AppRole.nurse,
+    'DIETITIAN': AppRole.nurse,
+    'SOCIAL_WORKER': AppRole.receptionist,
+    'CLINICAL_PSYCHOLOGIST': AppRole.nurse,
+    'MEDICAL_LABORATORY_SCIENTIST': AppRole.labTech,
+    'PATHOLOGIST': AppRole.labTech,
+    'SONOGRAPHER': AppRole.radiologyTech,
+    'PHARMACY_TECHNICIAN': AppRole.pharmacist,
+    'PARAMEDIC': AppRole.ambulanceOperator,
+    'EMT': AppRole.ambulanceOperator,
+    'MEDICAL_RECORDS_CLERK': AppRole.receptionist,
+    'ADMISSIONS_COORDINATOR': AppRole.receptionist,
+    'MEDICAL_CODER': AppRole.billing,
+    'IT_SUPPORT': AppRole.operations,
+    'SECURITY_OFFICER': AppRole.houseKeeper,
+    'CHAPLAIN': AppRole.other,
+    'FOOD_SERVICE_WORKER': AppRole.houseKeeper,
+    'PORTER': AppRole.houseKeeper,
+    'MAINTENANCE_ENGINEER': AppRole.biomed,
+  };
+
+  static Iterable<AppPermission> _permissionsForRoleCode(String value) {
+    final AppRole? knownRole = _normalizeRole(value);
+    if (knownRole != null) {
+      return _permissionsForRole(knownRole);
+    }
+    final AppRole? parent = _extendedRolePermissionParents[value
+        .trim()
+        .toUpperCase()
+        .replaceAll(RegExp(r'[\s-]+'), '_')];
+    if (parent != null) {
+      return _permissionsForRole(parent);
+    }
+    return const <AppPermission>[];
   }
 
   static AppRole? _normalizeRole(String value) {

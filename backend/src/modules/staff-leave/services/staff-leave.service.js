@@ -39,6 +39,7 @@ const listStaffLeaves = async (filters, page, limit, sortBy, order) => {
     if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
     if (filters.status) whereClause.status = filters.status;
+    if (filters.leave_type) whereClause.leave_type = filters.leave_type;
 
     const [staffLeaves, total] = await Promise.all([
       staffLeaveRepository.findMany(whereClause, skip, limit, orderBy),
@@ -83,6 +84,22 @@ const createStaffLeave = async (data, userId, ipAddress) => {
       }),
     };
 
+    if (data.covering_staff_profile_id) {
+      payload.covering_staff_profile_id = await resolveIdentifierForPayload({
+        value: data.covering_staff_profile_id,
+        model: 'staff_profile',
+        field: 'covering_staff_profile_id',
+        where: { deleted_at: null },
+      });
+    } else if (data.covering_staff_profile_id === null) {
+      payload.covering_staff_profile_id = null;
+    }
+
+    if (!payload.is_half_day) {
+      payload.is_half_day = false;
+      payload.half_day_period = null;
+    }
+
     const staffLeave = await staffLeaveRepository.create(payload);
     createAuditLog({
       user_id: userId,
@@ -109,7 +126,22 @@ const updateStaffLeave = async (id, data, userId, ipAddress) => {
     const before = await staffLeaveRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_leave.not_found', 404);
 
-    const staffLeave = await staffLeaveRepository.update(before.id, data);
+    const payload = { ...data };
+    if (Object.prototype.hasOwnProperty.call(data, 'covering_staff_profile_id')) {
+      payload.covering_staff_profile_id = data.covering_staff_profile_id
+        ? await resolveIdentifierForPayload({
+            value: data.covering_staff_profile_id,
+            model: 'staff_profile',
+            field: 'covering_staff_profile_id',
+            where: { deleted_at: null },
+          })
+        : null;
+    }
+    if (payload.is_half_day === false) {
+      payload.half_day_period = null;
+    }
+
+    const staffLeave = await staffLeaveRepository.update(before.id, payload);
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',

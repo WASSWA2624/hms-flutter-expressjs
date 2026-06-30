@@ -17198,6 +17198,56 @@
   "@hrLeaveDaysHelper": {
     "description": "Human resources workspace text for hrLeaveDaysHelper."
   },
+  "hrLeaveTypeLabel": "Leave type",
+  "@hrLeaveTypeLabel": {
+    "description": "Human resources workspace text for hrLeaveTypeLabel."
+  },
+  "hrLeaveHalfDayLabel": "Half-day leave",
+  "@hrLeaveHalfDayLabel": {
+    "description": "Human resources workspace text for hrLeaveHalfDayLabel."
+  },
+  "hrLeaveHalfDayHelper": "Use for a single morning or afternoon away from work.",
+  "@hrLeaveHalfDayHelper": {
+    "description": "Human resources workspace text for hrLeaveHalfDayHelper."
+  },
+  "hrLeaveHalfDayPeriodLabel": "Half-day period",
+  "@hrLeaveHalfDayPeriodLabel": {
+    "description": "Human resources workspace text for hrLeaveHalfDayPeriodLabel."
+  },
+  "hrLeaveHalfDaySingleDayError": "Half-day leave must start and end on the same day.",
+  "@hrLeaveHalfDaySingleDayError": {
+    "description": "Human resources workspace text for hrLeaveHalfDaySingleDayError."
+  },
+  "hrLeaveHalfDaySummary": "Half day ({period})",
+  "@hrLeaveHalfDaySummary": {
+    "description": "Human resources workspace text for hrLeaveHalfDaySummary.",
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "hrCoveringStaffLabel": "Covering colleague",
+  "@hrCoveringStaffLabel": {
+    "description": "Human resources workspace text for hrCoveringStaffLabel."
+  },
+  "hrCoveringStaffSummary": "Cover: {name}",
+  "@hrCoveringStaffSummary": {
+    "description": "Human resources workspace text for hrCoveringStaffSummary.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hrHandoverNotesLabel": "Handover notes",
+  "@hrHandoverNotesLabel": {
+    "description": "Human resources workspace text for hrHandoverNotesLabel."
+  },
+  "hrHandoverNotesHelper": "Tasks, patients, or shift details the covering colleague should know.",
+  "@hrHandoverNotesHelper": {
+    "description": "Human resources workspace text for hrHandoverNotesHelper."
+  },
   "hrAddNewPositionLabel": "Add a new position",
   "@hrAddNewPositionLabel": {
     "description": "Human resources workspace text for hrAddNewPositionLabel."
@@ -20264,6 +20314,222 @@
   "@hrReferenceStaffPositionFacilityManager": {
     "description": "Localized label for labels.hr.reference.staff_position.facility_manager."
   },
+  "hrReferenceRoleTenantAdmin": "Organization Administrator",
+  "@hrReferenceRoleTenantAdmin": {
+    "description": "Localized label for labels.hr.reference.role.tenant_admin."
+  },
+  "hrReferenceRoleFacilityAdmin": "Facility Administrator",
+  "@hrReferenceRoleFacilityAdmin": {
+    "description": "Localized label for labels.hr.reference.role.facility_admin."
+  },
+  "hrReferenceRoleHr": "HR / Workforce Manager",
+  "@hrReferenceRoleHr": {
+    "description": "Localized label for labels.hr.reference.role.hr."
+  },
+  "hrReferenceRoleOperations": "Operations Manager",
+  "@hrReferenceRoleOperations": {
+    "description": "Localized label for labels.hr.reference.role.operations."
+  },
+  "hrReferenceRoleItSupport": "IT Support Specialist",
+  "@hrReferenceRoleItSupport": {
+    "description": "Localized label for labels.hr.reference.role.it_support."
+  },
+  "hrReferenceRoleDoctor": "Doctor / Clinician",
+  "@hrReferenceRoleDoctor": {
+    "description": "Localized label for labels.hr.reference.role.doctor."
+  },
+  "hrReferenceRoleAttendingPhysician": "Attending Physician",
+  "@hrReferenceRoleAttendingPhysician": {
+    "description": "Localized label for labels.hr.reference.role.attending_physician."
+  },
+  "hrReferenceRoleResidentPhysician": "Resident Physician",
+  "@hrReferenceRoleResidentPhysician": {
+    "description": "Localized label for labels.hr.reference.role.resident_physician."
+  },
+  "hrReferenceRoleSurgeon": "Surgeon",
+  "@hrReferenceRoleSurgeon": {
+    "description": "Localized label for labels.hr.reference.role.surgeon."
+  },
+  "hrReferenceRoleAnesthesiologist": "Anesthesiologist",
+  "@hrReferenceRoleAnesthesiologist": {
+    "description": "Localized label for labels.hr.reference.role.anesthesiologist."
+  },
+  "hrReferenceRolePhysicianAssistant": "Physician Assistant (PA)",
+  "@hrReferenceRolePhysicianAssistant": {
+    "description": "Localized label for labels.hr.reference.role.physician_assistant."
+  },
+  "hrReferenceRoleEmergencyPhysician": "Emergency Medicine Physician",
+  "@hrReferenceRoleEmergencyPhysician": {
+    "description": "Localized label for labels.hr.reference.role.emergency_physician."
+  },
+  "hrReferenceRoleNurse": "Registered Nurse (RN)",
+  "@hrReferenceRoleNurse": {
+    "description": "Localized label for labels.hr.reference.role.nurse."
+  },
+  "hrReferenceRoleLicensedPracticalNurse": "Licensed Practical Nurse (LPN)",
+  "@hrReferenceRoleLicensedPracticalNurse": {
+    "description": "Localized label for labels.hr.reference.role.licensed_practical_nurse."
+  },
+  "hrReferenceRoleNursePractitioner": "Nurse Practitioner (NP)",
+  "@hrReferenceRoleNursePractitioner": {
+    "description": "Localized label for labels.hr.reference.role.nurse_practitioner."
+  },
+  "hrReferenceRoleTriageNurse": "Triage Nurse",
+  "@hrReferenceRoleTriageNurse": {
+    "description": "Localized label for labels.hr.reference.role.triage_nurse."
+  },
+  "hrReferenceRoleMidwife": "Midwife",
+  "@hrReferenceRoleMidwife": {
+    "description": "Localized label for labels.hr.reference.role.midwife."
+  },
+  "hrReferenceRoleChargeNurse": "Charge Nurse",
+  "@hrReferenceRoleChargeNurse": {
+    "description": "Localized label for labels.hr.reference.role.charge_nurse."
+  },
+  "hrReferenceRolePhysiotherapist": "Physiotherapist / Physical Therapist",
+  "@hrReferenceRolePhysiotherapist": {
+    "description": "Localized label for labels.hr.reference.role.physiotherapist."
+  },
+  "hrReferenceRoleOccupationalTherapist": "Occupational Therapist",
+  "@hrReferenceRoleOccupationalTherapist": {
+    "description": "Localized label for labels.hr.reference.role.occupational_therapist."
+  },
+  "hrReferenceRoleRespiratoryTherapist": "Respiratory Therapist",
+  "@hrReferenceRoleRespiratoryTherapist": {
+    "description": "Localized label for labels.hr.reference.role.respiratory_therapist."
+  },
+  "hrReferenceRoleDietitian": "Dietitian / Nutritionist",
+  "@hrReferenceRoleDietitian": {
+    "description": "Localized label for labels.hr.reference.role.dietitian."
+  },
+  "hrReferenceRoleSocialWorker": "Medical Social Worker",
+  "@hrReferenceRoleSocialWorker": {
+    "description": "Localized label for labels.hr.reference.role.social_worker."
+  },
+  "hrReferenceRoleClinicalPsychologist": "Clinical Psychologist",
+  "@hrReferenceRoleClinicalPsychologist": {
+    "description": "Localized label for labels.hr.reference.role.clinical_psychologist."
+  },
+  "hrReferenceRoleLabTech": "Laboratory Technologist",
+  "@hrReferenceRoleLabTech": {
+    "description": "Localized label for labels.hr.reference.role.lab_tech."
+  },
+  "hrReferenceRoleMedicalLaboratoryScientist": "Medical Laboratory Scientist",
+  "@hrReferenceRoleMedicalLaboratoryScientist": {
+    "description": "Localized label for labels.hr.reference.role.medical_laboratory_scientist."
+  },
+  "hrReferenceRolePathologist": "Pathologist",
+  "@hrReferenceRolePathologist": {
+    "description": "Localized label for labels.hr.reference.role.pathologist."
+  },
+  "hrReferenceRoleRadiologyTech": "Radiology / Imaging Technologist",
+  "@hrReferenceRoleRadiologyTech": {
+    "description": "Localized label for labels.hr.reference.role.radiology_tech."
+  },
+  "hrReferenceRoleSonographer": "Sonographer / Ultrasound Technologist",
+  "@hrReferenceRoleSonographer": {
+    "description": "Localized label for labels.hr.reference.role.sonographer."
+  },
+  "hrReferenceRolePharmacist": "Pharmacist",
+  "@hrReferenceRolePharmacist": {
+    "description": "Localized label for labels.hr.reference.role.pharmacist."
+  },
+  "hrReferenceRolePharmacyTechnician": "Pharmacy Technician",
+  "@hrReferenceRolePharmacyTechnician": {
+    "description": "Localized label for labels.hr.reference.role.pharmacy_technician."
+  },
+  "hrReferenceRoleReceptionist": "Receptionist / Front Desk",
+  "@hrReferenceRoleReceptionist": {
+    "description": "Localized label for labels.hr.reference.role.receptionist."
+  },
+  "hrReferenceRoleAdmissionsCoordinator": "Admissions Coordinator",
+  "@hrReferenceRoleAdmissionsCoordinator": {
+    "description": "Localized label for labels.hr.reference.role.admissions_coordinator."
+  },
+  "hrReferenceRoleMedicalRecordsClerk": "Medical Records Clerk",
+  "@hrReferenceRoleMedicalRecordsClerk": {
+    "description": "Localized label for labels.hr.reference.role.medical_records_clerk."
+  },
+  "hrReferenceRoleBilling": "Billing / Cashier",
+  "@hrReferenceRoleBilling": {
+    "description": "Localized label for labels.hr.reference.role.billing."
+  },
+  "hrReferenceRoleMedicalCoder": "Medical Coder / Coding Specialist",
+  "@hrReferenceRoleMedicalCoder": {
+    "description": "Localized label for labels.hr.reference.role.medical_coder."
+  },
+  "hrReferenceRoleAmbulanceOperator": "Ambulance Operator",
+  "@hrReferenceRoleAmbulanceOperator": {
+    "description": "Localized label for labels.hr.reference.role.ambulance_operator."
+  },
+  "hrReferenceRoleParamedic": "Paramedic",
+  "@hrReferenceRoleParamedic": {
+    "description": "Localized label for labels.hr.reference.role.paramedic."
+  },
+  "hrReferenceRoleEmt": "Emergency Medical Technician (EMT)",
+  "@hrReferenceRoleEmt": {
+    "description": "Localized label for labels.hr.reference.role.emt."
+  },
+  "hrReferenceRoleHouseKeeper": "Housekeeping Staff",
+  "@hrReferenceRoleHouseKeeper": {
+    "description": "Localized label for labels.hr.reference.role.house_keeper."
+  },
+  "hrReferenceRoleHousekeepingManager": "Housekeeping Manager",
+  "@hrReferenceRoleHousekeepingManager": {
+    "description": "Localized label for labels.hr.reference.role.housekeeping_manager."
+  },
+  "hrReferenceRoleFoodServiceWorker": "Food Service Worker",
+  "@hrReferenceRoleFoodServiceWorker": {
+    "description": "Localized label for labels.hr.reference.role.food_service_worker."
+  },
+  "hrReferenceRolePorter": "Porter / Orderly",
+  "@hrReferenceRolePorter": {
+    "description": "Localized label for labels.hr.reference.role.porter."
+  },
+  "hrReferenceRoleSecurityOfficer": "Security Officer",
+  "@hrReferenceRoleSecurityOfficer": {
+    "description": "Localized label for labels.hr.reference.role.security_officer."
+  },
+  "hrReferenceRoleMaintenanceEngineer": "Maintenance Engineer",
+  "@hrReferenceRoleMaintenanceEngineer": {
+    "description": "Localized label for labels.hr.reference.role.maintenance_engineer."
+  },
+  "hrReferenceRoleChaplain": "Hospital Chaplain",
+  "@hrReferenceRoleChaplain": {
+    "description": "Localized label for labels.hr.reference.role.chaplain."
+  },
+  "hrReferenceRoleBiomed": "Biomedical Engineer / Technician",
+  "@hrReferenceRoleBiomed": {
+    "description": "Localized label for labels.hr.reference.role.biomed."
+  },
+  "hrReferenceRoleBiomedManager": "Biomedical Manager",
+  "@hrReferenceRoleBiomedManager": {
+    "description": "Localized label for labels.hr.reference.role.biomed_manager."
+  },
+  "hrReferenceRoleUnitManager": "Unit Manager",
+  "@hrReferenceRoleUnitManager": {
+    "description": "Localized label for labels.hr.reference.role.unit_manager."
+  },
+  "hrReferenceRoleWardManager": "Ward Manager / Charge Nurse",
+  "@hrReferenceRoleWardManager": {
+    "description": "Localized label for labels.hr.reference.role.ward_manager."
+  },
+  "hrReferenceRoleIcuManager": "ICU Manager",
+  "@hrReferenceRoleIcuManager": {
+    "description": "Localized label for labels.hr.reference.role.icu_manager."
+  },
+  "hrReferenceRoleTheatreManager": "Theatre / Perioperative Manager",
+  "@hrReferenceRoleTheatreManager": {
+    "description": "Localized label for labels.hr.reference.role.theatre_manager."
+  },
+  "hrReferenceRoleMortuaryStaff": "Mortuary Attendant",
+  "@hrReferenceRoleMortuaryStaff": {
+    "description": "Localized label for labels.hr.reference.role.mortuary_staff."
+  },
+  "hrReferenceRoleMortuaryManager": "Mortuary Manager",
+  "@hrReferenceRoleMortuaryManager": {
+    "description": "Localized label for labels.hr.reference.role.mortuary_manager."
+  },
   "hrReferencePractitionerTypeMo": "Medical Officer (MO)",
   "@hrReferencePractitionerTypeMo": {
     "description": "Localized label for labels.hr.reference.practitioner_type.mo."
@@ -20363,5 +20629,49 @@
   "hrReferenceCompensationPayTypePerProcedure": "Per procedure / per task",
   "@hrReferenceCompensationPayTypePerProcedure": {
     "description": "Localized label for labels.hr.reference.compensation_pay_type.per_procedure."
+  },
+  "hrReferenceLeaveTypeAnnual": "Annual leave",
+  "@hrReferenceLeaveTypeAnnual": {
+    "description": "Localized label for labels.hr.reference.leave_type.annual."
+  },
+  "hrReferenceLeaveTypeSick": "Sick leave",
+  "@hrReferenceLeaveTypeSick": {
+    "description": "Localized label for labels.hr.reference.leave_type.sick."
+  },
+  "hrReferenceLeaveTypeMaternity": "Maternity leave",
+  "@hrReferenceLeaveTypeMaternity": {
+    "description": "Localized label for labels.hr.reference.leave_type.maternity."
+  },
+  "hrReferenceLeaveTypePaternity": "Paternity leave",
+  "@hrReferenceLeaveTypePaternity": {
+    "description": "Localized label for labels.hr.reference.leave_type.paternity."
+  },
+  "hrReferenceLeaveTypeCompassionate": "Compassionate / bereavement leave",
+  "@hrReferenceLeaveTypeCompassionate": {
+    "description": "Localized label for labels.hr.reference.leave_type.compassionate."
+  },
+  "hrReferenceLeaveTypeUnpaid": "Unpaid leave",
+  "@hrReferenceLeaveTypeUnpaid": {
+    "description": "Localized label for labels.hr.reference.leave_type.unpaid."
+  },
+  "hrReferenceLeaveTypeStudy": "Study / training leave",
+  "@hrReferenceLeaveTypeStudy": {
+    "description": "Localized label for labels.hr.reference.leave_type.study."
+  },
+  "hrReferenceLeaveTypeEmergency": "Emergency leave",
+  "@hrReferenceLeaveTypeEmergency": {
+    "description": "Localized label for labels.hr.reference.leave_type.emergency."
+  },
+  "hrReferenceLeaveTypeOther": "Other leave",
+  "@hrReferenceLeaveTypeOther": {
+    "description": "Localized label for labels.hr.reference.leave_type.other."
+  },
+  "hrReferenceLeaveHalfDayPeriodMorning": "Morning",
+  "@hrReferenceLeaveHalfDayPeriodMorning": {
+    "description": "Localized label for labels.hr.reference.leave_half_day_period.morning."
+  },
+  "hrReferenceLeaveHalfDayPeriodAfternoon": "Afternoon",
+  "@hrReferenceLeaveHalfDayPeriodAfternoon": {
+    "description": "Localized label for labels.hr.reference.leave_half_day_period.afternoon."
   }
 }

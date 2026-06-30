@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -602,7 +603,13 @@ class _HrAccessUserRow extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 4,
                         children: user.roleNames
-                            .map((String role) => Chip(label: Text(role)))
+                            .map(
+                              (String role) => Chip(
+                                label: Text(
+                                  l10n.hrReferenceRoleLabel(role, fallback: role),
+                                ),
+                              ),
+                            )
                             .toList(growable: false),
                       ),
                     ],
@@ -826,7 +833,11 @@ class _HrAccessUserDetailContent extends StatelessWidget {
             spacing: 6,
             runSpacing: 4,
             children: detail.roleNames
-                .map((String role) => Chip(label: Text(role)))
+                .map(
+                  (String role) => Chip(
+                    label: Text(l10n.hrReferenceRoleLabel(role, fallback: role)),
+                  ),
+                )
                 .toList(growable: false),
           ),
         ],
@@ -1045,7 +1056,7 @@ Future<void> showHrEditAccessUserDialog(
               for (final HrOption role
                   in state?.referenceData.roles ?? const [])
                 AppCheckboxField(
-                  title: role.label,
+                  title: l10n.hrLocalizedOptionLabel(role),
                   value: selectedRoleIds.contains(role.value),
                   onChanged: (bool checked) {
                     setState(() {

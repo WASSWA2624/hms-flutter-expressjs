@@ -288,6 +288,8 @@ final class HrReferenceData {
     this.roles = const <HrOption>[],
     this.users = const <HrOption>[],
     this.shiftTypes = const <HrOption>[],
+    this.leaveTypes = const <HrOption>[],
+    this.leaveHalfDayPeriods = const <HrOption>[],
     this.practitionerTypes = const <HrOption>[],
     this.compensationPayTypes = const <HrOption>[],
     this.resourceStatuses = const <String, List<HrOption>>{},
@@ -306,6 +308,8 @@ final class HrReferenceData {
   final List<HrOption> roles;
   final List<HrOption> users;
   final List<HrOption> shiftTypes;
+  final List<HrOption> leaveTypes;
+  final List<HrOption> leaveHalfDayPeriods;
   final List<HrOption> practitionerTypes;
   final List<HrOption> compensationPayTypes;
   final Map<String, List<HrOption>> resourceStatuses;
@@ -642,19 +646,31 @@ final class HrStaffLeave {
     required this.id,
     this.displayId,
     this.staffProfileId,
+    this.leaveType,
     this.status,
     this.startDate,
     this.endDate,
+    this.isHalfDay = false,
+    this.halfDayPeriod,
     this.reason,
+    this.handoverNotes,
+    this.coveringStaffProfileId,
+    this.coveringStaffName,
   });
 
   final String id;
   final String? displayId;
   final String? staffProfileId;
+  final String? leaveType;
   final String? status;
   final DateTime? startDate;
   final DateTime? endDate;
+  final bool isHalfDay;
+  final String? halfDayPeriod;
   final String? reason;
+  final String? handoverNotes;
+  final String? coveringStaffProfileId;
+  final String? coveringStaffName;
 
   String get effectiveId => displayId ?? id;
 }
@@ -748,6 +764,9 @@ final class HrWorkItem {
     this.staffName,
     this.staffNumber,
     this.staffPosition,
+    this.leaveType,
+    this.isHalfDay = false,
+    this.halfDayPeriod,
     this.shiftId,
     this.shiftType,
     this.rosterId,
@@ -769,6 +788,9 @@ final class HrWorkItem {
   final String? staffName;
   final String? staffNumber;
   final String? staffPosition;
+  final String? leaveType;
+  final bool isHalfDay;
+  final String? halfDayPeriod;
   final String? shiftId;
   final String? shiftType;
   final String? rosterId;

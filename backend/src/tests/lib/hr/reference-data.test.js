@@ -71,6 +71,33 @@ describe('hr reference-data constants', () => {
     );
   });
 
+  it('defines localized leave types and half-day periods', () => {
+    const { LEAVE_TYPE_CATALOG, leaveTypeOptions, leaveHalfDayPeriodOptions } = require('@lib/hr/reference-data');
+    expect(LEAVE_TYPE_CATALOG.length).toBeGreaterThanOrEqual(9);
+    const leaveTypes = leaveTypeOptions();
+    expect(leaveTypes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: 'ANNUAL',
+          label_key: 'labels.hr.reference.leave_type.annual',
+        }),
+        expect.objectContaining({
+          value: 'SICK',
+          label_key: 'labels.hr.reference.leave_type.sick',
+        }),
+      ])
+    );
+    const halfDayPeriods = leaveHalfDayPeriodOptions();
+    expect(halfDayPeriods).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: 'MORNING',
+          label_key: 'labels.hr.reference.leave_half_day_period.morning',
+        }),
+      ])
+    );
+  });
+
   it('maps known staff position names to label keys', () => {
     expect(staffPositionLabelKeyForName('Nurse')).toBe(
       'labels.hr.reference.staff_position.nurse'

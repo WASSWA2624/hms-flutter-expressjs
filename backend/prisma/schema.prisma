@@ -735,6 +735,23 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  COMPASSIONATE
+  UNPAID
+  STUDY
+  EMERGENCY
+  OTHER
+}
+
+enum LeaveHalfDayPeriod {
+  MORNING
+  AFTERNOON
+}
+
 enum PayrollStatus {
   DRAFT
   PROCESSED
@@ -4366,6 +4383,7 @@ model staff_profile {
   department                 department?          @relation(fields: [department_id], references: [id])
   assignments                staff_assignment[]
   leaves                     staff_leave[]
+  leave_cover_assignments    staff_leave[]        @relation("leave_covering_staff")
   staff_availabilities       staff_availability[]
   compensations              staff_compensation[]
   shift_assignments          shift_assignment[]
@@ -4417,24 +4435,32 @@ model staff_assignment {
 }
 
 model staff_leave {
-  id                String      @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?     @db.VarChar(32)
-  staff_profile_id  String      @db.VarChar(36)
-  status            LeaveStatus
-  start_date        DateTime
-  end_date          DateTime
-  reason            String?     @db.Text
-  created_at        DateTime    @default(now())
-  updated_at        DateTime    @updatedAt
-  deleted_at        DateTime?
-  version           Int         @default(1)
+  id                        String              @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id         String?             @db.VarChar(32)
+  staff_profile_id          String              @db.VarChar(36)
+  leave_type                LeaveType           @default(ANNUAL)
+  status                    LeaveStatus
+  start_date                DateTime
+  end_date                  DateTime
+  is_half_day               Boolean             @default(false)
+  half_day_period           LeaveHalfDayPeriod?
+  reason                    String?             @db.Text
+  handover_notes            String?             @db.Text
+  covering_staff_profile_id String?             @db.VarChar(36)
+  created_at                DateTime            @default(now())
+  updated_at                DateTime            @updatedAt
+  deleted_at                DateTime?
+  version                   Int                 @default(1)
 
-  staff_profile staff_profile @relation(fields: [staff_profile_id], references: [id])
+  staff_profile          staff_profile  @relation(fields: [staff_profile_id], references: [id])
+  covering_staff_profile staff_profile? @relation("leave_covering_staff", fields: [covering_staff_profile_id], references: [id])
 
   @@index([staff_profile_id])
+  @@index([leave_type])
   @@index([status])
   @@index([start_date])
   @@index([end_date])
+  @@index([covering_staff_profile_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

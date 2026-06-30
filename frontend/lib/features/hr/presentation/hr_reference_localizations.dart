@@ -16,6 +16,9 @@ extension HrReferenceLocalizations on AppLocalizations {
     if (key.isEmpty) {
       return fallback ?? '';
     }
+    if (key.startsWith('labels.hr.reference.role.')) {
+      return _roleLabelFromKey(key, fallback: fallback);
+    }
     return switch (key) {
       'labels.hr.reference.staff_position.nurse' =>
         hrReferenceStaffPositionNurse,
@@ -197,7 +200,55 @@ extension HrReferenceLocalizations on AppLocalizations {
         hrReferenceCompensationPayTypePerHour,
       'labels.hr.reference.compensation_pay_type.per_procedure' =>
         hrReferenceCompensationPayTypePerProcedure,
+      'labels.hr.reference.leave_type.annual' => hrReferenceLeaveTypeAnnual,
+      'labels.hr.reference.leave_type.sick' => hrReferenceLeaveTypeSick,
+      'labels.hr.reference.leave_type.maternity' =>
+        hrReferenceLeaveTypeMaternity,
+      'labels.hr.reference.leave_type.paternity' =>
+        hrReferenceLeaveTypePaternity,
+      'labels.hr.reference.leave_type.compassionate' =>
+        hrReferenceLeaveTypeCompassionate,
+      'labels.hr.reference.leave_type.unpaid' => hrReferenceLeaveTypeUnpaid,
+      'labels.hr.reference.leave_type.study' => hrReferenceLeaveTypeStudy,
+      'labels.hr.reference.leave_type.emergency' =>
+        hrReferenceLeaveTypeEmergency,
+      'labels.hr.reference.leave_type.other' => hrReferenceLeaveTypeOther,
+      'labels.hr.reference.leave_half_day_period.morning' =>
+        hrReferenceLeaveHalfDayPeriodMorning,
+      'labels.hr.reference.leave_half_day_period.afternoon' =>
+        hrReferenceLeaveHalfDayPeriodAfternoon,
       _ => fallback ?? key,
+    };
+  }
+
+  String hrReferenceLeaveTypeLabel(String? code, {String? fallback}) {
+    final String normalized = (code ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) {
+      return fallback ?? '';
+    }
+    return switch (normalized) {
+      'ANNUAL' => hrReferenceLeaveTypeAnnual,
+      'SICK' => hrReferenceLeaveTypeSick,
+      'MATERNITY' => hrReferenceLeaveTypeMaternity,
+      'PATERNITY' => hrReferenceLeaveTypePaternity,
+      'COMPASSIONATE' => hrReferenceLeaveTypeCompassionate,
+      'UNPAID' => hrReferenceLeaveTypeUnpaid,
+      'STUDY' => hrReferenceLeaveTypeStudy,
+      'EMERGENCY' => hrReferenceLeaveTypeEmergency,
+      'OTHER' => hrReferenceLeaveTypeOther,
+      _ => fallback ?? normalized,
+    };
+  }
+
+  String hrReferenceLeaveHalfDayPeriodLabel(String? code, {String? fallback}) {
+    final String normalized = (code ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) {
+      return fallback ?? '';
+    }
+    return switch (normalized) {
+      'MORNING' => hrReferenceLeaveHalfDayPeriodMorning,
+      'AFTERNOON' => hrReferenceLeaveHalfDayPeriodAfternoon,
+      _ => fallback ?? normalized,
     };
   }
 
@@ -323,6 +374,151 @@ extension HrReferenceLocalizations on AppLocalizations {
       'operations manager' => hrReferenceStaffPositionOperationsManager,
       'facility manager' => hrReferenceStaffPositionFacilityManager,
       _ => fallback ?? normalized,
+    };
+  }
+
+  String hrReferenceRoleLabel(String? code, {String? fallback}) {
+    final String normalized = (code ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) {
+      return fallback ?? '';
+    }
+    return switch (normalized) {
+      'TENANT_ADMIN' => hrReferenceRoleTenantAdmin,
+      'FACILITY_ADMIN' => hrReferenceRoleFacilityAdmin,
+      'HR' => hrReferenceRoleHr,
+      'OPERATIONS' => hrReferenceRoleOperations,
+      'IT_SUPPORT' => hrReferenceRoleItSupport,
+      'DOCTOR' => hrReferenceRoleDoctor,
+      'ATTENDING_PHYSICIAN' => hrReferenceRoleAttendingPhysician,
+      'RESIDENT_PHYSICIAN' => hrReferenceRoleResidentPhysician,
+      'SURGEON' => hrReferenceRoleSurgeon,
+      'ANESTHESIOLOGIST' => hrReferenceRoleAnesthesiologist,
+      'PHYSICIAN_ASSISTANT' => hrReferenceRolePhysicianAssistant,
+      'EMERGENCY_PHYSICIAN' => hrReferenceRoleEmergencyPhysician,
+      'NURSE' => hrReferenceRoleNurse,
+      'LICENSED_PRACTICAL_NURSE' => hrReferenceRoleLicensedPracticalNurse,
+      'NURSE_PRACTITIONER' => hrReferenceRoleNursePractitioner,
+      'TRIAGE_NURSE' => hrReferenceRoleTriageNurse,
+      'MIDWIFE' => hrReferenceRoleMidwife,
+      'CHARGE_NURSE' => hrReferenceRoleChargeNurse,
+      'PHYSIOTHERAPIST' => hrReferenceRolePhysiotherapist,
+      'OCCUPATIONAL_THERAPIST' => hrReferenceRoleOccupationalTherapist,
+      'RESPIRATORY_THERAPIST' => hrReferenceRoleRespiratoryTherapist,
+      'DIETITIAN' => hrReferenceRoleDietitian,
+      'SOCIAL_WORKER' => hrReferenceRoleSocialWorker,
+      'CLINICAL_PSYCHOLOGIST' => hrReferenceRoleClinicalPsychologist,
+      'LAB_TECH' => hrReferenceRoleLabTech,
+      'MEDICAL_LABORATORY_SCIENTIST' => hrReferenceRoleMedicalLaboratoryScientist,
+      'PATHOLOGIST' => hrReferenceRolePathologist,
+      'RADIOLOGY_TECH' => hrReferenceRoleRadiologyTech,
+      'SONOGRAPHER' => hrReferenceRoleSonographer,
+      'PHARMACIST' => hrReferenceRolePharmacist,
+      'PHARMACY_TECHNICIAN' => hrReferenceRolePharmacyTechnician,
+      'RECEPTIONIST' => hrReferenceRoleReceptionist,
+      'ADMISSIONS_COORDINATOR' => hrReferenceRoleAdmissionsCoordinator,
+      'MEDICAL_RECORDS_CLERK' => hrReferenceRoleMedicalRecordsClerk,
+      'BILLING' => hrReferenceRoleBilling,
+      'MEDICAL_CODER' => hrReferenceRoleMedicalCoder,
+      'AMBULANCE_OPERATOR' => hrReferenceRoleAmbulanceOperator,
+      'PARAMEDIC' => hrReferenceRoleParamedic,
+      'EMT' => hrReferenceRoleEmt,
+      'HOUSE_KEEPER' => hrReferenceRoleHouseKeeper,
+      'HOUSEKEEPING_MANAGER' => hrReferenceRoleHousekeepingManager,
+      'FOOD_SERVICE_WORKER' => hrReferenceRoleFoodServiceWorker,
+      'PORTER' => hrReferenceRolePorter,
+      'SECURITY_OFFICER' => hrReferenceRoleSecurityOfficer,
+      'MAINTENANCE_ENGINEER' => hrReferenceRoleMaintenanceEngineer,
+      'CHAPLAIN' => hrReferenceRoleChaplain,
+      'BIOMED' => hrReferenceRoleBiomed,
+      'BIOMED_MANAGER' => hrReferenceRoleBiomedManager,
+      'UNIT_MANAGER' => hrReferenceRoleUnitManager,
+      'WARD_MANAGER' => hrReferenceRoleWardManager,
+      'ICU_MANAGER' => hrReferenceRoleIcuManager,
+      'THEATRE_MANAGER' => hrReferenceRoleTheatreManager,
+      'MORTUARY_STAFF' => hrReferenceRoleMortuaryStaff,
+      'MORTUARY_MANAGER' => hrReferenceRoleMortuaryManager,
+      _ => fallback ?? normalized,
+    };
+  }
+
+  String _roleLabelFromKey(String key, {String? fallback}) {
+    return switch (key) {
+      'labels.hr.reference.role.tenant_admin' => hrReferenceRoleTenantAdmin,
+      'labels.hr.reference.role.facility_admin' => hrReferenceRoleFacilityAdmin,
+      'labels.hr.reference.role.hr' => hrReferenceRoleHr,
+      'labels.hr.reference.role.operations' => hrReferenceRoleOperations,
+      'labels.hr.reference.role.it_support' => hrReferenceRoleItSupport,
+      'labels.hr.reference.role.doctor' => hrReferenceRoleDoctor,
+      'labels.hr.reference.role.attending_physician' =>
+        hrReferenceRoleAttendingPhysician,
+      'labels.hr.reference.role.resident_physician' =>
+        hrReferenceRoleResidentPhysician,
+      'labels.hr.reference.role.surgeon' => hrReferenceRoleSurgeon,
+      'labels.hr.reference.role.anesthesiologist' =>
+        hrReferenceRoleAnesthesiologist,
+      'labels.hr.reference.role.physician_assistant' =>
+        hrReferenceRolePhysicianAssistant,
+      'labels.hr.reference.role.emergency_physician' =>
+        hrReferenceRoleEmergencyPhysician,
+      'labels.hr.reference.role.nurse' => hrReferenceRoleNurse,
+      'labels.hr.reference.role.licensed_practical_nurse' =>
+        hrReferenceRoleLicensedPracticalNurse,
+      'labels.hr.reference.role.nurse_practitioner' =>
+        hrReferenceRoleNursePractitioner,
+      'labels.hr.reference.role.triage_nurse' => hrReferenceRoleTriageNurse,
+      'labels.hr.reference.role.midwife' => hrReferenceRoleMidwife,
+      'labels.hr.reference.role.charge_nurse' => hrReferenceRoleChargeNurse,
+      'labels.hr.reference.role.physiotherapist' =>
+        hrReferenceRolePhysiotherapist,
+      'labels.hr.reference.role.occupational_therapist' =>
+        hrReferenceRoleOccupationalTherapist,
+      'labels.hr.reference.role.respiratory_therapist' =>
+        hrReferenceRoleRespiratoryTherapist,
+      'labels.hr.reference.role.dietitian' => hrReferenceRoleDietitian,
+      'labels.hr.reference.role.social_worker' => hrReferenceRoleSocialWorker,
+      'labels.hr.reference.role.clinical_psychologist' =>
+        hrReferenceRoleClinicalPsychologist,
+      'labels.hr.reference.role.lab_tech' => hrReferenceRoleLabTech,
+      'labels.hr.reference.role.medical_laboratory_scientist' =>
+        hrReferenceRoleMedicalLaboratoryScientist,
+      'labels.hr.reference.role.pathologist' => hrReferenceRolePathologist,
+      'labels.hr.reference.role.radiology_tech' => hrReferenceRoleRadiologyTech,
+      'labels.hr.reference.role.sonographer' => hrReferenceRoleSonographer,
+      'labels.hr.reference.role.pharmacist' => hrReferenceRolePharmacist,
+      'labels.hr.reference.role.pharmacy_technician' =>
+        hrReferenceRolePharmacyTechnician,
+      'labels.hr.reference.role.receptionist' => hrReferenceRoleReceptionist,
+      'labels.hr.reference.role.admissions_coordinator' =>
+        hrReferenceRoleAdmissionsCoordinator,
+      'labels.hr.reference.role.medical_records_clerk' =>
+        hrReferenceRoleMedicalRecordsClerk,
+      'labels.hr.reference.role.billing' => hrReferenceRoleBilling,
+      'labels.hr.reference.role.medical_coder' => hrReferenceRoleMedicalCoder,
+      'labels.hr.reference.role.ambulance_operator' =>
+        hrReferenceRoleAmbulanceOperator,
+      'labels.hr.reference.role.paramedic' => hrReferenceRoleParamedic,
+      'labels.hr.reference.role.emt' => hrReferenceRoleEmt,
+      'labels.hr.reference.role.house_keeper' => hrReferenceRoleHouseKeeper,
+      'labels.hr.reference.role.housekeeping_manager' =>
+        hrReferenceRoleHousekeepingManager,
+      'labels.hr.reference.role.food_service_worker' =>
+        hrReferenceRoleFoodServiceWorker,
+      'labels.hr.reference.role.porter' => hrReferenceRolePorter,
+      'labels.hr.reference.role.security_officer' =>
+        hrReferenceRoleSecurityOfficer,
+      'labels.hr.reference.role.maintenance_engineer' =>
+        hrReferenceRoleMaintenanceEngineer,
+      'labels.hr.reference.role.chaplain' => hrReferenceRoleChaplain,
+      'labels.hr.reference.role.biomed' => hrReferenceRoleBiomed,
+      'labels.hr.reference.role.biomed_manager' => hrReferenceRoleBiomedManager,
+      'labels.hr.reference.role.unit_manager' => hrReferenceRoleUnitManager,
+      'labels.hr.reference.role.ward_manager' => hrReferenceRoleWardManager,
+      'labels.hr.reference.role.icu_manager' => hrReferenceRoleIcuManager,
+      'labels.hr.reference.role.theatre_manager' => hrReferenceRoleTheatreManager,
+      'labels.hr.reference.role.mortuary_staff' => hrReferenceRoleMortuaryStaff,
+      'labels.hr.reference.role.mortuary_manager' =>
+        hrReferenceRoleMortuaryManager,
+      _ => fallback ?? key,
     };
   }
 

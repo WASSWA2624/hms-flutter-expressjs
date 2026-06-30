@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -51,7 +52,10 @@ Future<void> showHrAssignRoleDialog(
             value: roleId,
             labelText: l10n.hrRolePositionColumnLabel,
             isRequired: true,
-            options: _selectOptions(state?.referenceData.roles ?? const []),
+            options: _localizedSelectOptions(
+              l10n,
+              state?.referenceData.roles ?? const [],
+            ),
             validator: AppValidators.requiredValue(
               l10n.hrFieldRequiredLabel(l10n.hrRolePositionColumnLabel),
             ),
@@ -522,6 +526,19 @@ HrWorkspaceState? _readHrState(WidgetRef ref) {
       .asData
       ?.value
       .when(success: (HrWorkspaceState state) => state, failure: (_) => null);
+}
+
+List<AppSelectOption<String>> _localizedSelectOptions(
+  AppLocalizations l10n,
+  List<HrOption> options,
+) {
+  return <AppSelectOption<String>>[
+    for (final HrOption option in options)
+      AppSelectOption<String>(
+        value: option.value,
+        label: l10n.hrLocalizedOptionLabel(option),
+      ),
+  ];
 }
 
 List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
