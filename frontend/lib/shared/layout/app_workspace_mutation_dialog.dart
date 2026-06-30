@@ -191,6 +191,7 @@ class _AppWorkspaceMutationDialogState
       title: widget.title,
       icon: widget.icon,
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: widget.maxWidth,
       initialMaximized: widget.initialMaximized,
       closeEnabled: !_isSubmitting,

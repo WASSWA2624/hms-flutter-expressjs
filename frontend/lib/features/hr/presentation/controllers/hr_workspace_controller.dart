@@ -386,6 +386,34 @@ final class HrWorkspaceController
     );
   }
 
+  Future<AppFailure?> createAvailabilitySchedule(
+    List<Map<String, Object?>> dayPayloads,
+  ) {
+    if (dayPayloads.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return _mutateSelected((HrStaffDetail selected) async {
+      for (final Map<String, Object?> dayPayload in dayPayloads) {
+        final Result<Object?> result = await _repository.createStaffAvailability(
+          <String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            ...dayPayload,
+          },
+        );
+        if (result.isFailure) {
+          return result;
+        }
+      }
+      return const Result<Object?>.success(null);
+    });
+  }
+
+  Future<Result<List<HrStaffAvailability>>> loadStaffAvailabilities(
+    String staffProfileId,
+  ) {
+    return _repository.listStaffAvailabilities(staffProfileId);
+  }
+
   Future<AppFailure?> createLeave(Map<String, Object?> payload) {
     return _mutateSelected(
       (HrStaffDetail selected) =>

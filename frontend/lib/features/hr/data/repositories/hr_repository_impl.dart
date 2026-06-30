@@ -199,6 +199,23 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<List<HrStaffAvailability>>> listStaffAvailabilities(
+    String staffProfileId,
+  ) async {
+    final Result<List<HrStaffAvailability>> result = await _apiClient
+        .get<List<HrStaffAvailability>>(
+          ApiEndpoints.collection(HmsApiResource.staffAvailabilities),
+          queryParameters: <String, Object?>{
+            'staff_profile_id': staffProfileId,
+            'limit': 50,
+          },
+          decoder: (Object? data) =>
+              HrStaffAvailabilityPageDto.fromResponse(data).items,
+        );
+    return result;
+  }
+
+  @override
   Future<Result<Object?>> createStaffLeave(Map<String, Object?> payload) {
     return _postCollection(HmsApiResource.staffLeaves, payload);
   }

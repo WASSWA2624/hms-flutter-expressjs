@@ -17028,6 +17028,47 @@
   "@hrAddAvailabilitySlotAction": {
     "description": "Human resources workspace text for hrAddAvailabilitySlotAction."
   },
+  "hrAvailabilityCopyFromStaffAction": "Copy from staff",
+  "@hrAvailabilityCopyFromStaffAction": {
+    "description": "Action to copy another staff member's availability schedule into the form."
+  },
+  "hrAvailabilityCopyFromStaffLabel": "Source staff",
+  "@hrAvailabilityCopyFromStaffLabel": {
+    "description": "Label for the staff picker when copying availability from another staff member."
+  },
+  "hrAvailabilityDuplicateToAction": "Duplicate to…",
+  "@hrAvailabilityDuplicateToAction": {
+    "description": "Action to copy one day's time slots to other days of the week."
+  },
+  "hrAvailabilityDuplicateToDialogTitle": "Duplicate schedule",
+  "@hrAvailabilityDuplicateToDialogTitle": {
+    "description": "Title for the dialog that selects target days when duplicating availability slots."
+  },
+  "hrAvailabilityDuplicateToDialogDescription": "Replace the selected days with {dayName}'s time slots.",
+  "@hrAvailabilityDuplicateToDialogDescription": {
+    "description": "Explains that duplicating replaces target day slots.",
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
+  "hrAvailabilityEndAfterStartError": "End time must be after start time",
+  "@hrAvailabilityEndAfterStartError": {
+    "description": "Validation error when an availability slot end time is not after the start time."
+  },
+  "hrAvailabilityNoDaysSelectedError": "Add at least one time slot on any day",
+  "@hrAvailabilityNoDaysSelectedError": {
+    "description": "Validation error when submitting availability with no scheduled days."
+  },
+  "hrAvailabilitySlotOverlapError": "Time slots on the same day must not overlap",
+  "@hrAvailabilitySlotOverlapError": {
+    "description": "Validation error when availability slots overlap on one day."
+  },
+  "hrAvailabilityWeekScheduleTitle": "Weekly schedule",
+  "@hrAvailabilityWeekScheduleTitle": {
+    "description": "Section title for the seven-day availability schedule builder."
+  },
   "hrRemoveAvailabilitySlotAction": "Remove slot",
   "@hrRemoveAvailabilitySlotAction": {
     "description": "Human resources workspace text for hrRemoveAvailabilitySlotAction."

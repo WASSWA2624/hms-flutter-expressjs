@@ -24675,6 +24675,60 @@ abstract class AppLocalizations {
   /// **'Add slot'**
   String get hrAddAvailabilitySlotAction;
 
+  /// Action to copy another staff member's availability schedule into the form.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from staff'**
+  String get hrAvailabilityCopyFromStaffAction;
+
+  /// Label for the staff picker when copying availability from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'Source staff'**
+  String get hrAvailabilityCopyFromStaffLabel;
+
+  /// Action to copy one day's time slots to other days of the week.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate to…'**
+  String get hrAvailabilityDuplicateToAction;
+
+  /// Title for the dialog that selects target days when duplicating availability slots.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate schedule'**
+  String get hrAvailabilityDuplicateToDialogTitle;
+
+  /// Explains that duplicating replaces target day slots.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the selected days with {dayName}\'s time slots.'**
+  String hrAvailabilityDuplicateToDialogDescription(String dayName);
+
+  /// Validation error when an availability slot end time is not after the start time.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time'**
+  String get hrAvailabilityEndAfterStartError;
+
+  /// Validation error when submitting availability with no scheduled days.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one time slot on any day'**
+  String get hrAvailabilityNoDaysSelectedError;
+
+  /// Validation error when availability slots overlap on one day.
+  ///
+  /// In en, this message translates to:
+  /// **'Time slots on the same day must not overlap'**
+  String get hrAvailabilitySlotOverlapError;
+
+  /// Section title for the seven-day availability schedule builder.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly schedule'**
+  String get hrAvailabilityWeekScheduleTitle;
+
   /// Human resources workspace text for hrRemoveAvailabilitySlotAction.
   ///
   /// In en, this message translates to:

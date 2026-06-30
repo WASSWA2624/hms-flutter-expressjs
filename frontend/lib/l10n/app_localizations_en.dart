@@ -13135,6 +13135,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAddAvailabilitySlotAction => 'Add slot';
 
   @override
+  String get hrAvailabilityCopyFromStaffAction => 'Copy from staff';
+
+  @override
+  String get hrAvailabilityCopyFromStaffLabel => 'Source staff';
+
+  @override
+  String get hrAvailabilityDuplicateToAction => 'Duplicate to…';
+
+  @override
+  String get hrAvailabilityDuplicateToDialogTitle => 'Duplicate schedule';
+
+  @override
+  String hrAvailabilityDuplicateToDialogDescription(String dayName) {
+    return 'Replace the selected days with $dayName\'s time slots.';
+  }
+
+  @override
+  String get hrAvailabilityEndAfterStartError =>
+      'End time must be after start time';
+
+  @override
+  String get hrAvailabilityNoDaysSelectedError =>
+      'Add at least one time slot on any day';
+
+  @override
+  String get hrAvailabilitySlotOverlapError =>
+      'Time slots on the same day must not overlap';
+
+  @override
+  String get hrAvailabilityWeekScheduleTitle => 'Weekly schedule';
+
+  @override
   String get hrRemoveAvailabilitySlotAction => 'Remove slot';
 
   @override

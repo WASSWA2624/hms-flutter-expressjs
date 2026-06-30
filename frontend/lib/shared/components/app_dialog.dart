@@ -14,6 +14,7 @@ class AppDialog extends StatefulWidget {
     this.icon,
     this.semanticLabel,
     this.scrollable = false,
+    this.pinActionsToBottom = false,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
     this.resizable = true,
@@ -31,6 +32,7 @@ class AppDialog extends StatefulWidget {
   final Widget? icon;
   final String? semanticLabel;
   final bool scrollable;
+  final bool pinActionsToBottom;
   final bool showCloseButton;
   final bool showMaximizeButton;
   final bool resizable;
@@ -99,8 +101,11 @@ class _AppDialogState extends State<AppDialog> {
     );
     final bool resizeEnabled =
         desktopInteractive && !_isMaximized && widget.resizable;
+    final bool pinFooter =
+        widget.pinActionsToBottom && widget.actions.isNotEmpty;
     final bool fillShellHeight =
-        desktopInteractive && (desktopSize != null || _isMaximized);
+        pinFooter ||
+        (desktopInteractive && (desktopSize != null || _isMaximized));
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -129,7 +134,15 @@ class _AppDialogState extends State<AppDialog> {
 
     Widget dialogBody = ConstrainedBox(
       constraints: desktopInteractive
-          ? BoxConstraints(maxHeight: dialogConstraints.maxHeight)
+          ? BoxConstraints(
+              minHeight: pinFooter ? dialogConstraints.maxHeight : 0,
+              maxHeight: dialogConstraints.maxHeight,
+            )
+          : pinFooter
+          ? BoxConstraints(
+              minHeight: dialogConstraints.maxHeight,
+              maxHeight: dialogConstraints.maxHeight,
+            )
           : dialogConstraints,
       child: DecoratedBox(
         decoration: const BoxDecoration(),
@@ -137,10 +150,10 @@ class _AppDialogState extends State<AppDialog> {
       ),
     );
 
-    if (desktopInteractive) {
+    if (desktopInteractive || pinFooter) {
       dialogBody = SizedBox(
-        key: _dialogShellKey,
-        width: dialogConstraints.maxWidth,
+        key: desktopInteractive ? _dialogShellKey : null,
+        width: desktopInteractive ? dialogConstraints.maxWidth : null,
         height: fillShellHeight ? dialogConstraints.maxHeight : null,
         child: dialogBody,
       );
@@ -435,18 +448,31 @@ class _DialogBody extends StatelessWidget {
           onDragUpdate: onHeaderDragUpdate,
         ),
         if (dialogContent != null)
-          Flexible(
-            child: Padding(
-              padding: bodyPadding,
-              child: scrollable
-                  ? SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      child: dialogContent,
-                    )
-                  : dialogContent,
-            ),
-          ),
+          fillHeight
+              ? Expanded(
+                  child: Padding(
+                    padding: bodyPadding,
+                    child: scrollable
+                        ? SingleChildScrollView(
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            child: dialogContent,
+                          )
+                        : dialogContent,
+                  ),
+                )
+              : Flexible(
+                  child: Padding(
+                    padding: bodyPadding,
+                    child: scrollable
+                        ? SingleChildScrollView(
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            child: dialogContent,
+                          )
+                        : dialogContent,
+                  ),
+                ),
         if (actions.isNotEmpty)
           _DialogActions(actions: actions, compact: compact),
       ],

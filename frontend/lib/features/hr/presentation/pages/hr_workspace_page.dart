@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
@@ -673,7 +674,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           detail: detail,
           onAssignDepartment: showHrAssignDepartmentDialog,
           onAssignPosition: showHrAssignPositionDialog,
-          onRecordAvailability: _showAvailabilityDialog,
+          onRecordAvailability: showHrRecordAvailabilityDialog,
           onAssignShift: _showShiftAssignmentDialog,
           onSwapShift: _showShiftSwapDialog,
           onRequestLeave: _showLeaveDialog,
@@ -737,7 +738,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
             for (final HrStaffAvailability availability
                 in detail.availabilities)
               _RecordLine(
-                title: _dayLabel(l10n, availability.dayOfWeek),
+                title: hrDayLabel(l10n, availability.dayOfWeek ?? 0),
                 subtitle: _joinDisplay(<String?>[
                   _availabilitySlotSummary(availability),
                   _apiLabel(
@@ -1204,37 +1205,6 @@ class _HrWorkItemTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-Future<void> _showAvailabilityDialog(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<_AvailabilityFieldsState> fieldsKey =
-      GlobalKey<_AvailabilityFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrAvailabilityDialogTitle),
-    icon: const Icon(Icons.schedule_outlined),
-    submitLabel: l10n.hrRecordAvailabilityAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _AvailabilityFields(key: fieldsKey);
-    },
-    onSubmit: () => controller.createAvailability(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
   }
 }
 
@@ -1737,207 +1707,6 @@ Future<void> _submitSimple(
   final AppFailure? failure = await mutation;
   if (context.mounted) {
     _showMutationResult(context, failure);
-  }
-}
-
-class _AvailabilityFields extends StatefulWidget {
-  const _AvailabilityFields({super.key});
-
-  @override
-  State<_AvailabilityFields> createState() => _AvailabilityFieldsState();
-}
-
-class _AvailabilityFieldsState extends State<_AvailabilityFields> {
-  final List<_AvailabilitySlotDraft> _slots = <_AvailabilitySlotDraft>[
-    _AvailabilitySlotDraft(),
-  ];
-  int? _dayOfWeek = 1;
-  String? _preference = 'AVAILABLE';
-  DateTime? _effectiveFrom = DateTime.now();
-  DateTime? _effectiveTo;
-
-  @override
-  void dispose() {
-    for (final _AvailabilitySlotDraft slot in _slots) {
-      slot.dispose();
-    }
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload() {
-    final List<Map<String, Object?>> slots = <Map<String, Object?>>[
-      for (final _AvailabilitySlotDraft slot in _slots)
-        if (slot.start.trim().isNotEmpty && slot.end.trim().isNotEmpty)
-          <String, Object?>{
-            'start_time': slot.start.trim(),
-            'end_time': slot.end.trim(),
-          },
-    ];
-    return <String, Object?>{
-      'day_of_week': _dayOfWeek,
-      'start_time': slots.isEmpty ? null : slots.first['start_time'],
-      'end_time': slots.isEmpty ? null : slots.first['end_time'],
-      'time_slots': slots,
-      'preference': _preference,
-      'status': _preference,
-      'effective_from': _datePayload(_effectiveFrom),
-      'effective_to': _datePayload(_effectiveTo),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppSelectField<int>(
-          value: _dayOfWeek,
-          labelText: l10n.hrDayOfWeekLabel,
-          isRequired: true,
-          options: <AppSelectOption<int>>[
-            for (var index = 0; index < 7; index += 1)
-              AppSelectOption<int>(value: index, label: _dayLabel(l10n, index)),
-          ],
-          validator: AppValidators.requiredValue(
-            l10n.hrFieldRequiredLabel(l10n.hrDayOfWeekLabel),
-          ),
-          onChanged: (int? value) => setState(() => _dayOfWeek = value),
-        ),
-        for (var index = 0; index < _slots.length; index += 1)
-          _AvailabilitySlotFields(
-            slot: _slots[index],
-            canRemove: _slots.length > 1,
-            onRemove: () {
-              setState(() {
-                final _AvailabilitySlotDraft removed = _slots.removeAt(index);
-                removed.dispose();
-              });
-            },
-          ),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: AppButton.secondary(
-            label: l10n.hrAddAvailabilitySlotAction,
-            leadingIcon: Icons.add,
-            onPressed: () =>
-                setState(() => _slots.add(_AvailabilitySlotDraft())),
-          ),
-        ),
-        AppSelectField<String>(
-          value: _preference,
-          labelText: l10n.hrAvailabilityPreferenceLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'PREFERRED',
-              label: l10n.hrAvailabilityPreferred,
-            ),
-            AppSelectOption<String>(
-              value: 'AVAILABLE',
-              label: l10n.hrAvailabilityAvailable,
-            ),
-            AppSelectOption<String>(
-              value: 'UNAVAILABLE',
-              label: l10n.hrAvailabilityUnavailable,
-            ),
-          ],
-          onChanged: (String? value) => setState(() => _preference = value),
-        ),
-        AppDateField(
-          value: _effectiveFrom,
-          labelText: l10n.hrEffectiveFromLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) =>
-              setState(() => _effectiveFrom = value),
-        ),
-        AppDateField(
-          value: _effectiveTo,
-          labelText: l10n.hrEffectiveToLabel,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _effectiveTo = value),
-        ),
-      ],
-    );
-  }
-}
-
-final class _AvailabilitySlotDraft {
-  _AvailabilitySlotDraft();
-
-  final TextEditingController startController = TextEditingController();
-  final TextEditingController endController = TextEditingController();
-
-  String get start => startController.text;
-  String get end => endController.text;
-
-  void dispose() {
-    startController.dispose();
-    endController.dispose();
-  }
-}
-
-class _AvailabilitySlotFields extends StatelessWidget {
-  const _AvailabilitySlotFields({
-    required this.slot,
-    required this.canRemove,
-    required this.onRemove,
-  });
-
-  final _AvailabilitySlotDraft slot;
-  final bool canRemove;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: AppTextField(
-            controller: slot.startController,
-            labelText: l10n.hrStartTimeLabel,
-            hintText: l10n.hrTimeHint,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrStartTimeLabel),
-            ),
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: AppTextField(
-            controller: slot.endController,
-            labelText: l10n.hrEndTimeLabel,
-            hintText: l10n.hrTimeHint,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrEndTimeLabel),
-            ),
-          ),
-        ),
-        if (canRemove) ...<Widget>[
-          SizedBox(width: theme.spacing.xs),
-          AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.remove_circle_outline,
-            label: l10n.hrRemoveAvailabilitySlotAction,
-            semanticLabel: l10n.hrRemoveAvailabilitySlotAction,
-            tooltip: l10n.hrRemoveAvailabilitySlotAction,
-            onPressed: onRemove,
-          ),
-        ],
-      ],
-    );
   }
 }
 
@@ -2781,19 +2550,6 @@ IconData _activityIcon(String? type) {
     'PAYROLL' => Icons.payments_outlined,
     'SHIFT' => Icons.calendar_view_week_outlined,
     _ => Icons.history_outlined,
-  };
-}
-
-String _dayLabel(AppLocalizations l10n, int? day) {
-  return switch (day) {
-    0 => l10n.hrSundayLabel,
-    1 => l10n.hrMondayLabel,
-    2 => l10n.hrTuesdayLabel,
-    3 => l10n.hrWednesdayLabel,
-    4 => l10n.hrThursdayLabel,
-    5 => l10n.hrFridayLabel,
-    6 => l10n.hrSaturdayLabel,
-    _ => l10n.profileUnknownValue,
   };
 }
 
