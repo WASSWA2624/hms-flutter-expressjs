@@ -23,9 +23,10 @@ Replace the current **Add staff profile** modal (`/hr` → **+ Add staff**) with
 
 ### In scope
 
-1. **Extract** staff onboarding into a shared widget/dialog (e.g. `showHrStaffOnboardingDialog`) callable from `/hr` and any other module that may onboard staff.
-2. **Hide scope fields** — `tenant_id`, `facility_id`, and `branch_id` (when applicable) are injected server-side from the authenticated session; remove them from the form UI.
-3. **Restructure the form** into logical sections:
+1. **Extract** staff onboarding into the **single canonical** shared dialog — `showHrStaffOnboardingDialog` — in a dedicated file (e.g. `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart`), exported from the HR feature for app-wide use.
+2. **Consolidate and remove duplicates** — audit the repo for overlapping staff/user onboarding UI and backend paths; **replace every call site** with `showHrStaffOnboardingDialog` (or the shared coordinated API it uses), then **delete** the superseded widgets, nested dialogs, and dead code. Do not leave parallel implementations.
+3. **Hide scope fields** — `tenant_id`, `facility_id`, and `branch_id` (when applicable) are injected server-side from the authenticated session; remove them from the form UI.
+4. **Restructure the form** into logical sections:
 
    **A. Person & access**
    - Toggle or tabs: *Create new user* | *Link existing user*
@@ -49,9 +50,9 @@ Replace the current **Add staff profile** modal (`/hr` → **+ Add staff**) with
    - Rate + currency + effective-from date
    - Consultation fee + currency — **only** when role or practitioner type indicates a billing provider
 
-4. **Default maximize** the dialog using shared `AppDialog` viewport maximize behavior.
-5. **RBAC** — only users with staff-create permission (e.g. HR manager, administrator) see **+ Add staff** and can open the global dialog.
-6. **Backend** — ensure create/link/compensation/role assignment works in one coordinated action or a clear transactional sequence; validate scope server-side.
+5. **Default maximize** the dialog using shared `AppDialog` viewport maximize behavior.
+6. **RBAC** — only users with staff-create permission (e.g. HR manager, administrator) see **+ Add staff** and can open the global dialog.
+7. **Backend** — ensure create/link/compensation/role assignment works in one coordinated action or a clear transactional sequence; validate scope server-side. Retire or delegate duplicate create paths (e.g. doctor module inline `createStaffProfile`) to this coordinated endpoint.
 
 ### Out of scope
 
@@ -61,13 +62,45 @@ Replace the current **Add staff profile** modal (`/hr` → **+ Add staff**) with
 
 ---
 
+## Consolidation — replace, don’t duplicate
+
+**Rule:** one onboarding dialog, one coordinated create API. Any similar flow found during implementation must be **migrated to the canonical dialog** and the old code **removed**.
+
+### Known duplicates to replace (audit for others)
+
+| Current implementation | Location | Action |
+| ---------------------- | -------- | ------ |
+| `_StaffProfileFields` + `_showStaffProfileDialog` | `hr_workspace_page.dart` | Replace with `showHrStaffOnboardingDialog`; delete private widget |
+| Nested `showHrCreateUserDialog` | `hr_enhanced_dialogs.dart` | Fold into onboarding dialog; delete function |
+| `showHrCreateStandaloneUserDialog` (user + roles, no staff link) | `hr_access_dialogs.dart` | Replace “create user” entry with onboarding dialog in *link-existing* or *create-new* mode; delete if fully superseded |
+| Home quick actions `add_staff_profile` / `staff_profile` | `home_page.dart` + `dashboard-workspace.service.js` | Open `showHrStaffOnboardingDialog` directly (permission-gated) instead of only navigating to `/hr` |
+| Doctor inline staff creation | `backend/.../doctor.service.js` → `doctorRepository.createStaffProfile` | Delegate to shared HR staff-onboarding service / coordinated endpoint |
+| Edit-staff reuse | `_showStaffProfileDialog` edit path | Reuse same dialog in **edit mode** with shared field components — do not fork a second edit form |
+
+### Consolidation workflow
+
+1. **Search** the codebase for: `createStaffProfile`, `createUserAndLinkStaff`, `showHrCreateUserDialog`, `StaffProfileFields`, `add_staff_profile`, `tenant_id` on staff-create forms.
+2. **Implement** `showHrStaffOnboardingDialog` + shared field widgets + coordinated backend action.
+3. **Rewire** every entry point (HR toolbar, home dashboard, access workspace, future modules) to call the canonical dialog.
+4. **Delete** superseded private widgets, nested dialogs, and unused l10n keys.
+5. **Update tests** — migrate existing HR dialog tests to the new widget; add regression test that no duplicate create-staff dialog remains.
+
+Follow the same shared-dialog pattern already used for `showHrStaffDirectoryDialog` and `showHrWorkQueueDialog` in `hr_workspace_dialog_actions.dart`.
+
+---
+
 ## Implementation targets
 
 | Layer | Location |
 | ----- | -------- |
-| Current form | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` — `_StaffProfileFields` |
-| Create-user nested dialog | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` — `showHrCreateUserDialog` |
+| **New canonical dialog** | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` (create) |
+| Superseded form (remove) | `hr_workspace_page.dart` — `_StaffProfileFields`, `_showStaffProfileDialog` |
+| Superseded nested dialog (remove) | `hr_enhanced_dialogs.dart` — `showHrCreateUserDialog` |
+| Overlapping access dialog (migrate/remove) | `hr_access_dialogs.dart` — `showHrCreateStandaloneUserDialog` |
+| Shared dialog pattern | `hr_workspace_dialog_actions.dart` |
+| Home entry points | `home_page.dart`; `backend/.../dashboard-workspace.service.js` (`add_staff_profile`) |
 | Controller / API | `hr_workspace_controller.dart`, `hr_repository_impl.dart`, `backend/src/modules/hr-workspace/` |
+| Backend duplicate | `backend/src/modules/doctor/services/doctor.service.js` |
 | Compensation model | `HrStaffCompensation` in `hr_entities.dart`; `staff-compensation` API |
 | Design system | `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, `app_en.arb` for all labels |
 | Parent context | Align with `prompts/24-hr-module-prompt.md` global HR standards |
@@ -83,7 +116,11 @@ Replace the current **Add staff profile** modal (`/hr` → **+ Add staff**) with
 - [ ] Roles can be assigned on create; skipped roles show a visible warning on the profile.
 - [ ] Consultation fee fields appear only for applicable clinical roles.
 - [ ] Compensation type (monthly/daily/hourly/etc.) saves correctly and appears on staff detail.
-- [ ] Dialog is extracted as a reusable entry point, permission-gated, and renders well on all breakpoints.
+- [ ] `showHrStaffOnboardingDialog` is the **only** staff-create UI in the frontend; all known duplicates are removed.
+- [ ] Home dashboard and HR workspace both open the same dialog (not separate forms or route-only navigation).
+- [ ] `showHrCreateUserDialog` and `_StaffProfileFields` no longer exist in the codebase.
+- [ ] Backend doctor onboarding delegates to the shared HR create path (no parallel `createStaffProfile` logic).
+- [ ] Dialog is permission-gated, opens maximized by default, and renders well on all breakpoints.
 - [ ] `flutter analyze` and targeted `flutter test` pass; backend tests cover scoped create + compensation.
 
 ---
