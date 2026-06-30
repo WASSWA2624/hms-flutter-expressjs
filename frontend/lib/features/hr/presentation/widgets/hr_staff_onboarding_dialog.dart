@@ -426,6 +426,95 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     };
   }
 
+  Widget _emailField(AppLocalizations l10n) {
+    return AppEmailField(
+      controller: _emailController,
+      labelText: l10n.hrStaffEmailLabel,
+      isRequired: true,
+      invalidEmailMessage: l10n.authEmailInvalidMessage,
+      requiredMessage: l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
+    );
+  }
+
+  Widget _phoneField(AppLocalizations l10n) {
+    return AppPhoneField(
+      controller: _phoneController,
+      labelText: l10n.hrStaffPhoneLabel,
+      countryLabelText: l10n.appPhoneCountryLabel,
+      countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+      countryNoResultsText: l10n.appPhoneCountryNoResults,
+      numberLabelText: l10n.appPhoneNumberLabel,
+      numberHintText: l10n.appPhoneNumberHint,
+      invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+      isRequired: true,
+      requiredMessage: l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
+    );
+  }
+
+  Widget _passwordField(AppLocalizations l10n) {
+    return AppTextField(
+      controller: _passwordController,
+      labelText: l10n.hrStaffTemporaryPasswordLabel,
+      obscureText: true,
+      enableObscureTextToggle: true,
+      showObscuredTextLabel: l10n.authShowPasswordLabel,
+      hideObscuredTextLabel: l10n.authHidePasswordLabel,
+      helperText: l10n.hrStaffPasswordOptionalHint,
+    );
+  }
+
+  Widget _addressField(AppLocalizations l10n) {
+    return AppTextField(
+      controller: _addressController,
+      labelText: l10n.hrStaffOnboardingAddressLabel,
+      maxLines: 2,
+      textCapitalization: TextCapitalization.words,
+    );
+  }
+
+  Widget _staffNumberModePicker(AppLocalizations l10n, {required bool wide}) {
+    final ThemeData theme = Theme.of(context);
+    final Widget generateTile = RadioListTile<StaffNumberEntryMode>(
+      value: StaffNumberEntryMode.generate,
+      title: Text(l10n.hrStaffNumberAutoGenerateLabel),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+    );
+    final Widget manualTile = RadioListTile<StaffNumberEntryMode>(
+      value: StaffNumberEntryMode.manual,
+      title: Text(l10n.hrStaffNumberManualEntryLabel),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+    );
+
+    return RadioGroup<StaffNumberEntryMode>(
+      groupValue: _staffNumberMode,
+      onChanged: (StaffNumberEntryMode? value) {
+        if (value == null) {
+          return;
+        }
+        setState(() => _staffNumberMode = value);
+      },
+      child: wide
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: generateTile),
+                SizedBox(width: theme.spacing.md),
+                Expanded(child: manualTile),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[generateTile, manualTile],
+            ),
+    );
+  }
+
   Widget _responsivePair({required Widget left, required Widget right}) {
     return AppResponsiveFieldRow.two(
       left: left,
@@ -493,71 +582,21 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   ],
                   if (wide)
                     _responsivePair(
-                      left: AppTextField(
-                        controller: _emailController,
-                        labelText: l10n.hrStaffEmailLabel,
-                        isRequired: true,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: AppValidators.requiredText(
-                          l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
-                        ),
-                      ),
-                      right: AppTextField(
-                        controller: _phoneController,
-                        labelText: l10n.hrStaffPhoneLabel,
-                        isRequired: true,
-                        keyboardType: TextInputType.phone,
-                        validator: AppValidators.requiredText(
-                          l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
-                        ),
-                      ),
+                      left: _emailField(l10n),
+                      right: _phoneField(l10n),
                     )
                   else ...<Widget>[
-                    AppTextField(
-                      controller: _emailController,
-                      labelText: l10n.hrStaffEmailLabel,
-                      isRequired: true,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: AppValidators.requiredText(
-                        l10n.hrFieldRequiredLabel(l10n.hrStaffEmailLabel),
-                      ),
-                    ),
-                    AppTextField(
-                      controller: _phoneController,
-                      labelText: l10n.hrStaffPhoneLabel,
-                      isRequired: true,
-                      keyboardType: TextInputType.phone,
-                      validator: AppValidators.requiredText(
-                        l10n.hrFieldRequiredLabel(l10n.hrStaffPhoneLabel),
-                      ),
-                    ),
+                    _emailField(l10n),
+                    _phoneField(l10n),
                   ],
                   if (wide)
                     _responsivePair(
-                      left: AppTextField(
-                        controller: _addressController,
-                        labelText: l10n.hrStaffOnboardingAddressLabel,
-                        maxLines: 2,
-                      ),
-                      right: AppTextField(
-                        controller: _passwordController,
-                        labelText: l10n.hrStaffTemporaryPasswordLabel,
-                        obscureText: true,
-                        helperText: l10n.hrStaffPasswordOptionalHint,
-                      ),
+                      left: _addressField(l10n),
+                      right: _passwordField(l10n),
                     )
                   else ...<Widget>[
-                    AppTextField(
-                      controller: _addressController,
-                      labelText: l10n.hrStaffOnboardingAddressLabel,
-                      maxLines: 2,
-                    ),
-                    AppTextField(
-                      controller: _passwordController,
-                      labelText: l10n.hrStaffTemporaryPasswordLabel,
-                      obscureText: true,
-                      helperText: l10n.hrStaffPasswordOptionalHint,
-                    ),
+                    _addressField(l10n),
+                    _passwordField(l10n),
                   ],
                 ],
               ),
@@ -566,25 +605,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
             AppFormSection(
               title: l10n.hrStaffOnboardingEmploymentSectionTitle,
               children: <Widget>[
-                AppRadioGroup<StaffNumberEntryMode>(
-                  value: _staffNumberMode,
-                  onChanged: (StaffNumberEntryMode? value) {
-                    if (value == null) {
-                      return;
-                    }
-                    setState(() => _staffNumberMode = value);
-                  },
-                  options: <AppRadioOption<StaffNumberEntryMode>>[
-                    AppRadioOption<StaffNumberEntryMode>(
-                      value: StaffNumberEntryMode.generate,
-                      label: l10n.hrStaffNumberAutoGenerateLabel,
-                    ),
-                    AppRadioOption<StaffNumberEntryMode>(
-                      value: StaffNumberEntryMode.manual,
-                      label: l10n.hrStaffNumberManualEntryLabel,
-                    ),
-                  ],
-                ),
+                _staffNumberModePicker(l10n, wide: wide),
                 if (_staffNumberMode == StaffNumberEntryMode.manual)
                   AppTextField(
                     controller: _staffNumberController,

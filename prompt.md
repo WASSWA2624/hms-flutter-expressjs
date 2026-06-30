@@ -1,73 +1,79 @@
-# Add Staff Profile Dialog — UI Fixes
+# HR Staff Onboarding Dialog — UI Refinement
 
-**Target:** `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` (and shared HR access widgets as needed).
+## Objective
 
-**Context:** The Add staff profile modal is nearly complete. Fix layout, employment/staff-number UX, and wire reference data so dropdowns and role assignment work against the current facility.
+Polish the **Add staff profile** dialog (`showHrStaffOnboardingDialog`) so it reuses shared form components, uses space efficiently, and simplifies role assignment — without changing onboarding behavior or API payloads.
 
----
+## Target
 
-## 1. Staff details layout
+| Item | Location |
+|------|----------|
+| Primary form | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
+| Role picker (shared) | `frontend/lib/shared/components/app_role_assignment_picker.dart` |
+| Tests | `frontend/test/features/hr/presentation/widgets/hr_staff_onboarding_dialog_test.dart`, `frontend/test/shared/components/app_role_assignment_picker_test.dart` |
 
-- Place **Address** and **Temporary password** on the **same row** in a two-column layout (match the grid used for first name / last name / email / phone).
-- Keep the temporary-password helper text: *"Leave blank to auto-generate a secure password."*
-
----
-
-
-
-## 2. Employment — staff number mode
-
-Replace the current segmented **Generate / Enter manually** control with **two radio buttons/fields**:
-
-
-| Option    | Label (i18n)                        | Behavior                                    |
-| --------- | ----------------------------------- | ------------------------------------------- |
-| Default   | Automatically generate staff number | **Hide** the staff number field entirely    |
-| Alternate | Enter staff number manually         | **Show** a required staff number text field |
-
-
-- Default selection: **Automatically generate**.
-- Do not show an empty placeholder container when Automatically generate is selected.
+Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, and existing HR dialog conventions. Keep all user-visible strings in `app_en.arb`.
 
 ---
 
+## Requirements
 
+### 1. Reuse shared input components
 
-## 3. Employment — reference data
+Replace raw `AppTextField` usages with the established shared wrappers where they exist:
 
-Populate dropdowns from **facility-scoped** reference data (demo seed already defines these):
+| Field | Use |
+|-------|-----|
+| Staff email | `AppEmailField` (validation via `l10n.authEmailInvalidMessage`; required message via `l10n.validationRequired` or existing HR l10n) |
+| Staff phone | `AppPhoneField` (country/number labels from `l10n.appPhone*`) |
+| Temporary password | `AppTextField` with `obscureText: true` and `enableObscureTextToggle: true` — match auth/register pattern |
+| First / last name | Keep `AppTextField` (no dedicated wrapper) |
+| Address | Keep `AppTextField` with `maxLines: 2` and word capitalization — consistent with facility address fields |
 
-- **Position** — list available positions; keep **Add a new position** checkbox + inline field.
-- **Department** — list departments for the **current facility** only (not tenant-wide or empty).
-- **Practitioner type** — populate options.
-- **Hire date** — keep defaulting to today; no change required.
+Do **not** change field labels, required flags, helper text, or `toPayload()` keys.
 
-If `referenceData` is empty on open, ensure the HR workspace controller loads positions, departments, and practitioner types for the active `facilityId` before rendering the form.
+### 2. Staff number mode — horizontal layout
+
+The **Automatically generate staff number** / **Enter staff number manually** radio options currently stack vertically and waste space.
+
+- Render both options **on one row** in two columns when the dialog is wide (use `AppResponsiveFieldRow.two` at the existing `_kOnboardingTwoColumnBreakpoint`).
+- Stack vertically only on narrow viewports.
+- Manual staff-number text field behavior stays unchanged (shown only when manual mode is selected).
+
+### 3. Roles and access — remove empty-state warning
+
+Remove the red warning row:
+
+> *No roles assigned yet. This staff member will have limited access until roles are assigned.*
+
+- Do not show this indicator in `AppRoleAssignmentPicker` for staff onboarding (remove from the picker default or pass a flag / `emptyWarning: null` from the onboarding form).
+- Keep **Effective permissions** preview and the *No roles selected yet* empty-selection hint unless product says otherwise.
+
+### 4. Roles and access — single searchable select
+
+Replace the separate **Search roles** text field and **Add role** dropdown with **one searchable multi-select flow**:
+
+- One `AppSelectField<String>.searchable` (or equivalent shared pattern) where the user can type to filter roles and pick to add.
+- Selected roles still appear as removable chips/tiles below; effective-permissions preview unchanged.
+- Preserve role sort order from reference data and exclude already-selected roles from the dropdown.
+- On wide layouts, role picker controls may sit in one row; do not reintroduce a standalone search field.
+
+Refactor inside `AppRoleAssignmentPicker` so other consumers benefit; avoid HR-only duplication.
 
 ---
-
-
-
-## 4. Roles and access
-
-The Roles and access section is non-functional: roles are missing and add-role controls do not work.
-
-**Expected behavior:**
-
-- Load and display assignable roles for the tenant/facility.
-- Allow adding roles via searchable multi-select (search → pick role → chip/list of selected roles),
-- Show selected roles with remove affordance.
-- **Effective permissions** panel updates live from selected roles (existing preview logic).
-- Retain the warning when no roles are assigned: *"No roles assigned yet. This staff member will have limited access until roles are assigned."*
-
----
-
-
 
 ## Acceptance criteria
 
-- [ ] Address + temporary password share one two-column row on wide layouts.
-- [ ] Staff number uses radio buttons; field visible only in manual mode.
-- [ ] Position, department, and practitioner type dropdowns show facility-scoped options from demo/reference data.
-- [ ] Roles can be searched, added, removed; effective permissions preview works.
-- [ ] All new strings in `app_en.arb`; `flutter analyze` and `hr_staff_onboarding_dialog_test.dart` pass.
+- [ ] Email and phone use `AppEmailField` / `AppPhoneField` with correct validation and l10n.
+- [ ] Password field supports show/hide toggle like auth forms.
+- [ ] Staff-number radios appear side-by-side on wide dialogs.
+- [ ] Empty-state roles warning is gone; permissions preview still works when roles are selected.
+- [ ] Role assignment uses a single searchable select (no separate search bar).
+- [ ] `flutter analyze` and targeted widget tests pass.
+- [ ] No regression in create-staff payload or edit-staff behavior.
+
+## Test updates
+
+- Remove/update assertions expecting the removed warning text.
+- Add layout assertion for horizontal staff-number radios at wide width (if feasible in widget tests).
+- Verify role can be searched and added via the consolidated select.

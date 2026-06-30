@@ -27,7 +27,8 @@ void main() {
       ),
     ];
 
-    testWidgets('shows warning and empty selected state', (tester) async {
+    testWidgets('shows empty selected state without warning by default',
+        (tester) async {
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(
@@ -39,14 +40,30 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('No roles assigned yet'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('No roles assigned yet'), findsNothing);
       expect(find.text('No roles selected yet.'), findsOneWidget);
+      expect(find.text('Search roles'), findsNothing);
+      expect(find.text('Add role'), findsOneWidget);
     });
 
-    testWidgets('accepts role search input', (tester) async {
+    testWidgets('shows custom empty warning when provided', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          AppRoleAssignmentPicker(
+            roles: roles,
+            selectedRoleIds: const <String>{},
+            onSelectionChanged: (_) {},
+            emptyWarning: 'Assign at least one role.',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Assign at least one role.'), findsOneWidget);
+    });
+
+    testWidgets('filters roles via consolidated searchable select',
+        (tester) async {
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(
@@ -58,7 +75,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField).first, 'admin');
+      await tester.tap(find.byType(DropdownMenuFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'admin');
       await tester.pump();
 
       expect(find.text('admin'), findsOneWidget);

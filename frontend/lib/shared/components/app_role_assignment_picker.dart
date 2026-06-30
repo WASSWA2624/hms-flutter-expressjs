@@ -5,7 +5,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
-import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 
 @immutable
@@ -50,9 +49,9 @@ class AppRoleAssignmentPicker extends StatefulWidget {
 }
 
 class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
-  final TextEditingController _searchController = TextEditingController();
   final Set<String> _previewPermissions = <String>{};
   bool _loadingPermissions = false;
+  int _roleSelectGeneration = 0;
 
   @override
   void initState() {
@@ -68,26 +67,12 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   List<AppRoleAssignmentOption> get _availableRoles {
-    final String query = _searchController.text.trim().toLowerCase();
     return widget.roles
-        .where((AppRoleAssignmentOption role) {
-          if (widget.selectedRoleIds.contains(role.id)) {
-            return false;
-          }
-          if (query.isEmpty) {
-            return true;
-          }
-          final String haystack =
-              '${role.label} ${role.description ?? ''}'.toLowerCase();
-          return haystack.contains(query);
-        })
+        .where(
+          (AppRoleAssignmentOption role) =>
+              !widget.selectedRoleIds.contains(role.id),
+        )
         .toList(growable: false);
   }
 
@@ -111,6 +96,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     }
     final Set<String> next = Set<String>.from(widget.selectedRoleIds)
       ..add(roleId);
+    setState(() => _roleSelectGeneration += 1);
     _updateSelection(next);
   }
 
@@ -157,7 +143,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
 
     return AppFormSection(
       children: <Widget>[
-        if (widget.selectedRoleIds.isEmpty)
+        if (widget.emptyWarning != null && widget.selectedRoleIds.isEmpty)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -169,7 +155,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
               SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: Text(
-                  widget.emptyWarning ?? l10n.hrStaffOnboardingNoRolesWarning,
+                  widget.emptyWarning!,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.error,
                   ),
@@ -177,16 +163,16 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
               ),
             ],
           ),
-        AppTextField(
-          controller: _searchController,
-          labelText: l10n.hrRoleAssignmentSearchLabel,
-          onChanged: (_) => setState(() {}),
-        ),
         AppSelectField<String>.searchable(
+          key: ValueKey<int>(_roleSelectGeneration),
           labelText: l10n.hrRoleAssignmentAddRoleLabel,
           options: <AppSelectOption<String>>[
             for (final AppRoleAssignmentOption role in _availableRoles)
-              AppSelectOption<String>(value: role.id, label: role.label),
+              AppSelectOption<String>(
+                value: role.id,
+                label: role.label,
+                searchText: '${role.label} ${role.description ?? ''}',
+              ),
           ],
           onChanged: _addRole,
         ),

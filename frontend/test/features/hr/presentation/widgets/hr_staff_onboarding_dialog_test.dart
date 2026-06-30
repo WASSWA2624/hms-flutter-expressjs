@@ -144,12 +144,64 @@ void main() {
       expect(find.text('DEMO-STF-0001'), findsNothing);
     });
 
+    testWidgets('shows staff number mode radios side by side on wide layout',
+        (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      final Finder generateRadio = find.ancestor(
+        of: find.text('Automatically generate staff number'),
+        matching: find.byType(RadioListTile<StaffNumberEntryMode>),
+      );
+      final Finder manualRadio = find.ancestor(
+        of: find.text('Enter staff number manually'),
+        matching: find.byType(RadioListTile<StaffNumberEntryMode>),
+      );
+
+      expect(generateRadio, findsOneWidget);
+      expect(manualRadio, findsOneWidget);
+      expect(
+        tester.getTopLeft(generateRadio).dy,
+        closeTo(tester.getTopLeft(manualRadio).dy, 1.0),
+      );
+    });
+
+    testWidgets('stacks staff number mode radios on narrow layout',
+        (tester) async {
+      await tester.pumpWidget(buildForm(width: 400));
+      await tester.pumpAndSettle();
+
+      final Finder generateRadio = find.ancestor(
+        of: find.text('Automatically generate staff number'),
+        matching: find.byType(RadioListTile<StaffNumberEntryMode>),
+      );
+      final Finder manualRadio = find.ancestor(
+        of: find.text('Enter staff number manually'),
+        matching: find.byType(RadioListTile<StaffNumberEntryMode>),
+      );
+
+      expect(
+        tester.getTopLeft(generateRadio).dy,
+        lessThan(tester.getTopLeft(manualRadio).dy),
+      );
+    });
+
     testWidgets('shows staff number field only in manual mode', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       expect(find.text('Staff number'), findsNothing);
 
+      await tester.scrollUntilVisible(
+        find.text('Enter staff number manually'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(
         find.ancestor(
           of: find.text('Enter staff number manually'),
@@ -170,7 +222,7 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('No roles assigned yet'), findsOneWidget);
+      expect(find.textContaining('No roles assigned yet'), findsNothing);
 
       await tester.scrollUntilVisible(
         find.text('Add role'),
