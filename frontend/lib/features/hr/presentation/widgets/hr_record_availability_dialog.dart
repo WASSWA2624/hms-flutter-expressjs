@@ -420,6 +420,8 @@ class _HrRecordAvailabilityFieldsState
             invalidTimeMessage: l10n.appTimeInvalidMessage,
             hourLabelText: l10n.appTimeHourLabel,
             minuteLabelText: l10n.appTimeMinuteLabel,
+            hour12LabelText: l10n.appTime12HourLabel,
+            hour24LabelText: l10n.appTime24HourLabel,
             timeHint: l10n.hrTimeHint,
             requiredFieldMessage: l10n.hrFieldRequiredLabel,
           ),
@@ -485,6 +487,8 @@ class _DayScheduleSection extends StatelessWidget {
     required this.invalidTimeMessage,
     required this.hourLabelText,
     required this.minuteLabelText,
+    required this.hour12LabelText,
+    required this.hour24LabelText,
     required this.timeHint,
     required this.requiredFieldMessage,
   });
@@ -503,6 +507,8 @@ class _DayScheduleSection extends StatelessWidget {
   final String invalidTimeMessage;
   final String hourLabelText;
   final String minuteLabelText;
+  final String hour12LabelText;
+  final String hour24LabelText;
   final String timeHint;
   final String Function(String fieldLabel) requiredFieldMessage;
 
@@ -555,6 +561,8 @@ class _DayScheduleSection extends StatelessWidget {
                     invalidTimeMessage: invalidTimeMessage,
                     hourLabelText: hourLabelText,
                     minuteLabelText: minuteLabelText,
+                    hour12LabelText: hour12LabelText,
+                    hour24LabelText: hour24LabelText,
                     timeHint: timeHint,
                     removeSlotLabel: removeSlotLabel,
                     requiredFieldMessage: requiredFieldMessage,
@@ -653,6 +661,8 @@ class _AvailabilitySlotFields extends StatelessWidget {
     required this.invalidTimeMessage,
     required this.hourLabelText,
     required this.minuteLabelText,
+    required this.hour12LabelText,
+    required this.hour24LabelText,
     required this.timeHint,
     required this.removeSlotLabel,
     required this.requiredFieldMessage,
@@ -668,6 +678,8 @@ class _AvailabilitySlotFields extends StatelessWidget {
   final String invalidTimeMessage;
   final String hourLabelText;
   final String minuteLabelText;
+  final String hour12LabelText;
+  final String hour24LabelText;
   final String timeHint;
   final String removeSlotLabel;
   final String Function(String fieldLabel) requiredFieldMessage;
@@ -687,10 +699,11 @@ class _AvailabilitySlotFields extends StatelessWidget {
               hintText: timeHint,
               hourLabelText: hourLabelText,
               minuteLabelText: minuteLabelText,
+              hour12LabelText: hour12LabelText,
+              hour24LabelText: hour24LabelText,
               pickerButtonLabel: pickerButtonLabel,
               invalidTimeMessage: invalidTimeMessage,
               isRequired: true,
-              use24HourFormat: true,
               validator: AppValidators.requiredValue<AppTimeValue>(
                 requiredFieldMessage(startTimeLabel),
               ),
@@ -708,10 +721,11 @@ class _AvailabilitySlotFields extends StatelessWidget {
               hintText: timeHint,
               hourLabelText: hourLabelText,
               minuteLabelText: minuteLabelText,
+              hour12LabelText: hour12LabelText,
+              hour24LabelText: hour24LabelText,
               pickerButtonLabel: pickerButtonLabel,
               invalidTimeMessage: invalidTimeMessage,
               isRequired: true,
-              use24HourFormat: true,
               validator: AppValidators.requiredValue<AppTimeValue>(
                 requiredFieldMessage(endTimeLabel),
               ),

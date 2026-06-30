@@ -52,6 +52,25 @@ void main() {
     expect(selected, const AppTimeValue(hour: 10, minute: 5));
   });
 
+  testWidgets('AppTimeField shows 12H/24H format toggle', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppTimeField(
+        value: AppTimeValue(hour: 15, minute: 0),
+        use24HourFormat: true,
+        pickerButtonLabel: 'Select time',
+        invalidTimeMessage: 'Invalid time',
+        labelText: 'Start time',
+      ),
+    );
+
+    expect(find.text('Start time'), findsOneWidget);
+    expect(find.text('12H'), findsOneWidget);
+    expect(find.text('24H'), findsOneWidget);
+  });
+
   testWidgets('AppTimeField shows AM/PM toggle in 12-hour mode', (
     WidgetTester tester,
   ) async {
@@ -60,6 +79,7 @@ void main() {
       const AppTimeField(
         value: AppTimeValue(hour: 15, minute: 0),
         use24HourFormat: false,
+        allowFormatToggle: false,
         pickerButtonLabel: 'Select time',
         invalidTimeMessage: 'Invalid time',
       ),

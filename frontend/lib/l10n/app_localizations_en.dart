@@ -555,6 +555,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTimePmLabel => 'PM';
 
   @override
+  String get appTime12HourLabel => '12H';
+
+  @override
+  String get appTime24HourLabel => '24H';
+
+  @override
   String get appPhoneCountryLabel => 'Country code';
 
   @override

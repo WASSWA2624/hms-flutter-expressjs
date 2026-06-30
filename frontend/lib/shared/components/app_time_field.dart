@@ -19,6 +19,8 @@ class AppTimeField extends StatefulWidget {
     this.secondLabelText = 'SS',
     this.amLabelText = 'AM',
     this.pmLabelText = 'PM',
+    this.hour12LabelText = '12H',
+    this.hour24LabelText = '24H',
     this.hintText,
     this.helperText,
     this.errorText,
@@ -30,6 +32,7 @@ class AppTimeField extends StatefulWidget {
     this.isRequired = false,
     this.showSeconds = false,
     this.use24HourFormat,
+    this.allowFormatToggle = true,
     this.focusNode,
     this.restorationId,
     super.key,
@@ -45,6 +48,8 @@ class AppTimeField extends StatefulWidget {
   final String secondLabelText;
   final String amLabelText;
   final String pmLabelText;
+  final String hour12LabelText;
+  final String hour24LabelText;
   final String? hintText;
   final String? helperText;
   final String? errorText;
@@ -56,6 +61,7 @@ class AppTimeField extends StatefulWidget {
   final bool isRequired;
   final bool showSeconds;
   final bool? use24HourFormat;
+  final bool allowFormatToggle;
   final FocusNode? focusNode;
   final String? restorationId;
 
@@ -72,7 +78,9 @@ class _AppTimeFieldState extends State<AppTimeField> {
   late FocusNode _secondFocusNode;
   late bool _ownsHourFocusNode;
   late _AppTimePeriod _period;
+  bool? _userFormat24Hour;
   bool _isSyncing = false;
+  bool _didSyncInitialValue = false;
 
   @override
   void initState() {
@@ -80,9 +88,18 @@ class _AppTimeFieldState extends State<AppTimeField> {
     _hourController = TextEditingController();
     _minuteController = TextEditingController();
     _secondController = TextEditingController();
-    _period = _periodForValue(widget.value);
-    _syncControllersFromValue(widget.value);
+    _period = _AppTimePeriod.am;
     _attachFocusNodes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didSyncInitialValue) {
+      _didSyncInitialValue = true;
+      _period = _periodForValue(widget.value);
+      _syncControllersFromValue(widget.value);
+    }
   }
 
   @override
@@ -97,7 +114,8 @@ class _AppTimeFieldState extends State<AppTimeField> {
       _syncControllersFromValue(widget.value);
     }
     if (oldWidget.use24HourFormat != widget.use24HourFormat && mounted) {
-      _syncControllersFromValue(_parseParts());
+      _userFormat24Hour = null;
+      _syncControllersFromValue(_parseParts() ?? widget.value);
     }
   }
 
@@ -144,7 +162,9 @@ class _AppTimeFieldState extends State<AppTimeField> {
   }
 
   bool get _uses24Hour =>
-      widget.use24HourFormat ?? MediaQuery.alwaysUse24HourFormatOf(context);
+      _userFormat24Hour ??
+      widget.use24HourFormat ??
+      MediaQuery.alwaysUse24HourFormatOf(context);
 
   int get _hourMaxLength => _uses24Hour ? 2 : 2;
 
@@ -166,40 +186,76 @@ class _AppTimeFieldState extends State<AppTimeField> {
       forceErrorText: widget.errorText,
       onReset: () => _syncControllersFromValue(widget.value),
       builder: (FormFieldState<AppTimeValue> field) {
-        Widget timeField = InputDecorator(
-          isFocused: _hasFocus,
-          isEmpty: _allPartsEmpty,
-          decoration: InputDecoration(
-            enabled: canChange,
-            label: appFieldLabelWidget(
-              context,
-              widget.labelText,
-              isRequired: widget.isRequired,
-            ),
-            helperText: widget.helperText,
-            errorText: field.errorText,
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            contentPadding: EdgeInsetsDirectional.fromSTEB(
-              theme.spacing.md,
-              theme.spacing.md,
-              theme.spacing.xs,
-              theme.spacing.sm,
-            ),
-            suffixIcon: _TimePickerButton(
-              label: widget.pickerButtonLabel,
-              onPressed: canChange ? () => _selectTime(context, field) : null,
-            ),
-            suffixIconConstraints: BoxConstraints(
-              minWidth:
-                  theme.appTokens.minInteractiveDimension + theme.spacing.md,
-              minHeight:
-                  theme.inputDecorationTheme.constraints?.minHeight ?? 48,
-            ),
-          ).applyDefaults(theme.inputDecorationTheme),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: Row(
-              children: <Widget>[
+        final Widget? fieldLabel = appFieldLabelWidget(
+          context,
+          widget.labelText,
+          isRequired: widget.isRequired,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        );
+
+        Widget timeField = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (fieldLabel != null || widget.allowFormatToggle)
+              Padding(
+                padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                child: Row(
+                  children: <Widget>[
+                    if (fieldLabel != null) Expanded(child: fieldLabel),
+                    if (widget.allowFormatToggle)
+                      _TimeFormatToggle(
+                        uses24Hour: _uses24Hour,
+                        label12: widget.hour12LabelText,
+                        label24: widget.hour24LabelText,
+                        enabled: canChange,
+                        onChanged: (bool use24Hour) {
+                          setState(() => _userFormat24Hour = use24Hour);
+                          final AppTimeValue? current =
+                              _parseParts() ?? widget.value;
+                          if (current != null) {
+                            _syncControllersFromValue(current);
+                            field.didChange(current);
+                            widget.onChanged?.call(current);
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            InputDecorator(
+              isFocused: _hasFocus,
+              isEmpty: _allPartsEmpty,
+              decoration: InputDecoration(
+                enabled: canChange,
+                helperText: widget.helperText,
+                errorText: field.errorText,
+                floatingLabelBehavior: FloatingLabelBehavior.never,
+                contentPadding: EdgeInsetsDirectional.fromSTEB(
+                  theme.spacing.md,
+                  theme.spacing.sm,
+                  theme.spacing.xs,
+                  theme.spacing.sm,
+                ),
+                suffixIcon: _TimePickerButton(
+                  label: widget.pickerButtonLabel,
+                  onPressed:
+                      canChange ? () => _selectTime(context, field) : null,
+                ),
+                suffixIconConstraints: BoxConstraints(
+                  minWidth:
+                      theme.appTokens.minInteractiveDimension + theme.spacing.md,
+                  minHeight:
+                      theme.inputDecorationTheme.constraints?.minHeight ?? 48,
+                ),
+              ).applyDefaults(theme.inputDecorationTheme),
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  children: <Widget>[
                 Flexible(
                   flex: 2,
                   child: SizedBox(
@@ -268,15 +324,17 @@ class _AppTimeFieldState extends State<AppTimeField> {
                     pmLabel: widget.pmLabelText,
                     period: _period,
                     enabled: canChange,
-                    onChanged: ( _AppTimePeriod value) {
+                    onChanged: (_AppTimePeriod value) {
                       setState(() => _period = value);
                       _handlePartsChanged(field);
                     },
                   ),
                 ],
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         );
 
         if (widget.semanticLabel != null) {
@@ -633,6 +691,54 @@ class _TimePartSeparator extends StatelessWidget {
       child: Text(
         ':',
         style: theme.textTheme.titleMedium?.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _TimeFormatToggle extends StatelessWidget {
+  const _TimeFormatToggle({
+    required this.uses24Hour,
+    required this.label12,
+    required this.label24,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool uses24Hour;
+  final String label12;
+  final String label24;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: enabled
+            ? colors.surfaceContainerHighest
+            : colors.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _TimePeriodChip(
+            label: label12,
+            selected: !uses24Hour,
+            enabled: enabled,
+            onTap: () => onChanged(false),
+          ),
+          _TimePeriodChip(
+            label: label24,
+            selected: uses24Hour,
+            enabled: enabled,
+            onTap: () => onChanged(true),
+          ),
+        ],
       ),
     );
   }

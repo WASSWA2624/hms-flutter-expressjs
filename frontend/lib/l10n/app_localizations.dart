@@ -1132,6 +1132,18 @@ abstract class AppLocalizations {
   /// **'PM'**
   String get appTimePmLabel;
 
+  /// Label for switching a time field to 12-hour entry.
+  ///
+  /// In en, this message translates to:
+  /// **'12H'**
+  String get appTime12HourLabel;
+
+  /// Label for switching a time field to 24-hour entry.
+  ///
+  /// In en, this message translates to:
+  /// **'24H'**
+  String get appTime24HourLabel;
+
   /// Label for the country-code selector inside phone input fields.
   ///
   /// In en, this message translates to:

@@ -721,6 +721,14 @@
   "@appTimePmLabel": {
     "description": "Evening period label for 12-hour time input fields."
   },
+  "appTime12HourLabel": "12H",
+  "@appTime12HourLabel": {
+    "description": "Label for switching a time field to 12-hour entry."
+  },
+  "appTime24HourLabel": "24H",
+  "@appTime24HourLabel": {
+    "description": "Label for switching a time field to 24-hour entry."
+  },
   "appPhoneCountryLabel": "Country code",
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
