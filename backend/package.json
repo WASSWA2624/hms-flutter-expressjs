@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "predev": "node scripts/release-port.js 3000",
+    "predev": "node scripts/release-port.js 3000 && prisma generate",
     "start": "node src/server.js",
     "prestart": "node scripts/release-port.js 3000",
     "postinstall": "prisma generate",
