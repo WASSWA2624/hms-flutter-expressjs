@@ -204,13 +204,17 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           isLoading: widget.isLoading,
           onClear: _clearSelection,
         );
-        final bool enableFilter =
-            widget.searchable || widget.filterCallback != null;
-        final bool enableSearch =
-            widget.searchable || widget.searchCallback != null;
-        final MenuStyle menuStyle = _selectMenuStyle(theme, colorScheme);
+        final bool useNativeFilter = widget.filterCallback != null;
+        final bool useNativeSearch = widget.searchCallback != null;
+        final bool menuIsOpen = _focusNode.hasFocus;
+        final _SelectMenuChrome chrome = _selectMenuChrome(
+          theme,
+          colorScheme,
+          menuIsOpen: menuIsOpen,
+        );
+        final MenuStyle menuStyle = _selectMenuStyle(theme, chrome);
         final List<DropdownMenuEntry<T>> dropdownMenuEntries =
-            _dropdownMenuEntries(theme, colorScheme);
+            _dropdownMenuEntries(theme, colorScheme, chrome);
 
         return DropdownMenuFormField<T>(
           restorationId: widget.restorationId,
@@ -220,7 +224,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           width: width,
           menuHeight: effectiveMenuHeight,
           menuStyle: menuStyle,
-          alignmentOffset: const Offset(0, _menuFieldGap),
+          alignmentOffset: Offset(0, -chrome.borderWidth),
           label: appFieldLabelWidget(
             context,
             widget.labelText,
@@ -236,14 +240,14 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                 : theme.colorScheme.onSurface.withValues(alpha: 0.62),
             fontWeight: FontWeight.w500,
           ),
-          enableFilter: enableFilter,
-          enableSearch: enableSearch,
+          enableFilter: useNativeFilter,
+          enableSearch: useNativeSearch,
           expandedInsets: EdgeInsets.zero,
-          filterCallback: enableFilter
+          filterCallback: useNativeFilter
               ? (List<DropdownMenuEntry<T>> entries, String filter) =>
                     _filterCurrentEntries(dropdownMenuEntries, filter)
               : null,
-          searchCallback: enableSearch
+          searchCallback: useNativeSearch
               ? widget.searchCallback ?? _searchEntries
               : null,
           requestFocusOnTap: widget.searchable,
@@ -365,23 +369,47 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     return theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surface;
   }
 
-  MenuStyle _selectMenuStyle(ThemeData theme, ColorScheme colorScheme) {
-    final Color fillColor = _fieldFillColor(theme);
+  _SelectMenuChrome _selectMenuChrome(
+    ThemeData theme,
+    ColorScheme colorScheme, {
+    required bool menuIsOpen,
+  }) {
+    final InputBorder? focusedBorder = theme.inputDecorationTheme.focusedBorder;
+    final InputBorder? enabledBorder = theme.inputDecorationTheme.enabledBorder;
+    final Color focusedBorderColor =
+        focusedBorder?.borderSide.color ?? colorScheme.primary;
+    final double focusedBorderWidth = focusedBorder?.borderSide.width ?? 1.4;
+    final Color enabledBorderColor =
+        enabledBorder?.borderSide.color ?? colorScheme.outlineVariant;
+    final double enabledBorderWidth =
+        enabledBorder?.borderSide.width ?? theme.appTokens.dividerThickness;
+
+    return _SelectMenuChrome(
+      fillColor: _fieldFillColor(theme),
+      borderColor: menuIsOpen ? focusedBorderColor : enabledBorderColor,
+      borderWidth: menuIsOpen ? focusedBorderWidth : enabledBorderWidth,
+      dividerColor: colorScheme.outlineVariant.withValues(alpha: 0.72),
+      hoverColor: colorScheme.onSurface.withValues(alpha: 0.06),
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.14),
+    );
+  }
+
+  MenuStyle _selectMenuStyle(ThemeData theme, _SelectMenuChrome chrome) {
     return MenuStyle(
-      elevation: const WidgetStatePropertyAll<double?>(0),
-      shadowColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
+      elevation: const WidgetStatePropertyAll<double?>(3),
+      shadowColor: WidgetStatePropertyAll<Color?>(chrome.shadowColor),
       surfaceTintColor: const WidgetStatePropertyAll<Color?>(
         Colors.transparent,
       ),
-      backgroundColor: WidgetStatePropertyAll<Color?>(fillColor),
+      backgroundColor: WidgetStatePropertyAll<Color?>(chrome.fillColor),
       padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
         EdgeInsets.zero,
       ),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
           side: BorderSide(
-            color: colorScheme.outlineVariant,
-            width: theme.appTokens.dividerThickness,
+            color: chrome.borderColor,
+            width: chrome.borderWidth,
           ),
         ),
       ),
@@ -391,25 +419,32 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
 
   ButtonStyle _menuItemStyle(
     ThemeData theme,
-    ColorScheme colorScheme, {
+    _SelectMenuChrome chrome, {
     required bool showDivider,
   }) {
-    final Color fillColor = _fieldFillColor(theme);
     return ButtonStyle(
-      backgroundColor: WidgetStatePropertyAll<Color?>(fillColor),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return Colors.transparent;
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused) ||
+            states.contains(WidgetState.pressed)) {
+          return chrome.hoverColor;
+        }
+        return Colors.transparent;
+      }),
       surfaceTintColor: const WidgetStatePropertyAll<Color?>(
         Colors.transparent,
-      ),
-      overlayColor: WidgetStatePropertyAll<Color?>(
-        colorScheme.onSurface.withValues(alpha: 0.06),
       ),
       elevation: const WidgetStatePropertyAll<double?>(0),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
           side: showDivider
               ? BorderSide(
-                  color: colorScheme.outlineVariant,
+                  color: chrome.dividerColor,
                   width: theme.appTokens.dividerThickness,
                 )
               : BorderSide.none,
@@ -430,6 +465,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   List<DropdownMenuEntry<T>> _dropdownMenuEntries(
     ThemeData theme,
     ColorScheme colorScheme,
+    _SelectMenuChrome chrome,
   ) {
     final Iterable<AppSelectOption<T>> options = _menuOptions();
     final List<AppSelectOption<T>> optionList = options.toList(growable: false);
@@ -444,7 +480,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           enabled: optionList[index].enabled,
           style: _menuItemStyle(
             theme,
-            colorScheme,
+            chrome,
             showDivider: index < optionList.length - 1,
           ),
         ),
@@ -580,6 +616,24 @@ List<String> _queryTokens(String query) {
 
 String _normalizeSearchText(String value) {
   return value.trim().toLowerCase();
+}
+
+class _SelectMenuChrome {
+  const _SelectMenuChrome({
+    required this.fillColor,
+    required this.borderColor,
+    required this.borderWidth,
+    required this.dividerColor,
+    required this.hoverColor,
+    required this.shadowColor,
+  });
+
+  final Color fillColor;
+  final Color borderColor;
+  final double borderWidth;
+  final Color dividerColor;
+  final Color hoverColor;
+  final Color shadowColor;
 }
 
 class _SelectTrailingIcon extends StatelessWidget {

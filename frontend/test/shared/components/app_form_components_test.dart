@@ -204,7 +204,48 @@ void main() {
     await tester.enterText(find.byType(EditableText), 'Study 119');
     await tester.pumpAndSettle();
 
-    expect(find.text('Study 119').hitTestable(), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Study 119'),
+      ).hitTestable(),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('AppSelectField.searchable selects an option with one tap', (
+    WidgetTester tester,
+  ) async {
+    String? selected;
+
+    await pumpComponent(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Position',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'admin', label: 'Administrator'),
+          AppSelectOption<String>(
+            value: 'hospital-admin',
+            label: 'Hospital Administrator',
+          ),
+        ],
+        onChanged: (String? value) {
+          selected = value;
+        },
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Hospital Administrator'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(selected, 'hospital-admin');
   });
 
   testWidgets('AppSelectField clear button clears the selected value', (
