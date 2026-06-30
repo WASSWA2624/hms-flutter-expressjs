@@ -15,6 +15,18 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 /// Monday-first display order; values match API `day_of_week` (0 = Sunday).
 const List<int> kAvailabilityWeekDayOrder = <int>[1, 2, 3, 4, 5, 6, 0];
 
+/// Default weekday schedule for new availability records (Mon–Fri).
+const List<int> kDefaultAvailabilityWeekdays = <int>[1, 2, 3, 4, 5];
+
+const AppTimeValue kDefaultAvailabilityStartTime = AppTimeValue(
+  hour: 8,
+  minute: 0,
+);
+const AppTimeValue kDefaultAvailabilityEndTime = AppTimeValue(
+  hour: 17,
+  minute: 0,
+);
+
 /// Global entry point for recording a staff member's weekly availability.
 Future<void> showHrRecordAvailabilityDialog(
   BuildContext context,
@@ -113,7 +125,10 @@ class _HrRecordAvailabilityFields extends StatefulWidget {
 class _HrRecordAvailabilityFieldsState
     extends State<_HrRecordAvailabilityFields> {
   late final Map<int, _DayScheduleDraft> _days = <int, _DayScheduleDraft>{
-    for (final int day in kAvailabilityWeekDayOrder) day: _DayScheduleDraft(),
+    for (final int day in kAvailabilityWeekDayOrder)
+      day: kDefaultAvailabilityWeekdays.contains(day)
+          ? _DayScheduleDraft.weekdayDefault()
+          : _DayScheduleDraft(),
   };
 
   String? _preference = 'AVAILABLE';
@@ -594,6 +609,14 @@ class _DayScheduleSection extends StatelessWidget {
 
 final class _DayScheduleDraft {
   _DayScheduleDraft() : slots = <_AvailabilitySlotDraft>[_AvailabilitySlotDraft()];
+
+  factory _DayScheduleDraft.weekdayDefault() {
+    final _DayScheduleDraft schedule = _DayScheduleDraft();
+    final _AvailabilitySlotDraft slot = schedule.slots.first;
+    slot.start = kDefaultAvailabilityStartTime;
+    slot.end = kDefaultAvailabilityEndTime;
+    return schedule;
+  }
 
   final List<_AvailabilitySlotDraft> slots;
 

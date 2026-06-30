@@ -183,6 +183,7 @@ void main() {
     expect(find.text('Sunday'), findsWidgets);
     expect(find.textContaining('Effective from'), findsOneWidget);
     expect(find.text('Copy from staff'), findsOneWidget);
+    expect(find.textContaining('08:00-17:00'), findsNWidgets(5));
     expect(tester.takeException(), isNull);
   });
 
@@ -211,15 +212,9 @@ void main() {
 
     await _selectCopySourceStaff(tester);
 
-    await tester.tap(find.text('Monday'));
-    await tester.pumpAndSettle();
-
-    final Finder duplicateButton = find.text('Duplicate to…');
-    await tester.scrollUntilVisible(
-      duplicateButton,
-      120,
-      scrollable: find.byType(Scrollable).last,
-    );
+    final Finder duplicateButton = find.text('Duplicate to…').first;
+    await tester.ensureVisible(duplicateButton);
+    await tester.pump();
     await tester.tap(duplicateButton);
     await tester.pumpAndSettle();
 
