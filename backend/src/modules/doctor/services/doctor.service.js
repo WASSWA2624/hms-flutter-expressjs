@@ -11,7 +11,10 @@ const { hashPassword } = require('@lib/crypto');
 const { createAuditLog } = require('@lib/audit');
 
 const BCRYPT_PREFIX_REGEX = /^\$2[aby]\$\d{2}\$/;
-const PRACTITIONER_TYPES = new Set(['MO', 'SPECIALIST']);
+const {
+  PRACTITIONER_TYPES,
+  CONSULTATION_FEE_PRACTITIONER_TYPES,
+} = require('@lib/hr/reference-data');
 const ROLE_DOCTOR = 'DOCTOR';
 
 const DOCTOR_INCLUDE = {
@@ -118,7 +121,7 @@ const normalizeConsultationPayload = (inputData = {}, fallbackPractitionerType =
     data.consultation_currency = normalizeCurrencyCode(data.consultation_currency);
   }
 
-  if (practitionerType !== 'SPECIALIST') {
+  if (!CONSULTATION_FEE_PRACTITIONER_TYPES.has(practitionerType)) {
     data.consultation_fee = null;
     data.consultation_currency = null;
     data.is_fee_overridden = false;

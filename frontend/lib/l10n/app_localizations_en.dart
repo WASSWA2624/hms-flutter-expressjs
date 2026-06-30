@@ -13049,6 +13049,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffOnboardingCompensationSectionTitle => 'Compensation';
 
   @override
+  String get hrStaffOnboardingCompensationCreateHint =>
+      'Optional. Set pay rate and effective date when onboarding this staff member.';
+
+  @override
   String get hrStaffOnboardingConsultationSectionTitle =>
       'Consultation billing';
 
@@ -13228,6 +13232,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrCompensationProcedureRateLabel => 'Procedure rate';
+
+  @override
+  String get hrCompensationConsultationRateLabel => 'Consultation fee rate';
+
+  @override
+  String get hrCompensationCurrencyLabel => 'Currency';
 
   @override
   String get hrLeaveReportLabel => 'Leave summary';

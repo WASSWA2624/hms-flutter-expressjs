@@ -1,15 +1,28 @@
 const prisma = require('@prisma/client');
 const subject = require('../../../../modules/hr-workspace/services/hr-workspace.service');
 
+jest.mock('@lib/billing/identifiers', () => ({
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value || null),
+}));
+
 describe('hr-workspace.service contract', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.facility = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.staff_position = {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+      create: jest.fn().mockResolvedValue({ id: 'pos-1', name: 'Nurse' }),
+    };
+    prisma.facility = {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue({ tenant_id: 'tenant-1' }),
+    };
     prisma.department = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.unit = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_profile = { findMany: jest.fn().mockResolvedValue([]) };
-    prisma.staff_position = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.payroll_run = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.shift_template = { findMany: jest.fn().mockResolvedValue([]) };
@@ -88,5 +101,29 @@ describe('hr-workspace.service contract', () => {
         department_id: 'department-uuid',
       }),
     ]);
+  });
+
+  it('seeds default staff positions when catalog is empty', async () => {
+    prisma.staff_position.count.mockResolvedValue(0);
+    prisma.staff_position.create.mockImplementation(({ data }) =>
+      Promise.resolve({ id: `pos-${data.name}`, ...data })
+    );
+
+    await subject.getReferenceData({ facility_id: 'facility-1' });
+
+    expect(prisma.staff_position.count).toHaveBeenCalled();
+    expect(prisma.staff_position.create).toHaveBeenCalled();
+    expect(prisma.staff_position.create.mock.calls.length).toBeGreaterThan(10);
+  });
+
+  it('returns practitioner type options with human-friendly labels', async () => {
+    const result = await subject.getReferenceData({});
+
+    expect(result.practitioner_types).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: 'MO', label: expect.stringContaining('Medical Officer') }),
+        expect.objectContaining({ value: 'SPECIALIST', label: expect.stringContaining('Consultant') }),
+      ])
+    );
   });
 });

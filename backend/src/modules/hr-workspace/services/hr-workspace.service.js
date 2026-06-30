@@ -124,18 +124,11 @@ const RESOURCE_STATUS_ENUMS = Object.freeze({
 });
 
 const SHIFT_TYPE_OPTIONS = Object.freeze(['DAY', 'NIGHT', 'SWING', 'ON_CALL']);
-const PRACTITIONER_TYPE_OPTIONS = Object.freeze(['MO', 'SPECIALIST']);
+const {
+  DEFAULT_STAFF_POSITION_NAMES,
+  practitionerTypeOptions,
+} = require('@lib/hr/reference-data');
 const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
-const DEFAULT_STAFF_POSITION_NAMES = Object.freeze([
-  'Nurse',
-  'Doctor',
-  'Pharmacist',
-  'Radiologist',
-  'Lab Technologist',
-  'Receptionist',
-  'HR Officer',
-  'Administrator',
-]);
 
 const normalizeString = (value) => String(value || '').trim();
 const normalizeDate = (value) => {
@@ -995,6 +988,23 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
 const getReferenceData = async (filters = {}) => {
   const scope = await buildScope(filters);
   await ensureDefaultStaffPositions(scope);
+  const tenantId = await resolveTenantIdForScope(scope);
+  const staffPositionWhere = tenantId
+    ? {
+        deleted_at: null,
+        tenant_id: tenantId,
+        ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+        ...(scope.facilityId
+          ? {
+              OR: [{ facility_id: scope.facilityId }, { facility_id: null }],
+            }
+          : {}),
+      }
+    : {
+        deleted_at: null,
+        ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+        ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+      };
 
   const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles, users] =
     await Promise.all([
@@ -1072,11 +1082,7 @@ const getReferenceData = async (filters = {}) => {
         },
       }),
       prisma.staff_position.findMany({
-        where: {
-          deleted_at: null,
-          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-          ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
-        },
+        where: staffPositionWhere,
         orderBy: { name: 'asc' },
         take: 200,
         select: {
@@ -1326,7 +1332,7 @@ const getReferenceData = async (filters = {}) => {
       })
       .filter(Boolean),
     shift_types: SHIFT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
-    practitioner_types: PRACTITIONER_TYPE_OPTIONS.map((value) => ({ value, label: value })),
+    practitioner_types: practitionerTypeOptions(),
     resource_statuses: Object.fromEntries(
       Object.entries(RESOURCE_STATUS_ENUMS).map(([resource, values]) => [
         resource,
@@ -1335,8 +1341,6 @@ const getReferenceData = async (filters = {}) => {
     ),
   };
 };
-
-const shouldSeedReferenceData = () => process.env.NODE_ENV !== 'production';
 
 const resolveTenantIdForScope = async (scope) => {
   if (!scope.facilityId) {
@@ -1349,24 +1353,27 @@ const resolveTenantIdForScope = async (scope) => {
   return facility?.tenant_id || null;
 };
 
+const buildStaffPositionCatalogWhere = (scope, tenantId) => ({
+  deleted_at: null,
+  tenant_id: tenantId,
+  department_id: null,
+  ...(scope.facilityId
+    ? {
+        OR: [{ facility_id: scope.facilityId }, { facility_id: null }],
+      }
+    : { facility_id: null }),
+});
+
 const ensureDefaultStaffPositions = async (scope) => {
-  if (!shouldSeedReferenceData()) {
+  const tenantId = await resolveTenantIdForScope(scope);
+  if (!tenantId) {
     return;
   }
 
   const existingCount = await prisma.staff_position.count({
-    where: {
-      deleted_at: null,
-      ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-      ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
-    },
+    where: buildStaffPositionCatalogWhere(scope, tenantId),
   });
   if (existingCount > 0) {
-    return;
-  }
-
-  const tenantId = await resolveTenantIdForScope(scope);
-  if (!tenantId) {
     return;
   }
 
@@ -1375,7 +1382,7 @@ const ensureDefaultStaffPositions = async (scope) => {
       prisma.staff_position.create({
         data: {
           tenant_id: tenantId,
-          facility_id: scope.facilityId || null,
+          facility_id: null,
           name,
           is_active: true,
         },

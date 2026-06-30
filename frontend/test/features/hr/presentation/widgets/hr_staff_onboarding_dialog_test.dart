@@ -17,18 +17,26 @@ class _MockHrRepository extends Mock implements HrRepository {}
 const HrReferenceData _referenceData = HrReferenceData(
   staffPositions: <HrOption>[
     HrOption(value: 'pos-nurse', label: 'Nurse'),
+    HrOption(value: 'pos-doctor', label: 'Doctor'),
   ],
   departments: <HrOption>[
     HrOption(value: 'dept-er', label: 'Emergency'),
+    HrOption(value: 'dept-lab', label: 'Laboratory'),
   ],
   practitionerTypes: <HrOption>[
-    HrOption(value: 'MO', label: 'MO'),
+    HrOption(value: 'MO', label: 'Medical Officer (MO)'),
+    HrOption(value: 'SPECIALIST', label: 'Specialist / Consultant'),
   ],
   roles: <HrOption>[
     HrOption(
       value: 'role-nurse',
       label: 'Nurse | ROL001',
-      extra: <String, Object?>{'permission_count': 5},
+      extra: <String, Object?>{'permission_count': 5, 'name': 'NURSE'},
+    ),
+    HrOption(
+      value: 'role-doctor',
+      label: 'Doctor | ROL002',
+      extra: <String, Object?>{'permission_count': 12, 'name': 'DOCTOR'},
     ),
   ],
 );
@@ -269,19 +277,67 @@ void main() {
       expect(find.text('Roles and access'), findsOneWidget);
     });
 
+    testWidgets('exposes populated position and department options on first open',
+        (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      final HrStaffOnboardingFormState state =
+          tester.state<HrStaffOnboardingFormState>(
+        find.byType(HrStaffOnboardingForm),
+      );
+      expect(state.positionOptionCountForTest(), greaterThanOrEqualTo(2));
+      expect(state.departmentOptionCountForTest(), greaterThanOrEqualTo(2));
+      expect(find.text('Add a new position'), findsNothing);
+    });
+
+    testWidgets('shows compensation section on create', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compensation'), findsOneWidget);
+      expect(find.text('Pay type'), findsOneWidget);
+      expect(find.text('Monthly rate'), findsWidgets);
+    });
+
+    testWidgets('shows practitioner type only after doctor role is selected',
+        (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      final HrStaffOnboardingFormState state =
+          tester.state<HrStaffOnboardingFormState>(
+        find.byType(HrStaffOnboardingForm),
+      );
+      expect(state.showPractitionerTypeForTest, isFalse);
+
+      state.setSelectedRolesForTest(<String>{'role-doctor'});
+      await tester.pump();
+
+      expect(state.showPractitionerTypeForTest, isTrue);
+      expect(find.text('Practitioner type'), findsWidgets);
+    });
+
+    testWidgets('typed position is included in create payload', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      final HrStaffOnboardingFormState state =
+          tester.state<HrStaffOnboardingFormState>(
+        find.byType(HrStaffOnboardingForm),
+      );
+      state.setPositionDraftForTest(searchText: 'Clinical Coordinator');
+
+      final Map<String, Object?> payload = state.toPayload();
+      expect(payload['position'], 'Clinical Coordinator');
+    });
+
     testWidgets('does not show create/link user toggle', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       expect(find.text('Create new user'), findsNothing);
       expect(find.text('Link existing user'), findsNothing);
-    });
-
-    testWidgets('does not show compensation section on create', (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Compensation'), findsNothing);
     });
   });
 

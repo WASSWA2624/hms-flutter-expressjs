@@ -1,79 +1,106 @@
-# HR Staff Onboarding Dialog — UI Refinement
+# HR Staff Onboarding — Employment & Compensation Refinement
+
+## Context
+
+The **Add staff profile** dialog (`showHrStaffOnboardingDialog` in `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart`) is missing usable reference data and a compensation section on create. Position, Department, and Practitioner type dropdowns render empty; Roles and access appears before practitioner-specific fields; compensation is only shown on edit.
 
 ## Objective
 
-Polish the **Add staff profile** dialog (`showHrStaffOnboardingDialog`) so it reuses shared form components, uses space efficiently, and simplifies role assignment — without changing onboarding behavior or API payloads.
-
-## Target
-
-| Item | Location |
-|------|----------|
-| Primary form | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
-| Role picker (shared) | `frontend/lib/shared/components/app_role_assignment_picker.dart` |
-| Tests | `frontend/test/features/hr/presentation/widgets/hr_staff_onboarding_dialog_test.dart`, `frontend/test/shared/components/app_role_assignment_picker_test.dart` |
-
-Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, and existing HR dialog conventions. Keep all user-visible strings in `app_en.arb`.
-
----
+Refine the onboarding form so Employment, Roles, and Compensation are pre-populated, logically ordered, and persisted end-to-end (backend + frontend).
 
 ## Requirements
 
-### 1. Reuse shared input components
 
-Replace raw `AppTextField` usages with the established shared wrappers where they exist:
 
-| Field | Use |
-|-------|-----|
-| Staff email | `AppEmailField` (validation via `l10n.authEmailInvalidMessage`; required message via `l10n.validationRequired` or existing HR l10n) |
-| Staff phone | `AppPhoneField` (country/number labels from `l10n.appPhone*`) |
-| Temporary password | `AppTextField` with `obscureText: true` and `enableObscureTextToggle: true` — match auth/register pattern |
-| First / last name | Keep `AppTextField` (no dedicated wrapper) |
-| Address | Keep `AppTextField` with `maxLines: 2` and word capitalization — consistent with facility address fields |
+### 1. Position (searchable select + auto-create)
 
-Do **not** change field labels, required flags, helper text, or `toPayload()` keys.
+- Seed a **global hospital position catalog** (e.g. Nurse, Doctor, Pharmacist, Lab Technologist, Radiologist, Receptionist, HR Officer, Administrator, Ward Manager, Theatre Nurse, Billing Clerk, Housekeeper, Biomedical Engineer, Mortuary Attendant, Security Officer, Porter, Dietitian, Physiotherapist, Anaesthetist, Surgeon, Midwife).
+- Expose positions via HR reference data (`GET /hr/reference-data` → `staff_positions`) so the Position dropdown is never empty on first open.
+- Keep **searchable select** UX; remove or demote the “Add a new position” checkbox in favor of **type-to-create**: if the user enters a label not in the catalog, create `staff_position` on submit (backend upsert) and attach it to the profile.
+- Align seed list with `DEFAULT_STAFF_POSITION_NAMES` in `backend/src/modules/hr-workspace/services/hr-workspace.service.js`; expand it to cover common roles worldwide.
 
-### 2. Staff number mode — horizontal layout
 
-The **Automatically generate staff number** / **Enter staff number manually** radio options currently stack vertically and waste space.
 
-- Render both options **on one row** in two columns when the dialog is wide (use `AppResponsiveFieldRow.two` at the existing `_kOnboardingTwoColumnBreakpoint`).
-- Stack vertically only on narrow viewports.
-- Manual staff-number text field behavior stays unchanged (shown only when manual mode is selected).
+### 2. Department (facility-scoped, pre-populated)
 
-### 3. Roles and access — remove empty-state warning
+- Pre-populate Department from the **facility’s existing departments** (same source as Operations/seed catalog — e.g. Outpatient, Inpatient, Emergency, Laboratory, Radiology, Pharmacy, Billing, Operations, etc.).
+- Load via reference data (`departments` in `HrReferenceData`); do not require HR to type department names manually.
+- Default scope: current session `facility_id`; show human-friendly labels, persist `department_id`.
 
-Remove the red warning row:
 
-> *No roles assigned yet. This staff member will have limited access until roles are assigned.*
 
-- Do not show this indicator in `AppRoleAssignmentPicker` for staff onboarding (remove from the picker default or pass a flag / `emptyWarning: null` from the onboarding form).
-- Keep **Effective permissions** preview and the *No roles selected yet* empty-selection hint unless product says otherwise.
+### 3. Practitioner type (role-gated, expanded catalog)
 
-### 4. Roles and access — single searchable select
+- **Reorder sections**: Person → Employment (staff number, position, department, hire date) → **Roles and access** → **Practitioner type** (conditional) → **Compensation** → Consultation fee (conditional).
+- Show Practitioner type **only when** selected roles include a clinical prescriber (e.g. `DOCTOR`, `SPECIALIST`). Hide for nurses, admin, lab, etc.
+- Expand `PRACTITIONER_TYPE_OPTIONS` beyond `MO` / `SPECIALIST` to globally recognized types, e.g.:
+  - Medical Officer (MO)
+  - Specialist / Consultant
+  - Resident / Registrar
+  - Intern / House Officer
+  - General Practitioner (GP)
+  - Surgeon
+  - Anaesthetist
+  - Paediatrician
+  - Obstetrician/Gynaecologist
+- Store canonical codes in backend (`staff-profile.schema.js`, `staff-profile.service.js`); display localized labels in UI (`app_en.arb`).
+- Update consultation-fee visibility logic to match the expanded practitioner set.
 
-Replace the separate **Search roles** text field and **Add role** dropdown with **one searchable multi-select flow**:
 
-- One `AppSelectField<String>.searchable` (or equivalent shared pattern) where the user can type to filter roles and pick to add.
-- Selected roles still appear as removable chips/tiles below; effective-permissions preview unchanged.
-- Preserve role sort order from reference data and exclude already-selected roles from the dropdown.
-- On wide layouts, role picker controls may sit in one row; do not reintroduce a standalone search field.
 
-Refactor inside `AppRoleAssignmentPicker` so other consumers benefit; avoid HR-only duplication.
+### 4. Compensation (new section on create)
 
----
+- Add a **Compensation** `AppFormSection` on **create and edit**, placed after Roles (and Practitioner type when shown).
+- Use shared `AppCurrencyAmountField` for rate + currency (not plain `AppTextField`).
+- **Pay type** select with flexible models already supported by API:
+  - Consultation Fee (`PER_CONSULTATION`)
+  - Monthly salary (`PER_MONTH`)
+  - Daily wage (`PER_DAY`)
+  - Hourly (`PER_HOUR`)
+  - Per procedure / per task (`PER_PROCEDURE`)
+- Include **Effective from** date; section is optional but fully wired when filled.
+- Persist via existing onboarding payload (`compensations` array) and `staff_compensation` table; keep schema in sync (`compensationPayTypeSchema`).
+
+
+
+### 5. Backend synchronization
+
+- Ensure `ensureOnboardingReferenceData` / `listReferenceData` always returns non-empty positions, departments (for facility), practitioner types, and roles before the dialog opens.
+- Seed positions in non-production **and** provide a migration or tenant bootstrap path so production tenants get the catalog on first HR access.
+- On onboard/create staff: upsert unknown position names; validate practitioner type against expanded enum; create compensation row when provided.
+- Add/adjust backend tests for reference-data seeding, position auto-create, and compensation on create.
+
+
+
+### 6. Frontend quality
+
+- Follow `frontend/.cursor/design-system.mdc` and existing `AppFormSection` / `AppResponsiveFieldRow` patterns.
+- All new strings in `app_en.arb`.
+- Update `hr_staff_onboarding_dialog_test.dart` for: populated dropdowns, role-gated practitioner type, compensation on create, position auto-create.
+
+
 
 ## Acceptance criteria
 
-- [ ] Email and phone use `AppEmailField` / `AppPhoneField` with correct validation and l10n.
-- [ ] Password field supports show/hide toggle like auth forms.
-- [ ] Staff-number radios appear side-by-side on wide dialogs.
-- [ ] Empty-state roles warning is gone; permissions preview still works when roles are selected.
-- [ ] Role assignment uses a single searchable select (no separate search bar).
-- [ ] `flutter analyze` and targeted widget tests pass.
-- [ ] No regression in create-staff payload or edit-staff behavior.
+- [ ] Position, Department, and Practitioner type dropdowns show options on first open (screenshots no longer empty).
+- [ ] User can pick or type a new position; it is created and saved without a separate checkbox flow.
+- [ ] Practitioner type appears only after relevant roles are selected.
+- [ ] Compensation section visible on create with `AppCurrencyAmountField` and all four pay types.
+- [ ] Create staff persists position, department, practitioner type, roles, and compensation in one submit.
+- [ ] `flutter analyze` and targeted `flutter test` / backend tests pass.
 
-## Test updates
 
-- Remove/update assertions expecting the removed warning text.
-- Add layout assertion for horizontal staff-number radios at wide width (if feasible in widget tests).
-- Verify role can be searched and added via the consolidated select.
+
+## Key files
+
+
+| Layer             | Path                                                                             |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Dialog UI         | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart`  |
+| Reference data    | `frontend/lib/features/hr/presentation/controllers/hr_workspace_controller.dart` |
+| Amount field      | `frontend/lib/shared/components/app_currency_amount_field.dart`                  |
+| HR reference API  | `backend/src/modules/hr-workspace/services/hr-workspace.service.js`              |
+| Staff onboard API | `backend/src/modules/staff-profile/services/staff-profile.service.js`            |
+| Schemas           | `backend/src/modules/staff-profile/schemas/staff-profile.schema.js`              |
+
+

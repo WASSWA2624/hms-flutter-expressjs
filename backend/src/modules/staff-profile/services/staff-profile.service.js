@@ -21,7 +21,10 @@ const {
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PRACTITIONER_TYPES = new Set(['MO', 'SPECIALIST']);
+const {
+  PRACTITIONER_TYPES,
+  CONSULTATION_FEE_PRACTITIONER_TYPES,
+} = require('@lib/hr/reference-data');
 const ALLOWED_SORT_FIELDS = new Set([
   'created_at',
   'updated_at',
@@ -130,7 +133,7 @@ const normalizeConsultationFeePayload = (inputData = {}, { isEdit = false } = {}
     data.consultation_currency = normalizeCurrencyCode(data.consultation_currency);
   }
 
-  if (practitionerType && practitionerType !== 'SPECIALIST') {
+  if (practitionerType && !CONSULTATION_FEE_PRACTITIONER_TYPES.has(practitionerType)) {
     data.consultation_fee = null;
     data.consultation_currency = null;
     data.is_fee_overridden = false;
@@ -168,12 +171,6 @@ const extractCompensations = (data = {}) => {
   }));
 };
 
-const stripNestedStaffProfilePayload = (data = {}) => {
-  const payload = { ...data };
-  delete payload.compensations;
-  return payload;
-};
-
 const syncStaffCompensations = async (staffProfileId, compensations) => {
   if (!Array.isArray(compensations)) return;
 
@@ -198,6 +195,48 @@ const syncStaffCompensations = async (staffProfileId, compensations) => {
         },
       });
     }
+  });
+};
+
+const stripNestedStaffProfilePayload = (data = {}) => {
+  const payload = { ...data };
+  delete payload.compensations;
+  return payload;
+};
+
+const upsertStaffPositionCatalogEntry = async ({
+  tenantId,
+  facilityId = null,
+  positionName,
+}) => {
+  const normalizedName = normalizeIdentifier(positionName);
+  if (!normalizedName || !tenantId || !prisma?.staff_position?.findFirst) {
+    return null;
+  }
+
+  const existing = await prisma.staff_position.findFirst({
+    where: {
+      deleted_at: null,
+      tenant_id: tenantId,
+      name: normalizedName,
+      ...(facilityId
+        ? {
+            OR: [{ facility_id: facilityId }, { facility_id: null }],
+          }
+        : { facility_id: null }),
+    },
+  });
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.staff_position.create({
+    data: {
+      tenant_id: tenantId,
+      facility_id: facilityId || null,
+      name: normalizedName,
+      is_active: true,
+    },
   });
 };
 
@@ -452,6 +491,11 @@ const createStaffProfile = async (data, userId, ipAddress) => {
     const payload = await buildStaffProfileCreateData(data);
 
     const createdProfile = await staffProfileRepository.create(payload);
+    await upsertStaffPositionCatalogEntry({
+      tenantId: payload.tenant_id,
+      facilityId: data.facility_id || null,
+      positionName: payload.position,
+    });
     await syncStaffCompensations(createdProfile.id, requestedCompensations);
     const createdWithRelations = await staffProfileRepository.findById(
       createdProfile.id,
@@ -506,6 +550,12 @@ const updateStaffProfile = async (id, data, userId, ipAddress) => {
       });
     }
     const updatedProfile = await staffProfileRepository.update(before.id, payload);
+    if (Object.prototype.hasOwnProperty.call(data, 'position')) {
+      await upsertStaffPositionCatalogEntry({
+        tenantId: before.tenant_id,
+        positionName: payload.position,
+      });
+    }
     await syncStaffCompensations(updatedProfile.id, requestedCompensations);
     const updatedWithRelations = await staffProfileRepository.findById(
       updatedProfile.id,

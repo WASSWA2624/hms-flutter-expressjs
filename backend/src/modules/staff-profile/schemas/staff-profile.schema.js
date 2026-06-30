@@ -8,6 +8,10 @@
  */
 
 const { z } = require('zod');
+const {
+  PRACTITIONER_TYPE_OPTIONS,
+  COMPENSATION_PAY_TYPES,
+} = require('@lib/hr/reference-data');
 const { 
   uuidSchema,
   uuidOrFriendlyIdentifierSchema,
@@ -16,7 +20,7 @@ const {
 } = require('@lib/validation/zod');
 
 const STAFF_PROFILE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
-const PRACTITIONER_TYPE_VALUES = ['MO', 'SPECIALIST'];
+const PRACTITIONER_TYPE_VALUES = [...PRACTITIONER_TYPE_OPTIONS];
 
 const friendlyIdSchema = z
   .string()
@@ -28,7 +32,7 @@ const friendlyIdSchema = z
 
 const resourceIdentifierSchema = z.union([uuidSchema, friendlyIdSchema]);
 const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
-const compensationPayTypeSchema = z.enum(['PER_PROCEDURE', 'PER_HOUR', 'PER_MONTH', 'PER_DAY']);
+const compensationPayTypeSchema = z.enum(COMPENSATION_PAY_TYPES);
 const compensationInputSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema.optional(),
   pay_type: compensationPayTypeSchema,

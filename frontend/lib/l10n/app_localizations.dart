@@ -24513,6 +24513,12 @@ abstract class AppLocalizations {
   /// **'Compensation'**
   String get hrStaffOnboardingCompensationSectionTitle;
 
+  /// Helper text for the compensation section when creating a staff profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Set pay rate and effective date when onboarding this staff member.'**
+  String get hrStaffOnboardingCompensationCreateHint;
+
   /// Section title for consultation fee fields shown for clinical providers.
   ///
   /// In en, this message translates to:
@@ -24866,6 +24872,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Procedure rate'**
   String get hrCompensationProcedureRateLabel;
+
+  /// Pay rate label when compensation pay type is per consultation.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee rate'**
+  String get hrCompensationConsultationRateLabel;
+
+  /// Currency selector label for staff compensation fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get hrCompensationCurrencyLabel;
 
   /// Human resources workspace text for hrLeaveReportLabel.
   ///

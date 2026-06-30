@@ -19,15 +19,25 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const double _kOnboardingTwoColumnBreakpoint = 900;
 
-const Set<String> _clinicalRoleNames = <String>{
+const Set<String> _clinicalPrescriberRoleNames = <String>{
   'DOCTOR',
-  'NURSE',
   'SPECIALIST',
+};
+
+const Set<String> _consultationFeePractitionerTypes = <String>{
+  'MO',
+  'SPECIALIST',
+  'GP',
+  'SURGEON',
+  'ANAESTHETIST',
+  'PAEDIATRICIAN',
+  'OBGYN',
+  'RESIDENT',
 };
 
 enum StaffNumberEntryMode { generate, manual }
 
-enum _CompensationPayType { monthly, daily, hourly, perVisit }
+enum _CompensationPayType { perConsultation, monthly, daily, hourly, perVisit }
 
 /// Opens the canonical HR staff onboarding dialog (create or edit).
 Future<void> showHrStaffOnboardingDialog(
@@ -134,21 +144,20 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   late final TextEditingController _addressController;
   late final TextEditingController _passwordController;
   late final TextEditingController _staffNumberController;
-  late final TextEditingController _newPositionController;
   late final TextEditingController _compensationRateController;
-  late final TextEditingController _compensationCurrencyController;
   late final TextEditingController _feeController;
   late final TextEditingController _feeCurrencyController;
 
   StaffNumberEntryMode _staffNumberMode = StaffNumberEntryMode.generate;
   _CompensationPayType _payType = _CompensationPayType.monthly;
   String? _position;
+  String? _positionSearchText;
   String? _departmentId;
   String? _practitionerType;
+  String _compensationCurrency = appDefaultCurrencyCode;
   DateTime? _hireDate;
   DateTime? _compensationEffectiveFrom = DateTime.now();
-  bool _isAddingPosition = false;
-  bool _showCompensation = false;
+  bool _showPractitionerType = false;
   bool _showConsultationFee = false;
   final Set<String> _selectedRoleIds = <String>{};
 
@@ -162,6 +171,33 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   @visibleForTesting
   Set<String> get selectedRoleIds => Set<String>.unmodifiable(_selectedRoleIds);
+
+  @visibleForTesting
+  String resolvedPositionForTest() => _resolvedPosition();
+
+  @visibleForTesting
+  void setPositionDraftForTest({String? position, String? searchText}) {
+    _position = position;
+    _positionSearchText = searchText;
+  }
+
+  @visibleForTesting
+  bool get showPractitionerTypeForTest => _showPractitionerType;
+
+  @visibleForTesting
+  int positionOptionCountForTest() => _positionOptions().length;
+
+  @visibleForTesting
+  int departmentOptionCountForTest() =>
+      _selectOptions(_referenceData.departments).length;
+
+  @visibleForTesting
+  void setSelectedRolesForTest(Set<String> roleIds) {
+    _selectedRoleIds
+      ..clear()
+      ..addAll(roleIds);
+    _recomputeClinicalSections();
+  }
 
   HrReferenceData get _referenceData {
     final HrWorkspaceState? workspaceState = readHrWorkspaceState(ref);
@@ -187,18 +223,12 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     _addressController = TextEditingController();
     _passwordController = TextEditingController();
     _staffNumberController = TextEditingController(text: staff?.staffNumber);
-    _newPositionController = TextEditingController();
     _compensationRateController = TextEditingController();
-    _compensationCurrencyController = TextEditingController(
-      text: staff?.compensations.firstOrNull?.currency ??
-          staff?.consultationCurrency ??
-          'USD',
-    );
     _feeController = TextEditingController(
       text: staff?.consultationFee?.toString(),
     );
     _feeCurrencyController = TextEditingController(
-      text: staff?.consultationCurrency ?? 'USD',
+      text: staff?.consultationCurrency ?? appDefaultCurrencyCode,
     );
     _position = (staff?.position ?? '').trim().isEmpty ? null : staff!.position;
     _departmentId = staff?.departmentDisplayId ?? staff?.departmentId;
@@ -207,9 +237,10 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     if (staff != null && staff.compensations.isNotEmpty) {
       final HrStaffCompensation compensation = staff.compensations.first;
       _compensationRateController.text = compensation.rate?.toString() ?? '';
+      _compensationCurrency =
+          compensation.currency ?? appDefaultCurrencyCode;
       _payType = _payTypeFromApi(compensation.payType);
       _compensationEffectiveFrom = compensation.effectiveFrom ?? DateTime.now();
-      _showCompensation = compensation.rate != null;
     }
     if (staff?.staffNumber != null && staff!.staffNumber!.isNotEmpty) {
       _staffNumberMode = StaffNumberEntryMode.manual;
@@ -233,9 +264,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     _addressController.dispose();
     _passwordController.dispose();
     _staffNumberController.dispose();
-    _newPositionController.dispose();
     _compensationRateController.dispose();
-    _compensationCurrencyController.dispose();
     _feeController.dispose();
     _feeCurrencyController.dispose();
     super.dispose();
@@ -243,6 +272,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   _CompensationPayType _payTypeFromApi(String? value) {
     return switch ((value ?? '').toUpperCase()) {
+      'PER_CONSULTATION' => _CompensationPayType.perConsultation,
       'PER_HOUR' => _CompensationPayType.hourly,
       'PER_DAY' => _CompensationPayType.daily,
       'PER_PROCEDURE' => _CompensationPayType.perVisit,
@@ -252,6 +282,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   String _payTypeApiValue(_CompensationPayType type) {
     return switch (type) {
+      _CompensationPayType.perConsultation => 'PER_CONSULTATION',
       _CompensationPayType.hourly => 'PER_HOUR',
       _CompensationPayType.daily => 'PER_DAY',
       _CompensationPayType.perVisit => 'PER_PROCEDURE',
@@ -259,22 +290,15 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     };
   }
 
-  void _recomputeClinicalSections() {
-    final bool clinical = _isClinicalBillingProvider();
-    setState(() {
-      _showConsultationFee = clinical;
-      if (!clinical) {
-        _feeController.clear();
-        _feeCurrencyController.text = 'USD';
-      }
-    });
+  String _resolvedPosition() {
+    final String selected = (_position ?? '').trim();
+    if (selected.isNotEmpty) {
+      return selected;
+    }
+    return (_positionSearchText ?? '').trim();
   }
 
-  bool _isClinicalBillingProvider() {
-    final String? practitioner = _practitionerType?.toUpperCase();
-    if (practitioner == 'MO' || practitioner == 'SPECIALIST') {
-      return true;
-    }
+  bool _isClinicalPrescriberRoleSelected() {
     for (final String roleId in _selectedRoleIds) {
       final HrOption? role = _roleOptionById(roleId);
       if (role == null) {
@@ -285,12 +309,31 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
               .toString()
               .trim()
               .toUpperCase();
-      if (_clinicalRoleNames.contains(roleName) ||
+      if (_clinicalPrescriberRoleNames.contains(roleName) ||
           roleName.contains('DOCTOR')) {
         return true;
       }
     }
     return false;
+  }
+
+  void _recomputeClinicalSections() {
+    final bool showPractitioner = isEdit || _isClinicalPrescriberRoleSelected();
+    final String? practitioner = _practitionerType?.toUpperCase();
+    final bool showFee = showPractitioner &&
+        practitioner != null &&
+        _consultationFeePractitionerTypes.contains(practitioner);
+    setState(() {
+      _showPractitionerType = showPractitioner;
+      _showConsultationFee = showFee;
+      if (!showPractitioner) {
+        _practitionerType = null;
+      }
+      if (!showFee) {
+        _feeController.clear();
+        _feeCurrencyController.text = appDefaultCurrencyCode;
+      }
+    });
   }
 
   HrOption? _roleOptionById(String roleId) {
@@ -358,6 +401,10 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   List<AppSelectOption<String>> _payTypeOptions(AppLocalizations l10n) {
     return <AppSelectOption<String>>[
       AppSelectOption<String>(
+        value: _CompensationPayType.perConsultation.name,
+        label: l10n.hrCompensationConsultationRateLabel,
+      ),
+      AppSelectOption<String>(
         value: _CompensationPayType.monthly.name,
         label: l10n.hrCompensationMonthlyRateLabel,
       ),
@@ -376,23 +423,28 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     ];
   }
 
+  String _compensationRateLabel(AppLocalizations l10n) {
+    return switch (_payType) {
+      _CompensationPayType.perConsultation =>
+        l10n.hrCompensationConsultationRateLabel,
+      _CompensationPayType.monthly => l10n.hrCompensationMonthlyRateLabel,
+      _CompensationPayType.daily => l10n.hrStaffOnboardingDailyRateLabel,
+      _CompensationPayType.hourly => l10n.hrCompensationHourlyRateLabel,
+      _CompensationPayType.perVisit => l10n.hrCompensationProcedureRateLabel,
+    };
+  }
+
   Map<String, Object?> toPayload() {
-    final String position = _isAddingPosition
-        ? _newPositionController.text.trim()
-        : (_position ?? '').trim();
+    final String position = _resolvedPosition();
     final List<Map<String, Object?>> compensations = <Map<String, Object?>>[];
-    if (_showCompensation) {
-      final num? rate = num.tryParse(_compensationRateController.text.trim());
-      if (rate != null) {
-        compensations.add(<String, Object?>{
-          'pay_type': _payTypeApiValue(_payType),
-          'rate': rate,
-          'currency': _compensationCurrencyController.text
-              .trim()
-              .toUpperCase(),
-          'effective_from': _datePayload(_compensationEffectiveFrom),
-        });
-      }
+    final num? rate = num.tryParse(_compensationRateController.text.trim());
+    if (rate != null) {
+      compensations.add(<String, Object?>{
+        'pay_type': _payTypeApiValue(_payType),
+        'rate': rate,
+        'currency': _compensationCurrency.trim().toUpperCase(),
+        'effective_from': _datePayload(_compensationEffectiveFrom),
+      });
     }
 
     final bool useGeneratedStaffNumber =
@@ -607,16 +659,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       l10n.hrFieldRequiredLabel(l10n.hrStaffNumberLabel),
                     ),
                   ),
-                if (_isAddingPosition)
-                  AppTextField(
-                    controller: _newPositionController,
-                    labelText: l10n.hrNewPositionLabel,
-                    isRequired: true,
-                    validator: AppValidators.requiredText(
-                      l10n.hrFieldRequiredLabel(l10n.hrNewPositionLabel),
-                    ),
-                  )
-                else if (wide)
+                if (wide)
                   _responsivePair(
                     left: AppSelectField<String>.searchable(
                       value: _position,
@@ -624,6 +667,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                       options: _positionOptions(),
                       onChanged: (String? value) =>
                           setState(() => _position = value),
+                      onSearchTextChanged: (String value) =>
+                          _positionSearchText = value.trim(),
                     ),
                     right: AppSelectField<String>.searchable(
                       value: _departmentId,
@@ -640,6 +685,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     options: _positionOptions(),
                     onChanged: (String? value) =>
                         setState(() => _position = value),
+                    onSearchTextChanged: (String value) =>
+                        _positionSearchText = value.trim(),
                   ),
                   AppSelectField<String>.searchable(
                     value: _departmentId,
@@ -649,61 +696,17 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                         setState(() => _departmentId = value),
                   ),
                 ],
-                AppCheckboxField(
-                  title: l10n.hrAddNewPositionLabel,
-                  value: _isAddingPosition,
-                  onChanged: (bool value) =>
-                      setState(() => _isAddingPosition = value),
+                AppDateField(
+                  value: _hireDate,
+                  labelText: l10n.hrHireDateLabel,
+                  firstDate: DateTime(1950),
+                  lastDate: DateTime(2100),
+                  currentDate: DateTime.now(),
+                  pickerButtonLabel: l10n.hrPickDateAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _hireDate = value),
                 ),
-                if (wide)
-                  _responsivePair(
-                    left: AppSelectField<String>(
-                      value: _practitionerType,
-                      labelText: l10n.hrPractitionerTypeLabel,
-                      options: _selectOptions(
-                        _referenceData.practitionerTypes,
-                      ),
-                      onChanged: (String? value) {
-                        setState(() => _practitionerType = value);
-                        _recomputeClinicalSections();
-                      },
-                    ),
-                    right: AppDateField(
-                      value: _hireDate,
-                      labelText: l10n.hrHireDateLabel,
-                      firstDate: DateTime(1950),
-                      lastDate: DateTime(2100),
-                      currentDate: DateTime.now(),
-                      pickerButtonLabel: l10n.hrPickDateAction,
-                      invalidDateMessage: l10n.appDateInvalidMessage,
-                      onChanged: (DateTime? value) =>
-                          setState(() => _hireDate = value),
-                    ),
-                  )
-                else ...<Widget>[
-                  AppSelectField<String>(
-                    value: _practitionerType,
-                    labelText: l10n.hrPractitionerTypeLabel,
-                    options: _selectOptions(
-                      _referenceData.practitionerTypes,
-                    ),
-                    onChanged: (String? value) {
-                      setState(() => _practitionerType = value);
-                      _recomputeClinicalSections();
-                    },
-                  ),
-                  AppDateField(
-                    value: _hireDate,
-                    labelText: l10n.hrHireDateLabel,
-                    firstDate: DateTime(1950),
-                    lastDate: DateTime(2100),
-                    currentDate: DateTime.now(),
-                    pickerButtonLabel: l10n.hrPickDateAction,
-                    invalidDateMessage: l10n.appDateInvalidMessage,
-                    onChanged: (DateTime? value) =>
-                        setState(() => _hireDate = value),
-                  ),
-                ],
               ],
             ),
             if (!isEdit) ...<Widget>[
@@ -727,63 +730,69 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                 },
               ),
             ],
-            if (isEdit && _showCompensation) ...<Widget>[
+            if (_showPractitionerType) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
               AppFormSection(
-                title: l10n.hrStaffOnboardingCompensationSectionTitle,
-                description: l10n.hrStaffOnboardingCompensationEditHint,
+                title: l10n.hrPractitionerTypeLabel,
                 children: <Widget>[
-                  AppSelectField<String>(
-                    value: _payType.name,
-                    labelText: l10n.hrStaffOnboardingPayTypeLabel,
-                    options: _payTypeOptions(l10n),
+                  AppSelectField<String>.searchable(
+                    value: _practitionerType,
+                    labelText: l10n.hrPractitionerTypeLabel,
+                    options: _selectOptions(_referenceData.practitionerTypes),
                     onChanged: (String? value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(
-                        () => _payType = _CompensationPayType.values.byName(value),
-                      );
+                      setState(() => _practitionerType = value);
+                      _recomputeClinicalSections();
                     },
-                  ),
-                  AppTextField(
-                    controller: _compensationRateController,
-                    labelText: switch (_payType) {
-                      _CompensationPayType.monthly =>
-                        l10n.hrCompensationMonthlyRateLabel,
-                      _CompensationPayType.daily =>
-                        l10n.hrStaffOnboardingDailyRateLabel,
-                      _CompensationPayType.hourly =>
-                        l10n.hrCompensationHourlyRateLabel,
-                      _CompensationPayType.perVisit =>
-                        l10n.hrCompensationProcedureRateLabel,
-                    },
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
-                  ),
-                  AppTextField(
-                    controller: _compensationCurrencyController,
-                    labelText: l10n.hrConsultationCurrencyLabel,
-                    textCapitalization: TextCapitalization.characters,
-                  ),
-                  AppDateField(
-                    value: _compensationEffectiveFrom,
-                    labelText: l10n.hrEffectiveFromLabel,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                    currentDate: DateTime.now(),
-                    pickerButtonLabel: l10n.hrPickDateAction,
-                    invalidDateMessage: l10n.appDateInvalidMessage,
-                    onChanged: (DateTime? value) =>
-                        setState(() => _compensationEffectiveFrom = value),
                   ),
                 ],
               ),
             ],
+            SizedBox(height: theme.spacing.lg),
+            AppFormSection(
+              title: l10n.hrStaffOnboardingCompensationSectionTitle,
+              description: isEdit
+                  ? l10n.hrStaffOnboardingCompensationEditHint
+                  : l10n.hrStaffOnboardingCompensationCreateHint,
+              children: <Widget>[
+                AppSelectField<String>(
+                  value: _payType.name,
+                  labelText: l10n.hrStaffOnboardingPayTypeLabel,
+                  options: _payTypeOptions(l10n),
+                  onChanged: (String? value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(
+                      () => _payType = _CompensationPayType.values.byName(value),
+                    );
+                  },
+                ),
+                AppCurrencyAmountField(
+                  amountController: _compensationRateController,
+                  currency: _compensationCurrency,
+                  onCurrencyChanged: (String? value) {
+                    setState(
+                      () => _compensationCurrency =
+                          value ?? appDefaultCurrencyCode,
+                    );
+                  },
+                  amountLabelText: _compensationRateLabel(l10n),
+                  currencyLabelText: l10n.hrCompensationCurrencyLabel,
+                  currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
+                ),
+                AppDateField(
+                  value: _compensationEffectiveFrom,
+                  labelText: l10n.hrEffectiveFromLabel,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                  currentDate: DateTime.now(),
+                  pickerButtonLabel: l10n.hrPickDateAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _compensationEffectiveFrom = value),
+                ),
+              ],
+            ),
             if (_showConsultationFee) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
               AppFormSection(

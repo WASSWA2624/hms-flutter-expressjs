@@ -16896,6 +16896,10 @@
   "@hrStaffOnboardingCompensationSectionTitle": {
     "description": "Section title for compensation fields in staff onboarding."
   },
+  "hrStaffOnboardingCompensationCreateHint": "Optional. Set pay rate and effective date when onboarding this staff member.",
+  "@hrStaffOnboardingCompensationCreateHint": {
+    "description": "Helper text for the compensation section when creating a staff profile."
+  },
   "hrStaffOnboardingConsultationSectionTitle": "Consultation billing",
   "@hrStaffOnboardingConsultationSectionTitle": {
     "description": "Section title for consultation fee fields shown for clinical providers."
@@ -17136,6 +17140,14 @@
   "hrCompensationProcedureRateLabel": "Procedure rate",
   "@hrCompensationProcedureRateLabel": {
     "description": "Human resources workspace text for hrCompensationProcedureRateLabel."
+  },
+  "hrCompensationConsultationRateLabel": "Consultation fee rate",
+  "@hrCompensationConsultationRateLabel": {
+    "description": "Pay rate label when compensation pay type is per consultation."
+  },
+  "hrCompensationCurrencyLabel": "Currency",
+  "@hrCompensationCurrencyLabel": {
+    "description": "Currency selector label for staff compensation fields."
   },
   "hrLeaveReportLabel": "Leave summary",
   "@hrLeaveReportLabel": {

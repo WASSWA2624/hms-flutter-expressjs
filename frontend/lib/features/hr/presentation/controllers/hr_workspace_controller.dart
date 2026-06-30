@@ -904,6 +904,7 @@ final class HrWorkspaceController
       'staff_number': payload['staff_number'],
       'position': payload['position'],
       'department_id': payload['department_id'],
+      'facility_id': facilityId,
       'practitioner_type': payload['practitioner_type'],
       'hire_date': payload['hire_date'],
       'consultation_fee': payload['consultation_fee'],
@@ -1379,9 +1380,9 @@ final class HrWorkspaceController
   }
 
   bool _hasOnboardingReferenceData(HrReferenceData data) {
-    return data.staffPositions.isNotEmpty ||
-        data.departments.isNotEmpty ||
-        data.practitionerTypes.isNotEmpty ||
+    return data.staffPositions.isNotEmpty &&
+        data.departments.isNotEmpty &&
+        data.practitionerTypes.isNotEmpty &&
         data.roles.isNotEmpty;
   }
 
