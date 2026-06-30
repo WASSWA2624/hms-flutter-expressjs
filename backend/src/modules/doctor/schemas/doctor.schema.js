@@ -5,6 +5,7 @@
  */
 
 const { z } = require('zod');
+const { PRACTITIONER_TYPE_OPTIONS } = require('@lib/hr/reference-data');
 const { listQuerySchema, decimalStringSchema } = require('@lib/validation/zod');
 
 const FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
@@ -19,7 +20,7 @@ const resourceFriendlyIdSchema = z
 
 const resourceIdentifierSchema = resourceFriendlyIdSchema;
 
-const practitionerTypeSchema = z.enum(['MO', 'SPECIALIST']);
+const practitionerTypeSchema = z.enum([...PRACTITIONER_TYPE_OPTIONS]);
 const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']);
 const scheduleTypeSchema = z.enum(['RECURRING', 'OVERRIDE']);
 

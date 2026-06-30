@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
@@ -504,7 +505,7 @@ class _HrStaffDirectory extends ConsumerWidget {
                 title: item.position ?? context.l10n.profileUnknownValue,
                 subtitle: item.practitionerType == null
                     ? null
-                    : _apiLabel(item.practitionerType),
+                    : _apiLabel(context,item.practitionerType),
               );
             },
           ),
@@ -698,7 +699,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
           rows: <_RecordLine>[
             for (final HrStaffLeave leave in detail.leaves)
               _RecordLine(
-                title: _apiLabel(leave.status).ifEmpty(l10n.hrLeaveLabel),
+                title: _apiLabel(context,leave.status).ifEmpty(l10n.hrLeaveLabel),
                 subtitle: _dateRange(context, leave.startDate, leave.endDate),
                 trailing: leave.reason,
               ),
@@ -716,7 +717,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
                 title: _dayLabel(l10n, availability.dayOfWeek),
                 subtitle: _joinDisplay(<String?>[
                   _availabilitySlotSummary(availability),
-                  _apiLabel(availability.status ?? availability.preference),
+                  _apiLabel(context,availability.status ?? availability.preference),
                 ]),
               ),
           ],
@@ -743,7 +744,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
             for (final HrStaffCompensation compensation in detail.compensations)
               _RecordLine(
                 title: _joinDisplay(<String?>[
-                  _apiLabel(compensation.payType),
+                  _apiLabel(context,compensation.payType),
                   compensation.rate?.toString(),
                   compensation.currency,
                 ]).ifEmpty(l10n.hrCompensationLabel),
@@ -921,12 +922,12 @@ class _HrActivityPanel extends StatelessWidget {
         for (final HrTimelineItem item in items)
           AppWorkspaceActivityItem(
             title: _joinDisplay(<String?>[
-              _apiLabel(item.type),
+              _apiLabel(context,item.type),
               item.id,
             ]).ifEmpty(item.id),
             subtitle: _joinDisplay(<String?>[
-              _apiLabel(item.action),
-              _apiLabel(item.status),
+              _apiLabel(context,item.action),
+              _apiLabel(context,item.status),
               _formatDateTime(context, item.at),
             ]),
             icon: _activityIcon(item.type),
@@ -1104,7 +1105,7 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppWorkspaceStatusBadge(
       status: AppWorkspaceStatus(
-        label: _apiLabel(status).ifEmpty(context.l10n.profileUnknownValue),
+        label: _apiLabel(context,status).ifEmpty(context.l10n.profileUnknownValue),
         tone: _statusTone(status),
       ),
     );
@@ -1467,7 +1468,7 @@ class _WorkItemActions extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.hrStatusColumnLabel,
-              value: _apiLabel(item.status),
+              value: _apiLabel(context,item.status),
               icon: Icons.radio_button_checked,
             ),
             AppInfoTileData(
@@ -2944,7 +2945,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.reason,
     ]).ifEmpty(l10n.hrLeaveRequestTitle),
     HrQueue.swapRequests => _joinDisplay(<String?>[
-      item.shiftType == null ? null : _apiLabel(item.shiftType),
+      item.shiftType == null ? null : _apiLabel(context,item.shiftType),
       item.shiftId,
       item.staffNumber,
     ]).ifEmpty(l10n.hrSwapRequestTitle),
@@ -2953,7 +2954,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
     HrQueue.unassignedShifts || HrQueue.overdueShifts => _joinDisplay(<String?>[
-      item.shiftType == null ? null : _apiLabel(item.shiftType),
+      item.shiftType == null ? null : _apiLabel(context,item.shiftType),
       item.shiftId,
     ]).ifEmpty(l10n.hrShiftQueueTitle),
     HrQueue.payrollDrafts => _joinDisplay(<String?>[
@@ -3024,10 +3025,25 @@ String _dayLabel(AppLocalizations l10n, int? day) {
   };
 }
 
-String _apiLabel(String? value) {
+String _apiLabel(BuildContext context, String? value) {
   final String normalized = value?.trim() ?? '';
   if (normalized.isEmpty) {
     return '';
+  }
+  final AppLocalizations l10n = context.l10n;
+  final String practitioner = l10n.hrReferencePractitionerTypeLabel(
+    normalized,
+    fallback: '',
+  );
+  if (practitioner.isNotEmpty && practitioner != normalized) {
+    return practitioner;
+  }
+  final String payType = l10n.hrReferenceCompensationPayTypeLabel(
+    normalized,
+    fallback: '',
+  );
+  if (payType.isNotEmpty && payType != normalized) {
+    return payType;
   }
   return normalized
       .split('_')

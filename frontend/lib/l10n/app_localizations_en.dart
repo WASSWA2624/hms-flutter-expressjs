@@ -15365,4 +15365,296 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsAccessAdminActionBody =>
       'Manage staff accounts, role assignments, permissions, and demo users.';
+
+  @override
+  String get hrReferenceStaffPositionNurse => 'Nurse';
+
+  @override
+  String get hrReferenceStaffPositionSeniorNurse => 'Senior Nurse';
+
+  @override
+  String get hrReferenceStaffPositionStaffNurse => 'Staff Nurse';
+
+  @override
+  String get hrReferenceStaffPositionTheatreNurse => 'Theatre Nurse';
+
+  @override
+  String get hrReferenceStaffPositionScrubNurse => 'Scrub Nurse';
+
+  @override
+  String get hrReferenceStaffPositionWardManager => 'Ward Manager';
+
+  @override
+  String get hrReferenceStaffPositionMidwife => 'Midwife';
+
+  @override
+  String get hrReferenceStaffPositionNursingAssistant => 'Nursing Assistant';
+
+  @override
+  String get hrReferenceStaffPositionDoctor => 'Doctor';
+
+  @override
+  String get hrReferenceStaffPositionConsultantPhysician =>
+      'Consultant Physician';
+
+  @override
+  String get hrReferenceStaffPositionMedicalOfficer => 'Medical Officer';
+
+  @override
+  String get hrReferenceStaffPositionResidentDoctor => 'Resident Doctor';
+
+  @override
+  String get hrReferenceStaffPositionIntern => 'Intern';
+
+  @override
+  String get hrReferenceStaffPositionGeneralPractitioner =>
+      'General Practitioner';
+
+  @override
+  String get hrReferenceStaffPositionSurgeon => 'Surgeon';
+
+  @override
+  String get hrReferenceStaffPositionAnaesthetist => 'Anaesthetist';
+
+  @override
+  String get hrReferenceStaffPositionPaediatrician => 'Paediatrician';
+
+  @override
+  String get hrReferenceStaffPositionObgyn => 'Obstetrician/Gynaecologist';
+
+  @override
+  String get hrReferenceStaffPositionPsychiatrist => 'Psychiatrist';
+
+  @override
+  String get hrReferenceStaffPositionEmergencyPhysician =>
+      'Emergency Physician';
+
+  @override
+  String get hrReferenceStaffPositionFamilyMedicinePhysician =>
+      'Family Medicine Physician';
+
+  @override
+  String get hrReferenceStaffPositionDentalSurgeon => 'Dental Surgeon';
+
+  @override
+  String get hrReferenceStaffPositionNursePractitioner => 'Nurse Practitioner';
+
+  @override
+  String get hrReferenceStaffPositionPhysiotherapist => 'Physiotherapist';
+
+  @override
+  String get hrReferenceStaffPositionOccupationalTherapist =>
+      'Occupational Therapist';
+
+  @override
+  String get hrReferenceStaffPositionSpeechTherapist => 'Speech Therapist';
+
+  @override
+  String get hrReferenceStaffPositionDietitian => 'Dietitian';
+
+  @override
+  String get hrReferenceStaffPositionClinicalPsychologist =>
+      'Clinical Psychologist';
+
+  @override
+  String get hrReferenceStaffPositionSocialWorker => 'Social Worker';
+
+  @override
+  String get hrReferenceStaffPositionRespiratoryTherapist =>
+      'Respiratory Therapist';
+
+  @override
+  String get hrReferenceStaffPositionLabTechnologist => 'Lab Technologist';
+
+  @override
+  String get hrReferenceStaffPositionMedicalLaboratoryScientist =>
+      'Medical Laboratory Scientist';
+
+  @override
+  String get hrReferenceStaffPositionPhlebotomist => 'Phlebotomist';
+
+  @override
+  String get hrReferenceStaffPositionRadiologist => 'Radiologist';
+
+  @override
+  String get hrReferenceStaffPositionSonographer => 'Sonographer';
+
+  @override
+  String get hrReferenceStaffPositionEcgTechnician => 'ECG Technician';
+
+  @override
+  String get hrReferenceStaffPositionPharmacist => 'Pharmacist';
+
+  @override
+  String get hrReferenceStaffPositionPharmacyTechnician =>
+      'Pharmacy Technician';
+
+  @override
+  String get hrReferenceStaffPositionPharmacyAssistant => 'Pharmacy Assistant';
+
+  @override
+  String get hrReferenceStaffPositionAdministrator => 'Administrator';
+
+  @override
+  String get hrReferenceStaffPositionHrOfficer => 'HR Officer';
+
+  @override
+  String get hrReferenceStaffPositionReceptionist => 'Receptionist';
+
+  @override
+  String get hrReferenceStaffPositionMedicalRecordsOfficer =>
+      'Medical Records Officer';
+
+  @override
+  String get hrReferenceStaffPositionHealthInformationOfficer =>
+      'Health Information Officer';
+
+  @override
+  String get hrReferenceStaffPositionPatientRelationsOfficer =>
+      'Patient Relations Officer';
+
+  @override
+  String get hrReferenceStaffPositionBillingClerk => 'Billing Clerk';
+
+  @override
+  String get hrReferenceStaffPositionAccountsOfficer => 'Accounts Officer';
+
+  @override
+  String get hrReferenceStaffPositionInsuranceOfficer => 'Insurance Officer';
+
+  @override
+  String get hrReferenceStaffPositionCashier => 'Cashier';
+
+  @override
+  String get hrReferenceStaffPositionHousekeeper => 'Housekeeper';
+
+  @override
+  String get hrReferenceStaffPositionPorter => 'Porter';
+
+  @override
+  String get hrReferenceStaffPositionSecurityOfficer => 'Security Officer';
+
+  @override
+  String get hrReferenceStaffPositionLaundryAttendant => 'Laundry Attendant';
+
+  @override
+  String get hrReferenceStaffPositionKitchenStaff => 'Kitchen Staff';
+
+  @override
+  String get hrReferenceStaffPositionMortuaryAttendant => 'Mortuary Attendant';
+
+  @override
+  String get hrReferenceStaffPositionAmbulanceDriver => 'Ambulance Driver';
+
+  @override
+  String get hrReferenceStaffPositionAmbulanceOperator => 'Ambulance Operator';
+
+  @override
+  String get hrReferenceStaffPositionBiomedicalEngineer =>
+      'Biomedical Engineer';
+
+  @override
+  String get hrReferenceStaffPositionItSupportOfficer => 'IT Support Officer';
+
+  @override
+  String get hrReferenceStaffPositionMaintenanceTechnician =>
+      'Maintenance Technician';
+
+  @override
+  String get hrReferenceStaffPositionHospitalAdministrator =>
+      'Hospital Administrator';
+
+  @override
+  String get hrReferenceStaffPositionDepartmentHead => 'Department Head';
+
+  @override
+  String get hrReferenceStaffPositionChiefNursingOfficer =>
+      'Chief Nursing Officer';
+
+  @override
+  String get hrReferenceStaffPositionOperationsManager => 'Operations Manager';
+
+  @override
+  String get hrReferenceStaffPositionFacilityManager => 'Facility Manager';
+
+  @override
+  String get hrReferencePractitionerTypeMo => 'Medical Officer (MO)';
+
+  @override
+  String get hrReferencePractitionerTypeSpecialist => 'Specialist / Consultant';
+
+  @override
+  String get hrReferencePractitionerTypeResident => 'Resident / Registrar';
+
+  @override
+  String get hrReferencePractitionerTypeIntern => 'Intern / House Officer';
+
+  @override
+  String get hrReferencePractitionerTypeGp => 'General Practitioner (GP)';
+
+  @override
+  String get hrReferencePractitionerTypeSurgeon => 'Surgeon';
+
+  @override
+  String get hrReferencePractitionerTypeAnaesthetist => 'Anaesthetist';
+
+  @override
+  String get hrReferencePractitionerTypePaediatrician => 'Paediatrician';
+
+  @override
+  String get hrReferencePractitionerTypeObgyn => 'Obstetrician/Gynaecologist';
+
+  @override
+  String get hrReferencePractitionerTypeNursePractitioner =>
+      'Nurse Practitioner';
+
+  @override
+  String get hrReferencePractitionerTypeDentist => 'Dentist';
+
+  @override
+  String get hrReferencePractitionerTypePsychiatrist => 'Psychiatrist';
+
+  @override
+  String get hrReferencePractitionerTypeEmergencyMedicine =>
+      'Emergency Medicine Physician';
+
+  @override
+  String get hrReferencePractitionerTypeFamilyMedicine =>
+      'Family Medicine Physician';
+
+  @override
+  String get hrReferencePractitionerTypePathologist => 'Pathologist';
+
+  @override
+  String get hrReferencePractitionerTypeRadiologist => 'Radiologist';
+
+  @override
+  String get hrReferencePractitionerTypeDermatologist => 'Dermatologist';
+
+  @override
+  String get hrReferencePractitionerTypeCardiologist => 'Cardiologist';
+
+  @override
+  String get hrReferencePractitionerTypeOphthalmologist => 'Ophthalmologist';
+
+  @override
+  String get hrReferencePractitionerTypeOrthopaedicSurgeon =>
+      'Orthopaedic Surgeon';
+
+  @override
+  String get hrReferenceCompensationPayTypePerConsultation =>
+      'Consultation fee';
+
+  @override
+  String get hrReferenceCompensationPayTypePerMonth => 'Monthly salary';
+
+  @override
+  String get hrReferenceCompensationPayTypePerDay => 'Daily wage';
+
+  @override
+  String get hrReferenceCompensationPayTypePerHour => 'Hourly rate';
+
+  @override
+  String get hrReferenceCompensationPayTypePerProcedure =>
+      'Per procedure / per task';
 }

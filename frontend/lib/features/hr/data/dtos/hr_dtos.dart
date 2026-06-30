@@ -114,6 +114,7 @@ final class HrReferenceDataDto {
       users: _options(json['users']),
       shiftTypes: _options(json['shift_types']),
       practitionerTypes: _options(json['practitioner_types']),
+      compensationPayTypes: _options(json['compensation_pay_types']),
       resourceStatuses: _resourceStatuses(json['resource_statuses']),
     );
   }
@@ -689,6 +690,7 @@ final class HrOptionDto {
       value: value,
       label: _string(json['label']) ?? value,
       displayId: _string(json['display_id']),
+      labelKey: _string(json['label_key']),
       extra: <String, Object?>{
         for (final MapEntry<String, Object?> entry in json.entries)
           if (!<String>{
@@ -696,6 +698,7 @@ final class HrOptionDto {
             'label',
             'display_id',
             'id',
+            'label_key',
           }.contains(entry.key))
             entry.key: entry.value,
       },

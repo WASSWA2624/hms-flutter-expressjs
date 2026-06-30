@@ -80,11 +80,31 @@ const collectUsedTranslationKeys = () => {
     const content = fs.readFileSync(filePath, 'utf8');
     const matches = content.matchAll(translationKeyPattern);
     for (const match of matches) {
-      if (match[1]) {
-        usedKeys.add(match[1]);
+      const key = match[1];
+      if (key && !key.endsWith('.')) {
+        usedKeys.add(key);
       }
     }
   });
+
+  try {
+    const {
+      STAFF_POSITION_CATALOG,
+      PRACTITIONER_TYPE_CATALOG,
+      COMPENSATION_PAY_TYPE_CATALOG,
+    } = require('../src/lib/hr/reference-data');
+    for (const entry of [
+      ...STAFF_POSITION_CATALOG,
+      ...PRACTITIONER_TYPE_CATALOG,
+      ...COMPENSATION_PAY_TYPE_CATALOG,
+    ]) {
+      if (entry?.labelKey) {
+        usedKeys.add(entry.labelKey);
+      }
+    }
+  } catch {
+    // HR reference catalog is optional for locale checks.
+  }
 
   return Array.from(usedKeys).sort();
 };

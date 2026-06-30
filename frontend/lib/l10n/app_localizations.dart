@@ -28808,6 +28808,546 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage staff accounts, role assignments, permissions, and demo users.'**
   String get settingsAccessAdminActionBody;
+
+  /// Localized label for labels.hr.reference.staff_position.nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurse'**
+  String get hrReferenceStaffPositionNurse;
+
+  /// Localized label for labels.hr.reference.staff_position.senior_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Senior Nurse'**
+  String get hrReferenceStaffPositionSeniorNurse;
+
+  /// Localized label for labels.hr.reference.staff_position.staff_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff Nurse'**
+  String get hrReferenceStaffPositionStaffNurse;
+
+  /// Localized label for labels.hr.reference.staff_position.theatre_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Theatre Nurse'**
+  String get hrReferenceStaffPositionTheatreNurse;
+
+  /// Localized label for labels.hr.reference.staff_position.scrub_nurse.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrub Nurse'**
+  String get hrReferenceStaffPositionScrubNurse;
+
+  /// Localized label for labels.hr.reference.staff_position.ward_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward Manager'**
+  String get hrReferenceStaffPositionWardManager;
+
+  /// Localized label for labels.hr.reference.staff_position.midwife.
+  ///
+  /// In en, this message translates to:
+  /// **'Midwife'**
+  String get hrReferenceStaffPositionMidwife;
+
+  /// Localized label for labels.hr.reference.staff_position.nursing_assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing Assistant'**
+  String get hrReferenceStaffPositionNursingAssistant;
+
+  /// Localized label for labels.hr.reference.staff_position.doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor'**
+  String get hrReferenceStaffPositionDoctor;
+
+  /// Localized label for labels.hr.reference.staff_position.consultant_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultant Physician'**
+  String get hrReferenceStaffPositionConsultantPhysician;
+
+  /// Localized label for labels.hr.reference.staff_position.medical_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Officer'**
+  String get hrReferenceStaffPositionMedicalOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.resident_doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Resident Doctor'**
+  String get hrReferenceStaffPositionResidentDoctor;
+
+  /// Localized label for labels.hr.reference.staff_position.intern.
+  ///
+  /// In en, this message translates to:
+  /// **'Intern'**
+  String get hrReferenceStaffPositionIntern;
+
+  /// Localized label for labels.hr.reference.staff_position.general_practitioner.
+  ///
+  /// In en, this message translates to:
+  /// **'General Practitioner'**
+  String get hrReferenceStaffPositionGeneralPractitioner;
+
+  /// Localized label for labels.hr.reference.staff_position.surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon'**
+  String get hrReferenceStaffPositionSurgeon;
+
+  /// Localized label for labels.hr.reference.staff_position.anaesthetist.
+  ///
+  /// In en, this message translates to:
+  /// **'Anaesthetist'**
+  String get hrReferenceStaffPositionAnaesthetist;
+
+  /// Localized label for labels.hr.reference.staff_position.paediatrician.
+  ///
+  /// In en, this message translates to:
+  /// **'Paediatrician'**
+  String get hrReferenceStaffPositionPaediatrician;
+
+  /// Localized label for labels.hr.reference.staff_position.obgyn.
+  ///
+  /// In en, this message translates to:
+  /// **'Obstetrician/Gynaecologist'**
+  String get hrReferenceStaffPositionObgyn;
+
+  /// Localized label for labels.hr.reference.staff_position.psychiatrist.
+  ///
+  /// In en, this message translates to:
+  /// **'Psychiatrist'**
+  String get hrReferenceStaffPositionPsychiatrist;
+
+  /// Localized label for labels.hr.reference.staff_position.emergency_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Physician'**
+  String get hrReferenceStaffPositionEmergencyPhysician;
+
+  /// Localized label for labels.hr.reference.staff_position.family_medicine_physician.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Medicine Physician'**
+  String get hrReferenceStaffPositionFamilyMedicinePhysician;
+
+  /// Localized label for labels.hr.reference.staff_position.dental_surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Dental Surgeon'**
+  String get hrReferenceStaffPositionDentalSurgeon;
+
+  /// Localized label for labels.hr.reference.staff_position.nurse_practitioner.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurse Practitioner'**
+  String get hrReferenceStaffPositionNursePractitioner;
+
+  /// Localized label for labels.hr.reference.staff_position.physiotherapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapist'**
+  String get hrReferenceStaffPositionPhysiotherapist;
+
+  /// Localized label for labels.hr.reference.staff_position.occupational_therapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupational Therapist'**
+  String get hrReferenceStaffPositionOccupationalTherapist;
+
+  /// Localized label for labels.hr.reference.staff_position.speech_therapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech Therapist'**
+  String get hrReferenceStaffPositionSpeechTherapist;
+
+  /// Localized label for labels.hr.reference.staff_position.dietitian.
+  ///
+  /// In en, this message translates to:
+  /// **'Dietitian'**
+  String get hrReferenceStaffPositionDietitian;
+
+  /// Localized label for labels.hr.reference.staff_position.clinical_psychologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical Psychologist'**
+  String get hrReferenceStaffPositionClinicalPsychologist;
+
+  /// Localized label for labels.hr.reference.staff_position.social_worker.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Worker'**
+  String get hrReferenceStaffPositionSocialWorker;
+
+  /// Localized label for labels.hr.reference.staff_position.respiratory_therapist.
+  ///
+  /// In en, this message translates to:
+  /// **'Respiratory Therapist'**
+  String get hrReferenceStaffPositionRespiratoryTherapist;
+
+  /// Localized label for labels.hr.reference.staff_position.lab_technologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab Technologist'**
+  String get hrReferenceStaffPositionLabTechnologist;
+
+  /// Localized label for labels.hr.reference.staff_position.medical_laboratory_scientist.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Laboratory Scientist'**
+  String get hrReferenceStaffPositionMedicalLaboratoryScientist;
+
+  /// Localized label for labels.hr.reference.staff_position.phlebotomist.
+  ///
+  /// In en, this message translates to:
+  /// **'Phlebotomist'**
+  String get hrReferenceStaffPositionPhlebotomist;
+
+  /// Localized label for labels.hr.reference.staff_position.radiologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiologist'**
+  String get hrReferenceStaffPositionRadiologist;
+
+  /// Localized label for labels.hr.reference.staff_position.sonographer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sonographer'**
+  String get hrReferenceStaffPositionSonographer;
+
+  /// Localized label for labels.hr.reference.staff_position.ecg_technician.
+  ///
+  /// In en, this message translates to:
+  /// **'ECG Technician'**
+  String get hrReferenceStaffPositionEcgTechnician;
+
+  /// Localized label for labels.hr.reference.staff_position.pharmacist.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacist'**
+  String get hrReferenceStaffPositionPharmacist;
+
+  /// Localized label for labels.hr.reference.staff_position.pharmacy_technician.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy Technician'**
+  String get hrReferenceStaffPositionPharmacyTechnician;
+
+  /// Localized label for labels.hr.reference.staff_position.pharmacy_assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy Assistant'**
+  String get hrReferenceStaffPositionPharmacyAssistant;
+
+  /// Localized label for labels.hr.reference.staff_position.administrator.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get hrReferenceStaffPositionAdministrator;
+
+  /// Localized label for labels.hr.reference.staff_position.hr_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'HR Officer'**
+  String get hrReferenceStaffPositionHrOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.receptionist.
+  ///
+  /// In en, this message translates to:
+  /// **'Receptionist'**
+  String get hrReferenceStaffPositionReceptionist;
+
+  /// Localized label for labels.hr.reference.staff_position.medical_records_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Records Officer'**
+  String get hrReferenceStaffPositionMedicalRecordsOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.health_information_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Information Officer'**
+  String get hrReferenceStaffPositionHealthInformationOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.patient_relations_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient Relations Officer'**
+  String get hrReferenceStaffPositionPatientRelationsOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.billing_clerk.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing Clerk'**
+  String get hrReferenceStaffPositionBillingClerk;
+
+  /// Localized label for labels.hr.reference.staff_position.accounts_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts Officer'**
+  String get hrReferenceStaffPositionAccountsOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.insurance_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance Officer'**
+  String get hrReferenceStaffPositionInsuranceOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.cashier.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashier'**
+  String get hrReferenceStaffPositionCashier;
+
+  /// Localized label for labels.hr.reference.staff_position.housekeeper.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeper'**
+  String get hrReferenceStaffPositionHousekeeper;
+
+  /// Localized label for labels.hr.reference.staff_position.porter.
+  ///
+  /// In en, this message translates to:
+  /// **'Porter'**
+  String get hrReferenceStaffPositionPorter;
+
+  /// Localized label for labels.hr.reference.staff_position.security_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Security Officer'**
+  String get hrReferenceStaffPositionSecurityOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.laundry_attendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry Attendant'**
+  String get hrReferenceStaffPositionLaundryAttendant;
+
+  /// Localized label for labels.hr.reference.staff_position.kitchen_staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen Staff'**
+  String get hrReferenceStaffPositionKitchenStaff;
+
+  /// Localized label for labels.hr.reference.staff_position.mortuary_attendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary Attendant'**
+  String get hrReferenceStaffPositionMortuaryAttendant;
+
+  /// Localized label for labels.hr.reference.staff_position.ambulance_driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance Driver'**
+  String get hrReferenceStaffPositionAmbulanceDriver;
+
+  /// Localized label for labels.hr.reference.staff_position.ambulance_operator.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance Operator'**
+  String get hrReferenceStaffPositionAmbulanceOperator;
+
+  /// Localized label for labels.hr.reference.staff_position.biomedical_engineer.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical Engineer'**
+  String get hrReferenceStaffPositionBiomedicalEngineer;
+
+  /// Localized label for labels.hr.reference.staff_position.it_support_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'IT Support Officer'**
+  String get hrReferenceStaffPositionItSupportOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.maintenance_technician.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Technician'**
+  String get hrReferenceStaffPositionMaintenanceTechnician;
+
+  /// Localized label for labels.hr.reference.staff_position.hospital_administrator.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital Administrator'**
+  String get hrReferenceStaffPositionHospitalAdministrator;
+
+  /// Localized label for labels.hr.reference.staff_position.department_head.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Head'**
+  String get hrReferenceStaffPositionDepartmentHead;
+
+  /// Localized label for labels.hr.reference.staff_position.chief_nursing_officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief Nursing Officer'**
+  String get hrReferenceStaffPositionChiefNursingOfficer;
+
+  /// Localized label for labels.hr.reference.staff_position.operations_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations Manager'**
+  String get hrReferenceStaffPositionOperationsManager;
+
+  /// Localized label for labels.hr.reference.staff_position.facility_manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Manager'**
+  String get hrReferenceStaffPositionFacilityManager;
+
+  /// Localized label for labels.hr.reference.practitioner_type.mo.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Officer (MO)'**
+  String get hrReferencePractitionerTypeMo;
+
+  /// Localized label for labels.hr.reference.practitioner_type.specialist.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialist / Consultant'**
+  String get hrReferencePractitionerTypeSpecialist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.resident.
+  ///
+  /// In en, this message translates to:
+  /// **'Resident / Registrar'**
+  String get hrReferencePractitionerTypeResident;
+
+  /// Localized label for labels.hr.reference.practitioner_type.intern.
+  ///
+  /// In en, this message translates to:
+  /// **'Intern / House Officer'**
+  String get hrReferencePractitionerTypeIntern;
+
+  /// Localized label for labels.hr.reference.practitioner_type.gp.
+  ///
+  /// In en, this message translates to:
+  /// **'General Practitioner (GP)'**
+  String get hrReferencePractitionerTypeGp;
+
+  /// Localized label for labels.hr.reference.practitioner_type.surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon'**
+  String get hrReferencePractitionerTypeSurgeon;
+
+  /// Localized label for labels.hr.reference.practitioner_type.anaesthetist.
+  ///
+  /// In en, this message translates to:
+  /// **'Anaesthetist'**
+  String get hrReferencePractitionerTypeAnaesthetist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.paediatrician.
+  ///
+  /// In en, this message translates to:
+  /// **'Paediatrician'**
+  String get hrReferencePractitionerTypePaediatrician;
+
+  /// Localized label for labels.hr.reference.practitioner_type.obgyn.
+  ///
+  /// In en, this message translates to:
+  /// **'Obstetrician/Gynaecologist'**
+  String get hrReferencePractitionerTypeObgyn;
+
+  /// Localized label for labels.hr.reference.practitioner_type.nurse_practitioner.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurse Practitioner'**
+  String get hrReferencePractitionerTypeNursePractitioner;
+
+  /// Localized label for labels.hr.reference.practitioner_type.dentist.
+  ///
+  /// In en, this message translates to:
+  /// **'Dentist'**
+  String get hrReferencePractitionerTypeDentist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.psychiatrist.
+  ///
+  /// In en, this message translates to:
+  /// **'Psychiatrist'**
+  String get hrReferencePractitionerTypePsychiatrist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.emergency_medicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Medicine Physician'**
+  String get hrReferencePractitionerTypeEmergencyMedicine;
+
+  /// Localized label for labels.hr.reference.practitioner_type.family_medicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Medicine Physician'**
+  String get hrReferencePractitionerTypeFamilyMedicine;
+
+  /// Localized label for labels.hr.reference.practitioner_type.pathologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Pathologist'**
+  String get hrReferencePractitionerTypePathologist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.radiologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiologist'**
+  String get hrReferencePractitionerTypeRadiologist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.dermatologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Dermatologist'**
+  String get hrReferencePractitionerTypeDermatologist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.cardiologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Cardiologist'**
+  String get hrReferencePractitionerTypeCardiologist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.ophthalmologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Ophthalmologist'**
+  String get hrReferencePractitionerTypeOphthalmologist;
+
+  /// Localized label for labels.hr.reference.practitioner_type.orthopaedic_surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Orthopaedic Surgeon'**
+  String get hrReferencePractitionerTypeOrthopaedicSurgeon;
+
+  /// Localized label for labels.hr.reference.compensation_pay_type.per_consultation.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee'**
+  String get hrReferenceCompensationPayTypePerConsultation;
+
+  /// Localized label for labels.hr.reference.compensation_pay_type.per_month.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly salary'**
+  String get hrReferenceCompensationPayTypePerMonth;
+
+  /// Localized label for labels.hr.reference.compensation_pay_type.per_day.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily wage'**
+  String get hrReferenceCompensationPayTypePerDay;
+
+  /// Localized label for labels.hr.reference.compensation_pay_type.per_hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly rate'**
+  String get hrReferenceCompensationPayTypePerHour;
+
+  /// Localized label for labels.hr.reference.compensation_pay_type.per_procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Per procedure / per task'**
+  String get hrReferenceCompensationPayTypePerProcedure;
 }
 
 class _AppLocalizationsDelegate

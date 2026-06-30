@@ -16,16 +16,32 @@ class _MockHrRepository extends Mock implements HrRepository {}
 
 const HrReferenceData _referenceData = HrReferenceData(
   staffPositions: <HrOption>[
-    HrOption(value: 'pos-nurse', label: 'Nurse'),
-    HrOption(value: 'pos-doctor', label: 'Doctor'),
+    HrOption(
+      value: 'pos-nurse',
+      label: 'Nurse',
+      labelKey: 'labels.hr.reference.staff_position.nurse',
+    ),
+    HrOption(
+      value: 'pos-doctor',
+      label: 'Doctor',
+      labelKey: 'labels.hr.reference.staff_position.doctor',
+    ),
   ],
   departments: <HrOption>[
     HrOption(value: 'dept-er', label: 'Emergency'),
     HrOption(value: 'dept-lab', label: 'Laboratory'),
   ],
   practitionerTypes: <HrOption>[
-    HrOption(value: 'MO', label: 'Medical Officer (MO)'),
-    HrOption(value: 'SPECIALIST', label: 'Specialist / Consultant'),
+    HrOption(
+      value: 'MO',
+      label: 'Medical Officer (MO)',
+      labelKey: 'labels.hr.reference.practitioner_type.mo',
+    ),
+    HrOption(
+      value: 'SPECIALIST',
+      label: 'Specialist / Consultant',
+      labelKey: 'labels.hr.reference.practitioner_type.specialist',
+    ),
   ],
   roles: <HrOption>[
     HrOption(
@@ -297,7 +313,7 @@ void main() {
 
       expect(find.text('Compensation'), findsOneWidget);
       expect(find.text('Pay type'), findsOneWidget);
-      expect(find.text('Monthly rate'), findsWidgets);
+      expect(find.text('Monthly salary'), findsWidgets);
     });
 
     testWidgets('shows practitioner type only after doctor role is selected',

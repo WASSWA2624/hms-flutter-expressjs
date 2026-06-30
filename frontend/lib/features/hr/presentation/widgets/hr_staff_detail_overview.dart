@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_info_sheet.dart';
@@ -80,7 +81,10 @@ class HrStaffDetailOverview extends StatelessWidget {
       if ((profile.practitionerType ?? '').trim().isNotEmpty)
         AppInfoSheetItem(
           label: l10n.hrPractitionerTypeLabel,
-          value: _apiLabel(profile.practitionerType),
+          value: context.l10n.hrReferencePractitionerTypeLabel(
+            profile.practitionerType,
+            fallback: profile.practitionerType,
+          ),
         ),
       AppInfoSheetItem(
         label: l10n.hrDepartmentLabel,
@@ -114,21 +118,6 @@ bool _hasLinkedUser(HrStaffProfile profile) {
   return (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
       .trim()
       .isNotEmpty;
-}
-
-String _apiLabel(String? value) {
-  final String normalized = value?.trim() ?? '';
-  if (normalized.isEmpty) {
-    return '';
-  }
-  return normalized
-      .split('_')
-      .where((String part) => part.isNotEmpty)
-      .map((String part) {
-        final String lower = part.toLowerCase();
-        return lower.substring(0, 1).toUpperCase() + lower.substring(1);
-      })
-      .join(' ');
 }
 
 String _formatDate(BuildContext context, DateTime? value) {

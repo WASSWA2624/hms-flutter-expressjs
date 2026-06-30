@@ -145,10 +145,7 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
         : widget.tooltip ?? context.l10n.copyIdentifierAction;
     final String semanticLabel =
         widget.semanticLabel ?? '$tooltip: $visibleValue';
-    final Color borderColor = _copied
-        ? theme.statusColors.success.withValues(alpha: 0.46)
-        : colorScheme.outlineVariant;
-    final Color foregroundColor = _copied
+    final Color iconColor = _copied
         ? theme.statusColors.success
         : colorScheme.primary;
 
@@ -166,52 +163,32 @@ class _AppCopyableIdentifierState extends State<AppCopyableIdentifier> {
             child: InkWell(
               onTap: _copy,
               borderRadius: BorderRadius.circular(theme.radius.sm),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                curve: Curves.easeOutCubic,
-                padding: EdgeInsetsDirectional.only(
-                  start: theme.spacing.sm,
-                  top: theme.spacing.xs,
-                  bottom: theme.spacing.xs,
-                  end: widget.showCopyIcon
-                      ? theme.spacing.xs
-                      : theme.spacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: Color.alphaBlend(
-                    foregroundColor.withValues(alpha: _copied ? 0.09 : 0.035),
-                    colorScheme.surface,
-                  ),
-                  border: Border.all(color: borderColor),
-                  borderRadius: BorderRadius.circular(theme.radius.sm),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Flexible(
-                      child: Text(
-                        visibleValue,
-                        maxLines: widget.maxLines,
-                        overflow: TextOverflow.ellipsis,
-                        style: effectiveTextStyle?.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Flexible(
+                    child: Text(
+                      visibleValue,
+                      maxLines: widget.maxLines,
+                      overflow: TextOverflow.ellipsis,
+                      style: effectiveTextStyle?.copyWith(
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    if (widget.showCopyIcon) ...<Widget>[
-                      SizedBox(width: theme.spacing.xs),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 160),
-                        child: Icon(
-                          _copied ? Icons.check : Icons.copy_outlined,
-                          key: ValueKey<bool>(_copied),
-                          size: theme.appTokens.listIconSize,
-                          color: foregroundColor,
-                        ),
+                  ),
+                  if (widget.showCopyIcon) ...<Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 160),
+                      child: Icon(
+                        _copied ? Icons.check : Icons.copy_outlined,
+                        key: ValueKey<bool>(_copied),
+                        size: theme.appTokens.listIconSize,
+                        color: iconColor,
                       ),
-                    ],
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),

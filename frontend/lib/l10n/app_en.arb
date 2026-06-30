@@ -2513,23 +2513,23 @@
   "opdArrivalModeLabel": "Arrival mode",
   "opdEmergencySeverityLabel": "Emergency severity",
   "opdTriageLevelLabel": "Triage level",
-  "opdTriageLevel1Label": "Level 1 \u00b7 Immediate",
+  "opdTriageLevel1Label": "Level 1 · Immediate",
   "@opdTriageLevel1Label": {
     "description": "Triage priority level 1 (immediate / resuscitation) hospital-language label."
   },
-  "opdTriageLevel2Label": "Level 2 \u00b7 Urgent",
+  "opdTriageLevel2Label": "Level 2 · Urgent",
   "@opdTriageLevel2Label": {
     "description": "Triage priority level 2 (urgent / emergent) hospital-language label."
   },
-  "opdTriageLevel3Label": "Level 3 \u00b7 Less urgent",
+  "opdTriageLevel3Label": "Level 3 · Less urgent",
   "@opdTriageLevel3Label": {
     "description": "Triage priority level 3 (less urgent) hospital-language label."
   },
-  "opdTriageLevel4Label": "Level 4 \u00b7 Non-urgent",
+  "opdTriageLevel4Label": "Level 4 · Non-urgent",
   "@opdTriageLevel4Label": {
     "description": "Triage priority level 4 (non-urgent) hospital-language label."
   },
-  "opdTriageLevel5Label": "Level 5 \u00b7 Routine",
+  "opdTriageLevel5Label": "Level 5 · Routine",
   "@opdTriageLevel5Label": {
     "description": "Triage priority level 5 (routine) hospital-language label."
   },
@@ -6901,7 +6901,7 @@
   },
   "ipdCriticalAlertsSummaryLabel": "Critical alerts",
   "@ipdCriticalAlertsSummaryLabel": {
-    "description": "IPD summary label for active critical alerts."
+    "description": "Summary card label for critical alerts."
   },
   "ipdFiltersLabel": "Inpatient filters",
   "@ipdFiltersLabel": {
@@ -7435,10 +7435,6 @@
   "ipdStartAdmissionBedLabel": "Bed (optional)",
   "@ipdStartAdmissionBedLabel": {
     "description": "Bed field label in the start admission dialog."
-  },
-  "ipdCriticalAlertsSummaryLabel": "Critical alerts",
-  "@ipdCriticalAlertsSummaryLabel": {
-    "description": "Summary card label for critical alerts."
   },
   "ipdLengthOfStayColumnLabel": "Length of stay",
   "@ipdLengthOfStayColumnLabel": {
@@ -11326,24 +11322,36 @@
   "@labBatchPartialSaveMessage": {
     "description": "Shown when a batch save completes with some invalid or failed entries.",
     "placeholders": {
-      "savedCount": { "type": "int" },
-      "skippedCount": { "type": "int" }
+      "savedCount": {
+        "type": "int"
+      },
+      "skippedCount": {
+        "type": "int"
+      }
     }
   },
   "labBatchPartialSubmitMessage": "Submitted {savedCount} results. {skippedCount} entries need attention.",
   "@labBatchPartialSubmitMessage": {
     "description": "Shown when a batch submit completes with some invalid or failed entries.",
     "placeholders": {
-      "savedCount": { "type": "int" },
-      "skippedCount": { "type": "int" }
+      "savedCount": {
+        "type": "int"
+      },
+      "skippedCount": {
+        "type": "int"
+      }
     }
   },
   "labBatchPartialVerifyMessage": "Verified {savedCount} results. {skippedCount} entries need attention.",
   "@labBatchPartialVerifyMessage": {
     "description": "Shown when a batch verify completes with some invalid or failed entries.",
     "placeholders": {
-      "savedCount": { "type": "int" },
-      "skippedCount": { "type": "int" }
+      "savedCount": {
+        "type": "int"
+      },
+      "skippedCount": {
+        "type": "int"
+      }
     }
   },
   "labBatchEntryValidationMessage": "Correct the highlighted value before continuing.",
@@ -11358,7 +11366,9 @@
   "@labBatchValidationSummaryMessage": {
     "description": "Summary shown when batch lab result actions fail validation.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "labBatchValidationSummaryHint": "Check the highlighted tests below and complete any missing or invalid values.",
@@ -11369,22 +11379,30 @@
   "@labBatchActionFailedMessage": {
     "description": "Generic failure message for a lab batch action.",
     "placeholders": {
-      "actionLabel": { "type": "String" }
+      "actionLabel": {
+        "type": "String"
+      }
     }
   },
   "labBatchActionValidationMessage": "{actionLabel} could not run because some selected tests still need attention.",
   "@labBatchActionValidationMessage": {
     "description": "Validation failure message for a lab batch action.",
     "placeholders": {
-      "actionLabel": { "type": "String" }
+      "actionLabel": {
+        "type": "String"
+      }
     }
   },
   "labBatchActionFailedDetailMessage": "{actionLabel} failed: {detail}",
   "@labBatchActionFailedDetailMessage": {
     "description": "Detailed failure message for a lab batch action.",
     "placeholders": {
-      "actionLabel": { "type": "String" },
-      "detail": { "type": "String" }
+      "actionLabel": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
     }
   },
   "labBatchInvalidTransitionMessage": "Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.",
@@ -11475,21 +11493,27 @@
   "@clinicalLabResultReadyNotice": {
     "description": "Realtime notice shown to clinicians when lab results are ready.",
     "placeholders": {
-      "patientName": { "type": "String" }
+      "patientName": {
+        "type": "String"
+      }
     }
   },
   "clinicalLabResultUpdatedNotice": "Lab results updated for {patientName}.",
   "@clinicalLabResultUpdatedNotice": {
     "description": "Realtime notice shown to clinicians when lab results are updated.",
     "placeholders": {
-      "patientName": { "type": "String" }
+      "patientName": {
+        "type": "String"
+      }
     }
   },
   "clinicalLabResultCriticalNotice": "Critical lab result for {patientName} needs review.",
   "@clinicalLabResultCriticalNotice": {
     "description": "Realtime notice shown to clinicians when a critical lab result is released.",
     "placeholders": {
-      "patientName": { "type": "String" }
+      "patientName": {
+        "type": "String"
+      }
     }
   },
   "labOrderFavoriteTestsLabel": "Frequently used tests",
@@ -18449,7 +18473,9 @@
   "@labRestoreOrderItemDialogBody": {
     "description": "Body confirming restoration of a cancelled lab test.",
     "placeholders": {
-      "testName": { "type": "String" }
+      "testName": {
+        "type": "String"
+      }
     }
   },
   "labDeleteOrderItemAction": "Delete request",
@@ -18464,22 +18490,27 @@
   "@labDeleteOrderItemDialogBody": {
     "description": "Body confirming deletion of an individual lab test request.",
     "placeholders": {
-      "testName": { "type": "String" }
+      "testName": {
+        "type": "String"
+      }
     }
   },
   "labDeletePanelAction": "Delete panel",
   "@labDeletePanelAction": {
-    "description": "Action label to delete an entire lab panel from an order."
+    "description": "Action label for deleting a lab panel."
   },
-  "labDeletePanelDialogTitle": "Delete panel",
+  "labDeletePanelDialogTitle": "Delete lab panel",
   "@labDeletePanelDialogTitle": {
-    "description": "Title for the dialog confirming deletion of an entire lab panel."
+    "description": "Dialog title for deleting a lab panel."
   },
-  "labDeletePanelDialogBody": "Delete the entire \"{panelName}\" panel from this order? This removes all of its tests and cannot be undone.",
+  "labDeletePanelDialogBody": "This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.",
   "@labDeletePanelDialogBody": {
-    "description": "Body confirming deletion of an entire lab panel.",
+    "description": "Confirmation body for deleting a lab panel.",
     "placeholders": {
-      "panelName": { "type": "String" }
+      "panelName": {
+        "type": "String",
+        "example": "Complete Metabolic Panel"
+      }
     }
   },
   "labRejectOrderItemAction": "Reject test",
@@ -18786,10 +18817,6 @@
   "@labDeleteTestAction": {
     "description": "Action label for deleting a lab test."
   },
-  "labDeletePanelAction": "Delete panel",
-  "@labDeletePanelAction": {
-    "description": "Action label for deleting a lab panel."
-  },
   "labDeleteReasonLabel": "Deletion reason",
   "@labDeleteReasonLabel": {
     "description": "Field label for the required reason when deleting a lab record."
@@ -18827,20 +18854,6 @@
       "testName": {
         "type": "String",
         "example": "Complete Blood Count"
-      }
-    }
-  },
-  "labDeletePanelDialogTitle": "Delete lab panel",
-  "@labDeletePanelDialogTitle": {
-    "description": "Dialog title for deleting a lab panel."
-  },
-  "labDeletePanelDialogBody": "This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.",
-  "@labDeletePanelDialogBody": {
-    "description": "Confirmation body for deleting a lab panel.",
-    "placeholders": {
-      "panelName": {
-        "type": "String",
-        "example": "Complete Metabolic Panel"
       }
     }
   },
@@ -18962,8 +18975,12 @@
   "@labReportSelectedTestCount": {
     "description": "Selection count shown in the lab report preview dialog.",
     "placeholders": {
-      "selectedCount": { "type": "int" },
-      "totalCount": { "type": "int" }
+      "selectedCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
     }
   },
   "labReportIncludeColumnLabel": "Include",
@@ -19638,8 +19655,12 @@
   "@radiologyWorkflowProgressCollapsedSummary": {
     "description": "Collapsed workflow progress summary.",
     "placeholders": {
-      "completed": { "type": "int" },
-      "total": { "type": "int" }
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "radiologyStudiesPerformStudyCta": "Perform study",
@@ -19877,5 +19898,365 @@
   "settingsAccessAdminActionBody": "Manage staff accounts, role assignments, permissions, and demo users.",
   "@settingsAccessAdminActionBody": {
     "description": "Settings link body for access admin."
+  },
+  "hrReferenceStaffPositionNurse": "Nurse",
+  "@hrReferenceStaffPositionNurse": {
+    "description": "Localized label for labels.hr.reference.staff_position.nurse."
+  },
+  "hrReferenceStaffPositionSeniorNurse": "Senior Nurse",
+  "@hrReferenceStaffPositionSeniorNurse": {
+    "description": "Localized label for labels.hr.reference.staff_position.senior_nurse."
+  },
+  "hrReferenceStaffPositionStaffNurse": "Staff Nurse",
+  "@hrReferenceStaffPositionStaffNurse": {
+    "description": "Localized label for labels.hr.reference.staff_position.staff_nurse."
+  },
+  "hrReferenceStaffPositionTheatreNurse": "Theatre Nurse",
+  "@hrReferenceStaffPositionTheatreNurse": {
+    "description": "Localized label for labels.hr.reference.staff_position.theatre_nurse."
+  },
+  "hrReferenceStaffPositionScrubNurse": "Scrub Nurse",
+  "@hrReferenceStaffPositionScrubNurse": {
+    "description": "Localized label for labels.hr.reference.staff_position.scrub_nurse."
+  },
+  "hrReferenceStaffPositionWardManager": "Ward Manager",
+  "@hrReferenceStaffPositionWardManager": {
+    "description": "Localized label for labels.hr.reference.staff_position.ward_manager."
+  },
+  "hrReferenceStaffPositionMidwife": "Midwife",
+  "@hrReferenceStaffPositionMidwife": {
+    "description": "Localized label for labels.hr.reference.staff_position.midwife."
+  },
+  "hrReferenceStaffPositionNursingAssistant": "Nursing Assistant",
+  "@hrReferenceStaffPositionNursingAssistant": {
+    "description": "Localized label for labels.hr.reference.staff_position.nursing_assistant."
+  },
+  "hrReferenceStaffPositionDoctor": "Doctor",
+  "@hrReferenceStaffPositionDoctor": {
+    "description": "Localized label for labels.hr.reference.staff_position.doctor."
+  },
+  "hrReferenceStaffPositionConsultantPhysician": "Consultant Physician",
+  "@hrReferenceStaffPositionConsultantPhysician": {
+    "description": "Localized label for labels.hr.reference.staff_position.consultant_physician."
+  },
+  "hrReferenceStaffPositionMedicalOfficer": "Medical Officer",
+  "@hrReferenceStaffPositionMedicalOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.medical_officer."
+  },
+  "hrReferenceStaffPositionResidentDoctor": "Resident Doctor",
+  "@hrReferenceStaffPositionResidentDoctor": {
+    "description": "Localized label for labels.hr.reference.staff_position.resident_doctor."
+  },
+  "hrReferenceStaffPositionIntern": "Intern",
+  "@hrReferenceStaffPositionIntern": {
+    "description": "Localized label for labels.hr.reference.staff_position.intern."
+  },
+  "hrReferenceStaffPositionGeneralPractitioner": "General Practitioner",
+  "@hrReferenceStaffPositionGeneralPractitioner": {
+    "description": "Localized label for labels.hr.reference.staff_position.general_practitioner."
+  },
+  "hrReferenceStaffPositionSurgeon": "Surgeon",
+  "@hrReferenceStaffPositionSurgeon": {
+    "description": "Localized label for labels.hr.reference.staff_position.surgeon."
+  },
+  "hrReferenceStaffPositionAnaesthetist": "Anaesthetist",
+  "@hrReferenceStaffPositionAnaesthetist": {
+    "description": "Localized label for labels.hr.reference.staff_position.anaesthetist."
+  },
+  "hrReferenceStaffPositionPaediatrician": "Paediatrician",
+  "@hrReferenceStaffPositionPaediatrician": {
+    "description": "Localized label for labels.hr.reference.staff_position.paediatrician."
+  },
+  "hrReferenceStaffPositionObgyn": "Obstetrician/Gynaecologist",
+  "@hrReferenceStaffPositionObgyn": {
+    "description": "Localized label for labels.hr.reference.staff_position.obgyn."
+  },
+  "hrReferenceStaffPositionPsychiatrist": "Psychiatrist",
+  "@hrReferenceStaffPositionPsychiatrist": {
+    "description": "Localized label for labels.hr.reference.staff_position.psychiatrist."
+  },
+  "hrReferenceStaffPositionEmergencyPhysician": "Emergency Physician",
+  "@hrReferenceStaffPositionEmergencyPhysician": {
+    "description": "Localized label for labels.hr.reference.staff_position.emergency_physician."
+  },
+  "hrReferenceStaffPositionFamilyMedicinePhysician": "Family Medicine Physician",
+  "@hrReferenceStaffPositionFamilyMedicinePhysician": {
+    "description": "Localized label for labels.hr.reference.staff_position.family_medicine_physician."
+  },
+  "hrReferenceStaffPositionDentalSurgeon": "Dental Surgeon",
+  "@hrReferenceStaffPositionDentalSurgeon": {
+    "description": "Localized label for labels.hr.reference.staff_position.dental_surgeon."
+  },
+  "hrReferenceStaffPositionNursePractitioner": "Nurse Practitioner",
+  "@hrReferenceStaffPositionNursePractitioner": {
+    "description": "Localized label for labels.hr.reference.staff_position.nurse_practitioner."
+  },
+  "hrReferenceStaffPositionPhysiotherapist": "Physiotherapist",
+  "@hrReferenceStaffPositionPhysiotherapist": {
+    "description": "Localized label for labels.hr.reference.staff_position.physiotherapist."
+  },
+  "hrReferenceStaffPositionOccupationalTherapist": "Occupational Therapist",
+  "@hrReferenceStaffPositionOccupationalTherapist": {
+    "description": "Localized label for labels.hr.reference.staff_position.occupational_therapist."
+  },
+  "hrReferenceStaffPositionSpeechTherapist": "Speech Therapist",
+  "@hrReferenceStaffPositionSpeechTherapist": {
+    "description": "Localized label for labels.hr.reference.staff_position.speech_therapist."
+  },
+  "hrReferenceStaffPositionDietitian": "Dietitian",
+  "@hrReferenceStaffPositionDietitian": {
+    "description": "Localized label for labels.hr.reference.staff_position.dietitian."
+  },
+  "hrReferenceStaffPositionClinicalPsychologist": "Clinical Psychologist",
+  "@hrReferenceStaffPositionClinicalPsychologist": {
+    "description": "Localized label for labels.hr.reference.staff_position.clinical_psychologist."
+  },
+  "hrReferenceStaffPositionSocialWorker": "Social Worker",
+  "@hrReferenceStaffPositionSocialWorker": {
+    "description": "Localized label for labels.hr.reference.staff_position.social_worker."
+  },
+  "hrReferenceStaffPositionRespiratoryTherapist": "Respiratory Therapist",
+  "@hrReferenceStaffPositionRespiratoryTherapist": {
+    "description": "Localized label for labels.hr.reference.staff_position.respiratory_therapist."
+  },
+  "hrReferenceStaffPositionLabTechnologist": "Lab Technologist",
+  "@hrReferenceStaffPositionLabTechnologist": {
+    "description": "Localized label for labels.hr.reference.staff_position.lab_technologist."
+  },
+  "hrReferenceStaffPositionMedicalLaboratoryScientist": "Medical Laboratory Scientist",
+  "@hrReferenceStaffPositionMedicalLaboratoryScientist": {
+    "description": "Localized label for labels.hr.reference.staff_position.medical_laboratory_scientist."
+  },
+  "hrReferenceStaffPositionPhlebotomist": "Phlebotomist",
+  "@hrReferenceStaffPositionPhlebotomist": {
+    "description": "Localized label for labels.hr.reference.staff_position.phlebotomist."
+  },
+  "hrReferenceStaffPositionRadiologist": "Radiologist",
+  "@hrReferenceStaffPositionRadiologist": {
+    "description": "Localized label for labels.hr.reference.staff_position.radiologist."
+  },
+  "hrReferenceStaffPositionSonographer": "Sonographer",
+  "@hrReferenceStaffPositionSonographer": {
+    "description": "Localized label for labels.hr.reference.staff_position.sonographer."
+  },
+  "hrReferenceStaffPositionEcgTechnician": "ECG Technician",
+  "@hrReferenceStaffPositionEcgTechnician": {
+    "description": "Localized label for labels.hr.reference.staff_position.ecg_technician."
+  },
+  "hrReferenceStaffPositionPharmacist": "Pharmacist",
+  "@hrReferenceStaffPositionPharmacist": {
+    "description": "Localized label for labels.hr.reference.staff_position.pharmacist."
+  },
+  "hrReferenceStaffPositionPharmacyTechnician": "Pharmacy Technician",
+  "@hrReferenceStaffPositionPharmacyTechnician": {
+    "description": "Localized label for labels.hr.reference.staff_position.pharmacy_technician."
+  },
+  "hrReferenceStaffPositionPharmacyAssistant": "Pharmacy Assistant",
+  "@hrReferenceStaffPositionPharmacyAssistant": {
+    "description": "Localized label for labels.hr.reference.staff_position.pharmacy_assistant."
+  },
+  "hrReferenceStaffPositionAdministrator": "Administrator",
+  "@hrReferenceStaffPositionAdministrator": {
+    "description": "Localized label for labels.hr.reference.staff_position.administrator."
+  },
+  "hrReferenceStaffPositionHrOfficer": "HR Officer",
+  "@hrReferenceStaffPositionHrOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.hr_officer."
+  },
+  "hrReferenceStaffPositionReceptionist": "Receptionist",
+  "@hrReferenceStaffPositionReceptionist": {
+    "description": "Localized label for labels.hr.reference.staff_position.receptionist."
+  },
+  "hrReferenceStaffPositionMedicalRecordsOfficer": "Medical Records Officer",
+  "@hrReferenceStaffPositionMedicalRecordsOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.medical_records_officer."
+  },
+  "hrReferenceStaffPositionHealthInformationOfficer": "Health Information Officer",
+  "@hrReferenceStaffPositionHealthInformationOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.health_information_officer."
+  },
+  "hrReferenceStaffPositionPatientRelationsOfficer": "Patient Relations Officer",
+  "@hrReferenceStaffPositionPatientRelationsOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.patient_relations_officer."
+  },
+  "hrReferenceStaffPositionBillingClerk": "Billing Clerk",
+  "@hrReferenceStaffPositionBillingClerk": {
+    "description": "Localized label for labels.hr.reference.staff_position.billing_clerk."
+  },
+  "hrReferenceStaffPositionAccountsOfficer": "Accounts Officer",
+  "@hrReferenceStaffPositionAccountsOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.accounts_officer."
+  },
+  "hrReferenceStaffPositionInsuranceOfficer": "Insurance Officer",
+  "@hrReferenceStaffPositionInsuranceOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.insurance_officer."
+  },
+  "hrReferenceStaffPositionCashier": "Cashier",
+  "@hrReferenceStaffPositionCashier": {
+    "description": "Localized label for labels.hr.reference.staff_position.cashier."
+  },
+  "hrReferenceStaffPositionHousekeeper": "Housekeeper",
+  "@hrReferenceStaffPositionHousekeeper": {
+    "description": "Localized label for labels.hr.reference.staff_position.housekeeper."
+  },
+  "hrReferenceStaffPositionPorter": "Porter",
+  "@hrReferenceStaffPositionPorter": {
+    "description": "Localized label for labels.hr.reference.staff_position.porter."
+  },
+  "hrReferenceStaffPositionSecurityOfficer": "Security Officer",
+  "@hrReferenceStaffPositionSecurityOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.security_officer."
+  },
+  "hrReferenceStaffPositionLaundryAttendant": "Laundry Attendant",
+  "@hrReferenceStaffPositionLaundryAttendant": {
+    "description": "Localized label for labels.hr.reference.staff_position.laundry_attendant."
+  },
+  "hrReferenceStaffPositionKitchenStaff": "Kitchen Staff",
+  "@hrReferenceStaffPositionKitchenStaff": {
+    "description": "Localized label for labels.hr.reference.staff_position.kitchen_staff."
+  },
+  "hrReferenceStaffPositionMortuaryAttendant": "Mortuary Attendant",
+  "@hrReferenceStaffPositionMortuaryAttendant": {
+    "description": "Localized label for labels.hr.reference.staff_position.mortuary_attendant."
+  },
+  "hrReferenceStaffPositionAmbulanceDriver": "Ambulance Driver",
+  "@hrReferenceStaffPositionAmbulanceDriver": {
+    "description": "Localized label for labels.hr.reference.staff_position.ambulance_driver."
+  },
+  "hrReferenceStaffPositionAmbulanceOperator": "Ambulance Operator",
+  "@hrReferenceStaffPositionAmbulanceOperator": {
+    "description": "Localized label for labels.hr.reference.staff_position.ambulance_operator."
+  },
+  "hrReferenceStaffPositionBiomedicalEngineer": "Biomedical Engineer",
+  "@hrReferenceStaffPositionBiomedicalEngineer": {
+    "description": "Localized label for labels.hr.reference.staff_position.biomedical_engineer."
+  },
+  "hrReferenceStaffPositionItSupportOfficer": "IT Support Officer",
+  "@hrReferenceStaffPositionItSupportOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.it_support_officer."
+  },
+  "hrReferenceStaffPositionMaintenanceTechnician": "Maintenance Technician",
+  "@hrReferenceStaffPositionMaintenanceTechnician": {
+    "description": "Localized label for labels.hr.reference.staff_position.maintenance_technician."
+  },
+  "hrReferenceStaffPositionHospitalAdministrator": "Hospital Administrator",
+  "@hrReferenceStaffPositionHospitalAdministrator": {
+    "description": "Localized label for labels.hr.reference.staff_position.hospital_administrator."
+  },
+  "hrReferenceStaffPositionDepartmentHead": "Department Head",
+  "@hrReferenceStaffPositionDepartmentHead": {
+    "description": "Localized label for labels.hr.reference.staff_position.department_head."
+  },
+  "hrReferenceStaffPositionChiefNursingOfficer": "Chief Nursing Officer",
+  "@hrReferenceStaffPositionChiefNursingOfficer": {
+    "description": "Localized label for labels.hr.reference.staff_position.chief_nursing_officer."
+  },
+  "hrReferenceStaffPositionOperationsManager": "Operations Manager",
+  "@hrReferenceStaffPositionOperationsManager": {
+    "description": "Localized label for labels.hr.reference.staff_position.operations_manager."
+  },
+  "hrReferenceStaffPositionFacilityManager": "Facility Manager",
+  "@hrReferenceStaffPositionFacilityManager": {
+    "description": "Localized label for labels.hr.reference.staff_position.facility_manager."
+  },
+  "hrReferencePractitionerTypeMo": "Medical Officer (MO)",
+  "@hrReferencePractitionerTypeMo": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.mo."
+  },
+  "hrReferencePractitionerTypeSpecialist": "Specialist / Consultant",
+  "@hrReferencePractitionerTypeSpecialist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.specialist."
+  },
+  "hrReferencePractitionerTypeResident": "Resident / Registrar",
+  "@hrReferencePractitionerTypeResident": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.resident."
+  },
+  "hrReferencePractitionerTypeIntern": "Intern / House Officer",
+  "@hrReferencePractitionerTypeIntern": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.intern."
+  },
+  "hrReferencePractitionerTypeGp": "General Practitioner (GP)",
+  "@hrReferencePractitionerTypeGp": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.gp."
+  },
+  "hrReferencePractitionerTypeSurgeon": "Surgeon",
+  "@hrReferencePractitionerTypeSurgeon": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.surgeon."
+  },
+  "hrReferencePractitionerTypeAnaesthetist": "Anaesthetist",
+  "@hrReferencePractitionerTypeAnaesthetist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.anaesthetist."
+  },
+  "hrReferencePractitionerTypePaediatrician": "Paediatrician",
+  "@hrReferencePractitionerTypePaediatrician": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.paediatrician."
+  },
+  "hrReferencePractitionerTypeObgyn": "Obstetrician/Gynaecologist",
+  "@hrReferencePractitionerTypeObgyn": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.obgyn."
+  },
+  "hrReferencePractitionerTypeNursePractitioner": "Nurse Practitioner",
+  "@hrReferencePractitionerTypeNursePractitioner": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.nurse_practitioner."
+  },
+  "hrReferencePractitionerTypeDentist": "Dentist",
+  "@hrReferencePractitionerTypeDentist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.dentist."
+  },
+  "hrReferencePractitionerTypePsychiatrist": "Psychiatrist",
+  "@hrReferencePractitionerTypePsychiatrist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.psychiatrist."
+  },
+  "hrReferencePractitionerTypeEmergencyMedicine": "Emergency Medicine Physician",
+  "@hrReferencePractitionerTypeEmergencyMedicine": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.emergency_medicine."
+  },
+  "hrReferencePractitionerTypeFamilyMedicine": "Family Medicine Physician",
+  "@hrReferencePractitionerTypeFamilyMedicine": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.family_medicine."
+  },
+  "hrReferencePractitionerTypePathologist": "Pathologist",
+  "@hrReferencePractitionerTypePathologist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.pathologist."
+  },
+  "hrReferencePractitionerTypeRadiologist": "Radiologist",
+  "@hrReferencePractitionerTypeRadiologist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.radiologist."
+  },
+  "hrReferencePractitionerTypeDermatologist": "Dermatologist",
+  "@hrReferencePractitionerTypeDermatologist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.dermatologist."
+  },
+  "hrReferencePractitionerTypeCardiologist": "Cardiologist",
+  "@hrReferencePractitionerTypeCardiologist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.cardiologist."
+  },
+  "hrReferencePractitionerTypeOphthalmologist": "Ophthalmologist",
+  "@hrReferencePractitionerTypeOphthalmologist": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.ophthalmologist."
+  },
+  "hrReferencePractitionerTypeOrthopaedicSurgeon": "Orthopaedic Surgeon",
+  "@hrReferencePractitionerTypeOrthopaedicSurgeon": {
+    "description": "Localized label for labels.hr.reference.practitioner_type.orthopaedic_surgeon."
+  },
+  "hrReferenceCompensationPayTypePerConsultation": "Consultation fee",
+  "@hrReferenceCompensationPayTypePerConsultation": {
+    "description": "Localized label for labels.hr.reference.compensation_pay_type.per_consultation."
+  },
+  "hrReferenceCompensationPayTypePerMonth": "Monthly salary",
+  "@hrReferenceCompensationPayTypePerMonth": {
+    "description": "Localized label for labels.hr.reference.compensation_pay_type.per_month."
+  },
+  "hrReferenceCompensationPayTypePerDay": "Daily wage",
+  "@hrReferenceCompensationPayTypePerDay": {
+    "description": "Localized label for labels.hr.reference.compensation_pay_type.per_day."
+  },
+  "hrReferenceCompensationPayTypePerHour": "Hourly rate",
+  "@hrReferenceCompensationPayTypePerHour": {
+    "description": "Localized label for labels.hr.reference.compensation_pay_type.per_hour."
+  },
+  "hrReferenceCompensationPayTypePerProcedure": "Per procedure / per task",
+  "@hrReferenceCompensationPayTypePerProcedure": {
+    "description": "Localized label for labels.hr.reference.compensation_pay_type.per_procedure."
   }
 }

@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -22,17 +23,6 @@ const double _kOnboardingTwoColumnBreakpoint = 900;
 const Set<String> _clinicalPrescriberRoleNames = <String>{
   'DOCTOR',
   'SPECIALIST',
-};
-
-const Set<String> _consultationFeePractitionerTypes = <String>{
-  'MO',
-  'SPECIALIST',
-  'GP',
-  'SURGEON',
-  'ANAESTHETIST',
-  'PAEDIATRICIAN',
-  'OBGYN',
-  'RESIDENT',
 };
 
 enum StaffNumberEntryMode { generate, manual }
@@ -185,11 +175,11 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   bool get showPractitionerTypeForTest => _showPractitionerType;
 
   @visibleForTesting
-  int positionOptionCountForTest() => _positionOptions().length;
+  int positionOptionCountForTest() => _positionOptions(context.l10n).length;
 
   @visibleForTesting
   int departmentOptionCountForTest() =>
-      _selectOptions(_referenceData.departments).length;
+      _selectOptions(_referenceData.departments, context.l10n).length;
 
   @visibleForTesting
   void setSelectedRolesForTest(Set<String> roleIds) {
@@ -245,8 +235,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     if (staff?.staffNumber != null && staff!.staffNumber!.isNotEmpty) {
       _staffNumberMode = StaffNumberEntryMode.manual;
     }
-    _recomputeClinicalSections();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recomputeClinicalSections();
       unawaited(
         ref
             .read(hrWorkspaceControllerProvider.notifier)
@@ -318,11 +308,12 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   }
 
   void _recomputeClinicalSections() {
+    final AppLocalizations l10n = context.l10n;
     final bool showPractitioner = isEdit || _isClinicalPrescriberRoleSelected();
     final String? practitioner = _practitionerType?.toUpperCase();
     final bool showFee = showPractitioner &&
         practitioner != null &&
-        _consultationFeePractitionerTypes.contains(practitioner);
+        l10n.isConsultationFeePractitionerType(practitioner);
     setState(() {
       _showPractitionerType = showPractitioner;
       _showConsultationFee = showFee;
@@ -371,19 +362,22 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     );
   }
 
-  List<AppSelectOption<String>> _positionOptions() {
+  List<AppSelectOption<String>> _positionOptions(AppLocalizations l10n) {
     final Map<String, String> byLabel = <String, String>{};
     for (final HrOption option in _referenceData.staffPositions) {
       final String label = option.label.trim().isEmpty
           ? option.value.trim()
-          : option.label.trim();
+          : l10n.hrLocalizedOptionLabel(option);
       if (label.isNotEmpty) {
         byLabel[label] = label;
       }
     }
     final String? current = _position;
     if (current != null && current.isNotEmpty) {
-      byLabel.putIfAbsent(current, () => current);
+      byLabel.putIfAbsent(
+        l10n.hrReferenceStaffPositionLabel(current, fallback: current),
+        () => current,
+      );
     }
     return <AppSelectOption<String>>[
       for (final String label in byLabel.keys)
@@ -391,10 +385,16 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     ];
   }
 
-  List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
+  List<AppSelectOption<String>> _selectOptions(
+    List<HrOption> options,
+    AppLocalizations l10n,
+  ) {
     return <AppSelectOption<String>>[
       for (final HrOption option in options)
-        AppSelectOption<String>(value: option.value, label: option.label),
+        AppSelectOption<String>(
+          value: option.value,
+          label: l10n.hrLocalizedOptionLabel(option),
+        ),
     ];
   }
 
@@ -402,23 +402,38 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     return <AppSelectOption<String>>[
       AppSelectOption<String>(
         value: _CompensationPayType.perConsultation.name,
-        label: l10n.hrCompensationConsultationRateLabel,
+        label: l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_CONSULTATION',
+          fallback: l10n.hrCompensationConsultationRateLabel,
+        ),
       ),
       AppSelectOption<String>(
         value: _CompensationPayType.monthly.name,
-        label: l10n.hrCompensationMonthlyRateLabel,
+        label: l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_MONTH',
+          fallback: l10n.hrCompensationMonthlyRateLabel,
+        ),
       ),
       AppSelectOption<String>(
         value: _CompensationPayType.daily.name,
-        label: l10n.hrStaffOnboardingDailyRateLabel,
+        label: l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_DAY',
+          fallback: l10n.hrStaffOnboardingDailyRateLabel,
+        ),
       ),
       AppSelectOption<String>(
         value: _CompensationPayType.hourly.name,
-        label: l10n.hrCompensationHourlyRateLabel,
+        label: l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_HOUR',
+          fallback: l10n.hrCompensationHourlyRateLabel,
+        ),
       ),
       AppSelectOption<String>(
         value: _CompensationPayType.perVisit.name,
-        label: l10n.hrCompensationProcedureRateLabel,
+        label: l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_PROCEDURE',
+          fallback: l10n.hrCompensationProcedureRateLabel,
+        ),
       ),
     ];
   }
@@ -426,11 +441,27 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   String _compensationRateLabel(AppLocalizations l10n) {
     return switch (_payType) {
       _CompensationPayType.perConsultation =>
-        l10n.hrCompensationConsultationRateLabel,
-      _CompensationPayType.monthly => l10n.hrCompensationMonthlyRateLabel,
-      _CompensationPayType.daily => l10n.hrStaffOnboardingDailyRateLabel,
-      _CompensationPayType.hourly => l10n.hrCompensationHourlyRateLabel,
-      _CompensationPayType.perVisit => l10n.hrCompensationProcedureRateLabel,
+        l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_CONSULTATION',
+          fallback: l10n.hrCompensationConsultationRateLabel,
+        ),
+      _CompensationPayType.monthly => l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_MONTH',
+          fallback: l10n.hrCompensationMonthlyRateLabel,
+        ),
+      _CompensationPayType.daily => l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_DAY',
+          fallback: l10n.hrStaffOnboardingDailyRateLabel,
+        ),
+      _CompensationPayType.hourly => l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_HOUR',
+          fallback: l10n.hrCompensationHourlyRateLabel,
+        ),
+      _CompensationPayType.perVisit =>
+        l10n.hrReferenceCompensationPayTypeLabel(
+          'PER_PROCEDURE',
+          fallback: l10n.hrCompensationProcedureRateLabel,
+        ),
     };
   }
 
@@ -664,7 +695,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     left: AppSelectField<String>.searchable(
                       value: _position,
                       labelText: l10n.hrPositionLabel,
-                      options: _positionOptions(),
+                      options: _positionOptions(l10n),
                       onChanged: (String? value) =>
                           setState(() => _position = value),
                       onSearchTextChanged: (String value) =>
@@ -673,7 +704,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                     right: AppSelectField<String>.searchable(
                       value: _departmentId,
                       labelText: l10n.hrDepartmentLabel,
-                      options: _selectOptions(_referenceData.departments),
+                      options: _selectOptions(_referenceData.departments, l10n),
                       onChanged: (String? value) =>
                           setState(() => _departmentId = value),
                     ),
@@ -682,7 +713,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   AppSelectField<String>.searchable(
                     value: _position,
                     labelText: l10n.hrPositionLabel,
-                    options: _positionOptions(),
+                    options: _positionOptions(l10n),
                     onChanged: (String? value) =>
                         setState(() => _position = value),
                     onSearchTextChanged: (String value) =>
@@ -691,7 +722,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   AppSelectField<String>.searchable(
                     value: _departmentId,
                     labelText: l10n.hrDepartmentLabel,
-                    options: _selectOptions(_referenceData.departments),
+                    options: _selectOptions(_referenceData.departments, l10n),
                     onChanged: (String? value) =>
                         setState(() => _departmentId = value),
                   ),
@@ -738,7 +769,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   AppSelectField<String>.searchable(
                     value: _practitionerType,
                     labelText: l10n.hrPractitionerTypeLabel,
-                    options: _selectOptions(_referenceData.practitionerTypes),
+                    options: _selectOptions(_referenceData.practitionerTypes, l10n),
                     onChanged: (String? value) {
                       setState(() => _practitionerType = value);
                       _recomputeClinicalSections();

@@ -261,12 +261,14 @@ final class HrOption {
     required this.value,
     required this.label,
     this.displayId,
+    this.labelKey,
     this.extra = const <String, Object?>{},
   });
 
   final String value;
   final String label;
   final String? displayId;
+  final String? labelKey;
   final Map<String, Object?> extra;
 }
 
@@ -286,6 +288,7 @@ final class HrReferenceData {
     this.users = const <HrOption>[],
     this.shiftTypes = const <HrOption>[],
     this.practitionerTypes = const <HrOption>[],
+    this.compensationPayTypes = const <HrOption>[],
     this.resourceStatuses = const <String, List<HrOption>>{},
   });
 
@@ -302,6 +305,7 @@ final class HrReferenceData {
   final List<HrOption> users;
   final List<HrOption> shiftTypes;
   final List<HrOption> practitionerTypes;
+  final List<HrOption> compensationPayTypes;
   final Map<String, List<HrOption>> resourceStatuses;
 }
 

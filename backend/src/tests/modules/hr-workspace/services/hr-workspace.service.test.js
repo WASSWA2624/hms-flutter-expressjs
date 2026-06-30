@@ -116,13 +116,28 @@ describe('hr-workspace.service contract', () => {
     expect(prisma.staff_position.create.mock.calls.length).toBeGreaterThan(10);
   });
 
-  it('returns practitioner type options with human-friendly labels', async () => {
+    it('returns practitioner type options with human-friendly labels', async () => {
     const result = await subject.getReferenceData({});
 
     expect(result.practitioner_types).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ value: 'MO', label: expect.stringContaining('Medical Officer') }),
-        expect.objectContaining({ value: 'SPECIALIST', label: expect.stringContaining('Consultant') }),
+        expect.objectContaining({
+          value: 'MO',
+          label_key: 'labels.hr.reference.practitioner_type.mo',
+          label: expect.stringContaining('Medical Officer'),
+        }),
+        expect.objectContaining({
+          value: 'SPECIALIST',
+          label_key: 'labels.hr.reference.practitioner_type.specialist',
+        }),
+      ])
+    );
+    expect(result.compensation_pay_types).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: 'PER_MONTH',
+          label_key: 'labels.hr.reference.compensation_pay_type.per_month',
+        }),
       ])
     );
   });

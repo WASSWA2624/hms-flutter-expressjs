@@ -127,6 +127,8 @@ const SHIFT_TYPE_OPTIONS = Object.freeze(['DAY', 'NIGHT', 'SWING', 'ON_CALL']);
 const {
   DEFAULT_STAFF_POSITION_NAMES,
   practitionerTypeOptions,
+  compensationPayTypeOptions,
+  enrichStaffPositionOption,
 } = require('@lib/hr/reference-data');
 const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
 
@@ -1260,12 +1262,7 @@ const getReferenceData = async (filters = {}) => {
       })
       .filter(Boolean),
     staff_positions: staffPositions
-      .map((entry) =>
-        toOption(entry, [normalizeString(entry.name), resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '), {
-          department_id: entry.department_id || null,
-          is_active: Boolean(entry.is_active),
-        })
-      )
+      .map((entry) => enrichStaffPositionOption(entry))
       .filter(Boolean),
     rosters: rosters
       .map((entry) =>
@@ -1333,6 +1330,7 @@ const getReferenceData = async (filters = {}) => {
       .filter(Boolean),
     shift_types: SHIFT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
     practitioner_types: practitionerTypeOptions(),
+    compensation_pay_types: compensationPayTypeOptions(),
     resource_statuses: Object.fromEntries(
       Object.entries(RESOURCE_STATUS_ENUMS).map(([resource, values]) => [
         resource,
