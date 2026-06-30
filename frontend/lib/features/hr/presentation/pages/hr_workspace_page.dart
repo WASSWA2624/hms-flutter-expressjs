@@ -162,6 +162,26 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<Result<HrWorkspaceState>>>(
+      hrWorkspaceControllerProvider,
+      (AsyncValue<Result<HrWorkspaceState>>? previous,
+          AsyncValue<Result<HrWorkspaceState>> next) {
+        final HrWorkspaceState? nextState = _hrStateFromAsync(next);
+        if (nextState?.openStaffDetailAfterOnboarding != true) {
+          return;
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) {
+            return;
+          }
+          ref
+              .read(hrWorkspaceControllerProvider.notifier)
+              .clearOpenStaffDetailAfterOnboarding();
+          await showHrStaffDetailDialog(context, ref);
+        });
+      },
+    );
+
     final AppLocalizations l10n = context.l10n;
     final HrWorkspaceState state = widget.state;
     final HrWorkspaceController controller = ref.read(

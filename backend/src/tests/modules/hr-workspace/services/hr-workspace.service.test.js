@@ -141,4 +141,59 @@ describe('hr-workspace.service contract', () => {
       ])
     );
   });
+
+  it('falls back to the staff position catalog when no positions exist', async () => {
+    const result = await subject.getReferenceData({});
+
+    expect(result.staff_positions.length).toBeGreaterThan(10);
+    expect(result.staff_positions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: 'Nurse',
+          label_key: 'labels.hr.reference.staff_position.nurse',
+        }),
+        expect.objectContaining({
+          value: 'Doctor',
+          label_key: 'labels.hr.reference.staff_position.doctor',
+        }),
+      ])
+    );
+  });
+
+  it('includes departments and roles without human-friendly ids', async () => {
+    prisma.department.findMany.mockResolvedValue([
+      {
+        id: 'department-uuid',
+        human_friendly_id: null,
+        name: 'Emergency',
+        short_name: 'ER',
+        facility_id: 'facility-1',
+      },
+    ]);
+    prisma.role.findMany.mockResolvedValue([
+      {
+        id: 'role-uuid',
+        human_friendly_id: null,
+        name: 'NURSE',
+        permissions: [{ permission_id: 'perm-1' }],
+      },
+    ]);
+
+    const result = await subject.getReferenceData({});
+
+    expect(result.departments).toEqual([
+      expect.objectContaining({
+        value: 'department-uuid',
+        label: 'Emergency',
+      }),
+    ]);
+    expect(result.roles).toEqual([
+      expect.objectContaining({
+        value: 'role-uuid',
+        label: expect.stringContaining('NURSE'),
+        name: 'NURSE',
+        permission_count: 1,
+      }),
+    ]);
+  });
 });

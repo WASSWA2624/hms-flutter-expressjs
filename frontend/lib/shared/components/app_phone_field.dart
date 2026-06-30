@@ -72,6 +72,13 @@ class AppPhoneField extends StatefulWidget {
 
   @override
   State<AppPhoneField> createState() => _AppPhoneFieldState();
+
+  /// Commits the in-progress national digits to [controller] before submit.
+  static void commitPhone(GlobalKey<State<AppPhoneField>> key) {
+    final _AppPhoneFieldState? state =
+        key.currentState as _AppPhoneFieldState?;
+    state?.commitPhoneToController();
+  }
 }
 
 class _AppPhoneFieldState extends State<AppPhoneField> {
@@ -126,6 +133,13 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       builder: (FormFieldState<String> formField) {
         final InputDecorationThemeData inputTheme = theme.inputDecorationTheme;
         final double inputHeight = inputTheme.constraints?.minHeight ?? 48;
+        final double floatLabelTopInset = widget.useFloatingLabel
+            ? theme.spacing.sm
+            : 0;
+        final double childHeight = math.max(
+          theme.appTokens.minInteractiveDimension,
+          inputHeight - floatLabelTopInset,
+        );
 
         return InputDecorator(
           isFocused: _numberFocusNode.hasFocus || _isPickerOpen,
@@ -155,14 +169,14 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
                   )
                 : null,
             floatingLabelBehavior: widget.useFloatingLabel
-                ? FloatingLabelBehavior.auto
+                ? FloatingLabelBehavior.always
                 : FloatingLabelBehavior.never,
             helperText: widget.helperText,
             errorText: widget.errorText ?? formField.errorText,
-            contentPadding: EdgeInsets.zero,
+            contentPadding: EdgeInsets.only(top: floatLabelTopInset),
           ),
           child: SizedBox(
-            height: inputHeight,
+            height: childHeight,
             child: _UnifiedPhoneInput(
               country: _country,
               countryLabelText: widget.countryLabelText,
@@ -307,6 +321,17 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
     }
     _isSyncing = false;
     formField.didChange(nextValue);
+  }
+
+  void commitPhoneToController() {
+    final String nextValue = _composePhoneNumber();
+    if (widget.controller.text == nextValue) {
+      return;
+    }
+    _isSyncing = true;
+    widget.controller.text = nextValue;
+    widget.onChanged?.call(nextValue);
+    _isSyncing = false;
   }
 
   String? _validatePhone(String? _) {
@@ -574,7 +599,7 @@ class _PhoneCountryButton extends StatelessWidget {
       enabled: enabled,
       label: '$labelText ${country.callingCode}',
       child: Material(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? onPressed : null,
           child: Padding(

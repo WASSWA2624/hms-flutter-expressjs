@@ -797,6 +797,7 @@ final class HrWorkspaceState {
     this.isRefreshingDetail = false,
     this.isRefreshingWorkItems = false,
     this.isMutating = false,
+    this.openStaffDetailAfterOnboarding = false,
   });
 
   final HrWorkspaceOverview overview;
@@ -812,6 +813,7 @@ final class HrWorkspaceState {
   final bool isRefreshingDetail;
   final bool isRefreshingWorkItems;
   final bool isMutating;
+  final bool openStaffDetailAfterOnboarding;
 
   int get workloadCount => overview.summary.workloadCount;
 
@@ -829,8 +831,10 @@ final class HrWorkspaceState {
     bool? isRefreshingDetail,
     bool? isRefreshingWorkItems,
     bool? isMutating,
+    bool? openStaffDetailAfterOnboarding,
     bool clearSelectedStaff = false,
     bool clearLastFailure = false,
+    bool clearOpenStaffDetailAfterOnboarding = false,
   }) {
     return HrWorkspaceState(
       overview: overview ?? this.overview,
@@ -849,6 +853,10 @@ final class HrWorkspaceState {
       isRefreshingWorkItems:
           isRefreshingWorkItems ?? this.isRefreshingWorkItems,
       isMutating: isMutating ?? this.isMutating,
+      openStaffDetailAfterOnboarding: clearOpenStaffDetailAfterOnboarding
+          ? false
+          : openStaffDetailAfterOnboarding ??
+              this.openStaffDetailAfterOnboarding,
     );
   }
 }

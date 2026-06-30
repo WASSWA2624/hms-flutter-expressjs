@@ -53,10 +53,10 @@ final class HrWorkspaceController
   /// Loads facility-scoped reference data when onboarding dropdowns are empty.
   Future<void> ensureOnboardingReferenceData({String? facilityId}) async {
     final HrWorkspaceState? current = _currentState;
-    if (current != null && _hasOnboardingReferenceData(current.referenceData)) {
+    if (current != null && hasHrOnboardingReferenceData(current.referenceData)) {
       return;
     }
-    await _refreshReferences(facilityId: facilityId);
+    await _refreshReferences(facilityId: facilityId, forOnboarding: true);
   }
 
   Future<AppFailure?> applyStaffSearch(String value) async {
@@ -959,12 +959,30 @@ final class HrWorkspaceController
         ),
       );
     }
+    if (!isEdit) {
+      await _refreshSelectedDetail(profile);
+      final HrWorkspaceState? refreshed = _currentState;
+      if (refreshed != null) {
+        _emit(
+          refreshed.copyWith(
+            isMutating: false,
+            lastFailure: roleFailure,
+            openStaffDetailAfterOnboarding: roleFailure == null,
+          ),
+        );
+      }
+    }
     unawaited(_refreshOverview());
     unawaited(_refreshReferences());
-    if (!isEdit) {
-      unawaited(_refreshSelectedDetail(profile));
-    }
     return roleFailure;
+  }
+
+  void clearOpenStaffDetailAfterOnboarding() {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null || !current.openStaffDetailAfterOnboarding) {
+      return;
+    }
+    _emit(current.copyWith(clearOpenStaffDetailAfterOnboarding: true));
   }
 
   Future<AppFailure?> endAssignment(HrStaffAssignment assignment) {
@@ -1150,9 +1168,14 @@ final class HrWorkspaceController
     );
   }
 
-  Future<AppFailure?> _refreshReferences({String? facilityId}) async {
+  Future<AppFailure?> _refreshReferences({
+    String? facilityId,
+    bool forOnboarding = false,
+  }) async {
     final HrWorkspaceState? current = _currentState;
-    final String? departmentId = current?.staffQuery.departmentId;
+    final String? departmentId = forOnboarding
+        ? null
+        : current?.staffQuery.departmentId;
     final String? resolvedFacilityId =
         facilityId ?? ref.read(sessionStateProvider).session?.user?.facilityId;
     final Result<HrReferenceData> result = await _repository.loadReferenceData(
@@ -1381,13 +1404,6 @@ final class HrWorkspaceController
     );
   }
 
-  bool _hasOnboardingReferenceData(HrReferenceData data) {
-    return data.staffPositions.isNotEmpty &&
-        data.departments.isNotEmpty &&
-        data.practitionerTypes.isNotEmpty &&
-        data.roles.isNotEmpty;
-  }
-
   Future<AppPage<HrWorkItem>> _loadWorkItemsOrEmpty(
     HrWorkItemsQuery query,
   ) async {
@@ -1494,20 +1510,25 @@ final class HrWorkspaceController
   String? _extractCreatedUserId(Result<Object?> userResult) {
     return userResult.when(
       success: (Object? data) {
-        if (data is Map) {
-          final Object? nested = data['data'];
-          if (nested is Map) {
-            return nested['display_id']?.toString() ??
-                nested['human_friendly_id']?.toString() ??
-                nested['id']?.toString();
-          }
-          return data['display_id']?.toString() ??
-              data['human_friendly_id']?.toString() ??
-              data['id']?.toString();
+        if (data is! Map) {
+          return null;
         }
-        return null;
+        final Map<Object?, Object?> source =
+            data['data'] is Map ? data['data'] as Map : data;
+        return source['id']?.toString() ??
+            source['user_id']?.toString() ??
+            source['display_id']?.toString() ??
+            source['human_friendly_id']?.toString();
       },
       failure: (_) => null,
     );
   }
+}
+
+/// Whether HR staff onboarding dropdowns have enough reference data to render.
+bool hasHrOnboardingReferenceData(HrReferenceData data) {
+  return data.staffPositions.isNotEmpty &&
+      data.departments.isNotEmpty &&
+      data.practitionerTypes.isNotEmpty &&
+      data.roles.isNotEmpty;
 }

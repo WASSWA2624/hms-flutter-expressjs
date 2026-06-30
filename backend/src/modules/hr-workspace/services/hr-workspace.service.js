@@ -129,6 +129,7 @@ const {
   practitionerTypeOptions,
   compensationPayTypeOptions,
   enrichStaffPositionOption,
+  staffPositionCatalogOptions,
 } = require('@lib/hr/reference-data');
 const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
 
@@ -995,7 +996,6 @@ const getReferenceData = async (filters = {}) => {
     ? {
         deleted_at: null,
         tenant_id: tenantId,
-        ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
         ...(scope.facilityId
           ? {
               OR: [{ facility_id: scope.facilityId }, { facility_id: null }],
@@ -1005,7 +1005,6 @@ const getReferenceData = async (filters = {}) => {
     : {
         deleted_at: null,
         ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-        ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
       };
 
   const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles, users] =
@@ -1200,11 +1199,12 @@ const getReferenceData = async (filters = {}) => {
 
   const toOption = (value, label, extra = {}) => {
     const publicId = resolvePublicIdentifier(value?.human_friendly_id, value?.display_id);
-    if (!publicId) return null;
+    const optionValue = publicId || (value?.id ? String(value.id) : null);
+    if (!optionValue) return null;
     return {
-      value: publicId,
+      value: optionValue,
       label,
-      display_id: publicId,
+      display_id: publicId || null,
       ...extra,
     };
   };
@@ -1261,9 +1261,12 @@ const getReferenceData = async (filters = {}) => {
         };
       })
       .filter(Boolean),
-    staff_positions: staffPositions
-      .map((entry) => enrichStaffPositionOption(entry))
-      .filter(Boolean),
+    staff_positions: (() => {
+      const mapped = staffPositions
+        .map((entry) => enrichStaffPositionOption(entry))
+        .filter(Boolean);
+      return mapped.length > 0 ? mapped : staffPositionCatalogOptions();
+    })(),
     rosters: rosters
       .map((entry) =>
         toOption(entry, [resolvePublicIdentifier(entry.human_friendly_id), formatDateRangeLabel(entry.period_start, entry.period_end), entry.status].filter(Boolean).join(' | '), {

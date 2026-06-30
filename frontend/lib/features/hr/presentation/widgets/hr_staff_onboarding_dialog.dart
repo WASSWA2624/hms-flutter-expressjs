@@ -87,6 +87,7 @@ Future<void> showHrStaffOnboardingDialog(
       );
     },
     onSubmit: () {
+      fieldsKey.currentState?.prepareForSubmit();
       final Map<String, Object?> payload =
           fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
       payload['tenant_id'] = tenantId;
@@ -135,6 +136,8 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   late final TextEditingController _passwordController;
   late final TextEditingController _staffNumberController;
   late final TextEditingController _compensationRateController;
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   late final TextEditingController _feeController;
   late final TextEditingController _feeCurrencyController;
 
@@ -189,14 +192,15 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     _recomputeClinicalSections();
   }
 
+  void prepareForSubmit() {
+    AppPhoneField.commitPhone(_phoneFieldKey);
+  }
+
   HrReferenceData get _referenceData {
     final HrWorkspaceState? workspaceState = readHrWorkspaceState(ref);
     final HrReferenceData workspaceRefs =
         workspaceState?.referenceData ?? const HrReferenceData();
-    if (workspaceRefs.staffPositions.isNotEmpty ||
-        workspaceRefs.departments.isNotEmpty ||
-        workspaceRefs.practitionerTypes.isNotEmpty ||
-        workspaceRefs.roles.isNotEmpty) {
+    if (hasHrOnboardingReferenceData(workspaceRefs)) {
       return workspaceRefs;
     }
     return widget.referenceData;
@@ -467,7 +471,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     final String position = _resolvedPosition();
     final List<Map<String, Object?>> compensations = <Map<String, Object?>>[];
     final num? rate = num.tryParse(_compensationRateController.text.trim());
-    if (rate != null) {
+    if (rate != null && rate > 0) {
       compensations.add(<String, Object?>{
         'pay_type': _payTypeApiValue(_payType),
         'rate': rate,
@@ -478,12 +482,12 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
     final bool useGeneratedStaffNumber =
         !isEdit && _staffNumberMode == StaffNumberEntryMode.generate;
+    final String password = _passwordController.text.trim();
 
     return <String, Object?>{
       if (!isEdit) ...<String, Object?>{
         'email': _emailController.text.trim(),
-        if (_passwordController.text.trim().isNotEmpty)
-          'password': _passwordController.text.trim(),
+        if (password.length >= 8) 'password': password,
         'phone': _phoneController.text.trim(),
         'position_title': position.isNotEmpty ? position : 'Staff',
         'status': 'ACTIVE',
@@ -521,6 +525,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
 
   Widget _phoneField(AppLocalizations l10n) {
     return AppPhoneField(
+      key: _phoneFieldKey,
       controller: _phoneController,
       labelText: l10n.hrStaffPhoneLabel,
       countryLabelText: l10n.appPhoneCountryLabel,
@@ -543,6 +548,13 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       showObscuredTextLabel: l10n.authShowPasswordLabel,
       hideObscuredTextLabel: l10n.authHidePasswordLabel,
       helperText: l10n.hrStaffPasswordOptionalHint,
+      validator: (String? value) {
+        final String trimmed = value?.trim() ?? '';
+        if (trimmed.isEmpty || trimmed.length >= 8) {
+          return null;
+        }
+        return l10n.authPasswordMinLengthMessage;
+      },
     );
   }
 
