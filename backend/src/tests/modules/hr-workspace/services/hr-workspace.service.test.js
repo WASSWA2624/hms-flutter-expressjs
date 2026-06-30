@@ -33,6 +33,7 @@ describe('hr-workspace.service contract', () => {
     prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.payroll_run = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.shift_template = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.shift = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.role = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.user = { findMany: jest.fn().mockResolvedValue([]) };
   });
@@ -108,6 +109,59 @@ describe('hr-workspace.service contract', () => {
         department_id: 'department-uuid',
       }),
     ]);
+  });
+
+  it('builds shift options with searchable labels', async () => {
+    prisma.shift.findMany.mockResolvedValue([
+      {
+        id: 'shift-uuid',
+        human_friendly_id: 'SHF0001',
+        shift_type: 'DAY',
+        status: 'SCHEDULED',
+        start_time: new Date('2026-06-30T08:00:00.000Z'),
+        end_time: new Date('2026-06-30T17:00:00.000Z'),
+        facility_id: 'facility-uuid',
+        shift_template: {
+          id: 'template-uuid',
+          human_friendly_id: 'SHT0001',
+          name: 'Morning Ward',
+        },
+        nurse_roster: {
+          id: 'roster-uuid',
+          human_friendly_id: 'RST0001',
+          department: {
+            id: 'department-uuid',
+            human_friendly_id: 'DEP0001',
+            name: 'Emergency',
+            short_name: 'ER',
+          },
+        },
+      },
+    ]);
+
+    const result = await subject.getReferenceData({});
+
+    expect(prisma.shift.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deleted_at: null,
+          status: 'SCHEDULED',
+        }),
+      })
+    );
+    expect(result.shifts).toEqual([
+      expect.objectContaining({
+        value: 'SHF0001',
+        display_id: 'SHF0001',
+        shift_type: 'DAY',
+        status: 'SCHEDULED',
+        department_name: 'Emergency',
+        shift_template_name: 'Morning Ward',
+      }),
+    ]);
+    expect(result.shifts[0].label).toContain('Morning Ward');
+    expect(result.shifts[0].label).toContain('Emergency');
+    expect(result.shifts[0].label).toContain('SHF0001');
   });
 
   it('seeds default staff positions when catalog is empty', async () => {

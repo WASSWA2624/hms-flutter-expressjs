@@ -284,6 +284,7 @@ final class HrReferenceData {
     this.rosters = const <HrOption>[],
     this.payrollRuns = const <HrOption>[],
     this.shiftTemplates = const <HrOption>[],
+    this.shifts = const <HrOption>[],
     this.roles = const <HrOption>[],
     this.users = const <HrOption>[],
     this.shiftTypes = const <HrOption>[],
@@ -301,6 +302,7 @@ final class HrReferenceData {
   final List<HrOption> rosters;
   final List<HrOption> payrollRuns;
   final List<HrOption> shiftTemplates;
+  final List<HrOption> shifts;
   final List<HrOption> roles;
   final List<HrOption> users;
   final List<HrOption> shiftTypes;

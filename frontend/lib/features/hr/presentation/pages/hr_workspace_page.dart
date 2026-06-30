@@ -1855,23 +1855,11 @@ class _ShiftAssignmentFields extends StatefulWidget {
 }
 
 class _ShiftAssignmentFieldsState extends State<_ShiftAssignmentFields> {
-  final TextEditingController _shiftController = TextEditingController();
   String? _shiftId;
 
-  @override
-  void dispose() {
-    _shiftController.dispose();
-    super.dispose();
-  }
-
-  bool get _hasShiftOptions => widget.referenceData.shiftTemplates.isNotEmpty;
-
   Map<String, Object?> toPayload() {
-    final String shiftId = _hasShiftOptions
-        ? (_shiftId ?? '')
-        : _shiftController.text.trim();
     return <String, Object?>{
-      'shift_id': shiftId,
+      'shift_id': _shiftId ?? '',
       'assigned_at': DateTime.now().toUtc().toIso8601String(),
     };
   }
@@ -1881,27 +1869,17 @@ class _ShiftAssignmentFieldsState extends State<_ShiftAssignmentFields> {
     final AppLocalizations l10n = context.l10n;
     return AppFormSection(
       children: <Widget>[
-        if (_hasShiftOptions)
-          AppSelectField<String>.searchable(
-            value: _shiftId,
-            labelText: l10n.hrSelectShiftLabel,
-            hintText: l10n.hrSelectShiftHint,
-            isRequired: true,
-            options: _selectOptions(widget.referenceData.shiftTemplates),
-            validator: AppValidators.requiredValue(
-              l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
-            ),
-            onChanged: (String? value) => setState(() => _shiftId = value),
-          )
-        else
-          AppTextField(
-            controller: _shiftController,
-            labelText: l10n.hrShiftIdLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
-            ),
+        AppSelectField<String>.searchable(
+          value: _shiftId,
+          labelText: l10n.hrSelectShiftLabel,
+          hintText: l10n.hrSelectShiftHint,
+          isRequired: true,
+          options: _shiftSelectOptions(widget.referenceData.shifts),
+          validator: AppValidators.requiredValue(
+            l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
           ),
+          onChanged: (String? value) => setState(() => _shiftId = value),
+        ),
       ],
     );
   }
@@ -1917,24 +1895,12 @@ class _ShiftSwapFields extends StatefulWidget {
 }
 
 class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
-  final TextEditingController _shiftController = TextEditingController();
   String? _shiftId;
   String? _targetStaffId;
 
-  @override
-  void dispose() {
-    _shiftController.dispose();
-    super.dispose();
-  }
-
-  bool get _hasShiftOptions => widget.referenceData.shiftTemplates.isNotEmpty;
-
   Map<String, Object?> toPayload() {
-    final String shiftId = _hasShiftOptions
-        ? (_shiftId ?? '')
-        : _shiftController.text.trim();
     return <String, Object?>{
-      'shift_id': shiftId,
+      'shift_id': _shiftId ?? '',
       'target_staff_id': _targetStaffId,
     };
   }
@@ -1944,27 +1910,17 @@ class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
     final AppLocalizations l10n = context.l10n;
     return AppFormSection(
       children: <Widget>[
-        if (_hasShiftOptions)
-          AppSelectField<String>.searchable(
-            value: _shiftId,
-            labelText: l10n.hrSelectShiftLabel,
-            hintText: l10n.hrSelectShiftHint,
-            isRequired: true,
-            options: _selectOptions(widget.referenceData.shiftTemplates),
-            validator: AppValidators.requiredValue(
-              l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
-            ),
-            onChanged: (String? value) => setState(() => _shiftId = value),
-          )
-        else
-          AppTextField(
-            controller: _shiftController,
-            labelText: l10n.hrShiftIdLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              l10n.hrFieldRequiredLabel(l10n.hrShiftIdLabel),
-            ),
+        AppSelectField<String>.searchable(
+          value: _shiftId,
+          labelText: l10n.hrSelectShiftLabel,
+          hintText: l10n.hrSelectShiftHint,
+          isRequired: true,
+          options: _shiftSelectOptions(widget.referenceData.shifts),
+          validator: AppValidators.requiredValue(
+            l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
           ),
+          onChanged: (String? value) => setState(() => _shiftId = value),
+        ),
         AppSelectField<String>.searchable(
           value: _targetStaffId,
           labelText: l10n.hrTargetStaffLabel,
@@ -2416,6 +2372,27 @@ List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
     for (final HrOption option in options)
       AppSelectOption<String>(value: option.value, label: option.label),
   ];
+}
+
+List<AppSelectOption<String>> _shiftSelectOptions(List<HrOption> options) {
+  return <AppSelectOption<String>>[
+    for (final HrOption option in options)
+      AppSelectOption<String>(
+        value: option.value,
+        label: option.label,
+        searchText: _shiftSearchText(option),
+      ),
+  ];
+}
+
+String _shiftSearchText(HrOption option) {
+  final List<String> parts = <String>[
+    option.label,
+    if (option.displayId != null) option.displayId!,
+    for (final Object? value in option.extra.values)
+      if (value != null) value.toString(),
+  ];
+  return parts.where((String part) => part.isNotEmpty).join(' ');
 }
 
 List<AppSearchBarFilterChoice> _optionChoices(

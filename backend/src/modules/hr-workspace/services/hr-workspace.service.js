@@ -158,6 +158,33 @@ const formatDateRangeLabel = (from, to) => {
   return fromText || toText || null;
 };
 
+const formatTimeLabel = (value) => {
+  const parsed = normalizeDate(value);
+  return parsed ? parsed.toISOString().slice(11, 16) : null;
+};
+
+const formatShiftScheduleLabel = (start, end) => {
+  const dateText = formatDateLabel(start);
+  const startTime = formatTimeLabel(start);
+  const endTime = formatTimeLabel(end);
+  if (dateText && startTime && endTime) {
+    return `${dateText} ${startTime}-${endTime}`;
+  }
+  return formatDateRangeLabel(start, end);
+};
+
+const formatShiftOptionLabel = (entry) =>
+  [
+    normalizeString(entry.shift_template?.name),
+    entry.shift_type,
+    formatShiftScheduleLabel(entry.start_time, entry.end_time),
+    normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name),
+    resolvePublicIdentifier(entry.human_friendly_id),
+    entry.status,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+
 const daysBetweenInclusive = (start, end) => {
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -1012,7 +1039,7 @@ const getReferenceData = async (filters = {}) => {
         ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       };
 
-  const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, roles, users] =
+  const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, shifts, roles, users] =
     await Promise.all([
       prisma.facility.findMany({
         where: {
@@ -1146,6 +1173,48 @@ const getReferenceData = async (filters = {}) => {
           name: true,
           shift_type: true,
           is_active: true,
+        },
+      }),
+      prisma.shift.findMany({
+        where: {
+          deleted_at: null,
+          status: 'SCHEDULED',
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+          ...(scope.departmentId
+            ? { nurse_roster: { department_id: scope.departmentId } }
+            : {}),
+        },
+        orderBy: { start_time: 'desc' },
+        take: 200,
+        select: {
+          id: true,
+          human_friendly_id: true,
+          shift_type: true,
+          status: true,
+          start_time: true,
+          end_time: true,
+          facility_id: true,
+          shift_template: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+            },
+          },
+          nurse_roster: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              department: {
+                select: {
+                  id: true,
+                  human_friendly_id: true,
+                  name: true,
+                  short_name: true,
+                },
+              },
+            },
+          },
         },
       }),
       prisma.role.findMany({
@@ -1293,6 +1362,22 @@ const getReferenceData = async (filters = {}) => {
         toOption(entry, [normalizeString(entry.name), entry.shift_type, resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '), {
           shift_type: entry.shift_type || null,
           is_active: Boolean(entry.is_active),
+        })
+      )
+      .filter(Boolean),
+    shifts: shifts
+      .map((entry) =>
+        toOption(entry, formatShiftOptionLabel(entry), {
+          shift_type: entry.shift_type || null,
+          status: entry.status || null,
+          start_time: entry.start_time || null,
+          end_time: entry.end_time || null,
+          facility_id: entry.facility_id || null,
+          department_id: entry.nurse_roster?.department?.id || null,
+          department_name:
+            normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name) ||
+            null,
+          shift_template_name: normalizeString(entry.shift_template?.name) || null,
         })
       )
       .filter(Boolean),

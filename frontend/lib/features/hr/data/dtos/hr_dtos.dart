@@ -110,6 +110,7 @@ final class HrReferenceDataDto {
       rosters: _options(json['rosters']),
       payrollRuns: _options(json['payroll_runs']),
       shiftTemplates: _options(json['shift_templates']),
+      shifts: _options(json['shifts']),
       roles: _options(json['roles']),
       users: _options(json['users']),
       shiftTypes: _options(json['shift_types']),
