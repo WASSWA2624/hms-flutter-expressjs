@@ -108,10 +108,11 @@ final class AuthController extends Notifier<AuthControllerState> {
   Future<bool> register({
     required String email,
     required String password,
+    required String tenantName,
     required String facilityName,
     required String adminName,
     required String facilityType,
-    String? phone,
+    required String phone,
     String? location,
     String? interests,
   }) async {
@@ -129,6 +130,7 @@ final class AuthController extends Notifier<AuthControllerState> {
         .register(
           email: email,
           password: password,
+          tenantName: tenantName,
           facilityName: facilityName,
           adminName: adminName,
           facilityType: facilityType,

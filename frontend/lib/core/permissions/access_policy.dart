@@ -300,7 +300,7 @@ final class AppAccessPolicy {
       return true;
     }
     if (moduleEntitlements.isEmpty) {
-      return true;
+      return false;
     }
 
     final normalizedCode = AppModuleEntitlement.normalizeModuleCode(moduleCode);

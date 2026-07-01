@@ -91,10 +91,11 @@ final class AuthRepositoryImpl implements AuthRepository {
   Future<Result<void>> register({
     required String email,
     required String password,
+    required String tenantName,
     required String facilityName,
     required String adminName,
     required String facilityType,
-    String? phone,
+    required String phone,
     String? location,
     String? interests,
   }) {
@@ -103,11 +104,11 @@ final class AuthRepositoryImpl implements AuthRepository {
       data: <String, Object?>{
         'email': email.trim().toLowerCase(),
         'password': password,
+        'tenant_name': tenantName.trim(),
         'facility_name': facilityName.trim(),
         'admin_name': adminName.trim(),
         'facility_type': facilityType,
-        if (_normalizedOptional(phone) != null)
-          'phone': _normalizedOptional(phone),
+        'phone': phone.replaceAll(RegExp(r'\D'), ''),
         if (_normalizedOptional(location) != null)
           'location': _normalizedOptional(location),
         if (_normalizedOptional(interests) != null)

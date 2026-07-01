@@ -1,222 +1,80 @@
-# HR Schedule Templates — Flexible Weekly Patterns & Unified Schedule Editor
+# Subscription Upgrade CTA & Payment Dialog — Implementation Prompt
 
 ## Objective
 
-Elevate **Schedule templates** from a flat list with a single start/end pair into a **first-class scheduling pattern** that matches the flexibility of **Record availability**. Unify both flows behind one reusable **weekly schedule editor**, improve the manage dialog UX (maximized by default, copyable IDs, icon actions, drill-in detail), and align naming so administrators see one coherent scheduling vocabulary across HR.
+Add a **persistent, state-aware subscription button** to the authenticated app header and a **modal upgrade/activation flow** so tenants can discover plans, submit payment, and notify platform admins without leaving their current workspace.
 
-**Entry points:**
-- `/hr` → toolbar **Schedule templates** (overflow or inline per [prompt.md](./prompt.md))
-- `/hr` → staff detail → **Record availability**
-
-**Screenshots (current UI):** manage list (`Biomedical | DAY | SHI0000001`), create/edit template form (name, shift type, department, single start/end), and record availability (Mon–Sun expansion tiles, multi-slot, duplicate-to).
-
-**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md); companion [prompt.md](./prompt.md) (toolbar IA). This prompt **supersedes** the “schedule-template CRUD out of scope” note in `prompt.md`.
+**Parent prompts:** [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md), [prompt.md](./prompt.md)
 
 ---
 
-## Problem Statement (from current UI)
+## Header Subscription Button
 
-| Area | Current behavior | Issue |
-|------|------------------|-------|
-| Manage dialog | Opens at default size (`maxWidth: 720`) | Hard to scan patterns; should open **maximized** like other HR workspace dialogs |
-| Template row | `Biomedical \| DAY \| SHI0000001` as plain text | Template ID (`SHI0000001`) is not copyable; no row tap target |
-| Row actions | Text buttons **Edit template** / **Delete template** | Verbose; inconsistent with icon-only patterns elsewhere (e.g. tenant facility rows) |
-| Create/edit form | Single `default_start_time` / `default_end_time` pair | Cannot express split shifts, day-specific hours, or multi-slot days |
-| Record availability | Full weekly editor (`_DayScheduleSection`, duplicate-to, add slot) | Rich UX isolated in `hr_record_availability_dialog.dart` |
-| Naming | Toolbar label **Create schedule template** opens **Schedule templates** manage dialog; backend keys use `shift_template` | Confusing labels; two different forms for the same mental model (“when does this person/pattern work?”) |
+Place a prominent **Upgrade / Subscription** control in the **app shell header** (visible on all authenticated routes), with both an **icon** and a **text label**.
 
-A roster admin defining a **Biomedical day pattern** should use the same weekly schedule UI they already know from recording staff availability—not a reduced single-interval form.
+| Subscription state | Visual treatment | Label (i18n) |
+|------------------|------------------|--------------|
+| **Active** (paid or trial, healthy) | Theme success color (green/blue per theme); optional check/tick affordance | e.g. “Subscribed” / “Active” |
+| **Expiring soon** (within configurable threshold, e.g. 14 days) | Warning color (orange) | e.g. “Renew soon” / “Expires in {n} days” |
+| **Expired / past due** | Error color (red) | e.g. “Subscription expired” / “Upgrade required” |
 
----
-
-## Current Implementation
-
-| Area | Location |
-|------|----------|
-| Manage templates dialog | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` — `showHrManageScheduleTemplatesDialog` |
-| Create/edit template dialog | Same file — `showHrShiftTemplateDialog` |
-| Record availability dialog | `frontend/lib/features/hr/presentation/widgets/hr_record_availability_dialog.dart` — `showHrRecordAvailabilityDialog`, `_DayScheduleSection`, `_DayScheduleDraft` |
-| Weekly day order / defaults | `kAvailabilityWeekDayOrder`, `kDefaultAvailabilityWeekdays`, default 08:00–17:00 |
-| Toolbar entry | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` — `scheduleTemplatesAction` |
-| Copyable IDs (pattern) | `frontend/lib/shared/components/app_copyable_identifier.dart` — `AppCopyableIdentifier`; detail tiles via `AppInfoTileData(copyable: true)` in `hr_assignment_detail_dialog.dart` |
-| Icon-only row actions (pattern) | `tenant_facility_setup_page.dart`, staff detail edit in `hr_workspace_page.dart` — `AppButton(iconOnly: true, …)` |
-| Maximized dialogs (pattern) | `AppDialog.initialMaximized`, `showAppWorkspaceMutationDialog(initialMaximized: …)` — e.g. `hr_staff_onboarding_dialog.dart`, `hr_access_dialogs.dart` |
-| Backend model | `shift_template` — `name`, `shift_type`, `facility_id`, `default_start_time`, `default_end_time` only (`backend/prisma/schema.prisma`) |
-| API validation | `backend/src/modules/shift-template/schemas/shift-template.schema.js` |
-
-**List row today:** `ListTile` with `title: template.label` (composite string) and trailing `AppButton.secondary` labels from `hrEditShiftTemplateAction` / `hrDeleteShiftTemplateAction`.
+- Derive state from tenant subscription (`status`, `ends_at` / trial end) in session or workspace data — do not hardcode thresholds in UI widgets.
+- **Tap** opens the subscription upgrade/activation dialog (modal; no route navigation).
+- Compact breakpoints may collapse to icon + tooltip; full label remains on larger layouts.
 
 ---
 
-## Target UX
+## Upgrade / Activation Dialog
 
-### 1. Manage dialog — layout & defaults
+Single in-page dialog (or bottom sheet on narrow viewports) opened from the header button or subscription workspace.
 
-- Open with `initialMaximized: true` on `AppDialog`.
-- Widen content area when maximized (recommend `maxWidth: 980`, matching work-queue / staff-directory dialogs).
-- Keep description: *“Reusable shift patterns for roster generation and staff scheduling.”*
+### Plan selection
 
-### 2. Template list rows
+- List available plans (Basic, Pro, Advanced, Custom, trial → paid) with clear tier comparison.
+- Default selection should reflect current plan or recommended upgrade.
+- Initiation and plan discovery must be **one or two steps** — no buried navigation.
 
-Each row shows:
+### Payment methods
 
-| Element | Spec |
-|---------|------|
-| Primary title | Template **name** (e.g. `Biomedical`) |
-| Subtitle | Shift type + department when present (e.g. `DAY · Biomedical dept`) |
-| Identifier | `AppCopyableIdentifier` for `human_friendly_id` / `SHI…` (hide when empty/placeholder per `isCopyableIdentifierValue`) |
-| Row tap | Opens **template detail** dialog (see §3) |
-| Trailing actions | Icon-only **Edit** (`Icons.edit_outlined`) and **Delete** (`Icons.delete_outline`, destructive color)—**no “template” in labels**; use `semanticLabel` + `tooltip` from l10n (`commonEditAction` / `commonDeleteAction` or HR-specific short keys) |
+Support multiple paths in the same dialog:
 
-Stop opening the edit mutation dialog directly from the list edit icon if detail becomes the primary surface; edit icon may either open detail in edit mode or open the mutation dialog—pick one path and use detail for row tap.
+| Method | Behavior |
+|--------|----------|
+| **Manual / bank transfer** | Tenant uploads **proof of payment** (image/PDF); optional reference number and amount fields. |
+| **Mobile money** | Provider selection + payment instructions or deep link where integrated. |
+| **Card (Visa, etc.)** | Checkout or collect flow when payment provider is configured. |
+| **Other** | Extensible list driven by backend-supported methods. |
 
-### 3. Template detail dialog (new)
+### Platform admin contact & notification
 
-Follow `showHrAssignmentDetailDialog` / `AppInfoTileGrid` patterns:
-
-- Title: template name; icon: `Icons.view_week_outlined`.
-- Read-only tiles: Template ID (copyable), shift type, department, active status, created/updated if available from API.
-- **Weekly schedule summary** — human-readable per-day slot list (same formatting as availability expansion subtitles, e.g. `08:00-17:00`).
-- Footer / inline actions: **Edit**, **Delete**, and (when backend supports it) **Duplicate** / slot management.
-- Detail dialog may also open maximized when the weekly grid is shown inline.
-
-### 4. Flexible weekly schedule (shared editor)
-
-Extract a reusable widget from `hr_record_availability_dialog.dart`, e.g. `HrWeeklyScheduleEditor` (name negotiable), containing:
-
-- Monday-first `ExpansionTile` per day (`_DayScheduleSection` behavior).
-- Per-day multi-slot fields (`AppTimeField` with 12H/24H toggle).
-- **Duplicate to…**, **Add slot**, overlap / end-after-start validation.
-- Configurable props: which days to show, whether copy-from-staff is visible, read-only mode for detail view.
-
-**Consumers:**
-
-| Consumer | Editor mode | Extra fields |
-|----------|-------------|--------------|
-| Record availability | Editable; copy-from-staff | Preference, effective from/to, staff context |
-| Schedule template create/edit | Editable | Name, shift type, department (optional) |
-| Template detail | Read-only summary + actions | — |
-
-Record availability and schedule templates must **not** duplicate `_DayScheduleSection` / draft logic in separate files after this task.
-
-### 5. Create/edit template mutation dialog
-
-- Replace single `AppTimeField` start/end pair with `HrWeeklyScheduleEditor`.
-- Open with `initialMaximized: true` on `showAppWorkspaceMutationDialog` (weekly grid needs vertical space).
-- Submit still calls `createShiftTemplate` / `updateShiftTemplate` on `HrWorkspaceController`.
-
-### 6. Naming consistency (l10n)
-
-Align user-facing strings around **schedule** / **pattern**, not mixed “shift template” vs “schedule template”:
-
-| Key / surface | Current | Target |
-|---------------|---------|--------|
-| Toolbar / overflow | `hrShiftTemplateAction` → “Create schedule template” | **Schedule templates** (opens manage dialog) |
-| Manage dialog title | `hrManageScheduleTemplatesTitle` → “Schedule templates” | Keep |
-| Create action | `hrCreateShiftTemplateAction` → “Create template” | **Create schedule** or **Add pattern** (short, no redundant “template”) |
-| Edit / delete (list icons) | “Edit template” / “Delete template” | **Edit** / **Delete** (icon-only; tooltips only) |
-| Mutation dialog title | `hrShiftTemplateDialogTitle` → “Schedule template” | **Schedule pattern** (create) / **Edit schedule pattern** (edit)—or keep “Schedule template” if preferred; **must match** manage dialog vocabulary |
-| Record availability | `hrAvailabilityDialogTitle` → “Record availability” | Keep action label; shared section title **`hrWeeklyScheduleSectionTitle`** → “Weekly schedule” (reuse `hrAvailabilityWeekScheduleTitle` value, deprecate duplicate key) |
-| Shared editor a11y | — | One l10n prefix family for slot actions (`hrAddScheduleSlotAction`, `hrDuplicateScheduleToAction`, …) used by **both** flows |
-
-Rename arb keys only when necessary; prefer retargeting existing strings before adding parallel keys.
-
----
-
-## Backend Dependency (weekly slots on templates)
-
-`shift_template` today stores only `default_start_time` / `default_end_time`. Staff availability already supports `time_slots_json` per day.
-
-**Required for full parity:**
-
-1. Extend `shift_template` with `weekly_schedule_json` (or `time_slots_json` mirroring availability shape), **or** add a `shift_template_slot` child table.
-2. Update Zod schemas and Flutter DTOs / controller payloads.
-3. Migration + backward compatibility: existing templates map to a single weekday slot (e.g. Mon–Fri 08:00–17:00 or infer from `default_start_time`/`default_end_time` on read).
-
-**If backend work is deferred:** ship the shared UI component and detail/list UX first; serialize the weekly editor to the legacy pair (e.g. first filled slot of first filled day) with a visible banner: *“Full weekly patterns will apply after server update.”* Do **not** silently drop extra slots.
-
----
-
-## Implementation Requirements
-
-### 1. Shared weekly schedule module
-
-- New file under `frontend/lib/features/hr/presentation/widgets/` (e.g. `hr_weekly_schedule_editor.dart`).
-- Move `_DayScheduleSection`, `_DayScheduleDraft`, `_AvailabilitySlotDraft`, validation helpers, and `kAvailabilityWeekDayOrder` (or rename to `kHrWeekDayOrder`) into shared module.
-- Export a single public widget + draft-to-payload mapper(s) for availability batch API vs template API.
-
-### 2. Manage templates dialog
-
-- `initialMaximized: true`, `maxWidth: 980`.
-- Refactor list to structured row (title, subtitle, `AppCopyableIdentifier`, icon actions).
-- `onTap` → `showHrScheduleTemplateDetailDialog` (new).
-- Delete retains confirmation pattern if one exists elsewhere; show snackbar via `showHrMutationSnackBar`.
-
-### 3. Template detail dialog
-
-- New `hr_schedule_template_detail_dialog.dart` (or colocate in enhanced dialogs if small).
-- Use `AppInfoTileGrid` + read-only `HrWeeklyScheduleEditor`.
-- Actions: Edit (opens mutation dialog), Delete (with confirm).
-
-### 4. Record availability refactor
-
-- Replace inlined `_DayScheduleSection` usage with `HrWeeklyScheduleEditor`.
-- **No behavior regression** on copy-from-staff, duplicate-to, validation messages, or `createAvailabilitySchedule` payload.
-
-### 5. Shift template mutation dialog
-
-- Integrate `HrWeeklyScheduleEditor`; remove standalone start/end `AppTimeField`s.
-- `initialMaximized: true`.
-- Map weekly draft ↔ API payload per backend contract (§ Backend Dependency).
-
-### 6. Toolbar label fix
-
-- Update `hrShiftTemplateAction` (and generated l10n) to **Schedule templates** so the button matches the manage dialog it opens.
-
-### 7. Tests
-
-- Widget test: manage dialog opens maximized (`find.byType` / dialog size flag if exposed).
-- Widget test: list row shows `AppCopyableIdentifier` when ID present.
-- Widget test: icon-only edit/delete buttons with correct `semanticLabel`s.
-- Widget test: `HrWeeklyScheduleEditor` — add slot, duplicate-to, validation errors (extract from or extend `hr_record_availability` tests if any).
-- Regression: existing availability dialog tests still pass after refactor.
-
-### 8. Quality gate
-
-- `flutter analyze` clean on touched files.
-- `flutter test` for new/changed test files.
-- Manual QA: `.\tool\run_web_5201.ps1` → `/hr` → **Schedule templates** → verify maximize, copy ID, row detail, create/edit weekly pattern → **Record availability** on a staff profile → confirm identical weekly schedule UX.
-
----
-
-## Global Standards
-
-- Reuse `AppDialog`, `AppButton` (`iconOnly`), `AppCopyableIdentifier`, `AppInfoTileGrid`, `AppTimeField`, theme spacing.
-- Icons: outlined Material set (`view_week_outlined`, `edit_outlined`, `delete_outline`, `content_copy_outlined`).
-- All new/changed strings in `frontend/lib/l10n/app_en.arb`.
-- Permission gates unchanged (`hrRead` / `hrWrite`).
-- Hospital workflow language—no raw enum names in labels (`DAY` → “Day shift” if not already localized).
+- Show **platform admin contact details** in the dialog (email, phone with `mailto:` / `tel:` links) so tenants can call or email after paying.
+- On proof-of-payment submit (and other payment initiation where applicable):
+  - **Send email** to platform admin(s) with tenant name, plan, amount, and payment reference.
+  - Create or update a **pending payment / subscription request** record visible in platform admin workspace.
+- Platform admin reviews the request and **activates** or approves the subscription (existing admin activation flow).
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] **Schedule templates** manage dialog opens **maximized** by default.
-- [ ] Each template row shows a **copyable** template ID via `AppCopyableIdentifier`.
-- [ ] List **Edit** and **Delete** are **icon-only** (no “template” in visible text).
-- [ ] Tapping a template row opens a **detail** dialog with metadata, weekly schedule summary, and edit/delete actions.
-- [ ] Create/edit template uses the **same weekly schedule editor** as Record availability (multi-day, multi-slot, duplicate-to).
-- [ ] Weekly schedule UI lives in **one shared component**—no duplicated `_DayScheduleSection` in availability vs template files.
-- [ ] Toolbar action label matches manage dialog (**Schedule templates**).
-- [ ] l10n uses consistent **schedule / weekly schedule** vocabulary across both flows.
-- [ ] Backend stores and returns full weekly pattern **or** interim mapping is documented and non-destructive.
-- [ ] Widget tests cover list/detail/editor behaviors; manual QA checklist passes.
+- [ ] Header button is visible on authenticated shell; icon + label; state-driven color and copy.
+- [ ] Active, expiring-soon, and expired states render correctly from live subscription data.
+- [ ] Dialog opens from header button; plan selection and payment method choice are straightforward.
+- [ ] Manual payment supports proof upload; submission notifies platform admin (email + admin queue).
+- [ ] Admin contact info (email, phone) is shown in the payment section.
+- [ ] All strings in `app_en.arb`; follows design system and modal-first patterns.
+- [ ] Quality gate: `flutter analyze`, `flutter test`, targeted backend tests for payment-notification endpoints.
 
 ---
 
-## Out of Scope
+## Key References
 
-- Roster generation logic that consumes templates (separate scheduling prompt).
-- Work-queue or toolbar overflow IA ([prompt.md](./prompt.md)).
-- Staff detail action grid reordering.
-- Applying a template to a staff member in one click (“Assign template to staff”)—future enhancement.
+```
+frontend/lib/app/router/app_router.dart          — _AppShell / ResponsiveAppShell
+frontend/lib/shared/layout/responsive_shell_scaffold.dart
+frontend/lib/features/subscriptions/
+frontend/lib/core/security/auth_session.dart     — entitlements / subscription in session
+backend/src/modules/subscription/
+backend/src/modules/subscriptions-workspace/
+backend/src/config/env.js                        — admin contact / notification config
+```

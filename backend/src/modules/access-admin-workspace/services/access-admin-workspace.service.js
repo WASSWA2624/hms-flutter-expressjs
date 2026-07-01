@@ -3,6 +3,9 @@ const { hashPassword } = require('@lib/crypto/hashPassword');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { createAuditLog } = require('@lib/audit');
+const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
+const authRepository = require('@repositories/auth/auth.repository');
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 
 const DEFAULT_DEMO_RESET_PASSWORD = process.env.DEMO_RESET_PASSWORD || 'Hosspi@2624.';
@@ -15,6 +18,7 @@ const ACCESS_RESOURCES = [
   'role-permissions',
   'demo-users',
   'module-entitlements',
+  'registration-follow-ups',
 ];
 
 const ACCESS_PANELS = [
@@ -23,6 +27,7 @@ const ACCESS_PANELS = [
   { id: 'roles', label_key: 'access_admin.panels.roles', default_resource: 'roles' },
   { id: 'permissions', label_key: 'access_admin.panels.permissions', default_resource: 'permissions' },
   { id: 'entitlements', label_key: 'access_admin.panels.entitlements', default_resource: 'module-entitlements' },
+  { id: 'registrations', label_key: 'access_admin.panels.registrations', default_resource: 'registration-follow-ups' },
   { id: 'demo', label_key: 'access_admin.panels.demo', default_resource: 'demo-users' },
 ];
 
@@ -39,6 +44,7 @@ const RESOURCE_PANEL_MAP = {
   'role-permissions': 'permissions',
   'demo-users': 'demo',
   'module-entitlements': 'entitlements',
+  'registration-follow-ups': 'registrations',
 };
 
 const CLINICAL_FLOW_ROLES = new Set([
@@ -61,7 +67,15 @@ const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
 const roleList = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [user.role];
   return roles
-    .map((entry) => String(entry || '').trim().toUpperCase())
+    .map((entry) => {
+      if (typeof entry === 'string') {
+        return entry.trim().toUpperCase();
+      }
+      if (entry && typeof entry === 'object') {
+        return String(entry.name || entry.role_name || entry.role?.name || '').trim().toUpperCase();
+      }
+      return String(entry || '').trim().toUpperCase();
+    })
     .filter(Boolean);
 };
 
@@ -82,6 +96,14 @@ const canWriteAccess = (user = {}) => {
     ROLES.OPERATIONS,
   ]);
   return roleList(user).some((entry) => writeRoles.has(entry));
+};
+
+const isSuperAdmin = (user = {}) => roleList(user).includes(ROLES.SUPER_ADMIN);
+
+const requireSuperAdmin = (user = {}) => {
+  if (!isSuperAdmin(user)) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
 };
 
 const serializeUser = (record) => {
@@ -217,6 +239,30 @@ const serializeModuleEntitlement = (record, subscription = null) => {
   };
 };
 
+const serializeRegistrationFollowUp = (record = {}) => {
+  const user = record.user || {};
+  const tenant = record.tenant || user.tenant || null;
+  const facility = record.facility || user.facility || null;
+
+  return {
+    id: safePublicId(user.human_friendly_id, user.id),
+    display_id: safePublicId(record.human_friendly_id, record.id),
+    user_id: safePublicId(user.human_friendly_id, user.id),
+    email: record.email || user.email || null,
+    phone: record.phone || user.phone || null,
+    admin_name: record.admin_name || null,
+    facility_name: record.facility_name || facility?.name || null,
+    tenant_name: tenant?.name || record.facility_name || null,
+    facility_type: record.facility_type || facility?.facility_type || null,
+    status: 'PENDING_APPROVAL',
+    registered_at: record.first_registered_at || record.created_at || null,
+    email_verified_at: user.email_verified_at || null,
+    location: record.location || null,
+    interests: record.interests || null,
+    updated_at: record.updated_at || user.updated_at || null,
+  };
+};
+
 const serializeUserDetail = (record) => {
   const base = serializeUser(record);
   if (!base) return null;
@@ -309,6 +355,8 @@ const serializeItems = (resource, items = [], subscription = null) => {
       return items.map(serializeRolePermission);
     case 'module-entitlements':
       return items.map((entry) => serializeModuleEntitlement(entry, subscription));
+    case 'registration-follow-ups':
+      return items.map(serializeRegistrationFollowUp);
     default:
       return [];
   }
@@ -334,6 +382,18 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
     };
   }
 
+  if (resource === 'registration-follow-ups') {
+    const result = await authRepository.findPendingRegistrationApprovals({
+      skip,
+      take,
+      search: filters.search,
+    });
+    return {
+      items: result.items || [],
+      total: result.total || 0,
+    };
+  }
+
   const finderMap = {
     users: repository.findUsers,
     roles: repository.findRoles,
@@ -352,10 +412,18 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
 
 const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   const { panel, resource } = resolveResource(query);
-  const scopeResult = await repository.resolveWorkspaceScope({ filters: query, user });
+  const isRegistrationQueue = resource === 'registration-follow-ups';
+
+  if (isRegistrationQueue) {
+    requireSuperAdmin(user);
+  }
+
+  const scopeResult = isRegistrationQueue
+    ? { state: 'ready', scope: { tenant_id: null, facility_id: null } }
+    : await repository.resolveWorkspaceScope({ filters: query, user });
   const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
 
-  if (scopeResult.state === 'tenant_context_required') {
+  if (!isRegistrationQueue && scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);
     return {
       state: 'tenant_context_required',
@@ -389,23 +457,34 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 
   const skip = (page - 1) * limit;
-  const [summary, lookups, itemsResult] = await Promise.all([
-    repository.findSummary(scope),
-    repository.findLookups(scope, includeAllTenants),
-    findItemsForResource(resource, scope, filters, skip, limit),
-  ]);
+  const [summary, lookups, itemsResult] = isRegistrationQueue
+    ? [
+        {},
+        { tenants: [], facilities: [], roles: [], permissions: [] },
+        await findItemsForResource(resource, scope, filters, skip, limit),
+      ]
+    : await Promise.all([
+        repository.findSummary(scope),
+        repository.findLookups(scope, includeAllTenants),
+        findItemsForResource(resource, scope, filters, skip, limit),
+      ]);
 
   const subscription = itemsResult.subscription || null;
-  const overviewSubscription =
-    resource === 'module-entitlements'
+  const overviewSubscription = isRegistrationQueue
+    ? null
+    : resource === 'module-entitlements'
       ? subscription
       : (await repository.findModuleEntitlements(scope)).subscription;
+
+  const visiblePanels = isSuperAdmin(user)
+    ? ACCESS_PANELS
+    : ACCESS_PANELS.filter((entry) => entry.id !== 'registrations');
 
   return {
     state: 'ready',
     generated_at: new Date().toISOString(),
     summary,
-    panel_summaries: ACCESS_PANELS.map((entry) => ({
+    panel_summaries: visiblePanels.map((entry) => ({
       id: entry.id,
       label_key: entry.label_key,
       default_resource: entry.default_resource,
@@ -509,10 +588,90 @@ const resolveLegacyRoute = async (resource, identifier) => {
   };
 };
 
+const loadRegistrationUser = async (userIdentifier) => {
+  const scopedUser = await repository.findUserByIdentifier(userIdentifier, {
+    tenant_id: null,
+    facility_id: null,
+  });
+
+  if (!scopedUser?.id) {
+    throw new HttpError('errors.auth.registration_not_pending', 404);
+  }
+
+  const user = await authRepository.findUserById(scopedUser.id);
+  if (!user || user.status !== 'PENDING' || !user.email_verified_at) {
+    throw new HttpError('errors.auth.registration_not_pending', 404);
+  }
+
+  return user;
+};
+
+const activateRegistration = async (userIdentifier, actor = {}, ip = null) => {
+  requireSuperAdmin(actor);
+  const user = await loadRegistrationUser(userIdentifier);
+
+  await authRepository.updateUserStatus(user.id, 'ACTIVE');
+  await authRepository.updateRegistrationFollowUpStatus(user.id, 'ACTIVE').catch(() => {});
+  await provisionTrialSubscription(user.tenant_id);
+
+  await createAuditLog({
+    action: 'TENANT_REGISTRATION_ACTIVATED',
+    entity: 'user',
+    entity_id: user.id,
+    user_id: actor.id || null,
+    tenant_id: user.tenant_id,
+    facility_id: user.facility_id,
+    ip_address: ip,
+    details: {
+      email: user.email,
+      phone: user.phone || null,
+    },
+  }).catch(() => {});
+
+  return serializeRegistrationFollowUp({
+    email: user.email,
+    phone: user.phone,
+    user: { ...user, status: 'ACTIVE' },
+    facility_name: user.facility?.name || null,
+    facility_type: user.facility?.facility_type || null,
+    tenant: user.tenant || null,
+    facility: user.facility || null,
+    account_status: 'ACTIVE',
+    status: 'ACTIVE',
+    updated_at: new Date(),
+  });
+};
+
+const rejectRegistration = async (userIdentifier, actor = {}, ip = null) => {
+  requireSuperAdmin(actor);
+  const user = await loadRegistrationUser(userIdentifier);
+
+  await authRepository.updateUserStatus(user.id, 'INACTIVE');
+  await authRepository.updateRegistrationFollowUpStatus(user.id, 'INACTIVE').catch(() => {});
+
+  await createAuditLog({
+    action: 'TENANT_REGISTRATION_REJECTED',
+    entity: 'user',
+    entity_id: user.id,
+    user_id: actor.id || null,
+    tenant_id: user.tenant_id,
+    facility_id: user.facility_id,
+    ip_address: ip,
+    details: {
+      email: user.email,
+      phone: user.phone || null,
+    },
+  }).catch(() => {});
+
+  return { status: 'INACTIVE' };
+};
+
 module.exports = {
+  activateRegistration,
   getReferenceData,
   getUserDetail,
   getWorkspace,
+  rejectRegistration,
   resetDemoUserPassword,
   resolveLegacyRoute,
 };

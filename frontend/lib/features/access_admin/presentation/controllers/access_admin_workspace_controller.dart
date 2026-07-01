@@ -223,6 +223,18 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  Future<AppFailure?> activateRegistration(AccessAdminItem item) {
+    return _submitAction(
+      () => _repository.activateRegistration(item.effectiveDisplayId),
+    );
+  }
+
+  Future<AppFailure?> rejectRegistration(AccessAdminItem item) {
+    return _submitAction(
+      () => _repository.rejectRegistration(item.effectiveDisplayId),
+    );
+  }
+
   AccessAdminWorkspaceState? get _currentState {
     final Result<AccessAdminWorkspaceState>? currentResult =
         state.asData?.value;
@@ -409,6 +421,8 @@ final class AccessAdminWorkspaceController
       AccessAdminPanel.roles => AccessAdminResource.roles,
       AccessAdminPanel.permissions => AccessAdminResource.permissions,
       AccessAdminPanel.entitlements => AccessAdminResource.moduleEntitlements,
+      AccessAdminPanel.registrations =>
+        AccessAdminResource.registrationFollowUps,
       AccessAdminPanel.demo => AccessAdminResource.demoUsers,
     };
   }

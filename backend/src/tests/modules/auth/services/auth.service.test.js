@@ -10,6 +10,9 @@ jest.mock('@lib/crypto');
 jest.mock('@lib/jwt');
 jest.mock('@lib/audit');
 jest.mock('@lib/notifications');
+jest.mock('@lib/subscriptions/tenant-entitlements', () => ({
+  resolveTenantModuleEntitlements: jest.fn().mockResolvedValue([]),
+}));
 jest.mock('@config/env', () => ({
   JWT_SECRET: '12345678901234567890123456789012',
   APP_PUBLIC_URL: 'http://localhost:8081',
@@ -298,7 +301,10 @@ describe('Auth Service', () => {
 
       await expect(authService.login(loginData))
         .rejects
-        .toMatchObject({ statusCode: 403, messageKey: 'errors.auth.account_pending' });
+        .toMatchObject({
+          statusCode: 403,
+          messageKey: 'errors.auth.email_verification_required',
+        });
     });
 
     it('hydrates roles before issuing a token when tenant selection is implicit', async () => {
@@ -851,18 +857,20 @@ describe('Auth Service', () => {
 
       authRepository.findVerificationToken.mockResolvedValue(mockToken);
       authRepository.markTokenAsUsed.mockResolvedValue({});
-      authRepository.updateUserStatus.mockResolvedValue({});
+      authRepository.markEmailVerified.mockResolvedValue({});
       authRepository.deleteExpiredTokens.mockResolvedValue({});
       createAuditLog.mockResolvedValue({});
 
       const result = await authService.verifyEmail(verifyData);
 
       expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('awaiting_platform_approval', true);
       expect(result).toHaveProperty('next_path', '/login');
       expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-123');
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', 'EMAIL_VERIFICATION');
-      expect(authRepository.updateUserStatus).toHaveBeenCalledWith('user-123', 'ACTIVE');
-      expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-123', 'ACTIVE');
+      expect(authRepository.markEmailVerified).toHaveBeenCalledWith('user-123');
+      expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
+      expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-123', 'PENDING');
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'EMAIL_VERIFIED'
       }));
@@ -908,9 +916,6 @@ describe('Auth Service', () => {
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-active-123', 'EMAIL_VERIFICATION');
       expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
       expect(authRepository.updateRegistrationFollowUpStatus).toHaveBeenCalledWith('user-active-123', 'ACTIVE');
-      expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'EMAIL_VERIFIED_ALREADY_ACTIVE'
-      }));
     });
   });
 

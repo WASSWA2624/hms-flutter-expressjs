@@ -256,6 +256,10 @@ final class AccessAdminItemDto {
         return '${_string(json['role_name'])} → ${_string(json['permission_name'])}';
       case AccessAdminResource.moduleEntitlements:
         return _string(json['module_label'] ?? json['module_slug']);
+      case AccessAdminResource.registrationFollowUps:
+        return _nullableString(json['admin_name']) ??
+            _nullableString(json['tenant_name']) ??
+            _string(json['email']);
     }
   }
 
@@ -274,6 +278,13 @@ final class AccessAdminItemDto {
         return null;
       case AccessAdminResource.moduleEntitlements:
         return _nullableString(json['module_group']);
+      case AccessAdminResource.registrationFollowUps:
+        final String? facilityName = _nullableString(json['facility_name']);
+        final String? facilityType = _nullableString(json['facility_type']);
+        if (facilityName != null && facilityType != null) {
+          return '$facilityName · $facilityType';
+        }
+        return facilityName ?? facilityType;
     }
   }
 

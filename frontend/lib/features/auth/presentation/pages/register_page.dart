@@ -24,6 +24,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _adminNameController = TextEditingController();
+  final _tenantNameController = TextEditingController();
   final _facilityNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _locationController = TextEditingController();
@@ -31,6 +32,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _facilityNameFocusNode = FocusNode();
+  final _tenantNameFocusNode = FocusNode();
   final _phoneFocusNode = FocusNode();
   final _locationFocusNode = FocusNode();
   String _facilityType = 'HOSPITAL';
@@ -41,6 +43,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _adminNameController.dispose();
+    _tenantNameController.dispose();
     _facilityNameController.dispose();
     _phoneController.dispose();
     _locationController.dispose();
@@ -48,6 +51,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     _facilityNameFocusNode.dispose();
+    _tenantNameFocusNode.dispose();
     _phoneFocusNode.dispose();
     _locationFocusNode.dispose();
     super.dispose();
@@ -121,6 +125,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ),
             SizedBox(height: theme.spacing.md),
             AppTextField(
+              controller: _tenantNameController,
+              labelText: l10n.authTenantNameLabel,
+              textInputAction: TextInputAction.next,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              isRequired: true,
+              onChanged: (_) => _clearFormFeedback(),
+              onFocusChanged: _handleFieldFocusChanged,
+              focusNode: _tenantNameFocusNode,
+              enabled: !state.isSubmitting,
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
               controller: _facilityNameController,
               labelText: l10n.authFacilityNameLabel,
               textInputAction: TextInputAction.next,
@@ -175,7 +191,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             SizedBox(height: theme.spacing.md),
             AppPhoneField(
               controller: _phoneController,
-              labelText: l10n.authPhoneOptionalLabel,
+              labelText: l10n.authPhoneLabel,
               countryLabelText: l10n.appPhoneCountryLabel,
               countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
               countryNoResultsText: l10n.appPhoneCountryNoResults,
@@ -183,6 +199,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               numberHintText: l10n.appPhoneNumberHint,
               invalidPhoneMessage: l10n.appPhoneInvalidMessage,
               textInputAction: TextInputAction.next,
+              isRequired: true,
+              requiredMessage: l10n.validationRequired,
               onChanged: (_) => _clearFormFeedback(),
               onFocusChanged: _handleFieldFocusChanged,
               focusNode: _phoneFocusNode,
@@ -233,6 +251,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         .register(
           email: email,
           password: _passwordController.text,
+          tenantName: _tenantNameController.text,
           adminName: _adminNameController.text,
           facilityName: _facilityNameController.text,
           facilityType: _facilityType,

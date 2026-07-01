@@ -4532,6 +4532,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account is verified. You can now sign in.';
 
   @override
+  String get authEmailVerifiedAwaitingApprovalBody =>
+      'Your email is verified. A platform administrator will review your registration before you can sign in.';
+
+  @override
+  String get authAccountPendingApprovalMessage =>
+      'Your email is verified. Your account is awaiting platform approval before you can sign in.';
+
+  @override
+  String get authTenantNameLabel => 'Organization name';
+
+  @override
+  String get authPhoneLabel => 'Phone';
+
+  @override
   String get authVerificationCodeResentMessage =>
       'A new verification code has been sent.';
 
@@ -16088,6 +16102,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminPanelDemo => 'Demo accounts';
+
+  @override
+  String get accessAdminPanelRegistrations => 'Pending registrations';
+
+  @override
+  String get accessAdminPhoneLabel => 'Phone';
+
+  @override
+  String get accessAdminActivateRegistrationAction => 'Activate account';
+
+  @override
+  String get accessAdminRejectRegistrationAction => 'Reject';
 
   @override
   String get accessAdminActiveUsersLabel => 'Active users';

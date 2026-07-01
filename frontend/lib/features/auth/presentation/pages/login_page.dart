@@ -157,6 +157,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             },
           ),
         );
+      } else if (failure?.code == 'auth.account_pending_approval') {
+        // Stay on login — failure message explains approval is pending.
       }
       return;
     }

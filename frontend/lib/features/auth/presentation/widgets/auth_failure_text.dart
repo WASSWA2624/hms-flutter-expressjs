@@ -22,6 +22,9 @@ class AuthFailureText extends StatelessWidget {
     if (failure.code == 'auth.account_pending') {
       return l10n.authAccountPendingMessage;
     }
+    if (failure.code == 'auth.account_pending_approval') {
+      return l10n.authAccountPendingApprovalMessage;
+    }
     if (failure.code == 'auth.account_not_found') {
       return l10n.authAccountNotFoundMessage;
     }

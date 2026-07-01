@@ -21,6 +21,8 @@ const ACCESS_ADMIN_ROLES = [
   ROLES.OPERATIONS,
 ];
 
+const SUPER_ADMIN_ONLY = [ROLES.SUPER_ADMIN];
+
 const requireAccessAdminWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('access_admin_workspace_v1')) {
     return next(new HttpError('errors.access_admin.workspace_not_enabled', 404));
@@ -56,6 +58,20 @@ router.post(
   validateRequest({ params: userIdentifierParamsSchema }),
   authorize(ACCESS_ADMIN_ROLES, 'role'),
   accessAdminWorkspaceController.resetDemoUserPassword
+);
+
+router.post(
+  '/registrations/:userIdentifier/activate',
+  validateRequest({ params: userIdentifierParamsSchema }),
+  authorize(SUPER_ADMIN_ONLY, 'role'),
+  accessAdminWorkspaceController.activateRegistration
+);
+
+router.post(
+  '/registrations/:userIdentifier/reject',
+  validateRequest({ params: userIdentifierParamsSchema }),
+  authorize(SUPER_ADMIN_ONLY, 'role'),
+  accessAdminWorkspaceController.rejectRegistration
 );
 
 router.get(

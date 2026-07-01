@@ -82,9 +82,15 @@ final class NetworkFailureMapper {
 
     if (statusCode == 403) {
       final code = _responseCode(response?.data);
-      if (code == 'ACCOUNT_PENDING') {
+      if (code == 'ACCOUNT_PENDING' || code == 'EMAIL_VERIFICATION_REQUIRED') {
         return AppFailure.forbidden(
           code: 'auth.account_pending',
+          statusCode: statusCode,
+        );
+      }
+      if (code == 'ACCOUNT_PENDING_APPROVAL') {
+        return AppFailure.forbidden(
+          code: 'auth.account_pending_approval',
           statusCode: statusCode,
         );
       }

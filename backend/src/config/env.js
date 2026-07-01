@@ -183,6 +183,12 @@ const buildEnv = () => {
     'AUTH_SESSION_TTL_DAYS',
     { min: 1, max: 90 }
   );
+  const TRIAL_DURATION_DAYS = parseBoundedInteger(
+    process.env.TRIAL_DURATION_DAYS,
+    90,
+    'TRIAL_DURATION_DAYS',
+    { min: 1, max: 1095 }
+  );
   const SMTP_HOST = process.env.SMTP_HOST || null;
   const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : null;
   const SMTP_USER = process.env.SMTP_USER || null;
@@ -356,6 +362,7 @@ const buildEnv = () => {
     JWT_ACCESS_TOKEN_EXPIRATION,
     JWT_REFRESH_TOKEN_EXPIRATION,
     AUTH_SESSION_TTL_DAYS,
+    TRIAL_DURATION_DAYS,
     SMTP_HOST,
     SMTP_PORT,
     SMTP_USER,
@@ -438,6 +445,7 @@ const envKeys = [
   'JWT_ACCESS_TOKEN_EXPIRATION',
   'JWT_REFRESH_TOKEN_EXPIRATION',
   'AUTH_SESSION_TTL_DAYS',
+  'TRIAL_DURATION_DAYS',
   'SMTP_HOST',
   'SMTP_PORT',
   'SMTP_USER',

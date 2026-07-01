@@ -41,9 +41,10 @@ const registerBodySchema = z.object({
     .regex(/[0-9]/, 'errors.validation.password.number')
     .regex(/[^A-Za-z0-9]/, 'errors.validation.password.special'),
   facility_name: z.string().trim().min(1, 'errors.validation.field.required').max(255),
+  tenant_name: z.string().trim().min(1, 'errors.validation.field.required').max(255).optional(),
   admin_name: z.string().trim().min(1, 'errors.validation.field.required').max(255),
   facility_type: facilityTypeSchema,
-  phone: phoneSchema.optional(),
+  phone: phoneSchema,
   location: z.string().trim().max(255).optional(),
   interests: z.string().trim().max(2000).optional(),
 });

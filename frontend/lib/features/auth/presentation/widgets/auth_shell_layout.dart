@@ -43,11 +43,7 @@ class AuthShellLayout extends StatelessWidget {
                         displayName: displayName,
                       ),
                       SizedBox(height: theme.spacing.xl),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: child,
-                        ),
-                      ),
+                      Expanded(child: SingleChildScrollView(child: child)),
                     ],
                   ),
                 ),

@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -153,7 +154,8 @@ class _AccessAdminWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          if (state.isTenantContextRequired)
+          if (state.isTenantContextRequired &&
+              state.query.panel != AccessAdminPanel.registrations)
             AppStateView(
               title: context.l10n.accessAdminTenantContextRequiredTitle,
               body: context.l10n.accessAdminTenantContextRequiredBody,
@@ -188,7 +190,11 @@ class _AccessAdminWorkspaceContentState
     bool canWrite,
     AccessAdminWorkspaceController controller,
   ) {
-    if (!canWrite || state.isTenantContextRequired) return null;
+    if (!canWrite ||
+        (state.isTenantContextRequired &&
+            state.query.panel != AccessAdminPanel.registrations)) {
+      return null;
+    }
 
     return switch (state.query.resource) {
       AccessAdminResource.users ||
@@ -492,15 +498,22 @@ class _AccessAdminWorkspaceContentState
   }
 }
 
-class _PanelSelector extends StatelessWidget {
+class _PanelSelector extends ConsumerWidget {
   const _PanelSelector({required this.state, required this.controller});
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
 
   @override
-  Widget build(BuildContext context) {
-    const List<AccessAdminPanel> panels = AccessAdminPanel.values;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool isSuperAdmin = ref.watch(appAccessPolicyProvider).isElevated;
+    final List<AccessAdminPanel> panels = AccessAdminPanel.values
+        .where(
+          (AccessAdminPanel panel) =>
+              panel != AccessAdminPanel.registrations || isSuperAdmin,
+        )
+        .toList(growable: false);
+
     return Wrap(
       spacing: Theme.of(context).spacing.sm,
       runSpacing: Theme.of(context).spacing.sm,
@@ -527,6 +540,8 @@ class _PanelSelector extends StatelessWidget {
       AccessAdminPanel.permissions => context.l10n.accessAdminPanelPermissions,
       AccessAdminPanel.entitlements =>
         context.l10n.accessAdminPanelEntitlements,
+      AccessAdminPanel.registrations =>
+        context.l10n.accessAdminPanelRegistrations,
       AccessAdminPanel.demo => context.l10n.accessAdminPanelDemo,
     };
   }
@@ -678,6 +693,11 @@ class _DetailContent extends ConsumerWidget {
             label: context.l10n.accessAdminEmailLabel,
             value: item.email!,
           ),
+        if (item.phone != null)
+          _DetailRow(
+            label: context.l10n.accessAdminPhoneLabel,
+            value: item.phone!,
+          ),
         if (item.positionTitle != null)
           _DetailRow(
             label: context.l10n.accessAdminPositionLabel,
@@ -754,6 +774,21 @@ class _DetailContent extends ConsumerWidget {
     AccessAdminWorkspaceController controller,
   ) {
     final List<Widget> actions = <Widget>[];
+
+    if (item.resource == AccessAdminResource.registrationFollowUps) {
+      actions.add(
+        AppButton.primary(
+          label: context.l10n.accessAdminActivateRegistrationAction,
+          onPressed: () => unawaited(controller.activateRegistration(item)),
+        ),
+      );
+      actions.add(
+        AppButton.secondary(
+          label: context.l10n.accessAdminRejectRegistrationAction,
+          onPressed: () => unawaited(controller.rejectRegistration(item)),
+        ),
+      );
+    }
 
     if (item.resource == AccessAdminResource.users ||
         item.resource == AccessAdminResource.demoUsers) {

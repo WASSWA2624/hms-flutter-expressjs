@@ -37,6 +37,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   bool _isSubmitting = false;
   bool _isResending = false;
   bool _isVerified = false;
+  bool _awaitingPlatformApproval = false;
   bool _codeResent = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   AppFailure? _failure;
@@ -65,7 +66,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
 
     return AuthPageFrame(
       title: _isVerified
-          ? l10n.authEmailVerifiedTitle
+          ? (_awaitingPlatformApproval
+                ? l10n.authEmailVerifiedTitle
+                : l10n.authEmailVerifiedTitle)
           : l10n.authVerifyEmailTitle,
       subtitle: _bodyText(l10n, email),
       maxWidth: 460,
@@ -91,12 +94,13 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               SizedBox(height: theme.spacing.md),
             ],
             if (_isVerified) ...<Widget>[
-              AppButton.primary(
-                label: l10n.authLoginActionLabel,
-                leadingIcon: Icons.login,
-                fullWidth: true,
-                onPressed: () => context.go(AppRoutes.login.location()),
-              ),
+              if (!_awaitingPlatformApproval)
+                AppButton.primary(
+                  label: l10n.authLoginActionLabel,
+                  leadingIcon: Icons.login,
+                  fullWidth: true,
+                  onPressed: () => context.go(AppRoutes.login.location()),
+                ),
             ] else ...<Widget>[
               AppTextField(
                 controller: _codeController,
@@ -161,7 +165,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
 
   String _bodyText(AppLocalizations l10n, String? email) {
     if (_isVerified) {
-      return l10n.authEmailVerifiedBody;
+      return _awaitingPlatformApproval
+          ? l10n.authEmailVerifiedAwaitingApprovalBody
+          : l10n.authEmailVerifiedBody;
     }
 
     if (widget.reason == 'pending' && email != null) {
@@ -202,6 +208,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
         setState(() {
           _isSubmitting = false;
           _isVerified = true;
+          _awaitingPlatformApproval = true;
         });
       },
       failure: (failure) {

@@ -247,6 +247,30 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     );
   }
 
+  @override
+  Future<Result<void>> activateRegistration(String userId) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.accessAdminWorkspace,
+        'registrations',
+        <String>[userId, 'activate'],
+      ),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> rejectRegistration(String userId) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.accessAdminWorkspace,
+        'registrations',
+        <String>[userId, 'reject'],
+      ),
+      decoder: (_) {},
+    );
+  }
+
   Map<String, Object> _withoutEmpty(Map<String, Object?> values) {
     final Map<String, Object> normalized = <String, Object>{};
     values.forEach((String key, Object? value) {

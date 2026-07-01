@@ -13,6 +13,7 @@ const { HttpError } = require('@lib/errors');
 const { translate, resolveLocale } = require('@lib/i18n');
 const { sendEmail } = require('@lib/notifications');
 const { logger } = require('@lib/logging');
+const { resolveTenantModuleEntitlements } = require('@lib/subscriptions/tenant-entitlements');
 const env = require('@config/env');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -36,6 +37,43 @@ const resolveAccountStatusErrorKey = (status) => {
   if (status === 'PENDING') return 'errors.auth.account_pending';
   if (status === 'SUSPENDED') return 'errors.auth.account_suspended';
   return 'errors.auth.account_inactive';
+};
+
+const isEmailVerified = (user = {}) => Boolean(user.email_verified_at);
+
+const resolvePendingAccountError = (user = {}) => {
+  if (!isEmailVerified(user)) {
+    return {
+      messageKey: 'errors.auth.email_verification_required',
+      details: [{
+        reason: 'email_verification_required',
+        identifier_type: user.email ? 'email' : 'phone',
+        email: user.email || null,
+      }],
+    };
+  }
+
+  return {
+    messageKey: 'errors.auth.account_pending_approval',
+    details: [{
+      reason: 'platform_approval_required',
+      email: user.email || null,
+      phone: user.phone || null,
+    }],
+  };
+};
+
+const assertUserCanAuthenticate = (user = {}) => {
+  if (user.status === 'ACTIVE') {
+    return;
+  }
+
+  if (user.status === 'PENDING') {
+    const pending = resolvePendingAccountError(user);
+    throw new HttpError(pending.messageKey, 403, pending.details);
+  }
+
+  throw new HttpError(resolveAccountStatusErrorKey(user.status), 403);
 };
 
 const APP_DISPLAY_NAME =
@@ -117,6 +155,19 @@ const buildAuthUserPayload = (user = {}) => {
     permission_names: effectivePermissions,
     direct_permissions: directPermissions,
     role_permissions: rolePermissions,
+  };
+};
+
+const enrichAuthUserPayload = async (user = {}) => {
+  const base = buildAuthUserPayload(user);
+  if (!user?.tenant_id) {
+    return base;
+  }
+
+  const module_entitlements = await resolveTenantModuleEntitlements(user.tenant_id);
+  return {
+    ...base,
+    module_entitlements,
   };
 };
 
@@ -888,10 +939,8 @@ const login = async (data) => {
     if (activeUsers.length === 1) {
       user = await authRepository.findUserById(activeUsers[0].id);
     } else if (pendingUsers.length > 0) {
-      throw new HttpError('errors.auth.account_pending', 403, [{
-        reason: 'email_verification_required',
-        identifier_type: email ? 'email' : 'phone',
-      }]);
+      const pending = resolvePendingAccountError(pendingUsers[0]);
+      throw new HttpError(pending.messageKey, 403, pending.details);
     } else if (suspendedUsers.length > 0) {
       throw new HttpError('errors.auth.account_suspended', 403);
     } else {
@@ -904,17 +953,7 @@ const login = async (data) => {
   }
 
   // Check if user is active
-  if (user.status !== 'ACTIVE') {
-    const errorKey = resolveAccountStatusErrorKey(user.status);
-    const details = user.status === 'PENDING'
-      ? [{
-          reason: 'email_verification_required',
-          identifier_type: email ? 'email' : 'phone',
-          email: user.email || email || null,
-        }]
-      : [];
-    throw new HttpError(errorKey, 403, details);
-  }
+  assertUserCanAuthenticate(user);
 
   // Verify password
   const isPasswordValid = await comparePassword(password, user.password_hash);
@@ -1023,7 +1062,7 @@ const login = async (data) => {
   return {
     access_token: accessToken,
     refresh_token: refreshToken,
-    user: buildAuthUserPayload(user),
+    user: await enrichAuthUserPayload(user),
     requires_facility_selection: false
   };
 };
@@ -1050,6 +1089,7 @@ const register = async (data) => {
     email,
     password,
     facility_name,
+    tenant_name,
     admin_name,
     facility_type,
     phone,
@@ -1110,6 +1150,7 @@ const register = async (data) => {
       phone,
       password_hash,
       facility_name,
+      tenant_name: tenant_name || facility_name,
       admin_name,
       facility_type,
       status: 'PENDING',
@@ -1237,9 +1278,7 @@ const refresh = async (data) => {
   }
 
   // Check if user is active
-  if (session.user.status !== 'ACTIVE') {
-    throw new HttpError(resolveAccountStatusErrorKey(session.user.status), 403);
-  }
+  assertUserCanAuthenticate(session.user);
 
   // Revoke old session
   await authRepository.revokeSession(session.id);
@@ -1287,7 +1326,7 @@ const refresh = async (data) => {
   return {
     access_token: accessToken,
     refresh_token: newRefreshToken,
-    user: buildAuthUserPayload(session.user),
+    user: await enrichAuthUserPayload(session.user),
   };
 };
 
@@ -1412,7 +1451,7 @@ const getMe = async (userId) => {
     throw new HttpError('errors.auth.user_not_found', 404);
   }
 
-  return buildAuthUserPayload(user);
+  return enrichAuthUserPayload(user);
 };
 
 /**
@@ -1446,6 +1485,7 @@ const verifyEmail = async (data) => {
   }
 
   const alreadyActive = verificationToken.user.status === 'ACTIVE';
+  const emailAlreadyVerified = isEmailVerified(verificationToken.user);
 
   // Mark token as used
   await authRepository.markTokenAsUsed(verificationToken.id);
@@ -1455,13 +1495,15 @@ const verifyEmail = async (data) => {
     EMAIL_VERIFICATION_TOKEN_TYPE
   );
 
-  if (!alreadyActive) {
-    // Update user status to ACTIVE for first-time verification.
-    await authRepository.updateUserStatus(verificationToken.user_id, 'ACTIVE');
+  if (!alreadyActive && !emailAlreadyVerified) {
+    await authRepository.markEmailVerified(verificationToken.user_id);
   }
 
   try {
-    await authRepository.updateRegistrationFollowUpStatus(verificationToken.user_id, 'ACTIVE');
+    await authRepository.updateRegistrationFollowUpStatus(
+      verificationToken.user_id,
+      alreadyActive ? 'ACTIVE' : 'PENDING'
+    );
   } catch {
     // Tracking is best-effort and must not block email verification.
   }
@@ -1478,9 +1520,12 @@ const verifyEmail = async (data) => {
   });
 
   return {
-    message: 'messages.auth.email_verified.success',
+    message: alreadyActive
+      ? 'messages.auth.email_verified.success'
+      : 'messages.auth.email_verified.awaiting_approval',
     already_active: alreadyActive,
-    next_path: '/login',
+    awaiting_platform_approval: !alreadyActive,
+    next_path: alreadyActive ? '/login' : '/login',
   };
 };
 

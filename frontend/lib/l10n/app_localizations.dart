@@ -8518,6 +8518,30 @@ abstract class AppLocalizations {
   /// **'Your account is verified. You can now sign in.'**
   String get authEmailVerifiedBody;
 
+  /// Email verification success body when platform approval is still required.
+  ///
+  /// In en, this message translates to:
+  /// **'Your email is verified. A platform administrator will review your registration before you can sign in.'**
+  String get authEmailVerifiedAwaitingApprovalBody;
+
+  /// Login failure message when email is verified but platform approval is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your email is verified. Your account is awaiting platform approval before you can sign in.'**
+  String get authAccountPendingApprovalMessage;
+
+  /// Tenant display name collected during self-registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization name'**
+  String get authTenantNameLabel;
+
+  /// Required phone number collected during self-registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get authPhoneLabel;
+
   /// Message shown after requesting a fresh email verification code.
   ///
   /// In en, this message translates to:
@@ -30116,6 +30140,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Demo accounts'**
   String get accessAdminPanelDemo;
+
+  /// Access admin pending tenant registrations panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending registrations'**
+  String get accessAdminPanelRegistrations;
+
+  /// Access admin phone field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get accessAdminPhoneLabel;
+
+  /// Activate a pending tenant registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate account'**
+  String get accessAdminActivateRegistrationAction;
+
+  /// Reject a pending tenant registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get accessAdminRejectRegistrationAction;
 
   /// Access admin active users summary label.
   ///

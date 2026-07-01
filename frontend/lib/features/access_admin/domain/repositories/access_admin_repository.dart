@@ -47,4 +47,8 @@ abstract interface class AccessAdminRepository {
   Future<Result<AccessAdminDemoResetResult>> resetDemoUserPassword(
     String userId,
   );
+
+  Future<Result<void>> activateRegistration(String userId);
+
+  Future<Result<void>> rejectRegistration(String userId);
 }

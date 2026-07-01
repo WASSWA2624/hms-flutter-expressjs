@@ -36,6 +36,24 @@ const resetDemoUserPassword = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.access_admin_workspace.demo_reset.success', data);
 });
 
+const activateRegistration = asyncHandler(async (req, res) => {
+  const data = await accessAdminWorkspaceService.activateRegistration(
+    req.params.userIdentifier,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.access_admin_workspace.registration_activated.success', data);
+});
+
+const rejectRegistration = asyncHandler(async (req, res) => {
+  const data = await accessAdminWorkspaceService.rejectRegistration(
+    req.params.userIdentifier,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.access_admin_workspace.registration_rejected.success', data);
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await accessAdminWorkspaceService.resolveLegacyRoute(
     req.params.resource,
@@ -45,9 +63,11 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  activateRegistration,
   getReferenceData,
   getUserDetail,
   getWorkspace,
+  rejectRegistration,
   resetDemoUserPassword,
   resolveLegacyRoute,
 };

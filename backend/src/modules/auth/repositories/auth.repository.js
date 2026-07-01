@@ -345,18 +345,20 @@ const registerFacilityOwner = async (data) => {
     phone,
     password_hash,
     facility_name,
+    tenant_name,
     facility_type,
     admin_name,
     status = 'ACTIVE',
   } = data;
   const parsedName = splitAdminName(admin_name);
+  const resolvedTenantName = String(tenant_name || facility_name || '').trim();
 
   try {
     return await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: {
-          name: facility_name,
-          slug: buildTenantSlug(facility_name),
+          name: resolvedTenantName,
+          slug: buildTenantSlug(resolvedTenantName),
           is_active: true,
         },
       });
@@ -842,6 +844,96 @@ const updateUserStatus = async (userId, status) => {
 };
 
 /**
+ * Mark a user's email as verified without activating the account.
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Updated user
+ */
+const markEmailVerified = async (userId) => {
+  try {
+    return await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email_verified_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.auth.user_not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * List registrations awaiting platform approval.
+ *
+ * @param {Object} options
+ * @param {number} options.skip
+ * @param {number} options.take
+ * @param {string} [options.search]
+ * @returns {Promise<{ items: Array<Object>, total: number }>}
+ */
+const findPendingRegistrationApprovals = async ({ skip = 0, take = 20, search = '' } = {}) => {
+  const delegate = prisma?.registration_follow_up;
+  if (!delegate || typeof delegate.findMany !== 'function') {
+    return { items: [], total: 0 };
+  }
+
+  const term = String(search || '').trim();
+  const where = {
+    deleted_at: null,
+    account_status: 'PENDING',
+    user: {
+      deleted_at: null,
+      status: 'PENDING',
+      email_verified_at: { not: null },
+    },
+  };
+
+  if (term) {
+    where.OR = [
+      { email: { contains: term } },
+      { phone: { contains: term } },
+      { admin_name: { contains: term } },
+      { facility_name: { contains: term } },
+      { human_friendly_id: { contains: term } },
+    ];
+  }
+
+  try {
+    const [items, total] = await Promise.all([
+      delegate.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { first_registered_at: 'desc' },
+        include: {
+          user: {
+            include: {
+              tenant: true,
+              facility: true,
+              profile: true,
+            },
+          },
+          tenant: true,
+          facility: true,
+        },
+      }),
+      delegate.count({ where }),
+    ]);
+
+    return { items, total };
+  } catch (error) {
+    if (error?.code === 'P2021' || error?.code === 'P2022') {
+      return { items: [], total: 0 };
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Find user by email
  *
  * @param {string} email - User email
@@ -1068,6 +1160,8 @@ module.exports = {
   findEnabledUserMfas,
   touchUserMfaLastUsed,
   updateUserStatus,
+  markEmailVerified,
+  findPendingRegistrationApprovals,
   createSession,
   findSessionByRefreshToken,
   revokeSession,
