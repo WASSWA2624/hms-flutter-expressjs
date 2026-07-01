@@ -49,6 +49,34 @@
       }
     }
   },
+  "workspaceToolbarSectionStaffAccess": "Staff & access",
+  "@workspaceToolbarSectionStaffAccess": {
+    "description": "Overflow menu section header for staffing and access administration actions."
+  },
+  "workspaceToolbarSectionScheduling": "Scheduling & roster",
+  "@workspaceToolbarSectionScheduling": {
+    "description": "Overflow menu section header for roster and schedule template actions."
+  },
+  "workspaceToolbarSectionApprovals": "Approvals & alerts",
+  "@workspaceToolbarSectionApprovals": {
+    "description": "Overflow menu section header for notification shortcuts and approval queues."
+  },
+  "workspaceToolbarSectionActivity": "Activity & audit",
+  "@workspaceToolbarSectionActivity": {
+    "description": "Overflow menu section header for HR activity and audit trail actions."
+  },
+  "workspaceToolbarSectionWorkspace": "Workspace",
+  "@workspaceToolbarSectionWorkspace": {
+    "description": "Overflow menu section header for workspace utility actions such as refresh."
+  },
+  "workspaceToolbarSectionFacilities": "Facilities",
+  "@workspaceToolbarSectionFacilities": {
+    "description": "Overflow menu section header for housekeeping and equipment fault actions."
+  },
+  "workspaceNotificationsToolbarTooltip": "Jump directly to queues that need your attention.",
+  "@workspaceNotificationsToolbarTooltip": {
+    "description": "Tooltip clarifying that notifications are badge-driven queue shortcuts."
+  },
   "workspaceFullscreenEnterLabel": "Full screen",
   "@workspaceFullscreenEnterLabel": {
     "description": "Label for entering full-screen mode from the app shell."
@@ -18623,6 +18651,10 @@
   "hrWorkQueuesTitle": "Work queues",
   "@hrWorkQueuesTitle": {
     "description": "Human resources workspace text for hrWorkQueuesTitle."
+  },
+  "hrWorkQueuesToolbarTooltip": "Browse and act on all queue types in one dialog.",
+  "@hrWorkQueuesToolbarTooltip": {
+    "description": "Tooltip clarifying that work queues opens the full multi-queue dialog."
   },
   "copyAdmissionIdAction": "Copy admission ID",
   "@copyAdmissionIdAction": {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 import '../components/component_test_app.dart';
@@ -259,6 +261,165 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  testWidgets('sectioned overflow renders headers and dividers in order', (
+    WidgetTester tester,
+  ) async {
+    final Widget manageAccess = AppButton.secondary(
+      label: 'Manage users and roles',
+      leadingIcon: Icons.manage_accounts_outlined,
+      onPressed: () {},
+    );
+    final Widget scheduleTemplates = AppButton.secondary(
+      label: 'Create schedule template',
+      leadingIcon: Icons.view_week_outlined,
+      onPressed: () {},
+    );
+    final Widget hrActivity = AppButton.secondary(
+      label: 'HR activity',
+      leadingIcon: Icons.timeline_outlined,
+      onPressed: () {},
+    );
+    final Widget refreshAction = AppWorkspaceRefreshAction(
+      label: 'Refresh',
+      onPressed: () {},
+    );
+
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'HR',
+          toolbar: AppWorkspaceToolbarConfig(
+            showGlobalActions: false,
+            maxVisibleScreenActions: 0,
+            overflowLabel: 'More actions',
+            toolbarLayoutActions: <Widget>[
+              manageAccess,
+              scheduleTemplates,
+              hrActivity,
+              refreshAction,
+            ],
+            overflowSections: <AppToolbarOverflowSection>[
+              AppToolbarOverflowSection(
+                headerLabel: 'Staff & access',
+                actions: <Widget>[manageAccess],
+              ),
+              AppToolbarOverflowSection(
+                headerLabel: 'Scheduling & roster',
+                actions: <Widget>[scheduleTemplates],
+              ),
+              AppToolbarOverflowSection(
+                headerLabel: 'Activity & audit',
+                actions: <Widget>[hrActivity],
+              ),
+              AppToolbarOverflowSection(
+                headerLabel: 'Workspace',
+                actions: <Widget>[refreshAction],
+              ),
+            ],
+          ),
+          body: const Text('Directory'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Staff & access'), findsOneWidget);
+    expect(find.text('Scheduling & roster'), findsOneWidget);
+    expect(find.text('Activity & audit'), findsOneWidget);
+    expect(find.text('Workspace'), findsOneWidget);
+    expect(find.byType(Divider), findsNWidgets(3));
+    expect(find.byIcon(Icons.manage_accounts_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.view_week_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.timeline_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
+  });
+
+  testWidgets('facilities section hidden when both global actions disallowed', (
+    WidgetTester tester,
+  ) async {
+    const Widget housekeepingAction = AppGlobalHousekeepingRequestAction(
+      label: 'Request maintenance',
+    );
+    const Widget faultReportAction = AppGlobalFaultReportAction(
+      label: 'Report equipment fault',
+    );
+
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'HR',
+          toolbar: AppWorkspaceToolbarConfig(
+            showGlobalActions: false,
+            maxVisibleScreenActions: 0,
+            overflowLabel: 'More actions',
+            toolbarLayoutActions: <Widget>[
+              housekeepingAction,
+              faultReportAction,
+            ],
+            overflowSections: <AppToolbarOverflowSection>[
+              AppToolbarOverflowSection(
+                headerLabel: 'Facilities',
+                actions: <Widget>[housekeepingAction, faultReportAction],
+              ),
+            ],
+          ),
+          body: Text('Directory'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+    expect(find.text('Facilities'), findsNothing);
+  });
+
+  testWidgets('sectioned overflow keeps notifications in approvals section', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'HR',
+          toolbar: AppWorkspaceToolbarConfig(
+            showGlobalActions: false,
+            maxVisibleScreenActions: 0,
+            overflowLabel: 'More actions',
+            summaryNotifications: <AppWorkspaceSummaryNotification>[
+              AppWorkspaceSummaryNotification(
+                label: 'Leave requests',
+                count: 2,
+                icon: Icons.event_busy_outlined,
+                onSelected: _noop,
+              ),
+            ],
+            notificationsMenuLabel: 'Notifications',
+            overflowSections: <AppToolbarOverflowSection>[
+              AppToolbarOverflowSection(
+                headerLabel: 'Approvals & alerts',
+                showsNotifications: true,
+              ),
+            ],
+          ),
+          body: Text('Directory'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Approvals & alerts'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
   });
 }
 

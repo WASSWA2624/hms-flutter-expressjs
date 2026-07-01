@@ -44,6 +44,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get workspaceToolbarSectionStaffAccess => 'Staff & access';
+
+  @override
+  String get workspaceToolbarSectionScheduling => 'Scheduling & roster';
+
+  @override
+  String get workspaceToolbarSectionApprovals => 'Approvals & alerts';
+
+  @override
+  String get workspaceToolbarSectionActivity => 'Activity & audit';
+
+  @override
+  String get workspaceToolbarSectionWorkspace => 'Workspace';
+
+  @override
+  String get workspaceToolbarSectionFacilities => 'Facilities';
+
+  @override
+  String get workspaceNotificationsToolbarTooltip =>
+      'Jump directly to queues that need your attention.';
+
+  @override
   String get workspaceFullscreenEnterLabel => 'Full screen';
 
   @override
@@ -14464,6 +14486,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrWorkQueuesTitle => 'Work queues';
+
+  @override
+  String get hrWorkQueuesToolbarTooltip =>
+      'Browse and act on all queue types in one dialog.';
 
   @override
   String get copyAdmissionIdAction => 'Copy admission ID';

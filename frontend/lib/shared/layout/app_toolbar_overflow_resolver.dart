@@ -57,12 +57,25 @@ List<AppToolbarOverflowEntry> resolveToolbarOverflowEntries(
       entries.addAll(_boardToggleEntries(action));
       continue;
     }
-    final AppToolbarOverflowEntry? entry = _resolveAction(action, ref);
+    final AppToolbarOverflowEntry? entry = resolveToolbarOverflowEntry(
+      action,
+      ref,
+    );
     if (entry != null) {
       entries.add(entry);
     }
   }
   return entries;
+}
+
+AppToolbarOverflowEntry? resolveToolbarOverflowEntry(
+  Widget action,
+  WidgetRef ref,
+) {
+  if (action is AppWorkspaceBoardToggle<Object>) {
+    return null;
+  }
+  return _resolveAction(action, ref);
 }
 
 AppToolbarOverflowEntry? _resolveAction(Widget action, WidgetRef ref) {
@@ -160,6 +173,21 @@ IconData? _segmentIcon(Widget? iconWidget) {
     return iconWidget.icon;
   }
   return null;
+}
+
+/// Whether a toolbar action should appear in the overflow menu (permission-gated globals).
+bool isToolbarOverflowActionVisible(Widget action, WidgetRef ref) {
+  if (action is AppGlobalFaultReportAction) {
+    return _faultReportRequirement.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    );
+  }
+  if (action is AppGlobalHousekeepingRequestAction) {
+    return _housekeepingRequestRequirement.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    );
+  }
+  return true;
 }
 
 AppToolbarOverflowEntry _resolveAppButton(AppButton action) {

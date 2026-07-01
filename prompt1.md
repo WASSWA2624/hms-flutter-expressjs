@@ -1,217 +1,222 @@
-# HR Multi-Compensation Pay Structure — UI, Payroll Engine & Schedule Sync
+# HR Schedule Templates — Flexible Weekly Patterns & Unified Schedule Editor
 
 ## Objective
 
-Evolve staff compensation from a **single active pay structure** into a **multi-rate pay profile** so clinical and operational staff (e.g. doctors, surgeons, nurses) can hold **concurrent compensation lines** — monthly base, hourly shift pay, daily rate, consultation fee, and procedure fee — each with its own rate, currency, and effective dates.
+Elevate **Schedule templates** from a flat list with a single start/end pair into a **first-class scheduling pattern** that matches the flexibility of **Record availability**. Unify both flows behind one reusable **weekly schedule editor**, improve the manage dialog UX (maximized by default, copyable IDs, icon actions, drill-in detail), and align naming so administrators see one coherent scheduling vocabulary across HR.
 
-Payroll must **aggregate all applicable lines** for a pay period using **real activity and schedule data** (shifts, availability, leave, consultations, procedures), not a single dropdown selection. Implement end-to-end on **backend and frontend**.
+**Entry points:**
+- `/hr` → toolbar **Schedule templates** (overflow or inline per [prompt.md](./prompt.md))
+- `/hr` → staff detail → **Record availability**
 
-**Entry points (from screenshots):**
+**Screenshots (current UI):** manage list (`Biomedical | DAY | SHI0000001`), create/edit template form (name, shift type, department, single start/end), and record availability (Mon–Sun expansion tiles, multi-slot, duplicate-to).
 
-- HR workspace (`/hr`) → select staff → **Staff detail** → **Compensation** action or Compensation section
-- Staff detail → **Run payroll** (gated on at least one compensation line)
-- Staff onboarding compensation step (optional initial multi-line setup)
-
-**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) §6 Payroll and compensation
-
-**Primary touchpoints:**
-
-| Area | File |
-|------|------|
-| Update compensation dialog (Pay structure / History tabs) | `frontend/lib/features/hr/presentation/widgets/hr_compensation_dialog.dart` |
-| Staff detail compensation section & actions | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`, `hr_staff_detail_actions.dart`, `hr_staff_detail_helpers.dart` |
-| Onboarding compensation (single-line today) | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
-| Payroll preview / process wizard | `frontend/lib/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart`, `hr_enhanced_dialogs.dart` |
-| HR entities & DTOs | `frontend/lib/features/hr/domain/entities/hr_entities.dart`, `data/dtos/hr_dtos.dart` |
-| HR repository / controller | `frontend/lib/features/hr/data/repositories/hr_repository_impl.dart`, `presentation/controllers/hr_workspace_controller.dart` |
-| Pay type catalog | `backend/src/lib/hr/reference-data.js` (`COMPENSATION_PAY_TYPE_CATALOG`) |
-| Staff profile compensation sync | `backend/src/modules/staff-profile/services/staff-profile.service.js` (`syncStaffCompensations`) |
-| Compensation validation | `backend/src/modules/staff-profile/schemas/staff-profile.schema.js` |
-| Payroll calculation engine | `backend/src/modules/hr-workspace/services/hr-workspace.service.js` (`buildPayrollProposedItems`, `calculateCompensationAmount`) |
-| DB model | `backend/prisma/schema.prisma` (`staff_compensation`) |
-| Strings | `frontend/lib/l10n/app_en.arb` |
+**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md); companion [prompt.md](./prompt.md) (toolbar IA). This prompt **supersedes** the “schedule-template CRUD out of scope” note in `prompt.md`.
 
 ---
 
 ## Problem Statement (from current UI)
 
-The **Update compensation** dialog exposes one form for a single pay structure at a time:
+| Area | Current behavior | Issue |
+|------|------------------|-------|
+| Manage dialog | Opens at default size (`maxWidth: 720`) | Hard to scan patterns; should open **maximized** like other HR workspace dialogs |
+| Template row | `Biomedical \| DAY \| SHI0000001` as plain text | Template ID (`SHI0000001`) is not copyable; no row tap target |
+| Row actions | Text buttons **Edit template** / **Delete template** | Verbose; inconsistent with icon-only patterns elsewhere (e.g. tenant facility rows) |
+| Create/edit form | Single `default_start_time` / `default_end_time` pair | Cannot express split shifts, day-specific hours, or multi-slot days |
+| Record availability | Full weekly editor (`_DayScheduleSection`, duplicate-to, add slot) | Rich UX isolated in `hr_record_availability_dialog.dart` |
+| Naming | Toolbar label **Create schedule template** opens **Schedule templates** manage dialog; backend keys use `shift_template` | Confusing labels; two different forms for the same mental model (“when does this person/pattern work?”) |
 
-1. **Single-line editing** — Pay type, pay frequency, base rate, and effective dates are bound to one row. Changing pay type replaces the active structure instead of adding another concurrent line. A doctor who earns a monthly retainer **and** per-consultation **and** per-procedure fees cannot configure all three in one save.
-2. **History vs active structure conflated** — The **History** tab lists past rows but the **Pay structure** tab only hydrates from `history.first`, so secondary active pay types are invisible in the editor.
-3. **Payroll preview lacks activity breakdown** — Run payroll is enabled when any compensation exists, but preview does not clearly show per–pay-type line items, quantities (hours, days, consultations, procedures), or how schedule/leave affected eligibility.
-4. **Engine gaps** — Backend `calculateCompensationAmount` handles `PER_HOUR`, `PER_MONTH`, and `PER_PROCEDURE` only; `PER_DAY` and `PER_CONSULTATION` return zero. Procedure counts come from `metadata_json.procedure_count`, not clinical activity. Daily/monthly proration does not yet use availability slots or approved leave.
-5. **Schedule not in sync** — Compensation, availability, shifts, leave, and payroll operate as separate flows. Daily-rate staff should be paid for **worked/eligible days** derived from availability and shifts minus approved leave, not arbitrary period proration alone.
+A roster admin defining a **Biomedical day pattern** should use the same weekly schedule UI they already know from recording staff availability—not a reduced single-interval form.
+
+---
+
+## Current Implementation
+
+| Area | Location |
+|------|----------|
+| Manage templates dialog | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` — `showHrManageScheduleTemplatesDialog` |
+| Create/edit template dialog | Same file — `showHrShiftTemplateDialog` |
+| Record availability dialog | `frontend/lib/features/hr/presentation/widgets/hr_record_availability_dialog.dart` — `showHrRecordAvailabilityDialog`, `_DayScheduleSection`, `_DayScheduleDraft` |
+| Weekly day order / defaults | `kAvailabilityWeekDayOrder`, `kDefaultAvailabilityWeekdays`, default 08:00–17:00 |
+| Toolbar entry | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` — `scheduleTemplatesAction` |
+| Copyable IDs (pattern) | `frontend/lib/shared/components/app_copyable_identifier.dart` — `AppCopyableIdentifier`; detail tiles via `AppInfoTileData(copyable: true)` in `hr_assignment_detail_dialog.dart` |
+| Icon-only row actions (pattern) | `tenant_facility_setup_page.dart`, staff detail edit in `hr_workspace_page.dart` — `AppButton(iconOnly: true, …)` |
+| Maximized dialogs (pattern) | `AppDialog.initialMaximized`, `showAppWorkspaceMutationDialog(initialMaximized: …)` — e.g. `hr_staff_onboarding_dialog.dart`, `hr_access_dialogs.dart` |
+| Backend model | `shift_template` — `name`, `shift_type`, `facility_id`, `default_start_time`, `default_end_time` only (`backend/prisma/schema.prisma`) |
+| API validation | `backend/src/modules/shift-template/schemas/shift-template.schema.js` |
+
+**List row today:** `ListTile` with `title: template.label` (composite string) and trailing `AppButton.secondary` labels from `hrEditShiftTemplateAction` / `hrDeleteShiftTemplateAction`.
+
+---
+
+## Target UX
+
+### 1. Manage dialog — layout & defaults
+
+- Open with `initialMaximized: true` on `AppDialog`.
+- Widen content area when maximized (recommend `maxWidth: 980`, matching work-queue / staff-directory dialogs).
+- Keep description: *“Reusable shift patterns for roster generation and staff scheduling.”*
+
+### 2. Template list rows
+
+Each row shows:
+
+| Element | Spec |
+|---------|------|
+| Primary title | Template **name** (e.g. `Biomedical`) |
+| Subtitle | Shift type + department when present (e.g. `DAY · Biomedical dept`) |
+| Identifier | `AppCopyableIdentifier` for `human_friendly_id` / `SHI…` (hide when empty/placeholder per `isCopyableIdentifierValue`) |
+| Row tap | Opens **template detail** dialog (see §3) |
+| Trailing actions | Icon-only **Edit** (`Icons.edit_outlined`) and **Delete** (`Icons.delete_outline`, destructive color)—**no “template” in labels**; use `semanticLabel` + `tooltip` from l10n (`commonEditAction` / `commonDeleteAction` or HR-specific short keys) |
+
+Stop opening the edit mutation dialog directly from the list edit icon if detail becomes the primary surface; edit icon may either open detail in edit mode or open the mutation dialog—pick one path and use detail for row tap.
+
+### 3. Template detail dialog (new)
+
+Follow `showHrAssignmentDetailDialog` / `AppInfoTileGrid` patterns:
+
+- Title: template name; icon: `Icons.view_week_outlined`.
+- Read-only tiles: Template ID (copyable), shift type, department, active status, created/updated if available from API.
+- **Weekly schedule summary** — human-readable per-day slot list (same formatting as availability expansion subtitles, e.g. `08:00-17:00`).
+- Footer / inline actions: **Edit**, **Delete**, and (when backend supports it) **Duplicate** / slot management.
+- Detail dialog may also open maximized when the weekly grid is shown inline.
+
+### 4. Flexible weekly schedule (shared editor)
+
+Extract a reusable widget from `hr_record_availability_dialog.dart`, e.g. `HrWeeklyScheduleEditor` (name negotiable), containing:
+
+- Monday-first `ExpansionTile` per day (`_DayScheduleSection` behavior).
+- Per-day multi-slot fields (`AppTimeField` with 12H/24H toggle).
+- **Duplicate to…**, **Add slot**, overlap / end-after-start validation.
+- Configurable props: which days to show, whether copy-from-staff is visible, read-only mode for detail view.
+
+**Consumers:**
+
+| Consumer | Editor mode | Extra fields |
+|----------|-------------|--------------|
+| Record availability | Editable; copy-from-staff | Preference, effective from/to, staff context |
+| Schedule template create/edit | Editable | Name, shift type, department (optional) |
+| Template detail | Read-only summary + actions | — |
+
+Record availability and schedule templates must **not** duplicate `_DayScheduleSection` / draft logic in separate files after this task.
+
+### 5. Create/edit template mutation dialog
+
+- Replace single `AppTimeField` start/end pair with `HrWeeklyScheduleEditor`.
+- Open with `initialMaximized: true` on `showAppWorkspaceMutationDialog` (weekly grid needs vertical space).
+- Submit still calls `createShiftTemplate` / `updateShiftTemplate` on `HrWorkspaceController`.
+
+### 6. Naming consistency (l10n)
+
+Align user-facing strings around **schedule** / **pattern**, not mixed “shift template” vs “schedule template”:
+
+| Key / surface | Current | Target |
+|---------------|---------|--------|
+| Toolbar / overflow | `hrShiftTemplateAction` → “Create schedule template” | **Schedule templates** (opens manage dialog) |
+| Manage dialog title | `hrManageScheduleTemplatesTitle` → “Schedule templates” | Keep |
+| Create action | `hrCreateShiftTemplateAction` → “Create template” | **Create schedule** or **Add pattern** (short, no redundant “template”) |
+| Edit / delete (list icons) | “Edit template” / “Delete template” | **Edit** / **Delete** (icon-only; tooltips only) |
+| Mutation dialog title | `hrShiftTemplateDialogTitle` → “Schedule template” | **Schedule pattern** (create) / **Edit schedule pattern** (edit)—or keep “Schedule template” if preferred; **must match** manage dialog vocabulary |
+| Record availability | `hrAvailabilityDialogTitle` → “Record availability” | Keep action label; shared section title **`hrWeeklyScheduleSectionTitle`** → “Weekly schedule” (reuse `hrAvailabilityWeekScheduleTitle` value, deprecate duplicate key) |
+| Shared editor a11y | — | One l10n prefix family for slot actions (`hrAddScheduleSlotAction`, `hrDuplicateScheduleToAction`, …) used by **both** flows |
+
+Rename arb keys only when necessary; prefer retargeting existing strings before adding parallel keys.
+
+---
+
+## Backend Dependency (weekly slots on templates)
+
+`shift_template` today stores only `default_start_time` / `default_end_time`. Staff availability already supports `time_slots_json` per day.
+
+**Required for full parity:**
+
+1. Extend `shift_template` with `weekly_schedule_json` (or `time_slots_json` mirroring availability shape), **or** add a `shift_template_slot` child table.
+2. Update Zod schemas and Flutter DTOs / controller payloads.
+3. Migration + backward compatibility: existing templates map to a single weekday slot (e.g. Mon–Fri 08:00–17:00 or infer from `default_start_time`/`default_end_time` on read).
+
+**If backend work is deferred:** ship the shared UI component and detail/list UX first; serialize the weekly editor to the legacy pair (e.g. first filled slot of first filled day) with a visible banner: *“Full weekly patterns will apply after server update.”* Do **not** silently drop extra slots.
+
+---
+
+## Implementation Requirements
+
+### 1. Shared weekly schedule module
+
+- New file under `frontend/lib/features/hr/presentation/widgets/` (e.g. `hr_weekly_schedule_editor.dart`).
+- Move `_DayScheduleSection`, `_DayScheduleDraft`, `_AvailabilitySlotDraft`, validation helpers, and `kAvailabilityWeekDayOrder` (or rename to `kHrWeekDayOrder`) into shared module.
+- Export a single public widget + draft-to-payload mapper(s) for availability batch API vs template API.
+
+### 2. Manage templates dialog
+
+- `initialMaximized: true`, `maxWidth: 980`.
+- Refactor list to structured row (title, subtitle, `AppCopyableIdentifier`, icon actions).
+- `onTap` → `showHrScheduleTemplateDetailDialog` (new).
+- Delete retains confirmation pattern if one exists elsewhere; show snackbar via `showHrMutationSnackBar`.
+
+### 3. Template detail dialog
+
+- New `hr_schedule_template_detail_dialog.dart` (or colocate in enhanced dialogs if small).
+- Use `AppInfoTileGrid` + read-only `HrWeeklyScheduleEditor`.
+- Actions: Edit (opens mutation dialog), Delete (with confirm).
+
+### 4. Record availability refactor
+
+- Replace inlined `_DayScheduleSection` usage with `HrWeeklyScheduleEditor`.
+- **No behavior regression** on copy-from-staff, duplicate-to, validation messages, or `createAvailabilitySchedule` payload.
+
+### 5. Shift template mutation dialog
+
+- Integrate `HrWeeklyScheduleEditor`; remove standalone start/end `AppTimeField`s.
+- `initialMaximized: true`.
+- Map weekly draft ↔ API payload per backend contract (§ Backend Dependency).
+
+### 6. Toolbar label fix
+
+- Update `hrShiftTemplateAction` (and generated l10n) to **Schedule templates** so the button matches the manage dialog it opens.
+
+### 7. Tests
+
+- Widget test: manage dialog opens maximized (`find.byType` / dialog size flag if exposed).
+- Widget test: list row shows `AppCopyableIdentifier` when ID present.
+- Widget test: icon-only edit/delete buttons with correct `semanticLabel`s.
+- Widget test: `HrWeeklyScheduleEditor` — add slot, duplicate-to, validation errors (extract from or extend `hr_record_availability` tests if any).
+- Regression: existing availability dialog tests still pass after refactor.
+
+### 8. Quality gate
+
+- `flutter analyze` clean on touched files.
+- `flutter test` for new/changed test files.
+- Manual QA: `.\tool\run_web_5201.ps1` → `/hr` → **Schedule templates** → verify maximize, copy ID, row detail, create/edit weekly pattern → **Record availability** on a staff profile → confirm identical weekly schedule UX.
 
 ---
 
 ## Global Standards
 
-Follow the same rules as the HR module prompt:
-
-- Hospital workflow language — pay type labels from `hrReferenceCompensationPayTypeLabel`; show staff name, staff number, and rate summaries; avoid raw UUIDs in primary UI.
-- Modal-first: compensation and payroll flows use `AppDialog` / `showAppWorkspaceMutationDialog`.
-- Reuse `frontend/lib/shared/*` form components (`AppSelectField`, `AppCurrencyAmountField`, `AppDateField`, `AppFormSection`).
+- Reuse `AppDialog`, `AppButton` (`iconOnly`), `AppCopyableIdentifier`, `AppInfoTileGrid`, `AppTimeField`, theme spacing.
+- Icons: outlined Material set (`view_week_outlined`, `edit_outlined`, `delete_outline`, `content_copy_outlined`).
 - All new/changed strings in `frontend/lib/l10n/app_en.arb`.
-- Permission-gate writes with `hrWrite` (+ `financialApprove` for payroll process).
-- Refresh staff detail compensation list after every mutation without full-page reload.
-- Pay types must stay aligned with `COMPENSATION_PAY_TYPES`: `PER_CONSULTATION`, `PER_MONTH`, `PER_DAY`, `PER_HOUR`, `PER_PROCEDURE`.
-- Do **not** add new pay types without product approval; extend calculation and UI for the existing catalog first.
+- Permission gates unchanged (`hrRead` / `hrWrite`).
+- Hospital workflow language—no raw enum names in labels (`DAY` → “Day shift” if not already localized).
 
 ---
 
-## 1. Multi-Line Compensation UI
+## Acceptance Criteria
 
-### 1.1 Pay structure tab — concurrent lines
-
-Replace the single-form **Pay structure** tab with a **multi-row editor**:
-
-| Column / field | Behavior |
-|----------------|----------|
-| Pay type | Required; one row per pay type; prevent duplicate pay types in the active set |
-| Pay frequency | Optional; store in `metadata_json.pay_frequency` (`MONTHLY`, `BIWEEKLY`, `WEEKLY`) for salaried lines |
-| Base rate + currency | Required per row |
-| Effective from | Required |
-| Effective to | Optional |
-
-**Actions:**
-
-- **Add pay line** — append a new row (default pay type = next unused catalog entry).
-- **Remove pay line** — remove unsaved row or mark existing row ended (set `effective_to` to today or next period start; do not hard-delete history).
-- **Edit row** — inline or expand-in-place; opening detail from staff Compensation section should focus the matching row.
-
-Persist via existing `PUT /staff-profiles/:id` payload shape:
-
-```json
-{ "compensations": [ { "pay_type", "rate", "currency", "effective_from", "effective_to", "metadata_json" } ] }
-```
-
-`syncStaffCompensations` already soft-deletes and recreates rows — preserve that pattern but ensure the UI sends the **full intended active set**, not one line plus silent history merge.
-
-### 1.2 History tab
-
-Group history by pay type. Show ended rows with effective date range and rate. Distinguish **active** (no `effective_to` or future-dated end) vs **ended** rows. Tapping a history row opens read-only detail (`showHrCompensationDetailDialog`) with **Add new rate** pre-selecting that pay type.
-
-### 1.3 Staff detail Compensation section
-
-When multiple active lines exist, list **all** active compensations (not only the first). Each row: localized pay type, rate + currency, effective range. Empty state CTA opens multi-line editor.
-
-### 1.4 Onboarding (stretch)
-
-Allow optional multi-line compensation during onboarding using the same row component extracted from the compensation dialog. Minimum for this task: shared row widget reused by update dialog; onboarding may follow in a follow-up if time-boxed.
+- [ ] **Schedule templates** manage dialog opens **maximized** by default.
+- [ ] Each template row shows a **copyable** template ID via `AppCopyableIdentifier`.
+- [ ] List **Edit** and **Delete** are **icon-only** (no “template” in visible text).
+- [ ] Tapping a template row opens a **detail** dialog with metadata, weekly schedule summary, and edit/delete actions.
+- [ ] Create/edit template uses the **same weekly schedule editor** as Record availability (multi-day, multi-slot, duplicate-to).
+- [ ] Weekly schedule UI lives in **one shared component**—no duplicated `_DayScheduleSection` in availability vs template files.
+- [ ] Toolbar action label matches manage dialog (**Schedule templates**).
+- [ ] l10n uses consistent **schedule / weekly schedule** vocabulary across both flows.
+- [ ] Backend stores and returns full weekly pattern **or** interim mapping is documented and non-destructive.
+- [ ] Widget tests cover list/detail/editor behaviors; manual QA checklist passes.
 
 ---
 
-## 2. Backend Compensation API
+## Out of Scope
 
-### 2.1 Validation
-
-- Accept `compensations` array on staff profile create/update (already in schema).
-- Reject duplicate `pay_type` values in a single payload.
-- Validate `effective_to >= effective_from` per row (already in `compensationInputSchema`).
-- Return hydrated `compensations` on staff profile GET/detail responses ordered by `effective_from` desc, active lines first.
-
-### 2.2 Sync semantics
-
-Keep transactional soft-delete + recreate in `syncStaffCompensations`. Document that clients must send the complete desired compensation set. Optionally support row-level `id` for audit without changing delete-and-recreate if straightforward.
-
----
-
-## 3. Payroll Engine — Multi-Type Calculation
-
-### 3.1 Extend `calculateCompensationAmount`
-
-Implement missing pay types and tighten formulas:
-
-| Pay type | Quantity source | Formula |
-|----------|-----------------|---------|
-| `PER_HOUR` | Sum of shift assignment durations in period (existing) | `rate × hours` |
-| `PER_DAY` | Eligible workdays in period from availability + assigned shifts, minus approved leave days | `rate × eligible_days` |
-| `PER_MONTH` | Calendar proration over pay period intersecting effective dates (existing); optionally cap by eligible workdays when `metadata_json.pay_frequency` is not monthly | `rate × eligible_days / period_days` |
-| `PER_CONSULTATION` | Count of completed consultations attributed to staff in period (OPD/clinical module linkage or HR workspace aggregate endpoint) | `rate × consultation_count` |
-| `PER_PROCEDURE` | Count of completed procedures attributed to staff in period | `rate × procedure_count` |
-
-Each component returns a `calculation` object: `{ pay_type, rate, currency, quantity, unit, formula, source_refs }`.
-
-### 3.2 `buildPayrollProposedItems`
-
-- For each staff member in scope, load **all** effective compensations for the run period (already queried).
-- Compute each line independently; **sum amounts** per staff (same currency; if mixed currencies, return separate subtotals or primary currency + warning — match existing `normalizeMoney` behavior).
-- Include in `calculation_json.components` every pay type with quantity and amount (not only hourly).
-- Staff-scoped preview (`staff_profile_id` filter) must return the same component breakdown.
-
-### 3.3 Activity & schedule inputs
-
-Introduce or reuse queries for period-scoped:
-
-- **Shifts** — `shift_assignment` (existing).
-- **Availability** — `staff_availability` slots overlapping period (for eligible day/hour denominators).
-- **Leave** — approved `staff_leave` rows excluding days from eligible counts.
-- **Consultations / procedures** — prefer existing clinical billing or encounter tables; if not wired yet, add a thin HR aggregate service with clear TODO hooks and seed/demo counts for demo tenants.
-
-Document data sources in code comments; do not invent parallel clinical APIs inside HR widgets.
-
----
-
-## 4. Payroll & Compensation UI Sync
-
-### 4.1 Run payroll wizard
-
-- Before process, **Preview payroll** must show a **per-staff expandable breakdown**: each compensation line, quantity, rate, subtotal, gross total.
-- When staff has multiple pay types, show all components; do not collapse to a single hourly rate field.
-- Surface warnings when a configured pay type has **zero quantity** in the period (e.g. procedure rate set but no procedures recorded).
-- Keep **Replace existing payroll items** and period/facility filters.
-
-### 4.2 Cross-feature consistency
-
-| Feature | Sync expectation |
-|---------|------------------|
-| **Record availability** | Availability changes affect `PER_DAY` / `PER_HOUR` denominators on next payroll preview |
-| **Assign shift** | Shift hours feed `PER_HOUR`; shift days feed `PER_DAY` |
-| **Request / approve leave** | Approved leave subtracts from eligible days |
-| **Compensation update** | Staff detail and payroll preview refresh; run payroll stays disabled until at least one active line exists |
-
-After compensation save, invalidate staff detail and any open payroll preview for that staff member.
-
----
-
-## 5. Testing & Acceptance Criteria
-
-### Backend
-
-- Unit tests for `calculateCompensationAmount` covering all five pay types, leave exclusion, and multi-line summation.
-- Tests for duplicate `pay_type` rejection and multi-row `syncStaffCompensations`.
-- Payroll preview fixture: staff with monthly + consultation + procedure lines returns three `components` and correct gross total.
-
-### Frontend
-
-- Widget test: compensation dialog renders multiple rows, add/remove, submits full array.
-- Staff detail shows two+ active compensation rows.
-- Payroll preview displays component breakdown labels from l10n.
-
-### Manual (demo staff e.g. Avery Demo)
-
-1. Open **Staff detail** → **Compensation**.
-2. Add **Monthly rate** + **Consultation fee rate** + **Procedure rate** with distinct rates and shared or staggered effective dates; save.
-3. Staff detail Compensation section lists all three active lines.
-4. **Run payroll** for a period with shifts and (seeded) consultations/procedures → preview shows line items per pay type with quantities and subtotals.
-5. Approve leave spanning part of the period → daily/monthly eligible days decrease in preview calculation metadata.
-6. Change availability → re-preview reflects updated eligible days/hours.
-
----
-
-## 6. Out of Scope (unless trivial)
-
-- New pay types beyond the existing catalog.
-- Full general-ledger export or tax withholding rules.
-- Replacing facility-wide payroll run creation UX (only enhance calculation + preview fidelity).
-- OPD encounter UI changes — consume data via backend aggregates only.
-
----
-
-## 7. Delivery Notes
-
-- Extract a reusable `HrCompensationLineEditor` (or equivalent) shared by update dialog and optionally onboarding.
-- Prefer extending `calculateCompensationAmount` and preview DTOs over one-off frontend math.
-- Keep `metadata_json` for pay frequency and future extensibility; avoid schema migration unless `pay_frequency` must be first-class.
-- Update [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) §6 status line when complete.
+- Roster generation logic that consumes templates (separate scheduling prompt).
+- Work-queue or toolbar overflow IA ([prompt.md](./prompt.md)).
+- Staff detail action grid reordering.
+- Applying a template to a staff member in one click (“Assign template to staff”)—future enhancement.

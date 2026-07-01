@@ -202,72 +202,123 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         ? state.lastFailure! as AppFailure
         : null;
 
+    final Widget addStaffAction = AppButton.secondary(
+      label: l10n.hrAddStaffAction,
+      leadingIcon: Icons.person_add_outlined,
+      semanticLabel: l10n.hrAddStaffAction,
+      tooltip: l10n.hrAddStaffDialogTitle,
+      onPressed: state.isRefreshing
+          ? null
+          : () => showHrStaffOnboardingDialog(context, ref),
+    );
+    final Widget workQueuesAction = AppButton.secondary(
+      label: l10n.hrWorkQueuesTitle,
+      leadingIcon: Icons.pending_actions_outlined,
+      semanticLabel: l10n.hrWorkQueuesTitle,
+      tooltip: l10n.hrWorkQueuesToolbarTooltip,
+      onPressed: state.isRefreshing
+          ? null
+          : () => showHrWorkQueueDialog(
+              context,
+              ref,
+              columnVisibilityController: _queueColumnController,
+            ),
+    );
+    final Widget manageAccessAction = AppButton.secondary(
+      label: l10n.hrManageAccessAction,
+      leadingIcon: Icons.manage_accounts_outlined,
+      semanticLabel: l10n.hrManageAccessAction,
+      tooltip: l10n.hrManageAccessAction,
+      onPressed: state.isRefreshing
+          ? null
+          : () => showHrAccessWorkspaceDialog(context),
+    );
+    final Widget scheduleTemplatesAction = AppButton.secondary(
+      label: l10n.hrShiftTemplateAction,
+      leadingIcon: Icons.view_week_outlined,
+      semanticLabel: l10n.hrShiftTemplateAction,
+      tooltip: l10n.hrShiftTemplateAction,
+      onPressed: state.isRefreshing
+          ? null
+          : () => showHrManageScheduleTemplatesDialog(context, ref),
+    );
+    final Widget hrActivityAction = AppButton.secondary(
+      label: l10n.hrActivityTitle,
+      leadingIcon: Icons.timeline_outlined,
+      semanticLabel: l10n.hrActivityTitle,
+      tooltip: l10n.hrActivityTitle,
+      onPressed: state.isRefreshing
+          ? null
+          : () => _showActivityDialog(context),
+    );
+    final Widget refreshAction = AppWorkspaceRefreshAction(
+      label: l10n.commonRefreshActionLabel,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () {
+              unawaited(
+                controller.refresh().then((AppFailure? failure) {
+                  if (context.mounted && failure != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.failureMessage(failure))),
+                    );
+                  }
+                }),
+              );
+            },
+    );
+    final Widget housekeepingAction = AppGlobalHousekeepingRequestAction(
+      label: l10n.workspaceGlobalHousekeepingRequestAction,
+    );
+    final Widget faultReportAction = AppGlobalFaultReportAction(
+      label: l10n.workspaceGlobalFaultReportAction,
+    );
+
     return AppWorkspace(
       title: l10n.hrTitle,
       leadingIcon: AppRouteIcons.hr,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        showGlobalActions: false,
+        maxVisibleScreenActions: 2,
         summaryNotifications: _summaryNotifications(context, state, controller),
-        secondary: <Widget>[
-          AppButton.secondary(
-            label: l10n.hrAddStaffAction,
-            leadingIcon: Icons.person_add_outlined,
-            semanticLabel: l10n.hrAddStaffAction,
-            tooltip: l10n.hrAddStaffDialogTitle,
-            onPressed: state.isRefreshing
-                ? null
-                : () => showHrStaffOnboardingDialog(context, ref),
+        toolbarLayoutActions: <Widget>[
+          addStaffAction,
+          workQueuesAction,
+          manageAccessAction,
+          scheduleTemplatesAction,
+          hrActivityAction,
+          refreshAction,
+          housekeepingAction,
+          faultReportAction,
+        ],
+        overflowSections: <AppToolbarOverflowSection>[
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionStaffAccess,
+            actions: <Widget>[addStaffAction, manageAccessAction],
           ),
-          AppButton.secondary(
-            label: l10n.hrWorkQueuesTitle,
-            leadingIcon: Icons.pending_actions_outlined,
-            semanticLabel: l10n.hrWorkQueuesTitle,
-            tooltip: l10n.hrWorkQueuesTitle,
-            onPressed: state.isRefreshing
-                ? null
-                : () => showHrWorkQueueDialog(
-                    context,
-                    ref,
-                    columnVisibilityController: _queueColumnController,
-                  ),
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionScheduling,
+            actions: <Widget>[workQueuesAction, scheduleTemplatesAction],
           ),
-          AppButton.secondary(
-            label: l10n.hrManageAccessAction,
-            leadingIcon: Icons.manage_accounts_outlined,
-            semanticLabel: l10n.hrManageAccessAction,
-            tooltip: l10n.hrManageAccessAction,
-            onPressed: state.isRefreshing
-                ? null
-                : () => showHrAccessWorkspaceDialog(context),
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionApprovals,
+            showsNotifications: true,
           ),
-          AppButton.secondary(
-            label: l10n.hrManageScheduleTemplatesTitle,
-            leadingIcon: Icons.view_week_outlined,
-            semanticLabel: l10n.hrManageScheduleTemplatesTitle,
-            tooltip: l10n.hrManageScheduleTemplatesTitle,
-            onPressed: state.isRefreshing
-                ? null
-                : () => showHrManageScheduleTemplatesDialog(context, ref),
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionActivity,
+            actions: <Widget>[hrActivityAction],
           ),
-          AppButton.secondary(
-            label: l10n.hrActivityTitle,
-            leadingIcon: Icons.timeline_outlined,
-            semanticLabel: l10n.hrActivityTitle,
-            tooltip: l10n.hrActivityTitle,
-            onPressed: state.isRefreshing
-                ? null
-                : () => _showActivityDialog(context),
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionWorkspace,
+            actions: <Widget>[refreshAction],
+          ),
+          AppToolbarOverflowSection(
+            headerLabel: l10n.workspaceToolbarSectionFacilities,
+            actions: <Widget>[housekeepingAction, faultReportAction],
           ),
         ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted && failure != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.failureMessage(failure))),
-            );
-          }
-        },
-        isRefreshing: state.isRefreshing,
       ),
 
       body: Column(
@@ -366,7 +417,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       AppWorkspaceSummaryNotification(
         label: l10n.hrUnassignedShiftsSummaryLabel,
         count: summary.unassignedShifts,
-        icon: Icons.pending_actions_outlined,
+        icon: Icons.event_available_outlined,
         tone: summary.unassignedShifts > 0
             ? AppWorkspaceStatusTone.info
             : AppWorkspaceStatusTone.neutral,

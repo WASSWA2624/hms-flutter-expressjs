@@ -160,6 +160,48 @@ abstract class AppLocalizations {
   /// **'More actions — {count} items need attention'**
   String workspaceToolbarOverflowAttentionTooltip(int count);
 
+  /// Overflow menu section header for staffing and access administration actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff & access'**
+  String get workspaceToolbarSectionStaffAccess;
+
+  /// Overflow menu section header for roster and schedule template actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduling & roster'**
+  String get workspaceToolbarSectionScheduling;
+
+  /// Overflow menu section header for notification shortcuts and approval queues.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals & alerts'**
+  String get workspaceToolbarSectionApprovals;
+
+  /// Overflow menu section header for HR activity and audit trail actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get workspaceToolbarSectionActivity;
+
+  /// Overflow menu section header for workspace utility actions such as refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get workspaceToolbarSectionWorkspace;
+
+  /// Overflow menu section header for housekeeping and equipment fault actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get workspaceToolbarSectionFacilities;
+
+  /// Tooltip clarifying that notifications are badge-driven queue shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump directly to queues that need your attention.'**
+  String get workspaceNotificationsToolbarTooltip;
+
   /// Label for entering full-screen mode from the app shell.
   ///
   /// In en, this message translates to:
@@ -27158,6 +27200,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Work queues'**
   String get hrWorkQueuesTitle;
+
+  /// Tooltip clarifying that work queues opens the full multi-queue dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse and act on all queue types in one dialog.'**
+  String get hrWorkQueuesToolbarTooltip;
 
   /// Tooltip and action label for copying an admission identifier.
   ///
