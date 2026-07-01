@@ -5,6 +5,7 @@ param(
   [string]$Device = 'chrome',
   [string]$DartDefineFile = 'env/development.json.example',
   [switch]$EnableExpressionEvaluation,
+  [switch]$ResetChromeProfile,
   [switch]$ReleaseOnly
 )
 
@@ -14,7 +15,7 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $ProjectRoot
 
 $ChromeProfileDir = Join-Path $ProjectRoot '.dart_tool\flutter_chrome_profile'
-New-Item -ItemType Directory -Force -Path $ChromeProfileDir | Out-Null
+$ChromeProfileResetSizeMb = 150
 
 function Stop-FlutterChromeProcesses {
   param(
@@ -28,6 +29,39 @@ function Stop-FlutterChromeProcesses {
       Write-Host "Stopping stale Flutter Chrome ($($_.ProcessId))."
       Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
     }
+}
+
+function Get-DirectorySizeMb {
+  param(
+    [string]$Path
+  )
+
+  if (-not (Test-Path -LiteralPath $Path)) {
+    return 0
+  }
+
+  $bytes = (
+    Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue |
+      Measure-Object -Property Length -Sum
+  ).Sum
+
+  if (-not $bytes) {
+    return 0
+  }
+
+  return [math]::Round($bytes / 1MB, 1)
+}
+
+function Reset-FlutterChromeProfile {
+  param(
+    [string]$ProfileDir,
+    [string]$Reason
+  )
+
+  Write-Host "Resetting Flutter Chrome profile ($Reason)."
+  Stop-FlutterChromeProcesses -ProfileDir $ProfileDir
+  Start-Sleep -Milliseconds 500
+  Remove-Item -LiteralPath $ProfileDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 function Get-PortListeners {
@@ -53,6 +87,16 @@ function Get-PortListeners {
 }
 
 Stop-FlutterChromeProcesses -ProfileDir $ChromeProfileDir
+Start-Sleep -Milliseconds 500
+Stop-FlutterChromeProcesses -ProfileDir $ChromeProfileDir
+
+if ($ResetChromeProfile) {
+  Reset-FlutterChromeProfile -ProfileDir $ChromeProfileDir -Reason 'requested'
+} elseif ((Get-DirectorySizeMb -Path $ChromeProfileDir) -ge $ChromeProfileResetSizeMb) {
+  Reset-FlutterChromeProfile -ProfileDir $ChromeProfileDir -Reason "size >= ${ChromeProfileResetSizeMb}MB"
+}
+
+New-Item -ItemType Directory -Force -Path $ChromeProfileDir | Out-Null
 
 $listeners = Get-PortListeners -Address $HostName -ListenPort $Port
 $processIds = @(
@@ -122,7 +166,13 @@ if (-not $EnableExpressionEvaluation) {
 # A persistent Chrome profile avoids DWDS WebkitDebugger.enable timeouts on Windows
 # when Flutter's ephemeral Temp profile cannot be read or locked correctly.
 if ($Device -eq 'chrome' -or $Device -eq 'edge') {
-  $flutterArgs += "--web-browser-flag=--user-data-dir=$ChromeProfileDir"
+  $flutterBrowserFlags = @(
+    "--web-browser-flag=--user-data-dir=$ChromeProfileDir",
+    '--web-browser-flag=--disable-extensions',
+    '--web-browser-flag=--no-first-run',
+    '--web-browser-flag=--remote-allow-origins=*'
+  )
+  $flutterArgs += $flutterBrowserFlags
 }
 
 flutter @flutterArgs

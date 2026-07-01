@@ -653,7 +653,7 @@
   "@icuBedVacantLabel": {
     "description": "Label for a vacant ICU bed."
   },
-  "icuPrintAlertsSection": "Alerts",
+  "icuPrintAlertsSection": "Alertes",
   "@icuPrintAlertsSection": {
     "description": "Print section title for alerts."
   },
@@ -669,11 +669,11 @@
   "@icuPrintTransferSection": {
     "description": "Print section title for transfer and readiness."
   },
-  "ipdOpenIcuAction": "Open in ICU",
+  "ipdOpenIcuAction": "Ouvrir en unité de soins intensifs",
   "@ipdOpenIcuAction": {
     "description": "IPD action to open the ICU workspace for this admission."
   },
-  "ipdOpenTheaterAction": "Open in Theater",
+  "ipdOpenTheaterAction": "Dans le théâtre",
   "@ipdOpenTheaterAction": {
     "description": "IPD action to open the theater workspace for an active case."
   },
@@ -681,11 +681,11 @@
   "@ipdStatusInProcedureOt": {
     "description": "IPD stage label when the patient is in the operating theatre."
   },
-  "ipdNextCompleteTheatreHandover": "Complete theatre handover",
+  "ipdNextCompleteTheatreHandover": "Remise complète du théâtre",
   "@ipdNextCompleteTheatreHandover": {
     "description": "IPD next-step label when theatre handover is pending."
   },
-  "ipdTheatreHandoverTitle": "Theatre post-op handover",
+  "ipdTheatreHandoverTitle": "Remise post-opératoire du théâtre",
   "@ipdTheatreHandoverTitle": {
     "description": "IPD detail section title for theatre post-op handover summary."
   },
@@ -713,7 +713,7 @@
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."
   },
-  "appDateFormatHint": "DD/MM/YYYY",
+  "appDateFormatHint": "JJ/MM/AAAA",
   "@appDateFormatHint": {
     "description": "Hint text showing the supported manual date entry format."
   },
@@ -741,11 +741,11 @@
   "@appTimeSecondLabel": {
     "description": "Label for the second segment inside time input fields."
   },
-  "appTimeAmLabel": "AM",
+  "appTimeAmLabel": "Le matin",
   "@appTimeAmLabel": {
     "description": "Morning period label for 12-hour time input fields."
   },
-  "appTimePmLabel": "PM",
+  "appTimePmLabel": "L'apres-midi",
   "@appTimePmLabel": {
     "description": "Evening period label for 12-hour time input fields."
   },
@@ -757,11 +757,11 @@
   "@appTime24HourLabel": {
     "description": "Label for switching a time field to 24-hour entry."
   },
-  "appPhoneCountryLabel": "Country code",
+  "appPhoneCountryLabel": "Code pays",
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
   },
-  "appPhoneCountrySearchLabel": "Search country",
+  "appPhoneCountrySearchLabel": "Rechercher un pays",
   "@appPhoneCountrySearchLabel": {
     "description": "Label for the search field in the phone country-code picker."
   },
@@ -769,11 +769,11 @@
   "@appPhoneCountryNoResults": {
     "description": "Empty-state text shown when no phone country-code picker results match the search query."
   },
-  "appPhoneNumberLabel": "Phone number",
+  "appPhoneNumberLabel": "Numéro de téléphone",
   "@appPhoneNumberLabel": {
     "description": "Label for the national phone number field inside phone input fields."
   },
-  "appPhoneNumberHint": "Remaining number digits",
+  "appPhoneNumberHint": "Chiffres restants",
   "@appPhoneNumberHint": {
     "description": "Placeholder text for the phone number digits field after a country code is selected."
   },
@@ -781,31 +781,31 @@
   "@appPhoneInvalidMessage": {
     "description": "Validation message for invalid phone numbers."
   },
-  "appStatusOnlineLabel": "Online",
+  "appStatusOnlineLabel": "En ligne",
   "@appStatusOnlineLabel": {
     "description": "Label shown in the app header when network connectivity is available."
   },
-  "appStatusOfflineLabel": "Offline",
+  "appStatusOfflineLabel": "Hors ligne",
   "@appStatusOfflineLabel": {
     "description": "Label shown in the app header when network connectivity is unavailable."
   },
-  "appOpenNavigationMenuTooltip": "Open navigation menu",
+  "appOpenNavigationMenuTooltip": "Ouvrir le menu de navigation",
   "@appOpenNavigationMenuTooltip": {
     "description": "Tooltip for the mobile navigation drawer open button."
   },
-  "appCloseNavigationMenuTooltip": "Close navigation menu",
+  "appCloseNavigationMenuTooltip": "Fermer le menu de navigation",
   "@appCloseNavigationMenuTooltip": {
     "description": "Tooltip for the mobile navigation drawer close button."
   },
-  "appToggleSidebarTooltip": "Toggle sidebar",
+  "appToggleSidebarTooltip": "Basculer la barre latérale",
   "@appToggleSidebarTooltip": {
     "description": "Tooltip for the desktop sidebar collapse and expand button."
   },
-  "appNavigationSearchLabel": "Search menu",
+  "appNavigationSearchLabel": "Recherche Menu",
   "@appNavigationSearchLabel": {
     "description": "Accessibility label for the desktop side navigation search field."
   },
-  "appNavigationSearchHint": "Search menu",
+  "appNavigationSearchHint": "Recherche Menu",
   "@appNavigationSearchHint": {
     "description": "Hint text for the desktop side navigation search field."
   },
@@ -846,7 +846,7 @@
   "@appUserMenuLogoutLabel": {
     "description": "Account menu logout action label."
   },
-  "appUserMenuSignedInLabel": "Signed in",
+  "appUserMenuSignedInLabel": "Fait à……….",
   "@appUserMenuSignedInLabel": {
     "description": "Fallback account menu header label for authenticated users without profile details."
   },
@@ -866,15 +866,15 @@
   "@navigationSettingsShortLabel": {
     "description": "Compact navigation label for the settings destination."
   },
-  "navigationSetupLabel": "Tenant setup",
+  "navigationSetupLabel": "Configuration du locataire",
   "@navigationSetupLabel": {
     "description": "Navigation label for tenant and facility setup."
   },
-  "navigationSetupShortLabel": "Setup",
+  "navigationSetupShortLabel": "Réglages",
   "@navigationSetupShortLabel": {
     "description": "Compact navigation label for tenant and facility setup."
   },
-  "navigationPatientsLabel": "Patient registry",
+  "navigationPatientsLabel": "Le registre des patients ?",
   "@navigationPatientsLabel": {
     "description": "Navigation label for the patient registry destination."
   },
@@ -902,11 +902,11 @@
   "@billingLoadingBody": {
     "description": "Loading body for the billing workspace."
   },
-  "billingStatusLive": "Live",
+  "billingStatusLive": "Direct",
   "@billingStatusLive": {
     "description": "Live status label for billing workspace."
   },
-  "billingStatusPosting": "Posting",
+  "billingStatusPosting": "Publication",
   "@billingStatusPosting": {
     "description": "Saving status label for billing workspace."
   },
@@ -922,7 +922,7 @@
   "@billingAwaitingPayment": {
     "description": "Label for invoices awaiting payment."
   },
-  "billingIssueQueue": "Issue queue",
+  "billingIssueQueue": "File d'attente d'émission",
   "@billingIssueQueue": {
     "description": "Label for draft invoices needing issue."
   },
@@ -930,15 +930,15 @@
   "@billingClaimsPending": {
     "description": "Label for pending insurance claims queue."
   },
-  "billingApprovals": "Approvals",
+  "billingApprovals": "Approbations",
   "@billingApprovals": {
     "description": "Label for approval-required queue."
   },
-  "billingOverdue": "Overdue",
+  "billingOverdue": "Impayé",
   "@billingOverdue": {
     "description": "Label for overdue invoices queue."
   },
-  "billingNeedsIssue": "Needs issue",
+  "billingNeedsIssue": "Problème de besoins",
   "@billingNeedsIssue": {
     "description": "Label for needs-issue queue filter."
   },
@@ -946,7 +946,7 @@
   "@billingApprovalRequired": {
     "description": "Label for approval-required queue filter."
   },
-  "billingQueueLabel": "Queue",
+  "billingQueueLabel": "File d’attente",
   "@billingQueueLabel": {
     "description": "Label for billing queue filter group."
   },
@@ -954,7 +954,7 @@
   "@billingSearchHint": {
     "description": "Search hint for billing worklist."
   },
-  "billingSearchSemanticLabel": "Search billing worklist",
+  "billingSearchSemanticLabel": "Rechercher dans la liste de travail de facturation",
   "@billingSearchSemanticLabel": {
     "description": "Semantic label for billing search field."
   },
@@ -982,23 +982,23 @@
   "@billingStatusColumn": {
     "description": "Status column label in billing table."
   },
-  "billingAmountColumn": "Amount",
+  "billingAmountColumn": "Montant",
   "@billingAmountColumn": {
     "description": "Amount column label in billing table."
   },
-  "billingPaidColumn": "Paid",
+  "billingPaidColumn": "Payant",
   "@billingPaidColumn": {
     "description": "Paid column label in billing table."
   },
-  "billingBalanceColumn": "Balance",
+  "billingBalanceColumn": "Solde",
   "@billingBalanceColumn": {
     "description": "Balance column label in billing table."
   },
-  "billingUpdatedColumn": "Updated",
+  "billingUpdatedColumn": "Mis à jour",
   "@billingUpdatedColumn": {
     "description": "Updated column label in billing table."
   },
-  "billingInvoiceLabel": "Invoice",
+  "billingInvoiceLabel": "Facture",
   "@billingInvoiceLabel": {
     "description": "Invoice label in billing detail."
   },
@@ -1006,23 +1006,23 @@
   "@billingReceivePayment": {
     "description": "Receive payment action label."
   },
-  "billingIssueAction": "Issue",
+  "billingIssueAction": "Émettre",
   "@billingIssueAction": {
     "description": "Issue invoice action label."
   },
-  "billingRefundAction": "Refund",
+  "billingRefundAction": "Remboursement",
   "@billingRefundAction": {
     "description": "Refund action label."
   },
-  "billingAdjustAction": "Adjust",
+  "billingAdjustAction": "Régler",
   "@billingAdjustAction": {
     "description": "Adjustment action label."
   },
-  "billingVoidAction": "Void",
+  "billingVoidAction": "Vide",
   "@billingVoidAction": {
     "description": "Void invoice action label."
   },
-  "billingSendAction": "Send",
+  "billingSendAction": "Envoyer",
   "@billingSendAction": {
     "description": "Send invoice action label."
   },
@@ -1030,7 +1030,7 @@
   "@billingCloseShift": {
     "description": "Close shift action label."
   },
-  "billingCloseDay": "Close day",
+  "billingCloseDay": "Fermée la journée",
   "@billingCloseDay": {
     "description": "Close day action label."
   },
@@ -1046,15 +1046,15 @@
   "@billingVoidInvoice": {
     "description": "Void invoice dialog title."
   },
-  "billingRequestAdjustment": "Request adjustment",
+  "billingRequestAdjustment": "Demander un ajustement",
   "@billingRequestAdjustment": {
     "description": "Request adjustment dialog title."
   },
-  "billingRequestRefund": "Request refund",
+  "billingRequestRefund": "DEMANDE REMBOURSEMENT KOL",
   "@billingRequestRefund": {
     "description": "Request refund dialog title."
   },
-  "billingDueLabel": "Due",
+  "billingDueLabel": "Echéance",
   "@billingDueLabel": {
     "description": "Due amount label."
   },
@@ -1066,7 +1066,7 @@
   "@billingNoPayments": {
     "description": "Empty payments message."
   },
-  "billingNoAdjustments": "No billing adjustments recorded.",
+  "billingNoAdjustments": "Aucun ajustement de facturation enregistré.",
   "@billingNoAdjustments": {
     "description": "Empty adjustments message."
   },
@@ -1074,11 +1074,11 @@
   "@billingLineItemsTitle": {
     "description": "Line items section title."
   },
-  "billingPaymentsTitle": "Payments",
+  "billingPaymentsTitle": "Paiements",
   "@billingPaymentsTitle": {
     "description": "Payments section title."
   },
-  "billingAdjustmentsTitle": "Adjustments",
+  "billingAdjustmentsTitle": "Réglages",
   "@billingAdjustmentsTitle": {
     "description": "Adjustments section title."
   },
@@ -1086,7 +1086,7 @@
   "@billingFinancialSummaryTitle": {
     "description": "Financial summary section title."
   },
-  "billingInvoiceDetailTitle": "Invoice detail",
+  "billingInvoiceDetailTitle": "Détail de la facture",
   "@billingInvoiceDetailTitle": {
     "description": "Invoice detail dialog title."
   },
@@ -1102,11 +1102,11 @@
   "@billingApprovalDetailTitle": {
     "description": "Approval detail dialog title."
   },
-  "billingPreAuthDetailTitle": "Pre-authorization",
+  "billingPreAuthDetailTitle": "Pré-autorisation",
   "@billingPreAuthDetailTitle": {
     "description": "Pre-authorization detail dialog title."
   },
-  "billingActionSaved": "Billing action saved.",
+  "billingActionSaved": "Action de facturation enregistrée.",
   "@billingActionSaved": {
     "description": "Success snackbar after billing mutation."
   },
@@ -1114,7 +1114,7 @@
   "@billingActionPendingApproval": {
     "description": "Snackbar when billing action requires approval."
   },
-  "billingDocumentDownloaded": "Invoice document saved.",
+  "billingDocumentDownloaded": "Document de facture enregistré.",
   "@billingDocumentDownloaded": {
     "description": "Success message after invoice PDF download."
   },
@@ -1126,11 +1126,11 @@
   "@billingDocumentTooltip": {
     "description": "Tooltip for invoice document download."
   },
-  "billingViewLedgerAction": "View ledger",
+  "billingViewLedgerAction": "Afficher le grand livre",
   "@billingViewLedgerAction": {
     "description": "Action to open patient financial ledger."
   },
-  "billingLedgerTitle": "Patient ledger",
+  "billingLedgerTitle": "Registre des patients",
   "@billingLedgerTitle": {
     "description": "Patient ledger dialog title."
   },
@@ -1142,7 +1142,7 @@
   "@billingApproveAction": {
     "description": "Approve billing approval action."
   },
-  "billingRejectAction": "Reject",
+  "billingRejectAction": "Rejeter",
   "@billingRejectAction": {
     "description": "Reject billing approval action."
   },
@@ -1154,7 +1154,7 @@
   "@billingReconcileClaimAction": {
     "description": "Reconcile insurance claim action."
   },
-  "billingFinalizeEncounterAction": "Finalize financial clearance",
+  "billingFinalizeEncounterAction": "Finaliser l'apurement financier",
   "@billingFinalizeEncounterAction": {
     "description": "Finalize encounter billing when balances are cleared."
   },
@@ -1162,7 +1162,7 @@
   "@billingFinalizeEncounterBody": {
     "description": "Body for finalize encounter billing confirmation."
   },
-  "billingEncounterLabel": "Encounter",
+  "billingEncounterLabel": "Rencontre",
   "@billingEncounterLabel": {
     "description": "Encounter field label in billing detail."
   },
@@ -1170,15 +1170,15 @@
   "@billingCoveragePlanLabel": {
     "description": "Coverage plan field label."
   },
-  "billingRequestTypeLabel": "Request type",
+  "billingRequestTypeLabel": "Type de demande",
   "@billingRequestTypeLabel": {
     "description": "Approval request type label."
   },
-  "billingRequesterLabel": "Requested by",
+  "billingRequesterLabel": "Demandé par",
   "@billingRequesterLabel": {
     "description": "Approval requester label."
   },
-  "billingReasonLabel": "Reason",
+  "billingReasonLabel": "Raison",
   "@billingReasonLabel": {
     "description": "Reason field label."
   },
@@ -1186,31 +1186,31 @@
   "@billingLinkedInvoiceLabel": {
     "description": "Linked invoice field label."
   },
-  "billingClearanceCleared": "Cleared",
+  "billingClearanceCleared": "Effacé",
   "@billingClearanceCleared": {
     "description": "Cleared clearance state label."
   },
-  "billingClearancePartiallyPaid": "Partially paid",
+  "billingClearancePartiallyPaid": "Partiellement payée",
   "@billingClearancePartiallyPaid": {
     "description": "Partially paid clearance state label."
   },
-  "billingClearanceDeferred": "Deferred",
+  "billingClearanceDeferred": "AJ",
   "@billingClearanceDeferred": {
     "description": "Deferred clearance state label."
   },
-  "billingClearanceInsured": "Insured",
+  "billingClearanceInsured": "Assuré",
   "@billingClearanceInsured": {
     "description": "Insured clearance state label."
   },
-  "billingClearancePendingAuth": "Pending authorization",
+  "billingClearancePendingAuth": "Autorisation en attente",
   "@billingClearancePendingAuth": {
     "description": "Pending authorization clearance state label."
   },
-  "billingClearanceBlocked": "Blocked",
+  "billingClearanceBlocked": "Bloqué",
   "@billingClearanceBlocked": {
     "description": "Blocked clearance state label."
   },
-  "billingNotRecorded": "Not recorded",
+  "billingNotRecorded": "Non enregistré",
   "@billingNotRecorded": {
     "description": "Fallback when a billing timestamp is missing."
   },
@@ -1218,11 +1218,11 @@
   "@billingUnknownValue": {
     "description": "Fallback for unknown billing values."
   },
-  "billingPreviousPageLabel": "Previous page",
+  "billingPreviousPageLabel": "Page précédente",
   "@billingPreviousPageLabel": {
     "description": "Previous page label for billing worklist."
   },
-  "billingNextPageLabel": "Next page",
+  "billingNextPageLabel": "Page suivante",
   "@billingNextPageLabel": {
     "description": "Next page label for billing worklist."
   },
@@ -1238,7 +1238,7 @@
   "@billingPayerHint": {
     "description": "Hint for payer field."
   },
-  "billingPdfFileTypeLabel": "PDF document",
+  "billingPdfFileTypeLabel": "Document PDF",
   "@billingPdfFileTypeLabel": {
     "description": "File type label for invoice PDF save dialog."
   },
@@ -1250,43 +1250,43 @@
   "@billingClaimStatusRejected": {
     "description": "Insurance claim rejected status label."
   },
-  "billingClaimStatusPaid": "Paid",
+  "billingClaimStatusPaid": "Payant",
   "@billingClaimStatusPaid": {
     "description": "Insurance claim paid status label."
   },
-  "billingStatusDraft": "Draft",
+  "billingStatusDraft": "Projet",
   "@billingStatusDraft": {
     "description": "Draft billing status label."
   },
-  "billingStatusIssued": "Issued",
+  "billingStatusIssued": "Émis",
   "@billingStatusIssued": {
     "description": "Issued billing status label."
   },
-  "billingStatusPartial": "Partial",
+  "billingStatusPartial": "Partiel",
   "@billingStatusPartial": {
     "description": "Partial billing status label."
   },
-  "billingStatusPaid": "Paid",
+  "billingStatusPaid": "Payant",
   "@billingStatusPaid": {
     "description": "Paid billing status label."
   },
-  "billingAmountReceivedLabel": "Amount received",
+  "billingAmountReceivedLabel": "Montant",
   "@billingAmountReceivedLabel": {
     "description": "Label for the payment amount field in the receive payment form."
   },
-  "billingCurrencyLabel": "Currency",
+  "billingCurrencyLabel": "Devise",
   "@billingCurrencyLabel": {
     "description": "Label for currency selectors in billing amount fields."
   },
-  "billingPaymentMethodLabel": "Payment method",
+  "billingPaymentMethodLabel": "Mode de paiement",
   "@billingPaymentMethodLabel": {
     "description": "Label for the payment method selector in the receive payment form."
   },
-  "billingReferenceLabel": "Reference",
+  "billingReferenceLabel": "Référence",
   "@billingReferenceLabel": {
     "description": "Label for the payment transaction reference field."
   },
-  "billingPayerLabel": "Payer",
+  "billingPayerLabel": "Payeur ",
   "@billingPayerLabel": {
     "description": "Label for the payer field in the receive payment form."
   },
@@ -1294,7 +1294,7 @@
   "@billingGenerateReceiptLabel": {
     "description": "Checkbox label to generate a receipt after recording a payment."
   },
-  "billingPaymentLabel": "Payment",
+  "billingPaymentLabel": "Paiement",
   "@billingPaymentLabel": {
     "description": "Label for the payment selector in the refund form."
   },
@@ -1346,19 +1346,19 @@
   "@billingSubmitForApprovalLabel": {
     "description": "Checkbox label to submit a shift or day close for approval."
   },
-  "billingRequestVoidAction": "Request void",
+  "billingRequestVoidAction": "Demande annulée",
   "@billingRequestVoidAction": {
     "description": "Submit label for the void invoice request form."
   },
-  "billingVoidReasonLabel": "Void reason",
+  "billingVoidReasonLabel": "Motif nul",
   "@billingVoidReasonLabel": {
     "description": "Label for the void reason field in the void invoice form."
   },
-  "billingUnknownPatient": "Unknown patient",
+  "billingUnknownPatient": "Patient inconnu",
   "@billingUnknownPatient": {
     "description": "Fallback label shown when a billing work item has no patient name."
   },
-  "billingQuantityLabel": "Qty {quantity}",
+  "billingQuantityLabel": "Qté {quantity}",
   "@billingQuantityLabel": {
     "description": "Compact quantity label for an invoice line item.",
     "placeholders": {
@@ -1375,15 +1375,15 @@
   "@navigationSubscriptionsShortLabel": {
     "description": "Compact navigation label for the subscriptions workspace."
   },
-  "subscriptionHeaderActiveLabel": "Subscribed",
+  "subscriptionHeaderActiveLabel": "Abonné",
   "@subscriptionHeaderActiveLabel": {
     "description": "Shell header label when the tenant subscription is active."
   },
-  "subscriptionHeaderExpiringSoonLabel": "Renew soon",
+  "subscriptionHeaderExpiringSoonLabel": "Renouveler bientôt",
   "@subscriptionHeaderExpiringSoonLabel": {
     "description": "Shell header label when the tenant subscription is expiring soon."
   },
-  "subscriptionHeaderExpiresInDaysLabel": "Expires in {days} days",
+  "subscriptionHeaderExpiresInDaysLabel": "Expire dans (jours) {days} jours",
   "@subscriptionHeaderExpiresInDaysLabel": {
     "description": "Shell header label when the tenant subscription expires within the configured threshold.",
     "placeholders": {
@@ -1396,7 +1396,7 @@
   "@subscriptionHeaderExpiredLabel": {
     "description": "Shell header label when the tenant subscription is expired or past due."
   },
-  "subscriptionHeaderUpgradeLabel": "Upgrade",
+  "subscriptionHeaderUpgradeLabel": "Mise à niveau",
   "@subscriptionHeaderUpgradeLabel": {
     "description": "Shell header action label to open the subscription upgrade dialog."
   },
@@ -1437,11 +1437,11 @@
   "@subscriptionUpgradePlanLabel": {
     "description": "Label for the plan selector in the subscription upgrade dialog."
   },
-  "subscriptionUpgradePaymentMethodLabel": "Payment method",
+  "subscriptionUpgradePaymentMethodLabel": "Mode de paiement",
   "@subscriptionUpgradePaymentMethodLabel": {
     "description": "Label for the payment method selector in the subscription upgrade dialog."
   },
-  "subscriptionUpgradeAmountLabel": "Amount paid",
+  "subscriptionUpgradeAmountLabel": "Montant payé",
   "@subscriptionUpgradeAmountLabel": {
     "description": "Label for the amount field in the subscription upgrade dialog."
   },
@@ -1457,15 +1457,15 @@
   "@subscriptionUpgradeProofLabel": {
     "description": "Label for proof-of-payment upload in the subscription upgrade dialog."
   },
-  "subscriptionUpgradeAttachProofAction": "Attach proof",
+  "subscriptionUpgradeAttachProofAction": "Joindre une preuve",
   "@subscriptionUpgradeAttachProofAction": {
     "description": "Action label to attach proof of payment."
   },
-  "subscriptionUpgradeRemoveProofAction": "Remove attachment",
+  "subscriptionUpgradeRemoveProofAction": "Retirer le média",
   "@subscriptionUpgradeRemoveProofAction": {
     "description": "Action label to remove an attached proof of payment."
   },
-  "subscriptionUpgradeAdminContactTitle": "Platform billing contact",
+  "subscriptionUpgradeAdminContactTitle": "Contact de facturation de la plateforme",
   "@subscriptionUpgradeAdminContactTitle": {
     "description": "Section title for platform admin contact details in the upgrade dialog."
   },
@@ -1477,7 +1477,7 @@
   "@subscriptionUpgradeAdminContactEmailLabel": {
     "description": "Label for platform admin email in the upgrade dialog."
   },
-  "subscriptionUpgradeAdminContactPhoneLabel": "Phone",
+  "subscriptionUpgradeAdminContactPhoneLabel": "Téléphone",
   "@subscriptionUpgradeAdminContactPhoneLabel": {
     "description": "Label for platform admin phone in the upgrade dialog."
   },
@@ -1485,7 +1485,7 @@
   "@subscriptionUpgradeSubmitAction": {
     "description": "Submit action label for the subscription upgrade dialog."
   },
-  "subscriptionRenewSubmitAction": "Submit renewal",
+  "subscriptionRenewSubmitAction": "Soumettre le renouvellement",
   "@subscriptionRenewSubmitAction": {
     "description": "Submit action label when renewing the current subscription plan."
   },
@@ -1501,15 +1501,15 @@
   "@subscriptionMobileMoneyProviderLabel": {
     "description": "Label for mobile money provider selection."
   },
-  "subscriptionMobileMoneyPhoneLabel": "Mobile money number",
+  "subscriptionMobileMoneyPhoneLabel": "Numéro de compte Mobile Money",
   "@subscriptionMobileMoneyPhoneLabel": {
     "description": "Label for the payer mobile money phone number."
   },
-  "subscriptionMobileMoneyMtn": "MTN Mobile Money",
+  "subscriptionMobileMoneyMtn": "MTN Mobile Money ",
   "@subscriptionMobileMoneyMtn": {
     "description": "MTN mobile money provider label."
   },
-  "subscriptionMobileMoneyAirtel": "Airtel Money",
+  "subscriptionMobileMoneyAirtel": "Airtel Money ",
   "@subscriptionMobileMoneyAirtel": {
     "description": "Airtel Money provider label."
   },
@@ -1521,7 +1521,7 @@
   "@subscriptionMobileMoneyVodacom": {
     "description": "Vodacom M-Pesa provider label."
   },
-  "subscriptionMobileMoneyTigo": "Tigo / Mixx by Yas",
+  "subscriptionMobileMoneyTigo": "Tigo / Mixx par Yas",
   "@subscriptionMobileMoneyTigo": {
     "description": "Tigo Pesa provider label."
   },
@@ -1549,19 +1549,19 @@
   "@subscriptionBankAccountNameLabel": {
     "description": "Label for platform bank account holder name."
   },
-  "subscriptionPlatformBankNameLabel": "Bank",
+  "subscriptionPlatformBankNameLabel": "Banque",
   "@subscriptionPlatformBankNameLabel": {
     "description": "Label for platform bank institution name."
   },
-  "subscriptionBankBranchLabel": "Branch",
+  "subscriptionBankBranchLabel": "Agence",
   "@subscriptionBankBranchLabel": {
     "description": "Label for platform bank branch."
   },
-  "subscriptionBankAccountNumberLabel": "Account number",
+  "subscriptionBankAccountNumberLabel": "Numéro de compte",
   "@subscriptionBankAccountNumberLabel": {
     "description": "Label for platform bank account number."
   },
-  "subscriptionBankSwiftLabel": "SWIFT / BIC",
+  "subscriptionBankSwiftLabel": "SWIFT BIC",
   "@subscriptionBankSwiftLabel": {
     "description": "Label for platform bank SWIFT or BIC code."
   },
@@ -1573,11 +1573,11 @@
   "@subscriptionFxRateErrorMessage": {
     "description": "Non-blocking warning when FX conversion fails."
   },
-  "subscriptionCardHolderNameLabel": "Name on card",
+  "subscriptionCardHolderNameLabel": "Nom sur la carte",
   "@subscriptionCardHolderNameLabel": {
     "description": "Label for cardholder name on card payments."
   },
-  "subscriptionCardLastFourLabel": "Last 4 digits",
+  "subscriptionCardLastFourLabel": "4 derniers chiffres",
   "@subscriptionCardLastFourLabel": {
     "description": "Label for last four digits of the payment card."
   },
@@ -1597,19 +1597,19 @@
   "@subscriptionPaymentMethodBankTransfer": {
     "description": "Payment method label for manual bank transfer."
   },
-  "subscriptionPaymentMethodMobileMoney": "Mobile money",
+  "subscriptionPaymentMethodMobileMoney": "Argent mobile",
   "@subscriptionPaymentMethodMobileMoney": {
     "description": "Payment method label for mobile money."
   },
-  "subscriptionPaymentMethodCreditCard": "Credit card",
+  "subscriptionPaymentMethodCreditCard": "Carte bancaire",
   "@subscriptionPaymentMethodCreditCard": {
     "description": "Payment method label for credit card."
   },
-  "subscriptionPaymentMethodDebitCard": "Debit card",
+  "subscriptionPaymentMethodDebitCard": "Carte de débit",
   "@subscriptionPaymentMethodDebitCard": {
     "description": "Payment method label for debit card."
   },
-  "subscriptionPaymentMethodCash": "Cash",
+  "subscriptionPaymentMethodCash": "L'argent liquide",
   "@subscriptionPaymentMethodCash": {
     "description": "Payment method label for cash."
   },
@@ -1633,7 +1633,7 @@
   "@navigationIcuShortLabel": {
     "description": "Compact navigation label for the ICU workspace."
   },
-  "navigationHrLabel": "Human resources",
+  "navigationHrLabel": "Ressources humaines",
   "@navigationHrLabel": {
     "description": "Navigation label for the human resources workspace."
   },
@@ -1641,11 +1641,11 @@
   "@navigationHrShortLabel": {
     "description": "Compact navigation label for the human resources workspace."
   },
-  "navigationGroupOverviewLabel": "Overview",
+  "navigationGroupOverviewLabel": "Présentation",
   "@navigationGroupOverviewLabel": {
     "description": "Desktop side navigation group label for overview destinations."
   },
-  "navigationGroupPatientAccessLabel": "Patient intake",
+  "navigationGroupPatientAccessLabel": "IAO",
   "@navigationGroupPatientAccessLabel": {
     "description": "Desktop side navigation group label for front-desk and access destinations."
   },
@@ -1661,11 +1661,11 @@
   "@navigationGroupDiagnosticsMedicationLabel": {
     "description": "Desktop side navigation group label for diagnostic and medication destinations."
   },
-  "navigationGroupRevenueCycleLabel": "Billing & revenue",
+  "navigationGroupRevenueCycleLabel": "Facturation et revenus",
   "@navigationGroupRevenueCycleLabel": {
     "description": "Desktop side navigation group label for billing and revenue destinations."
   },
-  "navigationGroupFacilityOperationsLabel": "Facility services",
+  "navigationGroupFacilityOperationsLabel": "Services aux établissements",
   "@navigationGroupFacilityOperationsLabel": {
     "description": "Desktop side navigation group label for facility operations destinations."
   },
@@ -1673,7 +1673,7 @@
   "@navigationGroupAdministrationLabel": {
     "description": "Desktop side navigation group label for administrative destinations."
   },
-  "navigationOpdLabel": "Outpatient (OPD)",
+  "navigationOpdLabel": "Patients externes (OPD)",
   "@navigationOpdLabel": {
     "description": "Navigation label for the OPD workflow destination."
   },
@@ -1685,7 +1685,7 @@
   "@navigationTheaterLabel": {
     "description": "Navigation label for the theater workflow destination."
   },
-  "navigationTheaterShortLabel": "Theater",
+  "navigationTheaterShortLabel": "Mode Cinéma",
   "@navigationTheaterShortLabel": {
     "description": "Compact navigation label for the theater workflow destination."
   },
@@ -1693,35 +1693,35 @@
   "@navigationCommunicationsLabel": {
     "description": "Navigation label for the communications workspace."
   },
-  "navigationCommunicationsShortLabel": "Comms",
+  "navigationCommunicationsShortLabel": "Communications",
   "@navigationCommunicationsShortLabel": {
     "description": "Compact navigation label for the communications workspace."
   },
-  "hrTitle": "Human resources",
+  "hrTitle": "Ressources humaines",
   "@hrTitle": {
     "description": "Human resources workspace text for hrTitle."
   },
-  "navigationIntegrationsLabel": "Integrations",
+  "navigationIntegrationsLabel": "Intégrations",
   "@navigationIntegrationsLabel": {
     "description": "Navigation label for the integrations workspace."
   },
-  "navigationIntegrationsShortLabel": "Integrations",
+  "navigationIntegrationsShortLabel": "Intégrations",
   "@navigationIntegrationsShortLabel": {
     "description": "Compact navigation label for the integrations workspace."
   },
-  "navigationMortuaryLabel": "Mortuary",
+  "navigationMortuaryLabel": "Morgue",
   "@navigationMortuaryLabel": {
     "description": "Navigation label for the mortuary workspace."
   },
-  "navigationMortuaryShortLabel": "Mortuary",
+  "navigationMortuaryShortLabel": "Morgue",
   "@navigationMortuaryShortLabel": {
     "description": "Compact navigation label for the mortuary workspace."
   },
-  "navigationReportsLabel": "Reports",
+  "navigationReportsLabel": "Rapports",
   "@navigationReportsLabel": {
     "description": "Navigation label for the reports workspace."
   },
-  "navigationReportsShortLabel": "Reports",
+  "navigationReportsShortLabel": "Rapports",
   "@navigationReportsShortLabel": {
     "description": "Compact navigation label for the reports workspace."
   },
@@ -1729,11 +1729,11 @@
   "@navigationRoomsBedsLabel": {
     "description": "Navigation label for the rooms and beds workspace."
   },
-  "navigationRoomsBedsShortLabel": "Beds",
+  "navigationRoomsBedsShortLabel": "Lits",
   "@navigationRoomsBedsShortLabel": {
     "description": "Compact navigation label for the rooms and beds workspace."
   },
-  "navigationHousekeepingLabel": "Housekeeping",
+  "navigationHousekeepingLabel": "Ménage",
   "@navigationHousekeepingLabel": {
     "description": "Navigation label for the housekeeping workspace."
   },
@@ -1741,7 +1741,7 @@
   "@navigationHousekeepingShortLabel": {
     "description": "Compact navigation label for the housekeeping workspace."
   },
-  "theaterTitle": "Theater",
+  "theaterTitle": "Mode Cinéma",
   "@theaterTitle": {
     "description": "Title for the theater workspace."
   },
@@ -1765,15 +1765,15 @@
   "@theaterSavingStatus": {
     "description": "Status label when theater data is being saved."
   },
-  "theaterSavedMessage": "Theater changes saved.",
+  "theaterSavedMessage": "Modifications théâtrales enregistrées.",
   "@theaterSavedMessage": {
     "description": "Snackbar message after theater mutations succeed."
   },
-  "theaterScheduleCaseAction": "Schedule case",
+  "theaterScheduleCaseAction": "Cas de planification",
   "@theaterScheduleCaseAction": {
     "description": "Action label for scheduling a theater case."
   },
-  "theaterScheduledSummaryLabel": "Scheduled",
+  "theaterScheduledSummaryLabel": "Planifié",
   "@theaterScheduledSummaryLabel": {
     "description": "Summary card label for scheduled theater cases."
   },
@@ -1781,7 +1781,7 @@
   "@theaterInTheaterSummaryLabel": {
     "description": "Summary card label for active theater cases."
   },
-  "theaterReadySummaryLabel": "Ready",
+  "theaterReadySummaryLabel": "Prêt",
   "@theaterReadySummaryLabel": {
     "description": "Summary card label for ready theater cases."
   },
@@ -1789,19 +1789,19 @@
   "@theaterCompletedSummaryLabel": {
     "description": "Summary card label for completed theater cases."
   },
-  "theaterAllCasesSummaryLabel": "All cases",
+  "theaterAllCasesSummaryLabel": "Tous les cas",
   "@theaterAllCasesSummaryLabel": {
     "description": "Summary card label for all theater cases on the current board."
   },
-  "theaterCaseIdColumnLabel": "Case",
+  "theaterCaseIdColumnLabel": "Affaire",
   "@theaterCaseIdColumnLabel": {
     "description": "Theater board column label for case identifier."
   },
-  "theaterProcedureColumnLabel": "Procedure",
+  "theaterProcedureColumnLabel": "Procédure",
   "@theaterProcedureColumnLabel": {
     "description": "Theater board column label for procedure name."
   },
-  "theaterResponsibleRoleColumnLabel": "Owner",
+  "theaterResponsibleRoleColumnLabel": "Responsable",
   "@theaterResponsibleRoleColumnLabel": {
     "description": "Theater board column label for responsible clinical role."
   },
@@ -1813,11 +1813,11 @@
   "@theaterSourceEmergency": {
     "description": "Theater source context label for emergency pathway."
   },
-  "theaterSourceOpd": "OPD elective",
+  "theaterSourceOpd": "OPD optionnel",
   "@theaterSourceOpd": {
     "description": "Theater source context label for OPD elective pathway."
   },
-  "theaterSourceIpd": "Inpatient surgery",
+  "theaterSourceIpd": "Chirurgie en milieu hospitalier",
   "@theaterSourceIpd": {
     "description": "Theater source context label for IPD surgery pathway."
   },
@@ -1825,11 +1825,11 @@
   "@theaterOpenInIpdAction": {
     "description": "Theater action to open linked IPD admission."
   },
-  "theaterOpenInEmergencyAction": "Open in Emergency",
+  "theaterOpenInEmergencyAction": "Ouvrir en cas d'urgence",
   "@theaterOpenInEmergencyAction": {
     "description": "Theater action to open linked emergency case."
   },
-  "theaterHandoverDestinationLabel": "Recovery destination",
+  "theaterHandoverDestinationLabel": "Destination de récupération",
   "@theaterHandoverDestinationLabel": {
     "description": "Theater handover form label for recovery destination."
   },
@@ -1841,27 +1841,27 @@
   "@theaterHandoverToIcu": {
     "description": "Theater handover destination option for ICU recovery."
   },
-  "theaterHandoverToOpd": "Day-case / OPD follow-up",
+  "theaterHandoverToOpd": "Suivi du cas à la journée/ OPD",
   "@theaterHandoverToOpd": {
     "description": "Theater handover destination option for outpatient follow-up."
   },
-  "theaterRoleNurse": "Theater nurse",
+  "theaterRoleNurse": "Infirmière de théâtre",
   "@theaterRoleNurse": {
     "description": "Responsible role label for theater nurse."
   },
-  "theaterRoleSurgeon": "Surgeon",
+  "theaterRoleSurgeon": "Chirurgien",
   "@theaterRoleSurgeon": {
     "description": "Responsible role label for surgeon."
   },
-  "theaterRoleAnesthetist": "Anesthetist",
+  "theaterRoleAnesthetist": "ANESTHESISTE:",
   "@theaterRoleAnesthetist": {
     "description": "Responsible role label for anesthetist."
   },
-  "theaterRoleTeam": "Theater team",
+  "theaterRoleTeam": "Équipe théâtrale",
   "@theaterRoleTeam": {
     "description": "Responsible role label for multidisciplinary theater team."
   },
-  "theaterRoleCoordinator": "Theater coordinator",
+  "theaterRoleCoordinator": "Coordinateur de théâtre",
   "@theaterRoleCoordinator": {
     "description": "Responsible role label for theater coordinator."
   },
@@ -1877,7 +1877,7 @@
   "@theaterSearchHint": {
     "description": "Hint for theater search field."
   },
-  "theaterScheduleDateFilterLabel": "Schedule date",
+  "theaterScheduleDateFilterLabel": "Période",
   "@theaterScheduleDateFilterLabel": {
     "description": "Label for theater schedule date filter."
   },
@@ -1889,7 +1889,7 @@
   "@theaterStatusFilterLabel": {
     "description": "Label for theater status filter."
   },
-  "theaterStageFilterLabel": "Stage",
+  "theaterStageFilterLabel": "Étape",
   "@theaterStageFilterLabel": {
     "description": "Label for theater stage filter."
   },
@@ -1901,7 +1901,7 @@
   "@theaterClearFiltersAction": {
     "description": "Action label for clearing theater filters."
   },
-  "theaterCasesTitle": "Daily cases",
+  "theaterCasesTitle": "Nouveaux cas quotidiens",
   "@theaterCasesTitle": {
     "description": "Title for theater case board."
   },
@@ -1917,7 +1917,7 @@
   "@theaterNoCasesBody": {
     "description": "Empty-state body when no theater cases match filters."
   },
-  "theaterNoCaseSelectedTitle": "No case selected",
+  "theaterNoCaseSelectedTitle": "Aucun cas sélectionné",
   "@theaterNoCaseSelectedTitle": {
     "description": "Empty detail title when no theater case is selected."
   },
@@ -1941,15 +1941,15 @@
   "@theaterStatusColumnLabel": {
     "description": "Theater case list status column label."
   },
-  "theaterReadinessColumnLabel": "Readiness",
+  "theaterReadinessColumnLabel": "Préparation",
   "@theaterReadinessColumnLabel": {
     "description": "Theater case list readiness column label."
   },
-  "theaterNextActionColumnLabel": "Next action",
+  "theaterNextActionColumnLabel": "Prochaine action",
   "@theaterNextActionColumnLabel": {
     "description": "Theater case list next action column label."
   },
-  "theaterPageLabel": "{from}-{to} of {total}",
+  "theaterPageLabel": "{from}J{to} sur {total}",
   "@theaterPageLabel": {
     "description": "Pagination label for theater data lists.",
     "placeholders": {
@@ -1964,19 +1964,19 @@
       }
     }
   },
-  "theaterCaseDetailTitle": "Case detail",
+  "theaterCaseDetailTitle": "Détail du cas",
   "@theaterCaseDetailTitle": {
     "description": "Title for theater case detail panel."
   },
-  "theaterRescheduleAction": "Reschedule",
+  "theaterRescheduleAction": "Planification",
   "@theaterRescheduleAction": {
     "description": "Action label for rescheduling a theater case."
   },
-  "theaterUpdateStageAction": "Update stage",
+  "theaterUpdateStageAction": "Mettre à jour l’étape",
   "@theaterUpdateStageAction": {
     "description": "Action label for updating theater case stage."
   },
-  "theaterEncounterLabel": "Encounter",
+  "theaterEncounterLabel": "Rencontre",
   "@theaterEncounterLabel": {
     "description": "Label for encounter in theater detail."
   },
@@ -2008,7 +2008,7 @@
   "@theaterScheduleEmergencyHint": {
     "description": "Helper text shown when scheduling theater cases from emergency context."
   },
-  "theaterScheduleEmergencyPanelTitle": "Emergency scheduling",
+  "theaterScheduleEmergencyPanelTitle": "Planification d'urgence",
   "@theaterScheduleEmergencyPanelTitle": {
     "description": "Title for emergency scheduling helper panel in theater schedule form."
   },
@@ -2028,7 +2028,7 @@
   "@theaterAnesthetistSearchHint": {
     "description": "Hint for anesthetist selection in theater schedule forms."
   },
-  "theaterProceduresSectionLabel": "Procedures",
+  "theaterProceduresSectionLabel": "Procédures",
   "@theaterProceduresSectionLabel": {
     "description": "Section title for procedure billing in theater schedule forms."
   },
@@ -2040,7 +2040,7 @@
   "@theaterNoProceduresSelectedLabel": {
     "description": "Empty state when no procedures are selected in theater schedule forms."
   },
-  "theaterScheduledAtLabel": "Scheduled at",
+  "theaterScheduledAtLabel": "Programmée pour ",
   "@theaterScheduledAtLabel": {
     "description": "Label for scheduled date time in theater forms and detail."
   },
@@ -2048,7 +2048,7 @@
   "@theaterRoomLabel": {
     "description": "Label for theater room."
   },
-  "theaterReadinessLabel": "Readiness",
+  "theaterReadinessLabel": "Préparation",
   "@theaterReadinessLabel": {
     "description": "Label for theater readiness."
   },
@@ -2056,15 +2056,15 @@
   "@theaterTeamTitle": {
     "description": "Title for theater team and flow section."
   },
-  "theaterSurgeonLabel": "Surgeon",
+  "theaterSurgeonLabel": "Chirurgien",
   "@theaterSurgeonLabel": {
     "description": "Label for theater surgeon."
   },
-  "theaterAnesthetistLabel": "Anesthetist",
+  "theaterAnesthetistLabel": "ANESTHESISTE:",
   "@theaterAnesthetistLabel": {
     "description": "Label for theater anesthetist."
   },
-  "theaterStageLabel": "Stage",
+  "theaterStageLabel": "Étape",
   "@theaterStageLabel": {
     "description": "Label for theater workflow stage."
   },
@@ -2072,23 +2072,23 @@
   "@theaterStatusLabel": {
     "description": "Label for theater status."
   },
-  "theaterStageNotesLabel": "Stage notes",
+  "theaterStageNotesLabel": "Notes de scène",
   "@theaterStageNotesLabel": {
     "description": "Label for theater stage notes."
   },
-  "theaterAssignResourceAction": "Assign resource",
+  "theaterAssignResourceAction": "Affecter une ressource",
   "@theaterAssignResourceAction": {
     "description": "Action label for assigning a theater resource."
   },
-  "theaterUpdateReadinessAction": "Update readiness",
+  "theaterUpdateReadinessAction": "Mise à jour de l'état de",
   "@theaterUpdateReadinessAction": {
     "description": "Action label for updating theater readiness checklist."
   },
-  "theaterAnesthesiaAction": "Anesthesia",
+  "theaterAnesthesiaAction": "Anesthésie",
   "@theaterAnesthesiaAction": {
     "description": "Action label for editing anesthesia record."
   },
-  "theaterPostOpAction": "Post-op",
+  "theaterPostOpAction": "SSPI",
   "@theaterPostOpAction": {
     "description": "Action label for editing post-op note."
   },
@@ -2096,19 +2096,19 @@
   "@theaterHandoverAction": {
     "description": "Action label for theater handover."
   },
-  "theaterFinalizeAction": "Finalize",
+  "theaterFinalizeAction": "Finaliser",
   "@theaterFinalizeAction": {
     "description": "Action label for finalizing theater records."
   },
-  "theaterCancelCaseAction": "Cancel case",
+  "theaterCancelCaseAction": "Annuler le cas",
   "@theaterCancelCaseAction": {
     "description": "Action label for cancelling a theater case."
   },
-  "theaterStartCaseAction": "Start case",
+  "theaterStartCaseAction": "Commencer un cas",
   "@theaterStartCaseAction": {
     "description": "Next-action label for starting a ready scheduled case."
   },
-  "theaterChecklistTitle": "Readiness checklist",
+  "theaterChecklistTitle": "Liste de vérification de la préparation du site",
   "@theaterChecklistTitle": {
     "description": "Title for theater readiness checklist."
   },
@@ -2128,19 +2128,19 @@
   "@theaterPostOpStatusLabel": {
     "description": "Label for post-op record status."
   },
-  "theaterAnesthesiaNotesLabel": "Anesthesia notes",
+  "theaterAnesthesiaNotesLabel": "Notes d'anesthésie",
   "@theaterAnesthesiaNotesLabel": {
     "description": "Label for anesthesia notes."
   },
-  "theaterPostOpNoteLabel": "Post-op note",
+  "theaterPostOpNoteLabel": "Note post-op",
   "@theaterPostOpNoteLabel": {
     "description": "Label for post-op note."
   },
-  "theaterNoObservationsLabel": "No anesthesia observations recorded",
+  "theaterNoObservationsLabel": "Aucune observation d'anesthésie enregistrée",
   "@theaterNoObservationsLabel": {
     "description": "Empty text for anesthesia observations."
   },
-  "theaterResourcesTitle": "Resources",
+  "theaterResourcesTitle": "Ressources",
   "@theaterResourcesTitle": {
     "description": "Title for theater resource allocations section."
   },
@@ -2148,11 +2148,11 @@
   "@theaterNoResourcesLabel": {
     "description": "Empty text for theater resources."
   },
-  "theaterTimelineTitle": "Timeline",
+  "theaterTimelineTitle": "Calendrier",
   "@theaterTimelineTitle": {
     "description": "Title for theater timeline."
   },
-  "theaterNoTimelineLabel": "No timeline entries",
+  "theaterNoTimelineLabel": "Aucune entrée de chronologie",
   "@theaterNoTimelineLabel": {
     "description": "Empty text for theater timeline."
   },
@@ -2164,7 +2164,7 @@
   "@theaterScheduleCaseDialogBody": {
     "description": "Introductory help text for the schedule theater case dialog."
   },
-  "theaterSchedulePatientContextSection": "Patient context",
+  "theaterSchedulePatientContextSection": "Contexte du patient",
   "@theaterSchedulePatientContextSection": {
     "description": "Section title for patient and encounter selection in schedule case dialog."
   },
@@ -2192,11 +2192,11 @@
   "@theaterUpdateStageDialogTitle": {
     "description": "Dialog title for updating theater stage."
   },
-  "theaterHandoverDialogTitle": "Complete handover",
+  "theaterHandoverDialogTitle": "Remise complète du site ",
   "@theaterHandoverDialogTitle": {
     "description": "Dialog title for theater handover."
   },
-  "theaterHandoverNotesLabel": "Handover notes",
+  "theaterHandoverNotesLabel": "Notes de passation",
   "@theaterHandoverNotesLabel": {
     "description": "Label for theater handover notes."
   },
@@ -2204,7 +2204,7 @@
   "@theaterCancelCaseDialogTitle": {
     "description": "Dialog title for cancelling a theater case."
   },
-  "theaterCancellationReasonLabel": "Cancellation reason",
+  "theaterCancellationReasonLabel": "Motif d'annulation",
   "@theaterCancellationReasonLabel": {
     "description": "Label for theater cancellation reason."
   },
@@ -2212,7 +2212,7 @@
   "@theaterAssignResourceDialogTitle": {
     "description": "Dialog title for assigning a theater resource."
   },
-  "theaterReadinessDialogTitle": "Update readiness",
+  "theaterReadinessDialogTitle": "Mise à jour de l'état de",
   "@theaterReadinessDialogTitle": {
     "description": "Dialog title for updating theater readiness."
   },
@@ -2220,7 +2220,7 @@
   "@theaterAnesthesiaDialogTitle": {
     "description": "Dialog title for editing anesthesia record."
   },
-  "theaterPostOpDialogTitle": "Post-op note",
+  "theaterPostOpDialogTitle": "Note post-op",
   "@theaterPostOpDialogTitle": {
     "description": "Dialog title for editing post-op note."
   },
@@ -2232,7 +2232,7 @@
   "@theaterResourceFiltersDialogTitle": {
     "description": "Dialog title for theater resource filters."
   },
-  "theaterEncounterIdLabel": "Encounter ID",
+  "theaterEncounterIdLabel": "Identifiant de la rencontre",
   "@theaterEncounterIdLabel": {
     "description": "Label for encounter ID in theater forms."
   },
@@ -2240,11 +2240,11 @@
   "@theaterEncounterIdHint": {
     "description": "Hint for encounter ID in theater forms."
   },
-  "theaterDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
+  "theaterDateTimeHint": "AAAA-MM-JJTHH :MM :SS",
   "@theaterDateTimeHint": {
     "description": "Hint for ISO date time entry in theater forms."
   },
-  "theaterRoomIdLabel": "Room ID",
+  "theaterRoomIdLabel": "ID de la chambre",
   "@theaterRoomIdLabel": {
     "description": "Label for theater room ID."
   },
@@ -2256,11 +2256,11 @@
   "@theaterAnesthetistIdLabel": {
     "description": "Label for anesthetist user ID."
   },
-  "theaterResourceTypeLabel": "Resource type",
+  "theaterResourceTypeLabel": "Type de ressource",
   "@theaterResourceTypeLabel": {
     "description": "Label for theater resource type."
   },
-  "theaterResourceIdLabel": "Resource ID",
+  "theaterResourceIdLabel": "ID de la ressource",
   "@theaterResourceIdLabel": {
     "description": "Label for theater resource ID."
   },
@@ -2272,11 +2272,11 @@
   "@theaterNotesLabel": {
     "description": "Generic notes label for theater forms."
   },
-  "theaterChecklistPhaseLabel": "Checklist phase",
+  "theaterChecklistPhaseLabel": "Phase de la liste de contrôle",
   "@theaterChecklistPhaseLabel": {
     "description": "Label for theater checklist phase."
   },
-  "theaterChecklistItemCodeLabel": "Item code",
+  "theaterChecklistItemCodeLabel": "Code Article",
   "@theaterChecklistItemCodeLabel": {
     "description": "Label for theater checklist item code."
   },
@@ -2296,7 +2296,7 @@
   "@theaterSaveRecordAction": {
     "description": "Action label for saving a theater clinical record."
   },
-  "theaterRecordTypeLabel": "Record type",
+  "theaterRecordTypeLabel": "Type de record",
   "@theaterRecordTypeLabel": {
     "description": "Label for theater record type."
   },
@@ -2313,7 +2313,7 @@
       }
     }
   },
-  "theaterStatusScheduled": "Scheduled",
+  "theaterStatusScheduled": "Planifié",
   "@theaterStatusScheduled": {
     "description": "Display label for scheduled theater case status."
   },
@@ -2329,7 +2329,7 @@
   "@theaterStatusCancelled": {
     "description": "Display label for cancelled theater case status."
   },
-  "theaterStagePreOp": "Pre-op",
+  "theaterStagePreOp": "Pré-op :",
   "@theaterStagePreOp": {
     "description": "Display label for pre-op theater stage."
   },
@@ -2337,7 +2337,7 @@
   "@theaterStageSignIn": {
     "description": "Display label for sign-in theater stage."
   },
-  "theaterStageTimeOut": "Time out",
+  "theaterStageTimeOut": "Temps de fin",
   "@theaterStageTimeOut": {
     "description": "Display label for time-out theater stage."
   },
@@ -2349,11 +2349,11 @@
   "@theaterStageSignOut": {
     "description": "Display label for sign-out theater stage."
   },
-  "theaterStagePostOp": "Post-op",
+  "theaterStagePostOp": "SSPI",
   "@theaterStagePostOp": {
     "description": "Display label for post-op theater stage."
   },
-  "theaterStagePacuHandoff": "PACU handover",
+  "theaterStagePacuHandoff": "Remise PACU",
   "@theaterStagePacuHandoff": {
     "description": "Display label for PACU handover theater stage."
   },
@@ -2361,19 +2361,19 @@
   "@theaterStageCompleted": {
     "description": "Display label for completed theater stage."
   },
-  "theaterRecordDraft": "Draft",
+  "theaterRecordDraft": "Projet",
   "@theaterRecordDraft": {
     "description": "Display label for draft clinical record status."
   },
-  "theaterRecordFinal": "Final",
+  "theaterRecordFinal": "Étape finale",
   "@theaterRecordFinal": {
     "description": "Display label for final clinical record status."
   },
-  "theaterReadinessNotStarted": "Not started",
+  "theaterReadinessNotStarted": "Non démarrée.",
   "@theaterReadinessNotStarted": {
     "description": "Display label when theater readiness has no checklist items."
   },
-  "theaterReadinessProgress": "{completed}/{total} complete",
+  "theaterReadinessProgress": "{completed}/{total} complétéer",
   "@theaterReadinessProgress": {
     "description": "Progress label for theater readiness checklist.",
     "placeholders": {
@@ -2385,7 +2385,7 @@
       }
     }
   },
-  "opdTitle": "OPD flow",
+  "opdTitle": "Flux OPD",
   "@opdTitle": {
     "description": "OPD workspace title."
   },
@@ -2393,7 +2393,7 @@
   "@opdDescription": {
     "description": "OPD workspace description."
   },
-  "opdLoadingTitle": "Loading OPD flow",
+  "opdLoadingTitle": "Chargement du flux OPD",
   "@opdLoadingTitle": {
     "description": "Title while OPD data loads."
   },
@@ -2425,19 +2425,19 @@
   "@opdStartEncounterTooltip": {
     "description": "Tooltip for the shared OPD encounter start action."
   },
-  "opdSavedMessage": "OPD changes saved.",
+  "opdSavedMessage": "Modifications enregistrées.",
   "@opdSavedMessage": {
     "description": "Snackbar shown after an OPD operation succeeds."
   },
-  "opdArrivalsSummaryLabel": "Arrivals",
+  "opdArrivalsSummaryLabel": "Arrivées",
   "@opdArrivalsSummaryLabel": {
     "description": "Summary label for OPD arrivals."
   },
-  "opdQueueSummaryLabel": "Queue",
+  "opdQueueSummaryLabel": "File d’attente",
   "@opdQueueSummaryLabel": {
     "description": "Summary label for OPD queue entries."
   },
-  "opdActiveFlowSummaryLabel": "Active flows",
+  "opdActiveFlowSummaryLabel": "Flux actifs",
   "@opdActiveFlowSummaryLabel": {
     "description": "Summary label for active OPD flows."
   },
@@ -2457,7 +2457,7 @@
   "@opdFilterDialogTitle": {
     "description": "OPD table filter dialog title."
   },
-  "opdSearchFieldFilterLabel": "Search in",
+  "opdSearchFieldFilterLabel": "Rechercher dans",
   "@opdSearchFieldFilterLabel": {
     "description": "Label for choosing which OPD table field the search text applies to."
   },
@@ -2465,19 +2465,19 @@
   "@opdAllFieldsFilterLabel": {
     "description": "Option label for searching or filtering all available OPD table fields."
   },
-  "opdArrivalDateFilterLabel": "Arrival date",
+  "opdArrivalDateFilterLabel": "date d’arrivée ;",
   "@opdArrivalDateFilterLabel": {
     "description": "Label for the OPD arrival date range filter."
   },
-  "opdDateFromLabel": "From",
+  "opdDateFromLabel": "Du",
   "@opdDateFromLabel": {
     "description": "Label for the start date in OPD date range filters."
   },
-  "opdDateToLabel": "To",
+  "opdDateToLabel": "A",
   "@opdDateToLabel": {
     "description": "Label for the end date in OPD date range filters."
   },
-  "opdDatePickerButtonLabel": "Choose date",
+  "opdDatePickerButtonLabel": "Choisissez une date",
   "@opdDatePickerButtonLabel": {
     "description": "Button label for opening the OPD date picker."
   },
@@ -2485,31 +2485,31 @@
   "@opdInvalidDateMessage": {
     "description": "Validation message for invalid OPD date filter values."
   },
-  "opdArrivalRangeFilterLabel": "Arrival range",
+  "opdArrivalRangeFilterLabel": "Plage d'arrivée",
   "@opdArrivalRangeFilterLabel": {
     "description": "Label for the OPD quick arrival date range filter."
   },
-  "opdAnyArrivalDateOption": "Any arrival date",
+  "opdAnyArrivalDateOption": "date d'arrivée",
   "@opdAnyArrivalDateOption": {
     "description": "Option label for not restricting OPD rows by arrival date."
   },
-  "opdDatePresetToday": "Today",
+  "opdDatePresetToday": "Aujourdh’ui",
   "@opdDatePresetToday": {
     "description": "Quick OPD date filter option for today's arrivals."
   },
-  "opdDatePresetYesterday": "Yesterday",
+  "opdDatePresetYesterday": "Hier",
   "@opdDatePresetYesterday": {
     "description": "Quick OPD date filter option for yesterday's arrivals."
   },
-  "opdDatePresetLast7Days": "Last 7 days",
+  "opdDatePresetLast7Days": "7 derniers jours",
   "@opdDatePresetLast7Days": {
     "description": "Quick OPD date filter option for arrivals in the last seven days."
   },
-  "opdDatePresetLast30Days": "Last 30 days",
+  "opdDatePresetLast30Days": "Les 30 derniers jours",
   "@opdDatePresetLast30Days": {
     "description": "Quick OPD date filter option for arrivals in the last thirty days."
   },
-  "opdCategoryFilterLabel": "Category",
+  "opdCategoryFilterLabel": "Catégorie",
   "@opdCategoryFilterLabel": {
     "description": "OPD table category filter label."
   },
@@ -2517,11 +2517,11 @@
   "@opdStatusFilterLabel": {
     "description": "OPD table status filter label."
   },
-  "opdVisitTypeFilterLabel": "Visit type",
+  "opdVisitTypeFilterLabel": "Type de visite",
   "@opdVisitTypeFilterLabel": {
     "description": "OPD table visit type filter label."
   },
-  "opdQueueFilterLabel": "Queue",
+  "opdQueueFilterLabel": "File d’attente",
   "@opdQueueFilterLabel": {
     "description": "OPD table queue filter label."
   },
@@ -2533,7 +2533,7 @@
   "@opdBillingFilterLabel": {
     "description": "OPD table billing filter label."
   },
-  "opdNextActionFilterLabel": "Next action",
+  "opdNextActionFilterLabel": "Prochaine action",
   "@opdNextActionFilterLabel": {
     "description": "OPD table next action filter label."
   },
@@ -2541,7 +2541,7 @@
   "@opdAllCategoriesOption": {
     "description": "All categories option label in OPD filters."
   },
-  "opdAllStatusesOption": "All statuses",
+  "opdAllStatusesOption": "Tous les statuts",
   "@opdAllStatusesOption": {
     "description": "All statuses option label in OPD filters."
   },
@@ -2549,7 +2549,7 @@
   "@opdAllVisitTypesOption": {
     "description": "All visit types option label in OPD filters."
   },
-  "opdAllQueuesOption": "All queues",
+  "opdAllQueuesOption": "Toutes les files d'attente",
   "@opdAllQueuesOption": {
     "description": "All queues option label in OPD filters."
   },
@@ -2557,7 +2557,7 @@
   "@opdAllProvidersOption": {
     "description": "All providers option label in OPD filters."
   },
-  "opdAllBillingStatesOption": "All billing states",
+  "opdAllBillingStatesOption": "Tous les états de facturation",
   "@opdAllBillingStatesOption": {
     "description": "All billing states option label in OPD filters."
   },
@@ -2565,27 +2565,27 @@
   "@opdAllNextActionsOption": {
     "description": "All next actions option label in OPD filters."
   },
-  "opdSummaryAllPatientsLabel": "All Patients",
+  "opdSummaryAllPatientsLabel": "Tous les patients",
   "@opdSummaryAllPatientsLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryAllOpdPatientsLabel": "All OPD Patients",
+  "opdSummaryAllOpdPatientsLabel": "Tous les patients atteints d'OPH",
   "@opdSummaryAllOpdPatientsLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryActiveOpdLabel": "Active OPD",
+  "opdSummaryActiveOpdLabel": "OPD actif",
   "@opdSummaryActiveOpdLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryVitalsNeededLabel": "Vitals needed",
+  "opdSummaryVitalsNeededLabel": "Vitaux nécessaires",
   "@opdSummaryVitalsNeededLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryDoctorNeededLabel": "Doctor needed",
+  "opdSummaryDoctorNeededLabel": "Médecin en cas de besoin",
   "@opdSummaryDoctorNeededLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryWithDoctorLabel": "With doctor",
+  "opdSummaryWithDoctorLabel": "Avec médecin",
   "@opdSummaryWithDoctorLabel": {
     "description": "OPD display label."
   },
@@ -2601,7 +2601,7 @@
   "@opdSummaryPharmacyPendingLabel": {
     "description": "OPD display label."
   },
-  "opdSummaryDecisionNeededLabel": "Decision needed",
+  "opdSummaryDecisionNeededLabel": "1987 pas de décision nécessai re",
   "@opdSummaryDecisionNeededLabel": {
     "description": "OPD display label."
   },
@@ -2613,23 +2613,23 @@
   "@opdSummaryDischargedTodayLabel": {
     "description": "OPD display label."
   },
-  "opdStatusPaymentDueLabel": "Payment due",
+  "opdStatusPaymentDueLabel": "Montant à payer&#xA0;:",
   "@opdStatusPaymentDueLabel": {
     "description": "OPD display label."
   },
-  "opdStatusVitalsNeededLabel": "Vitals needed",
+  "opdStatusVitalsNeededLabel": "Vitaux nécessaires",
   "@opdStatusVitalsNeededLabel": {
     "description": "OPD display label."
   },
-  "opdStatusDoctorNeededLabel": "Doctor needed",
+  "opdStatusDoctorNeededLabel": "Médecin en cas de besoin",
   "@opdStatusDoctorNeededLabel": {
     "description": "OPD display label."
   },
-  "opdStatusWithDoctorLabel": "With doctor",
+  "opdStatusWithDoctorLabel": "Avec médecin",
   "@opdStatusWithDoctorLabel": {
     "description": "OPD display label."
   },
-  "opdStatusDoctorReviewLabel": "Doctor review",
+  "opdStatusDoctorReviewLabel": "L’avis du docteur",
   "@opdStatusDoctorReviewLabel": {
     "description": "OPD display label."
   },
@@ -2645,7 +2645,7 @@
   "@opdStatusInLabLabel": {
     "description": "OPD display label."
   },
-  "opdStatusResultsReadyLabel": "Results ready",
+  "opdStatusResultsReadyLabel": "RÉSULTATS PRÊTS",
   "@opdStatusResultsReadyLabel": {
     "description": "OPD display label."
   },
@@ -2657,7 +2657,7 @@
   "@opdStatusReportPendingLabel": {
     "description": "OPD display label."
   },
-  "opdStatusReportReadyLabel": "Report ready",
+  "opdStatusReportReadyLabel": "Rapport prêt",
   "@opdStatusReportReadyLabel": {
     "description": "OPD display label."
   },
@@ -2669,15 +2669,15 @@
   "@opdStatusPharmacyPendingLabel": {
     "description": "OPD display label."
   },
-  "opdStatusDispensingLabel": "Dispensing",
+  "opdStatusDispensingLabel": "Distribution",
   "@opdStatusDispensingLabel": {
     "description": "OPD display label."
   },
-  "opdStatusMedicinesDispensedLabel": "Medicines dispensed",
+  "opdStatusMedicinesDispensedLabel": "Médicaments distribués",
   "@opdStatusMedicinesDispensedLabel": {
     "description": "OPD display label."
   },
-  "opdStatusDecisionNeededLabel": "Decision needed",
+  "opdStatusDecisionNeededLabel": "1987 pas de décision nécessai re",
   "@opdStatusDecisionNeededLabel": {
     "description": "OPD display label."
   },
@@ -2689,11 +2689,11 @@
   "@opdStatusAdmittedLabel": {
     "description": "OPD display label."
   },
-  "opdStatusDischargedLabel": "Discharged",
+  "opdStatusDischargedLabel": "Sortie d&apos;hôpital du malade",
   "@opdStatusDischargedLabel": {
     "description": "OPD display label."
   },
-  "opdNextCollectSampleLabel": "Collect sample",
+  "opdNextCollectSampleLabel": "Prélever échantillon",
   "@opdNextCollectSampleLabel": {
     "description": "OPD display label."
   },
@@ -2709,7 +2709,7 @@
   "@opdNextLabHandoffLabel": {
     "description": "OPD display label."
   },
-  "opdNextPerformImagingLabel": "Perform imaging",
+  "opdNextPerformImagingLabel": "Effectuer des examens d'imagerie:&#10;",
   "@opdNextPerformImagingLabel": {
     "description": "OPD display label."
   },
@@ -2729,7 +2729,7 @@
   "@opdNextDiagnosticsPendingLabel": {
     "description": "OPD display label."
   },
-  "opdNextDispenseMedicineLabel": "Dispense medicine",
+  "opdNextDispenseMedicineLabel": "Distribuer des médicaments",
   "@opdNextDispenseMedicineLabel": {
     "description": "OPD display label."
   },
@@ -2757,7 +2757,7 @@
   "@opdAdmissionHandoffBody": {
     "description": "Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace."
   },
-  "opdAdmissionHandoffStayAction": "Stay in OPD",
+  "opdAdmissionHandoffStayAction": "Rester dans l'OPD",
   "@opdAdmissionHandoffStayAction": {
     "description": "Secondary action to remain in the OPD workspace instead of opening the inpatient workspace."
   },
@@ -2801,7 +2801,7 @@
   "@opdFlowStageFilterLabel": {
     "description": "Filter label for OPD flow stage."
   },
-  "opdArrivalsTitle": "Arrivals",
+  "opdArrivalsTitle": "Arrivées",
   "@opdArrivalsTitle": {
     "description": "OPD arrivals panel title."
   },
@@ -2889,7 +2889,7 @@
   "@opdPatientColumnLabel": {
     "description": "Patient column label."
   },
-  "opdCategoryColumnLabel": "Category",
+  "opdCategoryColumnLabel": "Catégorie",
   "@opdCategoryColumnLabel": {
     "description": "Category column label for the main OPD table."
   },
@@ -2897,7 +2897,7 @@
   "@opdStatusColumnLabel": {
     "description": "Status column label."
   },
-  "opdVisitTypeColumnLabel": "Visit type",
+  "opdVisitTypeColumnLabel": "Type de visite",
   "@opdVisitTypeColumnLabel": {
     "description": "Visit type column label for the main OPD table."
   },
@@ -2925,7 +2925,7 @@
   "@opdActionsColumnLabel": {
     "description": "Actions column label."
   },
-  "opdStageColumnLabel": "Stage",
+  "opdStageColumnLabel": "Étape",
   "@opdStageColumnLabel": {
     "description": "Stage column label."
   },
@@ -2945,11 +2945,11 @@
   "@opdNoRelatedRecordsLabel": {
     "description": "Empty label for related OPD records."
   },
-  "opdNoTimelineLabel": "No timeline entries",
+  "opdNoTimelineLabel": "Aucune entrée de chronologie",
   "@opdNoTimelineLabel": {
     "description": "Empty label for OPD timeline."
   },
-  "opdTimelineTitle": "Timeline",
+  "opdTimelineTitle": "Calendrier",
   "@opdTimelineTitle": {
     "description": "OPD timeline title."
   },
@@ -2961,11 +2961,11 @@
   "@opdFollowUpsTitle": {
     "description": "OPD follow-ups title."
   },
-  "opdPaymentStatusLabel": "Payment",
+  "opdPaymentStatusLabel": "Paiement",
   "@opdPaymentStatusLabel": {
     "description": "Payment status label."
   },
-  "opdPaymentPaidLabel": "Paid",
+  "opdPaymentPaidLabel": "Payant",
   "@opdPaymentPaidLabel": {
     "description": "Paid payment label."
   },
@@ -2981,7 +2981,7 @@
   "@opdBillingRequiredAmountLabel": {
     "description": "Label for consultation fee required before payment is complete."
   },
-  "opdBillingAmountPaidLabel": "Amount paid",
+  "opdBillingAmountPaidLabel": "Montant payé",
   "@opdBillingAmountPaidLabel": {
     "description": "Label for consultation amount already paid."
   },
@@ -3021,7 +3021,7 @@
   "@opdEncounterIdCopiedMessage": {
     "description": "Snackbar shown after copying an OPD encounter identifier."
   },
-  "opdPageLabel": "{from}-{to} of {total}",
+  "opdPageLabel": "{from}J{to} sur {total}",
   "@opdPageLabel": {
     "description": "Pagination label for OPD data lists.",
     "placeholders": {
@@ -3036,11 +3036,11 @@
       }
     }
   },
-  "opdPreviousPageLabel": "Previous page",
+  "opdPreviousPageLabel": "Page précédente",
   "@opdPreviousPageLabel": {
     "description": "Previous page label for OPD lists."
   },
-  "opdNextPageLabel": "Next page",
+  "opdNextPageLabel": "Page suivante",
   "@opdNextPageLabel": {
     "description": "Next page label for OPD lists."
   },
@@ -3145,11 +3145,11 @@
   "@opdProviderIdLabel": {
     "description": "Provider ID field label."
   },
-  "opdConsultationFeeLabel": "Consultation fee",
+  "opdConsultationFeeLabel": "Frais de consultation",
   "@opdConsultationFeeLabel": {
     "description": "Consultation fee field label."
   },
-  "opdCurrencyLabel": "Currency",
+  "opdCurrencyLabel": "Devise",
   "@opdCurrencyLabel": {
     "description": "Currency field label."
   },
@@ -3157,11 +3157,11 @@
   "@opdNotesLabel": {
     "description": "Notes field label."
   },
-  "opdQueueAction": "Queue",
+  "opdQueueAction": "File d’attente",
   "@opdQueueAction": {
     "description": "Action label to queue an appointment."
   },
-  "opdRescheduleAction": "Reschedule",
+  "opdRescheduleAction": "Planification",
   "@opdRescheduleAction": {
     "description": "Action label to reschedule an appointment."
   },
@@ -3181,7 +3181,7 @@
   "@opdAppointmentEndLabel": {
     "description": "Appointment end field label."
   },
-  "opdDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
+  "opdDateTimeHint": "AAAA-MM-JJTHH :MM :SS",
   "@opdDateTimeHint": {
     "description": "Date-time input hint for OPD forms."
   },
@@ -3189,7 +3189,7 @@
   "@opdSaveAction": {
     "description": "Save action label for OPD forms."
   },
-  "opdCancellationReasonLabel": "Cancellation reason",
+  "opdCancellationReasonLabel": "Motif d'annulation",
   "@opdCancellationReasonLabel": {
     "description": "Cancellation reason field label."
   },
@@ -3197,7 +3197,7 @@
   "@opdQueueStatusLabel": {
     "description": "Queue status field label."
   },
-  "opdReasonLabel": "Reason",
+  "opdReasonLabel": "Raison",
   "@opdReasonLabel": {
     "description": "Reason field label."
   },
@@ -3249,11 +3249,11 @@
   "@opdDispositionAction": {
     "description": "Action label to apply OPD disposition."
   },
-  "opdAmountLabel": "Amount",
+  "opdAmountLabel": "Montant",
   "@opdAmountLabel": {
     "description": "Amount field label."
   },
-  "opdPaymentMethodLabel": "Payment method",
+  "opdPaymentMethodLabel": "Mode de paiement",
   "@opdPaymentMethodLabel": {
     "description": "Payment method field label."
   },
@@ -3261,7 +3261,7 @@
   "@opdTransactionReferenceLabel": {
     "description": "Transaction reference field label."
   },
-  "opdStageLabel": "Stage",
+  "opdStageLabel": "Étape",
   "@opdStageLabel": {
     "description": "Stage field label."
   },
@@ -3377,7 +3377,7 @@
   "@opdEditVitalsAction": {
     "description": "Action label to edit OPD vitals."
   },
-  "opdDoctorReviewAction": "Doctor review",
+  "opdDoctorReviewAction": "L’avis du docteur",
   "@opdDoctorReviewAction": {
     "description": "Action label to record a doctor review."
   },
@@ -3425,7 +3425,7 @@
   "@opdClinicalNotesSummaryLabel": {
     "description": "Clinical notes summary label."
   },
-  "opdProceduresSummaryLabel": "Procedures",
+  "opdProceduresSummaryLabel": "Procédures",
   "@opdProceduresSummaryLabel": {
     "description": "Procedures summary label."
   },
@@ -3598,7 +3598,7 @@
   "@opdNoRouteDecisionLabel": {
     "description": "Option for saving triage without routing yet."
   },
-  "patientsTitle": "Patient registry",
+  "patientsTitle": "Le registre des patients ?",
   "@patientsTitle": {
     "description": "Patient registry screen title."
   },
@@ -3838,7 +3838,7 @@
   "@patientsPhoneIdentifierColumnLabel": {
     "description": "Patient list phone and identifier column label."
   },
-  "patientsAlertColumnLabel": "Alerts",
+  "patientsAlertColumnLabel": "Alertes",
   "@patientsAlertColumnLabel": {
     "description": "Patient list alert and allergy column label."
   },
@@ -3846,7 +3846,7 @@
   "@patientsVisitColumnLabel": {
     "description": "Patient list current or latest visit column label."
   },
-  "patientsNextActionColumnLabel": "Next action",
+  "patientsNextActionColumnLabel": "Prochaine action",
   "@patientsNextActionColumnLabel": {
     "description": "Patient list next permitted action column label."
   },
@@ -3886,7 +3886,7 @@
   "@patientsOpenRecordAction": {
     "description": "Next action label for opening a patient record."
   },
-  "patientsPageLabel": "{from}-{to} of {total}",
+  "patientsPageLabel": "{from}J{to} sur {total}",
   "@patientsPageLabel": {
     "description": "Patient list pagination range label.",
     "placeholders": {
@@ -3953,7 +3953,7 @@
   "@patientsGenderLabel": {
     "description": "Patient gender label."
   },
-  "patientsPhoneLabel": "Phone",
+  "patientsPhoneLabel": "Téléphone",
   "@patientsPhoneLabel": {
     "description": "Patient phone label."
   },
@@ -4129,7 +4129,7 @@
   "@patientsAppointmentStatusLabel": {
     "description": "Patient appointment status field label."
   },
-  "patientsAppointmentReasonLabel": "Reason",
+  "patientsAppointmentReasonLabel": "Raison",
   "@patientsAppointmentReasonLabel": {
     "description": "Patient appointment reason field label."
   },
@@ -4301,11 +4301,11 @@
   "@patientsDiagnosisLabel": {
     "description": "Patient diagnosis field label."
   },
-  "patientsConsultationFeeLabel": "Consultation fee",
+  "patientsConsultationFeeLabel": "Frais de consultation",
   "@patientsConsultationFeeLabel": {
     "description": "Patient consultation fee field label."
   },
-  "patientsCurrencyLabel": "Currency",
+  "patientsCurrencyLabel": "Devise",
   "@patientsCurrencyLabel": {
     "description": "Patient currency field label."
   },
@@ -4313,7 +4313,7 @@
   "@patientsMarkPaymentReceivedLabel": {
     "description": "Patient billing payment received checkbox label."
   },
-  "patientsPaymentMethodLabel": "Payment method",
+  "patientsPaymentMethodLabel": "Mode de paiement",
   "@patientsPaymentMethodLabel": {
     "description": "Patient payment method field label."
   },
@@ -4421,11 +4421,11 @@
   "@patientsReportVitalsSectionTitle": {
     "description": "Patient report vital signs section title."
   },
-  "patientsReportPaymentsSectionTitle": "Payments",
+  "patientsReportPaymentsSectionTitle": "Paiements",
   "@patientsReportPaymentsSectionTitle": {
     "description": "Patient report payments section title."
   },
-  "patientsReportPageNumberLabel": "Page {page} of {total}",
+  "patientsReportPageNumberLabel": "Page {page} sur {total}",
   "@patientsReportPageNumberLabel": {
     "description": "Patient report page number label.",
     "placeholders": {
@@ -4509,7 +4509,7 @@
   "@patientsConsentsSectionTitle": {
     "description": "Patient consents section title."
   },
-  "patientsTimelineSectionTitle": "Timeline",
+  "patientsTimelineSectionTitle": "Calendrier",
   "@patientsTimelineSectionTitle": {
     "description": "Patient timeline section title."
   },
@@ -4890,7 +4890,7 @@
   "@homeViewAllAction": {
     "description": "Action to open the full queue from a home dashboard panel."
   },
-  "homeTrendLast7Days": "Last 7 days",
+  "homeTrendLast7Days": "7 derniers jours",
   "@homeTrendLast7Days": {
     "description": "Subtitle for HR staffing trend chart on the home dashboard."
   },
@@ -4974,7 +4974,7 @@
   "@profileEmailLabel": {
     "description": "User profile email field label."
   },
-  "profilePhoneLabel": "Phone",
+  "profilePhoneLabel": "Téléphone",
   "@profilePhoneLabel": {
     "description": "User profile phone field label."
   },
@@ -5400,7 +5400,7 @@
   "@tenantFacilityChecklistTitle": {
     "description": "Setup checklist section title."
   },
-  "tenantFacilityChecklistBody": "{completed} of {total} setup areas complete.",
+  "tenantFacilityChecklistBody": "{completed} sur {total} setup areas complete.",
   "@tenantFacilityChecklistBody": {
     "description": "Setup checklist completion summary.",
     "placeholders": {
@@ -5484,7 +5484,7 @@
   "@tenantFacilityWizardStepRooms": {
     "description": "Wizard step label for rooms."
   },
-  "tenantFacilityWizardStepBeds": "Beds",
+  "tenantFacilityWizardStepBeds": "Lits",
   "@tenantFacilityWizardStepBeds": {
     "description": "Wizard step label for beds."
   },
@@ -5809,7 +5809,7 @@
   "@tenantFacilityDepartmentTypeLabel": {
     "description": "Department type field label."
   },
-  "tenantFacilityDepartmentBranchLabel": "Branch",
+  "tenantFacilityDepartmentBranchLabel": "Agence",
   "@tenantFacilityDepartmentBranchLabel": {
     "description": "Department branch selection field label."
   },

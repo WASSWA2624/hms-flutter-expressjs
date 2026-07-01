@@ -41,3 +41,7 @@ The script frees port 5201 first, uses a persistent Chrome profile under
 disables web debugger expression evaluation by default. This avoids DWDS
 `WebkitDebugger.enable` startup timeouts on larger debug builds. If expression
 evaluation is required for a debugging session, pass `-EnableExpressionEvaluation`.
+
+If Chrome debug still fails after a crash, pass `-ResetChromeProfile` or delete
+`.dart_tool/flutter_chrome_profile`. The script also auto-resets profiles larger
+than 150 MB, which commonly happens after interrupted runs on Windows.
