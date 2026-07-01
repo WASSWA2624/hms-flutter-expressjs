@@ -104,9 +104,26 @@ const main = async () => {
   }
 
   console.log('[e2e] activating registration');
+  const platformAdmin = await prisma.user.findFirst({
+    where: {
+      deleted_at: null,
+      status: 'ACTIVE',
+      roles: {
+        some: {
+          deleted_at: null,
+          role: { name: 'SUPER_ADMIN', deleted_at: null },
+        },
+      },
+    },
+    select: { id: true },
+  });
+
   await accessAdminWorkspaceService.activateRegistration(
     user.id,
-    { id: 'e2e-super-admin', roles: ['SUPER_ADMIN'] },
+    {
+      id: platformAdmin?.id || null,
+      roles: ['SUPER_ADMIN'],
+    },
     '127.0.0.1'
   );
 

@@ -29,8 +29,25 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.subscriptions_workspace.resolve_legacy.success', data);
 });
 
+const getUpgradeContext = asyncHandler(async (req, res) => {
+  const data = await subscriptionsWorkspaceService.getUpgradeContext(req.user);
+  return sendSuccess(res, 200, 'messages.subscriptions_workspace.upgrade_context.success', data);
+});
+
+const submitPaymentRequest = asyncHandler(async (req, res) => {
+  const data = await subscriptionsWorkspaceService.submitPaymentRequest(
+    req.body,
+    req.files,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(res, 201, 'messages.subscriptions_workspace.payment_request.success', data);
+});
+
 module.exports = {
   getReferenceData,
+  getUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
+  submitPaymentRequest,
 };

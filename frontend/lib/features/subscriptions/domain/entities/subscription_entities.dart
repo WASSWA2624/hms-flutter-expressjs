@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 enum SubscriptionPanel {
@@ -835,6 +836,69 @@ final class SubscriptionActionDraft {
   final String? reason;
   final String? notes;
   final String? paymentMethod;
+}
+
+@immutable
+final class SubscriptionUpgradePlanOption {
+  const SubscriptionUpgradePlanOption({
+    required this.id,
+    required this.label,
+    this.tierCode,
+    this.billingCycle,
+    this.price,
+  });
+
+  final String id;
+  final String label;
+  final String? tierCode;
+  final String? billingCycle;
+  final double? price;
+}
+
+@immutable
+final class SubscriptionUpgradeContext {
+  const SubscriptionUpgradeContext({
+    this.summary,
+    this.currentSubscriptionId,
+    this.currentPlanLabel,
+    this.recommendedPlanId,
+    this.plans = const <SubscriptionUpgradePlanOption>[],
+    this.paymentMethods = const <String>[],
+    this.platformAdminContact,
+    this.expiringSoonDays = 14,
+  });
+
+  final TenantSubscriptionSummary? summary;
+  final String? currentSubscriptionId;
+  final String? currentPlanLabel;
+  final String? recommendedPlanId;
+  final List<SubscriptionUpgradePlanOption> plans;
+  final List<String> paymentMethods;
+  final PlatformAdminContact? platformAdminContact;
+  final int expiringSoonDays;
+}
+
+@immutable
+final class SubscriptionPaymentRequestDraft {
+  const SubscriptionPaymentRequestDraft({
+    required this.targetPlanId,
+    required this.paymentMethod,
+    this.amount,
+    this.reference,
+    this.notes,
+    this.proofBytes,
+    this.proofFileName,
+    this.proofMimeType,
+  });
+
+  final String targetPlanId;
+  final String paymentMethod;
+  final String? amount;
+  final String? reference;
+  final String? notes;
+  final List<int>? proofBytes;
+  final String? proofFileName;
+  final String? proofMimeType;
 }
 
 const Object _unset = Object();

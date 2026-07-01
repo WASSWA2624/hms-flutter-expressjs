@@ -1,3 +1,4 @@
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -496,4 +497,74 @@ String _apiLabel(String? value) {
         return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
       })
       .join(' ');
+}
+
+final class SubscriptionUpgradeContextDto {
+  const SubscriptionUpgradeContextDto(this.json);
+
+  final SubscriptionJsonMap json;
+
+  factory SubscriptionUpgradeContextDto.fromResponse(Object? responseData) {
+    return SubscriptionUpgradeContextDto(_dataMap(responseData));
+  }
+
+  SubscriptionUpgradeContext toEntity() {
+    final Object? currentSubscriptionRaw = json['current_subscription'];
+    final Object? summaryRaw = json['subscription_summary'];
+    final Object? contactRaw = json['platform_admin_contact'];
+    final SubscriptionJsonMap currentSubscription =
+        currentSubscriptionRaw is Map
+        ? _map(currentSubscriptionRaw)
+        : const <String, Object?>{};
+
+    return SubscriptionUpgradeContext(
+      summary: summaryRaw is Map
+          ? TenantSubscriptionSummary.fromJson(_map(summaryRaw))
+          : null,
+      currentSubscriptionId: _string(currentSubscription['id']),
+      currentPlanLabel: _string(currentSubscription['plan_label']),
+      recommendedPlanId: _string(json['recommended_plan_id']),
+      plans: _list(json['plans'])
+          .map((SubscriptionJsonMap plan) {
+            final String id = _string(plan['id']) ?? '';
+            if (id.isEmpty) {
+              return null;
+            }
+            return SubscriptionUpgradePlanOption(
+              id: id,
+              label: _string(plan['name']) ?? _string(plan['plan_label']) ?? id,
+              tierCode: _string(plan['tier_code']),
+              billingCycle: _string(plan['billing_cycle']),
+              price: _double(plan['price']),
+            );
+          })
+          .whereType<SubscriptionUpgradePlanOption>()
+          .toList(growable: false),
+      paymentMethods: _list(json['payment_methods'])
+          .map((Object? value) => _string(value))
+          .whereType<String>()
+          .toList(growable: false),
+      platformAdminContact: contactRaw is Map
+          ? PlatformAdminContact.fromJson(_map(contactRaw))
+          : null,
+      expiringSoonDays: _int(json['expiring_soon_days']) ?? 14,
+    );
+  }
+
+  static double? _double(Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse('$value');
+  }
+
+  static int? _int(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value');
+  }
 }

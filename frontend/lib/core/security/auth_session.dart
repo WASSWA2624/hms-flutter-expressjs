@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 
 final class AuthSession {
   AuthSession({
@@ -11,6 +12,8 @@ final class AuthSession {
     Iterable<AppPermission> permissions = const <AppPermission>[],
     Iterable<AppModuleEntitlement> moduleEntitlements =
         const <AppModuleEntitlement>[],
+    this.subscriptionSummary,
+    this.platformAdminContact,
   }) : subject =
            _normalizedSubject(subject) ??
            _normalizedSubject(user?.email) ??
@@ -41,6 +44,8 @@ final class AuthSession {
   final AuthUserProfile? user;
   final Set<AppPermission> permissions;
   final Map<String, AppModuleEntitlement> moduleEntitlements;
+  final TenantSubscriptionSummary? subscriptionSummary;
+  final PlatformAdminContact? platformAdminContact;
 
   bool hasPermission(AppPermission permission) {
     return permissions.grants(permission);
@@ -56,6 +61,8 @@ final class AuthSession {
     AuthUserProfile? user,
     Iterable<AppPermission>? permissions,
     Iterable<AppModuleEntitlement>? moduleEntitlements,
+    TenantSubscriptionSummary? subscriptionSummary,
+    PlatformAdminContact? platformAdminContact,
   }) {
     return AuthSession(
       tokens: tokens ?? this.tokens,
@@ -63,6 +70,8 @@ final class AuthSession {
       user: user ?? this.user,
       permissions: permissions ?? this.permissions,
       moduleEntitlements: moduleEntitlements ?? this.moduleEntitlements.values,
+      subscriptionSummary: subscriptionSummary ?? this.subscriptionSummary,
+      platformAdminContact: platformAdminContact ?? this.platformAdminContact,
     );
   }
 

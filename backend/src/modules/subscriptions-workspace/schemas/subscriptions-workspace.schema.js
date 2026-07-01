@@ -67,12 +67,22 @@ const referenceDataQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
+const paymentRequestBodySchema = z.object({
+  target_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+  plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+  payment_method: z.string().trim().max(40).optional(),
+  amount: z.string().trim().max(40).optional().nullable(),
+  reference: z.string().trim().max(120).optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable(),
+});
+
 const resolveLegacyParamsSchema = z.object({
   resource: subscriptionsResourceSchema,
   id: uuidOrFriendlyIdentifierSchema,
 });
 
 module.exports = {
+  paymentRequestBodySchema,
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
   subscriptionsPanelSchema,

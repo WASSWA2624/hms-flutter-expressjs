@@ -14,6 +14,10 @@ const { translate, resolveLocale } = require('@lib/i18n');
 const { sendEmail } = require('@lib/notifications');
 const { logger } = require('@lib/logging');
 const { resolveTenantModuleEntitlements } = require('@lib/subscriptions/tenant-entitlements');
+const {
+  resolvePlatformAdminContact,
+  resolveTenantSubscriptionSummary,
+} = require('@lib/subscriptions/tenant-subscription-summary');
 const env = require('@config/env');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -164,10 +168,16 @@ const enrichAuthUserPayload = async (user = {}) => {
     return base;
   }
 
-  const module_entitlements = await resolveTenantModuleEntitlements(user.tenant_id);
+  const [module_entitlements, subscription_summary] = await Promise.all([
+    resolveTenantModuleEntitlements(user.tenant_id),
+    resolveTenantSubscriptionSummary(user.tenant_id),
+  ]);
+
   return {
     ...base,
     module_entitlements,
+    subscription_summary,
+    platform_admin_contact: resolvePlatformAdminContact(),
   };
 };
 

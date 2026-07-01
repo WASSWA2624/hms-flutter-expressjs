@@ -125,13 +125,17 @@ class _CommunicationsWorkspaceContentState
 
     _routeSubscription = ref.listenManual(
       communicationsWorkspaceControllerProvider,
-      (AsyncValue<Result<CommunicationsWorkspaceState>>? previous,
-          AsyncValue<Result<CommunicationsWorkspaceState>> next) {
-        final CommunicationsWorkspaceState? previousState =
-            previous?.asData?.value.when(
-          success: (CommunicationsWorkspaceState value) => value,
-          failure: (_) => null,
-        );
+      (
+        AsyncValue<Result<CommunicationsWorkspaceState>>? previous,
+        AsyncValue<Result<CommunicationsWorkspaceState>> next,
+      ) {
+        final CommunicationsWorkspaceState? previousState = previous
+            ?.asData
+            ?.value
+            .when(
+              success: (CommunicationsWorkspaceState value) => value,
+              failure: (_) => null,
+            );
         final CommunicationsWorkspaceState? nextState = next.asData?.value.when(
           success: (CommunicationsWorkspaceState value) => value,
           failure: (_) => null,

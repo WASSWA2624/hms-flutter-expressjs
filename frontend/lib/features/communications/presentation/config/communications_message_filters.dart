@@ -89,7 +89,9 @@ CommunicationsMessageFilter communicationsMessageFilterById(String id) {
   );
 }
 
-String communicationsMessageFilterIdForQuery(CommunicationsWorkspaceQuery query) {
+String communicationsMessageFilterIdForQuery(
+  CommunicationsWorkspaceQuery query,
+) {
   if (query.unreadOnly) {
     return kCommunicationsMessageFilterUnread;
   }

@@ -1407,6 +1407,8 @@
   "messages.subscription_plan.list_retrieved": "Subscription plans retrieved successfully",
   "messages.subscription_plan.retrieved": "Subscription plan retrieved successfully",
   "messages.subscription_plan.updated": "Subscription plan updated successfully",
+  "messages.subscriptions_workspace.payment_request.success": "Subscription payment request submitted successfully",
+  "messages.subscriptions_workspace.upgrade_context.success": "Subscription upgrade context retrieved successfully",
   "messages.subscriptions_workspace.reference_data.success": "Subscriptions workspace reference data retrieved successfully",
   "messages.subscriptions_workspace.resolve_legacy.success": "Subscriptions legacy route resolved successfully",
   "messages.subscriptions_workspace.workspace.success": "Subscriptions workspace retrieved successfully",

@@ -2,6 +2,10 @@ const { HttpError } = require('@lib/errors');
 const { ROLES } = require('@config/roles');
 const repository = require('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 const {
+  getUpgradeContext: loadUpgradeContext,
+  submitPaymentRequest: createPaymentRequest,
+} = require('@lib/subscriptions/subscription-payment-request');
+const {
   SUBSCRIPTIONS_BILLING_CYCLES,
   SUBSCRIPTIONS_CHANGE_STATUS_VALUES,
   SUBSCRIPTIONS_FIT_STATUS_VALUES,
@@ -691,6 +695,8 @@ const resolveLegacyRoute = async (resource, identifier, user = {}) => {
 
 module.exports = {
   getReferenceData,
+  getUpgradeContext: loadUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
+  submitPaymentRequest: createPaymentRequest,
 };

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 
 final class AuthSessionDto {
   const AuthSessionDto({
@@ -12,6 +13,8 @@ final class AuthSessionDto {
     this.user,
     this.permissions = const <AppPermission>[],
     this.moduleEntitlements = const <AppModuleEntitlement>[],
+    this.subscriptionSummary,
+    this.platformAdminContact,
   });
 
   factory AuthSessionDto.fromResponseData(Object? data) {
@@ -24,22 +27,30 @@ final class AuthSessionDto {
 
   factory AuthSessionDto.fromJson(Map<String, Object?> json) {
     final user = json['user'];
+    final Map<String, Object?>? userMap =
+        user is Map<String, Object?> ? user : null;
     return AuthSessionDto(
       accessToken: _requiredString(json, 'access_token'),
       refreshToken: _optionalString(json, 'refresh_token'),
-      subject: user is Map<String, Object?>
-          ? _userSubject(user)
+      subject: userMap != null
+          ? _userSubject(userMap)
           : _subjectFromToken(_requiredString(json, 'access_token')),
-      user: user is Map<String, Object?>
-          ? _userProfileFromUser(user)
+      user: userMap != null
+          ? _userProfileFromUser(userMap)
           : _userProfileFromToken(_requiredString(json, 'access_token')),
-      permissions: user is Map<String, Object?>
-          ? _permissionsFromUser(user)
+      permissions: userMap != null
+          ? _permissionsFromUser(userMap)
           : _permissionsFromToken(_requiredString(json, 'access_token')),
       moduleEntitlements: _moduleEntitlementsFromResponse(
         json,
         _requiredString(json, 'access_token'),
       ),
+      subscriptionSummary: userMap == null
+          ? null
+          : subscriptionSummaryFromResponseData(userMap),
+      platformAdminContact: userMap == null
+          ? null
+          : platformAdminContactFromResponseData(userMap),
     );
   }
 
@@ -49,6 +60,8 @@ final class AuthSessionDto {
   final AuthUserProfile? user;
   final List<AppPermission> permissions;
   final List<AppModuleEntitlement> moduleEntitlements;
+  final TenantSubscriptionSummary? subscriptionSummary;
+  final PlatformAdminContact? platformAdminContact;
 
   AuthSession toEntity() {
     return AuthSession(
@@ -61,6 +74,8 @@ final class AuthSessionDto {
       user: user,
       permissions: permissions,
       moduleEntitlements: moduleEntitlements,
+      subscriptionSummary: subscriptionSummary,
+      platformAdminContact: platformAdminContact,
     );
   }
 
@@ -124,6 +139,37 @@ final class AuthSessionDto {
     }
 
     return _permissionsFromUser(data);
+  }
+
+  static TenantSubscriptionSummary? subscriptionSummaryFromResponseData(
+    Object? data,
+  ) {
+    if (data is! Map<String, Object?>) {
+      return null;
+    }
+
+    final summary = data['subscription_summary'] ?? data['subscriptionSummary'];
+    if (summary is! Map<String, Object?>) {
+      return null;
+    }
+
+    return TenantSubscriptionSummary.fromJson(summary);
+  }
+
+  static PlatformAdminContact? platformAdminContactFromResponseData(
+    Object? data,
+  ) {
+    if (data is! Map<String, Object?>) {
+      return null;
+    }
+
+    final contact =
+        data['platform_admin_contact'] ?? data['platformAdminContact'];
+    if (contact is! Map<String, Object?>) {
+      return null;
+    }
+
+    return PlatformAdminContact.fromJson(contact);
   }
 
   static AuthUserProfile? _userProfileFromUser(Map<String, Object?> user) {

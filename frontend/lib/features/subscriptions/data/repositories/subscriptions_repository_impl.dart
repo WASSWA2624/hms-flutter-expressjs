@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
@@ -267,6 +268,58 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
         const <String>['retry'],
       ),
       data: _withoutEmpty(<String, Object?>{'retry_reason': draft.reason}),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<SubscriptionUpgradeContext>> getUpgradeContext() {
+    return _apiClient.get<SubscriptionUpgradeContext>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'upgrade-context',
+        const <String>[],
+      ),
+      decoder: (Object? data) {
+        return SubscriptionUpgradeContextDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<void>> submitPaymentRequest(
+    SubscriptionPaymentRequestDraft draft,
+  ) {
+    final FormData formData = FormData.fromMap(<String, Object?>{
+      'target_plan_id': draft.targetPlanId,
+      'payment_method': draft.paymentMethod,
+      if (draft.amount != null) 'amount': draft.amount,
+      if (draft.reference != null) 'reference': draft.reference,
+      if (draft.notes != null) 'notes': draft.notes,
+    });
+
+    if (draft.proofBytes != null && draft.proofFileName != null) {
+      formData.files.add(
+        MapEntry<String, MultipartFile>(
+          'proof',
+          MultipartFile.fromBytes(
+            draft.proofBytes!,
+            filename: draft.proofFileName,
+            contentType: draft.proofMimeType == null
+                ? null
+                : DioMediaType.parse(draft.proofMimeType!),
+          ),
+        ),
+      );
+    }
+
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'payment-requests',
+        const <String>[],
+      ),
+      data: formData,
       decoder: (_) {},
     );
   }

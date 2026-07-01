@@ -152,6 +152,44 @@ void main() {
       },
     );
 
+    test('maps email verification required forbidden responses', () {
+      final requestOptions = RequestOptions(path: '/auth/login');
+      final failure = mapper.map(
+        DioException(
+          requestOptions: requestOptions,
+          response: Response<Object?>(
+            requestOptions: requestOptions,
+            statusCode: 403,
+            data: <String, Object?>{'code': 'EMAIL_VERIFICATION_REQUIRED'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(failure.category, AppFailureCategory.forbidden);
+      expect(failure.code, 'auth.account_pending');
+    });
+
+    test('maps pending approval forbidden responses', () {
+      final requestOptions = RequestOptions(path: '/auth/login');
+      final failure = mapper.map(
+        DioException(
+          requestOptions: requestOptions,
+          response: Response<Object?>(
+            requestOptions: requestOptions,
+            statusCode: 403,
+            data: <String, Object?>{'code': 'ACCOUNT_PENDING_APPROVAL'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(failure.category, AppFailureCategory.forbidden);
+      expect(failure.code, 'auth.account_pending_approval');
+    });
+
     test('maps connection and cancellation errors to typed failures', () {
       final requestOptions = RequestOptions(path: '/readiness');
 

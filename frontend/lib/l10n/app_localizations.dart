@@ -2098,6 +2098,162 @@ abstract class AppLocalizations {
   /// **'Plans'**
   String get navigationSubscriptionsShortLabel;
 
+  /// Shell header label when the tenant subscription is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribed'**
+  String get subscriptionHeaderActiveLabel;
+
+  /// Shell header label when the tenant subscription is expiring soon.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew soon'**
+  String get subscriptionHeaderExpiringSoonLabel;
+
+  /// Shell header label when the tenant subscription expires within the configured threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires in {days} days'**
+  String subscriptionHeaderExpiresInDaysLabel(int days);
+
+  /// Shell header label when the tenant subscription is expired or past due.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription expired'**
+  String get subscriptionHeaderExpiredLabel;
+
+  /// Shell header action label to open the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get subscriptionHeaderUpgradeLabel;
+
+  /// Tooltip for the shell header subscription action.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription and billing'**
+  String get subscriptionHeaderTooltip;
+
+  /// Title for the subscription upgrade and payment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade subscription'**
+  String get subscriptionUpgradeDialogTitle;
+
+  /// Body text for the subscription upgrade and payment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a plan and submit payment to keep full access after your trial or renewal date.'**
+  String get subscriptionUpgradeDialogBody;
+
+  /// Label for the plan selector in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get subscriptionUpgradePlanLabel;
+
+  /// Label for the payment method selector in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get subscriptionUpgradePaymentMethodLabel;
+
+  /// Label for the amount field in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid'**
+  String get subscriptionUpgradeAmountLabel;
+
+  /// Label for the payment reference field in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference'**
+  String get subscriptionUpgradeReferenceLabel;
+
+  /// Label for optional notes in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get subscriptionUpgradeNotesLabel;
+
+  /// Label for proof-of-payment upload in the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of payment'**
+  String get subscriptionUpgradeProofLabel;
+
+  /// Action label to attach proof of payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach proof'**
+  String get subscriptionUpgradeAttachProofAction;
+
+  /// Action label to remove an attached proof of payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get subscriptionUpgradeRemoveProofAction;
+
+  /// Section title for platform admin contact details in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform billing contact'**
+  String get subscriptionUpgradeAdminContactTitle;
+
+  /// Helper text for platform admin contact details in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'After paying, you can contact the platform team to confirm activation.'**
+  String get subscriptionUpgradeAdminContactBody;
+
+  /// Submit action label for the subscription upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit payment'**
+  String get subscriptionUpgradeSubmitAction;
+
+  /// Success message after submitting a subscription payment request.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment submitted. The platform team will review and activate your subscription.'**
+  String get subscriptionUpgradeSubmittedMessage;
+
+  /// Payment method label for manual bank transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get subscriptionPaymentMethodBankTransfer;
+
+  /// Payment method label for mobile money.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money'**
+  String get subscriptionPaymentMethodMobileMoney;
+
+  /// Payment method label for credit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit card'**
+  String get subscriptionPaymentMethodCreditCard;
+
+  /// Payment method label for debit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit card'**
+  String get subscriptionPaymentMethodDebitCard;
+
+  /// Payment method label for cash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get subscriptionPaymentMethodCash;
+
+  /// Payment method label for other payment types.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get subscriptionPaymentMethodOther;
+
   /// Navigation label for the emergency workspace.
   ///
   /// In en, this message translates to:

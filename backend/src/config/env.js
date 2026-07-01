@@ -189,6 +189,14 @@ const buildEnv = () => {
     'TRIAL_DURATION_DAYS',
     { min: 1, max: 1095 }
   );
+  const SUBSCRIPTION_EXPIRING_SOON_DAYS = parseBoundedInteger(
+    process.env.SUBSCRIPTION_EXPIRING_SOON_DAYS,
+    14,
+    'SUBSCRIPTION_EXPIRING_SOON_DAYS',
+    { min: 1, max: 90 }
+  );
+  const PLATFORM_ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || null;
+  const PLATFORM_ADMIN_PHONE = process.env.PLATFORM_ADMIN_PHONE || null;
   const SMTP_HOST = process.env.SMTP_HOST || null;
   const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : null;
   const SMTP_USER = process.env.SMTP_USER || null;
@@ -363,6 +371,9 @@ const buildEnv = () => {
     JWT_REFRESH_TOKEN_EXPIRATION,
     AUTH_SESSION_TTL_DAYS,
     TRIAL_DURATION_DAYS,
+    SUBSCRIPTION_EXPIRING_SOON_DAYS,
+    PLATFORM_ADMIN_EMAIL,
+    PLATFORM_ADMIN_PHONE,
     SMTP_HOST,
     SMTP_PORT,
     SMTP_USER,
@@ -446,6 +457,9 @@ const envKeys = [
   'JWT_REFRESH_TOKEN_EXPIRATION',
   'AUTH_SESSION_TTL_DAYS',
   'TRIAL_DURATION_DAYS',
+  'SUBSCRIPTION_EXPIRING_SOON_DAYS',
+  'PLATFORM_ADMIN_EMAIL',
+  'PLATFORM_ADMIN_PHONE',
   'SMTP_HOST',
   'SMTP_PORT',
   'SMTP_USER',

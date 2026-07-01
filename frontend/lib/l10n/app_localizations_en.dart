@@ -1059,6 +1059,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSubscriptionsShortLabel => 'Plans';
 
   @override
+  String get subscriptionHeaderActiveLabel => 'Subscribed';
+
+  @override
+  String get subscriptionHeaderExpiringSoonLabel => 'Renew soon';
+
+  @override
+  String subscriptionHeaderExpiresInDaysLabel(int days) {
+    return 'Expires in $days days';
+  }
+
+  @override
+  String get subscriptionHeaderExpiredLabel => 'Subscription expired';
+
+  @override
+  String get subscriptionHeaderUpgradeLabel => 'Upgrade';
+
+  @override
+  String get subscriptionHeaderTooltip => 'Manage subscription and billing';
+
+  @override
+  String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
+
+  @override
+  String get subscriptionUpgradeDialogBody =>
+      'Choose a plan and submit payment to keep full access after your trial or renewal date.';
+
+  @override
+  String get subscriptionUpgradePlanLabel => 'Plan';
+
+  @override
+  String get subscriptionUpgradePaymentMethodLabel => 'Payment method';
+
+  @override
+  String get subscriptionUpgradeAmountLabel => 'Amount paid';
+
+  @override
+  String get subscriptionUpgradeReferenceLabel => 'Payment reference';
+
+  @override
+  String get subscriptionUpgradeNotesLabel => 'Notes';
+
+  @override
+  String get subscriptionUpgradeProofLabel => 'Proof of payment';
+
+  @override
+  String get subscriptionUpgradeAttachProofAction => 'Attach proof';
+
+  @override
+  String get subscriptionUpgradeRemoveProofAction => 'Remove attachment';
+
+  @override
+  String get subscriptionUpgradeAdminContactTitle => 'Platform billing contact';
+
+  @override
+  String get subscriptionUpgradeAdminContactBody =>
+      'After paying, you can contact the platform team to confirm activation.';
+
+  @override
+  String get subscriptionUpgradeSubmitAction => 'Submit payment';
+
+  @override
+  String get subscriptionUpgradeSubmittedMessage =>
+      'Payment submitted. The platform team will review and activate your subscription.';
+
+  @override
+  String get subscriptionPaymentMethodBankTransfer => 'Bank transfer';
+
+  @override
+  String get subscriptionPaymentMethodMobileMoney => 'Mobile money';
+
+  @override
+  String get subscriptionPaymentMethodCreditCard => 'Credit card';
+
+  @override
+  String get subscriptionPaymentMethodDebitCard => 'Debit card';
+
+  @override
+  String get subscriptionPaymentMethodCash => 'Cash';
+
+  @override
+  String get subscriptionPaymentMethodOther => 'Other';
+
+  @override
   String get navigationEmergencyLabel => 'Emergency';
 
   @override

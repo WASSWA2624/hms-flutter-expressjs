@@ -1375,6 +1375,115 @@
   "@navigationSubscriptionsShortLabel": {
     "description": "Compact navigation label for the subscriptions workspace."
   },
+  "subscriptionHeaderActiveLabel": "Subscribed",
+  "@subscriptionHeaderActiveLabel": {
+    "description": "Shell header label when the tenant subscription is active."
+  },
+  "subscriptionHeaderExpiringSoonLabel": "Renew soon",
+  "@subscriptionHeaderExpiringSoonLabel": {
+    "description": "Shell header label when the tenant subscription is expiring soon."
+  },
+  "subscriptionHeaderExpiresInDaysLabel": "Expires in {days} days",
+  "@subscriptionHeaderExpiresInDaysLabel": {
+    "description": "Shell header label when the tenant subscription expires within the configured threshold.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionHeaderExpiredLabel": "Subscription expired",
+  "@subscriptionHeaderExpiredLabel": {
+    "description": "Shell header label when the tenant subscription is expired or past due."
+  },
+  "subscriptionHeaderUpgradeLabel": "Upgrade",
+  "@subscriptionHeaderUpgradeLabel": {
+    "description": "Shell header action label to open the subscription upgrade dialog."
+  },
+  "subscriptionHeaderTooltip": "Manage subscription and billing",
+  "@subscriptionHeaderTooltip": {
+    "description": "Tooltip for the shell header subscription action."
+  },
+  "subscriptionUpgradeDialogTitle": "Upgrade subscription",
+  "@subscriptionUpgradeDialogTitle": {
+    "description": "Title for the subscription upgrade and payment dialog."
+  },
+  "subscriptionUpgradeDialogBody": "Choose a plan and submit payment to keep full access after your trial or renewal date.",
+  "@subscriptionUpgradeDialogBody": {
+    "description": "Body text for the subscription upgrade and payment dialog."
+  },
+  "subscriptionUpgradePlanLabel": "Plan",
+  "@subscriptionUpgradePlanLabel": {
+    "description": "Label for the plan selector in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradePaymentMethodLabel": "Payment method",
+  "@subscriptionUpgradePaymentMethodLabel": {
+    "description": "Label for the payment method selector in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeAmountLabel": "Amount paid",
+  "@subscriptionUpgradeAmountLabel": {
+    "description": "Label for the amount field in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeReferenceLabel": "Payment reference",
+  "@subscriptionUpgradeReferenceLabel": {
+    "description": "Label for the payment reference field in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeNotesLabel": "Notes",
+  "@subscriptionUpgradeNotesLabel": {
+    "description": "Label for optional notes in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeProofLabel": "Proof of payment",
+  "@subscriptionUpgradeProofLabel": {
+    "description": "Label for proof-of-payment upload in the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeAttachProofAction": "Attach proof",
+  "@subscriptionUpgradeAttachProofAction": {
+    "description": "Action label to attach proof of payment."
+  },
+  "subscriptionUpgradeRemoveProofAction": "Remove attachment",
+  "@subscriptionUpgradeRemoveProofAction": {
+    "description": "Action label to remove an attached proof of payment."
+  },
+  "subscriptionUpgradeAdminContactTitle": "Platform billing contact",
+  "@subscriptionUpgradeAdminContactTitle": {
+    "description": "Section title for platform admin contact details in the upgrade dialog."
+  },
+  "subscriptionUpgradeAdminContactBody": "After paying, you can contact the platform team to confirm activation.",
+  "@subscriptionUpgradeAdminContactBody": {
+    "description": "Helper text for platform admin contact details in the upgrade dialog."
+  },
+  "subscriptionUpgradeSubmitAction": "Submit payment",
+  "@subscriptionUpgradeSubmitAction": {
+    "description": "Submit action label for the subscription upgrade dialog."
+  },
+  "subscriptionUpgradeSubmittedMessage": "Payment submitted. The platform team will review and activate your subscription.",
+  "@subscriptionUpgradeSubmittedMessage": {
+    "description": "Success message after submitting a subscription payment request."
+  },
+  "subscriptionPaymentMethodBankTransfer": "Bank transfer",
+  "@subscriptionPaymentMethodBankTransfer": {
+    "description": "Payment method label for manual bank transfer."
+  },
+  "subscriptionPaymentMethodMobileMoney": "Mobile money",
+  "@subscriptionPaymentMethodMobileMoney": {
+    "description": "Payment method label for mobile money."
+  },
+  "subscriptionPaymentMethodCreditCard": "Credit card",
+  "@subscriptionPaymentMethodCreditCard": {
+    "description": "Payment method label for credit card."
+  },
+  "subscriptionPaymentMethodDebitCard": "Debit card",
+  "@subscriptionPaymentMethodDebitCard": {
+    "description": "Payment method label for debit card."
+  },
+  "subscriptionPaymentMethodCash": "Cash",
+  "@subscriptionPaymentMethodCash": {
+    "description": "Payment method label for cash."
+  },
+  "subscriptionPaymentMethodOther": "Other",
+  "@subscriptionPaymentMethodOther": {
+    "description": "Payment method label for other payment types."
+  },
   "navigationEmergencyLabel": "Emergency",
   "@navigationEmergencyLabel": {
     "description": "Navigation label for the emergency workspace."

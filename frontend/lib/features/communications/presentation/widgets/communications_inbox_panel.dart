@@ -72,8 +72,7 @@ class CommunicationsInboxPanel extends ConsumerWidget {
                   child: AppWorkspaceStatePanel.empty(
                     title:
                         context.l10n.communicationsNoConversationSelectedTitle,
-                    body:
-                        context.l10n.communicationsNoConversationSelectedBody,
+                    body: context.l10n.communicationsNoConversationSelectedBody,
                     icon: Icons.forum_outlined,
                     minHeight: 420,
                   ),

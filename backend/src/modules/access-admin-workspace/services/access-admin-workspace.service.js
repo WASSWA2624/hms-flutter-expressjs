@@ -5,6 +5,7 @@ const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
+const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
 const authRepository = require('@repositories/auth/auth.repository');
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 
@@ -19,6 +20,7 @@ const ACCESS_RESOURCES = [
   'demo-users',
   'module-entitlements',
   'registration-follow-ups',
+  'subscription-payment-requests',
 ];
 
 const ACCESS_PANELS = [
@@ -28,6 +30,7 @@ const ACCESS_PANELS = [
   { id: 'permissions', label_key: 'access_admin.panels.permissions', default_resource: 'permissions' },
   { id: 'entitlements', label_key: 'access_admin.panels.entitlements', default_resource: 'module-entitlements' },
   { id: 'registrations', label_key: 'access_admin.panels.registrations', default_resource: 'registration-follow-ups' },
+  { id: 'payments', label_key: 'access_admin.panels.payments', default_resource: 'subscription-payment-requests' },
   { id: 'demo', label_key: 'access_admin.panels.demo', default_resource: 'demo-users' },
 ];
 
@@ -45,6 +48,7 @@ const RESOURCE_PANEL_MAP = {
   'demo-users': 'demo',
   'module-entitlements': 'entitlements',
   'registration-follow-ups': 'registrations',
+  'subscription-payment-requests': 'payments',
 };
 
 const CLINICAL_FLOW_ROLES = new Set([
@@ -357,6 +361,8 @@ const serializeItems = (resource, items = [], subscription = null) => {
       return items.map((entry) => serializeModuleEntitlement(entry, subscription));
     case 'registration-follow-ups':
       return items.map(serializeRegistrationFollowUp);
+    case 'subscription-payment-requests':
+      return items;
     default:
       return [];
   }
@@ -394,6 +400,29 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
     };
   }
 
+  if (resource === 'subscription-payment-requests') {
+    const items = await listPendingPaymentRequests();
+    const search = String(filters.search || '').trim().toLowerCase();
+    const filtered = search
+      ? items.filter((entry) => {
+          const haystack = [
+            entry.tenant_label,
+            entry.plan_label,
+            entry.reference,
+            entry.submitted_by_email,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(search);
+        })
+      : items;
+    return {
+      items: filtered.slice(skip, skip + take),
+      total: filtered.length,
+    };
+  }
+
   const finderMap = {
     users: repository.findUsers,
     roles: repository.findRoles,
@@ -413,17 +442,18 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
 const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   const { panel, resource } = resolveResource(query);
   const isRegistrationQueue = resource === 'registration-follow-ups';
+  const isPaymentRequestQueue = resource === 'subscription-payment-requests';
 
-  if (isRegistrationQueue) {
+  if (isRegistrationQueue || isPaymentRequestQueue) {
     requireSuperAdmin(user);
   }
 
-  const scopeResult = isRegistrationQueue
+  const scopeResult = isRegistrationQueue || isPaymentRequestQueue
     ? { state: 'ready', scope: { tenant_id: null, facility_id: null } }
     : await repository.resolveWorkspaceScope({ filters: query, user });
   const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
 
-  if (!isRegistrationQueue && scopeResult.state === 'tenant_context_required') {
+  if (!isRegistrationQueue && !isPaymentRequestQueue && scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);
     return {
       state: 'tenant_context_required',

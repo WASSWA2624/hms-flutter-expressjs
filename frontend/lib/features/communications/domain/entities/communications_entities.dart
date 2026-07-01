@@ -257,11 +257,8 @@ final class CommunicationUser {
   final String? initials;
   final List<String> roles;
 
-  String get displayName => resolvePersonDisplayName(
-    email: email,
-    displayName: name,
-    fallbackId: id,
-  );
+  String get displayName =>
+      resolvePersonDisplayName(email: email, displayName: name, fallbackId: id);
 }
 
 @immutable

@@ -108,6 +108,7 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.userProfile,
     super.unreadNotificationCount,
     super.systemIndicators,
+    super.headerTrailingActions,
     super.onNotificationsSelected,
     super.onProfileSelected,
     super.onSettingsSelected,
@@ -150,6 +151,7 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.userProfile,
     this.unreadNotificationCount = 0,
     this.systemIndicators = const <ShellSystemIndicator>[],
+    this.headerTrailingActions,
     this.onNotificationsSelected,
     this.onProfileSelected,
     this.onSettingsSelected,
@@ -188,6 +190,7 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final UserMenuProfileData? userProfile;
   final int unreadNotificationCount;
   final List<ShellSystemIndicator> systemIndicators;
+  final Widget? headerTrailingActions;
   final VoidCallback? onNotificationsSelected;
   final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
@@ -256,6 +259,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   userProfile: widget.userProfile,
                   unreadNotificationCount: widget.unreadNotificationCount,
                   systemIndicators: widget.systemIndicators,
+                  headerTrailingActions: widget.headerTrailingActions,
                   onNotificationsSelected: widget.onNotificationsSelected,
                   onProfileSelected: widget.onProfileSelected,
                   onSettingsSelected: widget.onSettingsSelected,
@@ -412,6 +416,7 @@ class AppMenuBar extends StatelessWidget {
     required this.signedInLabel,
     required this.unreadNotificationCount,
     required this.systemIndicators,
+    this.headerTrailingActions,
     required this.toggleTooltip,
     required this.onToggleNavigation,
     this.onNotificationsSelected,
@@ -443,6 +448,7 @@ class AppMenuBar extends StatelessWidget {
   final String signedInLabel;
   final int unreadNotificationCount;
   final List<ShellSystemIndicator> systemIndicators;
+  final Widget? headerTrailingActions;
   final String toggleTooltip;
   final VoidCallback onToggleNavigation;
   final VoidCallback? onNotificationsSelected;
@@ -504,6 +510,10 @@ class AppMenuBar extends StatelessWidget {
               if (!isMobile && systemIndicators.isNotEmpty) ...<Widget>[
                 SizedBox(width: theme.spacing.xs),
                 _SystemIndicatorsBar(indicators: systemIndicators),
+              ],
+              if (headerTrailingActions != null) ...<Widget>[
+                SizedBox(width: theme.spacing.xs),
+                headerTrailingActions!,
               ],
               AppConnectivityIndicator(
                 status: connectivityStatus,

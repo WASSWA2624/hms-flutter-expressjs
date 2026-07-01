@@ -54,4 +54,10 @@ abstract interface class SubscriptionsRepository {
     String subscriptionInvoiceId,
     SubscriptionActionDraft draft,
   );
+
+  Future<Result<SubscriptionUpgradeContext>> getUpgradeContext();
+
+  Future<Result<void>> submitPaymentRequest(
+    SubscriptionPaymentRequestDraft draft,
+  );
 }

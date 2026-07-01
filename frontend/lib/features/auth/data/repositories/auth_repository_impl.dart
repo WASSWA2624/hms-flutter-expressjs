@@ -297,12 +297,24 @@ final class AuthRepositoryImpl implements AuthRepository {
           final permissions = AuthSessionDto.permissionsFromResponseData(
             payload,
           );
+          final subscriptionSummary =
+              AuthSessionDto.subscriptionSummaryFromResponseData(payload);
+          final platformAdminContact =
+              AuthSessionDto.platformAdminContactFromResponseData(payload);
           var enriched = session;
           if (profile != null) {
             enriched = enriched.enrichFromUserProfile(profile);
           }
           if (permissions.isNotEmpty) {
             enriched = enriched.copyWith(permissions: permissions);
+          }
+          if (subscriptionSummary != null) {
+            enriched = enriched.copyWith(subscriptionSummary: subscriptionSummary);
+          }
+          if (platformAdminContact != null) {
+            enriched = enriched.copyWith(
+              platformAdminContact: platformAdminContact,
+            );
           }
           return enriched;
         },

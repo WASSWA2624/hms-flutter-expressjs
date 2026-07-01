@@ -13,6 +13,23 @@ jest.mock('@lib/notifications');
 jest.mock('@lib/subscriptions/tenant-entitlements', () => ({
   resolveTenantModuleEntitlements: jest.fn().mockResolvedValue([]),
 }));
+jest.mock('@lib/subscriptions/tenant-subscription-summary', () => ({
+  resolveTenantSubscriptionSummary: jest.fn().mockResolvedValue({
+    subscription_id: null,
+    status: null,
+    plan_id: null,
+    plan_label: null,
+    tier_code: null,
+    end_date: null,
+    days_until_expiry: null,
+    expiring_soon_days: 14,
+    header_state: 'expired',
+  }),
+  resolvePlatformAdminContact: jest.fn().mockReturnValue({
+    email: null,
+    phone: null,
+  }),
+}));
 jest.mock('@config/env', () => ({
   JWT_SECRET: '12345678901234567890123456789012',
   APP_PUBLIC_URL: 'http://localhost:8081',

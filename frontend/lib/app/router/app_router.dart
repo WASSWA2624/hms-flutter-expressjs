@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
@@ -91,6 +92,8 @@ import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.da
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_header_button.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
@@ -1241,6 +1244,12 @@ class _AppShell extends ConsumerWidget {
           context.go(AppRoutes.login.location());
         }
       },
+      headerTrailingActions: _subscriptionHeaderAction(
+        context: context,
+        ref: ref,
+        session: session,
+        l10n: l10n,
+      ),
       destinations: <ResponsiveShellDestination>[
         for (final _ShellDestinationRoute destination in shellDestinations)
           destination.destination,
@@ -1275,6 +1284,48 @@ class _AppShell extends ConsumerWidget {
 
 bool _canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
   return route.accessRequirement.isAllowed(accessPolicy);
+}
+
+Widget? _subscriptionHeaderAction({
+  required BuildContext context,
+  required WidgetRef ref,
+  required AuthSession? session,
+  required AppLocalizations l10n,
+}) {
+  if (session == null) {
+    return null;
+  }
+
+  final TenantSubscriptionSummary summary =
+      session.subscriptionSummary ?? const TenantSubscriptionSummary();
+
+  return SubscriptionHeaderButton(
+    summary: summary,
+    onPressed: () async {
+      final bool? submitted = await showSubscriptionUpgradeDialog(
+        context,
+        initialSummary: summary,
+        initialAdminContact: session.platformAdminContact,
+      );
+      if (submitted != true || !context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.subscriptionUpgradeSubmittedMessage)),
+      );
+
+      final refreshResult = await ref
+          .read(authRepositoryProvider)
+          .fetchCurrentUser(session);
+      refreshResult.when(
+        success: (AuthSession refreshed) {
+          ref.read(sessionStateProvider.notifier).persistSession(refreshed);
+        },
+        failure: (_) {},
+      );
+    },
+  );
 }
 
 UserMenuProfileData? _userMenuProfile(AuthSession? session) {

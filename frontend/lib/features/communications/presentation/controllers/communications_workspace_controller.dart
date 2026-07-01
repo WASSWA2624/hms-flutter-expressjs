@@ -81,8 +81,7 @@ final class CommunicationsWorkspaceController
         search: value.trim(),
         pageRequest: current.query.pageRequest.first(),
       ),
-      preservePanelSelections:
-          current.query.panel == CommunicationsPanel.inbox,
+      preservePanelSelections: current.query.panel == CommunicationsPanel.inbox,
     );
   }
 
@@ -169,8 +168,7 @@ final class CommunicationsWorkspaceController
     }
     return _applyQuery(
       current.query.copyWith(pageRequest: request),
-      preservePanelSelections:
-          current.query.panel == CommunicationsPanel.inbox,
+      preservePanelSelections: current.query.panel == CommunicationsPanel.inbox,
     );
   }
 
@@ -519,17 +517,14 @@ final class CommunicationsWorkspaceController
         isRefreshingTemplates: panel == CommunicationsPanel.templates,
         clearLastFailure: true,
         clearSelectedConversation:
-            !preservePanelSelections ||
-            panel != CommunicationsPanel.inbox,
+            !preservePanelSelections || panel != CommunicationsPanel.inbox,
         clearSelectedNotification:
             !preservePanelSelections ||
             panel != CommunicationsPanel.notifications,
         clearSelectedDelivery:
-            !preservePanelSelections ||
-            panel != CommunicationsPanel.deliveries,
+            !preservePanelSelections || panel != CommunicationsPanel.deliveries,
         clearSelectedTemplate:
-            !preservePanelSelections ||
-            panel != CommunicationsPanel.templates,
+            !preservePanelSelections || panel != CommunicationsPanel.templates,
       ),
     );
 
@@ -575,10 +570,7 @@ final class CommunicationsWorkspaceController
       },
       failure: (AppFailure failure) {
         _emit(
-          current.copyWith(
-            isRefreshingThread: false,
-            lastFailure: failure,
-          ),
+          current.copyWith(isRefreshingThread: false, lastFailure: failure),
         );
         return failure;
       },
@@ -601,9 +593,8 @@ final class CommunicationsWorkspaceController
             communicationsMessageFilterById(
               communicationsMessageFilterIdForQuery(current.query),
             );
-        final bool usesClientFilter = communicationsMessageFilterUsesClientFallback(
-          filter,
-        );
+        final bool usesClientFilter =
+            communicationsMessageFilterUsesClientFallback(filter);
         final String? currentUserId = ref
             .read(sessionStateProvider)
             .session
@@ -617,10 +608,12 @@ final class CommunicationsWorkspaceController
               useClientFallback: usesClientFilter,
             );
 
-        CommunicationsConversation? selectedConversation =
-            preserveConversation ? current.selectedConversation : null;
+        CommunicationsConversation? selectedConversation = preserveConversation
+            ? current.selectedConversation
+            : null;
         selectedConversation ??= nextState.selectedConversation;
-        if (selectedConversation == null && current.query.conversationId != null) {
+        if (selectedConversation == null &&
+            current.query.conversationId != null) {
           selectedConversation = filteredConversations
               .where(
                 (CommunicationsConversation item) =>

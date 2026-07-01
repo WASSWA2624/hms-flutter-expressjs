@@ -62,7 +62,9 @@ bool communicationsMessageIsReadByOthers({
   );
 }
 
-String communicationsConversationTitle(CommunicationsConversation conversation) {
+String communicationsConversationTitle(
+  CommunicationsConversation conversation,
+) {
   final String? subject = conversation.subject?.trim();
   if (subject != null && subject.isNotEmpty) {
     return subject;

@@ -34,6 +34,8 @@ void main() {
           useClientFallback: true,
         );
 
-    expect(filtered.map((CommunicationsConversation item) => item.id), <String>['1']);
+    expect(filtered.map((CommunicationsConversation item) => item.id), <String>[
+      '1',
+    ]);
   });
 }

@@ -13,10 +13,7 @@ void main() {
           body: AppWorkspaceOptionToggle<String>(
             value: 'b',
             options: const <AppWorkspaceOptionToggleOption<String>>[
-              AppWorkspaceOptionToggleOption<String>(
-                value: 'a',
-                label: 'All',
-              ),
+              AppWorkspaceOptionToggleOption<String>(value: 'a', label: 'All'),
               AppWorkspaceOptionToggleOption<String>(
                 value: 'b',
                 label: 'Unread',

@@ -95,10 +95,7 @@ void main() {
             id: 'conversation-1',
             title: 'Critical lab follow-up',
             messages: <CommunicationMessage>[
-              CommunicationMessage(
-                id: 'message-1',
-                content: 'Hello team',
-              ),
+              CommunicationMessage(id: 'message-1', content: 'Hello team'),
             ],
           ),
         ),
@@ -110,10 +107,7 @@ void main() {
             id: 'conversation-1',
             title: 'Critical lab follow-up',
             messages: <CommunicationMessage>[
-              CommunicationMessage(
-                id: 'message-1',
-                content: 'Hello team',
-              ),
+              CommunicationMessage(id: 'message-1', content: 'Hello team'),
             ],
           ),
         ),
@@ -123,15 +117,14 @@ void main() {
       addTearDown(container.dispose);
       await container.read(communicationsWorkspaceControllerProvider.future);
 
-      final CommunicationsConversation listConversation =
-          container
-              .read(communicationsWorkspaceControllerProvider)
-              .requireValue
-              .when(
-                success: (CommunicationsWorkspaceState value) =>
-                    value.conversations.items.single,
-                failure: (AppFailure failure) => fail(failure.code),
-              );
+      final CommunicationsConversation listConversation = container
+          .read(communicationsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (CommunicationsWorkspaceState value) =>
+                value.conversations.items.single,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
 
       await container
           .read(communicationsWorkspaceControllerProvider.notifier)
@@ -150,33 +143,38 @@ void main() {
       verify(() => repository.getConversation('conversation-1')).called(1);
     });
 
-    test('applyPanel restores cached data without clearing notifications', () async {
-      final _MockCommunicationsRepository repository =
-          _MockCommunicationsRepository();
-      _stubWorkspace(repository);
+    test(
+      'applyPanel restores cached data without clearing notifications',
+      () async {
+        final _MockCommunicationsRepository repository =
+            _MockCommunicationsRepository();
+        _stubWorkspace(repository);
 
-      final ProviderContainer container = _testContainer(repository);
-      addTearDown(container.dispose);
-      await container.read(communicationsWorkspaceControllerProvider.future);
-      final CommunicationsWorkspaceController controller = container.read(
-        communicationsWorkspaceControllerProvider.notifier,
-      );
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(communicationsWorkspaceControllerProvider.future);
+        final CommunicationsWorkspaceController controller = container.read(
+          communicationsWorkspaceControllerProvider.notifier,
+        );
 
-      await controller.applyPanel(CommunicationsPanel.notifications);
-      await controller.applyPanel(CommunicationsPanel.inbox);
+        await controller.applyPanel(CommunicationsPanel.notifications);
+        await controller.applyPanel(CommunicationsPanel.inbox);
 
-      final CommunicationsWorkspaceState state = container
-          .read(communicationsWorkspaceControllerProvider)
-          .requireValue
-          .when(
-            success: (CommunicationsWorkspaceState value) => value,
-            failure: (AppFailure failure) => fail(failure.code),
-          );
+        final CommunicationsWorkspaceState state = container
+            .read(communicationsWorkspaceControllerProvider)
+            .requireValue
+            .when(
+              success: (CommunicationsWorkspaceState value) => value,
+              failure: (AppFailure failure) => fail(failure.code),
+            );
 
-      expect(state.query.panel, CommunicationsPanel.inbox);
-      expect(state.notifications.items, isNotEmpty);
-      verify(() => repository.getWorkspace(any())).called(greaterThanOrEqualTo(2));
-    });
+        expect(state.query.panel, CommunicationsPanel.inbox);
+        expect(state.notifications.items, isNotEmpty);
+        verify(
+          () => repository.getWorkspace(any()),
+        ).called(greaterThanOrEqualTo(2));
+      },
+    );
   });
 }
 
