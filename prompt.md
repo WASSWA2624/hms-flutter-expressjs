@@ -1,135 +1,63 @@
-# Subscription Upgrade Dialog — UX Refinement Prompt
+# Refine subscription upgrade dialog UI
 
-## Objective
+Improve the subscription upgrade / payment form in `frontend/lib/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart` and related widgets.
 
-Refine the **subscription upgrade / renewal dialog** so it is compact, maximized by default, and guides tenants through payment with method-specific inline fields, proof upload with preview, and **read-only plan amounts** converted to the selected currency in real time.
+## 1. Plan selection → toggle buttons
 
-**Parent prompts:** [prompt1.md](./prompt1.md), [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md)
+Replace `AppSelectField` for plan selection with **toggle buttons** (segmented control or equivalent). The current dropdown is hard to see or clipped; toggles should make plan switching obvious and keep all options visible without opening a menu.
 
-**Primary file:** `frontend/lib/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart`
+**Files:** `subscription_upgrade_dialog.dart` (and a small shared widget if needed).
 
----
+## 2. Payment method selector — compact single-line chips
 
-## Dialog Shell
+Redesign `SubscriptionPaymentMethodSelector` so each method is a **compact horizontal chip**:
 
-- Open **maximized by default** (`AppDialog.initialMaximized: true`).
-- Tighten vertical spacing; remove redundant copy where the title already conveys intent.
-- **Remove** the upgrade intent banner (`_IntentBanner` / `subscriptionUpgradeIntentBanner` — “You are upgrading to a higher plan.”). Keep the renewal banner if useful, or remove both for consistency.
-- Retain plan selector, payment method selector, payment details, amount/currency, proof upload, admin contact, and submit actions.
+- **Layout:** icon on the left, label on the right (one line per method).
+- **Style:** remove card border and filled background; use minimal styling with a clear selected state only.
+- **Density:** all methods should fit on **one row** on typical widths (wrap only on very narrow screens if unavoidable).
 
----
+**Files:** `subscription_payment_method_selector.dart`.
 
-## Payment Method Selector
+## 3. Mobile money provider logos
 
-Keep the existing top-level method cards (`SubscriptionPaymentMethodSelector`): Mobile Money, Bank Transfer, Credit Card, Debit Card, Cash, Other.
+In `MobileMoneyProviderSelector`, replace placeholder or incorrect logos with **official brand assets** for:
 
-When a method is selected, show **inline detail fields** below (no nested modal).
+MTN, Airtel Money, M-Pesa, Tigo, Orange, Zamtel, Government Payment.
 
-| Method | Inline fields |
-|--------|---------------|
-| **Mobile Money** | Provider chips (see below) + payer phone number |
-| **Bank Transfer** | Platform bank account details (account name, bank, branch, account number, SWIFT/IBAN where applicable) + optional payer bank name |
-| **Credit Card** | Cardholder name + last 4 digits |
-| **Debit Card** | Cardholder name + last 4 digits |
-| **Cash** | **Amount paid only** — remove reference / transaction ID fields |
-| **Other** | Notes only (unchanged) |
+- Source logos from each provider’s official site or brand kit.
+- Add assets under the frontend repo (e.g. `frontend/assets/images/payment_providers/`) and wire them in the selector.
+- MTN is acceptable as-is; prioritize fixing Airtel, M-Pesa, and the rest.
 
-### Mobile Money providers
+**Files:** `mobile_money_provider_selector.dart`, new asset files, `pubspec.yaml` if needed.
 
-Replace the dropdown with a **horizontal, scrollable row** of selectable chips/buttons (radio semantics, single selection):
+## 4. Payment details layout & amount formatting
 
-MTN Mobile Money, Airtel Money, M-Pesa, Vodacom, Tigo, Orange, Zamtel, Government — per `MobileMoneyProviderId`.
+- On **large screens**, place **mobile money number** and **amount paid** on the **same row** (responsive: stack on small screens).
+- Format **amount paid** with **thousands separators** (comma-separated) for readability. Reuse or extend `AppCurrencyAmountField` / `fx_currency_utils` if appropriate.
 
-- Each chip shows the **provider logo** (add assets under `frontend/assets/…`) **and** localized name.
-- Single tap selects; compact layout with horizontal overflow scroll on narrow widths.
-- Reuse existing `subscriptionPaymentMethodRequiresProof` rules.
+**Files:** `subscription_upgrade_dialog.dart`, `app_currency_amount_field.dart` (if formatting lives there).
 
-### Bank Transfer details
+## 5. Proof of payment
 
-Display **recipient bank instructions** (read-only) when Bank Transfer is selected. Source from platform admin / env config or a small backend endpoint if not yet available. Research standard fields for East/Southern African bank transfers.
+No change — file picker and preview behavior are fine.
 
----
+## 6. Platform billing contact — clearer post-payment guidance
 
-## Proof of Payment
+Expand `_AdminContactSection` copy so users know what to do **after paying**, e.g.:
 
-Required for: **Bank Transfer**, **Mobile Money**, **Cash** (per `subscriptionPaymentMethodRequiresProof`).
+- If the account is not activated after payment, contact platform administrators using the shown email/phone.
+- State that support is available **at any time**.
 
-- Support image and PDF upload (existing file picker flow).
-- After upload, show an **inline preview**:
-  - Thumbnail for images
-  - File name + icon for PDFs
-- Keep attach / remove actions; preview sits beside or below the file name.
+Update `app_en.arb` (and regenerate l10n) with clear, actionable wording; show email and phone prominently.
 
----
+**Files:** `subscription_upgrade_dialog.dart`, `app_en.arb`.
 
-## Amount & Currency
+## Acceptance criteria
 
-- Plan prices are stored in **USD** (base currency).
-- **Amount is read-only** for subscribers — they cannot edit the numeric value.
-- **Currency is selectable** via `AppCurrencyAmountField` (or equivalent); only the currency control is interactive.
-- On **plan change**: set amount from the selected plan’s USD price.
-- On **currency change**: convert USD → selected currency using **[Frankfurter](https://frankfurter.dev)** (open source, no API key, self-hostable — [GitHub: lineofflight/frankfurter](https://github.com/lineofflight/frankfurter)).
-
-### FX API — Frankfurter (chosen)
-
-| | |
-|---|---|
-| **Why** | Open source (MIT), free, no signup/key, official central-bank rates, 200+ currencies in v2, suitable for billing |
-| **Update cadence** | Latest official rates (working-day refresh, not intraday ticks — acceptable for subscription amounts) |
-| **Public base URL** | `https://api.frankfurter.dev` |
-
-**Primary call (v1 — simple, stable):**
-
-```
-GET https://api.frankfurter.dev/v1/latest?base=USD&symbols=UGX
-```
-
-```json
-{ "amount": 1, "base": "USD", "date": "2026-07-01", "rates": { "UGX": 3701.23 } }
-```
-
-**Conversion:** `convertedAmount = usdPrice * rates[TARGET]` (round per currency rules below).
-
-**Fallback for unsupported pairs (v2):**
-
-```
-GET https://api.frankfurter.dev/v2/rate/USD/UGX
-```
-
-**Implementation notes:**
-
-- Add a small `FxRateService` (frontend or thin backend proxy) that fetches on currency change.
-- Cache the full USD→symbols map in memory for **1 hour** (or until dialog closes) to avoid repeat calls.
-- Show a brief loading indicator on the amount field while fetching; on failure, keep USD amount and show a non-blocking error (“Could not load exchange rate — amount shown in USD”).
-- Round converted amounts sensibly (0 decimals for UGX/TZS/KES/ZMW; 2 for USD/EUR).
-- Persist submitted `amount` + `currency` as today; backend may normalize to USD if needed later.
-
----
-
-## Acceptance Criteria
-
-- [ ] Dialog opens maximized; layout uses less vertical space than current build.
-- [ ] Upgrade intent banner is removed.
-- [ ] Mobile money providers render as logo + label chips in a horizontal row; no nested dialog.
-- [ ] Bank transfer shows platform recipient details inline.
-- [ ] Credit/debit card collect holder name + last 4 digits only.
-- [ ] Cash collects amount only (no reference / transaction ID).
-- [ ] Proof upload shows image/PDF preview before submit.
-- [ ] Amount field is disabled/read-only; currency change triggers live FX conversion from USD plan price.
-- [ ] All new strings in `app_en.arb`; new logos added to `pubspec.yaml` assets.
-- [ ] Quality gate: `flutter analyze`, `flutter test` (including dialog/widget tests where applicable).
-
----
-
-## Key References
-
-```
-frontend/lib/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart
-frontend/lib/features/subscriptions/presentation/widgets/subscription_payment_method_selector.dart
-frontend/lib/features/subscriptions/presentation/widgets/subscription_payment_methods.dart
-frontend/lib/shared/components/app_dialog.dart                    — initialMaximized
-frontend/lib/shared/forms/app_currency_amount_field.dart
-backend/src/config/env.js                                         — admin / bank details config
-https://frankfurter.dev                                           — FX API docs
-https://github.com/lineofflight/frankfurter                       — open-source server (self-host option)
-```
+- [ ] Plan selection uses toggles, not a dropdown; all plans visible at a glance.
+- [ ] Payment methods are compact, icon-left / label-right, no heavy borders or backgrounds.
+- [ ] Mobile money logos are official assets committed to the repo.
+- [ ] Phone + amount share a row on wide layouts; amount displays with comma separators.
+- [ ] Admin contact section explains post-payment activation help and 24/7 availability.
+- [ ] Existing form validation and submit flow unchanged.
+- [ ] Widget tests updated or added where behavior changed.
