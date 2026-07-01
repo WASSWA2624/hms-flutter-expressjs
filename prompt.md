@@ -68,8 +68,40 @@ Required for: **Bank Transfer**, **Mobile Money**, **Cash** (per `subscriptionPa
 - **Amount is read-only** for subscribers — they cannot edit the numeric value.
 - **Currency is selectable** via `AppCurrencyAmountField` (or equivalent); only the currency control is interactive.
 - On **plan change**: set amount from the selected plan’s USD price.
-- On **currency change**: convert USD → selected currency using a **real-time exchange rate** (prefer a free public FX API such as Frankfurter or ExchangeRate-API, or a thin backend proxy if keys must stay server-side). Show a brief loading state while rates fetch; cache rates briefly to avoid excessive calls.
-- Round converted amounts sensibly (e.g. 0 decimal places for UGX/TZS, 2 for USD/EUR).
+- On **currency change**: convert USD → selected currency using **[Frankfurter](https://frankfurter.dev)** (open source, no API key, self-hostable — [GitHub: lineofflight/frankfurter](https://github.com/lineofflight/frankfurter)).
+
+### FX API — Frankfurter (chosen)
+
+| | |
+|---|---|
+| **Why** | Open source (MIT), free, no signup/key, official central-bank rates, 200+ currencies in v2, suitable for billing |
+| **Update cadence** | Latest official rates (working-day refresh, not intraday ticks — acceptable for subscription amounts) |
+| **Public base URL** | `https://api.frankfurter.dev` |
+
+**Primary call (v1 — simple, stable):**
+
+```
+GET https://api.frankfurter.dev/v1/latest?base=USD&symbols=UGX
+```
+
+```json
+{ "amount": 1, "base": "USD", "date": "2026-07-01", "rates": { "UGX": 3701.23 } }
+```
+
+**Conversion:** `convertedAmount = usdPrice * rates[TARGET]` (round per currency rules below).
+
+**Fallback for unsupported pairs (v2):**
+
+```
+GET https://api.frankfurter.dev/v2/rate/USD/UGX
+```
+
+**Implementation notes:**
+
+- Add a small `FxRateService` (frontend or thin backend proxy) that fetches on currency change.
+- Cache the full USD→symbols map in memory for **1 hour** (or until dialog closes) to avoid repeat calls.
+- Show a brief loading indicator on the amount field while fetching; on failure, keep USD amount and show a non-blocking error (“Could not load exchange rate — amount shown in USD”).
+- Round converted amounts sensibly (0 decimals for UGX/TZS/KES/ZMW; 2 for USD/EUR).
 - Persist submitted `amount` + `currency` as today; backend may normalize to USD if needed later.
 
 ---
@@ -98,4 +130,6 @@ frontend/lib/features/subscriptions/presentation/widgets/subscription_payment_me
 frontend/lib/shared/components/app_dialog.dart                    — initialMaximized
 frontend/lib/shared/forms/app_currency_amount_field.dart
 backend/src/config/env.js                                         — admin / bank details config
+https://frankfurter.dev                                           — FX API docs
+https://github.com/lineofflight/frankfurter                       — open-source server (self-host option)
 ```
