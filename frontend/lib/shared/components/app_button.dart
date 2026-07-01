@@ -340,7 +340,25 @@ class _ButtonContent extends StatelessWidget {
       ),
     );
 
-    if (!isLoading && leadingIcon == null && iconWidget == null) {
+    if (isLoading) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          SizedBox.square(
+            dimension: iconSize,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
+            ),
+          ),
+          SizedBox(width: spacing.sm),
+          Flexible(child: labelText),
+        ],
+      );
+    }
+
+    if (leadingIcon == null && iconWidget == null) {
       return labelText;
     }
 

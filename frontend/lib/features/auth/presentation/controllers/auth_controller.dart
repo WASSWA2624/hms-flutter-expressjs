@@ -79,24 +79,30 @@ final class AuthController extends Notifier<AuthControllerState> {
     }
 
     state = state.copyWith(isSubmitting: true, clearFailure: true);
-    final AuthRepository repository = ref.read(authRepositoryProvider);
-    final result = await repository.login(
-      identifier: identifier,
-      password: password,
-    );
+    try {
+      final AuthRepository repository = ref.read(authRepositoryProvider);
+      final result = await repository.login(
+        identifier: identifier,
+        password: password,
+      );
 
-    return result.when(
-      success: (AuthSession session) async {
-        final enriched = await _enrichSession(repository, session);
-        await ref.read(sessionStateProvider.notifier).persistSession(enriched);
-        state = state.copyWith(isSubmitting: false, clearFailure: true);
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return await result.when(
+        success: (AuthSession session) async {
+          // Login already returns a complete session payload. Persist first so
+          // authenticated clients can read tokens from storage when needed.
+          await ref.read(sessionStateProvider.notifier).persistSession(session);
+          state = state.copyWith(isSubmitting: false, clearFailure: true);
+          return true;
+        },
+        failure: (AppFailure failure) async {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } catch (_) {
+      state = state.copyWith(isSubmitting: false);
+      rethrow;
+    }
   }
 
   Future<bool> register({
@@ -315,17 +321,6 @@ final class AuthController extends Notifier<AuthControllerState> {
         state = state.copyWith(isSubmitting: false, failure: failure);
         return false;
       },
-    );
-  }
-
-  Future<AuthSession> _enrichSession(
-    AuthRepository repository,
-    AuthSession session,
-  ) async {
-    final result = await repository.fetchCurrentUser(session);
-    return result.when(
-      success: (AuthSession enriched) => enriched,
-      failure: (_) => session,
     );
   }
 }
