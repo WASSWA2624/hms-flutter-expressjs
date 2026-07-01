@@ -601,8 +601,19 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
                 );
               },
             ),
-            itemKeyBuilder: (SubscriptionItem item) =>
-                ValueKey<String>('${item.resource.serverValue}:${item.id}'),
+            itemKeyBuilder: (SubscriptionItem item) => ValueKey<String>(
+              <String?>[
+                    item.resource.serverValue,
+                    item.id,
+                    item.tenantId,
+                    item.planId,
+                    item.moduleId,
+                    item.invoiceId,
+                  ]
+                  .whereType<String>()
+                  .where((String value) => value.isNotEmpty)
+                  .join(':'),
+            ),
             onRowSelected: onItemSelected,
             previousPageLabel: _SubscriptionsText.previousPage,
             nextPageLabel: _SubscriptionsText.nextPage,

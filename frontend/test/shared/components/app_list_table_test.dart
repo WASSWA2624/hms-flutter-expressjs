@@ -637,6 +637,35 @@ void main() {
     expect(find.text('Beta'), findsOneWidget);
     expect(find.text('3-4 of 6'), findsOneWidget);
   });
+
+  testWidgets('AppListTable tolerates duplicate item keys', (
+    WidgetTester tester,
+  ) async {
+    const duplicateItems = <_RowItem>[
+      _RowItem(id: 'dup', title: 'Alpha', status: 'Active'),
+      _RowItem(id: 'dup', title: 'Beta', status: 'Draft'),
+    ];
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        width: 960,
+        child: AppListTable<_RowItem>(
+          items: duplicateItems,
+          columns: _columns,
+          itemKeyBuilder: (_RowItem item) => ValueKey<String>(item.id),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return ListTile(title: Text(item.title));
+          },
+        ),
+      ),
+      size: const Size(960, 600),
+    );
+
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+  });
 }
 
 const List<AppListTableColumn<_RowItem>> _columns =

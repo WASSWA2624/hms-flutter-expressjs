@@ -18,11 +18,17 @@ final class SubscriptionsWorkspaceDto {
   }
 
   SubscriptionsWorkspaceData toEntity() {
+    final Set<String> seenItemKeys = <String>{};
     final List<SubscriptionItem> items = _list(json['items'])
         .map((SubscriptionJsonMap item) {
           return SubscriptionItemDto(item, resource: query.resource).toEntity();
         })
         .where((SubscriptionItem item) => item.id.isNotEmpty)
+        .where((SubscriptionItem item) {
+          final String key =
+              '${item.resource.serverValue}:${item.id}:${item.tenantId ?? ''}';
+          return seenItemKeys.add(key);
+        })
         .toList(growable: false);
 
     return SubscriptionsWorkspaceData(

@@ -26,6 +26,21 @@ enum AppListTableDisplayMode { adaptive, table, list }
 const int _maxVisibleTableColumns = 5;
 const double _rowNumberColumnWidth = 48;
 
+LocalKey appListTableUniqueRowKey<T>({
+  required int index,
+  required AppListTableItemKeyBuilder<T>? itemKeyBuilder,
+  required T item,
+}) {
+  final LocalKey? baseKey = itemKeyBuilder?.call(item);
+  if (baseKey is ValueKey<Object?>) {
+    return ValueKey<Object>(Object.hash(index, baseKey.value));
+  }
+  if (baseKey != null) {
+    return ValueKey<Object>(Object.hash(index, baseKey));
+  }
+  return ValueKey<int>(index);
+}
+
 List<AppListTableColumn<T>> _availableColumnsFor<T>(
   List<AppListTableColumn<T>> columns,
   List<AppListTableColumn<T>>? columnChoices,
@@ -1266,7 +1281,11 @@ class _MobileListTable<T> extends StatelessWidget {
       itemBuilder: (BuildContext context, int index) {
         final T item = items[index];
         Widget row = KeyedSubtree(
-          key: itemKeyBuilder?.call(item),
+          key: appListTableUniqueRowKey<T>(
+            index: index,
+            itemKeyBuilder: itemKeyBuilder,
+            item: item,
+          ),
           child: _NumberedMobileListItem(
             number: index + 1,
             child: itemBuilder(context, item),
@@ -1509,7 +1528,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final T item = widget.items[index];
 
     return DataRow(
-      key: widget.itemKeyBuilder?.call(item),
+      key: appListTableUniqueRowKey<T>(
+        index: index,
+        itemKeyBuilder: widget.itemKeyBuilder,
+        item: item,
+      ),
       color: _rowColor(context, item),
       onSelectChanged: widget.onRowSelected == null
           ? null
