@@ -1,88 +1,101 @@
-# Auth & Subscription Onboarding — Review and Implementation
+# Subscription Upgrade Dialog — UX Refinement Prompt
 
 ## Objective
 
-Review the existing **Authentication** and **Subscription** modules, close gaps, and wire them together so tenant self-registration, email verification, platform approval, and subscription entitlements form one coherent onboarding path.
+Refine the **subscription upgrade / renewal dialog** so it is compact, maximized by default, and guides tenants through payment with method-specific inline fields, proof upload with preview, and **read-only plan amounts** converted to the selected currency in real time.
 
-Login, registration, change password, and email verification appear functional today — **validate end-to-end behavior** before extending.
+**Parent prompts:** [prompt1.md](./prompt1.md), [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md)
 
-**Parent prompts:** [prompts/01-auth-module-prompt.md](./prompts/01-auth-module-prompt.md), [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md), [prompts/03-tenant-facility-module-prompt.md](./prompts/03-tenant-facility-module-prompt.md), [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md)
-
----
-
-## Target Onboarding Flow
-
-```
-Register → Email verification → Platform admin activation → Login → Trial subscription → Paid upgrade
-```
-
-| Step | Requirement |
-|------|-------------|
-| **1. Registration** | Self-register creates a **tenant** (not just a user). Capture **tenant display name** (global name visible to others), **facility type**, admin name, email, phone, and password. Branches, departments, and other org structure are configured later in tenant/facility settings. **Before submit**, validate email and/or phone against existing tenants; block duplicate tenant creation and surface clear recovery paths (log in, verify email, contact support). |
-| **1a. Duplicate guard** | At or before registration, detect when **email** and/or **phone** already belong to an existing tenant user. Normalize identifiers (lowercase email, E.164 or canonical phone). Reject new tenant bootstrap on conflict; do not create a second tenant for the same contact. Existing-email flows may resend verification for pending accounts — must not silently provision a duplicate org. |
-| **2. Email verification** | Send a **6-digit verification code** to the tenant email. User enters the code on the verify-email screen. **Code entry only** — no magic links, clickable verify URLs, or auto-verification from email. Login is blocked until email is verified. |
-| **3. Platform activation** | After email verification, account remains **pending platform approval**. A **platform super admin** sees new registrations (email, phone, facility/tenant name) in an admin workspace, can contact the registrant (e.g. phone link), and **activates** the account. Only then may the user log in and access services. |
-| **4. Trial subscription** | On activation, provision a **trial** subscription for the tenant. Default: **3 months** full access to all modules (duration must be configurable on the plan/subscription tier — not hardcoded). |
-| **5. Post-trial** | When the trial ends, restrict access to paid tiers. Tenant must **pay or upgrade** to Basic, Pro, Advanced, or Custom to unlock modules again. |
-| **6. Entitlement gating** | Module and service access everywhere (routes, `AccessGate`, backend `module-entitlement` middleware) must reflect the tenant's **active subscription** and enabled module subscriptions. |
+**Primary file:** `frontend/lib/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart`
 
 ---
 
-## Review Checklist
+## Dialog Shell
 
-### Auth (`frontend/lib/features/auth/`, `backend/src/modules/auth/`)
+- Open **maximized by default** (`AppDialog.initialMaximized: true`).
+- Tighten vertical spacing; remove redundant copy where the title already conveys intent.
+- **Remove** the upgrade intent banner (`_IntentBanner` / `subscriptionUpgradeIntentBanner` — “You are upgrading to a higher plan.”). Keep the renewal banner if useful, or remove both for consistency.
+- Retain plan selector, payment method selector, payment details, amount/currency, proof upload, admin contact, and submit actions.
 
-- [ ] Registration bootstraps tenant + facility + tenant admin (`registerFacilityOwner`).
-- [ ] Registration fields align with UX: tenant name, facility type, email, phone — not only facility name.
-- [ ] **Duplicate guard:** email and phone checked against existing tenants **before** or **on** register (frontend field validation and/or `POST /auth/identify` or dedicated availability check; backend enforces as source of truth).
-- [ ] Conflicting email/phone returns actionable errors (e.g. account exists → log in; pending → verify email) — no duplicate tenant or facility created.
-- [ ] Phone uniqueness enforced with the same rigor as email (normalize format before compare).
-- [ ] Email verification is **code-only**: send, resend, verify, and expiry work via 6-digit OTP on the verify-email screen.
-- [ ] Verification emails contain the code only — no verify links, `href`, or one-click URL activation; remove any legacy link-based paths.
-- [ ] **Separate** email verification from platform activation (today `verifyEmail` may set user `ACTIVE` immediately — adjust if admin approval is required).
-- [ ] Login returns clear states for: unverified email, pending admin approval, suspended/inactive.
-- [ ] `registration_follow_up` records are created/updated on register and status transitions.
-- [ ] Change password and session restore still work after flow changes.
+---
 
-### Subscriptions (`frontend/lib/features/subscriptions/`, `backend/src/modules/subscription*`)
+## Payment Method Selector
 
-- [ ] New tenant receives a **TRIAL** (or equivalent) subscription on platform activation with configurable duration (default **90 days**).
-- [ ] Trial grants full module access; expiry transitions to restricted/past-due state.
-- [ ] Upgrade paths to Basic, Pro, Advanced, Custom are reachable from subscription workspace.
-- [ ] Entitlements in session (`auth_session`, `/auth/me`) match subscription + module-subscription state.
-- [ ] Disabling a module hides routes and returns 403 from API.
+Keep the existing top-level method cards (`SubscriptionPaymentMethodSelector`): Mobile Money, Bank Transfer, Credit Card, Debit Card, Cash, Other.
 
-### Platform admin (`frontend/lib/features/access_admin/` or appropriate super-admin surface)
+When a method is selected, show **inline detail fields** below (no nested modal).
 
-- [ ] Queue/list of **pending tenant registrations** with email, phone, tenant/facility name, registration date.
-- [ ] **Activate** action (and optional reject/suspend) with audit trail.
-- [ ] Contact affordances (e.g. `tel:` link for phone) for sales/onboarding calls.
+| Method | Inline fields |
+|--------|---------------|
+| **Mobile Money** | Provider chips (see below) + payer phone number |
+| **Bank Transfer** | Platform bank account details (account name, bank, branch, account number, SWIFT/IBAN where applicable) + optional payer bank name |
+| **Credit Card** | Cardholder name + last 4 digits |
+| **Debit Card** | Cardholder name + last 4 digits |
+| **Cash** | **Amount paid only** — remove reference / transaction ID fields |
+| **Other** | Notes only (unchanged) |
+
+### Mobile Money providers
+
+Replace the dropdown with a **horizontal, scrollable row** of selectable chips/buttons (radio semantics, single selection):
+
+MTN Mobile Money, Airtel Money, M-Pesa, Vodacom, Tigo, Orange, Zamtel, Government — per `MobileMoneyProviderId`.
+
+- Each chip shows the **provider logo** (add assets under `frontend/assets/…`) **and** localized name.
+- Single tap selects; compact layout with horizontal overflow scroll on narrow widths.
+- Reuse existing `subscriptionPaymentMethodRequiresProof` rules.
+
+### Bank Transfer details
+
+Display **recipient bank instructions** (read-only) when Bank Transfer is selected. Source from platform admin / env config or a small backend endpoint if not yet available. Research standard fields for East/Southern African bank transfers.
+
+---
+
+## Proof of Payment
+
+Required for: **Bank Transfer**, **Mobile Money**, **Cash** (per `subscriptionPaymentMethodRequiresProof`).
+
+- Support image and PDF upload (existing file picker flow).
+- After upload, show an **inline preview**:
+  - Thumbnail for images
+  - File name + icon for PDFs
+- Keep attach / remove actions; preview sits beside or below the file name.
+
+---
+
+## Amount & Currency
+
+- Plan prices are stored in **USD** (base currency).
+- **Amount is read-only** for subscribers — they cannot edit the numeric value.
+- **Currency is selectable** via `AppCurrencyAmountField` (or equivalent); only the currency control is interactive.
+- On **plan change**: set amount from the selected plan’s USD price.
+- On **currency change**: convert USD → selected currency using a **real-time exchange rate** (prefer a free public FX API such as Frankfurter or ExchangeRate-API, or a thin backend proxy if keys must stay server-side). Show a brief loading state while rates fetch; cache rates briefly to avoid excessive calls.
+- Round converted amounts sensibly (e.g. 0 decimal places for UGX/TZS, 2 for USD/EUR).
+- Persist submitted `amount` + `currency` as today; backend may normalize to USD if needed later.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Email verification completes only by entering the code on the verify-email screen (not via email link).
-- [ ] Registering with an email or phone already tied to a tenant is blocked with a clear message; no duplicate tenant is created.
-- [ ] New user can register → verify email → wait for admin activation → log in after activation.
-- [ ] Activated tenant has a trial subscription; all modules work during trial.
-- [ ] After trial expiry, paid modules are gated until upgrade/payment.
-- [ ] Platform super admin can discover, review, and activate pending accounts.
-- [ ] Auth and subscription state stay consistent across frontend guards and backend middleware.
-- [ ] Quality gate passes: `flutter analyze`, `flutter test`, targeted backend `npm test` for touched modules.
+- [ ] Dialog opens maximized; layout uses less vertical space than current build.
+- [ ] Upgrade intent banner is removed.
+- [ ] Mobile money providers render as logo + label chips in a horizontal row; no nested dialog.
+- [ ] Bank transfer shows platform recipient details inline.
+- [ ] Credit/debit card collect holder name + last 4 digits only.
+- [ ] Cash collects amount only (no reference / transaction ID).
+- [ ] Proof upload shows image/PDF preview before submit.
+- [ ] Amount field is disabled/read-only; currency change triggers live FX conversion from USD plan price.
+- [ ] All new strings in `app_en.arb`; new logos added to `pubspec.yaml` assets.
+- [ ] Quality gate: `flutter analyze`, `flutter test` (including dialog/widget tests where applicable).
 
 ---
 
 ## Key References
 
 ```
-frontend/lib/features/auth/
-frontend/lib/features/subscriptions/
-frontend/lib/features/access_admin/
-frontend/lib/core/security/auth_session.dart
-backend/src/modules/auth/
-backend/src/modules/subscription/
-backend/src/modules/subscriptions-workspace/
-backend/src/middlewares/module-entitlement.middleware.js
-backend/prisma/schema.prisma  — registration_follow_up, subscription, UserStatus
+frontend/lib/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart
+frontend/lib/features/subscriptions/presentation/widgets/subscription_payment_method_selector.dart
+frontend/lib/features/subscriptions/presentation/widgets/subscription_payment_methods.dart
+frontend/lib/shared/components/app_dialog.dart                    — initialMaximized
+frontend/lib/shared/forms/app_currency_amount_field.dart
+backend/src/config/env.js                                         — admin / bank details config
 ```
