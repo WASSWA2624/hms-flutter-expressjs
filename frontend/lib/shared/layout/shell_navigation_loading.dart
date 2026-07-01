@@ -171,9 +171,12 @@ class ShellLoadingReporter extends ConsumerStatefulWidget {
 }
 
 class _ShellLoadingReporterState extends ConsumerState<ShellLoadingReporter> {
+  ShellNavigationLoadingController? _loadingController;
+
   @override
   void initState() {
     super.initState();
+    _loadingController = ref.read(shellNavigationLoadingProvider.notifier);
     _syncLoading();
   }
 
@@ -187,7 +190,7 @@ class _ShellLoadingReporterState extends ConsumerState<ShellLoadingReporter> {
 
   @override
   void dispose() {
-    ref.read(shellNavigationLoadingProvider.notifier).setLoading(false);
+    _loadingController?.setLoading(false);
     super.dispose();
   }
 
@@ -196,9 +199,7 @@ class _ShellLoadingReporterState extends ConsumerState<ShellLoadingReporter> {
       if (!mounted) {
         return;
       }
-      ref
-          .read(shellNavigationLoadingProvider.notifier)
-          .setLoading(widget.isLoading);
+      _loadingController?.setLoading(widget.isLoading);
     });
   }
 

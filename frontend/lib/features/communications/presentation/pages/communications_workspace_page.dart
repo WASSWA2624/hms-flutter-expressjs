@@ -107,6 +107,8 @@ class _CommunicationsWorkspaceContentState
   _deliveryColumns;
   late final AppListTableColumnVisibilityController<CommunicationTemplate>
   _templateColumns;
+  ProviderSubscription<AsyncValue<Result<CommunicationsWorkspaceState>>>?
+  _routeSubscription;
 
   @override
   void initState() {
@@ -121,18 +123,28 @@ class _CommunicationsWorkspaceContentState
     _templateColumns =
         AppListTableColumnVisibilityController<CommunicationTemplate>();
 
-    ref.listenManual(
+    _routeSubscription = ref.listenManual(
       communicationsWorkspaceControllerProvider,
       (AsyncValue<Result<CommunicationsWorkspaceState>>? previous,
           AsyncValue<Result<CommunicationsWorkspaceState>> next) {
-        final CommunicationsWorkspaceState? state = next.asData?.value.when(
+        final CommunicationsWorkspaceState? previousState =
+            previous?.asData?.value.when(
           success: (CommunicationsWorkspaceState value) => value,
           failure: (_) => null,
         );
-        if (state == null || !mounted) {
+        final CommunicationsWorkspaceState? nextState = next.asData?.value.when(
+          success: (CommunicationsWorkspaceState value) => value,
+          failure: (_) => null,
+        );
+        if (nextState == null || !mounted) {
           return;
         }
-        _syncRoute(state.query);
+        if (previousState != null &&
+            _querySignature(previousState.query) ==
+                _querySignature(nextState.query)) {
+          return;
+        }
+        _syncRoute(nextState.query);
       },
     );
   }
@@ -145,13 +157,24 @@ class _CommunicationsWorkspaceContentState
       return;
     }
     _syncedRouteSignature = signature;
-    final String location = AppRoutes.communications.location(
-      queryParameters: query.toQueryParameters(),
-    );
-    final String current = GoRouterState.of(context).uri.toString();
-    if (current != location) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final String location = AppRoutes.communications.location(
+        queryParameters: query.toQueryParameters(),
+      );
+      final Uri currentUri = GoRouterState.of(context).uri;
+      if (_routeUriMatchesQuery(currentUri, query)) {
+        return;
+      }
       context.go(location);
-    }
+    });
+  }
+
+  bool _routeUriMatchesQuery(Uri uri, CommunicationsWorkspaceQuery query) {
+    return _querySignature(CommunicationsWorkspaceQuery.fromUri(uri)) ==
+        _querySignature(query);
   }
 
   @override
@@ -166,6 +189,7 @@ class _CommunicationsWorkspaceContentState
 
   @override
   void dispose() {
+    _routeSubscription?.close();
     _searchController.dispose();
     _conversationColumns.dispose();
     _notificationColumns.dispose();
