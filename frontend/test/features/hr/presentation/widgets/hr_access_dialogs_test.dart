@@ -119,6 +119,11 @@ void main() {
     registerFallbackValue(const HrAccessQuery());
     registerFallbackValue(const HrStaffQuery());
     registerFallbackValue(const HrWorkItemsQuery());
+    when(() => repository.listAllAccessPermissions(any())).thenAnswer(
+      (_) async => const Result<List<HrAccessPermission>>.success(
+        <HrAccessPermission>[],
+      ),
+    );
   });
 
   test('isHrAccessTenantUuid rejects display ids', () {
@@ -161,5 +166,50 @@ void main() {
 
     expect(find.text('Tenant context required'), findsOneWidget);
     verifyNever(() => repository.listAccessUsers(any()));
+  });
+
+  testWidgets('opens staff detail without limit validation error', (
+    tester,
+  ) async {
+    when(() => repository.listAccessUsers(any())).thenAnswer(
+      (_) async => const Result<AppPage<HrAccessUser>>.success(
+        AppPage<HrAccessUser>(
+          items: <HrAccessUser>[_accessUser],
+          request: AppPageRequest(pageSize: 12),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => repository.loadAccessUserDetail(any())).thenAnswer(
+      (_) async => const Result<HrAccessUserDetail>.success(
+        HrAccessUserDetail(
+          id: 'USR-1',
+          displayId: 'USR-1',
+          email: 'hr.admin@example.com',
+          profileName: 'HR Admin',
+          status: 'ACTIVE',
+        ),
+      ),
+    );
+    when(
+      () => repository.listUserRoles(
+        userId: any(named: 'userId'),
+        tenantId: any(named: 'tenantId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<HrUserRole>>.success(<HrUserRole>[]),
+    );
+
+    await _pumpAccessDialog(tester, repository);
+    await tester.tap(find.text('HR Admin'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('hr.admin@example.com'), findsWidgets);
+    verify(
+      () => repository.listUserRoles(
+        userId: 'USR-1',
+        tenantId: _tenantUuid,
+      ),
+    ).called(1);
   });
 }

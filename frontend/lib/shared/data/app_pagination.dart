@@ -8,6 +8,9 @@ final class AppPageRequest {
 
   static const int defaultPageSize = 20;
 
+  /// Backend `MAX_PAGE_LIMIT` — do not exceed in API `limit` params.
+  static const int maxPageSize = 100;
+
   final int pageIndex;
   final int pageSize;
 

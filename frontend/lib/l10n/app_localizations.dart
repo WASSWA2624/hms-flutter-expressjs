@@ -25929,6 +25929,426 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get hrAccessSearchLabel;
 
+  /// Search hint in HR access workspace tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Search staff, roles, or permissions'**
+  String get hrAccessSearchHint;
+
+  /// Label for permission picker searchable select.
+  ///
+  /// In en, this message translates to:
+  /// **'Add permission'**
+  String get hrPermissionAssignmentAddPermissionLabel;
+
+  /// Empty state when no permissions are selected in picker.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions selected.'**
+  String get hrPermissionAssignmentEmptySelectedLabel;
+
+  /// Remove a selected permission from picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove permission'**
+  String get hrPermissionAssignmentRemovePermissionAction;
+
+  /// Section label for module-grouped permission list.
+  ///
+  /// In en, this message translates to:
+  /// **'Available by module'**
+  String get hrPermissionAssignmentAvailableByModuleLabel;
+
+  /// Label for catalog permission select in create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get hrAccessPermissionCatalogSelectLabel;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile — Read'**
+  String get permissionCatalogProfileRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile — Update'**
+  String get permissionCatalogProfileUpdate;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient — Read'**
+  String get permissionCatalogPatientRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient — Write'**
+  String get permissionCatalogPatientWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient — Delete'**
+  String get permissionCatalogPatientDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical — Read'**
+  String get permissionCatalogClinicalRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical — Write'**
+  String get permissionCatalogClinicalWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency — Read'**
+  String get permissionCatalogEmergencyRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency — Write'**
+  String get permissionCatalogEmergencyWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency — Delete'**
+  String get permissionCatalogEmergencyDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab — Read'**
+  String get permissionCatalogLabRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab — Write'**
+  String get permissionCatalogLabWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology — Read'**
+  String get permissionCatalogRadiologyRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology — Write'**
+  String get permissionCatalogRadiologyWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy — Read'**
+  String get permissionCatalogPharmacyRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy — Write'**
+  String get permissionCatalogPharmacyWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing — Read'**
+  String get permissionCatalogBillingRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing — Write'**
+  String get permissionCatalogBillingWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations — Read'**
+  String get permissionCatalogOperationsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations — Write'**
+  String get permissionCatalogOperationsWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'HR — Read'**
+  String get permissionCatalogHrRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'HR — Write'**
+  String get permissionCatalogHrWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit — Read'**
+  String get permissionCatalogUnitRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit — Manage'**
+  String get permissionCatalogUnitManage;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster — Read'**
+  String get permissionCatalogRosterRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster — Write'**
+  String get permissionCatalogRosterWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster — Publish'**
+  String get permissionCatalogRosterPublish;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster — Approve'**
+  String get permissionCatalogRosterApprove;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomed — Read'**
+  String get permissionCatalogBiomedRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomed — Write'**
+  String get permissionCatalogBiomedWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Read'**
+  String get permissionCatalogMortuaryRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Write'**
+  String get permissionCatalogMortuaryWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Release'**
+  String get permissionCatalogMortuaryRelease;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Manage storage'**
+  String get permissionCatalogMortuaryManageStorage;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Post-mortem request'**
+  String get permissionCatalogMortuaryPostMortemRequest;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Approve'**
+  String get permissionCatalogMortuaryApprove;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Billing event'**
+  String get permissionCatalogMortuaryBillingEvent;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Export'**
+  String get permissionCatalogMortuaryExport;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary — Audit'**
+  String get permissionCatalogMortuaryAudit;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Communications — Read'**
+  String get permissionCatalogCommunicationsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Communications — Write'**
+  String get permissionCatalogCommunicationsWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Communications — Delete'**
+  String get permissionCatalogCommunicationsDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration — Read'**
+  String get permissionCatalogIntegrationRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration — Write'**
+  String get permissionCatalogIntegrationWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration — Delete'**
+  String get permissionCatalogIntegrationDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports — Read'**
+  String get permissionCatalogReportsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports — Write'**
+  String get permissionCatalogReportsWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports — Delete'**
+  String get permissionCatalogReportsDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions — Read'**
+  String get permissionCatalogSubscriptionsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions — Write'**
+  String get permissionCatalogSubscriptionsWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions — Delete'**
+  String get permissionCatalogSubscriptionsDelete;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last office — Read'**
+  String get permissionCatalogLastOfficeRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last office — Write'**
+  String get permissionCatalogLastOfficeWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last office — Approve'**
+  String get permissionCatalogLastOfficeApprove;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance — Read'**
+  String get permissionCatalogComplianceRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance — Review'**
+  String get permissionCatalogComplianceReview;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Break glass — Request'**
+  String get permissionCatalogBreakGlassRequest;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Break glass — Review'**
+  String get permissionCatalogBreakGlassReview;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Break glass — Approve'**
+  String get permissionCatalogBreakGlassApprove;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence — Export'**
+  String get permissionCatalogEvidenceExport;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial — Approve'**
+  String get permissionCatalogFinancialApprove;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility — Admin'**
+  String get permissionCatalogFacilityAdmin;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant — Admin'**
+  String get permissionCatalogTenantAdmin;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'System — Admin'**
+  String get permissionCatalogSystemAdmin;
+
   /// Empty state for HR user directory.
   ///
   /// In en, this message translates to:

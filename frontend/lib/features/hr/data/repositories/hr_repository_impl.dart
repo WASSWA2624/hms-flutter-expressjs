@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -529,6 +530,49 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<List<HrAccessPermission>>> listAllAccessPermissions(
+    HrAccessQuery query,
+  ) async {
+    final List<HrAccessPermission> all = <HrAccessPermission>[];
+    var pageIndex = 0;
+    const int pageSize = AppPageRequest.maxPageSize;
+
+    while (true) {
+      final Result<AppPage<HrAccessPermission>> result =
+          await listAccessPermissions(
+            HrAccessQuery(
+              panel: query.panel,
+              search: query.search,
+              tenantId: query.tenantId,
+              pageRequest: AppPageRequest(
+                pageIndex: pageIndex,
+                pageSize: pageSize,
+              ),
+            ),
+          );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return Result<List<HrAccessPermission>>.failure(failure);
+      }
+
+      final AppPage<HrAccessPermission> page = result.when(
+        success: (AppPage<HrAccessPermission> value) => value,
+        failure: (_) => throw StateError('unreachable'),
+      );
+      all.addAll(page.items);
+      if (!page.hasNextPage) {
+        break;
+      }
+      pageIndex += 1;
+    }
+
+    return Result<List<HrAccessPermission>>.success(all);
+  }
+
+  @override
   Future<Result<Object?>> updateUserAccount(
     String userId,
     Map<String, Object?> payload,
@@ -611,14 +655,60 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
-  Future<Result<AppPage<HrOption>>> listRolePermissions(String roleId) {
-    const AppPageRequest request = AppPageRequest(pageSize: 200);
+  Future<Result<AppPage<HrOption>>> listRolePermissions(String roleId) async {
+    final List<HrOption> all = <HrOption>[];
+    var pageIndex = 0;
+    const int pageSize = AppPageRequest.maxPageSize;
+
+    while (true) {
+      final Result<AppPage<HrOption>> result = await _fetchRolePermissionsPage(
+        roleId: roleId,
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+      );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return Result<AppPage<HrOption>>.failure(failure);
+      }
+
+      final AppPage<HrOption> page = result.when(
+        success: (AppPage<HrOption> value) => value,
+        failure: (_) => throw StateError('unreachable'),
+      );
+      all.addAll(page.items);
+      if (!page.hasNextPage) {
+        break;
+      }
+      pageIndex += 1;
+    }
+
+    return Result<AppPage<HrOption>>.success(
+      AppPage<HrOption>(
+        items: all,
+        request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+        totalItemCount: all.length,
+      ),
+    );
+  }
+
+  Future<Result<AppPage<HrOption>>> _fetchRolePermissionsPage({
+    required String roleId,
+    required int pageIndex,
+    required int pageSize,
+  }) {
+    final AppPageRequest request = AppPageRequest(
+      pageIndex: pageIndex,
+      pageSize: pageSize,
+    );
     return _apiClient.get<AppPage<HrOption>>(
       ApiEndpoints.collection(HmsApiResource.rolePermissions),
       queryParameters: <String, Object?>{
         'role_id': roleId,
-        'page': 1,
-        'limit': request.pageSize,
+        'page': pageIndex + 1,
+        'limit': pageSize,
       },
       decoder: (Object? data) {
         final Map<String, Object?> response = data is Map<String, Object?>
@@ -655,10 +745,11 @@ final class HrRepositoryImpl implements HrRepository {
             })
             .where((HrOption item) => item.value.isNotEmpty)
             .toList(growable: false);
+        final int? total = _parsePaginationTotal(response);
         return AppPage<HrOption>(
           items: items,
           request: request,
-          totalItemCount: items.length,
+          totalItemCount: total ?? items.length,
         );
       },
     );
@@ -677,14 +768,53 @@ final class HrRepositoryImpl implements HrRepository {
   Future<Result<List<HrUserRole>>> listUserRoles({
     required String userId,
     String? tenantId,
+  }) async {
+    final List<HrUserRole> all = <HrUserRole>[];
+    var pageIndex = 0;
+    const int pageSize = AppPageRequest.maxPageSize;
+
+    while (true) {
+      final Result<List<HrUserRole>> result = await _fetchUserRolesPage(
+        userId: userId,
+        tenantId: tenantId,
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+      );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return Result<List<HrUserRole>>.failure(failure);
+      }
+
+      final List<HrUserRole> page = result.when(
+        success: (List<HrUserRole> value) => value,
+        failure: (_) => throw StateError('unreachable'),
+      );
+      all.addAll(page);
+      if (page.length < pageSize) {
+        break;
+      }
+      pageIndex += 1;
+    }
+
+    return Result<List<HrUserRole>>.success(all);
+  }
+
+  Future<Result<List<HrUserRole>>> _fetchUserRolesPage({
+    required String userId,
+    String? tenantId,
+    required int pageIndex,
+    required int pageSize,
   }) {
     return _apiClient.get<List<HrUserRole>>(
       ApiEndpoints.collection(HmsApiResource.userRoles),
       queryParameters: _withoutEmpty(<String, Object?>{
         'user_id': userId,
         'tenant_id': tenantId,
-        'page': 1,
-        'limit': 200,
+        'page': pageIndex + 1,
+        'limit': pageSize,
       }),
       decoder: (Object? data) {
         final Map<String, Object?> response = data is Map<String, Object?>
@@ -828,4 +958,19 @@ bool _isEmptyPayloadValue(Object? value) {
     return value.isEmpty;
   }
   return false;
+}
+
+int? _parsePaginationTotal(Map<String, Object?> response) {
+  final Object? pagination = response['pagination'];
+  if (pagination is! Map<String, Object?>) {
+    return null;
+  }
+  final Object? total = pagination['total'];
+  if (total is int) {
+    return total;
+  }
+  if (total is String) {
+    return int.tryParse(total);
+  }
+  return null;
 }

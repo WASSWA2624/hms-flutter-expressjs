@@ -134,6 +134,10 @@ abstract interface class HrRepository {
     HrAccessQuery query,
   );
 
+  Future<Result<List<HrAccessPermission>>> listAllAccessPermissions(
+    HrAccessQuery query,
+  );
+
   Future<Result<Object?>> updateUserAccount(
     String userId,
     Map<String, Object?> payload,

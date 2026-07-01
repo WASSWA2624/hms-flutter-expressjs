@@ -6,6 +6,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -54,10 +56,22 @@ class _HrAccessWorkspaceDialogState
   List<HrAccessUser> _users = const <HrAccessUser>[];
   List<HrAccessRole> _roles = const <HrAccessRole>[];
   List<HrAccessPermission> _permissions = const <HrAccessPermission>[];
+  late final AppListTableColumnVisibilityController<HrAccessUser>
+  _userColumnVisibility;
+  late final AppListTableColumnVisibilityController<HrAccessRole>
+  _roleColumnVisibility;
+  late final AppListTableColumnVisibilityController<HrAccessPermission>
+  _permissionColumnVisibility;
 
   @override
   void initState() {
     super.initState();
+    _userColumnVisibility =
+        AppListTableColumnVisibilityController<HrAccessUser>();
+    _roleColumnVisibility =
+        AppListTableColumnVisibilityController<HrAccessRole>();
+    _permissionColumnVisibility =
+        AppListTableColumnVisibilityController<HrAccessPermission>();
     _searchController.addListener(_onSearchChanged);
     unawaited(_reload(resetPage: true));
   }
@@ -65,6 +79,9 @@ class _HrAccessWorkspaceDialogState
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _userColumnVisibility.dispose();
+    _roleColumnVisibility.dispose();
+    _permissionColumnVisibility.dispose();
     _searchController
       ..removeListener(_onSearchChanged)
       ..dispose();
@@ -194,6 +211,21 @@ class _HrAccessWorkspaceDialogState
   AppPageRequest get _pageRequest =>
       AppPageRequest(pageIndex: _pageIndex, pageSize: _pageSize);
 
+  AppListTableSearch<T> _accessTableSearch<T>(AppLocalizations l10n) {
+    return AppListTableSearch<T>(
+      controller: _searchController,
+      semanticLabel: l10n.hrAccessSearchLabel,
+      hintText: l10n.hrAccessSearchHint,
+      clearLabel: l10n.hrClearFiltersAction,
+      matcher: (_, _) => true,
+      onSubmitted: (_) => unawaited(_reload(resetPage: true)),
+      onClear: () {
+        _searchController.clear();
+        unawaited(_reload(resetPage: true));
+      },
+    );
+  }
+
   String _accessPageLabel<T>(AppPage<T> page, AppLocalizations l10n) {
     return l10n.hrPageLabel(
       page.firstItemNumber,
@@ -244,12 +276,6 @@ class _HrAccessWorkspaceDialogState
               setState(() => _panel = next);
               unawaited(_reload(resetPage: true));
             },
-          ),
-          const SizedBox(height: 12),
-          AppTextField(
-            controller: _searchController,
-            labelText: l10n.hrAccessSearchLabel,
-            onFieldSubmitted: (_) => unawaited(_reload(resetPage: true)),
           ),
           const SizedBox(height: 12),
           if (_tenantContextRequired)
@@ -341,6 +367,9 @@ class _HrAccessWorkspaceDialogState
         totalItemCount: _totalItemCount,
       ),
       isLoading: _loading,
+      search: _accessTableSearch<HrAccessUser>(l10n),
+      columnVisibilityController: _userColumnVisibility,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessUser item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessUser user) async {
         await showHrAccessUserDetailDialog(
@@ -399,7 +428,7 @@ class _HrAccessWorkspaceDialogState
               ),
           cellBuilder: (BuildContext context, HrAccessUser item) {
             if (item.roleNames.isEmpty) {
-              return Text(context.l10n.profileUnknownValue);
+              return const Text('—');
             }
             return Text(
               item.roleNames
@@ -467,6 +496,9 @@ class _HrAccessWorkspaceDialogState
         totalItemCount: _totalItemCount,
       ),
       isLoading: _loading,
+      search: _accessTableSearch<HrAccessRole>(l10n),
+      columnVisibilityController: _roleColumnVisibility,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessRole item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessRole role) async {
         await showHrAccessRoleDetailDialog(
@@ -568,6 +600,9 @@ class _HrAccessWorkspaceDialogState
         totalItemCount: _totalItemCount,
       ),
       isLoading: _loading,
+      search: _accessTableSearch<HrAccessPermission>(l10n),
+      columnVisibilityController: _permissionColumnVisibility,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessPermission item) =>
           ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessPermission permission) async {
@@ -603,9 +638,10 @@ class _HrAccessWorkspaceDialogState
           sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
               appListTableCompareText(left.description, right.description),
           cellBuilder: (BuildContext context, HrAccessPermission item) {
+            final String code = item.name ?? item.effectiveId;
             return Text(
               item.description ??
-                  l10n.hrAccessPermissionRoleCount(item.roleCount),
+                  l10n.permissionCatalogDescriptionForCode(code),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             );
@@ -777,7 +813,6 @@ Future<void> showHrAccessRoleDetailDialog(
               label: l10n.hrAccessAssignPermissionsAction,
               leadingIcon: Icons.security_outlined,
               onPressed: () async {
-                Navigator.of(dialogContext).pop();
                 await showHrAssignRolePermissionsDialog(context, ref, role);
                 onChanged?.call();
               },
@@ -856,84 +891,149 @@ Future<void> showHrAccessUserDetailDialog(
   HrAccessUser user, {
   VoidCallback? onChanged,
 }) async {
-  final AppLocalizations l10n = context.l10n;
-  final String? tenantId = resolveHrAccessTenantId(ref);
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final bool canWrite = canWriteHrAccess(ref);
-
-  HrAccessUserDetail? detail;
-  AppFailure? failure;
-  final Result<HrAccessUserDetail> result = await controller
-      .loadAccessUserDetail(user.effectiveId, tenantId: tenantId);
-  result.when(
-    success: (HrAccessUserDetail value) => detail = value,
-    failure: (AppFailure value) => failure = value,
-  );
-  if (!context.mounted) {
-    return;
-  }
-
   await showAppDialog<void>(
     context: context,
     builder: (BuildContext dialogContext) {
-      if (failure != null) {
-        return AppDialog(
-          title: Text(l10n.hrAccessUserDetailTitle),
-          icon: const Icon(Icons.person_outline),
-          content: AppFailureStateView(failure: failure!),
-          actions: <Widget>[
-            AppButton.secondary(
-              label: l10n.commonCloseActionLabel,
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-          ],
-        );
-      }
-
-      final HrAccessUserDetail resolved = detail!;
-      return AppDialog(
-        title: Text(l10n.hrAccessUserDetailTitle),
-        icon: const Icon(Icons.person_outline),
-        scrollable: true,
-        maxWidth: 720,
-        content: _HrAccessUserDetailContent(detail: resolved),
-        actions: <Widget>[
-          if ((resolved.staffProfileId ?? '').isNotEmpty)
-            AppButton.secondary(
-              label: l10n.hrAccessOpenStaffProfileAction,
-              leadingIcon: Icons.badge_outlined,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-                await ref
-                    .read(hrWorkspaceControllerProvider.notifier)
-                    .selectStaffByDisplayId(resolved.staffProfileId!);
-              },
-            ),
-          if (canWrite)
-            AppButton.secondary(
-              label: l10n.hrAccessEditUserAction,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await showHrEditAccessUserDialog(
-                  context,
-                  ref,
-                  resolved.toSummary(),
-                  initialDetail: resolved,
-                );
-                onChanged?.call();
-              },
-            ),
-          AppButton.primary(
-            label: l10n.commonCloseActionLabel,
-            onPressed: () => Navigator.of(dialogContext).pop(),
-          ),
-        ],
+      return _HrAccessUserDetailDialog(
+        user: user,
+        onChanged: onChanged,
       );
     },
   );
+}
+
+class _HrAccessUserDetailDialog extends ConsumerStatefulWidget {
+  const _HrAccessUserDetailDialog({required this.user, this.onChanged});
+
+  final HrAccessUser user;
+  final VoidCallback? onChanged;
+
+  @override
+  ConsumerState<_HrAccessUserDetailDialog> createState() =>
+      _HrAccessUserDetailDialogState();
+}
+
+class _HrAccessUserDetailDialogState
+    extends ConsumerState<_HrAccessUserDetailDialog> {
+  HrAccessUserDetail? _detail;
+  AppFailure? _failure;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadDetail());
+  }
+
+  Future<void> _loadDetail() async {
+    setState(() {
+      _loading = true;
+      _failure = null;
+    });
+    final String? tenantId = resolveHrAccessTenantId(ref);
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final Result<HrAccessUserDetail> result = await controller
+        .loadAccessUserDetail(widget.user.effectiveId, tenantId: tenantId);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (HrAccessUserDetail value) {
+        setState(() {
+          _loading = false;
+          _detail = value;
+        });
+      },
+      failure: (AppFailure value) {
+        setState(() {
+          _loading = false;
+          _failure = value;
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final bool canWrite = canWriteHrAccess(ref);
+    final String title = _detail?.profileName ??
+        widget.user.displayLabel;
+
+    if (_loading) {
+      return AppDialog(
+        title: Text(title),
+        icon: const Icon(Icons.person_outline),
+        content: const Center(child: CircularProgressIndicator()),
+        actions: <Widget>[
+          AppButton.primary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+    }
+
+    if (_failure != null) {
+      return AppDialog(
+        title: Text(l10n.hrAccessUserDetailTitle),
+        icon: const Icon(Icons.person_outline),
+        content: AppFailureStateView(
+          failure: _failure!,
+          onRetry: () => unawaited(_loadDetail()),
+        ),
+        actions: <Widget>[
+          AppButton.primary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+    }
+
+    final HrAccessUserDetail resolved = _detail!;
+    return AppDialog(
+      title: Text(title),
+      icon: const Icon(Icons.person_outline),
+      scrollable: true,
+      maxWidth: 720,
+      content: _HrAccessUserDetailContent(detail: resolved),
+      actions: <Widget>[
+        if ((resolved.staffProfileId ?? '').isNotEmpty)
+          AppButton.secondary(
+            label: l10n.hrAccessOpenStaffProfileAction,
+            leadingIcon: Icons.badge_outlined,
+            onPressed: () async {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+              await ref
+                  .read(hrWorkspaceControllerProvider.notifier)
+                  .selectStaffByDisplayId(resolved.staffProfileId!);
+            },
+          ),
+        if (canWrite)
+          AppButton.secondary(
+            label: l10n.hrAccessEditUserAction,
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await showHrEditAccessUserDialog(
+                context,
+                ref,
+                resolved.toSummary(),
+                initialDetail: resolved,
+              );
+              widget.onChanged?.call();
+            },
+          ),
+        AppButton.primary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
 }
 
 class _HrAccessUserDetailContent extends StatelessWidget {
@@ -1112,23 +1212,46 @@ Future<void> showHrEditAccessUserDialog(
   final Set<String> selectedPermissionIds = detail.directPermissions
       .map((HrAccessPermission permission) => permission.effectiveId)
       .toSet();
-  final TextEditingController permissionSearchController =
-      TextEditingController();
 
-  final Result<AppPage<HrAccessPermission>> permissionsResult = await controller
-      .loadAccessPermissions(
+  final Result<List<HrAccessPermission>> permissionsResult = await controller
+      .loadAllAccessPermissions(
         HrAccessQuery(panel: HrAccessPanel.permissions, tenantId: tenantId),
       );
   final List<HrAccessPermission> permissionOptions = permissionsResult.when(
-    success: (AppPage<HrAccessPermission> page) => page.items,
+    success: (List<HrAccessPermission> items) => items,
     failure: (_) => const <HrAccessPermission>[],
   );
+
+  final List<AppRoleAssignmentOption> roleOptions =
+      (state?.referenceData.roles ?? const <HrOption>[])
+          .map(
+            (HrOption role) => AppRoleAssignmentOption(
+              id: role.value,
+              label: l10n.hrLocalizedOptionLabel(role),
+              permissionCount: (role.extra['permission_count'] as int?) ?? 0,
+              isSystemCritical: role.extra['is_system_critical'] == true,
+            ),
+          )
+          .toList(growable: false);
+
+  final List<AppPermissionAssignmentOption> permissionAssignmentOptions =
+      permissionOptions
+          .map(
+            (HrAccessPermission permission) => AppPermissionAssignmentOption(
+              id: permission.effectiveId,
+              code: permission.name ?? permission.effectiveId,
+              label: l10n.permissionCatalogLabelForCode(
+                permission.name ?? permission.effectiveId,
+              ),
+              description: permission.description,
+            ),
+          )
+          .toList(growable: false);
 
   if (!context.mounted) {
     emailController.dispose();
     phoneController.dispose();
     positionController.dispose();
-    permissionSearchController.dispose();
     return;
   }
 
@@ -1148,20 +1271,6 @@ Future<void> showHrEditAccessUserDialog(
         ]) {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              final String permissionQuery = permissionSearchController.text
-                  .trim()
-                  .toLowerCase();
-              final Iterable<HrAccessPermission>
-              filteredPermissions = permissionOptions.where((
-                HrAccessPermission permission,
-              ) {
-                final String haystack =
-                    '${permission.name ?? ''} ${permission.description ?? ''}'
-                        .toLowerCase();
-                return permissionQuery.isEmpty ||
-                    haystack.contains(permissionQuery);
-              });
-
               return AppFormSection(
                 children: <Widget>[
                   AppTextField(
@@ -1199,82 +1308,43 @@ Future<void> showHrEditAccessUserDialog(
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                  _HrAccessMultiSelectHeader(
-                    selectAllLabel: l10n.hrAccessSelectAllRolesAction,
-                    clearLabel: l10n.hrAccessClearRolesAction,
-                    onSelectAll: () {
+                  AppRoleAssignmentPicker(
+                    roles: roleOptions,
+                    selectedRoleIds: selectedRoleIds,
+                    onSelectionChanged: (Set<String> next) {
                       setState(() {
                         selectedRoleIds
                           ..clear()
-                          ..addAll(
-                            (state?.referenceData.roles ?? const <HrOption>[])
-                                .map((HrOption role) => role.value),
-                          );
+                          ..addAll(next);
                       });
                     },
-                    onClear: () => setState(selectedRoleIds.clear),
+                    loadRolePermissions: (String roleId) async {
+                      final Result<AppPage<HrOption>> result = await controller
+                          .listRolePermissionOptions(roleId);
+                      return result.when(
+                        success: (AppPage<HrOption> page) => page.items
+                            .map((HrOption option) => option.label)
+                            .toSet(),
+                        failure: (_) => <String>{},
+                      );
+                    },
                   ),
-                  for (final HrOption role
-                      in state?.referenceData.roles ?? const [])
-                    AppCheckboxField(
-                      title: l10n.hrLocalizedOptionLabel(role),
-                      value: selectedRoleIds.contains(role.value),
-                      onChanged: (bool checked) {
-                        setState(() {
-                          if (checked) {
-                            selectedRoleIds.add(role.value);
-                          } else {
-                            selectedRoleIds.remove(role.value);
-                          }
-                        });
-                      },
-                    ),
                   Text(
                     l10n.hrAccessDirectPermissionsLabel,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                  AppTextField(
-                    controller: permissionSearchController,
-                    labelText: l10n.hrAccessSearchLabel,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  _HrAccessMultiSelectHeader(
-                    selectAllLabel: l10n.hrAccessSelectAllPermissionsAction,
-                    clearLabel: l10n.hrAccessClearPermissionsAction,
-                    onSelectAll: () {
+                  AppPermissionAssignmentPicker(
+                    permissions: permissionAssignmentOptions,
+                    selectedPermissionIds: selectedPermissionIds,
+                    onSelectionChanged: (Set<String> next) {
                       setState(() {
                         selectedPermissionIds
                           ..clear()
-                          ..addAll(
-                            permissionOptions.map(
-                              (HrAccessPermission permission) =>
-                                  permission.effectiveId,
-                            ),
-                          );
+                          ..addAll(next);
                       });
                     },
-                    onClear: () => setState(selectedPermissionIds.clear),
                   ),
-                  for (final HrAccessPermission permission
-                      in filteredPermissions)
-                    AppCheckboxField(
-                      title: permission.name ?? permission.effectiveId,
-                      value: selectedPermissionIds.contains(
-                        permission.effectiveId,
-                      ),
-                      onChanged: (bool checked) {
-                        setState(() {
-                          if (checked) {
-                            selectedPermissionIds.add(permission.effectiveId);
-                          } else {
-                            selectedPermissionIds.remove(
-                              permission.effectiveId,
-                            );
-                          }
-                        });
-                      },
-                    ),
                 ],
               );
             },
@@ -1302,37 +1372,8 @@ Future<void> showHrEditAccessUserDialog(
   emailController.dispose();
   phoneController.dispose();
   positionController.dispose();
-  permissionSearchController.dispose();
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);
-  }
-}
-
-class _HrAccessMultiSelectHeader extends StatelessWidget {
-  const _HrAccessMultiSelectHeader({
-    required this.selectAllLabel,
-    required this.clearLabel,
-    required this.onSelectAll,
-    required this.onClear,
-  });
-
-  final String selectAllLabel;
-  final String clearLabel;
-  final VoidCallback onSelectAll;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Wrap(
-        spacing: 8,
-        children: <Widget>[
-          AppButton.secondary(label: selectAllLabel, onPressed: onSelectAll),
-          AppButton.secondary(label: clearLabel, onPressed: onClear),
-        ],
-      ),
-    );
   }
 }
 
@@ -1467,12 +1508,12 @@ Future<void> showHrAssignRolePermissionsDialog(
   );
   final String? tenantId = resolveHrAccessTenantId(ref);
 
-  final Result<AppPage<HrAccessPermission>> permissionsResult = await controller
-      .loadAccessPermissions(
+  final Result<List<HrAccessPermission>> permissionsResult = await controller
+      .loadAllAccessPermissions(
         HrAccessQuery(panel: HrAccessPanel.permissions, tenantId: tenantId),
       );
   final List<HrAccessPermission> permissionOptions = permissionsResult.when(
-    success: (AppPage<HrAccessPermission> page) => page.items,
+    success: (List<HrAccessPermission> items) => items,
     failure: (_) => const <HrAccessPermission>[],
   );
   final Result<AppPage<HrOption>> assignedResult = await controller
@@ -1482,6 +1523,20 @@ Future<void> showHrAssignRolePermissionsDialog(
         page.items.map((HrOption option) => option.value).toSet(),
     failure: (_) => <String>{},
   );
+
+  final List<AppPermissionAssignmentOption> permissionAssignmentOptions =
+      permissionOptions
+          .map(
+            (HrAccessPermission permission) => AppPermissionAssignmentOption(
+              id: permission.effectiveId,
+              code: permission.name ?? permission.effectiveId,
+              label: l10n.permissionCatalogLabelForCode(
+                permission.name ?? permission.effectiveId,
+              ),
+              description: permission.description,
+            ),
+          )
+          .toList(growable: false);
 
   if (!context.mounted) {
     return;
@@ -1510,45 +1565,20 @@ Future<void> showHrAssignRolePermissionsDialog(
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                  _HrAccessMultiSelectHeader(
-                    selectAllLabel: l10n.hrAccessSelectAllPermissionsAction,
-                    clearLabel: l10n.hrAccessClearPermissionsAction,
-                    onSelectAll: () {
-                      setState(() {
-                        selectedPermissionIds
-                          ..clear()
-                          ..addAll(
-                            permissionOptions.map(
-                              (HrAccessPermission permission) =>
-                                  permission.effectiveId,
-                            ),
-                          );
-                      });
-                    },
-                    onClear: () => setState(selectedPermissionIds.clear),
-                  ),
-                  if (permissionOptions.isEmpty)
+                  if (permissionAssignmentOptions.isEmpty)
                     Text(l10n.hrAccessEmptyPermissionsLabel)
                   else
-                    for (final HrAccessPermission permission
-                        in permissionOptions)
-                      AppCheckboxField(
-                        title: permission.name ?? permission.effectiveId,
-                        value: selectedPermissionIds.contains(
-                          permission.effectiveId,
-                        ),
-                        onChanged: (bool checked) {
-                          setState(() {
-                            if (checked) {
-                              selectedPermissionIds.add(permission.effectiveId);
-                            } else {
-                              selectedPermissionIds.remove(
-                                permission.effectiveId,
-                              );
-                            }
-                          });
-                        },
-                      ),
+                    AppPermissionAssignmentPicker(
+                      permissions: permissionAssignmentOptions,
+                      selectedPermissionIds: selectedPermissionIds,
+                      onSelectionChanged: (Set<String> next) {
+                        setState(() {
+                          selectedPermissionIds
+                            ..clear()
+                            ..addAll(next);
+                        });
+                      },
+                    ),
                 ],
               );
             },
@@ -1585,8 +1615,34 @@ Future<void> showHrCreatePermissionDialog(
     );
     return;
   }
-  final TextEditingController nameController = TextEditingController();
+
+  final Result<List<HrAccessPermission>> existingResult = await controller
+      .loadAllAccessPermissions(
+        HrAccessQuery(panel: HrAccessPanel.permissions, tenantId: tenantId),
+      );
+  final Set<String> provisionedCodes = existingResult.when(
+    success: (List<HrAccessPermission> items) => items
+        .map((HrAccessPermission p) => p.name ?? '')
+        .where((String name) => name.isNotEmpty)
+        .toSet(),
+    failure: (_) => <String>{},
+  );
+  final List<AppPermission> catalogOptions = AppPermissions.all
+      .where(
+        (AppPermission permission) =>
+            !provisionedCodes.contains(permission.value),
+      )
+      .toList(growable: false)
+    ..sort((AppPermission left, AppPermission right) =>
+        left.value.compareTo(right.value));
+
+  String? selectedPermissionCode;
   final TextEditingController descriptionController = TextEditingController();
+
+  if (!context.mounted) {
+    descriptionController.dispose();
+    return;
+  }
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -1602,31 +1658,58 @@ Future<void> showHrCreatePermissionDialog(
           bool _, [
           AppFailure? failure,
         ]) {
-          return AppFormSection(
-            children: <Widget>[
-              AppTextField(
-                controller: nameController,
-                labelText: l10n.hrAccessPermissionNameLabel,
-                isRequired: true,
-                validator: AppValidators.requiredText(
-                  l10n.hrFieldRequiredLabel(l10n.hrAccessPermissionNameLabel),
-                ),
-              ),
-              AppTextField(
-                controller: descriptionController,
-                labelText: l10n.hrAccessPermissionDescriptionLabel,
-                maxLines: 2,
-              ),
-            ],
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppFormSection(
+                children: <Widget>[
+                  if (catalogOptions.isEmpty)
+                    Text(l10n.hrAccessEmptyPermissionsLabel)
+                  else
+                    AppSelectField<String>.searchable(
+                      value: selectedPermissionCode,
+                      labelText: l10n.hrAccessPermissionCatalogSelectLabel,
+                      isRequired: true,
+                      options: <AppSelectOption<String>>[
+                        for (final AppPermission permission in catalogOptions)
+                          AppSelectOption<String>(
+                            value: permission.value,
+                            label: l10n.permissionCatalogLabel(permission),
+                            searchText:
+                                '${permission.value} ${l10n.permissionCatalogLabel(permission)}',
+                          ),
+                      ],
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedPermissionCode = value;
+                          if (value != null) {
+                            descriptionController.text = l10n
+                                .permissionCatalogDescriptionForCode(value);
+                          }
+                        });
+                      },
+                    ),
+                  AppTextField(
+                    controller: descriptionController,
+                    labelText: l10n.hrAccessPermissionDescriptionLabel,
+                    maxLines: 2,
+                  ),
+                ],
+              );
+            },
           );
         },
-    onSubmit: () => controller.createAccessPermission(<String, Object?>{
-      'tenant_id': tenantId,
-      'name': nameController.text.trim(),
-      'description': descriptionController.text.trim(),
-    }),
+    onSubmit: () {
+      final String? code = selectedPermissionCode?.trim();
+      if (code == null || code.isEmpty) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
+      return controller.createAccessPermission(<String, Object?>{
+        'tenant_id': tenantId,
+        'name': code,
+        'description': descriptionController.text.trim(),
+      });
+    },
   );
-  nameController.dispose();
   descriptionController.dispose();
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);
@@ -1642,12 +1725,10 @@ Future<void> showHrEditPermissionDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final TextEditingController nameController = TextEditingController(
-    text: permission.name,
-  );
   final TextEditingController descriptionController = TextEditingController(
     text: permission.description,
   );
+  final String permissionName = permission.name ?? permission.effectiveId;
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -1666,9 +1747,9 @@ Future<void> showHrEditPermissionDialog(
           return AppFormSection(
             children: <Widget>[
               AppTextField(
-                controller: nameController,
+                initialValue: permissionName,
                 labelText: l10n.hrAccessPermissionNameLabel,
-                isRequired: true,
+                readOnly: true,
               ),
               AppTextField(
                 controller: descriptionController,
@@ -1680,11 +1761,9 @@ Future<void> showHrEditPermissionDialog(
         },
     onSubmit: () => controller
         .updateAccessPermission(permission.effectiveId, <String, Object?>{
-          'name': nameController.text.trim(),
           'description': descriptionController.text.trim(),
         }),
   );
-  nameController.dispose();
   descriptionController.dispose();
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);

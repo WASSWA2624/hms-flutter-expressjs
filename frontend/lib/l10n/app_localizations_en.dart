@@ -13785,6 +13785,222 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessSearchLabel => 'Search';
 
   @override
+  String get hrAccessSearchHint => 'Search staff, roles, or permissions';
+
+  @override
+  String get hrPermissionAssignmentAddPermissionLabel => 'Add permission';
+
+  @override
+  String get hrPermissionAssignmentEmptySelectedLabel =>
+      'No permissions selected.';
+
+  @override
+  String get hrPermissionAssignmentRemovePermissionAction =>
+      'Remove permission';
+
+  @override
+  String get hrPermissionAssignmentAvailableByModuleLabel =>
+      'Available by module';
+
+  @override
+  String get hrAccessPermissionCatalogSelectLabel => 'Permission';
+
+  @override
+  String get permissionCatalogProfileRead => 'Profile — Read';
+
+  @override
+  String get permissionCatalogProfileUpdate => 'Profile — Update';
+
+  @override
+  String get permissionCatalogPatientRead => 'Patient — Read';
+
+  @override
+  String get permissionCatalogPatientWrite => 'Patient — Write';
+
+  @override
+  String get permissionCatalogPatientDelete => 'Patient — Delete';
+
+  @override
+  String get permissionCatalogClinicalRead => 'Clinical — Read';
+
+  @override
+  String get permissionCatalogClinicalWrite => 'Clinical — Write';
+
+  @override
+  String get permissionCatalogEmergencyRead => 'Emergency — Read';
+
+  @override
+  String get permissionCatalogEmergencyWrite => 'Emergency — Write';
+
+  @override
+  String get permissionCatalogEmergencyDelete => 'Emergency — Delete';
+
+  @override
+  String get permissionCatalogLabRead => 'Lab — Read';
+
+  @override
+  String get permissionCatalogLabWrite => 'Lab — Write';
+
+  @override
+  String get permissionCatalogRadiologyRead => 'Radiology — Read';
+
+  @override
+  String get permissionCatalogRadiologyWrite => 'Radiology — Write';
+
+  @override
+  String get permissionCatalogPharmacyRead => 'Pharmacy — Read';
+
+  @override
+  String get permissionCatalogPharmacyWrite => 'Pharmacy — Write';
+
+  @override
+  String get permissionCatalogBillingRead => 'Billing — Read';
+
+  @override
+  String get permissionCatalogBillingWrite => 'Billing — Write';
+
+  @override
+  String get permissionCatalogOperationsRead => 'Operations — Read';
+
+  @override
+  String get permissionCatalogOperationsWrite => 'Operations — Write';
+
+  @override
+  String get permissionCatalogHrRead => 'HR — Read';
+
+  @override
+  String get permissionCatalogHrWrite => 'HR — Write';
+
+  @override
+  String get permissionCatalogUnitRead => 'Unit — Read';
+
+  @override
+  String get permissionCatalogUnitManage => 'Unit — Manage';
+
+  @override
+  String get permissionCatalogRosterRead => 'Roster — Read';
+
+  @override
+  String get permissionCatalogRosterWrite => 'Roster — Write';
+
+  @override
+  String get permissionCatalogRosterPublish => 'Roster — Publish';
+
+  @override
+  String get permissionCatalogRosterApprove => 'Roster — Approve';
+
+  @override
+  String get permissionCatalogBiomedRead => 'Biomed — Read';
+
+  @override
+  String get permissionCatalogBiomedWrite => 'Biomed — Write';
+
+  @override
+  String get permissionCatalogMortuaryRead => 'Mortuary — Read';
+
+  @override
+  String get permissionCatalogMortuaryWrite => 'Mortuary — Write';
+
+  @override
+  String get permissionCatalogMortuaryRelease => 'Mortuary — Release';
+
+  @override
+  String get permissionCatalogMortuaryManageStorage =>
+      'Mortuary — Manage storage';
+
+  @override
+  String get permissionCatalogMortuaryPostMortemRequest =>
+      'Mortuary — Post-mortem request';
+
+  @override
+  String get permissionCatalogMortuaryApprove => 'Mortuary — Approve';
+
+  @override
+  String get permissionCatalogMortuaryBillingEvent =>
+      'Mortuary — Billing event';
+
+  @override
+  String get permissionCatalogMortuaryExport => 'Mortuary — Export';
+
+  @override
+  String get permissionCatalogMortuaryAudit => 'Mortuary — Audit';
+
+  @override
+  String get permissionCatalogCommunicationsRead => 'Communications — Read';
+
+  @override
+  String get permissionCatalogCommunicationsWrite => 'Communications — Write';
+
+  @override
+  String get permissionCatalogCommunicationsDelete => 'Communications — Delete';
+
+  @override
+  String get permissionCatalogIntegrationRead => 'Integration — Read';
+
+  @override
+  String get permissionCatalogIntegrationWrite => 'Integration — Write';
+
+  @override
+  String get permissionCatalogIntegrationDelete => 'Integration — Delete';
+
+  @override
+  String get permissionCatalogReportsRead => 'Reports — Read';
+
+  @override
+  String get permissionCatalogReportsWrite => 'Reports — Write';
+
+  @override
+  String get permissionCatalogReportsDelete => 'Reports — Delete';
+
+  @override
+  String get permissionCatalogSubscriptionsRead => 'Subscriptions — Read';
+
+  @override
+  String get permissionCatalogSubscriptionsWrite => 'Subscriptions — Write';
+
+  @override
+  String get permissionCatalogSubscriptionsDelete => 'Subscriptions — Delete';
+
+  @override
+  String get permissionCatalogLastOfficeRead => 'Last office — Read';
+
+  @override
+  String get permissionCatalogLastOfficeWrite => 'Last office — Write';
+
+  @override
+  String get permissionCatalogLastOfficeApprove => 'Last office — Approve';
+
+  @override
+  String get permissionCatalogComplianceRead => 'Compliance — Read';
+
+  @override
+  String get permissionCatalogComplianceReview => 'Compliance — Review';
+
+  @override
+  String get permissionCatalogBreakGlassRequest => 'Break glass — Request';
+
+  @override
+  String get permissionCatalogBreakGlassReview => 'Break glass — Review';
+
+  @override
+  String get permissionCatalogBreakGlassApprove => 'Break glass — Approve';
+
+  @override
+  String get permissionCatalogEvidenceExport => 'Evidence — Export';
+
+  @override
+  String get permissionCatalogFinancialApprove => 'Financial — Approve';
+
+  @override
+  String get permissionCatalogFacilityAdmin => 'Facility — Admin';
+
+  @override
+  String get permissionCatalogTenantAdmin => 'Tenant — Admin';
+
+  @override
+  String get permissionCatalogSystemAdmin => 'System — Admin';
+
+  @override
   String get hrAccessEmptyUsersLabel => 'No staff accounts match your search.';
 
   @override

@@ -583,6 +583,12 @@ final class HrWorkspaceController
     return _repository.listAccessPermissions(query);
   }
 
+  Future<Result<List<HrAccessPermission>>> loadAllAccessPermissions(
+    HrAccessQuery query,
+  ) {
+    return _repository.listAllAccessPermissions(query);
+  }
+
   Future<AppFailure?> updateAccessUser(
     String userId,
     Map<String, Object?> payload, {
