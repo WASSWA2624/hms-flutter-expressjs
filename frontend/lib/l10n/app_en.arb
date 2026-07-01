@@ -5545,13 +5545,29 @@
   "@tenantFacilityFacilitySectionBody": {
     "description": "Facility profile form section body."
   },
+  "tenantFacilityLogoLabel": "Facility logo",
+  "@tenantFacilityLogoLabel": {
+    "description": "Facility logo upload field label."
+  },
+  "tenantFacilityLogoHelper": "Upload a square image (JPG, PNG, or WebP, up to 5 MB).",
+  "@tenantFacilityLogoHelper": {
+    "description": "Facility logo upload helper text."
+  },
+  "tenantFacilityChooseLogoAction": "Choose image",
+  "@tenantFacilityChooseLogoAction": {
+    "description": "Facility logo file picker action label."
+  },
+  "tenantFacilityRemoveLogoAction": "Remove",
+  "@tenantFacilityRemoveLogoAction": {
+    "description": "Facility logo remove action label."
+  },
   "tenantFacilityLogoUrlLabel": "Logo storage URL",
   "@tenantFacilityLogoUrlLabel": {
-    "description": "Facility logo URL field label."
+    "description": "Deprecated facility logo URL field label."
   },
   "tenantFacilityLogoUrlHelper": "Use a URL created by the approved storage service.",
   "@tenantFacilityLogoUrlHelper": {
-    "description": "Facility logo URL helper text."
+    "description": "Deprecated facility logo URL helper text."
   },
   "tenantFacilityAddressLineLabel": "Address line",
   "@tenantFacilityAddressLineLabel": {

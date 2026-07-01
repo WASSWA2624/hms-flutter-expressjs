@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_logo_upload_field.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -874,7 +875,6 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
 class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _logoUrlController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _addressLineController;
@@ -882,6 +882,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   late final TextEditingController _countryController;
   late FacilitySetupType _type;
   late bool _isActive;
+  String? _existingLogoUrl;
+  String? _logoFileName;
+  List<int>? _logoBytes;
+  String? _logoMimeType;
+  bool _logoCleared = false;
 
   @override
   void initState() {
@@ -889,9 +894,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _nameController = TextEditingController(
       text: widget.snapshot.facility?.name,
     );
-    _logoUrlController = TextEditingController(
-      text: widget.snapshot.facility?.logoUrl,
-    );
+    _existingLogoUrl = widget.snapshot.facility?.logoUrl;
     _phoneController = TextEditingController(
       text: widget.snapshot.contactAddress.phone,
     );
@@ -916,7 +919,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.snapshot.facility?.id != widget.snapshot.facility?.id) {
       _nameController.text = widget.snapshot.facility?.name ?? '';
-      _logoUrlController.text = widget.snapshot.facility?.logoUrl ?? '';
+      _existingLogoUrl = widget.snapshot.facility?.logoUrl;
+      _logoFileName = null;
+      _logoBytes = null;
+      _logoMimeType = null;
+      _logoCleared = false;
       _phoneController.text = widget.snapshot.contactAddress.phone ?? '';
       _emailController.text = widget.snapshot.contactAddress.email ?? '';
       _addressLineController.text =
@@ -931,13 +938,38 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   @override
   void dispose() {
     _nameController.dispose();
-    _logoUrlController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _addressLineController.dispose();
     _cityController.dispose();
     _countryController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickLogo() async {
+    final FacilityLogoPickResult? picked = await pickFacilityLogoFile(
+      context.l10n,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _logoFileName = picked.fileName;
+      _logoBytes = picked.bytes;
+      _logoMimeType = picked.mimeType;
+      _logoCleared = false;
+    });
+  }
+
+  void _clearLogo() {
+    setState(() {
+      _logoFileName = null;
+      _logoBytes = null;
+      _logoMimeType = null;
+      _existingLogoUrl = null;
+      _logoCleared = true;
+    });
   }
 
   @override
@@ -991,7 +1023,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               for (final type in FacilitySetupType.values)
                 AppSelectOption<FacilitySetupType>(
                   value: type,
-                  label: _facilityTypeLabel(l10n, type),
+                  label: tenantFacilityFacilityTypeLabel(l10n, type),
+                  leadingIcon: Icon(tenantFacilityFacilityTypeIcon(type)),
                 ),
             ],
             onChanged: (FacilitySetupType? value) {
@@ -1002,12 +1035,17 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               }
             },
           ),
-          AppTextField(
-            controller: _logoUrlController,
+          FacilityLogoUploadField(
+            label: l10n.tenantFacilityLogoLabel,
+            helperText: l10n.tenantFacilityLogoHelper,
+            chooseLabel: l10n.tenantFacilityChooseLogoAction,
+            removeLabel: l10n.tenantFacilityRemoveLogoAction,
             enabled: canEdit,
-            labelText: l10n.tenantFacilityLogoUrlLabel,
-            helperText: l10n.tenantFacilityLogoUrlHelper,
-            keyboardType: TextInputType.url,
+            existingLogoUrl: _logoCleared ? null : _existingLogoUrl,
+            pendingFileName: _logoFileName,
+            pendingBytes: _logoBytes,
+            onChoose: _pickLogo,
+            onClear: _clearLogo,
           ),
           AppPhoneField(
             controller: _phoneController,
@@ -1109,7 +1147,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           name: _nameController.text,
           type: _type,
           isActive: _isActive,
-          logoUrl: _logoUrlController.text,
+          logoUrl: _logoCleared ? null : _existingLogoUrl,
+          removeLogo: _logoCleared,
+          logoBytes: _logoBytes,
+          logoFileName: _logoFileName,
+          logoMimeType: _logoMimeType,
           phone: _phoneController.text,
           email: _emailController.text,
           addressLine1: _addressLineController.text,
@@ -3064,16 +3106,6 @@ class _SubmitButton extends ConsumerWidget {
   }
 }
 
-String _facilityTypeLabel(AppLocalizations l10n, FacilitySetupType type) {
-  return switch (type) {
-    FacilitySetupType.hospital => l10n.authFacilityTypeHospital,
-    FacilitySetupType.clinic => l10n.authFacilityTypeClinic,
-    FacilitySetupType.lab => l10n.authFacilityTypeLab,
-    FacilitySetupType.pharmacy => l10n.authFacilityTypePharmacy,
-    FacilitySetupType.other => l10n.authFacilityTypeOther,
-  };
-}
-
 String _departmentTypeLabel(AppLocalizations l10n, DepartmentSetupType type) {
   return switch (type) {
     DepartmentSetupType.clinical => l10n.tenantFacilityDepartmentTypeClinical,
@@ -3115,6 +3147,24 @@ void _showSaved(BuildContext context) {
     ..showSnackBar(
       SnackBar(content: Text(context.l10n.tenantFacilitySavedMessage)),
     );
+}
+
+/// Shared department create/edit dialog for facility setup.
+Future<void> showTenantFacilityDepartmentFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  DepartmentProfile? department,
+}) {
+  return _openDepartmentDialog(context, snapshot, department: department);
+}
+
+/// Shared unit create/edit dialog for facility setup.
+Future<void> showTenantFacilityUnitFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  UnitProfile? unit,
+}) {
+  return _openUnitDialog(context, snapshot, unit: unit);
 }
 
 /// Shared room create/edit dialog for facility setup and rooms & beds workspace.

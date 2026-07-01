@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -201,16 +202,20 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required FacilitySetupType type,
     required bool isActive,
     String? logoUrl,
+    bool removeLogo = false,
   }) {
     final String? normalizedLogoUrl = _normalizedOptional(logoUrl);
+    final Map<String, Object?>? extensionJson = normalizedLogoUrl != null
+        ? <String, Object?>{'logo_url': normalizedLogoUrl}
+        : removeLogo
+        ? <String, Object?>{'logo_url': null}
+        : null;
     final payload = <String, Object?>{
       if (id == null) 'tenant_id': tenantId,
       'name': name.trim(),
       'facility_type': type.apiValue,
       'is_active': isActive,
-      'extension_json': <String, Object?>{
-        if (normalizedLogoUrl case final String logoUrl) 'logo_url': logoUrl,
-      },
+      'extension_json': ?extensionJson,
     };
     if (id == null) {
       return _apiClient.post<FacilityProfile>(
@@ -224,6 +229,52 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       ApiEndpoints.byId(HmsApiResource.facilities, id),
       data: payload,
       decoder: _decodeFacility,
+    );
+  }
+
+  @override
+  Future<Result<String>> uploadFacilityLogo({
+    required String facilityId,
+    required List<int> bytes,
+    required String fileName,
+    String? mimeType,
+  }) {
+    final FormData formData = FormData();
+    formData.files.add(
+      MapEntry<String, MultipartFile>(
+        'logo',
+        MultipartFile.fromBytes(
+          bytes,
+          filename: fileName,
+          contentType: mimeType == null ? null : DioMediaType.parse(mimeType),
+        ),
+      ),
+    );
+
+    return _apiClient.post<String>(
+      ApiEndpoints.nested(
+        HmsApiResource.tenantFacilityWorkspace,
+        'facilities',
+        <String>[facilityId, 'logo'],
+      ),
+      data: formData,
+      decoder: (Object? data) {
+        return ApiResponseEnvelope.decodeData<String>(
+          data,
+          decoder: (Object? payload) {
+            if (payload is! JsonMap) {
+              throw const FormatException('Expected logo upload response object.');
+            }
+
+            final Object? logoUrlValue = payload['logo_url'];
+            if (logoUrlValue is! String || logoUrlValue.trim().isEmpty) {
+              throw const FormatException('Expected logo_url in upload response.');
+            }
+
+            return logoUrlValue.trim();
+          },
+        );
+      },
     );
   }
 

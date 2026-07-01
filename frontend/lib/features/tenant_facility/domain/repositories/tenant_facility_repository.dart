@@ -18,6 +18,14 @@ abstract interface class TenantFacilityRepository {
     required FacilitySetupType type,
     required bool isActive,
     String? logoUrl,
+    bool removeLogo = false,
+  });
+
+  Future<Result<String>> uploadFacilityLogo({
+    required String facilityId,
+    required List<int> bytes,
+    required String fileName,
+    String? mimeType,
   });
 
   Future<Result<void>> saveFacilityContactAddress({

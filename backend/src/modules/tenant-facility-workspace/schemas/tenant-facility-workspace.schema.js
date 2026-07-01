@@ -8,6 +8,11 @@ const setupQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
+const facilityLogoParamsSchema = z.object({
+  facilityId: uuidOrFriendlyIdentifierSchema,
+});
+
 module.exports = {
   setupQuerySchema,
+  facilityLogoParamsSchema,
 };

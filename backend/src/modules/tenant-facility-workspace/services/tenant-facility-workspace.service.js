@@ -1,4 +1,9 @@
+const path = require('path');
 const repository = require('@repositories/tenant-facility-workspace/tenant-facility-workspace.repository');
+const facilityRepository = require('@repositories/facility/facility.repository');
+const { HttpError } = require('@lib/errors');
+const { createStorageService, sanitizeFilename } = require('@lib/storage');
+const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
 const {
@@ -427,6 +432,90 @@ const getSetup = async (filters = {}, user = {}) => {
   return payload;
 };
 
+const ACCEPTED_LOGO_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+
+const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
+
+const normalizeUploadedLogo = (file = {}) => ({
+  originalname: String(file?.originalname || file?.name || '').trim(),
+  mimetype: String(file?.mimetype || file?.type || '')
+    .trim()
+    .toLowerCase(),
+  size: Number(file?.size || 0),
+  buffer: file?.buffer,
+});
+
+const buildFacilityLogoPath = (tenantId, facilityId, originalName) => {
+  const extension = path.extname(originalName || '').toLowerCase() || '.png';
+  const safeName = sanitizeFilename(`logo${extension}`);
+  return `facilities/${tenantId}/${facilityId}/branding/${safeName}`;
+};
+
+const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
+  const normalizedFile = normalizeUploadedLogo(file);
+  if (!normalizedFile.originalname || !Buffer.isBuffer(normalizedFile.buffer)) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'logo' }]);
+  }
+  if (!ACCEPTED_LOGO_MIME_TYPES.has(normalizedFile.mimetype)) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'content_type' }]);
+  }
+  if (normalizedFile.size > MAX_LOGO_SIZE_BYTES) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'size' }]);
+  }
+
+  const scopeResult = await repository.resolveWorkspaceScope({ filters: {}, user });
+  if (scopeResult.state !== 'ready' || !scopeResult.scope?.tenant_id) {
+    throw new HttpError('errors.auth.scope_mismatch', 403);
+  }
+
+  const facilityId = await resolveIdentifierForFilter({
+    value: facilityIdentifier,
+    model: 'facility',
+    where: { tenant_id: scopeResult.scope.tenant_id },
+  });
+  if (!facilityId) {
+    throw new HttpError('errors.facility.not_found', 404);
+  }
+
+  const facility = await facilityRepository.findById(facilityId);
+  if (!facility || facility.tenant_id !== scopeResult.scope.tenant_id) {
+    throw new HttpError('errors.facility.not_found', 404);
+  }
+
+  const storage = createStorageService();
+  const storageKey = buildFacilityLogoPath(
+    facility.tenant_id,
+    facility.id,
+    normalizedFile.originalname
+  );
+  const uploaded = await storage.upload(normalizedFile.buffer, storageKey, {
+    mimeType: normalizedFile.mimetype,
+  });
+  const logoUrl = await storage.getUrl(uploaded?.path || storageKey);
+  const extensionJson =
+    facility.extension_json && typeof facility.extension_json === 'object'
+      ? facility.extension_json
+      : {};
+
+  await facilityRepository.update(facility.id, {
+    extension_json: {
+      ...extensionJson,
+      logo_url: logoUrl,
+    },
+  });
+
+  return {
+    logo_url: logoUrl,
+    facility_id: safePublicId(facility.human_friendly_id, facility.id),
+  };
+};
+
 module.exports = {
   getSetup,
+  uploadFacilityLogo,
 };

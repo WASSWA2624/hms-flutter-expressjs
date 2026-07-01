@@ -8074,13 +8074,37 @@ abstract class AppLocalizations {
   /// **'Facility name, logo reference, contact details, address, type, and active state.'**
   String get tenantFacilityFacilitySectionBody;
 
-  /// Facility logo URL field label.
+  /// Facility logo upload field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility logo'**
+  String get tenantFacilityLogoLabel;
+
+  /// Facility logo upload helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a square image (JPG, PNG, or WebP, up to 5 MB).'**
+  String get tenantFacilityLogoHelper;
+
+  /// Facility logo file picker action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose image'**
+  String get tenantFacilityChooseLogoAction;
+
+  /// Facility logo remove action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get tenantFacilityRemoveLogoAction;
+
+  /// Deprecated facility logo URL field label.
   ///
   /// In en, this message translates to:
   /// **'Logo storage URL'**
   String get tenantFacilityLogoUrlLabel;
 
-  /// Facility logo URL helper text.
+  /// Deprecated facility logo URL helper text.
   ///
   /// In en, this message translates to:
   /// **'Use a URL created by the approved storage service.'**

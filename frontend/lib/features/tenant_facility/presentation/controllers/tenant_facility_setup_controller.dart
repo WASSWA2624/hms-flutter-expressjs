@@ -182,6 +182,10 @@ final class TenantFacilitySetupSubmissionController
     required FacilitySetupType type,
     required bool isActive,
     String? logoUrl,
+    bool removeLogo = false,
+    List<int>? logoBytes,
+    String? logoFileName,
+    String? logoMimeType,
     String? phone,
     String? email,
     String? addressLine1,
@@ -190,34 +194,77 @@ final class TenantFacilitySetupSubmissionController
   }) {
     return _submit(
       () async {
-        final facilityResult = await _repository.saveFacility(
+        String? resolvedLogoUrl = logoUrl?.trim();
+        if (resolvedLogoUrl != null && resolvedLogoUrl.isEmpty) {
+          resolvedLogoUrl = null;
+        }
+
+        var facilityResult = await _repository.saveFacility(
           id: id,
           tenantId: tenantId,
           name: name,
           type: type,
           isActive: isActive,
-          logoUrl: logoUrl,
+          logoUrl: resolvedLogoUrl,
+          removeLogo: removeLogo,
         );
 
-        return facilityResult.when(
-          success: (FacilityProfile facility) async {
-            final contactResult = await _repository.saveFacilityContactAddress(
-              tenantId: tenantId,
-              facilityId: facility.id,
-              phone: phone,
-              email: email,
-              addressLine1: addressLine1,
-              city: city,
-              country: country,
-            );
+        if (facilityResult case ResultFailure<FacilityProfile>(:final failure)) {
+          return Result<FacilityProfile>.failure(failure);
+        }
 
-            return contactResult.when(
+        var facility = (facilityResult as ResultSuccess<FacilityProfile>).value;
+
+        if (logoBytes != null &&
+            logoFileName != null &&
+            logoFileName.trim().isNotEmpty) {
+          final uploadResult = await _repository.uploadFacilityLogo(
+            facilityId: facility.id,
+            bytes: logoBytes,
+            fileName: logoFileName,
+            mimeType: logoMimeType,
+          );
+
+          final String? uploadedLogoUrl = uploadResult.when(
+            success: (String value) => value,
+            failure: (_) => null,
+          );
+          if (uploadedLogoUrl == null) {
+            return uploadResult.when(
               success: (_) => Result<FacilityProfile>.success(facility),
               failure: (AppFailure failure) =>
                   Result<FacilityProfile>.failure(failure),
             );
-          },
-          failure: (AppFailure failure) async =>
+          }
+
+          facilityResult = await _repository.saveFacility(
+            id: facility.id,
+            tenantId: tenantId,
+            name: name,
+            type: type,
+            isActive: isActive,
+            logoUrl: uploadedLogoUrl,
+          );
+          if (facilityResult case ResultFailure<FacilityProfile>(:final failure)) {
+            return Result<FacilityProfile>.failure(failure);
+          }
+          facility = (facilityResult as ResultSuccess<FacilityProfile>).value;
+          resolvedLogoUrl = uploadedLogoUrl;
+        }
+
+        final contactResult = await _repository.saveFacilityContactAddress(
+          tenantId: tenantId,
+          facilityId: facility.id,
+          phone: phone,
+          email: email,
+          addressLine1: addressLine1,
+          city: city,
+          country: country,
+        );
+
+        return contactResult.when(
+          success: (_) => Result<FacilityProfile>.success(facility),
+          failure: (AppFailure failure) =>
               Result<FacilityProfile>.failure(failure),
         );
       },

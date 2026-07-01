@@ -70,6 +70,16 @@ String tenantFacilityFacilityTypeLabel(
   };
 }
 
+IconData tenantFacilityFacilityTypeIcon(FacilitySetupType type) {
+  return switch (type) {
+    FacilitySetupType.hospital => Icons.local_hospital_outlined,
+    FacilitySetupType.clinic => Icons.medical_services_outlined,
+    FacilitySetupType.lab => Icons.biotech_outlined,
+    FacilitySetupType.pharmacy => Icons.medication_outlined,
+    FacilitySetupType.other => Icons.domain_outlined,
+  };
+}
+
 String tenantFacilityDepartmentTypeLabel(
   AppLocalizations l10n,
   DepartmentSetupType type,

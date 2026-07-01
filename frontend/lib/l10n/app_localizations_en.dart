@@ -4299,6 +4299,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Facility name, logo reference, contact details, address, type, and active state.';
 
   @override
+  String get tenantFacilityLogoLabel => 'Facility logo';
+
+  @override
+  String get tenantFacilityLogoHelper =>
+      'Upload a square image (JPG, PNG, or WebP, up to 5 MB).';
+
+  @override
+  String get tenantFacilityChooseLogoAction => 'Choose image';
+
+  @override
+  String get tenantFacilityRemoveLogoAction => 'Remove';
+
+  @override
   String get tenantFacilityLogoUrlLabel => 'Logo storage URL';
 
   @override
