@@ -2,6 +2,7 @@ const {
   resolveHeaderState,
   resolveDaysUntil,
   resolvePlatformAdminContact,
+  resolvePlatformBankTransferDetails,
 } = require('@lib/subscriptions/tenant-subscription-summary');
 
 describe('tenant-subscription-summary', () => {
@@ -50,6 +51,12 @@ describe('tenant-subscription-summary', () => {
         email: contact.email,
         phone: contact.phone,
       });
+    });
+  });
+
+  describe('resolvePlatformBankTransferDetails', () => {
+    it('returns null when bank details are not configured', () => {
+      expect(resolvePlatformBankTransferDetails()).toBeNull();
     });
   });
 });

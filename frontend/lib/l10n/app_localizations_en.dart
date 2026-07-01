@@ -1176,7 +1176,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionMobileMoneyGovernment => 'Government payment portal';
 
   @override
-  String get subscriptionBankNameLabel => 'Bank name';
+  String get subscriptionBankNameLabel => 'Your bank name';
+
+  @override
+  String get subscriptionBankTransferDetailsTitle => 'Transfer to this account';
+
+  @override
+  String get subscriptionBankAccountNameLabel => 'Account name';
+
+  @override
+  String get subscriptionPlatformBankNameLabel => 'Bank';
+
+  @override
+  String get subscriptionBankBranchLabel => 'Branch';
+
+  @override
+  String get subscriptionBankAccountNumberLabel => 'Account number';
+
+  @override
+  String get subscriptionBankSwiftLabel => 'SWIFT / BIC';
+
+  @override
+  String get subscriptionBankIbanLabel => 'IBAN';
+
+  @override
+  String get subscriptionFxRateErrorMessage =>
+      'Could not load exchange rate — amount shown in USD.';
 
   @override
   String get subscriptionCardHolderNameLabel => 'Name on card';

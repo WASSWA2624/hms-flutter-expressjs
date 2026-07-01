@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
+import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/mobile_money_provider_selector.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_method_selector.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_methods.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -61,8 +66,11 @@ class _SubscriptionUpgradeDialogState
   AppFailure? _failure;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isFxLoading = false;
   String? _selectedPlanId;
   String _currency = appDefaultCurrencyCode;
+  double? _usdPlanPrice;
+  String? _fxWarning;
   SubscriptionPaymentMethodId _paymentMethod =
       SubscriptionPaymentMethodId.mobileMoney;
   MobileMoneyProviderId _mobileMoneyProvider = MobileMoneyProviderId.mtn;
@@ -108,6 +116,10 @@ class _SubscriptionUpgradeDialogState
     return null;
   }
 
+  bool get _showReferenceField =>
+      _paymentMethod == SubscriptionPaymentMethodId.mobileMoney ||
+      _paymentMethod == SubscriptionPaymentMethodId.bankTransfer;
+
   String _planLabel(AppLocalizations l10n, SubscriptionUpgradePlanOption plan) {
     if (plan.tierCode == null || plan.tierCode!.isEmpty) {
       return plan.label;
@@ -145,8 +157,9 @@ class _SubscriptionUpgradeDialogState
         });
 
         final SubscriptionUpgradePlanOption? selectedPlan = _selectedPlan;
-        if (selectedPlan?.price != null && _amountController.text.isEmpty) {
-          _amountController.text = selectedPlan!.price!.toStringAsFixed(0);
+        if (selectedPlan?.price != null) {
+          _usdPlanPrice = selectedPlan!.price;
+          unawaited(_applyConvertedAmount());
         }
       },
       failure: (AppFailure failure) {
@@ -156,6 +169,81 @@ class _SubscriptionUpgradeDialogState
         });
       },
     );
+  }
+
+  Future<void> _applyConvertedAmount() async {
+    final double? usdPrice = _usdPlanPrice;
+    if (usdPrice == null) {
+      return;
+    }
+
+    final String targetCurrency = _currency.trim().toUpperCase();
+    if (targetCurrency == subscriptionPlanBaseCurrencyCode) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isFxLoading = false;
+        _fxWarning = null;
+        _amountController.text = formatConvertedAmount(
+          usdPrice,
+          subscriptionPlanBaseCurrencyCode,
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _isFxLoading = true;
+      _fxWarning = null;
+    });
+
+    final double? rate = await ref
+        .read(fxRateServiceProvider)
+        .convertUsdTo(targetCurrency);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (rate == null) {
+      setState(() {
+        _isFxLoading = false;
+        _fxWarning = context.l10n.subscriptionFxRateErrorMessage;
+        _amountController.text = formatConvertedAmount(
+          usdPrice,
+          subscriptionPlanBaseCurrencyCode,
+        );
+      });
+      return;
+    }
+
+    final double converted = roundConvertedAmount(
+      usdPrice * rate,
+      targetCurrency,
+    );
+    setState(() {
+      _isFxLoading = false;
+      _fxWarning = null;
+      _amountController.text = formatConvertedAmount(converted, targetCurrency);
+    });
+  }
+
+  Future<void> _onPlanChanged(String planId) async {
+    final SubscriptionUpgradePlanOption? plan = _context?.plans
+        .where((SubscriptionUpgradePlanOption entry) => entry.id == planId)
+        .firstOrNull;
+
+    setState(() {
+      _selectedPlanId = planId;
+      _usdPlanPrice = plan?.price;
+    });
+    await _applyConvertedAmount();
+  }
+
+  Future<void> _onCurrencyChanged(String currency) async {
+    setState(() => _currency = currency);
+    await _applyConvertedAmount();
   }
 
   Future<void> _pickProof() async {
@@ -219,7 +307,9 @@ class _SubscriptionUpgradeDialogState
             paymentMethod: _paymentMethod.serverValue,
             amount: normalizeCurrencyAmount(_amountController.text),
             currency: _currency,
-            reference: _emptyToNull(_referenceController.text),
+            reference: _showReferenceField
+                ? _emptyToNull(_referenceController.text)
+                : null,
             notes: _buildSubmissionNotes(),
             paymentProvider: provider,
             payerPhone: _emptyToNull(_phoneController.text),
@@ -266,11 +356,13 @@ class _SubscriptionUpgradeDialogState
     final ColorScheme colorScheme = theme.colorScheme;
     final bool isRenewal =
         _flowIntent == SubscriptionPaymentFlowIntent.renewal;
+    final int amountDigits = decimalDigitsForCurrency(_currency);
 
     if (_isLoading) {
       return AppDialog(
         title: Text(l10n.subscriptionUpgradeDialogTitle),
         icon: const Icon(Icons.workspace_premium_outlined),
+        initialMaximized: true,
         content: const SizedBox(
           width: 420,
           child: Center(child: CircularProgressIndicator()),
@@ -287,9 +379,6 @@ class _SubscriptionUpgradeDialogState
     final SubscriptionUpgradeContext? contextData = _context;
     final PlatformAdminContact? adminContact =
         contextData?.platformAdminContact ?? widget.initialAdminContact;
-    final SubscriptionUpgradePlanOption? selectedPlan = _selectedPlan;
-    final String intentPlanLabel =
-        selectedPlan?.label ?? contextData?.currentPlanLabel ?? l10n.subscriptionUpgradePlanLabel;
 
     return AppDialog(
       title: Text(
@@ -300,35 +389,22 @@ class _SubscriptionUpgradeDialogState
       icon: Icon(
         isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
       ),
-      maxWidth: 560,
+      initialMaximized: true,
+      maxWidth: 640,
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
         autovalidateMode: _autovalidateMode,
         children: <Widget>[
-          Text(
-            isRenewal
-                ? l10n.subscriptionRenewDialogBody
-                : l10n.subscriptionUpgradeDialogBody,
-            style: theme.textTheme.bodyMedium,
-          ),
-          SizedBox(height: theme.spacing.md),
-          _IntentBanner(
-            isRenewal: isRenewal,
-            planLabel: intentPlanLabel,
-            renewalText: l10n.subscriptionRenewIntentBanner(intentPlanLabel),
-            upgradeText: l10n.subscriptionUpgradeIntentBanner,
-          ),
           if (_failure != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
             Text(
               context.l10n.failureMessage(_failure!),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.error,
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
           ],
-          SizedBox(height: theme.spacing.md),
           AppSelectField<String>(
             value: _selectedPlanId,
             labelText: l10n.subscriptionUpgradePlanLabel,
@@ -354,71 +430,76 @@ class _SubscriptionUpgradeDialogState
               if (value == null) {
                 return;
               }
-              setState(() {
-                _selectedPlanId = value;
-                final SubscriptionUpgradePlanOption? plan = _context?.plans
-                    .where((SubscriptionUpgradePlanOption entry) => entry.id == value)
-                    .firstOrNull;
-                if (plan?.price != null) {
-                  _amountController.text = plan!.price!.toStringAsFixed(0);
-                }
-              });
+              unawaited(_onPlanChanged(value));
             },
           ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.md),
           Text(
             l10n.subscriptionUpgradePaymentMethodSectionTitle,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: theme.spacing.sm),
+          SizedBox(height: theme.spacing.xs),
           SubscriptionPaymentMethodSelector(
             selected: _paymentMethod,
             onSelected: (SubscriptionPaymentMethodId method) {
               setState(() => _paymentMethod = method);
             },
           ),
-          SizedBox(height: theme.spacing.lg),
-          Text(
-            l10n.subscriptionUpgradePaymentDetailsTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+          if (_paymentMethod != SubscriptionPaymentMethodId.cash &&
+              _paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.subscriptionUpgradePaymentDetailsTitle,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          ..._paymentDetailFields(l10n, theme),
+            SizedBox(height: theme.spacing.xs),
+            ..._paymentDetailFields(l10n, theme, contextData),
+          ],
           SizedBox(height: theme.spacing.md),
           AppCurrencyAmountField(
             amountController: _amountController,
             currency: _currency,
+            amountReadOnly: true,
+            isLoading: _isFxLoading,
             onCurrencyChanged: (String? value) {
               if (value != null) {
-                setState(() => _currency = value);
+                unawaited(_onCurrencyChanged(value));
               }
             },
             amountLabelText: l10n.subscriptionUpgradeAmountLabel,
             currencyLabelText: l10n.billingCurrencyLabel,
             isRequired: true,
             allowZero: false,
-            decimalDigits: 0,
+            decimalDigits: amountDigits,
           ),
-          if (_paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
+          if (_fxWarning != null) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              _fxWarning!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.tertiary,
+              ),
+            ),
+          ],
+          if (_showReferenceField) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: _referenceController,
               labelText: l10n.subscriptionUpgradeReferenceLabel,
               hintText: l10n.subscriptionPaymentReferenceHint,
-              isRequired: _paymentMethod == SubscriptionPaymentMethodId.cash ||
-                  subscriptionPaymentMethodRequiresProof(_paymentMethod),
+              isRequired: true,
             ),
           ],
-          if (_paymentMethod == SubscriptionPaymentMethodId.mobileMoney ||
-              _paymentMethod == SubscriptionPaymentMethodId.bankTransfer ||
-              _paymentMethod == SubscriptionPaymentMethodId.cash) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
+          if (subscriptionPaymentMethodRequiresProof(_paymentMethod)) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
             _ProofOfPaymentSection(
               fileName: _proofFileName,
+              proofBytes: _proofBytes,
+              proofMimeType: _proofMimeType,
               isSubmitting: _isSubmitting,
               attachLabel: l10n.subscriptionUpgradeAttachProofAction,
               removeLabel: l10n.subscriptionUpgradeRemoveProofAction,
@@ -432,6 +513,7 @@ class _SubscriptionUpgradeDialogState
             ),
           ],
           if (_paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: _notesController,
               labelText: l10n.subscriptionUpgradeNotesLabel,
@@ -439,7 +521,7 @@ class _SubscriptionUpgradeDialogState
             ),
           ],
           if (adminContact?.hasContact == true) ...<Widget>[
-            SizedBox(height: theme.spacing.lg),
+            SizedBox(height: theme.spacing.md),
             _AdminContactSection(
               adminContact: adminContact!,
               title: l10n.subscriptionUpgradeAdminContactTitle,
@@ -464,28 +546,14 @@ class _SubscriptionUpgradeDialogState
   List<Widget> _paymentDetailFields(
     AppLocalizations l10n,
     ThemeData theme,
+    SubscriptionUpgradeContext? contextData,
   ) {
     final List<Widget> fields = switch (_paymentMethod) {
       SubscriptionPaymentMethodId.mobileMoney => <Widget>[
-        AppSelectField<MobileMoneyProviderId>(
-          value: _mobileMoneyProvider,
-          labelText: l10n.subscriptionMobileMoneyProviderLabel,
-          isRequired: true,
-          allowClear: false,
-          options: MobileMoneyProviderId.values
-              .map(
-                (MobileMoneyProviderId provider) =>
-                    AppSelectOption<MobileMoneyProviderId>(
-                      value: provider,
-                      label: mobileMoneyProviderLabel(l10n, provider),
-                      leadingIcon: const Icon(Icons.account_balance_wallet_outlined),
-                    ),
-              )
-              .toList(growable: false),
-          onChanged: (MobileMoneyProviderId? value) {
-            if (value != null) {
-              setState(() => _mobileMoneyProvider = value);
-            }
+        MobileMoneyProviderSelector(
+          selected: _mobileMoneyProvider,
+          onSelected: (MobileMoneyProviderId provider) {
+            setState(() => _mobileMoneyProvider = provider);
           },
         ),
         AppTextField(
@@ -496,10 +564,20 @@ class _SubscriptionUpgradeDialogState
         ),
       ],
       SubscriptionPaymentMethodId.bankTransfer => <Widget>[
+        if (contextData?.bankTransferDetails?.hasDetails == true)
+          _BankTransferDetailsSection(
+            details: contextData!.bankTransferDetails!,
+            title: l10n.subscriptionBankTransferDetailsTitle,
+            accountNameLabel: l10n.subscriptionBankAccountNameLabel,
+            bankNameLabel: l10n.subscriptionPlatformBankNameLabel,
+            branchLabel: l10n.subscriptionBankBranchLabel,
+            accountNumberLabel: l10n.subscriptionBankAccountNumberLabel,
+            swiftLabel: l10n.subscriptionBankSwiftLabel,
+            ibanLabel: l10n.subscriptionBankIbanLabel,
+          ),
         AppTextField(
           controller: _bankNameController,
           labelText: l10n.subscriptionBankNameLabel,
-          isRequired: true,
         ),
       ],
       SubscriptionPaymentMethodId.creditCard ||
@@ -553,51 +631,96 @@ class _SubscriptionUpgradeDialogState
   }
 }
 
-class _IntentBanner extends StatelessWidget {
-  const _IntentBanner({
-    required this.isRenewal,
-    required this.planLabel,
-    required this.renewalText,
-    required this.upgradeText,
+class _BankTransferDetailsSection extends StatelessWidget {
+  const _BankTransferDetailsSection({
+    required this.details,
+    required this.title,
+    required this.accountNameLabel,
+    required this.bankNameLabel,
+    required this.branchLabel,
+    required this.accountNumberLabel,
+    required this.swiftLabel,
+    required this.ibanLabel,
   });
 
-  final bool isRenewal;
-  final String planLabel;
-  final String renewalText;
-  final String upgradeText;
+  final PlatformBankTransferDetails details;
+  final String title;
+  final String accountNameLabel;
+  final String bankNameLabel;
+  final String branchLabel;
+  final String accountNumberLabel;
+  final String swiftLabel;
+  final String ibanLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color accent = isRenewal
-        ? const Color(0xFF2563EB)
-        : const Color(0xFF7C3AED);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(theme.spacing.md),
+      padding: EdgeInsets.all(theme.spacing.sm),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: accent.withValues(alpha: 0.24)),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (details.accountName != null)
+            _BankDetailRow(label: accountNameLabel, value: details.accountName!),
+          if (details.bankName != null)
+            _BankDetailRow(label: bankNameLabel, value: details.bankName!),
+          if (details.branch != null)
+            _BankDetailRow(label: branchLabel, value: details.branch!),
+          if (details.accountNumber != null)
+            _BankDetailRow(
+              label: accountNumberLabel,
+              value: details.accountNumber!,
+            ),
+          if (details.swiftCode != null)
+            _BankDetailRow(label: swiftLabel, value: details.swiftCode!),
+          if (details.iban != null)
+            _BankDetailRow(label: ibanLabel, value: details.iban!),
+        ],
+      ),
+    );
+  }
+}
+
+class _BankDetailRow extends StatelessWidget {
+  const _BankDetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            isRenewal ? Icons.autorenew : Icons.trending_up,
-            color: accent,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
+          SizedBox(
+            width: 132,
             child: Text(
-              isRenewal ? renewalText : upgradeText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: accent,
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          Expanded(
+            child: SelectableText(value, style: theme.textTheme.bodySmall),
           ),
         ],
       ),
@@ -608,6 +731,8 @@ class _IntentBanner extends StatelessWidget {
 class _ProofOfPaymentSection extends StatelessWidget {
   const _ProofOfPaymentSection({
     required this.fileName,
+    required this.proofBytes,
+    required this.proofMimeType,
     required this.isSubmitting,
     required this.attachLabel,
     required this.removeLabel,
@@ -617,6 +742,8 @@ class _ProofOfPaymentSection extends StatelessWidget {
   });
 
   final String? fileName;
+  final List<int>? proofBytes;
+  final String? proofMimeType;
   final bool isSubmitting;
   final String attachLabel;
   final String removeLabel;
@@ -624,9 +751,30 @@ class _ProofOfPaymentSection extends StatelessWidget {
   final VoidCallback onAttach;
   final VoidCallback onRemove;
 
+  bool get _isImage {
+    final String? mime = proofMimeType?.toLowerCase();
+    if (mime != null && mime.startsWith('image/')) {
+      return true;
+    }
+    final String? name = fileName?.toLowerCase();
+    return name != null &&
+        (name.endsWith('.jpg') ||
+            name.endsWith('.jpeg') ||
+            name.endsWith('.png'));
+  }
+
+  bool get _isPdf {
+    final String? mime = proofMimeType?.toLowerCase();
+    if (mime == 'application/pdf') {
+      return true;
+    }
+    return fileName?.toLowerCase().endsWith('.pdf') ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,7 +796,6 @@ class _ProofOfPaymentSection extends StatelessWidget {
               leadingIcon: Icons.attach_file_outlined,
               onPressed: isSubmitting ? null : onAttach,
             ),
-            if (fileName != null) Text(fileName!, style: theme.textTheme.bodySmall),
             if (fileName != null)
               AppButton.tertiary(
                 label: removeLabel,
@@ -656,6 +803,44 @@ class _ProofOfPaymentSection extends StatelessWidget {
               ),
           ],
         ),
+        if (fileName != null && proofBytes != null) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (_isImage)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  child: Image.memory(
+                    Uint8List.fromList(proofBytes!),
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(
+                  width: 96,
+                  height: 96,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    border: Border.all(color: colorScheme.outlineVariant),
+                  ),
+                  child: Icon(
+                    _isPdf ? Icons.picture_as_pdf_outlined : Icons.insert_drive_file_outlined,
+                    size: 36,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(fileName!, style: theme.textTheme.bodySmall),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

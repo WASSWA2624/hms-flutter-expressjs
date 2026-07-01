@@ -15,6 +15,7 @@ const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const {
   resolvePlatformAdminContact,
+  resolvePlatformBankTransferDetails,
   resolveTenantSubscriptionSummary,
 } = require('@lib/subscriptions/tenant-subscription-summary');
 const { serializeSubscriptionPlan } = require('@lib/subscriptions/serializers');
@@ -191,6 +192,7 @@ const getUpgradeContext = async (user = {}) => {
     recommended_plan_id: recommendedPlan?.id || null,
     payment_methods: PAYMENT_METHODS,
     platform_admin_contact: resolvePlatformAdminContact(),
+    bank_transfer_details: resolvePlatformBankTransferDetails(),
     expiring_soon_days: Number(env.SUBSCRIPTION_EXPIRING_SOON_DAYS) || 14,
   };
 };

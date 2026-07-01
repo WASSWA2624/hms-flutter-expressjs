@@ -56,6 +56,7 @@ class AppCurrencyAmountField extends StatefulWidget {
     this.amountInvalidMessage = 'Enter a valid amount.',
     this.currencyInvalidMessage = 'Choose a supported currency.',
     this.enabled = true,
+    this.amountReadOnly = false,
     this.isLoading = false,
     this.isRequired = false,
     this.allowZero = true,
@@ -91,6 +92,7 @@ class AppCurrencyAmountField extends StatefulWidget {
   final String amountInvalidMessage;
   final String currencyInvalidMessage;
   final bool enabled;
+  final bool amountReadOnly;
   final bool isLoading;
   final bool isRequired;
   final bool allowZero;
@@ -148,7 +150,9 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
 
   @override
   Widget build(BuildContext context) {
-    final bool canEdit = widget.enabled && !widget.isLoading;
+    final bool canEditAmount =
+        widget.enabled && !widget.isLoading && !widget.amountReadOnly;
+    final bool canEditCurrency = widget.enabled && !widget.isLoading;
     Widget field = FormField<String>(
       key: _fieldKey,
       initialValue: widget.amountController.text,
@@ -160,7 +164,7 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
           isFocused: _amountFocusNode.hasFocus || _isPickerOpen,
           isEmpty: widget.amountController.text.trim().isEmpty,
           decoration: InputDecoration(
-            enabled: canEdit,
+            enabled: canEditAmount,
             label: appFieldLabelWidget(
               context,
               widget.amountLabelText,
@@ -180,7 +184,8 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
             selectedCurrency: _optionForCode(widget.currency),
             currencyLabelText:
                 widget.currencySemanticLabel ?? widget.currencyLabelText,
-            canEdit: canEdit,
+            canEditAmount: canEditAmount,
+            canEditCurrency: canEditCurrency,
             isLoading: widget.isLoading,
             decimalDigits: widget.decimalDigits,
             restorationId: widget.restorationId,
@@ -201,7 +206,7 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
     if (semanticLabel.isNotEmpty) {
       field = Semantics(
         textField: true,
-        enabled: canEdit,
+        enabled: canEditAmount,
         label: semanticLabel,
         child: field,
       );
@@ -395,7 +400,8 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
     required this.amountFocusNode,
     required this.currency,
     required this.currencyLabelText,
-    required this.canEdit,
+    required this.canEditAmount,
+    required this.canEditCurrency,
     required this.isLoading,
     required this.onAmountChanged,
     required this.onSelectCurrency,
@@ -412,7 +418,8 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
   final FocusNode amountFocusNode;
   final String currency;
   final String currencyLabelText;
-  final bool canEdit;
+  final bool canEditAmount;
+  final bool canEditCurrency;
   final bool isLoading;
   final ValueChanged<String> onAmountChanged;
   final VoidCallback onSelectCurrency;
@@ -448,7 +455,8 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                 child: TextField(
                   controller: amountController,
                   focusNode: amountFocusNode,
-                  enabled: canEdit,
+                  readOnly: !canEditAmount,
+                  enabled: canEditAmount,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -469,7 +477,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                               ? theme.textTheme.titleMedium
                               : theme.textTheme.titleLarge)
                           ?.copyWith(
-                            color: canEdit
+                            color: canEditAmount
                                 ? colorScheme.onSurface
                                 : colorScheme.onSurface.withValues(alpha: 0.62),
                             fontWeight: FontWeight.w700,
@@ -511,7 +519,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                   currency: currency,
                   hintText: currencyHintText,
                   labelText: currencyLabelText,
-                  enabled: canEdit,
+                  enabled: canEditCurrency,
                   isLoading: isLoading,
                   compact: compact,
                   veryCompact: veryCompact,

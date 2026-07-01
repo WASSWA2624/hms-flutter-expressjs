@@ -49,6 +49,53 @@ final class PlatformAdminContact {
 }
 
 @immutable
+final class PlatformBankTransferDetails {
+  const PlatformBankTransferDetails({
+    this.accountName,
+    this.bankName,
+    this.branch,
+    this.accountNumber,
+    this.swiftCode,
+    this.iban,
+  });
+
+  final String? accountName;
+  final String? bankName;
+  final String? branch;
+  final String? accountNumber;
+  final String? swiftCode;
+  final String? iban;
+
+  bool get hasDetails =>
+      (accountName?.isNotEmpty ?? false) ||
+      (bankName?.isNotEmpty ?? false) ||
+      (accountNumber?.isNotEmpty ?? false);
+
+  factory PlatformBankTransferDetails.fromJson(Map<String, Object?>? json) {
+    if (json == null) {
+      return const PlatformBankTransferDetails();
+    }
+
+    return PlatformBankTransferDetails(
+      accountName: _string(json['account_name']),
+      bankName: _string(json['bank_name']),
+      branch: _string(json['branch']),
+      accountNumber: _string(json['account_number']),
+      swiftCode: _string(json['swift_code']),
+      iban: _string(json['iban']),
+    );
+  }
+
+  static String? _string(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+}
+
+@immutable
 final class TenantSubscriptionSummary {
   const TenantSubscriptionSummary({
     this.subscriptionId,

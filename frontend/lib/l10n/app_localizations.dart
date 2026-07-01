@@ -2314,11 +2314,59 @@ abstract class AppLocalizations {
   /// **'Government payment portal'**
   String get subscriptionMobileMoneyGovernment;
 
-  /// Label for bank name on bank transfer payments.
+  /// Label for payer bank name on bank transfer payments.
   ///
   /// In en, this message translates to:
-  /// **'Bank name'**
+  /// **'Your bank name'**
   String get subscriptionBankNameLabel;
+
+  /// Title for platform bank transfer recipient details.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer to this account'**
+  String get subscriptionBankTransferDetailsTitle;
+
+  /// Label for platform bank account holder name.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name'**
+  String get subscriptionBankAccountNameLabel;
+
+  /// Label for platform bank institution name.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank'**
+  String get subscriptionPlatformBankNameLabel;
+
+  /// Label for platform bank branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get subscriptionBankBranchLabel;
+
+  /// Label for platform bank account number.
+  ///
+  /// In en, this message translates to:
+  /// **'Account number'**
+  String get subscriptionBankAccountNumberLabel;
+
+  /// Label for platform bank SWIFT or BIC code.
+  ///
+  /// In en, this message translates to:
+  /// **'SWIFT / BIC'**
+  String get subscriptionBankSwiftLabel;
+
+  /// Label for platform bank IBAN.
+  ///
+  /// In en, this message translates to:
+  /// **'IBAN'**
+  String get subscriptionBankIbanLabel;
+
+  /// Non-blocking warning when FX conversion fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load exchange rate — amount shown in USD.'**
+  String get subscriptionFxRateErrorMessage;
 
   /// Label for cardholder name on card payments.
   ///

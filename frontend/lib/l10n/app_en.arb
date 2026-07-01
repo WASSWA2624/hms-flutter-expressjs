@@ -1529,9 +1529,41 @@
   "@subscriptionMobileMoneyGovernment": {
     "description": "Government-supported mobile payment initiative label."
   },
-  "subscriptionBankNameLabel": "Bank name",
+  "subscriptionBankNameLabel": "Your bank name",
   "@subscriptionBankNameLabel": {
-    "description": "Label for bank name on bank transfer payments."
+    "description": "Label for payer bank name on bank transfer payments."
+  },
+  "subscriptionBankTransferDetailsTitle": "Transfer to this account",
+  "@subscriptionBankTransferDetailsTitle": {
+    "description": "Title for platform bank transfer recipient details."
+  },
+  "subscriptionBankAccountNameLabel": "Account name",
+  "@subscriptionBankAccountNameLabel": {
+    "description": "Label for platform bank account holder name."
+  },
+  "subscriptionPlatformBankNameLabel": "Bank",
+  "@subscriptionPlatformBankNameLabel": {
+    "description": "Label for platform bank institution name."
+  },
+  "subscriptionBankBranchLabel": "Branch",
+  "@subscriptionBankBranchLabel": {
+    "description": "Label for platform bank branch."
+  },
+  "subscriptionBankAccountNumberLabel": "Account number",
+  "@subscriptionBankAccountNumberLabel": {
+    "description": "Label for platform bank account number."
+  },
+  "subscriptionBankSwiftLabel": "SWIFT / BIC",
+  "@subscriptionBankSwiftLabel": {
+    "description": "Label for platform bank SWIFT or BIC code."
+  },
+  "subscriptionBankIbanLabel": "IBAN",
+  "@subscriptionBankIbanLabel": {
+    "description": "Label for platform bank IBAN."
+  },
+  "subscriptionFxRateErrorMessage": "Could not load exchange rate — amount shown in USD.",
+  "@subscriptionFxRateErrorMessage": {
+    "description": "Non-blocking warning when FX conversion fails."
   },
   "subscriptionCardHolderNameLabel": "Name on card",
   "@subscriptionCardHolderNameLabel": {

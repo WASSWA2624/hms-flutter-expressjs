@@ -111,9 +111,32 @@ const resolvePlatformAdminContact = () => ({
   phone: String(env.PLATFORM_ADMIN_PHONE || '').trim() || null,
 });
 
+const resolvePlatformBankTransferDetails = () => {
+  const accountName = String(env.PLATFORM_BANK_ACCOUNT_NAME || '').trim() || null;
+  const bankName = String(env.PLATFORM_BANK_NAME || '').trim() || null;
+  const branch = String(env.PLATFORM_BANK_BRANCH || '').trim() || null;
+  const accountNumber = String(env.PLATFORM_BANK_ACCOUNT_NUMBER || '').trim() || null;
+  const swiftCode = String(env.PLATFORM_BANK_SWIFT_CODE || '').trim() || null;
+  const iban = String(env.PLATFORM_BANK_IBAN || '').trim() || null;
+
+  if (!accountName && !bankName && !accountNumber) {
+    return null;
+  }
+
+  return {
+    account_name: accountName,
+    bank_name: bankName,
+    branch,
+    account_number: accountNumber,
+    swift_code: swiftCode,
+    iban,
+  };
+};
+
 module.exports = {
   resolveDaysUntil,
   resolveHeaderState,
   resolvePlatformAdminContact,
+  resolvePlatformBankTransferDetails,
   resolveTenantSubscriptionSummary,
 };
