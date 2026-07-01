@@ -23,7 +23,7 @@ Future<void> showCommunicationsNewDirectMessageDialog(
     submitLabel: context.l10n.communicationsStartConversationAction,
     submitIcon: Icons.edit_outlined,
     maxWidth: 520,
-    buildFields: (_, __, _, [__]) =>
+    buildFields: (context, formKey, isSubmitting, [failure]) =>
         _NewDirectMessageFields(key: fieldsKey, ref: ref),
     onSubmit: () => fieldsKey.currentState?.submit() ?? _missingRecipient(),
   );
@@ -52,7 +52,8 @@ Future<void> showCommunicationsNewGroupDialog(
     submitLabel: context.l10n.communicationsCreateGroupAction,
     submitIcon: Icons.group_add_outlined,
     maxWidth: 560,
-    buildFields: (_, __, _, [__]) => _NewGroupFields(key: fieldsKey, ref: ref),
+    buildFields: (context, formKey, isSubmitting, [failure]) =>
+        _NewGroupFields(key: fieldsKey, ref: ref),
     onSubmit: () => fieldsKey.currentState?.submit() ?? _missingGroupFields(),
   );
 }
