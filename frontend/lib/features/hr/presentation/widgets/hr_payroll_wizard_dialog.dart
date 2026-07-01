@@ -6,7 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_preview_breakdown.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -86,6 +86,7 @@ class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> 
     }
     final Result<HrPayrollPreview> result = await controller.previewPayrollRunById(
       runId,
+      staffProfileId: widget.staff.id,
     );
     if (!mounted) {
       return;
@@ -204,17 +205,9 @@ class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> 
             Text(l10n.hrPayrollWizardPreviewStepTitle),
             SizedBox(height: theme.spacing.sm),
             for (final HrPayrollPreviewItem item in _scopedItems)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(item.staffName ?? widget.staff.displayName),
-                subtitle: Text(
-                  hrJoinDisplay(<String?>[
-                    l10n.hrGrossPayLabel,
-                    '${item.amount} ${item.currency ?? ''}',
-                    l10n.hrNetPayLabel,
-                    '${item.amount} ${item.currency ?? ''}',
-                  ]),
-                ),
+              HrPayrollPreviewBreakdown(
+                item: item,
+                defaultStaffName: widget.staff.displayName,
               ),
             if (_scopedItems.isEmpty)
               Text(l10n.hrPayrollWizardNoStaffItemsLabel),

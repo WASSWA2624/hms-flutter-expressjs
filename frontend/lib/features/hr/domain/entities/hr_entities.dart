@@ -555,6 +555,50 @@ final class HrStaffAccessSummary {
 }
 
 @immutable
+final class HrPayrollCalculationComponent {
+  const HrPayrollCalculationComponent({
+    this.payType,
+    this.rate = 0,
+    this.currency,
+    this.quantity = 0,
+    this.unit,
+    this.formula,
+    this.amount = 0,
+  });
+
+  final String? payType;
+  final num rate;
+  final String? currency;
+  final num quantity;
+  final String? unit;
+  final String? formula;
+  final num amount;
+}
+
+@immutable
+final class HrPayrollPreviewCalculation {
+  const HrPayrollPreviewCalculation({
+    this.components = const <HrPayrollCalculationComponent>[],
+    this.warnings = const <HrPayrollPreviewWarning>[],
+    this.eligibleWorkdays,
+    this.mixedCurrency = false,
+  });
+
+  final List<HrPayrollCalculationComponent> components;
+  final List<HrPayrollPreviewWarning> warnings;
+  final int? eligibleWorkdays;
+  final bool mixedCurrency;
+}
+
+@immutable
+final class HrPayrollPreviewWarning {
+  const HrPayrollPreviewWarning({this.payType, this.warning});
+
+  final String? payType;
+  final String? warning;
+}
+
+@immutable
 final class HrPayrollPreviewItem {
   const HrPayrollPreviewItem({
     this.staffProfileId,
@@ -565,6 +609,7 @@ final class HrPayrollPreviewItem {
     this.totalHours = 0,
     this.amount = 0,
     this.currency,
+    this.calculation,
   });
 
   final String? staffProfileId;
@@ -575,6 +620,7 @@ final class HrPayrollPreviewItem {
   final num totalHours;
   final num amount;
   final String? currency;
+  final HrPayrollPreviewCalculation? calculation;
 }
 
 @immutable
@@ -751,6 +797,7 @@ final class HrStaffCompensation {
     this.currency,
     this.effectiveFrom,
     this.effectiveTo,
+    this.payFrequency,
   });
 
   final String id;
@@ -761,6 +808,15 @@ final class HrStaffCompensation {
   final String? currency;
   final DateTime? effectiveFrom;
   final DateTime? effectiveTo;
+  final String? payFrequency;
+
+  bool get isActive {
+    final DateTime now = DateTime.now();
+    if (effectiveTo != null && effectiveTo!.isBefore(now)) {
+      return false;
+    }
+    return true;
+  }
 }
 
 @immutable

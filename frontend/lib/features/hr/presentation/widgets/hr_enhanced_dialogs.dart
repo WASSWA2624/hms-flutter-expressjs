@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_preview_breakdown.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -405,13 +406,7 @@ Future<void> showHrPreviewPayrollDialog(
               ),
               const SizedBox(height: 12),
               for (final HrPayrollPreviewItem line in preview.items.take(12))
-                ListTile(
-                  dense: true,
-                  title: Text(line.staffName ?? line.staffNumber ?? ''),
-                  subtitle: Text(
-                    '${line.totalHours}h | ${line.amount} ${line.currency ?? ''}',
-                  ),
-                ),
+                HrPayrollPreviewBreakdown(item: line),
             ],
           ),
         ),

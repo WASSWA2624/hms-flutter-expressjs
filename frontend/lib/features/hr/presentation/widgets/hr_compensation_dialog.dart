@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_line_editor.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -13,14 +14,13 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-enum _CompensationPayType { perConsultation, monthly, daily, hourly, perVisit }
-
 Future<void> showHrCompensationDialog(
   BuildContext context,
   WidgetRef ref,
   HrStaffProfile staff,
-  List<HrStaffCompensation> history,
-) async {
+  List<HrStaffCompensation> history, {
+  String? focusPayType,
+}) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
@@ -35,7 +35,7 @@ Future<void> showHrCompensationDialog(
     submitLabel: l10n.hrCompensationAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 640,
+    maxWidth: 720,
     buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
       AppFailure? failure,
     ]) {
@@ -43,6 +43,7 @@ Future<void> showHrCompensationDialog(
         key: fieldsKey,
         staff: staff,
         history: history,
+        focusPayType: focusPayType,
       );
     },
     onSubmit: () => controller.updateSelectedStaffProfile(
@@ -114,106 +115,120 @@ Future<void> showHrCompensationDetailDialog(
   );
 }
 
-class _HrCompensationForm extends StatefulWidget {
+class _HrCompensationForm extends ConsumerStatefulWidget {
   const _HrCompensationForm({
     required this.staff,
     required this.history,
+    this.focusPayType,
     super.key,
   });
 
   final HrStaffProfile staff;
   final List<HrStaffCompensation> history;
+  final String? focusPayType;
 
   @override
-  State<_HrCompensationForm> createState() => _HrCompensationFormState();
+  ConsumerState<_HrCompensationForm> createState() => _HrCompensationFormState();
 }
 
-class _HrCompensationFormState extends State<_HrCompensationForm>
+class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  late final TextEditingController _rateController;
-  _CompensationPayType _payType = _CompensationPayType.monthly;
-  String _currency = appDefaultCurrencyCode;
-  String _payFrequency = 'MONTHLY';
-  DateTime? _effectiveFrom = DateTime.now();
-  DateTime? _effectiveTo;
+  final List<HrCompensationLineData> _lines = <HrCompensationLineData>[];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _rateController = TextEditingController();
-    if (widget.history.isNotEmpty) {
-      final HrStaffCompensation current = widget.history.first;
-      _rateController.text = current.rate?.toString() ?? '';
-      _currency = current.currency ?? appDefaultCurrencyCode;
-      _payType = _payTypeFromApi(current.payType);
-      _effectiveFrom = current.effectiveFrom ?? DateTime.now();
-      _effectiveTo = current.effectiveTo;
+    _hydrateLines();
+    final String? focus = widget.focusPayType?.trim().toUpperCase();
+    if (focus != null && focus.isNotEmpty) {
+      final bool hasLine = _lines.any((HrCompensationLineData line) => line.payType == focus);
+      if (!hasLine) {
+        _addLine(defaultPayType: focus);
+      }
     }
+  }
+
+  void _hydrateLines() {
+    final List<HrStaffCompensation> active = widget.history
+        .where((HrStaffCompensation row) => row.isActive)
+        .toList(growable: false);
+    if (active.isEmpty) {
+      _addLine();
+      return;
+    }
+    for (final HrStaffCompensation row in active) {
+      _lines.add(
+        HrCompensationLineData(
+          payType: row.payType ?? 'PER_MONTH',
+          rateController: TextEditingController(text: row.rate?.toString() ?? ''),
+          currency: row.currency ?? appDefaultCurrencyCode,
+          payFrequency: row.payFrequency ?? 'MONTHLY',
+          effectiveFrom: row.effectiveFrom ?? DateTime.now(),
+          effectiveTo: row.effectiveTo,
+        ),
+      );
+    }
+  }
+
+  void _addLine({String? defaultPayType}) {
+    final Set<String> used = _lines
+        .where((HrCompensationLineData line) => !line.removed)
+        .map((HrCompensationLineData line) => line.payType)
+        .toSet();
+    final String payType = defaultPayType ??
+        kHrCompensationPayTypeCodes.firstWhere(
+          (String code) => !used.contains(code),
+          orElse: () => kHrCompensationPayTypeCodes.first,
+        );
+    _lines.add(
+      HrCompensationLineData(
+        payType: payType,
+        rateController: TextEditingController(),
+        effectiveFrom: DateTime.now(),
+      ),
+    );
+  }
+
+  Set<String> get _usedPayTypes => _lines
+      .where((HrCompensationLineData line) => !line.removed)
+      .map((HrCompensationLineData line) => line.payType)
+      .toSet();
+
+  Map<String, Object?> toPayload() {
+    final List<Map<String, Object?>> compensations = _lines
+        .where((HrCompensationLineData line) => !line.removed)
+        .map((HrCompensationLineData line) => line.toPayload())
+        .where((Map<String, Object?> row) => row.isNotEmpty)
+        .toList(growable: false);
+    return <String, Object?>{'compensations': compensations};
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _rateController.dispose();
+    for (final HrCompensationLineData line in _lines) {
+      line.rateController.dispose();
+    }
     super.dispose();
   }
 
-  _CompensationPayType _payTypeFromApi(String? value) {
-    return switch ((value ?? '').trim().toUpperCase()) {
-      'PER_CONSULTATION' => _CompensationPayType.perConsultation,
-      'PER_HOUR' => _CompensationPayType.hourly,
-      'PER_DAY' => _CompensationPayType.daily,
-      'PER_PROCEDURE' => _CompensationPayType.perVisit,
-      _ => _CompensationPayType.monthly,
-    };
-  }
-
-  String _payTypeApiValue(_CompensationPayType type) {
-    return switch (type) {
-      _CompensationPayType.perConsultation => 'PER_CONSULTATION',
-      _CompensationPayType.hourly => 'PER_HOUR',
-      _CompensationPayType.daily => 'PER_DAY',
-      _CompensationPayType.perVisit => 'PER_PROCEDURE',
-      _CompensationPayType.monthly => 'PER_MONTH',
-    };
-  }
-
-  Map<String, Object?> toPayload() {
-    final num? rate = num.tryParse(_rateController.text.trim());
-    final List<Map<String, Object?>> compensations = <Map<String, Object?>>[];
-    if (rate != null) {
-      compensations.add(<String, Object?>{
-        'pay_type': _payTypeApiValue(_payType),
-        'rate': rate,
-        'currency': _currency.trim().toUpperCase(),
-        'effective_from': _datePayload(_effectiveFrom),
-        'effective_to': _datePayload(_effectiveTo),
-        'metadata_json': <String, Object?>{'pay_frequency': _payFrequency},
-      });
+  Map<String, List<HrStaffCompensation>> _groupedHistory() {
+    final Map<String, List<HrStaffCompensation>> grouped =
+        <String, List<HrStaffCompensation>>{};
+    for (final HrStaffCompensation row in widget.history) {
+      final String key = (row.payType ?? 'UNKNOWN').toUpperCase();
+      grouped.putIfAbsent(key, () => <HrStaffCompensation>[]).add(row);
     }
-    for (final HrStaffCompensation item in widget.history) {
-      if (compensations.any(
-        (Map<String, Object?> row) => row['pay_type'] == item.payType,
-      )) {
-        continue;
-      }
-      compensations.add(<String, Object?>{
-        'pay_type': item.payType,
-        'rate': item.rate,
-        'currency': item.currency,
-        'effective_from': _datePayload(item.effectiveFrom),
-        'effective_to': _datePayload(item.effectiveTo),
-      });
-    }
-    return <String, Object?>{'compensations': compensations};
+    return grouped;
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final Map<String, List<HrStaffCompensation>> groupedHistory = _groupedHistory();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -226,7 +241,7 @@ class _HrCompensationFormState extends State<_HrCompensationForm>
           ],
         ),
         SizedBox(
-          height: 360,
+          height: 420,
           child: TabBarView(
             controller: _tabController,
             children: <Widget>[
@@ -236,115 +251,87 @@ class _HrCompensationFormState extends State<_HrCompensationForm>
                   title: l10n.hrStaffOnboardingCompensationSectionTitle,
                   description: l10n.hrStaffOnboardingCompensationEditHint,
                   children: <Widget>[
-                    AppSelectField<String>(
-                      value: _payType.name,
-                      labelText: l10n.hrStaffOnboardingPayTypeLabel,
-                      options: <AppSelectOption<String>>[
-                        AppSelectOption<String>(
-                          value: _CompensationPayType.monthly.name,
-                          label: l10n.hrCompensationMonthlyRateLabel,
+                    for (final HrCompensationLineData line in _lines)
+                      if (!line.removed)
+                        HrCompensationLineEditor(
+                          line: line,
+                          usedPayTypes: _usedPayTypes,
+                          onChanged: () => setState(() {}),
+                          onRemove: () {
+                            setState(() {
+                              line.removed = true;
+                              if (_lines.every((HrCompensationLineData row) => row.removed)) {
+                                _addLine();
+                              }
+                            });
+                          },
                         ),
-                        AppSelectOption<String>(
-                          value: _CompensationPayType.hourly.name,
-                          label: l10n.hrCompensationHourlyRateLabel,
-                        ),
-                        AppSelectOption<String>(
-                          value: _CompensationPayType.daily.name,
-                          label: l10n.hrCompensationDailyRateLabel,
-                        ),
-                        AppSelectOption<String>(
-                          value: _CompensationPayType.perConsultation.name,
-                          label: l10n.hrCompensationConsultationRateLabel,
-                        ),
-                        AppSelectOption<String>(
-                          value: _CompensationPayType.perVisit.name,
-                          label: l10n.hrCompensationProcedureRateLabel,
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value == null) {
-                          return;
-                        }
-                        setState(
-                          () => _payType =
-                              _CompensationPayType.values.byName(value),
-                        );
-                      },
-                    ),
-                    AppSelectField<String>(
-                      value: _payFrequency,
-                      labelText: l10n.hrCompensationPayFrequencyLabel,
-                      options: <AppSelectOption<String>>[
-                        AppSelectOption<String>(
-                          value: 'MONTHLY',
-                          label: l10n.hrCompensationFrequencyMonthlyLabel,
-                        ),
-                        AppSelectOption<String>(
-                          value: 'BIWEEKLY',
-                          label: l10n.hrCompensationFrequencyBiweeklyLabel,
-                        ),
-                        AppSelectOption<String>(
-                          value: 'WEEKLY',
-                          label: l10n.hrCompensationFrequencyWeeklyLabel,
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value != null) {
-                          setState(() => _payFrequency = value);
-                        }
-                      },
-                    ),
-                    AppCurrencyAmountField(
-                      amountController: _rateController,
-                      currency: _currency,
-                      onCurrencyChanged: (String? value) {
-                        setState(
-                          () => _currency = value ?? appDefaultCurrencyCode,
-                        );
-                      },
-                      amountLabelText: l10n.hrCompensationBaseRateLabel,
-                      currencyLabelText: l10n.hrCompensationCurrencyLabel,
-                      currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
-                    ),
-                    AppDateField(
-                      value: _effectiveFrom,
-                      labelText: l10n.hrEffectiveFromLabel,
-                      isRequired: true,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      currentDate: DateTime.now(),
-                      pickerButtonLabel: l10n.hrPickDateAction,
-                      invalidDateMessage: l10n.appDateInvalidMessage,
-                      onChanged: (DateTime? value) =>
-                          setState(() => _effectiveFrom = value),
-                    ),
-                    AppDateField(
-                      value: _effectiveTo,
-                      labelText: l10n.hrEffectiveToLabel,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      currentDate: DateTime.now(),
-                      pickerButtonLabel: l10n.hrPickDateAction,
-                      invalidDateMessage: l10n.appDateInvalidMessage,
-                      onChanged: (DateTime? value) =>
-                          setState(() => _effectiveTo = value),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: AppButton.secondary(
+                        label: l10n.hrCompensationAddPayLineAction,
+                        leadingIcon: Icons.add,
+                        onPressed: _usedPayTypes.length >= kHrCompensationPayTypeCodes.length
+                            ? null
+                            : () => setState(() => _addLine()),
+                      ),
                     ),
                   ],
                 ),
               ),
-              ListView.separated(
+              ListView(
                 padding: EdgeInsets.only(top: theme.spacing.md),
-                itemCount: widget.history.length,
-                separatorBuilder: (_, _) => SizedBox(height: theme.spacing.xs),
-                itemBuilder: (BuildContext context, int index) {
-                  final HrStaffCompensation item = widget.history[index];
-                  return ListTile(
-                    title: Text(hrCompensationRowTitle(context, item)),
-                    subtitle: Text(
-                      hrDateRange(context, item.effectiveFrom, item.effectiveTo),
+                children: <Widget>[
+                  for (final MapEntry<String, List<HrStaffCompensation>> entry
+                      in groupedHistory.entries)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: theme.spacing.sm,
+                            bottom: theme.spacing.xs,
+                          ),
+                          child: Text(
+                            hrCompensationPayTypeLabel(l10n, entry.key),
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                        for (final HrStaffCompensation item in entry.value)
+                          ListTile(
+                            title: Text(hrCompensationRowTitle(context, item)),
+                            subtitle: Text(
+                              hrDateRange(
+                                context,
+                                item.effectiveFrom,
+                                item.effectiveTo,
+                              ),
+                            ),
+                            trailing: AppWorkspaceStatusBadge(
+                              status: AppWorkspaceStatus(
+                                label: item.isActive
+                                    ? l10n.hrCompensationActiveStatusLabel
+                                    : l10n.hrCompensationEndedStatusLabel,
+                                tone: item.isActive
+                                    ? AppWorkspaceStatusTone.success
+                                    : AppWorkspaceStatusTone.neutral,
+                              ),
+                            ),
+                            onTap: () => showHrCompensationDetailDialog(
+                              context,
+                              item,
+                              () => showHrCompensationDialog(
+                                context,
+                                ref,
+                                widget.staff,
+                                widget.history,
+                                focusPayType: item.payType,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  );
-                },
+                ],
               ),
             ],
           ),
@@ -353,5 +340,3 @@ class _HrCompensationFormState extends State<_HrCompensationForm>
     );
   }
 }
-
-String? _datePayload(DateTime? value) => value?.toIso8601String();

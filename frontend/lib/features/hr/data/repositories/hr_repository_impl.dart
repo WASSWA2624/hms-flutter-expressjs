@@ -438,9 +438,19 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
-  Future<Result<HrPayrollPreview>> previewPayrollRun(String payrollRunId) {
+  Future<Result<HrPayrollPreview>> previewPayrollRun(
+    String payrollRunId, {
+    String? staffProfileId,
+    String? facilityId,
+    String? departmentId,
+  }) {
     return _apiClient.get<HrPayrollPreview>(
       _hrEndpoint(<String>['payroll-runs', payrollRunId, 'preview']),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'staff_profile_id': staffProfileId,
+        'facility_id': facilityId,
+        'department_id': departmentId,
+      }),
       decoder: (Object? data) =>
           HrPayrollPreviewDto.fromResponse(data).toEntity(),
     );

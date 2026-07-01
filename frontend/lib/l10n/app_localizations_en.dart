@@ -14138,6 +14138,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessSystemCriticalRoleBadge => 'System critical';
 
   @override
+  String get hrAccessNonSystemRoleLabel => 'Non-system';
+
+  @override
   String get hrAccessSelectAllRolesAction => 'Select all roles';
 
   @override
@@ -14252,6 +14255,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrCompensationAddNewRateAction => 'Add new rate';
+
+  @override
+  String get hrCompensationAddPayLineAction => 'Add pay line';
+
+  @override
+  String get hrCompensationRemovePayLineAction => 'Remove pay line';
+
+  @override
+  String get hrCompensationActiveStatusLabel => 'Active';
+
+  @override
+  String get hrCompensationEndedStatusLabel => 'Ended';
+
+  @override
+  String hrPayrollComponentBreakdownLabel(
+    String quantity,
+    String unit,
+    String rate,
+    String currency,
+    String subtotal,
+  ) {
+    return '$quantity $unit × $rate $currency = $subtotal';
+  }
+
+  @override
+  String hrPayrollZeroQuantityWarning(String payType) {
+    return 'No recorded activity for $payType in this period.';
+  }
+
+  @override
+  String get hrPayrollMixedCurrencyWarning =>
+      'Some compensation lines use a different currency and were excluded from the total.';
 
   @override
   String get hrPayrollWizardTitle => 'Payroll run';

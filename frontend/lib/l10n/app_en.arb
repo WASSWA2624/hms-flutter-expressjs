@@ -18198,6 +18198,10 @@
   "@hrAccessSystemCriticalRoleBadge": {
     "description": "Badge for roles that cannot be edited in HR staff access."
   },
+  "hrAccessNonSystemRoleLabel": "Non-system",
+  "@hrAccessNonSystemRoleLabel": {
+    "description": "Filter label for custom (non-system) roles."
+  },
   "hrAccessSelectAllRolesAction": "Select all roles",
   "@hrAccessSelectAllRolesAction": {
     "description": "Select all roles in a multi-select list."
@@ -18345,6 +18349,44 @@
   "hrCompensationAddNewRateAction": "Add new rate",
   "@hrCompensationAddNewRateAction": {
     "description": "Action to add a new compensation rate."
+  },
+  "hrCompensationAddPayLineAction": "Add pay line",
+  "@hrCompensationAddPayLineAction": {
+    "description": "Action to add another concurrent compensation line."
+  },
+  "hrCompensationRemovePayLineAction": "Remove pay line",
+  "@hrCompensationRemovePayLineAction": {
+    "description": "Action to remove or end a compensation line."
+  },
+  "hrCompensationActiveStatusLabel": "Active",
+  "@hrCompensationActiveStatusLabel": {
+    "description": "Status label for an active compensation row."
+  },
+  "hrCompensationEndedStatusLabel": "Ended",
+  "@hrCompensationEndedStatusLabel": {
+    "description": "Status label for an ended compensation row."
+  },
+  "hrPayrollComponentBreakdownLabel": "{quantity} {unit} × {rate} {currency} = {subtotal}",
+  "@hrPayrollComponentBreakdownLabel": {
+    "description": "Payroll preview line item breakdown.",
+    "placeholders": {
+      "quantity": { "type": "String" },
+      "unit": { "type": "String" },
+      "rate": { "type": "String" },
+      "currency": { "type": "String" },
+      "subtotal": { "type": "String" }
+    }
+  },
+  "hrPayrollZeroQuantityWarning": "No recorded activity for {payType} in this period.",
+  "@hrPayrollZeroQuantityWarning": {
+    "description": "Warning when a pay type has zero quantity in payroll preview.",
+    "placeholders": {
+      "payType": { "type": "String" }
+    }
+  },
+  "hrPayrollMixedCurrencyWarning": "Some compensation lines use a different currency and were excluded from the total.",
+  "@hrPayrollMixedCurrencyWarning": {
+    "description": "Warning when payroll lines use mixed currencies."
   },
   "hrPayrollWizardTitle": "Payroll run",
   "@hrPayrollWizardTitle": {

@@ -44,9 +44,13 @@ class _HrAccessWorkspaceDialog extends ConsumerStatefulWidget {
 class _HrAccessWorkspaceDialogState
     extends ConsumerState<_HrAccessWorkspaceDialog> {
   static const int _pageSize = 12;
+  static const String _accessStatusFilterKey = 'access_status';
+  static const String _accessSystemRoleFilterKey = 'access_system_role';
+  static const String _accessPositionFilterKey = 'access_position';
 
   HrAccessPanel _panel = HrAccessPanel.users;
   final TextEditingController _searchController = TextEditingController();
+  AppSearchBarFilterValue _accessFilters = AppSearchBarFilterValue.empty;
   Timer? _searchDebounce;
   bool _loading = true;
   bool _tenantContextRequired = false;
@@ -211,8 +215,8 @@ class _HrAccessWorkspaceDialogState
   AppPageRequest get _pageRequest =>
       AppPageRequest(pageIndex: _pageIndex, pageSize: _pageSize);
 
-  AppListTableSearch<T> _accessTableSearch<T>(AppLocalizations l10n) {
-    return AppListTableSearch<T>(
+  AppListTableSearch<HrAccessUser> _usersTableSearch(AppLocalizations l10n) {
+    return AppListTableSearch<HrAccessUser>(
       controller: _searchController,
       semanticLabel: l10n.hrAccessSearchLabel,
       hintText: l10n.hrAccessSearchHint,
@@ -223,7 +227,169 @@ class _HrAccessWorkspaceDialogState
         _searchController.clear();
         unawaited(_reload(resetPage: true));
       },
+      showAdvancedFilterButton: true,
+      advancedFilterButtonLabel: l10n.hrFiltersLabel,
+      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      enableDateFilter: false,
+      allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+      textFilters: <AppSearchBarTextFilter>[
+        AppSearchBarTextFilter(
+          key: _accessPositionFilterKey,
+          label: l10n.hrAccessPositionTitleLabel,
+          icon: Icons.work_outline,
+          textInputAction: TextInputAction.done,
+        ),
+      ],
+      filterGroups: <AppSearchBarFilterGroup>[
+        AppSearchBarFilterGroup(
+          key: _accessStatusFilterKey,
+          label: l10n.hrStatusColumnLabel,
+          allLabel: l10n.opdAllFieldsFilterLabel,
+          choices: <AppSearchBarFilterChoice>[
+            const AppSearchBarFilterChoice(
+              value: 'ACTIVE',
+              label: 'Active',
+              icon: Icons.check_circle_outline,
+            ),
+            const AppSearchBarFilterChoice(
+              value: 'INACTIVE',
+              label: 'Inactive',
+              icon: Icons.pause_circle_outline,
+            ),
+            const AppSearchBarFilterChoice(
+              value: 'SUSPENDED',
+              label: 'Suspended',
+              icon: Icons.block,
+            ),
+          ],
+        ),
+      ],
+      filterValue: _accessFilters,
+      hasActiveFilters: _hasAccessFilters,
+      onFilterChanged: (AppSearchBarFilterValue value) {
+        setState(() => _accessFilters = value);
+      },
     );
+  }
+
+  AppListTableSearch<HrAccessRole> _rolesTableSearch(AppLocalizations l10n) {
+    return AppListTableSearch<HrAccessRole>(
+      controller: _searchController,
+      semanticLabel: l10n.hrAccessSearchLabel,
+      hintText: l10n.hrAccessSearchHint,
+      clearLabel: l10n.hrClearFiltersAction,
+      matcher: (_, _) => true,
+      onSubmitted: (_) => unawaited(_reload(resetPage: true)),
+      onClear: () {
+        _searchController.clear();
+        unawaited(_reload(resetPage: true));
+      },
+      showAdvancedFilterButton: true,
+      advancedFilterButtonLabel: l10n.hrFiltersLabel,
+      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      enableDateFilter: false,
+      allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+      filterGroups: <AppSearchBarFilterGroup>[
+        AppSearchBarFilterGroup(
+          key: _accessSystemRoleFilterKey,
+          label: l10n.hrAccessSystemColumnLabel,
+          allLabel: l10n.opdAllFieldsFilterLabel,
+          choices: <AppSearchBarFilterChoice>[
+            AppSearchBarFilterChoice(
+              value: 'yes',
+              label: l10n.hrAccessSystemCriticalRoleBadge,
+              icon: Icons.shield_outlined,
+            ),
+            AppSearchBarFilterChoice(
+              value: 'no',
+              label: l10n.hrAccessNonSystemRoleLabel,
+              icon: Icons.shield_outlined,
+            ),
+          ],
+        ),
+      ],
+      filterValue: _accessFilters,
+      hasActiveFilters: _hasAccessFilters,
+      onFilterChanged: (AppSearchBarFilterValue value) {
+        setState(() => _accessFilters = value);
+      },
+    );
+  }
+
+  AppListTableSearch<HrAccessPermission> _permissionsTableSearch(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableSearch<HrAccessPermission>(
+      controller: _searchController,
+      semanticLabel: l10n.hrAccessSearchLabel,
+      hintText: l10n.hrAccessSearchHint,
+      clearLabel: l10n.hrClearFiltersAction,
+      matcher: (_, _) => true,
+      onSubmitted: (_) => unawaited(_reload(resetPage: true)),
+      onClear: () {
+        _searchController.clear();
+        unawaited(_reload(resetPage: true));
+      },
+      showAdvancedFilterButton: true,
+      advancedFilterButtonLabel: l10n.hrFiltersLabel,
+      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      enableDateFilter: false,
+      allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+      filterValue: _accessFilters,
+      hasActiveFilters: _hasAccessFilters,
+      onFilterChanged: (AppSearchBarFilterValue value) {
+        setState(() => _accessFilters = value);
+      },
+    );
+  }
+
+  bool get _hasAccessFilters {
+    if ((_accessFilters.option(_accessStatusFilterKey) ?? '').isNotEmpty) {
+      return true;
+    }
+    if ((_accessFilters.option(_accessSystemRoleFilterKey) ?? '').isNotEmpty) {
+      return true;
+    }
+    return (_accessFilters.text(_accessPositionFilterKey) ?? '')
+        .trim()
+        .isNotEmpty;
+  }
+
+  List<HrAccessUser> get _filteredUsers {
+    final String? status = _accessFilters.option(_accessStatusFilterKey);
+    final String positionQuery =
+        (_accessFilters.text(_accessPositionFilterKey) ?? '').trim().toLowerCase();
+    return _users.where((HrAccessUser user) {
+      if (status != null &&
+          status.isNotEmpty &&
+          (user.status ?? 'ACTIVE').toUpperCase() != status.toUpperCase()) {
+        return false;
+      }
+      if (positionQuery.isNotEmpty &&
+          !(user.positionTitle ?? '').toLowerCase().contains(positionQuery)) {
+        return false;
+      }
+      return true;
+    }).toList(growable: false);
+  }
+
+  List<HrAccessRole> get _filteredRoles {
+    final String? system = _accessFilters.option(_accessSystemRoleFilterKey);
+    return switch (system) {
+      'yes' => _roles
+          .where((HrAccessRole role) => role.isSystemCritical)
+          .toList(growable: false),
+      'no' => _roles
+          .where((HrAccessRole role) => !role.isSystemCritical)
+          .toList(growable: false),
+      _ => _roles,
+    };
   }
 
   String _accessPageLabel<T>(AppPage<T> page, AppLocalizations l10n) {
@@ -273,7 +439,10 @@ class _HrAccessWorkspaceDialogState
               if (next == _panel) {
                 return;
               }
-              setState(() => _panel = next);
+              setState(() {
+                _panel = next;
+                _accessFilters = AppSearchBarFilterValue.empty;
+              });
               unawaited(_reload(resetPage: true));
             },
           ),
@@ -360,14 +529,18 @@ class _HrAccessWorkspaceDialogState
       (HrAccessUser user) => (user.positionTitle ?? '').trim().isNotEmpty,
     );
 
+    final List<HrAccessUser> visibleUsers = _filteredUsers;
+
     return AppListTable<HrAccessUser>(
       page: AppPage<HrAccessUser>(
-        items: _users,
+        items: visibleUsers,
         request: _pageRequest,
-        totalItemCount: _totalItemCount,
+        totalItemCount: _hasAccessFilters
+            ? visibleUsers.length
+            : _totalItemCount,
       ),
       isLoading: _loading,
-      search: _accessTableSearch<HrAccessUser>(l10n),
+      search: _usersTableSearch(l10n),
       columnVisibilityController: _userColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessUser item) => ValueKey<String>(item.effectiveId),
@@ -450,10 +623,7 @@ class _HrAccessWorkspaceDialogState
             if ((item.status ?? '').isEmpty) {
               return Text(context.l10n.profileUnknownValue);
             }
-            return AppStatusText(
-              label: item.status!,
-              tone: hrAccessUserStatusTone(item.status),
-            );
+            return _HrAccessStatusBadge(status: item.status);
           },
         ),
         if (showPositionColumn)
@@ -478,10 +648,7 @@ class _HrAccessWorkspaceDialogState
           title: Text(item.displayLabel),
           subtitle: Text(item.email ?? ''),
           trailing: (item.status ?? '').isNotEmpty
-              ? AppStatusText(
-                  label: item.status!,
-                  tone: hrAccessUserStatusTone(item.status),
-                )
+              ? _HrAccessStatusBadge(status: item.status)
               : null,
         );
       },
@@ -489,14 +656,18 @@ class _HrAccessWorkspaceDialogState
   }
 
   Widget _buildRolesTable(BuildContext context, AppLocalizations l10n) {
+    final List<HrAccessRole> visibleRoles = _filteredRoles;
+
     return AppListTable<HrAccessRole>(
       page: AppPage<HrAccessRole>(
-        items: _roles,
+        items: visibleRoles,
         request: _pageRequest,
-        totalItemCount: _totalItemCount,
+        totalItemCount: _hasAccessFilters
+            ? visibleRoles.length
+            : _totalItemCount,
       ),
       isLoading: _loading,
-      search: _accessTableSearch<HrAccessRole>(l10n),
+      search: _rolesTableSearch(l10n),
       columnVisibilityController: _roleColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessRole item) => ValueKey<String>(item.effectiveId),
@@ -600,7 +771,7 @@ class _HrAccessWorkspaceDialogState
         totalItemCount: _totalItemCount,
       ),
       isLoading: _loading,
-      search: _accessTableSearch<HrAccessPermission>(l10n),
+      search: _permissionsTableSearch(l10n),
       columnVisibilityController: _permissionColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       itemKeyBuilder: (HrAccessPermission item) =>
@@ -667,6 +838,38 @@ class _HrAccessWorkspaceDialogState
       },
     );
   }
+}
+
+class _HrAccessStatusBadge extends StatelessWidget {
+  const _HrAccessStatusBadge({required this.status});
+
+  final String? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = _hrAccessStatusLabel(context, status);
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: label,
+        tone: hrAccessUserStatusTone(status),
+      ),
+    );
+  }
+}
+
+String _hrAccessStatusLabel(BuildContext context, String? status) {
+  final String normalized = (status ?? '').trim();
+  if (normalized.isEmpty) {
+    return context.l10n.profileUnknownValue;
+  }
+  return normalized
+      .split('_')
+      .where((String part) => part.isNotEmpty)
+      .map((String part) {
+        final String lower = part.toLowerCase();
+        return lower.substring(0, 1).toUpperCase() + lower.substring(1);
+      })
+      .join(' ');
 }
 
 class _HrAccessCopyableIdentifierCell extends StatelessWidget {

@@ -257,13 +257,13 @@ Implement or finish the following. Status reflects codebase today.
 
 **Goal:** Per-staff compensation and facility payroll runs.
 
-**Status:** Compensation dialog; run payroll from detail; preview/process in payroll draft queue.
+**Status:** Multi-line compensation editor (concurrent pay types); payroll preview with per–pay-type component breakdown; activity-driven calculation (shifts, availability, leave, consultations, procedures); run payroll from staff detail gated on active compensation lines.
 
 **Actions:**
 
-- Pay types: `PER_HOUR`, `PER_MONTH`, `PER_PROCEDURE` (extend schema only if product approves per task/review).
-- Multiple compensation rows with effective dates; detail **Compensation** section.
-- **Preview payroll** (`GET /hr/payroll-runs/:id/preview`) before process — nested modal.
+- Pay types: `PER_CONSULTATION`, `PER_MONTH`, `PER_DAY`, `PER_HOUR`, `PER_PROCEDURE` (catalog-aligned; no new types without product approval).
+- Multiple concurrent compensation rows with effective dates and `metadata_json.pay_frequency` for salaried lines; detail **Compensation** section lists all active lines.
+- **Preview payroll** (`GET /hr/payroll-runs/:id/preview`) shows per-staff expandable breakdown with quantities, rates, subtotals, and zero-quantity warnings before process — nested modal.
 - Gate with `hrWrite` + `financialApprove`.
 
 **APIs:** `staff_compensation` CRUD, `POST /payroll-runs`, `GET /hr/payroll-runs/:id/preview`, `POST /hr/payroll-runs/:id/process`.

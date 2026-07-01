@@ -702,7 +702,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return widget.emptyBuilder!(context);
     }
 
-    return LayoutBuilder(
+        return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool hasBoundedHeight = constraints.hasBoundedHeight;
         final bool effectiveShrinkWrap = widget.shrinkWrap || !hasBoundedHeight;
@@ -723,7 +723,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           );
         }
 
-        return _DesktopListTable<T>(
+        final Widget desktopTable = _DesktopListTable<T>(
           items: visibleItems,
           columns: visibleColumns,
           itemKeyBuilder: widget.itemKeyBuilder,
@@ -734,6 +734,17 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           sortColumnKey: _sortColumnKey,
           sortAscending: _sortAscending,
           onSort: _sortByColumn,
+        );
+
+        if (!hasBoundedHeight) {
+          return desktopTable;
+        }
+
+        return Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            child: desktopTable,
+          ),
         );
       },
     );

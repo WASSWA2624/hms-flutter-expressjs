@@ -1,36 +1,47 @@
-# HR Staff Access Dialog — Table Layout & UX Refinement
+# HR Multi-Compensation Pay Structure — UI, Payroll Engine & Schedule Sync
 
 ## Objective
 
-Refine the **Staff access** modal in the HR workspace (`/hr`) so it matches the rest of the app's management-table patterns. Replace flat list rows with sortable `AppListTable` views, use row-click navigation into existing detail/edit dialogs, square off the panel tabs, and open the modal **maximized and resizable** by default.
+Evolve staff compensation from a **single active pay structure** into a **multi-rate pay profile** so clinical and operational staff (e.g. doctors, surgeons, nurses) can hold **concurrent compensation lines** — monthly base, hourly shift pay, daily rate, consultation fee, and procedure fee — each with its own rate, currency, and effective dates.
 
-**Entry point:** HR workspace → More actions (⋮) → **Manage users and roles** → `Staff access` modal.
+Payroll must **aggregate all applicable lines** for a pay period using **real activity and schedule data** (shifts, availability, leave, consultations, procedures), not a single dropdown selection. Implement end-to-end on **backend and frontend**.
 
-**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md), [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md)
+**Entry points (from screenshots):**
+
+- HR workspace (`/hr`) → select staff → **Staff detail** → **Compensation** action or Compensation section
+- Staff detail → **Run payroll** (gated on at least one compensation line)
+- Staff onboarding compensation step (optional initial multi-line setup)
+
+**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) §6 Payroll and compensation
 
 **Primary touchpoints:**
 
 | Area | File |
 |------|------|
-| Staff access modal (tabs, lists, actions) | `frontend/lib/features/hr/presentation/widgets/hr_access_dialogs.dart` |
-| More-actions menu entry | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` |
-| Staff directory table reference | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` (`AppListTable<HrStaffProfile>`) |
-| Staff onboarding / create flow | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
-| Access entities | `frontend/lib/features/hr/domain/entities/hr_entities.dart` (`HrAccessUser`, `HrAccessRole`, `HrAccessPermission`) |
+| Update compensation dialog (Pay structure / History tabs) | `frontend/lib/features/hr/presentation/widgets/hr_compensation_dialog.dart` |
+| Staff detail compensation section & actions | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart`, `hr_staff_detail_actions.dart`, `hr_staff_detail_helpers.dart` |
+| Onboarding compensation (single-line today) | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
+| Payroll preview / process wizard | `frontend/lib/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart`, `hr_enhanced_dialogs.dart` |
+| HR entities & DTOs | `frontend/lib/features/hr/domain/entities/hr_entities.dart`, `data/dtos/hr_dtos.dart` |
+| HR repository / controller | `frontend/lib/features/hr/data/repositories/hr_repository_impl.dart`, `presentation/controllers/hr_workspace_controller.dart` |
+| Pay type catalog | `backend/src/lib/hr/reference-data.js` (`COMPENSATION_PAY_TYPE_CATALOG`) |
+| Staff profile compensation sync | `backend/src/modules/staff-profile/services/staff-profile.service.js` (`syncStaffCompensations`) |
+| Compensation validation | `backend/src/modules/staff-profile/schemas/staff-profile.schema.js` |
+| Payroll calculation engine | `backend/src/modules/hr-workspace/services/hr-workspace.service.js` (`buildPayrollProposedItems`, `calculateCompensationAmount`) |
+| DB model | `backend/prisma/schema.prisma` (`staff_compensation`) |
 | Strings | `frontend/lib/l10n/app_en.arb` |
 
 ---
 
 ## Problem Statement (from current UI)
 
-The Staff access modal is functionally present but visually and behaviorally inconsistent with the HR staff directory and other admin workspaces:
+The **Update compensation** dialog exposes one form for a single pay structure at a time:
 
-1. **Rounded segmented tabs** — `SegmentedButton` renders pill-shaped segments with checkmark icons. Tabs should be square-edged and align with workspace board-toggle styling (`AppWorkspaceBoardToggle` / `showSelectedIcon: false`).
-2. **Flat list rows instead of tables** — Users, roles, and permissions render as stacked `ListTile` / custom row widgets with trailing **View** / **Edit** buttons. The HR staff directory already uses `AppListTable` with sortable columns, pagination, and row selection.
-3. **Redundant inline actions** — Users show duplicate email lines, an **ACTIVE** badge, and separate **View** / **Edit user** links. Row click should be the primary affordance; detail and edit live in nested dialogs.
-4. **Modal sizing** — Dialog opens at `maxWidth: 920`, not maximized. It should open **maximized by default** (`initialMaximized: true`) and remain **resizable** (`resizable: true`).
-5. **Terminology** — The **Users** tab and **Create user account** action use generic "user" language. In HR context, these are facility **staff** accounts.
-6. **Create action wiring** — Footer **Create user account** already opens `showHrStaffOnboardingDialog`; label should reflect staff creation, not a separate user-only flow.
+1. **Single-line editing** — Pay type, pay frequency, base rate, and effective dates are bound to one row. Changing pay type replaces the active structure instead of adding another concurrent line. A doctor who earns a monthly retainer **and** per-consultation **and** per-procedure fees cannot configure all three in one save.
+2. **History vs active structure conflated** — The **History** tab lists past rows but the **Pay structure** tab only hydrates from `history.first`, so secondary active pay types are invisible in the editor.
+3. **Payroll preview lacks activity breakdown** — Run payroll is enabled when any compensation exists, but preview does not clearly show per–pay-type line items, quantities (hours, days, consultations, procedures), or how schedule/leave affected eligibility.
+4. **Engine gaps** — Backend `calculateCompensationAmount` handles `PER_HOUR`, `PER_MONTH`, and `PER_PROCEDURE` only; `PER_DAY` and `PER_CONSULTATION` return zero. Procedure counts come from `metadata_json.procedure_count`, not clinical activity. Daily/monthly proration does not yet use availability slots or approved leave.
+5. **Schedule not in sync** — Compensation, availability, shifts, leave, and payroll operate as separate flows. Daily-rate staff should be paid for **worked/eligible days** derived from availability and shifts minus approved leave, not arbitrary period proration alone.
 
 ---
 
@@ -38,175 +49,169 @@ The Staff access modal is functionally present but visually and behaviorally inc
 
 Follow the same rules as the HR module prompt:
 
-- Hospital workflow language — show names, staff numbers, role labels, and status badges; never raw UUIDs in primary UI.
-- Modal-first: all create/edit/detail flows use `AppDialog` / `showAppWorkspaceMutationDialog`.
-- Reuse `frontend/lib/shared/*` components; follow `frontend/.cursor/design-system.mdc` and `ui-patterns.mdc`.
-- Match the **HR staff directory** table patterns (`AppListTable`, `_CopyableIdentifierCell`, `_TwoLineCell`, `AppStatusText`, pagination labels).
+- Hospital workflow language — pay type labels from `hrReferenceCompensationPayTypeLabel`; show staff name, staff number, and rate summaries; avoid raw UUIDs in primary UI.
+- Modal-first: compensation and payroll flows use `AppDialog` / `showAppWorkspaceMutationDialog`.
+- Reuse `frontend/lib/shared/*` form components (`AppSelectField`, `AppCurrencyAmountField`, `AppDateField`, `AppFormSection`).
 - All new/changed strings in `frontend/lib/l10n/app_en.arb`.
-- Permission-gate write actions with `canWriteHrAccess(ref)`; respect `hrWrite` permission.
-- Refresh the active panel after every mutation via existing `_reload(resetPage: true)`.
+- Permission-gate writes with `hrWrite` (+ `financialApprove` for payroll process).
+- Refresh staff detail compensation list after every mutation without full-page reload.
+- Pay types must stay aligned with `COMPENSATION_PAY_TYPES`: `PER_CONSULTATION`, `PER_MONTH`, `PER_DAY`, `PER_HOUR`, `PER_PROCEDURE`.
+- Do **not** add new pay types without product approval; extend calculation and UI for the existing catalog first.
 
 ---
 
-## 1. Modal Shell
+## 1. Multi-Line Compensation UI
 
-### 1.1 Maximized, resizable dialog
+### 1.1 Pay structure tab — concurrent lines
 
-Update `_HrAccessWorkspaceDialog` `AppDialog` configuration:
+Replace the single-form **Pay structure** tab with a **multi-row editor**:
 
-| Property | Required value |
-|----------|----------------|
-| `initialMaximized` | `true` |
-| `resizable` | `true` (default; keep enabled) |
-| `showMaximizeButton` | `true` (allow restore after maximize) |
-| `scrollable` | `true` |
-| `maxWidth` | Remove or raise — when not maximized, use a sensible desktop width; maximized state should fill the viewport |
+| Column / field | Behavior |
+|----------------|----------|
+| Pay type | Required; one row per pay type; prevent duplicate pay types in the active set |
+| Pay frequency | Optional; store in `metadata_json.pay_frequency` (`MONTHLY`, `BIWEEKLY`, `WEEKLY`) for salaried lines |
+| Base rate + currency | Required per row |
+| Effective from | Required |
+| Effective to | Optional |
 
-Remove `mainAxisSize: MainAxisSize.min` from content where it prevents the table from expanding; let the table fill available dialog height.
+**Actions:**
 
-### 1.2 Square panel tabs
+- **Add pay line** — append a new row (default pay type = next unused catalog entry).
+- **Remove pay line** — remove unsaved row or mark existing row ended (set `effective_to` to today or next period start; do not hard-delete history).
+- **Edit row** — inline or expand-in-place; opening detail from staff Compensation section should focus the matching row.
 
-Replace the current `SegmentedButton<HrAccessPanel>` with square-edged tab styling:
+Persist via existing `PUT /staff-profiles/:id` payload shape:
 
-- Use `AppWorkspaceBoardToggle<HrAccessPanel>` **or** `SegmentedButton` with `showSelectedIcon: false` and minimal/small border radius (match `AppWorkspaceBoardToggle` — `theme.radius.sm`, not pill-shaped).
-- No checkmark icon on the selected tab.
-- Rename tab labels (see §5 Terminology).
+```json
+{ "compensations": [ { "pay_type", "rate", "currency", "effective_from", "effective_to", "metadata_json" } ] }
+```
 
----
+`syncStaffCompensations` already soft-deletes and recreates rows — preserve that pattern but ensure the UI sends the **full intended active set**, not one line plus silent history merge.
 
-## 2. Staff Tab (formerly Users)
+### 1.2 History tab
 
-### 2.1 Replace list with `AppListTable<HrAccessUser>`
+Group history by pay type. Show ended rows with effective date range and rate. Distinguish **active** (no `effective_to` or future-dated end) vs **ended** rows. Tapping a history row opens read-only detail (`showHrCompensationDetailDialog`) with **Add new rate** pre-selecting that pay type.
 
-Remove `_HrAccessUserRow` and the `Column` of row widgets. Render staff accounts in `AppListTable` following the staff directory pattern in `hr_workspace_page.dart`.
+### 1.3 Staff detail Compensation section
 
-**Suggested columns:**
+When multiple active lines exist, list **all** active compensations (not only the first). Each row: localized pay type, rate + currency, effective range. Empty state CTA opens multi-line editor.
 
-| Column | Source | Notes |
-|--------|--------|-------|
-| Staff | `displayLabel` + `staffProfileName` or `profileName` | Use `_CopyableIdentifierCell` with staff number / `displayId` when linked |
-| Email | `email` | Single line; do not duplicate display label |
-| Roles | `roleNames` | Comma-separated or chip summary; localize via `hrReferenceRoleLabel` |
-| Status | `status` | `AppStatusText` with `hrAccessUserStatusTone` |
-| Position | `positionTitle` | Optional column; hide when empty for all rows |
+### 1.4 Onboarding (stretch)
 
-**Table behavior:**
-
-- Server-side search via existing `_searchController` debounce and `HrAccessQuery` (keep search field above the table or integrate as `AppListTableSearch` if it fits without duplicating the search box).
-- Pagination via `AppPageRequest` — replace manual "load more" with `AppListTable` `onPageChanged` / `pageLabelBuilder` using existing `hrPageLabel` l10n keys.
-- `onRowSelected` → `showHrAccessUserDetailDialog(context, ref, user, onChanged: …)` — **do not** render trailing View/Edit buttons on rows.
-- Empty state: keep `hrAccessEmptyUsersLabel` inside `emptyBuilder`.
-
-### 2.2 Reuse existing detail & edit dialogs
-
-- **Row click** opens `showHrAccessUserDetailDialog` (already loads `HrAccessUserDetail` and shows roles, direct permissions, linked staff profile).
-- **Edit** remains available inside the detail dialog's **Edit user** action → `showHrEditAccessUserDialog`.
-- Do not build a new user-detail view; extend `_HrAccessUserDetailContent` only if columns expose fields not yet shown.
-
-### 2.3 Footer create action
-
-- Rename **Create user account** → **Create staff** (or **Add staff account** — pick one consistent with `hrAddStaffAction` if it exists).
-- Keep `onPressed` → `showHrStaffOnboardingDialog` (canonical staff + account creation flow).
+Allow optional multi-line compensation during onboarding using the same row component extracted from the compensation dialog. Minimum for this task: shared row widget reused by update dialog; onboarding may follow in a follow-up if time-boxed.
 
 ---
 
-## 3. Roles Tab
+## 2. Backend Compensation API
 
-### 3.1 Replace list with `AppListTable<HrAccessRole>`
+### 2.1 Validation
 
-Remove per-row trailing **Edit role** / **Assign permissions** buttons from the list.
+- Accept `compensations` array on staff profile create/update (already in schema).
+- Reject duplicate `pay_type` values in a single payload.
+- Validate `effective_to >= effective_from` per row (already in `compensationInputSchema`).
+- Return hydrated `compensations` on staff profile GET/detail responses ordered by `effective_from` desc, active lines first.
 
-**Suggested columns:**
+### 2.2 Sync semantics
 
-| Column | Source | Notes |
-|--------|--------|-------|
-| Role | `name` (localized) | Primary identifier |
-| Description | `description` | Truncate with ellipsis in cell |
-| Permissions | `permissionCount` | e.g. "3 permissions" via `hrAccessRoleSummary` fragment |
-| Assignments | `userCount` | e.g. "2 staff" |
-| System | `isSystemCritical` | Badge/chip when true (`hrAccessSystemCriticalRoleBadge`); disable edit affordances for critical roles in detail only |
-
-**Row click behavior:**
-
-- Open existing `showHrEditRoleDialog` for editable roles, **or** a read-only role detail summary dialog if edit is not appropriate.
-- **Assign permissions** moves to the role detail/edit flow (`showHrAssignRolePermissionsDialog`) — not inline on the table row.
-
-### 3.2 Footer
-
-- Keep **Create role** → `showHrCreateRoleDialog`.
-- Keep **Refresh**.
+Keep transactional soft-delete + recreate in `syncStaffCompensations`. Document that clients must send the complete desired compensation set. Optionally support row-level `id` for audit without changing delete-and-recreate if straightforward.
 
 ---
 
-## 4. Permissions Tab
+## 3. Payroll Engine — Multi-Type Calculation
 
-### 4.1 Replace list with `AppListTable<HrAccessPermission>`
+### 3.1 Extend `calculateCompensationAmount`
 
-**Suggested columns:**
+Implement missing pay types and tighten formulas:
 
-| Column | Source | Notes |
-|--------|--------|-------|
-| Permission | `name` | e.g. `unit:read` |
-| Description | `description` | Fallback to generated label when null |
-| Roles | `roleCount` | Via `hrAccessPermissionRoleCount` |
+| Pay type | Quantity source | Formula |
+|----------|-----------------|---------|
+| `PER_HOUR` | Sum of shift assignment durations in period (existing) | `rate × hours` |
+| `PER_DAY` | Eligible workdays in period from availability + assigned shifts, minus approved leave days | `rate × eligible_days` |
+| `PER_MONTH` | Calendar proration over pay period intersecting effective dates (existing); optionally cap by eligible workdays when `metadata_json.pay_frequency` is not monthly | `rate × eligible_days / period_days` |
+| `PER_CONSULTATION` | Count of completed consultations attributed to staff in period (OPD/clinical module linkage or HR workspace aggregate endpoint) | `rate × consultation_count` |
+| `PER_PROCEDURE` | Count of completed procedures attributed to staff in period | `rate × procedure_count` |
 
-**Row click** → `showHrEditPermissionDialog`.
+Each component returns a `calculation` object: `{ pay_type, rate, currency, quantity, unit, formula, source_refs }`.
 
-Remove trailing **Edit permission** button from rows.
+### 3.2 `buildPayrollProposedItems`
 
-### 4.2 Footer
+- For each staff member in scope, load **all** effective compensations for the run period (already queried).
+- Compute each line independently; **sum amounts** per staff (same currency; if mixed currencies, return separate subtotals or primary currency + warning — match existing `normalizeMoney` behavior).
+- Include in `calculation_json.components` every pay type with quantity and amount (not only hourly).
+- Staff-scoped preview (`staff_profile_id` filter) must return the same component breakdown.
 
-- Keep **Create permission** → `showHrCreatePermissionDialog`.
-- Keep **Refresh**.
+### 3.3 Activity & schedule inputs
 
----
+Introduce or reuse queries for period-scoped:
 
-## 5. Terminology (l10n)
+- **Shifts** — `shift_assignment` (existing).
+- **Availability** — `staff_availability` slots overlapping period (for eligible day/hour denominators).
+- **Leave** — approved `staff_leave` rows excluding days from eligible counts.
+- **Consultations / procedures** — prefer existing clinical billing or encounter tables; if not wired yet, add a thin HR aggregate service with clear TODO hooks and seed/demo counts for demo tenants.
 
-Update `app_en.arb` (and regenerate localizations):
-
-| Current key / string | New string |
-|----------------------|------------|
-| `hrAccessPanelUsers` → "Users" | **Staff** |
-| `hrCreateUserAction` → "Create user account" | **Create staff** (or align with existing add-staff wording) |
-| `hrAccessEmptyUsersLabel` | Reword to "staff" where user-facing |
-| `hrAccessViewUserAction` | Remove from table UI (key may remain for detail dialog if used) |
-| `hrAccessEditUserAction` | Keep for detail dialog only |
-
-Do **not** rename domain types (`HrAccessUser`, API fields); only user-visible labels.
+Document data sources in code comments; do not invent parallel clinical APIs inside HR widgets.
 
 ---
 
-## 6. Out of Scope (implement later)
+## 4. Payroll & Compensation UI Sync
 
-Defer to future prompts — do not block this refinement:
+### 4.1 Run payroll wizard
 
-- Full access-admin workspace at `/settings` ([prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md))
-- Permission matrix bulk editor, demo account management, break-glass access
-- Advanced filters on staff access tables (department, role multi-select)
-- Backend schema or API changes
-- Audit log of permission changes
-- Module entitlements editor inside this modal
+- Before process, **Preview payroll** must show a **per-staff expandable breakdown**: each compensation line, quantity, rate, subtotal, gross total.
+- When staff has multiple pay types, show all components; do not collapse to a single hourly rate field.
+- Surface warnings when a configured pay type has **zero quantity** in the period (e.g. procedure rate set but no procedures recorded).
+- Keep **Replace existing payroll items** and period/facility filters.
 
----
+### 4.2 Cross-feature consistency
 
-## Acceptance Criteria
+| Feature | Sync expectation |
+|---------|------------------|
+| **Record availability** | Availability changes affect `PER_DAY` / `PER_HOUR` denominators on next payroll preview |
+| **Assign shift** | Shift hours feed `PER_HOUR`; shift days feed `PER_DAY` |
+| **Request / approve leave** | Approved leave subtracts from eligible days |
+| **Compensation update** | Staff detail and payroll preview refresh; run payroll stays disabled until at least one active line exists |
 
-- [ ] Staff access modal opens **maximized** and can be **resized/restored** via the maximize control.
-- [ ] Panel tabs (Staff / Roles / Permissions) have **square edges**, no selected checkmark icon.
-- [ ] All three panels use **`AppListTable`** with sortable columns, pagination, and empty/loading states consistent with the HR staff directory.
-- [ ] **No inline View/Edit/Assign buttons** on table rows; row click opens the appropriate existing detail or edit dialog.
-- [ ] Staff tab shows name, email, roles, and status in table columns — not duplicate email lines.
-- [ ] **Create staff** footer action opens `showHrStaffOnboardingDialog`.
-- [ ] Tab label reads **Staff**, not Users; other user-facing copy uses "staff" where appropriate.
-- [ ] `flutter analyze` passes; new strings localized in `app_en.arb`.
-- [ ] After any mutation (create, edit, assign), the active panel refreshes without closing the modal.
+After compensation save, invalidate staff detail and any open payroll preview for that staff member.
 
 ---
 
-## Implementation Notes
+## 5. Testing & Acceptance Criteria
 
-- Reference implementation for table layout: `_HrStaffDirectoryPanel` in `hr_workspace_page.dart` (~lines 426–560).
-- Reference for maximized onboarding dialog: `hr_staff_onboarding_dialog.dart` (`initialMaximized: true`).
-- Reference for square tabs: `AppWorkspaceBoardToggle` in `frontend/lib/shared/layout/app_workspace_board_toggle.dart`.
-- Existing dialogs to reuse (do not duplicate): `showHrAccessUserDetailDialog`, `showHrEditAccessUserDialog`, `showHrEditRoleDialog`, `showHrAssignRolePermissionsDialog`, `showHrEditPermissionDialog`, `showHrCreateRoleDialog`, `showHrCreatePermissionDialog`.
+### Backend
+
+- Unit tests for `calculateCompensationAmount` covering all five pay types, leave exclusion, and multi-line summation.
+- Tests for duplicate `pay_type` rejection and multi-row `syncStaffCompensations`.
+- Payroll preview fixture: staff with monthly + consultation + procedure lines returns three `components` and correct gross total.
+
+### Frontend
+
+- Widget test: compensation dialog renders multiple rows, add/remove, submits full array.
+- Staff detail shows two+ active compensation rows.
+- Payroll preview displays component breakdown labels from l10n.
+
+### Manual (demo staff e.g. Avery Demo)
+
+1. Open **Staff detail** → **Compensation**.
+2. Add **Monthly rate** + **Consultation fee rate** + **Procedure rate** with distinct rates and shared or staggered effective dates; save.
+3. Staff detail Compensation section lists all three active lines.
+4. **Run payroll** for a period with shifts and (seeded) consultations/procedures → preview shows line items per pay type with quantities and subtotals.
+5. Approve leave spanning part of the period → daily/monthly eligible days decrease in preview calculation metadata.
+6. Change availability → re-preview reflects updated eligible days/hours.
+
+---
+
+## 6. Out of Scope (unless trivial)
+
+- New pay types beyond the existing catalog.
+- Full general-ledger export or tax withholding rules.
+- Replacing facility-wide payroll run creation UX (only enhance calculation + preview fidelity).
+- OPD encounter UI changes — consume data via backend aggregates only.
+
+---
+
+## 7. Delivery Notes
+
+- Extract a reusable `HrCompensationLineEditor` (or equivalent) shared by update dialog and optionally onboarding.
+- Prefer extending `calculateCompensationAmount` and preview DTOs over one-off frontend math.
+- Keep `metadata_json` for pay frequency and future extensibility; avoid schema migration unless `pay_frequency` must be first-class.
+- Update [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) §6 status line when complete.

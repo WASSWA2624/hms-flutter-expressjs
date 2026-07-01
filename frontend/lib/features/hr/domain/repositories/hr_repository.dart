@@ -114,7 +114,12 @@ abstract interface class HrRepository {
 
   Future<Result<Object?>> deleteShiftTemplate(String templateId);
 
-  Future<Result<HrPayrollPreview>> previewPayrollRun(String payrollRunId);
+  Future<Result<HrPayrollPreview>> previewPayrollRun(
+    String payrollRunId, {
+    String? staffProfileId,
+    String? facilityId,
+    String? departmentId,
+  });
 
   Future<Result<Object?>> offboardStaff(
     String staffProfileId,

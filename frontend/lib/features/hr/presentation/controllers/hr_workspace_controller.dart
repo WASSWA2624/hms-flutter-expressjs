@@ -1080,8 +1080,14 @@ final class HrWorkspaceController
     );
   }
 
-  Future<Result<HrPayrollPreview>> previewPayrollRunById(String payrollRunId) {
-    return _repository.previewPayrollRun(payrollRunId);
+  Future<Result<HrPayrollPreview>> previewPayrollRunById(
+    String payrollRunId, {
+    String? staffProfileId,
+  }) {
+    return _repository.previewPayrollRun(
+      payrollRunId,
+      staffProfileId: staffProfileId,
+    );
   }
 
   Future<AppFailure?> processPayrollRunById(

@@ -65,10 +65,22 @@ const buildUserDisplayName = (user = {}) => {
   return [firstName, middleName, lastName].filter(Boolean).join(' ');
 };
 
+const sortCompensationsForDisplay = (rows = []) => {
+  const now = Date.now();
+  return [...rows].sort((left, right) => {
+    const leftActive = !left.effective_to || new Date(left.effective_to).getTime() >= now;
+    const rightActive = !right.effective_to || new Date(right.effective_to).getTime() >= now;
+    if (leftActive !== rightActive) return leftActive ? -1 : 1;
+    return new Date(right.effective_from).getTime() - new Date(left.effective_from).getTime();
+  });
+};
+
 const mapStaffProfileForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
+  const compensations = sortCompensationsForDisplay(record.compensations || []);
   return {
     ...record,
+    compensations,
     display_id: resolvePublicIdentifier(
       record?.display_id,
       record?.human_friendly_id,
@@ -169,6 +181,10 @@ const extractCompensations = (data = {}) => {
     currency: String(entry.currency || '').trim().toUpperCase(),
     effective_from: entry.effective_from,
     effective_to: entry.effective_to || null,
+    metadata_json:
+      entry.metadata_json && typeof entry.metadata_json === 'object'
+        ? entry.metadata_json
+        : null,
   }));
 };
 
@@ -193,6 +209,7 @@ const syncStaffCompensations = async (staffProfileId, compensations) => {
           currency: compensation.currency,
           effective_from: compensation.effective_from,
           effective_to: compensation.effective_to,
+          metadata_json: compensation.metadata_json || undefined,
         },
       });
     }

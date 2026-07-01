@@ -144,6 +144,7 @@ const leaveRejectSchema = z.object({
 const payrollPreviewQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
+  staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
 const payrollProcessSchema = z.object({

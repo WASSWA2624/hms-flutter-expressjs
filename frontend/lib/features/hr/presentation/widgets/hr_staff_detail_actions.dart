@@ -65,8 +65,10 @@ class HrStaffDetailActions extends ConsumerWidget {
     final HrStaffProfile profile = detail.profile;
     final bool separated = profile.isSeparated;
     final bool enabled = !state.isMutating && !separated;
-    final bool hasCompensation =
-        detail.compensations.isNotEmpty || profile.compensations.isNotEmpty;
+    final bool hasCompensation = <HrStaffCompensation>[
+      ...detail.compensations,
+      ...profile.compensations,
+    ].any((HrStaffCompensation row) => row.isActive);
     final bool hasLinkedUser =
         (profile.userId ?? profile.userDisplayId ?? '').trim().isNotEmpty;
 

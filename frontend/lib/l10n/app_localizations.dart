@@ -26541,6 +26541,12 @@ abstract class AppLocalizations {
   /// **'System critical'**
   String get hrAccessSystemCriticalRoleBadge;
 
+  /// Filter label for custom (non-system) roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-system'**
+  String get hrAccessNonSystemRoleLabel;
+
   /// Select all roles in a multi-select list.
   ///
   /// In en, this message translates to:
@@ -26762,6 +26768,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add new rate'**
   String get hrCompensationAddNewRateAction;
+
+  /// Action to add another concurrent compensation line.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pay line'**
+  String get hrCompensationAddPayLineAction;
+
+  /// Action to remove or end a compensation line.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove pay line'**
+  String get hrCompensationRemovePayLineAction;
+
+  /// Status label for an active compensation row.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get hrCompensationActiveStatusLabel;
+
+  /// Status label for an ended compensation row.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get hrCompensationEndedStatusLabel;
+
+  /// Payroll preview line item breakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{quantity} {unit} × {rate} {currency} = {subtotal}'**
+  String hrPayrollComponentBreakdownLabel(
+    String quantity,
+    String unit,
+    String rate,
+    String currency,
+    String subtotal,
+  );
+
+  /// Warning when a pay type has zero quantity in payroll preview.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded activity for {payType} in this period.'**
+  String hrPayrollZeroQuantityWarning(String payType);
+
+  /// Warning when payroll lines use mixed currencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Some compensation lines use a different currency and were excluded from the total.'**
+  String get hrPayrollMixedCurrencyWarning;
 
   /// Title for payroll wizard dialog.
   ///

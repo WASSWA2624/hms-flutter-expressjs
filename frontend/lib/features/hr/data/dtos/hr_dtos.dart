@@ -219,6 +219,7 @@ final class HrStaffCompensationDto {
   final HrJsonMap json;
 
   HrStaffCompensation toEntity() {
+    final HrJsonMap metadata = _map(json['metadata_json']);
     return HrStaffCompensation(
       id:
           _string(json['display_id']) ??
@@ -233,6 +234,7 @@ final class HrStaffCompensationDto {
       currency: _string(json['currency']),
       effectiveFrom: _date(json['effective_from']),
       effectiveTo: _date(json['effective_to']),
+      payFrequency: _string(metadata['pay_frequency']),
     );
   }
 }
@@ -664,6 +666,7 @@ final class HrPayrollPreviewItemDto {
   final HrJsonMap json;
 
   HrPayrollPreviewItem toEntity() {
+    final HrJsonMap calculation = _map(json['calculation']);
     return HrPayrollPreviewItem(
       staffProfileId: _string(json['staff_profile_id']),
       staffProfileDisplayId: _string(json['staff_profile_display_id']),
@@ -673,6 +676,61 @@ final class HrPayrollPreviewItemDto {
       totalHours: _number(json['total_hours']) ?? 0,
       amount: _number(json['amount']) ?? 0,
       currency: _string(json['currency']),
+      calculation: calculation.isEmpty
+          ? null
+          : HrPayrollPreviewCalculationDto(calculation).toEntity(),
+    );
+  }
+}
+
+final class HrPayrollPreviewCalculationDto {
+  const HrPayrollPreviewCalculationDto(this.json);
+
+  final HrJsonMap json;
+
+  HrPayrollPreviewCalculation toEntity() {
+    return HrPayrollPreviewCalculation(
+      components: _list(json['components'])
+          .map(HrPayrollCalculationComponentDto.new)
+          .map((HrPayrollCalculationComponentDto dto) => dto.toEntity())
+          .toList(growable: false),
+      warnings: _list(json['warnings'])
+          .map(HrPayrollPreviewWarningDto.new)
+          .map((HrPayrollPreviewWarningDto dto) => dto.toEntity())
+          .toList(growable: false),
+      eligibleWorkdays: _int(json['eligible_workdays']),
+      mixedCurrency: json['mixed_currency'] == true,
+    );
+  }
+}
+
+final class HrPayrollCalculationComponentDto {
+  const HrPayrollCalculationComponentDto(this.json);
+
+  final HrJsonMap json;
+
+  HrPayrollCalculationComponent toEntity() {
+    return HrPayrollCalculationComponent(
+      payType: _string(json['pay_type']),
+      rate: _number(json['rate']) ?? 0,
+      currency: _string(json['currency']),
+      quantity: _number(json['quantity']) ?? 0,
+      unit: _string(json['unit']),
+      formula: _string(json['formula']),
+      amount: _number(json['amount']) ?? 0,
+    );
+  }
+}
+
+final class HrPayrollPreviewWarningDto {
+  const HrPayrollPreviewWarningDto(this.json);
+
+  final HrJsonMap json;
+
+  HrPayrollPreviewWarning toEntity() {
+    return HrPayrollPreviewWarning(
+      payType: _string(json['pay_type']),
+      warning: _string(json['warning']),
     );
   }
 }

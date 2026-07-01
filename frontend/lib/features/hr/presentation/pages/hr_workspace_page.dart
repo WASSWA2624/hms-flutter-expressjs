@@ -844,7 +844,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
                     detail.compensations,
                   ),
           rows: <_RecordLine>[
-            for (final HrStaffCompensation compensation in detail.compensations)
+            for (final HrStaffCompensation compensation
+                in detail.compensations.where((HrStaffCompensation row) => row.isActive))
               _RecordLine(
                 title: hrCompensationRowTitle(context, compensation),
                 subtitle: hrDateRange(
@@ -861,6 +862,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
                     ref,
                     profile,
                     detail.compensations,
+                    focusPayType: compensation.payType,
                   ),
                 ),
               ),

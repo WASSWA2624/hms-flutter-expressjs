@@ -7,6 +7,11 @@ const {
 } = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { parseRecordSlots } = require('../../staff-availability/lib/availability-slots');
+const {
+  listAvailability,
+  listApprovedLeaves,
+  listExistingAssignments,
+} = require('./hr-roster-engine-queries');
 
 const DEFAULT_CONSTRAINTS = Object.freeze({
   max_shifts_per_nurse: null,
@@ -232,50 +237,6 @@ const listCandidateProfiles = async (roster) => {
   });
 };
 
-const listAvailability = async (profileIds, periodStart, periodEnd) => {
-  if (!Array.isArray(profileIds) || !profileIds.length) return [];
-
-  return prisma.staff_availability.findMany({
-    where: {
-      deleted_at: null,
-      staff_profile_id: {
-        in: profileIds,
-      },
-      effective_from: {
-        lte: periodEnd,
-      },
-      OR: [
-        { effective_to: null },
-        {
-          effective_to: {
-            gte: periodStart,
-          },
-        },
-      ],
-    },
-  });
-};
-
-const listApprovedLeaves = async (profileIds, periodStart, periodEnd) => {
-  if (!Array.isArray(profileIds) || !profileIds.length) return [];
-
-  return prisma.staff_leave.findMany({
-    where: {
-      deleted_at: null,
-      status: 'APPROVED',
-      staff_profile_id: {
-        in: profileIds,
-      },
-      start_date: {
-        lte: periodEnd,
-      },
-      end_date: {
-        gte: periodStart,
-      },
-    },
-  });
-};
-
 const listDayOffs = async (profileIds, rosterId) => {
   if (!Array.isArray(profileIds) || !profileIds.length) return [];
 
@@ -285,39 +246,6 @@ const listDayOffs = async (profileIds, rosterId) => {
       nurse_roster_id: rosterId,
       staff_profile_id: {
         in: profileIds,
-      },
-    },
-  });
-};
-
-const listExistingAssignments = async (profileIds, periodStart, periodEnd) => {
-  if (!Array.isArray(profileIds) || !profileIds.length) return [];
-
-  return prisma.shift_assignment.findMany({
-    where: {
-      deleted_at: null,
-      staff_profile_id: {
-        in: profileIds,
-      },
-      shift: {
-        deleted_at: null,
-        start_time: {
-          lte: periodEnd,
-        },
-        end_time: {
-          gte: periodStart,
-        },
-      },
-    },
-    include: {
-      shift: {
-        select: {
-          id: true,
-          human_friendly_id: true,
-          start_time: true,
-          end_time: true,
-          nurse_roster_id: true,
-        },
       },
     },
   });
@@ -898,4 +826,7 @@ module.exports = {
   generateRosterAssignments,
   resolveRecordOrThrow,
   resolveDisplayId,
+  listAvailability,
+  listApprovedLeaves,
+  listExistingAssignments,
 };

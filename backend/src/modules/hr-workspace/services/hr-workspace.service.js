@@ -14,6 +14,13 @@ const {
   resolveRecordOrThrow,
   resolveDisplayId,
 } = require('@services/hr-workspace/hr-roster-engine');
+const {
+  calculateCompensationAmount,
+  computeEligibleWorkdays,
+  normalizeMoney,
+  sumCompensationAmounts,
+} = require('@services/hr-workspace/payroll-calculation');
+const { loadStaffPayrollActivity } = require('@services/hr-workspace/hr-payroll-activity');
 
 const DEFAULT_PANEL = 'staffing';
 const DEFAULT_RESOURCE = 'staff-profiles';
@@ -189,72 +196,6 @@ const formatShiftOptionLabel = (entry) =>
   ]
     .filter(Boolean)
     .join(' | ');
-
-const daysBetweenInclusive = (start, end) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
-  const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
-  const endUtc = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
-  return Math.max(0, Math.floor((endUtc - startUtc) / 86400000) + 1);
-};
-
-const overlapDaysInclusive = (leftStart, leftEnd, rightStart, rightEnd) => {
-  const start = new Date(Math.max(new Date(leftStart).getTime(), new Date(rightStart).getTime()));
-  const end = new Date(Math.min(new Date(leftEnd).getTime(), new Date(rightEnd || leftEnd).getTime()));
-  return daysBetweenInclusive(start, end);
-};
-
-const normalizeMoney = (value) => Number((Number(value || 0) || 0).toFixed(2));
-
-const calculateCompensationAmount = ({ compensation, totalHours, periodStart, periodEnd }) => {
-  const payType = normalizeString(compensation.pay_type).toUpperCase();
-  const rate = Number(compensation.rate || 0) || 0;
-  const currency = normalizeString(compensation.currency).toUpperCase() || 'USD';
-  const calculation = {
-    compensation_id: resolveDisplayId(compensation),
-    pay_type: payType,
-    rate: normalizeMoney(rate),
-    currency,
-  };
-
-  if (payType === 'PER_HOUR') {
-    const amount = normalizeMoney(rate * totalHours);
-    return {
-      amount,
-      currency,
-      calculation: { ...calculation, hours: normalizeMoney(totalHours), formula: 'rate * hours' },
-    };
-  }
-
-  if (payType === 'PER_MONTH') {
-    const periodDays = daysBetweenInclusive(periodStart, periodEnd) || 1;
-    const eligibleDays = overlapDaysInclusive(
-      compensation.effective_from || periodStart,
-      compensation.effective_to || periodEnd,
-      periodStart,
-      periodEnd
-    );
-    const amount = normalizeMoney(rate * (eligibleDays / periodDays));
-    return {
-      amount,
-      currency,
-      calculation: { ...calculation, period_days: periodDays, eligible_days: eligibleDays, formula: 'rate * eligible_days / period_days' },
-    };
-  }
-
-  if (payType === 'PER_PROCEDURE') {
-    const procedureCount = Number(compensation.metadata_json?.procedure_count || 0) || 0;
-    const amount = normalizeMoney(rate * procedureCount);
-    return {
-      amount,
-      currency,
-      calculation: { ...calculation, procedure_count: procedureCount, formula: 'rate * procedure_count' },
-    };
-  }
-
-  return { amount: 0, currency, calculation };
-};
 
 const buildPagination = (page, limit, total) => ({
   page,
@@ -2220,115 +2161,144 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
     model: 'department',
     where: { deleted_at: null },
   });
+  const staffProfileId = await resolveIdentifierForFilter({
+    value: filters.staff_profile_id,
+    model: 'staff_profile',
+    where: { deleted_at: null, tenant_id: payrollRunRecord.tenant_id },
+  });
 
-  const assignments = await prisma.shift_assignment.findMany({
-    where: {
-      deleted_at: null,
-      shift: {
-        deleted_at: null,
-        tenant_id: payrollRunRecord.tenant_id,
-        ...(facilityId ? { facility_id: facilityId } : {}),
-        start_time: { gte: payrollRunRecord.period_start, lte: payrollRunRecord.period_end },
-      },
-      ...(departmentId ? { staff_profile: { department_id: departmentId } } : {}),
+  const periodStart = payrollRunRecord.period_start;
+  const periodEnd = payrollRunRecord.period_end;
+  const compensationEffectiveWhere = {
+    deleted_at: null,
+    effective_from: { lte: periodEnd },
+    OR: [{ effective_to: null }, { effective_to: { gte: periodStart } }],
+  };
+
+  const staffInclude = {
+    id: true,
+    human_friendly_id: true,
+    staff_number: true,
+    user_id: true,
+    consultation_fee: true,
+    consultation_currency: true,
+    compensations: {
+      where: compensationEffectiveWhere,
+      orderBy: { effective_from: 'desc' },
     },
-    include: {
-      shift: { select: { start_time: true, end_time: true } },
-      staff_profile: {
-        select: {
-          id: true,
-          human_friendly_id: true,
-          staff_number: true,
-          consultation_fee: true,
-          consultation_currency: true,
-          compensations: {
-            where: {
-              deleted_at: null,
-              effective_from: { lte: payrollRunRecord.period_end },
-              OR: [{ effective_to: null }, { effective_to: { gte: payrollRunRecord.period_start } }],
-            },
-            orderBy: { effective_from: 'desc' },
-          },
-          user: {
-            select: {
-              email: true,
-              profile: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                },
-              },
-            },
+    user: {
+      select: {
+        id: true,
+        email: true,
+        profile: {
+          select: {
+            first_name: true,
+            last_name: true,
           },
         },
       },
     },
+  };
+
+  const staffProfiles = await prisma.staff_profile.findMany({
+    where: {
+      deleted_at: null,
+      tenant_id: payrollRunRecord.tenant_id,
+      ...(departmentId ? { department_id: departmentId } : {}),
+      ...(staffProfileId ? { id: staffProfileId } : {}),
+      OR: [
+        { compensations: { some: compensationEffectiveWhere } },
+        {
+          shift_assignments: {
+            some: {
+              deleted_at: null,
+              shift: {
+                deleted_at: null,
+                ...(facilityId ? { facility_id: facilityId } : {}),
+                start_time: { lte: periodEnd },
+                end_time: { gte: periodStart },
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: staffInclude,
   });
 
-  const grouped = new Map();
-  for (const assignment of assignments) {
-    if (!grouped.has(assignment.staff_profile_id)) {
-      grouped.set(assignment.staff_profile_id, {
-        profile: assignment.staff_profile,
-        totalHours: 0,
-        assignmentCount: 0,
-      });
-    }
+  const activityMap = await loadStaffPayrollActivity({
+    staffProfiles,
+    periodStart,
+    periodEnd,
+    tenantId: payrollRunRecord.tenant_id,
+    facilityId,
+  });
 
-    const entry = grouped.get(assignment.staff_profile_id);
-    entry.assignmentCount += 1;
-    const hours = Math.max(
-      0,
-      (new Date(assignment.shift.end_time).getTime() - new Date(assignment.shift.start_time).getTime()) / 3600000
-    );
-    entry.totalHours += hours;
-  }
+  const proposedItems = staffProfiles.map((profile) => {
+    const activity = activityMap.get(profile.id) || {
+      assignments: [],
+      availability: [],
+      leaves: [],
+      totalHours: 0,
+      assignmentCount: 0,
+      consultationCount: 0,
+      procedureCount: 0,
+    };
+    const eligibleWorkdays = computeEligibleWorkdays({
+      periodStart,
+      periodEnd,
+      availabilityRecords: activity.availability,
+      assignments: activity.assignments,
+      leaves: activity.leaves,
+    });
 
-  const proposedItems = Array.from(grouped.values()).map((entry) => {
-    const compensations = Array.isArray(entry.profile.compensations) && entry.profile.compensations.length
-      ? entry.profile.compensations
-      : entry.profile.consultation_fee
+    const compensations = Array.isArray(profile.compensations) && profile.compensations.length
+      ? profile.compensations
+      : profile.consultation_fee
         ? [
             {
-              pay_type: 'PER_HOUR',
-              rate: entry.profile.consultation_fee,
-              currency: entry.profile.consultation_currency || 'USD',
-              effective_from: payrollRunRecord.period_start,
+              pay_type: 'PER_CONSULTATION',
+              rate: profile.consultation_fee,
+              currency: profile.consultation_currency || 'USD',
+              effective_from: periodStart,
               metadata_json: { source: 'legacy_consultation_fee' },
             },
           ]
         : [];
+
     const calculations = compensations.map((compensation) =>
       calculateCompensationAmount({
         compensation,
-        totalHours: entry.totalHours,
-        periodStart: payrollRunRecord.period_start,
-        periodEnd: payrollRunRecord.period_end,
+        totalHours: activity.totalHours,
+        periodStart,
+        periodEnd,
+        eligibleWorkdays,
+        consultationCount: activity.consultationCount,
+        procedureCount: activity.procedureCount,
       })
     );
-    const currency = calculations.find((item) => item.currency)?.currency || 'USD';
-    const amount = normalizeMoney(
-      calculations
-        .filter((item) => item.currency === currency)
-        .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-    );
+
+    const { amount, currency, warnings, mixedCurrency } = sumCompensationAmounts(calculations);
 
     return {
-      staff_profile_id: entry.profile.id,
-      staff_profile_display_id: resolveDisplayId(entry.profile || {}),
-      staff_number: entry.profile.staff_number || null,
+      staff_profile_id: profile.id,
+      staff_profile_display_id: resolveDisplayId(profile || {}),
+      staff_number: profile.staff_number || null,
       staff_name:
-        normalizeString(`${entry.profile.user?.profile?.first_name || ''} ${entry.profile.user?.profile?.last_name || ''}`) ||
-        entry.profile.user?.email ||
+        normalizeString(`${profile.user?.profile?.first_name || ''} ${profile.user?.profile?.last_name || ''}`) ||
+        profile.user?.email ||
         null,
-      assignment_count: entry.assignmentCount,
-      total_hours: Number(entry.totalHours.toFixed(2)),
+      assignment_count: activity.assignmentCount,
+      total_hours: Number((activity.totalHours || 0).toFixed(2)),
       hourly_rate: calculations.find((item) => item.calculation.pay_type === 'PER_HOUR')?.calculation.rate || 0,
       amount,
       currency,
       calculation: {
         compensation_count: compensations.length,
         components: calculations.map((item) => item.calculation),
+        warnings,
+        mixed_currency: mixedCurrency,
+        eligible_workdays: eligibleWorkdays.eligibleDays,
       },
     };
   });

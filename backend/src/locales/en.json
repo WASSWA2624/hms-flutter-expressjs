@@ -363,6 +363,7 @@
   "errors.validation.email.format": "Invalid email format",
   "errors.validation.email.required": "Email is required",
   "errors.validation.failed": "Validation failed",
+  "errors.validation.duplicate_compensation_pay_type": "Each pay type can only appear once in the compensation set",
   "errors.validation.field.required": "{{field}} is required",
   "errors.validation.invalid": "Invalid value for {{field}}",
   "errors.validation.invalid_number": "Enter a valid number",
