@@ -24795,6 +24795,30 @@ abstract class AppLocalizations {
   /// **'Weekly schedule'**
   String get hrWeeklyScheduleSectionTitle;
 
+  /// Label for the segmented control that chooses how availability is built.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule source'**
+  String get hrAvailabilityScheduleSourceLabel;
+
+  /// Availability schedule source: enter weekly slots manually.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get hrAvailabilitySourceManual;
+
+  /// Availability schedule source: copy from another staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'From staff'**
+  String get hrAvailabilitySourceFromStaff;
+
+  /// Availability schedule source: copy from an existing schedule template.
+  ///
+  /// In en, this message translates to:
+  /// **'From template'**
+  String get hrAvailabilitySourceFromTemplate;
+
   /// Action to copy another staff member's availability schedule into the form.
   ///
   /// In en, this message translates to:
@@ -24806,6 +24830,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Source staff'**
   String get hrAvailabilityCopyFromStaffLabel;
+
+  /// Action to copy a schedule template's weekly pattern into the availability form.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template'**
+  String get hrAvailabilityCopyFromTemplateAction;
+
+  /// Label for the template picker when copying availability from a schedule template.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule template'**
+  String get hrAvailabilityCopyFromTemplateLabel;
 
   /// Action to copy one day's time slots to other days of the week.
   ///

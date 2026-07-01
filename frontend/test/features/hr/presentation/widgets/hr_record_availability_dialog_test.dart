@@ -21,6 +21,22 @@ const HrReferenceData _referenceData = HrReferenceData(
     HrOption(value: 'staff-1', label: 'Alice Nurse'),
     HrOption(value: 'staff-2', label: 'Bob Clinician'),
   ],
+  shiftTemplates: <HrOption>[
+    HrOption(
+      value: 'tpl-1',
+      label: 'Biomedical',
+      extra: <String, Object?>{
+        'weekly_schedule_json': <Map<String, Object?>>[
+          <String, Object?>{
+            'day_of_week': 1,
+            'time_slots': <Map<String, String>>[
+              <String, String>{'start_time': '09:00', 'end_time': '18:00'},
+            ],
+          },
+        ],
+      },
+    ),
+  ],
 );
 
 const HrStaffProfile _selectedStaff = HrStaffProfile(
@@ -178,11 +194,14 @@ void main() {
     await _pumpRecordAvailabilityDialog(tester, repository);
 
     expect(find.text('Record availability'), findsWidgets);
+    expect(find.text('Schedule source'), findsOneWidget);
+    expect(find.text('Manual'), findsOneWidget);
+    expect(find.text('From staff'), findsWidgets);
+    expect(find.text('From template'), findsOneWidget);
     expect(find.text('Weekly schedule'), findsOneWidget);
     expect(find.text('Monday'), findsWidgets);
     expect(find.text('Sunday'), findsWidgets);
     expect(find.textContaining('Effective from'), findsOneWidget);
-    expect(find.text('Copy from staff'), findsOneWidget);
     expect(find.textContaining('08:00-17:00'), findsNWidgets(5));
     expect(tester.takeException(), isNull);
   });
@@ -191,6 +210,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await _pumpRecordAvailabilityDialog(tester, repository);
+
+    await tester.tap(find.text('From staff'));
+    await tester.pumpAndSettle();
 
     await _selectCopySourceStaff(tester);
 
@@ -205,10 +227,35 @@ void main() {
     expect(find.text('02'), findsWidgets);
   });
 
+  testWidgets('apply template pre-fills weekly schedule from pattern', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRecordAvailabilityDialog(tester, repository);
+
+    await tester.tap(find.text('From template'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(TextField).first, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Bio');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Biomedical').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Monday'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.textContaining('09:00-18:00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('duplicate day dialog offers other weekdays as targets', (
     WidgetTester tester,
   ) async {
     await _pumpRecordAvailabilityDialog(tester, repository);
+
+    await tester.tap(find.text('From staff'));
+    await tester.pumpAndSettle();
 
     await _selectCopySourceStaff(tester);
 

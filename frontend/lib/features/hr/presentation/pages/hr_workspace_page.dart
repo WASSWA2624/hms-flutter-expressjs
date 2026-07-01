@@ -6,9 +6,6 @@ import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
@@ -129,7 +126,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         return;
       }
       if (failure != null) {
-        _showMutationResult(context, failure);
+        showHrMutationSnackBar(context, failure);
         return;
       }
       final HrWorkspaceState? state = _hrStateFromAsync(
@@ -355,7 +352,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     final AppFailure? failure = await controller.selectStaff(staff);
     if (failure != null || !context.mounted) {
       if (context.mounted) {
-        _showMutationResult(context, failure ?? AppFailure.validation());
+        showHrMutationSnackBar(context, failure ?? AppFailure.validation());
       }
       return;
     }
@@ -563,7 +560,7 @@ class _HrStaffDirectory extends ConsumerWidget {
             sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
                 appListTableCompareText(left.displayName, right.displayName),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return _CopyableIdentifierCell(
+              return AppCopyableIdentifierCell(
                 title: item.displayName,
                 identifier: item.staffNumber ?? item.displayId,
               );
@@ -577,11 +574,15 @@ class _HrStaffDirectory extends ConsumerWidget {
                   right.assignmentLine,
                 ),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return _TwoLineCell(
+              final ThemeData theme = Theme.of(context);
+              return AppListItemText(
                 title: item.position ?? context.l10n.profileUnknownValue,
                 subtitle: item.practitionerType == null
                     ? null
                     : _apiLabel(context, item.practitionerType),
+                titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               );
             },
           ),
@@ -711,7 +712,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
                     role.roleName,
                     fallback: role.roleName ?? role.roleId,
                   ),
-                  subtitle: _joinDisplay(<String?>[
+                  subtitle: hrJoinDisplay(<String?>[
                     role.facilityName,
                     role.facilityDisplayId,
                   ]),
@@ -1023,7 +1024,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
         AppListTableColumn<HrWorkItem>(
           label: l10n.hrQueueItemColumnLabel,
           cellBuilder: (BuildContext context, HrWorkItem item) {
-            return _CopyableIdentifierCell(
+            return AppCopyableIdentifierCell(
               title: _workItemTitle(context, item),
               identifier: item.effectiveId,
             );
@@ -1034,7 +1035,7 @@ class _HrWorkQueueTable extends ConsumerWidget {
           sortComparator: (HrWorkItem left, HrWorkItem right) =>
               appListTableCompareText(left.queue.value, right.queue.value),
           cellBuilder: (BuildContext context, HrWorkItem item) {
-            return Text(_queueLabel(context.l10n, item.queue));
+            return Text(hrQueueLabel(context.l10n, item.queue));
           },
         ),
         AppListTableColumn<HrWorkItem>(
@@ -1084,11 +1085,11 @@ class _HrActivityPanel extends StatelessWidget {
       items: <AppWorkspaceActivityItem>[
         for (final HrTimelineItem item in items)
           AppWorkspaceActivityItem(
-            title: _joinDisplay(<String?>[
+            title: hrJoinDisplay(<String?>[
               _apiLabel(context, item.type),
               item.id,
             ]).ifEmpty(item.id),
-            subtitle: _joinDisplay(<String?>[
+            subtitle: hrJoinDisplay(<String?>[
               _apiLabel(context, item.action),
               _apiLabel(context, item.status),
               _formatDateTime(context, item.at),
@@ -1182,7 +1183,13 @@ class _RecordLineTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _TwoLineCell(title: line.title, subtitle: line.subtitle),
+                AppListItemText(
+                  title: line.title,
+                  subtitle: line.subtitle,
+                  titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 if (line.badges.isNotEmpty) ...<Widget>[
                   SizedBox(height: theme.spacing.xs),
                   Wrap(
@@ -1277,89 +1284,6 @@ class _HrSeparationBanner extends StatelessWidget {
   }
 }
 
-class _CopyableIdentifierCell extends StatelessWidget {
-  const _CopyableIdentifierCell({
-    required this.title,
-    this.identifier,
-    this.subtitle,
-  });
-
-  final String title;
-  final String? identifier;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w700,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: titleStyle,
-        ),
-        if ((identifier ?? '').trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          AppCopyableIdentifier(
-            value: identifier,
-            textStyle: theme.textTheme.bodySmall,
-          ),
-        ],
-        if ((subtitle ?? '').trim().isNotEmpty)
-          Text(
-            subtitle!,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if ((subtitle ?? '').trim().isNotEmpty)
-          Text(
-            subtitle!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -1394,10 +1318,10 @@ class _HrStaffListTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: _CopyableIdentifierCell(
+            child: AppCopyableIdentifierCell(
               title: staff.displayName,
               identifier: staff.staffNumber ?? staff.displayId,
-              subtitle: _joinDisplay(<String?>[
+              subtitle: hrJoinDisplay(<String?>[
                 staff.position,
                 staff.departmentName ?? staff.departmentDisplayId,
               ]),
@@ -1429,12 +1353,15 @@ class _HrWorkItemTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: _TwoLineCell(
+            child: AppListItemText(
               title: _workItemTitle(context, item),
-              subtitle: _joinDisplay(<String?>[
-                _queueLabel(context.l10n, item.queue),
+              subtitle: hrJoinDisplay(<String?>[
+                hrQueueLabel(context.l10n, item.queue),
                 _workItemPeriod(context, item),
               ]),
+              titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           SizedBox(width: theme.spacing.sm),
@@ -1450,7 +1377,7 @@ Future<void> _showShiftAssignmentDialog(
   WidgetRef ref,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
@@ -1476,13 +1403,13 @@ Future<void> _showShiftAssignmentDialog(
     ),
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
 Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
@@ -1508,7 +1435,7 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
     ),
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
@@ -1521,7 +1448,7 @@ Future<void> _showWorkItemDialog(
     context: context,
     builder: (_) => AppDialog(
       title: Text(_workItemTitle(context, item)),
-      icon: Icon(_queueIcon(item.queue)),
+      icon: Icon(hrQueueIcon(item.queue)),
       scrollable: true,
       maxWidth: 640,
       content: _WorkItemActions(item: item),
@@ -1537,7 +1464,7 @@ class _WorkItemActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final HrWorkspaceState? state = _readHrState(ref);
+    final HrWorkspaceState? state = readHrWorkspaceState(ref);
     final bool enabled = state?.isMutating != true;
 
     return Column(
@@ -1555,8 +1482,8 @@ class _WorkItemActions extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.hrQueueColumnLabel,
-              value: _queueLabel(l10n, item.queue),
-              icon: _queueIcon(item.queue),
+              value: hrQueueLabel(l10n, item.queue),
+              icon: hrQueueIcon(item.queue),
             ),
             AppInfoTileData(
               label: l10n.hrStatusColumnLabel,
@@ -1592,7 +1519,7 @@ class _WorkItemActions extends ConsumerWidget {
     return switch (item.queue) {
       HrQueue.leaveRequests => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrApproveLeaveAction,
           icon: Icons.check_circle_outline,
           enabled: enabled,
@@ -1606,7 +1533,7 @@ class _WorkItemActions extends ConsumerWidget {
           ),
         ),
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrRejectLeaveAction,
           icon: Icons.cancel_outlined,
           enabled: enabled,
@@ -1622,7 +1549,7 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.swapRequests => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _rosterApproveRequirement,
+          requirement: hrRosterApproveRequirement,
           label: l10n.hrApproveSwapAction,
           icon: Icons.check_circle_outline,
           enabled: enabled,
@@ -1636,7 +1563,7 @@ class _WorkItemActions extends ConsumerWidget {
           ),
         ),
         AppPermissionActionItem(
-          requirement: _rosterApproveRequirement,
+          requirement: hrRosterApproveRequirement,
           label: l10n.hrRejectSwapAction,
           icon: Icons.cancel_outlined,
           enabled: enabled,
@@ -1652,14 +1579,14 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.rosterDrafts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrPreviewRosterAction,
           icon: Icons.visibility_outlined,
           enabled: enabled,
           onPressed: () => showHrPreviewRosterDialog(context, ref, item),
         ),
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrGenerateRosterAction,
           icon: Icons.auto_awesome_outlined,
           enabled: enabled,
@@ -1667,7 +1594,7 @@ class _WorkItemActions extends ConsumerWidget {
               _submitSimple(context, controller.generateRoster(item)),
         ),
         AppPermissionActionItem(
-          requirement: _rosterPublishRequirement,
+          requirement: hrRosterPublishRequirement,
           label: l10n.hrPublishRosterAction,
           icon: Icons.publish_outlined,
           enabled: enabled,
@@ -1677,7 +1604,7 @@ class _WorkItemActions extends ConsumerWidget {
       HrQueue.unassignedShifts ||
       HrQueue.overdueShifts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrOverrideShiftAction,
           icon: Icons.manage_accounts_outlined,
           enabled: enabled,
@@ -1686,14 +1613,14 @@ class _WorkItemActions extends ConsumerWidget {
       ],
       HrQueue.payrollDrafts => <AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _payrollRequirement,
+          requirement: hrPayrollRequirement,
           label: l10n.hrPreviewPayrollAction,
           icon: Icons.receipt_long_outlined,
           enabled: enabled,
           onPressed: () => showHrPreviewPayrollDialog(context, ref, item),
         ),
         AppPermissionActionItem(
-          requirement: _payrollRequirement,
+          requirement: hrPayrollRequirement,
           label: l10n.hrProcessPayrollAction,
           icon: Icons.price_check_outlined,
           enabled: enabled,
@@ -1729,7 +1656,7 @@ Future<void> _submitReason(
     onSubmit: () => onSubmit(fieldsKey.currentState?.reason),
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
@@ -1765,7 +1692,7 @@ Future<void> _showRosterPublishDialog(
     },
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
@@ -1775,7 +1702,7 @@ Future<void> _showOverrideShiftDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
@@ -1807,7 +1734,7 @@ Future<void> _showOverrideShiftDialog(
     },
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
@@ -1842,7 +1769,7 @@ Future<void> _showProcessPayrollDialog(
     },
   );
   if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
+    showHrMutationSnackBar(context, null);
   }
 }
 
@@ -1852,7 +1779,7 @@ Future<void> _submitSimple(
 ) async {
   final AppFailure? failure = await mutation;
   if (context.mounted) {
-    _showMutationResult(context, failure);
+    showHrMutationSnackBar(context, failure);
   }
 }
 
@@ -1935,7 +1862,7 @@ class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
         AppSelectField<String>.searchable(
           value: _targetStaffId,
           labelText: l10n.hrTargetStaffLabel,
-          options: _selectOptions(widget.referenceData.staffProfiles),
+          options: hrSelectOptions(widget.referenceData.staffProfiles),
           onChanged: (String? value) => setState(() => _targetStaffId = value),
         ),
       ],
@@ -2070,7 +1997,7 @@ class _OverrideShiftFieldsState extends State<_OverrideShiftFields> {
           value: _staffProfileId,
           labelText: l10n.hrStaffLabel,
           isRequired: true,
-          options: _selectOptions(widget.referenceData.staffProfiles),
+          options: hrSelectOptions(widget.referenceData.staffProfiles),
           validator: AppValidators.requiredValue(
             l10n.hrFieldRequiredLabel(l10n.hrStaffLabel),
           ),
@@ -2145,21 +2072,6 @@ HrWorkspaceState? _hrStateFromAsync(
   );
 }
 
-HrWorkspaceState? _readHrState(WidgetRef ref) {
-  return ref
-      .read(hrWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(success: (HrWorkspaceState state) => state, failure: (_) => null);
-}
-
-List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
-  return <AppSelectOption<String>>[
-    for (final HrOption option in options)
-      AppSelectOption<String>(value: option.value, label: option.label),
-  ];
-}
-
 List<AppSelectOption<String>> _shiftSelectOptions(List<HrOption> options) {
   return <AppSelectOption<String>>[
     for (final HrOption option in options)
@@ -2215,20 +2127,6 @@ bool _hasStaffFilters(HrStaffQuery query) {
       query.practitionerType != null;
 }
 
-void _showMutationResult(BuildContext context, AppFailure? failure) {
-  if (!context.mounted) {
-    return;
-  }
-  final AppLocalizations l10n = context.l10n;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        failure == null ? l10n.hrSavedMessage : l10n.failureMessage(failure),
-      ),
-    ),
-  );
-}
-
 String _staffNextAction(BuildContext context, HrStaffProfile staff) {
   final AppLocalizations l10n = context.l10n;
   if ((staff.departmentId ?? staff.departmentDisplayId ?? '').trim().isEmpty) {
@@ -2243,27 +2141,27 @@ String _staffNextAction(BuildContext context, HrStaffProfile staff) {
 String _workItemTitle(BuildContext context, HrWorkItem item) {
   final AppLocalizations l10n = context.l10n;
   return switch (item.queue) {
-    HrQueue.leaveRequests => _joinDisplay(<String?>[
+    HrQueue.leaveRequests => hrJoinDisplay(<String?>[
       item.leaveType == null
           ? null
           : _apiLabel(context, item.leaveType),
       item.staffName,
       item.staffNumber,
     ]).ifEmpty(l10n.hrLeaveRequestTitle),
-    HrQueue.swapRequests => _joinDisplay(<String?>[
+    HrQueue.swapRequests => hrJoinDisplay(<String?>[
       item.shiftType == null ? null : _apiLabel(context, item.shiftType),
       item.shiftId,
       item.staffNumber,
     ]).ifEmpty(l10n.hrSwapRequestTitle),
-    HrQueue.rosterDrafts => _joinDisplay(<String?>[
+    HrQueue.rosterDrafts => hrJoinDisplay(<String?>[
       item.periodLabel,
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
-    HrQueue.unassignedShifts || HrQueue.overdueShifts => _joinDisplay(<String?>[
+    HrQueue.unassignedShifts || HrQueue.overdueShifts => hrJoinDisplay(<String?>[
       item.shiftType == null ? null : _apiLabel(context, item.shiftType),
       item.shiftId,
     ]).ifEmpty(l10n.hrShiftQueueTitle),
-    HrQueue.payrollDrafts => _joinDisplay(<String?>[
+    HrQueue.payrollDrafts => hrJoinDisplay(<String?>[
       item.periodLabel,
       item.payrollRunId ?? item.displayId,
     ]).ifEmpty(l10n.hrPayrollDraftTitle),
@@ -2286,17 +2184,12 @@ String _workItemPeriod(BuildContext context, HrWorkItem item) {
   if ((item.periodLabel ?? '').trim().isNotEmpty) {
     return item.periodLabel!;
   }
-  return _dateRange(
+  return hrDateRange(
     context,
     item.startAt,
     item.endAt,
   ).ifEmpty(context.l10n.profileUnknownValue);
 }
-
-String _queueLabel(AppLocalizations l10n, HrQueue queue) =>
-    hrQueueLabel(l10n, queue);
-
-IconData _queueIcon(HrQueue queue) => hrQueueIcon(queue);
 
 IconData _activityIcon(String? type) {
   return switch ((type ?? '').trim().toUpperCase()) {
@@ -2388,7 +2281,7 @@ String _leaveSummaryTitle(BuildContext context, HrStaffLeave leave) {
 String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
   final AppLocalizations l10n = context.l10n;
   final List<String> parts = <String>[
-    _dateRange(context, leave.startDate, leave.endDate),
+    hrDateRange(context, leave.startDate, leave.endDate),
     if (leave.isHalfDay)
       l10n.hrLeaveHalfDaySummary(
         _apiLabel(context, leave.halfDayPeriod).ifEmpty(
@@ -2401,70 +2294,15 @@ String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
   return parts.join(' · ');
 }
 
-String _formatDate(BuildContext context, DateTime? value) {
-  return value == null
-      ? ''
-      : AppFormatters.mediumDate(value, Localizations.localeOf(context));
-}
-
 String _formatDateTime(BuildContext context, DateTime? value) {
   return value == null
       ? ''
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
-String _dateRange(BuildContext context, DateTime? start, DateTime? end) {
-  return _joinDisplay(<String?>[
-    _formatDate(context, start),
-    _formatDate(context, end),
-  ]);
-}
-
-String _joinDisplay(Iterable<String?> values) {
-  return values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' | ');
-}
-
 const String _hrPositionFilterKey = 'position';
 const String _hrDepartmentFilterKey = 'department';
 const String _hrPractitionerFilterKey = 'practitioner';
-
-const AccessRequirement _hrWriteRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _rosterWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterWrite,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _rosterApproveRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterApprove,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _rosterPublishRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterPublish,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _payrollRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  anyPermissions: <AppPermission>[AppPermissions.financialApprove],
-  activeModules: <String>['hr-rosters'],
-);
 
 extension on String {
   String ifEmpty(String fallback) {

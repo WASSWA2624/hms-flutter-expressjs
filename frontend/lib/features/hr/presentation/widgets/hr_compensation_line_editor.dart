@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -68,11 +67,9 @@ class HrCompensationLineEditor extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return Card(
-      margin: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
@@ -184,9 +181,33 @@ class HrCompensationLineEditor extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
+}
+
+List<AppSelectOption<String>> hrCompensationPayTypeSelectOptions(
+  AppLocalizations l10n,
+) {
+  return kHrCompensationPayTypeCodes
+      .map(
+        (String code) => AppSelectOption<String>(
+          value: code,
+          label: hrCompensationPayTypeLabel(l10n, code),
+        ),
+      )
+      .toList(growable: false);
+}
+
+String hrCompensationRateLabel(AppLocalizations l10n, String payType) {
+  return hrCompensationPayTypeLabel(l10n, payType);
+}
+
+String hrCompensationPayTypeFromApi(String? value) {
+  final String normalized = (value ?? '').trim().toUpperCase();
+  if (kHrCompensationPayTypeCodes.contains(normalized)) {
+    return normalized;
+  }
+  return 'PER_MONTH';
 }
 
 String hrCompensationPayTypeLabel(AppLocalizations l10n, String payType) {

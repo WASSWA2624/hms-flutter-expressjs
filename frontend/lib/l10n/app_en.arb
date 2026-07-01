@@ -17113,6 +17113,22 @@
   "@hrWeeklyScheduleSectionTitle": {
     "description": "Shared section title for the weekly schedule editor in HR flows."
   },
+  "hrAvailabilityScheduleSourceLabel": "Schedule source",
+  "@hrAvailabilityScheduleSourceLabel": {
+    "description": "Label for the segmented control that chooses how availability is built."
+  },
+  "hrAvailabilitySourceManual": "Manual",
+  "@hrAvailabilitySourceManual": {
+    "description": "Availability schedule source: enter weekly slots manually."
+  },
+  "hrAvailabilitySourceFromStaff": "From staff",
+  "@hrAvailabilitySourceFromStaff": {
+    "description": "Availability schedule source: copy from another staff member."
+  },
+  "hrAvailabilitySourceFromTemplate": "From template",
+  "@hrAvailabilitySourceFromTemplate": {
+    "description": "Availability schedule source: copy from an existing schedule template."
+  },
   "hrAvailabilityCopyFromStaffAction": "Copy from staff",
   "@hrAvailabilityCopyFromStaffAction": {
     "description": "Action to copy another staff member's availability schedule into the form."
@@ -17120,6 +17136,14 @@
   "hrAvailabilityCopyFromStaffLabel": "Source staff",
   "@hrAvailabilityCopyFromStaffLabel": {
     "description": "Label for the staff picker when copying availability from another staff member."
+  },
+  "hrAvailabilityCopyFromTemplateAction": "Apply template",
+  "@hrAvailabilityCopyFromTemplateAction": {
+    "description": "Action to copy a schedule template's weekly pattern into the availability form."
+  },
+  "hrAvailabilityCopyFromTemplateLabel": "Schedule template",
+  "@hrAvailabilityCopyFromTemplateLabel": {
+    "description": "Label for the template picker when copying availability from a schedule template."
   },
   "hrAvailabilityDuplicateToAction": "Duplicate to…",
   "@hrAvailabilityDuplicateToAction": {

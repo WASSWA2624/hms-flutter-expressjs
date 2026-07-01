@@ -13,6 +13,8 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+enum _HrAvailabilityScheduleSource { manual, fromStaff, fromTemplate }
+
 /// Global entry point for recording a staff member's weekly availability.
 Future<void> showHrRecordAvailabilityDialog(
   BuildContext context,
@@ -115,10 +117,14 @@ class _HrRecordAvailabilityFieldsState
     weekdayDefaults: true,
   );
 
+  _HrAvailabilityScheduleSource _scheduleSource =
+      _HrAvailabilityScheduleSource.manual;
+
   String? _preference = 'AVAILABLE';
   DateTime? _effectiveFrom = DateTime.now();
   DateTime? _effectiveTo;
   String? _copyFromStaffId;
+  String? _copyFromTemplateId;
   bool _isLoadingCopy = false;
 
   @override
@@ -142,6 +148,44 @@ class _HrRecordAvailabilityFieldsState
       return l10n.hrFieldRequiredLabel(l10n.hrEffectiveFromLabel);
     }
     return _schedule.validate(l10n);
+  }
+
+  void _onScheduleSourceChanged(_HrAvailabilityScheduleSource next) {
+    if (next == _scheduleSource) {
+      return;
+    }
+    setState(() {
+      _scheduleSource = next;
+      _copyFromStaffId = null;
+      _copyFromTemplateId = null;
+    });
+  }
+
+  void _copyFromTemplate(String? templateId) {
+    final String sourceId = templateId?.trim() ?? '';
+    if (sourceId.isEmpty) {
+      return;
+    }
+
+    final HrOption? template = widget.referenceData.shiftTemplates
+        .where((HrOption option) => option.value == sourceId)
+        .firstOrNull;
+    if (template == null) {
+      return;
+    }
+
+    final HrWeeklyScheduleDraft source =
+        HrWeeklyScheduleDraft.fromTemplateExtra(template.extra);
+    final Map<int, List<HrAvailabilitySlot>> slotsByDay =
+        <int, List<HrAvailabilitySlot>>{
+          for (final int day in kHrWeekDayOrder)
+            day: source.days[day]!.toEntitySlots(),
+        };
+    source.dispose();
+
+    setState(() {
+      _schedule.applyEntitySlotsByDay(slotsByDay);
+    });
   }
 
   Future<void> _copyFromStaff(String? staffProfileId) async {
@@ -246,6 +290,13 @@ class _HrRecordAvailabilityFieldsState
     ];
   }
 
+  List<AppSelectOption<String>> get _templateOptions {
+    return <AppSelectOption<String>>[
+      for (final HrOption option in widget.referenceData.shiftTemplates)
+        AppSelectOption<String>(value: option.value, label: option.label),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -253,31 +304,98 @@ class _HrRecordAvailabilityFieldsState
 
     return AppFormSection(
       children: <Widget>[
-        if (_staffOptions.isNotEmpty) ...<Widget>[
-          AppSelectField<String>.searchable(
-            value: _copyFromStaffId,
-            labelText: l10n.hrAvailabilityCopyFromStaffLabel,
-            options: _staffOptions,
-            enabled: !_isLoadingCopy,
-            onChanged: (String? value) {
-              setState(() => _copyFromStaffId = value);
-              if (value != null) {
-                _copyFromStaff(value);
-              }
-            },
-          ),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AppButton.secondary(
-              label: l10n.hrAvailabilityCopyFromStaffAction,
-              leadingIcon: Icons.person_search_outlined,
-              isLoading: _isLoadingCopy,
-              enabled: _copyFromStaffId != null && !_isLoadingCopy,
-              onPressed: _copyFromStaffId == null
-                  ? null
-                  : () => _copyFromStaff(_copyFromStaffId),
+        Text(
+          l10n.hrAvailabilityScheduleSourceLabel,
+          style: theme.textTheme.titleSmall,
+        ),
+        SizedBox(height: theme.spacing.xs),
+        AppWorkspaceBoardToggle<_HrAvailabilityScheduleSource>(
+          value: _scheduleSource,
+          segments: <ButtonSegment<_HrAvailabilityScheduleSource>>[
+            ButtonSegment<_HrAvailabilityScheduleSource>(
+              value: _HrAvailabilityScheduleSource.manual,
+              label: Text(l10n.hrAvailabilitySourceManual),
+              icon: const Icon(Icons.edit_calendar_outlined),
             ),
-          ),
+            ButtonSegment<_HrAvailabilityScheduleSource>(
+              value: _HrAvailabilityScheduleSource.fromStaff,
+              label: Text(l10n.hrAvailabilitySourceFromStaff),
+              icon: const Icon(Icons.person_search_outlined),
+            ),
+            ButtonSegment<_HrAvailabilityScheduleSource>(
+              value: _HrAvailabilityScheduleSource.fromTemplate,
+              label: Text(l10n.hrAvailabilitySourceFromTemplate),
+              icon: const Icon(Icons.view_week_outlined),
+            ),
+          ],
+          onChanged: _onScheduleSourceChanged,
+        ),
+        SizedBox(height: theme.spacing.sm),
+        if (_scheduleSource == _HrAvailabilityScheduleSource.fromStaff) ...<Widget>[
+          if (_staffOptions.isEmpty)
+            Text(
+              l10n.hrNoStaffTitle,
+              style: theme.textTheme.bodyMedium,
+            )
+          else ...<Widget>[
+            AppSelectField<String>.searchable(
+              value: _copyFromStaffId,
+              labelText: l10n.hrAvailabilityCopyFromStaffLabel,
+              options: _staffOptions,
+              enabled: !_isLoadingCopy,
+              onChanged: (String? value) {
+                setState(() => _copyFromStaffId = value);
+                if (value != null) {
+                  _copyFromStaff(value);
+                }
+              },
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.secondary(
+                label: l10n.hrAvailabilityCopyFromStaffAction,
+                leadingIcon: Icons.person_search_outlined,
+                isLoading: _isLoadingCopy,
+                enabled: _copyFromStaffId != null && !_isLoadingCopy,
+                onPressed: _copyFromStaffId == null
+                    ? null
+                    : () => _copyFromStaff(_copyFromStaffId),
+              ),
+            ),
+          ],
+          SizedBox(height: theme.spacing.sm),
+        ],
+        if (_scheduleSource ==
+            _HrAvailabilityScheduleSource.fromTemplate) ...<Widget>[
+          if (_templateOptions.isEmpty)
+            Text(
+              l10n.hrNoShiftTemplatesLabel,
+              style: theme.textTheme.bodyMedium,
+            )
+          else ...<Widget>[
+            AppSelectField<String>.searchable(
+              value: _copyFromTemplateId,
+              labelText: l10n.hrAvailabilityCopyFromTemplateLabel,
+              options: _templateOptions,
+              onChanged: (String? value) {
+                setState(() => _copyFromTemplateId = value);
+                if (value != null) {
+                  _copyFromTemplate(value);
+                }
+              },
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.secondary(
+                label: l10n.hrAvailabilityCopyFromTemplateAction,
+                leadingIcon: Icons.view_week_outlined,
+                enabled: _copyFromTemplateId != null,
+                onPressed: _copyFromTemplateId == null
+                    ? null
+                    : () => _copyFromTemplate(_copyFromTemplateId),
+              ),
+            ),
+          ],
           SizedBox(height: theme.spacing.sm),
         ],
         HrWeeklyScheduleEditor(

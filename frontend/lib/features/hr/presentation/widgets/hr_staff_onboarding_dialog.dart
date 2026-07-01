@@ -9,8 +9,10 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_line_editor.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -34,8 +36,6 @@ const Set<String> _clinicalPrescriberRoleNames = <String>{
 };
 
 enum StaffNumberEntryMode { generate, manual }
-
-enum _CompensationPayType { perConsultation, monthly, daily, hourly, perVisit }
 
 /// Opens the canonical HR staff onboarding dialog (create or edit).
 Future<void> showHrStaffOnboardingDialog(
@@ -155,7 +155,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
   late final TextEditingController _feeCurrencyController;
 
   StaffNumberEntryMode _staffNumberMode = StaffNumberEntryMode.generate;
-  _CompensationPayType _payType = _CompensationPayType.monthly;
+  String _payType = 'PER_MONTH';
   String? _position;
   String? _positionSearchText;
   String? _departmentId;
@@ -245,7 +245,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       final HrStaffCompensation compensation = staff.compensations.first;
       _compensationRateController.text = compensation.rate?.toString() ?? '';
       _compensationCurrency = compensation.currency ?? appDefaultCurrencyCode;
-      _payType = _payTypeFromApi(compensation.payType);
+      _payType = hrCompensationPayTypeFromApi(compensation.payType);
       _compensationEffectiveFrom = compensation.effectiveFrom ?? DateTime.now();
     }
     if (staff?.staffNumber != null && staff!.staffNumber!.isNotEmpty) {
@@ -274,26 +274,6 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     _feeController.dispose();
     _feeCurrencyController.dispose();
     super.dispose();
-  }
-
-  _CompensationPayType _payTypeFromApi(String? value) {
-    return switch ((value ?? '').toUpperCase()) {
-      'PER_CONSULTATION' => _CompensationPayType.perConsultation,
-      'PER_HOUR' => _CompensationPayType.hourly,
-      'PER_DAY' => _CompensationPayType.daily,
-      'PER_PROCEDURE' => _CompensationPayType.perVisit,
-      _ => _CompensationPayType.monthly,
-    };
-  }
-
-  String _payTypeApiValue(_CompensationPayType type) {
-    return switch (type) {
-      _CompensationPayType.perConsultation => 'PER_CONSULTATION',
-      _CompensationPayType.hourly => 'PER_HOUR',
-      _CompensationPayType.daily => 'PER_DAY',
-      _CompensationPayType.perVisit => 'PER_PROCEDURE',
-      _CompensationPayType.monthly => 'PER_MONTH',
-    };
   }
 
   String _resolvedPosition() {
@@ -405,79 +385,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     List<HrOption> options,
     AppLocalizations l10n,
   ) {
-    return <AppSelectOption<String>>[
-      for (final HrOption option in options)
-        AppSelectOption<String>(
-          value: option.value,
-          label: l10n.hrLocalizedOptionLabel(option),
-        ),
-    ];
-  }
-
-  List<AppSelectOption<String>> _payTypeOptions(AppLocalizations l10n) {
-    return <AppSelectOption<String>>[
-      AppSelectOption<String>(
-        value: _CompensationPayType.perConsultation.name,
-        label: l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_CONSULTATION',
-          fallback: l10n.hrCompensationConsultationRateLabel,
-        ),
-      ),
-      AppSelectOption<String>(
-        value: _CompensationPayType.monthly.name,
-        label: l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_MONTH',
-          fallback: l10n.hrCompensationMonthlyRateLabel,
-        ),
-      ),
-      AppSelectOption<String>(
-        value: _CompensationPayType.daily.name,
-        label: l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_DAY',
-          fallback: l10n.hrStaffOnboardingDailyRateLabel,
-        ),
-      ),
-      AppSelectOption<String>(
-        value: _CompensationPayType.hourly.name,
-        label: l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_HOUR',
-          fallback: l10n.hrCompensationHourlyRateLabel,
-        ),
-      ),
-      AppSelectOption<String>(
-        value: _CompensationPayType.perVisit.name,
-        label: l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_PROCEDURE',
-          fallback: l10n.hrCompensationProcedureRateLabel,
-        ),
-      ),
-    ];
-  }
-
-  String _compensationRateLabel(AppLocalizations l10n) {
-    return switch (_payType) {
-      _CompensationPayType.perConsultation =>
-        l10n.hrReferenceCompensationPayTypeLabel(
-          'PER_CONSULTATION',
-          fallback: l10n.hrCompensationConsultationRateLabel,
-        ),
-      _CompensationPayType.monthly => l10n.hrReferenceCompensationPayTypeLabel(
-        'PER_MONTH',
-        fallback: l10n.hrCompensationMonthlyRateLabel,
-      ),
-      _CompensationPayType.daily => l10n.hrReferenceCompensationPayTypeLabel(
-        'PER_DAY',
-        fallback: l10n.hrStaffOnboardingDailyRateLabel,
-      ),
-      _CompensationPayType.hourly => l10n.hrReferenceCompensationPayTypeLabel(
-        'PER_HOUR',
-        fallback: l10n.hrCompensationHourlyRateLabel,
-      ),
-      _CompensationPayType.perVisit => l10n.hrReferenceCompensationPayTypeLabel(
-        'PER_PROCEDURE',
-        fallback: l10n.hrCompensationProcedureRateLabel,
-      ),
-    };
+    return hrLocalizedSelectOptions(l10n, options);
   }
 
   Map<String, Object?> toPayload() {
@@ -486,7 +394,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
     final num? rate = num.tryParse(_compensationRateController.text.trim());
     if (rate != null && rate > 0) {
       compensations.add(<String, Object?>{
-        'pay_type': _payTypeApiValue(_payType),
+        'pay_type': _payType,
         'rate': rate,
         'currency': _compensationCurrency.trim().toUpperCase(),
         'effective_from': _datePayload(_compensationEffectiveFrom),
@@ -813,17 +721,14 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                   : l10n.hrStaffOnboardingCompensationCreateHint,
               children: <Widget>[
                 AppSelectField<String>(
-                  value: _payType.name,
+                  value: _payType,
                   labelText: l10n.hrStaffOnboardingPayTypeLabel,
-                  options: _payTypeOptions(l10n),
+                  options: hrCompensationPayTypeSelectOptions(l10n),
                   onChanged: (String? value) {
                     if (value == null) {
                       return;
                     }
-                    setState(
-                      () =>
-                          _payType = _CompensationPayType.values.byName(value),
-                    );
+                    setState(() => _payType = value);
                   },
                 ),
                 AppCurrencyAmountField(
@@ -835,7 +740,7 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
                           value ?? appDefaultCurrencyCode,
                     );
                   },
-                  amountLabelText: _compensationRateLabel(l10n),
+                  amountLabelText: hrCompensationRateLabel(l10n, _payType),
                   currencyLabelText: l10n.hrCompensationCurrencyLabel,
                   currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
                 ),

@@ -5,15 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
-import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_preview_breakdown.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -21,10 +19,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-const AccessRequirement hrAdminWriteRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  activeModules: <String>['hr-rosters'],
-);
+export '../hr_presentation_helpers.dart';
 
 Future<void> showHrAssignRoleDialog(
   BuildContext context,
@@ -32,7 +27,7 @@ Future<void> showHrAssignRoleDialog(
   HrStaffDetail detail,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
@@ -55,7 +50,7 @@ Future<void> showHrAssignRoleDialog(
             value: roleId,
             labelText: l10n.hrRolePositionColumnLabel,
             isRequired: true,
-            options: _localizedSelectOptions(
+            options: hrLocalizedSelectOptions(
               l10n,
               state?.referenceData.roles ?? const [],
             ),
@@ -67,7 +62,7 @@ Future<void> showHrAssignRoleDialog(
           AppSelectField<String>.searchable(
             value: facilityId,
             labelText: l10n.hrDepartmentLabel,
-            options: _selectOptions(
+            options: hrSelectOptions(
               state?.referenceData.facilities ?? const [],
             ),
             onChanged: (String? value) => facilityId = value,
@@ -164,7 +159,7 @@ Future<void> showHrManageScheduleTemplatesDialog(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef dialogRef, _) {
-        final HrWorkspaceState? state = _readHrState(dialogRef);
+        final HrWorkspaceState? state = readHrWorkspaceState(dialogRef);
         final List<HrOption> templates =
             state?.referenceData.shiftTemplates ?? const <HrOption>[];
         final HrWorkspaceController controller = dialogRef.read(
@@ -234,7 +229,7 @@ Future<void> showHrShiftTemplateDialog(
   HrOption? template,
 ]) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
@@ -350,7 +345,7 @@ class _HrShiftTemplateFieldsState extends State<_HrShiftTemplateFields> {
           value: widget.shiftType,
           labelText: l10n.hrShiftTypeLabel,
           isRequired: true,
-          options: _selectOptions(widget.referenceData.shiftTypes),
+          options: hrSelectOptions(widget.referenceData.shiftTypes),
           validator: AppValidators.requiredValue(
             l10n.hrFieldRequiredLabel(l10n.hrShiftTypeLabel),
           ),
@@ -359,7 +354,7 @@ class _HrShiftTemplateFieldsState extends State<_HrShiftTemplateFields> {
         AppSelectField<String>.searchable(
           value: widget.facilityId,
           labelText: l10n.hrDepartmentLabel,
-          options: _selectOptions(widget.referenceData.facilities),
+          options: hrSelectOptions(widget.referenceData.facilities),
           onChanged: widget.onFacilityChanged,
         ),
         HrWeeklyScheduleEditor(
@@ -477,7 +472,7 @@ Future<void> showHrPreviewPayrollDialog(
                 items: <AppInfoTileData>[
                   AppInfoTileData(
                     label: l10n.hrPeriodColumnLabel,
-                    value: _dateRange(
+                    value: hrDateRange(
                       context,
                       preview.periodStart,
                       preview.periodEnd,
@@ -759,59 +754,4 @@ DateTime? _parseTemplateDateTime(Object? value) {
     return null;
   }
   return DateTime.tryParse(raw);
-}
-
-void showHrMutationSnackBar(BuildContext context, AppFailure? failure) {
-  if (!context.mounted) {
-    return;
-  }
-  final AppLocalizations l10n = context.l10n;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        failure == null ? l10n.hrSavedMessage : l10n.failureMessage(failure),
-      ),
-    ),
-  );
-}
-
-HrWorkspaceState? _readHrState(WidgetRef ref) {
-  return ref
-      .read(hrWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(success: (HrWorkspaceState state) => state, failure: (_) => null);
-}
-
-List<AppSelectOption<String>> _localizedSelectOptions(
-  AppLocalizations l10n,
-  List<HrOption> options,
-) {
-  return <AppSelectOption<String>>[
-    for (final HrOption option in options)
-      AppSelectOption<String>(
-        value: option.value,
-        label: l10n.hrLocalizedOptionLabel(option),
-      ),
-  ];
-}
-
-List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
-  return <AppSelectOption<String>>[
-    for (final HrOption option in options)
-      AppSelectOption<String>(value: option.value, label: option.label),
-  ];
-}
-
-String _dateRange(BuildContext context, DateTime? from, DateTime? to) {
-  final AppLocalizations l10n = context.l10n;
-  final Locale locale = Localizations.localeOf(context);
-  final String? start = from == null
-      ? null
-      : AppFormatters.shortDate(from, locale);
-  final String? end = to == null ? null : AppFormatters.shortDate(to, locale);
-  if (start != null && end != null) {
-    return '$start - $end';
-  }
-  return start ?? end ?? l10n.profileUnknownValue;
 }

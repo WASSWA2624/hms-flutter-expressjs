@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
@@ -75,42 +73,42 @@ class HrStaffDetailActions extends ConsumerWidget {
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
       if (!separated) ...<AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrAssignDepartmentAction,
           icon: Icons.account_tree_outlined,
           enabled: enabled,
           onPressed: () => onAssignDepartment(context, ref),
         ),
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrAssignPositionAction,
           icon: Icons.work_outline,
           enabled: enabled,
           onPressed: () => onAssignPosition(context, ref, profile),
         ),
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrRecordAvailabilityAction,
           icon: Icons.schedule_outlined,
           enabled: enabled,
           onPressed: () => onRecordAvailability(context, ref),
         ),
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrAssignShiftAction,
           icon: Icons.calendar_view_week_outlined,
           enabled: enabled,
           onPressed: () => onAssignShift(context, ref),
         ),
         AppPermissionActionItem(
-          requirement: _rosterWriteRequirement,
+          requirement: hrRosterWriteRequirement,
           label: l10n.hrSwapShiftAction,
           icon: Icons.swap_horiz_outlined,
           enabled: enabled,
           onPressed: () => onSwapShift(context, ref),
         ),
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrRequestLeaveAction,
           icon: Icons.event_busy_outlined,
           enabled: enabled,
@@ -118,7 +116,7 @@ class HrStaffDetailActions extends ConsumerWidget {
         ),
       ],
       AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
+        requirement: hrWriteRequirement,
         label: l10n.hrCompensationAction,
         icon: Icons.price_change_outlined,
         enabled: enabled,
@@ -128,7 +126,7 @@ class HrStaffDetailActions extends ConsumerWidget {
             : () => onCompensation(context, ref, profile),
       ),
       AppPermissionActionItem(
-        requirement: _payrollRequirement,
+        requirement: hrPayrollRequirement,
         label: l10n.hrRunPayrollAction,
         icon: Icons.payments_outlined,
         enabled: enabled && hasCompensation,
@@ -141,14 +139,14 @@ class HrStaffDetailActions extends ConsumerWidget {
       ),
       if (!separated && hasLinkedUser) ...<AppPermissionActionItem>[
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrAssignRoleAction,
           icon: Icons.admin_panel_settings_outlined,
           enabled: enabled,
           onPressed: () => onAssignRole(context, ref, detail),
         ),
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrModuleAccessAction,
           icon: Icons.apps_outlined,
           enabled: enabled,
@@ -157,7 +155,7 @@ class HrStaffDetailActions extends ConsumerWidget {
       ],
       if (!separated && onOffboardStaff != null)
         AppPermissionActionItem(
-          requirement: _hrWriteRequirement,
+          requirement: hrWriteRequirement,
           label: l10n.hrOffboardStaffAction,
           icon: Icons.person_off_outlined,
           enabled: enabled,
@@ -178,22 +176,3 @@ class HrStaffDetailActions extends ConsumerWidget {
     );
   }
 }
-
-const AccessRequirement _hrWriteRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _rosterWriteRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.hrWrite,
-    AppPermissions.rosterWrite,
-  ],
-  activeModules: <String>['hr-rosters'],
-);
-
-const AccessRequirement _payrollRequirement = AccessRequirement(
-  allPermissions: <AppPermission>[AppPermissions.hrWrite],
-  anyPermissions: <AppPermission>[AppPermissions.financialApprove],
-  activeModules: <String>['hr-rosters'],
-);

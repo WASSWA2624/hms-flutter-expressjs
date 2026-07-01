@@ -13198,10 +13198,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrWeeklyScheduleSectionTitle => 'Weekly schedule';
 
   @override
+  String get hrAvailabilityScheduleSourceLabel => 'Schedule source';
+
+  @override
+  String get hrAvailabilitySourceManual => 'Manual';
+
+  @override
+  String get hrAvailabilitySourceFromStaff => 'From staff';
+
+  @override
+  String get hrAvailabilitySourceFromTemplate => 'From template';
+
+  @override
   String get hrAvailabilityCopyFromStaffAction => 'Copy from staff';
 
   @override
   String get hrAvailabilityCopyFromStaffLabel => 'Source staff';
+
+  @override
+  String get hrAvailabilityCopyFromTemplateAction => 'Apply template';
+
+  @override
+  String get hrAvailabilityCopyFromTemplateLabel => 'Schedule template';
 
   @override
   String get hrAvailabilityDuplicateToAction => 'Duplicate to…';

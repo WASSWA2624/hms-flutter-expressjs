@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -122,7 +123,7 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
           value: _departmentId,
           labelText: l10n.hrDepartmentLabel,
           isRequired: true,
-          options: _selectOptions(widget.referenceData.departments),
+          options: hrSelectOptions(widget.referenceData.departments),
           validator: AppValidators.requiredValue(
             l10n.hrFieldRequiredLabel(l10n.hrDepartmentLabel),
           ),
@@ -131,7 +132,7 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
         AppSelectField<String>.searchable(
           value: _unitId,
           labelText: l10n.hrUnitLabel,
-          options: _selectOptions(_scopedUnits),
+          options: hrSelectOptions(_scopedUnits),
           onChanged: (String? value) => setState(() => _unitId = value),
         ),
         if (_departmentId != null && _scopedRooms.isNotEmpty) ...<Widget>[
@@ -215,13 +216,6 @@ class _HrRoomMultiSelectHeader extends StatelessWidget {
       ],
     );
   }
-}
-
-List<AppSelectOption<String>> _selectOptions(List<HrOption> options) {
-  return <AppSelectOption<String>>[
-    for (final HrOption option in options)
-      AppSelectOption<String>(value: option.value, label: option.label),
-  ];
 }
 
 List<HrOption> _scopedOptions(

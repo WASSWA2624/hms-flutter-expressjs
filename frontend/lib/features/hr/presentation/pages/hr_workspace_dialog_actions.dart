@@ -56,7 +56,7 @@ Future<void> applyHrQueueAndShow(
     return;
   }
   if (failure != null) {
-    _showMutationResult(context, failure);
+    showHrMutationSnackBar(context, failure);
     return;
   }
   await showHrWorkQueueDialog(context, ref, maximize: maximize);
@@ -70,7 +70,7 @@ Future<void> showHrStaffDirectoryDialog(
   bool maximize = false,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   final TextEditingController searchController = TextEditingController(
     text: state?.staffQuery.search ?? '',
   );
@@ -115,7 +115,7 @@ Future<void> _openStaffDetailFromDialog(
     return;
   }
   if (failure != null) {
-    _showMutationResult(context, failure);
+    showHrMutationSnackBar(context, failure);
     return;
   }
   await showHrStaffDetailDialog(context, ref);
@@ -127,7 +127,7 @@ Future<void> showHrStaffDetailDialog(
   WidgetRef ref,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceState? state = _readHrState(ref);
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
   await showAppDialog<void>(
     context: context,
     builder: (BuildContext dialogContext) => AppDialog(

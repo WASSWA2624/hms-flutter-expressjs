@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -12,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -567,7 +567,7 @@ class _HrAccessWorkspaceDialogState
           sortComparator: (HrAccessUser left, HrAccessUser right) =>
               appListTableCompareText(left.displayLabel, right.displayLabel),
           cellBuilder: (BuildContext context, HrAccessUser item) {
-            return _HrAccessCopyableIdentifierCell(
+            return AppCopyableIdentifierCell(
               title: item.displayLabel,
               identifier: item.staffProfileId != null
                   ? (item.staffProfileName ?? item.staffProfileId)
@@ -872,56 +872,6 @@ String _hrAccessStatusLabel(BuildContext context, String? status) {
       .join(' ');
 }
 
-class _HrAccessCopyableIdentifierCell extends StatelessWidget {
-  const _HrAccessCopyableIdentifierCell({
-    required this.title,
-    this.identifier,
-    this.subtitle,
-  });
-
-  final String title;
-  final String? identifier;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.w700,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: titleStyle,
-        ),
-        if ((identifier ?? '').trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          AppCopyableIdentifier(
-            value: identifier,
-            textStyle: theme.textTheme.bodySmall,
-          ),
-        ],
-        if ((subtitle ?? '').trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            subtitle!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 Future<void> showHrAccessPermissionDetailDialog(
   BuildContext context,
   HrAccessPermission permission,
@@ -1070,14 +1020,6 @@ bool isHrAccessTenantUuid(String? value) {
 
 bool canWriteHrAccess(WidgetRef ref) {
   return ref.read(appAccessPolicyProvider).grants(AppPermissions.hrWrite);
-}
-
-HrWorkspaceState? readHrWorkspaceState(WidgetRef ref) {
-  return ref
-      .read(hrWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(success: (HrWorkspaceState state) => state, failure: (_) => null);
 }
 
 AppWorkspaceStatusTone hrAccessUserStatusTone(String? status) {
