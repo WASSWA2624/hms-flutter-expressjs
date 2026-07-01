@@ -13,6 +13,23 @@ $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $ProjectRoot
 
+$ChromeProfileDir = Join-Path $ProjectRoot '.dart_tool\flutter_chrome_profile'
+New-Item -ItemType Directory -Force -Path $ChromeProfileDir | Out-Null
+
+function Stop-FlutterChromeProcesses {
+  param(
+    [string]$ProfileDir
+  )
+
+  $escapedProfile = [regex]::Escape($ProfileDir)
+  Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match $escapedProfile } |
+    ForEach-Object {
+      Write-Host "Stopping stale Flutter Chrome ($($_.ProcessId))."
+      Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Get-PortListeners {
   param(
     [string]$Address,
@@ -34,6 +51,8 @@ function Get-PortListeners {
     -State Listen `
     -ErrorAction SilentlyContinue
 }
+
+Stop-FlutterChromeProcesses -ProfileDir $ChromeProfileDir
 
 $listeners = Get-PortListeners -Address $HostName -ListenPort $Port
 $processIds = @(
@@ -87,6 +106,10 @@ $flutterArgs = @(
 if (-not $EnableExpressionEvaluation) {
   $flutterArgs += '--no-web-enable-expression-evaluation'
 }
+
+# A persistent Chrome profile avoids DWDS WebkitDebugger.enable timeouts on Windows
+# when Flutter's ephemeral Temp profile cannot be read or locked correctly.
+$flutterArgs += "--web-browser-flag=--user-data-dir=$ChromeProfileDir"
 
 flutter @flutterArgs
 

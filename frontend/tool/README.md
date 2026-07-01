@@ -36,7 +36,8 @@ Use the port-specific script when running the Flutter web app locally:
 .\tool\run_web_5201.ps1
 ```
 
-The script frees port 5201 first and disables web debugger expression
-evaluation by default. This avoids DWDS `WebkitDebugger.enable` startup
-timeouts on larger debug builds. If expression evaluation is required for a
-debugging session, pass `-EnableExpressionEvaluation`.
+The script frees port 5201 first, uses a persistent Chrome profile under
+`.dart_tool/flutter_chrome_profile` (avoids Windows DWDS debugger timeouts), and
+disables web debugger expression evaluation by default. This avoids DWDS
+`WebkitDebugger.enable` startup timeouts on larger debug builds. If expression
+evaluation is required for a debugging session, pass `-EnableExpressionEvaluation`.
