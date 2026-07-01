@@ -18,6 +18,9 @@ jest.mock('@lib/audit');
 jest.mock('@lib/hr/staff-number', () => ({
   generateStaffNumber: jest.fn().mockResolvedValue({ staff_number: 'STF-001' }),
 }));
+jest.mock('@lib/hr/staff-department-sync', () => ({
+  syncStaffProfilePrimaryDepartment: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('@prisma/client', () => ({
   user: {
     findFirst: jest.fn(),

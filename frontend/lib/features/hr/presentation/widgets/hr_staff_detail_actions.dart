@@ -9,7 +9,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
 typedef HrStaffDetailActionCallback =
     void Function(BuildContext context, WidgetRef ref);
@@ -22,6 +22,9 @@ typedef HrStaffDetailAccessActionCallback =
 
 typedef HrStaffDetailModuleAccessCallback =
     void Function(BuildContext context, HrStaffDetail detail);
+
+typedef HrStaffDetailOffboardCallback =
+    void Function(BuildContext context, WidgetRef ref, HrStaffDetail detail);
 
 /// Unified staff mutation actions for the staff detail dialog.
 class HrStaffDetailActions extends ConsumerWidget {
@@ -38,6 +41,7 @@ class HrStaffDetailActions extends ConsumerWidget {
     required this.onRunPayroll,
     required this.onAssignRole,
     required this.onModuleAccess,
+    this.onOffboardStaff,
     super.key,
   });
 
@@ -53,74 +57,87 @@ class HrStaffDetailActions extends ConsumerWidget {
   final HrStaffDetailProfileActionCallback onRunPayroll;
   final HrStaffDetailAccessActionCallback onAssignRole;
   final HrStaffDetailModuleAccessCallback onModuleAccess;
+  final HrStaffDetailOffboardCallback? onOffboardStaff;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final bool enabled = !state.isMutating;
+    final HrStaffProfile profile = detail.profile;
+    final bool separated = profile.isSeparated;
+    final bool enabled = !state.isMutating && !separated;
+    final bool hasCompensation =
+        detail.compensations.isNotEmpty || profile.compensations.isNotEmpty;
     final bool hasLinkedUser =
-        (detail.profile.userId ?? detail.profile.userDisplayId ?? '')
-            .trim()
-            .isNotEmpty;
+        (profile.userId ?? profile.userDisplayId ?? '').trim().isNotEmpty;
 
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
+      if (!separated) ...<AppPermissionActionItem>[
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrAssignDepartmentAction,
+          icon: Icons.account_tree_outlined,
+          enabled: enabled,
+          onPressed: () => onAssignDepartment(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrAssignPositionAction,
+          icon: Icons.work_outline,
+          enabled: enabled,
+          onPressed: () => onAssignPosition(context, ref, profile),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrRecordAvailabilityAction,
+          icon: Icons.schedule_outlined,
+          enabled: enabled,
+          onPressed: () => onRecordAvailability(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrAssignShiftAction,
+          icon: Icons.calendar_view_week_outlined,
+          enabled: enabled,
+          onPressed: () => onAssignShift(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _rosterWriteRequirement,
+          label: l10n.hrSwapShiftAction,
+          icon: Icons.swap_horiz_outlined,
+          enabled: enabled,
+          onPressed: () => onSwapShift(context, ref),
+        ),
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrRequestLeaveAction,
+          icon: Icons.event_busy_outlined,
+          enabled: enabled,
+          onPressed: () => onRequestLeave(context, ref),
+        ),
+      ],
       AppPermissionActionItem(
         requirement: _hrWriteRequirement,
-        label: l10n.hrAssignDepartmentAction,
-        icon: Icons.account_tree_outlined,
-        enabled: enabled,
-        onPressed: () => onAssignDepartment(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
-        label: l10n.hrAssignPositionAction,
-        icon: Icons.work_outline,
-        enabled: enabled,
-        onPressed: () => onAssignPosition(context, ref, detail.profile),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrRecordAvailabilityAction,
-        icon: Icons.schedule_outlined,
-        enabled: enabled,
-        onPressed: () => onRecordAvailability(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrAssignShiftAction,
-        icon: Icons.calendar_view_week_outlined,
-        enabled: enabled,
-        onPressed: () => onAssignShift(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _rosterWriteRequirement,
-        label: l10n.hrSwapShiftAction,
-        icon: Icons.swap_horiz_outlined,
-        enabled: enabled,
-        onPressed: () => onSwapShift(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _hrWriteRequirement,
-        label: l10n.hrRequestLeaveAction,
-        icon: Icons.event_busy_outlined,
-        enabled: enabled,
-        onPressed: () => onRequestLeave(context, ref),
-      ),
-      AppPermissionActionItem(
-        requirement: _payrollRequirement,
         label: l10n.hrCompensationAction,
         icon: Icons.price_change_outlined,
         enabled: enabled,
-        onPressed: () => onCompensation(context, ref, detail.profile),
+        tooltip: l10n.hrCompensationActionTooltip,
+        onPressed: separated
+            ? null
+            : () => onCompensation(context, ref, profile),
       ),
       AppPermissionActionItem(
         requirement: _payrollRequirement,
         label: l10n.hrRunPayrollAction,
         icon: Icons.payments_outlined,
-        enabled: enabled,
-        onPressed: () => onRunPayroll(context, ref, detail.profile),
+        enabled: enabled && hasCompensation,
+        tooltip: hasCompensation
+            ? l10n.hrRunPayrollActionTooltip
+            : l10n.hrPayrollMissingCompensationTooltip,
+        onPressed: separated || !hasCompensation
+            ? null
+            : () => onRunPayroll(context, ref, profile),
       ),
-      if (hasLinkedUser) ...<AppPermissionActionItem>[
+      if (!separated && hasLinkedUser) ...<AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: _hrWriteRequirement,
           label: l10n.hrAssignRoleAction,
@@ -136,6 +153,15 @@ class HrStaffDetailActions extends ConsumerWidget {
           onPressed: () => onModuleAccess(context, detail),
         ),
       ],
+      if (!separated && onOffboardStaff != null)
+        AppPermissionActionItem(
+          requirement: _hrWriteRequirement,
+          label: l10n.hrOffboardStaffAction,
+          icon: Icons.person_off_outlined,
+          enabled: enabled,
+          tooltip: l10n.hrOffboardStaffActionTooltip,
+          onPressed: () => onOffboardStaff!(context, ref, detail),
+        ),
     ];
 
     return AppSectionPanel(

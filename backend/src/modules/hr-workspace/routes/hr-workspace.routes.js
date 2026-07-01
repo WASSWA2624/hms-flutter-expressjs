@@ -16,6 +16,7 @@ const {
   leaveIdentifierParamsSchema,
   payrollRunIdentifierParamsSchema,
   staffProfileIdentifierParamsSchema,
+  staffOffboardSchema,
   resolveLegacyParamsSchema,
   rosterGenerateSchema,
   rosterPublishSchema,
@@ -75,6 +76,16 @@ router.get(
   validateRequest({ params: staffProfileIdentifierParamsSchema }),
   authorize(HR_READ_SCOPES, 'permission'),
   hrWorkspaceController.getStaffAccessSummary
+);
+
+router.post(
+  '/staff/:staffProfileIdentifier/offboard',
+  validateRequest({
+    params: staffProfileIdentifierParamsSchema,
+    body: staffOffboardSchema,
+  }),
+  authorize(HR_WRITE_SCOPES, 'permission'),
+  hrWorkspaceController.offboardStaff
 );
 
 router.get(

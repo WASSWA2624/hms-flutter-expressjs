@@ -18056,6 +18056,286 @@
   "@hrEndAssignmentDialogTitle": {
     "description": "Dialog title for ending an assignment."
   },
+  "hrEndAssignmentDateLabel": "End date",
+  "@hrEndAssignmentDateLabel": {
+    "description": "Date picker label when ending an assignment."
+  },
+  "hrAssignmentDetailDialogTitle": "Assignment details",
+  "@hrAssignmentDetailDialogTitle": {
+    "description": "Dialog title for assignment detail view."
+  },
+  "hrAssignmentIdLabel": "Assignment ID",
+  "@hrAssignmentIdLabel": {
+    "description": "Label for assignment display identifier."
+  },
+  "hrEditAssignmentAction": "Edit assignment",
+  "@hrEditAssignmentAction": {
+    "description": "Action to edit an assignment."
+  },
+  "hrAssignmentActiveLabel": "Active",
+  "@hrAssignmentActiveLabel": {
+    "description": "Status badge for active assignment."
+  },
+  "hrAssignmentEndedLabel": "Ended",
+  "@hrAssignmentEndedLabel": {
+    "description": "Status badge for ended assignment."
+  },
+  "hrDateRangeOngoingLabel": "Ongoing",
+  "@hrDateRangeOngoingLabel": {
+    "description": "Label when an assignment or compensation has no end date."
+  },
+  "hrAvailabilityWeekViewLabel": "Week view",
+  "@hrAvailabilityWeekViewLabel": {
+    "description": "Toggle label for week availability calendar."
+  },
+  "hrAvailabilityMonthViewLabel": "Month view",
+  "@hrAvailabilityMonthViewLabel": {
+    "description": "Toggle label for month availability calendar."
+  },
+  "hrAvailabilityCalendarEmptyBody": "Record weekly availability to see the calendar.",
+  "@hrAvailabilityCalendarEmptyBody": {
+    "description": "Empty state body for availability calendar."
+  },
+  "hrAvailabilityLegendAvailableLabel": "Available",
+  "@hrAvailabilityLegendAvailableLabel": {
+    "description": "Calendar legend for available days."
+  },
+  "hrAvailabilityLegendUnavailableLabel": "Unavailable",
+  "@hrAvailabilityLegendUnavailableLabel": {
+    "description": "Calendar legend for unavailable days."
+  },
+  "hrAvailabilityLegendLeaveLabel": "Approved leave",
+  "@hrAvailabilityLegendLeaveLabel": {
+    "description": "Calendar legend for approved leave overlay."
+  },
+  "hrAvailabilityDayEmptyLabel": "No time slots recorded for this day.",
+  "@hrAvailabilityDayEmptyLabel": {
+    "description": "Empty state when a calendar day has no slots."
+  },
+  "hrAvailabilityAddSlotAction": "Add slot",
+  "@hrAvailabilityAddSlotAction": {
+    "description": "Action to add an availability slot."
+  },
+  "hrAvailabilityEditDayAction": "Edit day",
+  "@hrAvailabilityEditDayAction": {
+    "description": "Action to edit availability for a day."
+  },
+  "hrCompensationActionTooltip": "Define or update pay structure for this staff member.",
+  "@hrCompensationActionTooltip": {
+    "description": "Tooltip for compensation action."
+  },
+  "hrRunPayrollActionTooltip": "Calculate and process pay for a pay period. Requires Financial Approve permission.",
+  "@hrRunPayrollActionTooltip": {
+    "description": "Tooltip for run payroll action."
+  },
+  "hrPayrollMissingCompensationTooltip": "Add compensation before running payroll.",
+  "@hrPayrollMissingCompensationTooltip": {
+    "description": "Tooltip when payroll is disabled due to missing compensation."
+  },
+  "hrCompensationPayStructureTabLabel": "Pay structure",
+  "@hrCompensationPayStructureTabLabel": {
+    "description": "Tab label for compensation pay structure form."
+  },
+  "hrCompensationHistoryTabLabel": "History",
+  "@hrCompensationHistoryTabLabel": {
+    "description": "Tab label for compensation history list."
+  },
+  "hrCompensationBaseRateLabel": "Base rate",
+  "@hrCompensationBaseRateLabel": {
+    "description": "Label for base compensation rate."
+  },
+  "hrCompensationPayFrequencyLabel": "Pay frequency",
+  "@hrCompensationPayFrequencyLabel": {
+    "description": "Label for pay frequency selector."
+  },
+  "hrCompensationFrequencyMonthlyLabel": "Monthly",
+  "@hrCompensationFrequencyMonthlyLabel": {
+    "description": "Monthly pay frequency option."
+  },
+  "hrCompensationFrequencyBiweeklyLabel": "Bi-weekly",
+  "@hrCompensationFrequencyBiweeklyLabel": {
+    "description": "Bi-weekly pay frequency option."
+  },
+  "hrCompensationFrequencyWeeklyLabel": "Weekly",
+  "@hrCompensationFrequencyWeeklyLabel": {
+    "description": "Weekly pay frequency option."
+  },
+  "hrCompensationDailyRateLabel": "Daily rate",
+  "@hrCompensationDailyRateLabel": {
+    "description": "Daily compensation rate label."
+  },
+  "hrCompensationDetailDialogTitle": "Compensation details",
+  "@hrCompensationDetailDialogTitle": {
+    "description": "Dialog title for read-only compensation detail."
+  },
+  "hrCompensationAddNewRateAction": "Add new rate",
+  "@hrCompensationAddNewRateAction": {
+    "description": "Action to add a new compensation rate."
+  },
+  "hrPayrollWizardTitle": "Payroll run",
+  "@hrPayrollWizardTitle": {
+    "description": "Title for payroll wizard dialog."
+  },
+  "hrPayrollWizardPeriodStepTitle": "Select pay period",
+  "@hrPayrollWizardPeriodStepTitle": {
+    "description": "Payroll wizard step 1 title."
+  },
+  "hrPayPeriodStartLabel": "Pay period start",
+  "@hrPayPeriodStartLabel": {
+    "description": "Pay period start date label."
+  },
+  "hrPayPeriodEndLabel": "Pay period end",
+  "@hrPayPeriodEndLabel": {
+    "description": "Pay period end date label."
+  },
+  "hrPayrollWizardPreviewStepTitle": "Preview payslips",
+  "@hrPayrollWizardPreviewStepTitle": {
+    "description": "Payroll wizard preview step title."
+  },
+  "hrPayrollWizardNoStaffItemsLabel": "No payroll line items for this staff member in the selected period.",
+  "@hrPayrollWizardNoStaffItemsLabel": {
+    "description": "Empty preview message for staff-scoped payroll."
+  },
+  "hrPayrollStaffCountLabel": "Staff count",
+  "@hrPayrollStaffCountLabel": {
+    "description": "Payroll review staff count label."
+  },
+  "hrGrossPayLabel": "Gross pay",
+  "@hrGrossPayLabel": {
+    "description": "Gross pay label for payroll."
+  },
+  "hrNetPayLabel": "Net pay",
+  "@hrNetPayLabel": {
+    "description": "Net pay label for payroll."
+  },
+  "hrDeductionsLabel": "Deductions",
+  "@hrDeductionsLabel": {
+    "description": "Deductions label for payroll."
+  },
+  "hrPayrollWizardProcessStepBody": "Process will create payroll items and advance the run toward paid status.",
+  "@hrPayrollWizardProcessStepBody": {
+    "description": "Final payroll wizard step body text."
+  },
+  "hrPayrollWizardPreviewAction": "Preview",
+  "@hrPayrollWizardPreviewAction": {
+    "description": "Payroll wizard preview button."
+  },
+  "hrPayrollWizardReviewAction": "Review",
+  "@hrPayrollWizardReviewAction": {
+    "description": "Payroll wizard review button."
+  },
+  "hrLeaveDetailDialogTitle": "Leave details",
+  "@hrLeaveDetailDialogTitle": {
+    "description": "Dialog title for leave detail view."
+  },
+  "hrLeaveCoveringStaffLabel": "Covering staff",
+  "@hrLeaveCoveringStaffLabel": {
+    "description": "Label for covering staff on leave."
+  },
+  "hrLeaveHandoverNotesLabel": "Handover notes",
+  "@hrLeaveHandoverNotesLabel": {
+    "description": "Label for leave handover notes."
+  },
+  "hrLeaveReasonLabel": "Reason",
+  "@hrLeaveReasonLabel": {
+    "description": "Label for leave reason."
+  },
+  "hrShiftDetailDialogTitle": "Shift details",
+  "@hrShiftDetailDialogTitle": {
+    "description": "Dialog title for shift assignment detail."
+  },
+  "hrShiftTypeLabel": "Shift type",
+  "@hrShiftTypeLabel": {
+    "description": "Label for shift type."
+  },
+  "hrAssignedAtLabel": "Assigned at",
+  "@hrAssignedAtLabel": {
+    "description": "Label for shift assignment timestamp."
+  },
+  "hrRosterPeriodLabel": "Roster period",
+  "@hrRosterPeriodLabel": {
+    "description": "Label for linked roster period."
+  },
+  "hrRemoveShiftAssignmentAction": "Remove assignment",
+  "@hrRemoveShiftAssignmentAction": {
+    "description": "Action to remove a shift assignment."
+  },
+  "hrOffboardStaffAction": "End employment",
+  "@hrOffboardStaffAction": {
+    "description": "Action to offboard a staff member."
+  },
+  "hrOffboardStaffActionTooltip": "Record separation and optionally end assignments and revoke access.",
+  "@hrOffboardStaffActionTooltip": {
+    "description": "Tooltip for offboard staff action."
+  },
+  "hrOffboardStaffDialogTitle": "End employment",
+  "@hrOffboardStaffDialogTitle": {
+    "description": "Dialog title for staff offboarding."
+  },
+  "hrOffboardStaffDialogHint": "This ends employment for the staff member. Active assignments can be closed on the last working day.",
+  "@hrOffboardStaffDialogHint": {
+    "description": "Hint text in offboarding dialog."
+  },
+  "hrSeparationTypeLabel": "Separation type",
+  "@hrSeparationTypeLabel": {
+    "description": "Label for separation type selector."
+  },
+  "hrSeparationTypeResignationLabel": "Resignation",
+  "@hrSeparationTypeResignationLabel": {
+    "description": "Resignation separation type."
+  },
+  "hrSeparationTypeTerminationLabel": "Termination",
+  "@hrSeparationTypeTerminationLabel": {
+    "description": "Termination separation type."
+  },
+  "hrSeparationTypeRetirementLabel": "Retirement",
+  "@hrSeparationTypeRetirementLabel": {
+    "description": "Retirement separation type."
+  },
+  "hrSeparationTypeContractEndLabel": "Contract end",
+  "@hrSeparationTypeContractEndLabel": {
+    "description": "Contract end separation type."
+  },
+  "hrSeparationTypeDeceasedLabel": "Deceased",
+  "@hrSeparationTypeDeceasedLabel": {
+    "description": "Deceased separation type."
+  },
+  "hrSeparationTypeOtherLabel": "Separation",
+  "@hrSeparationTypeOtherLabel": {
+    "description": "Fallback separation type label."
+  },
+  "hrLastWorkingDayLabel": "Last working day",
+  "@hrLastWorkingDayLabel": {
+    "description": "Label for last working day in offboarding."
+  },
+  "hrSeparationNotesLabel": "Reason / notes",
+  "@hrSeparationNotesLabel": {
+    "description": "Optional separation notes field."
+  },
+  "hrOffboardEndAssignmentsLabel": "End all active assignments",
+  "@hrOffboardEndAssignmentsLabel": {
+    "description": "Checkbox to end assignments on offboard."
+  },
+  "hrOffboardRevokeAccessLabel": "Revoke system access",
+  "@hrOffboardRevokeAccessLabel": {
+    "description": "Checkbox to revoke user access on offboard."
+  },
+  "hrOffboardFinalPayrollLabel": "Schedule final payroll",
+  "@hrOffboardFinalPayrollLabel": {
+    "description": "Checkbox to link final payroll on offboard."
+  },
+  "hrSeparationBannerMessage": "{separationType} · Last day {lastDay}",
+  "@hrSeparationBannerMessage": {
+    "description": "Banner shown when staff member is separated.",
+    "placeholders": {
+      "separationType": {
+        "type": "String"
+      },
+      "lastDay": {
+        "type": "String"
+      }
+    }
+  },
   "hrShiftTemplateAction": "Create schedule template",
   "@hrShiftTemplateAction": {
     "description": "Toolbar action for shift template CRUD."

@@ -446,6 +446,17 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
+  Future<Result<Object?>> offboardStaff(
+    String staffProfileId,
+    Map<String, Object?> payload,
+  ) {
+    return _postHrAction(
+      <String>['staff', staffProfileId, 'offboard'],
+      payload,
+    );
+  }
+
+  @override
   Future<Result<HrRosterGenerateResult>> generateRosterPreview(
     String rosterId, {
     bool replaceExistingAssignments = true,

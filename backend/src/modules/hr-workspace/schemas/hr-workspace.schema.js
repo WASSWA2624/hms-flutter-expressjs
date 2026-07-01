@@ -156,6 +156,21 @@ const generateStaffNumberSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
+const staffOffboardSchema = z.object({
+  separation_type: z.enum([
+    'RESIGNATION',
+    'TERMINATION',
+    'RETIREMENT',
+    'CONTRACT_END',
+    'DECEASED',
+  ]),
+  last_working_day: z.string().datetime(),
+  reason: z.string().trim().max(500).optional().nullable(),
+  end_assignments: z.coerce.boolean().optional().default(true),
+  revoke_access: z.coerce.boolean().optional().default(true),
+  schedule_final_payroll: z.coerce.boolean().optional().default(false),
+});
+
 module.exports = {
   hrQueueSchema,
   workspaceQuerySchema,
@@ -178,4 +193,5 @@ module.exports = {
   payrollPreviewQuerySchema,
   payrollProcessSchema,
   generateStaffNumberSchema,
+  staffOffboardSchema,
 };

@@ -26151,6 +26151,414 @@ abstract class AppLocalizations {
   /// **'End assignment'**
   String get hrEndAssignmentDialogTitle;
 
+  /// Date picker label when ending an assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get hrEndAssignmentDateLabel;
+
+  /// Dialog title for assignment detail view.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment details'**
+  String get hrAssignmentDetailDialogTitle;
+
+  /// Label for assignment display identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment ID'**
+  String get hrAssignmentIdLabel;
+
+  /// Action to edit an assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit assignment'**
+  String get hrEditAssignmentAction;
+
+  /// Status badge for active assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get hrAssignmentActiveLabel;
+
+  /// Status badge for ended assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get hrAssignmentEndedLabel;
+
+  /// Label when an assignment or compensation has no end date.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get hrDateRangeOngoingLabel;
+
+  /// Toggle label for week availability calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Week view'**
+  String get hrAvailabilityWeekViewLabel;
+
+  /// Toggle label for month availability calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Month view'**
+  String get hrAvailabilityMonthViewLabel;
+
+  /// Empty state body for availability calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Record weekly availability to see the calendar.'**
+  String get hrAvailabilityCalendarEmptyBody;
+
+  /// Calendar legend for available days.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get hrAvailabilityLegendAvailableLabel;
+
+  /// Calendar legend for unavailable days.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get hrAvailabilityLegendUnavailableLabel;
+
+  /// Calendar legend for approved leave overlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved leave'**
+  String get hrAvailabilityLegendLeaveLabel;
+
+  /// Empty state when a calendar day has no slots.
+  ///
+  /// In en, this message translates to:
+  /// **'No time slots recorded for this day.'**
+  String get hrAvailabilityDayEmptyLabel;
+
+  /// Action to add an availability slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add slot'**
+  String get hrAvailabilityAddSlotAction;
+
+  /// Action to edit availability for a day.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit day'**
+  String get hrAvailabilityEditDayAction;
+
+  /// Tooltip for compensation action.
+  ///
+  /// In en, this message translates to:
+  /// **'Define or update pay structure for this staff member.'**
+  String get hrCompensationActionTooltip;
+
+  /// Tooltip for run payroll action.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate and process pay for a pay period. Requires Financial Approve permission.'**
+  String get hrRunPayrollActionTooltip;
+
+  /// Tooltip when payroll is disabled due to missing compensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add compensation before running payroll.'**
+  String get hrPayrollMissingCompensationTooltip;
+
+  /// Tab label for compensation pay structure form.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay structure'**
+  String get hrCompensationPayStructureTabLabel;
+
+  /// Tab label for compensation history list.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get hrCompensationHistoryTabLabel;
+
+  /// Label for base compensation rate.
+  ///
+  /// In en, this message translates to:
+  /// **'Base rate'**
+  String get hrCompensationBaseRateLabel;
+
+  /// Label for pay frequency selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay frequency'**
+  String get hrCompensationPayFrequencyLabel;
+
+  /// Monthly pay frequency option.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get hrCompensationFrequencyMonthlyLabel;
+
+  /// Bi-weekly pay frequency option.
+  ///
+  /// In en, this message translates to:
+  /// **'Bi-weekly'**
+  String get hrCompensationFrequencyBiweeklyLabel;
+
+  /// Weekly pay frequency option.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get hrCompensationFrequencyWeeklyLabel;
+
+  /// Daily compensation rate label.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily rate'**
+  String get hrCompensationDailyRateLabel;
+
+  /// Dialog title for read-only compensation detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation details'**
+  String get hrCompensationDetailDialogTitle;
+
+  /// Action to add a new compensation rate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new rate'**
+  String get hrCompensationAddNewRateAction;
+
+  /// Title for payroll wizard dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll run'**
+  String get hrPayrollWizardTitle;
+
+  /// Payroll wizard step 1 title.
+  ///
+  /// In en, this message translates to:
+  /// **'Select pay period'**
+  String get hrPayrollWizardPeriodStepTitle;
+
+  /// Pay period start date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay period start'**
+  String get hrPayPeriodStartLabel;
+
+  /// Pay period end date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay period end'**
+  String get hrPayPeriodEndLabel;
+
+  /// Payroll wizard preview step title.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview payslips'**
+  String get hrPayrollWizardPreviewStepTitle;
+
+  /// Empty preview message for staff-scoped payroll.
+  ///
+  /// In en, this message translates to:
+  /// **'No payroll line items for this staff member in the selected period.'**
+  String get hrPayrollWizardNoStaffItemsLabel;
+
+  /// Payroll review staff count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff count'**
+  String get hrPayrollStaffCountLabel;
+
+  /// Gross pay label for payroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross pay'**
+  String get hrGrossPayLabel;
+
+  /// Net pay label for payroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Net pay'**
+  String get hrNetPayLabel;
+
+  /// Deductions label for payroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deductions'**
+  String get hrDeductionsLabel;
+
+  /// Final payroll wizard step body text.
+  ///
+  /// In en, this message translates to:
+  /// **'Process will create payroll items and advance the run toward paid status.'**
+  String get hrPayrollWizardProcessStepBody;
+
+  /// Payroll wizard preview button.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get hrPayrollWizardPreviewAction;
+
+  /// Payroll wizard review button.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get hrPayrollWizardReviewAction;
+
+  /// Dialog title for leave detail view.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave details'**
+  String get hrLeaveDetailDialogTitle;
+
+  /// Label for covering staff on leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Covering staff'**
+  String get hrLeaveCoveringStaffLabel;
+
+  /// Label for leave handover notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover notes'**
+  String get hrLeaveHandoverNotesLabel;
+
+  /// Label for leave reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get hrLeaveReasonLabel;
+
+  /// Dialog title for shift assignment detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift details'**
+  String get hrShiftDetailDialogTitle;
+
+  /// Label for shift type field.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift type'**
+  String get hrShiftTypeLabel;
+
+  /// Label for shift assignment timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned at'**
+  String get hrAssignedAtLabel;
+
+  /// Label for linked roster period.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster period'**
+  String get hrRosterPeriodLabel;
+
+  /// Action to remove a shift assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove assignment'**
+  String get hrRemoveShiftAssignmentAction;
+
+  /// Action to offboard a staff member.
+  ///
+  /// In en, this message translates to:
+  /// **'End employment'**
+  String get hrOffboardStaffAction;
+
+  /// Tooltip for offboard staff action.
+  ///
+  /// In en, this message translates to:
+  /// **'Record separation and optionally end assignments and revoke access.'**
+  String get hrOffboardStaffActionTooltip;
+
+  /// Dialog title for staff offboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'End employment'**
+  String get hrOffboardStaffDialogTitle;
+
+  /// Hint text in offboarding dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'This ends employment for the staff member. Active assignments can be closed on the last working day.'**
+  String get hrOffboardStaffDialogHint;
+
+  /// Label for separation type selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation type'**
+  String get hrSeparationTypeLabel;
+
+  /// Resignation separation type.
+  ///
+  /// In en, this message translates to:
+  /// **'Resignation'**
+  String get hrSeparationTypeResignationLabel;
+
+  /// Termination separation type.
+  ///
+  /// In en, this message translates to:
+  /// **'Termination'**
+  String get hrSeparationTypeTerminationLabel;
+
+  /// Retirement separation type.
+  ///
+  /// In en, this message translates to:
+  /// **'Retirement'**
+  String get hrSeparationTypeRetirementLabel;
+
+  /// Contract end separation type.
+  ///
+  /// In en, this message translates to:
+  /// **'Contract end'**
+  String get hrSeparationTypeContractEndLabel;
+
+  /// Deceased separation type.
+  ///
+  /// In en, this message translates to:
+  /// **'Deceased'**
+  String get hrSeparationTypeDeceasedLabel;
+
+  /// Fallback separation type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation'**
+  String get hrSeparationTypeOtherLabel;
+
+  /// Label for last working day in offboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Last working day'**
+  String get hrLastWorkingDayLabel;
+
+  /// Optional separation notes field.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason / notes'**
+  String get hrSeparationNotesLabel;
+
+  /// Checkbox to end assignments on offboard.
+  ///
+  /// In en, this message translates to:
+  /// **'End all active assignments'**
+  String get hrOffboardEndAssignmentsLabel;
+
+  /// Checkbox to revoke user access on offboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke system access'**
+  String get hrOffboardRevokeAccessLabel;
+
+  /// Checkbox to link final payroll on offboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule final payroll'**
+  String get hrOffboardFinalPayrollLabel;
+
+  /// Banner shown when staff member is separated.
+  ///
+  /// In en, this message translates to:
+  /// **'{separationType} · Last day {lastDay}'**
+  String hrSeparationBannerMessage(String separationType, String lastDay);
+
   /// Toolbar action for shift template CRUD.
   ///
   /// In en, this message translates to:
@@ -26186,12 +26594,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Template name'**
   String get hrShiftTemplateNameLabel;
-
-  /// Label for shift type field.
-  ///
-  /// In en, this message translates to:
-  /// **'Shift type'**
-  String get hrShiftTypeLabel;
 
   /// Action to preview payroll line items.
   ///

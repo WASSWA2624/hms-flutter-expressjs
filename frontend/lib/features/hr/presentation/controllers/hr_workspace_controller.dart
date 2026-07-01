@@ -1017,11 +1017,16 @@ final class HrWorkspaceController
     _emit(current.copyWith(clearOpenStaffDetailAfterOnboarding: true));
   }
 
-  Future<AppFailure?> endAssignment(HrStaffAssignment assignment) async {
+  Future<AppFailure?> endAssignment(
+    HrStaffAssignment assignment, {
+    DateTime? endDate,
+  }) async {
     final AppFailure? failure = await _mutateSelected(
       (_) => _repository.updateStaffAssignment(
         assignment.effectiveId,
-        <String, Object?>{'end_date': DateTime.now().toIso8601String()},
+        <String, Object?>{
+          'end_date': (endDate ?? DateTime.now()).toIso8601String(),
+        },
       ),
     );
     if (failure == null) {
@@ -1066,6 +1071,92 @@ final class HrWorkspaceController
     return _finishGenericMutation(
       await _repository.deleteShiftTemplate(templateId),
       refreshReferencesAfter: true,
+    );
+  }
+
+  Future<Result<HrPayrollPreview>> previewPayrollRunById(String payrollRunId) {
+    return _repository.previewPayrollRun(payrollRunId);
+  }
+
+  Future<AppFailure?> processPayrollRunById(
+    String payrollRunId, {
+    bool replaceExistingItems = false,
+  }) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    return _finishGenericMutation(
+      await _repository.processPayrollRun(
+        payrollRunId,
+        replaceExistingItems: replaceExistingItems,
+      ),
+      refreshOverviewAfter: true,
+      refreshWorkItemsAfter: true,
+      refreshReferencesAfter: true,
+    );
+  }
+
+  Future<Result<String>> createPayrollRunDraft(
+    Map<String, Object?> payload,
+  ) async {
+    final Result<Object?> result = await _repository.createPayrollRun(payload);
+    return result.when(
+      success: (Object? data) {
+        final String? runId = _extractApiRecordId(data);
+        if (runId == null) {
+          return Result<String>.failure(AppFailure.validation());
+        }
+        return Result<String>.success(runId);
+      },
+      failure: Result<String>.failure,
+    );
+  }
+
+  Future<AppFailure?> offboardStaff(Map<String, Object?> payload) async {
+    final HrWorkspaceState? current = _currentState;
+    final HrStaffDetail? selected = current?.selectedStaff;
+    if (current == null || selected == null) {
+      return AppFailure.validation();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<Object?> result = await _repository.offboardStaff(
+      selected.profile.effectiveId,
+      payload,
+    );
+    return result.when(
+      success: (_) async {
+        final DateTime? separationDate = DateTime.tryParse(
+          payload['last_working_day']?.toString() ?? '',
+        );
+        final HrStaffProfile separated = selected.profile.copyWith(
+          status: 'SEPARATED',
+          separationType: payload['separation_type']?.toString(),
+          separationDate: separationDate,
+          separationNotes: payload['reason']?.toString(),
+        );
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              staff: _replaceStaff(latest.staff, separated),
+              selectedStaff: selected.copyWith(profile: separated),
+              isMutating: false,
+            ),
+          );
+        }
+        unawaited(_refreshStaff(showLoading: false));
+        unawaited(_refreshOverview());
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final HrWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
     );
   }
 
@@ -1558,6 +1649,17 @@ final class HrWorkspaceController
       },
       failure: (_) => null,
     );
+  }
+
+  String? _extractApiRecordId(Object? data) {
+    if (data is! Map) {
+      return null;
+    }
+    final Map<Object?, Object?> source =
+        data['data'] is Map ? data['data'] as Map : data;
+    return source['display_id']?.toString() ??
+        source['human_friendly_id']?.toString() ??
+        source['id']?.toString();
   }
 }
 

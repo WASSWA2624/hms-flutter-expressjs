@@ -261,6 +261,8 @@ final class HrStaffAssignmentDto {
 
   HrStaffAssignment toEntity() {
     final HrJsonMap department = _map(json['department']);
+    final HrJsonMap unit = _map(json['unit']);
+    final HrJsonMap room = _map(json['room']);
     final DateTime? endDate = _date(json['end_date']);
     final bool isActive = endDate == null || endDate.isAfter(DateTime.now());
     return HrStaffAssignment(
@@ -279,11 +281,17 @@ final class HrStaffAssignmentDto {
           _string(json['department_display_id']) ??
           _string(department['human_friendly_id']),
       unitId: _string(json['unit_id']),
+      unitName: _string(unit['name']),
+      unitDisplayId: _string(unit['human_friendly_id']),
       roomId: _string(json['room_id']),
+      roomName: _string(room['name']),
+      roomDisplayId: _string(room['human_friendly_id']),
       startDate: _date(json['start_date']),
       endDate: endDate,
       isPrimary: json['is_primary'] == true,
       isActive: isActive,
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
     );
   }
 }
@@ -421,6 +429,7 @@ final class HrShiftAssignmentDto {
   final HrJsonMap json;
 
   HrShiftAssignment toEntity() {
+    final HrJsonMap shift = _map(json['shift']);
     return HrShiftAssignment(
       id:
           _string(json['display_id']) ??
@@ -430,6 +439,12 @@ final class HrShiftAssignmentDto {
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       shiftId: _string(json['shift_id']),
+      shiftName: _string(shift['name']) ??
+          _string(shift['shift_type']) ??
+          _string(shift['human_friendly_id']),
+      shiftType: _string(shift['shift_type']),
+      shiftStatus: _string(shift['status']),
+      rosterPeriodLabel: _string(shift['roster_period_label']),
       staffProfileId: _string(json['staff_profile_id']),
       assignedAt: _date(json['assigned_at']),
     );

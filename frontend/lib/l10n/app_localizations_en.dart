@@ -13922,6 +13922,221 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrEndAssignmentDialogTitle => 'End assignment';
 
   @override
+  String get hrEndAssignmentDateLabel => 'End date';
+
+  @override
+  String get hrAssignmentDetailDialogTitle => 'Assignment details';
+
+  @override
+  String get hrAssignmentIdLabel => 'Assignment ID';
+
+  @override
+  String get hrEditAssignmentAction => 'Edit assignment';
+
+  @override
+  String get hrAssignmentActiveLabel => 'Active';
+
+  @override
+  String get hrAssignmentEndedLabel => 'Ended';
+
+  @override
+  String get hrDateRangeOngoingLabel => 'Ongoing';
+
+  @override
+  String get hrAvailabilityWeekViewLabel => 'Week view';
+
+  @override
+  String get hrAvailabilityMonthViewLabel => 'Month view';
+
+  @override
+  String get hrAvailabilityCalendarEmptyBody =>
+      'Record weekly availability to see the calendar.';
+
+  @override
+  String get hrAvailabilityLegendAvailableLabel => 'Available';
+
+  @override
+  String get hrAvailabilityLegendUnavailableLabel => 'Unavailable';
+
+  @override
+  String get hrAvailabilityLegendLeaveLabel => 'Approved leave';
+
+  @override
+  String get hrAvailabilityDayEmptyLabel =>
+      'No time slots recorded for this day.';
+
+  @override
+  String get hrAvailabilityAddSlotAction => 'Add slot';
+
+  @override
+  String get hrAvailabilityEditDayAction => 'Edit day';
+
+  @override
+  String get hrCompensationActionTooltip =>
+      'Define or update pay structure for this staff member.';
+
+  @override
+  String get hrRunPayrollActionTooltip =>
+      'Calculate and process pay for a pay period. Requires Financial Approve permission.';
+
+  @override
+  String get hrPayrollMissingCompensationTooltip =>
+      'Add compensation before running payroll.';
+
+  @override
+  String get hrCompensationPayStructureTabLabel => 'Pay structure';
+
+  @override
+  String get hrCompensationHistoryTabLabel => 'History';
+
+  @override
+  String get hrCompensationBaseRateLabel => 'Base rate';
+
+  @override
+  String get hrCompensationPayFrequencyLabel => 'Pay frequency';
+
+  @override
+  String get hrCompensationFrequencyMonthlyLabel => 'Monthly';
+
+  @override
+  String get hrCompensationFrequencyBiweeklyLabel => 'Bi-weekly';
+
+  @override
+  String get hrCompensationFrequencyWeeklyLabel => 'Weekly';
+
+  @override
+  String get hrCompensationDailyRateLabel => 'Daily rate';
+
+  @override
+  String get hrCompensationDetailDialogTitle => 'Compensation details';
+
+  @override
+  String get hrCompensationAddNewRateAction => 'Add new rate';
+
+  @override
+  String get hrPayrollWizardTitle => 'Payroll run';
+
+  @override
+  String get hrPayrollWizardPeriodStepTitle => 'Select pay period';
+
+  @override
+  String get hrPayPeriodStartLabel => 'Pay period start';
+
+  @override
+  String get hrPayPeriodEndLabel => 'Pay period end';
+
+  @override
+  String get hrPayrollWizardPreviewStepTitle => 'Preview payslips';
+
+  @override
+  String get hrPayrollWizardNoStaffItemsLabel =>
+      'No payroll line items for this staff member in the selected period.';
+
+  @override
+  String get hrPayrollStaffCountLabel => 'Staff count';
+
+  @override
+  String get hrGrossPayLabel => 'Gross pay';
+
+  @override
+  String get hrNetPayLabel => 'Net pay';
+
+  @override
+  String get hrDeductionsLabel => 'Deductions';
+
+  @override
+  String get hrPayrollWizardProcessStepBody =>
+      'Process will create payroll items and advance the run toward paid status.';
+
+  @override
+  String get hrPayrollWizardPreviewAction => 'Preview';
+
+  @override
+  String get hrPayrollWizardReviewAction => 'Review';
+
+  @override
+  String get hrLeaveDetailDialogTitle => 'Leave details';
+
+  @override
+  String get hrLeaveCoveringStaffLabel => 'Covering staff';
+
+  @override
+  String get hrLeaveHandoverNotesLabel => 'Handover notes';
+
+  @override
+  String get hrLeaveReasonLabel => 'Reason';
+
+  @override
+  String get hrShiftDetailDialogTitle => 'Shift details';
+
+  @override
+  String get hrShiftTypeLabel => 'Shift type';
+
+  @override
+  String get hrAssignedAtLabel => 'Assigned at';
+
+  @override
+  String get hrRosterPeriodLabel => 'Roster period';
+
+  @override
+  String get hrRemoveShiftAssignmentAction => 'Remove assignment';
+
+  @override
+  String get hrOffboardStaffAction => 'End employment';
+
+  @override
+  String get hrOffboardStaffActionTooltip =>
+      'Record separation and optionally end assignments and revoke access.';
+
+  @override
+  String get hrOffboardStaffDialogTitle => 'End employment';
+
+  @override
+  String get hrOffboardStaffDialogHint =>
+      'This ends employment for the staff member. Active assignments can be closed on the last working day.';
+
+  @override
+  String get hrSeparationTypeLabel => 'Separation type';
+
+  @override
+  String get hrSeparationTypeResignationLabel => 'Resignation';
+
+  @override
+  String get hrSeparationTypeTerminationLabel => 'Termination';
+
+  @override
+  String get hrSeparationTypeRetirementLabel => 'Retirement';
+
+  @override
+  String get hrSeparationTypeContractEndLabel => 'Contract end';
+
+  @override
+  String get hrSeparationTypeDeceasedLabel => 'Deceased';
+
+  @override
+  String get hrSeparationTypeOtherLabel => 'Separation';
+
+  @override
+  String get hrLastWorkingDayLabel => 'Last working day';
+
+  @override
+  String get hrSeparationNotesLabel => 'Reason / notes';
+
+  @override
+  String get hrOffboardEndAssignmentsLabel => 'End all active assignments';
+
+  @override
+  String get hrOffboardRevokeAccessLabel => 'Revoke system access';
+
+  @override
+  String get hrOffboardFinalPayrollLabel => 'Schedule final payroll';
+
+  @override
+  String hrSeparationBannerMessage(String separationType, String lastDay) {
+    return '$separationType · Last day $lastDay';
+  }
+
+  @override
   String get hrShiftTemplateAction => 'Create schedule template';
 
   @override
@@ -13938,9 +14153,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrShiftTemplateNameLabel => 'Template name';
-
-  @override
-  String get hrShiftTypeLabel => 'Shift type';
 
   @override
   String get hrPreviewPayrollAction => 'Preview payroll';

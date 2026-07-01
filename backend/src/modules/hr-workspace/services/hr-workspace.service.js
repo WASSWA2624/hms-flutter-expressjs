@@ -2722,6 +2722,105 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
   };
 };
 
+const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null, ipAddress = null) => {
+  const staffRecord = await resolveModelRecordByIdentifier({
+    model: 'staff_profile',
+    identifier: staffProfileIdentifier,
+    where: { deleted_at: null },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      staff_number: true,
+      tenant_id: true,
+      user_id: true,
+    },
+  });
+
+  if (!staffRecord?.id) {
+    throw new HttpError('errors.staff_profile.not_found', 404);
+  }
+
+  const lastWorkingDay = new Date(payload.last_working_day);
+  if (Number.isNaN(lastWorkingDay.getTime())) {
+    throw new HttpError('errors.validation.invalid_date', 400);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (payload.end_assignments !== false) {
+      await tx.staff_assignment.updateMany({
+        where: {
+          deleted_at: null,
+          staff_profile_id: staffRecord.id,
+          OR: [{ end_date: null }, { end_date: { gt: lastWorkingDay } }],
+        },
+        data: { end_date: lastWorkingDay },
+      });
+    }
+
+    await tx.shift_assignment.updateMany({
+      where: {
+        deleted_at: null,
+        staff_profile_id: staffRecord.id,
+        assigned_at: { gt: lastWorkingDay },
+      },
+      data: { deleted_at: new Date() },
+    });
+
+    await tx.staff_leave.updateMany({
+      where: {
+        deleted_at: null,
+        staff_profile_id: staffRecord.id,
+        status: { in: ['PENDING', 'REQUESTED', 'DRAFT'] },
+      },
+      data: { status: 'CANCELLED' },
+    });
+
+    if (payload.revoke_access !== false && staffRecord.user_id) {
+      await tx.user.update({
+        where: { id: staffRecord.user_id },
+        data: { deleted_at: new Date() },
+      }).catch(() => {});
+    }
+
+    await tx.staff_profile.update({
+      where: { id: staffRecord.id },
+      data: { deleted_at: lastWorkingDay },
+    });
+  });
+
+  createAuditLog({
+    user_id: userId,
+    action: 'UPDATE',
+    entity: 'staff_profile',
+    entity_id: staffRecord.id,
+    diff: {
+      metadata: {
+        operation: 'STAFF_OFFBOARD',
+        separation_type: payload.separation_type,
+        last_working_day: lastWorkingDay.toISOString(),
+        reason: normalizeString(payload.reason) || null,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  publishHrWorkspaceUpdate({
+    action: 'OFFBOARD',
+    actorUserId: userId || null,
+    tenantId: staffRecord.tenant_id,
+    staffProfileId: staffRecord.id,
+  }).catch(() => {});
+
+  return {
+    staff_profile_id: resolveDisplayId(staffRecord),
+    staff_profile_display_id: resolveDisplayId(staffRecord),
+    status: 'SEPARATED',
+    separation_type: payload.separation_type,
+    separation_date: lastWorkingDay,
+    reason: normalizeString(payload.reason) || null,
+  };
+};
+
 module.exports = {
   getWorkspace,
   getWorkItems,
@@ -2739,5 +2838,6 @@ module.exports = {
   rejectLeave,
   previewPayrollRun,
   processPayrollRun,
+  offboardStaff,
   resolveLegacyRouteIdentifier,
 };

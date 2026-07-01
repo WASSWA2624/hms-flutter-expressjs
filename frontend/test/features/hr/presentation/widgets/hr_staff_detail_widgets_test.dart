@@ -133,6 +133,7 @@ void main() {
         onRunPayroll: (_, _, _) {},
         onAssignRole: (_, _, _) {},
         onModuleAccess: (_, _) {},
+        onOffboardStaff: (_, _, _) {},
       ),
     );
 
@@ -149,6 +150,7 @@ void main() {
     expect(find.text('Request leave'), findsOneWidget);
     expect(find.text('Compensation'), findsOneWidget);
     expect(find.text('Run payroll'), findsOneWidget);
+    expect(find.text('End employment'), findsOneWidget);
     expect(find.text('Assign role'), findsOneWidget);
     expect(find.text('View module access'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -173,6 +175,7 @@ void main() {
         onRunPayroll: (_, _, _) {},
         onAssignRole: (_, _, _) {},
         onModuleAccess: (_, _) {},
+        onOffboardStaff: (_, _, _) {},
       ),
     );
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -17,12 +16,20 @@ import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.d
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_access_dialogs.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_department_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assignment_detail_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_availability_calendar.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_leave_detail_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_payroll_wizard_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_queue_switcher.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_record_availability_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_shift_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -611,6 +618,11 @@ class _HrStaffDetailPanel extends ConsumerWidget {
         children: <Widget>[
           if (state.isRefreshingDetail)
             const LinearProgressIndicator(minHeight: 2),
+          if (selected.profile.isSeparated)
+            Padding(
+              padding: EdgeInsets.only(bottom: Theme.of(context).spacing.md),
+              child: _HrSeparationBanner(profile: selected.profile),
+            ),
           _HrStaffDetailBody(state: state, detail: selected),
         ],
       ),
@@ -680,35 +692,63 @@ class _HrStaffDetailBody extends ConsumerWidget {
           onSwapShift: _showShiftSwapDialog,
           onRequestLeave: (BuildContext context, WidgetRef ref) =>
               showHrRequestLeaveDialog(context, ref),
-          onCompensation: _showCompensationDialog,
-          onRunPayroll: _showPayrollRunDialog,
+          onCompensation: (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
+              showHrCompensationDialog(
+                context,
+                ref,
+                staff,
+                detail.compensations,
+              ),
+          onRunPayroll: (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
+              showHrPayrollWizardDialog(context, ref, staff),
           onAssignRole: showHrAssignRoleDialog,
           onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
             showHrModuleAccessDialog(context, ref, staffDetail.accessSummary);
           },
+          onOffboardStaff: (BuildContext context, WidgetRef ref, HrStaffDetail d) =>
+              showHrStaffOffboardingDialog(
+                context,
+                ref,
+                d,
+                onOpenPayroll: () => showHrPayrollWizardDialog(
+                  context,
+                  ref,
+                  d.profile,
+                ),
+              ),
         ),
         SizedBox(height: theme.spacing.md),
         _SmallRecordSection(
           title: l10n.hrAssignmentsSectionTitle,
           icon: Icons.account_tree_outlined,
           emptyText: l10n.hrNoAssignmentsLabel,
+          emptyActionLabel: l10n.hrAssignDepartmentAction,
+          onEmptyAction: profile.isSeparated || state.isMutating
+              ? null
+              : () => showHrAssignDepartmentDialog(context, ref),
           rows: <_RecordLine>[
             for (final HrStaffAssignment assignment in detail.assignments)
               _RecordLine(
-                title: _joinDisplay(<String?>[
-                  assignment.departmentName ?? assignment.departmentDisplayId,
-                  assignment.departmentId,
-                  if (assignment.isPrimary) l10n.hrPrimaryAssignmentLabel,
-                ]).ifEmpty(l10n.hrAssignmentLabel),
-                subtitle: _dateRange(
-                  context,
-                  assignment.startDate,
-                  assignment.endDate,
-                ),
-                trailing: assignment.isActive && !state.isMutating
+                title: hrAssignmentTitle(assignment, l10n),
+                subtitle: hrAssignmentSubtitle(context, assignment, l10n),
+                badges: <AppWorkspaceStatus>[
+                  if (assignment.isPrimary) hrPrimaryAssignmentBadge(l10n),
+                  hrAssignmentStatusBadge(assignment, l10n),
+                ],
+                trailing: assignment.isActive && !state.isMutating && !profile.isSeparated
                     ? l10n.hrEndAssignmentAction
                     : null,
-                onTrailingTap: assignment.isActive && !state.isMutating
+                showChevron: true,
+                onTap: () => showHrAssignmentDetailDialog(
+                  context,
+                  ref,
+                  detail,
+                  assignment,
+                  isMutating: state.isMutating,
+                ),
+                onTrailingTap: assignment.isActive &&
+                        !state.isMutating &&
+                        !profile.isSeparated
                     ? () => showHrEndAssignmentDialog(context, ref, assignment)
                     : null,
               ),
@@ -724,28 +764,40 @@ class _HrStaffDetailBody extends ConsumerWidget {
               _RecordLine(
                 title: _leaveSummaryTitle(context, leave),
                 subtitle: _leaveSummarySubtitle(context, leave),
-                trailing: leave.reason,
+                showChevron: true,
+                onTap: () => showHrLeaveDetailDialog(context, leave),
               ),
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        _SmallRecordSection(
+        AppSectionPanel(
           title: l10n.hrAvailabilitySectionTitle,
-          icon: Icons.schedule_outlined,
-          emptyText: l10n.hrNoAvailabilityLabel,
-          rows: <_RecordLine>[
-            for (final HrStaffAvailability availability
-                in detail.availabilities)
-              _RecordLine(
-                title: hrDayLabel(l10n, availability.dayOfWeek ?? 0),
-                subtitle: _joinDisplay(<String?>[
-                  _availabilitySlotSummary(availability),
-                  _apiLabel(
-                    context,
-                    availability.status ?? availability.preference,
-                  ),
-                ]),
-              ),
+          leadingIcon: Icons.schedule_outlined,
+          density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            HrAvailabilityCalendar(
+              availabilities: detail.availabilities,
+              leaves: detail.leaves,
+              onRecordAvailability: profile.isSeparated || state.isMutating
+                  ? null
+                  : () => showHrRecordAvailabilityDialog(context, ref),
+              onDayTap: (int day) {
+                HrStaffAvailability? availability;
+                for (final HrStaffAvailability item in detail.availabilities) {
+                  if (item.dayOfWeek == day) {
+                    availability = item;
+                    break;
+                  }
+                }
+                showHrAvailabilityDaySheet(
+                  context,
+                  dayOfWeek: day,
+                  availability: availability,
+                  onEdit: () => showHrRecordAvailabilityDialog(context, ref),
+                  onAddSlot: () => showHrRecordAvailabilityDialog(context, ref),
+                );
+              },
+            ),
           ],
         ),
         SizedBox(height: theme.spacing.md),
@@ -753,11 +805,27 @@ class _HrStaffDetailBody extends ConsumerWidget {
           title: l10n.hrShiftsSectionTitle,
           icon: Icons.calendar_view_week_outlined,
           emptyText: l10n.hrNoShiftsLabel,
+          emptyActionLabel: l10n.hrAssignShiftAction,
+          onEmptyAction: profile.isSeparated || state.isMutating
+              ? null
+              : () => _showShiftAssignmentDialog(context, ref),
           rows: <_RecordLine>[
             for (final HrShiftAssignment assignment in detail.shiftAssignments)
               _RecordLine(
-                title: assignment.shiftId ?? l10n.hrShiftLabel,
-                subtitle: _formatDateTime(context, assignment.assignedAt),
+                title: hrShiftAssignmentTitle(
+                  assignment,
+                  state.referenceData,
+                  l10n,
+                ),
+                subtitle: hrShiftAssignmentSubtitle(context, assignment, l10n),
+                showChevron: true,
+                onTap: () => showHrShiftDetailDialog(
+                  context,
+                  assignment,
+                  state.referenceData,
+                  actionsEnabled: !profile.isSeparated && !state.isMutating,
+                  onSwap: () => _showShiftSwapDialog(context, ref),
+                ),
               ),
           ],
         ),
@@ -766,18 +834,34 @@ class _HrStaffDetailBody extends ConsumerWidget {
           title: l10n.hrCompensationSectionTitle,
           icon: Icons.price_change_outlined,
           emptyText: l10n.hrNoCompensationLabel,
+          emptyActionLabel: l10n.hrCompensationAction,
+          onEmptyAction: profile.isSeparated || state.isMutating
+              ? null
+              : () => showHrCompensationDialog(
+                    context,
+                    ref,
+                    profile,
+                    detail.compensations,
+                  ),
           rows: <_RecordLine>[
             for (final HrStaffCompensation compensation in detail.compensations)
               _RecordLine(
-                title: _joinDisplay(<String?>[
-                  _apiLabel(context, compensation.payType),
-                  compensation.rate?.toString(),
-                  compensation.currency,
-                ]).ifEmpty(l10n.hrCompensationLabel),
-                subtitle: _dateRange(
+                title: hrCompensationRowTitle(context, compensation),
+                subtitle: hrDateRange(
                   context,
                   compensation.effectiveFrom,
                   compensation.effectiveTo,
+                ),
+                showChevron: true,
+                onTap: () => showHrCompensationDetailDialog(
+                  context,
+                  compensation,
+                  () => showHrCompensationDialog(
+                    context,
+                    ref,
+                    profile,
+                    detail.compensations,
+                  ),
                 ),
               ),
           ],
@@ -970,21 +1054,36 @@ class _SmallRecordSection extends StatelessWidget {
     required this.icon,
     required this.emptyText,
     required this.rows,
+    this.emptyActionLabel,
+    this.onEmptyAction,
   });
 
   final String title;
   final IconData icon;
   final String emptyText;
   final List<_RecordLine> rows;
+  final String? emptyActionLabel;
+  final VoidCallback? onEmptyAction;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return AppSectionPanel(
       title: title,
       leadingIcon: icon,
       density: AppContentPanelDensity.compact,
       children: rows.isEmpty
-          ? <Widget>[Text(emptyText)]
+          ? <Widget>[
+              Text(emptyText),
+              if (onEmptyAction != null &&
+                  (emptyActionLabel ?? '').trim().isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                AppButton.secondary(
+                  label: emptyActionLabel!,
+                  onPressed: onEmptyAction,
+                ),
+              ],
+            ]
           : <Widget>[
               for (final _RecordLine row in rows) _RecordLineTile(line: row),
             ],
@@ -999,12 +1098,18 @@ final class _RecordLine {
     this.subtitle,
     this.trailing,
     this.onTrailingTap,
+    this.onTap,
+    this.badges = const <AppWorkspaceStatus>[],
+    this.showChevron = false,
   });
 
   final String title;
   final String? subtitle;
   final String? trailing;
   final VoidCallback? onTrailingTap;
+  final VoidCallback? onTap;
+  final List<AppWorkspaceStatus> badges;
+  final bool showChevron;
 }
 
 class _RecordLineTile extends StatelessWidget {
@@ -1015,13 +1120,29 @@ class _RecordLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Padding(
+    final Widget content = Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: _TwoLineCell(title: line.title, subtitle: line.subtitle),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _TwoLineCell(title: line.title, subtitle: line.subtitle),
+                if (line.badges.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      for (final AppWorkspaceStatus badge in line.badges)
+                        AppWorkspaceStatusBadge(status: badge),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
           if ((line.trailing ?? '').trim().isNotEmpty) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
@@ -1033,7 +1154,71 @@ class _RecordLineTile extends StatelessWidget {
             else
               Flexible(child: Text(line.trailing!)),
           ],
+          if (line.showChevron) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ],
+      ),
+    );
+
+    if (line.onTap == null) {
+      return content;
+    }
+
+    return InkWell(
+      onTap: line.onTap,
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: content,
+    );
+  }
+}
+
+class _HrSeparationBanner extends StatelessWidget {
+  const _HrSeparationBanner({required this.profile});
+
+  final HrStaffProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String separationType = hrSeparationTypeLabel(
+      l10n,
+      profile.separationType,
+    );
+    final String lastDay = profile.separationDate == null
+        ? l10n.profileUnknownValue
+        : AppFormatters.shortDate(
+            profile.separationDate!,
+            Localizations.localeOf(context),
+          );
+
+    return Material(
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(theme.radius.md),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.person_off_outlined,
+              color: theme.colorScheme.error,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                l10n.hrSeparationBannerMessage(separationType, lastDay),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1266,70 +1451,6 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
       );
     },
     onSubmit: () => controller.createShiftSwapRequest(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
-}
-
-Future<void> _showPayrollRunDialog(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffProfile staff,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<_PayrollRunFieldsState> fieldsKey =
-      GlobalKey<_PayrollRunFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrPayrollRunDialogTitle),
-    icon: const Icon(Icons.payments_outlined),
-    submitLabel: l10n.hrRunPayrollAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _PayrollRunFields(key: fieldsKey, staff: staff);
-    },
-    onSubmit: () => controller.createPayrollRun(
-      fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
-    ),
-  );
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
-}
-
-Future<void> _showCompensationDialog(
-  BuildContext context,
-  WidgetRef ref,
-  HrStaffProfile staff,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final HrWorkspaceController controller = ref.read(
-    hrWorkspaceControllerProvider.notifier,
-  );
-  final GlobalKey<_CompensationFieldsState> fieldsKey =
-      GlobalKey<_CompensationFieldsState>();
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.hrCompensationDialogTitle),
-    icon: const Icon(Icons.price_change_outlined),
-    submitLabel: l10n.hrCompensationAction,
-    cancelLabel: l10n.commonCancelActionLabel,
-    submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _CompensationFields(key: fieldsKey, staff: staff);
-    },
-    onSubmit: () => controller.updateSelectedStaffProfile(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),
   );
@@ -1769,231 +1890,6 @@ class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
   }
 }
 
-class _PayrollRunFields extends StatefulWidget {
-  const _PayrollRunFields({required this.staff, super.key});
-
-  final HrStaffProfile staff;
-
-  @override
-  State<_PayrollRunFields> createState() => _PayrollRunFieldsState();
-}
-
-class _PayrollRunFieldsState extends State<_PayrollRunFields> {
-  late final TextEditingController _tenantController;
-  DateTime? _periodStart = DateTime(DateTime.now().year, DateTime.now().month);
-  DateTime? _periodEnd = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    _tenantController = TextEditingController(text: widget.staff.tenantId);
-  }
-
-  @override
-  void dispose() {
-    _tenantController.dispose();
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'tenant_id': _tenantController.text.trim(),
-      'period_start': _datePayload(_periodStart),
-      'period_end': _datePayload(_periodEnd),
-      'status': 'DRAFT',
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppTextField(
-          controller: _tenantController,
-          labelText: l10n.hrTenantIdLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrTenantIdLabel),
-          ),
-        ),
-        AppDateField(
-          value: _periodStart,
-          labelText: l10n.hrPeriodStartLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _periodStart = value),
-        ),
-        AppDateField(
-          value: _periodEnd,
-          labelText: l10n.hrPeriodEndLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _periodEnd = value),
-        ),
-      ],
-    );
-  }
-}
-
-class _CompensationFields extends StatefulWidget {
-  const _CompensationFields({required this.staff, super.key});
-
-  final HrStaffProfile staff;
-
-  @override
-  State<_CompensationFields> createState() => _CompensationFieldsState();
-}
-
-class _CompensationFieldsState extends State<_CompensationFields> {
-  late final TextEditingController _currencyController;
-  late final TextEditingController _hourlyRateController;
-  late final TextEditingController _monthlyRateController;
-  late final TextEditingController _procedureRateController;
-  DateTime? _effectiveFrom = DateTime.now();
-  DateTime? _effectiveTo;
-
-  @override
-  void initState() {
-    super.initState();
-    final String currency = widget.staff.compensations.isNotEmpty
-        ? widget.staff.compensations.first.currency ?? ''
-        : widget.staff.consultationCurrency ?? '';
-    _currencyController = TextEditingController(
-      text: currency.trim().isEmpty ? 'USD' : currency,
-    );
-    _hourlyRateController = TextEditingController(
-      text:
-          _rateFor('PER_HOUR')?.toString() ??
-          widget.staff.consultationFee?.toString() ??
-          '',
-    );
-    _monthlyRateController = TextEditingController(
-      text: _rateFor('PER_MONTH')?.toString() ?? '',
-    );
-    _procedureRateController = TextEditingController(
-      text: _rateFor('PER_PROCEDURE')?.toString() ?? '',
-    );
-    if (widget.staff.compensations.isNotEmpty) {
-      _effectiveFrom = widget.staff.compensations.first.effectiveFrom;
-      _effectiveTo = widget.staff.compensations.first.effectiveTo;
-    }
-  }
-
-  @override
-  void dispose() {
-    _currencyController.dispose();
-    _hourlyRateController.dispose();
-    _monthlyRateController.dispose();
-    _procedureRateController.dispose();
-    super.dispose();
-  }
-
-  num? _rateFor(String payType) {
-    for (final HrStaffCompensation compensation in widget.staff.compensations) {
-      if ((compensation.payType ?? '').toUpperCase() == payType) {
-        return compensation.rate;
-      }
-    }
-    return null;
-  }
-
-  Map<String, Object?> toPayload() {
-    final String currency = _currencyController.text.trim().toUpperCase();
-    final List<Map<String, Object?>> compensations = <Map<String, Object?>>[];
-    void addCompensation(String payType, TextEditingController controller) {
-      final num? rate = num.tryParse(controller.text.trim());
-      if (rate == null) {
-        return;
-      }
-      compensations.add(<String, Object?>{
-        'pay_type': payType,
-        'rate': rate,
-        'currency': currency,
-        'effective_from': _datePayload(_effectiveFrom),
-        'effective_to': _datePayload(_effectiveTo),
-      });
-    }
-
-    addCompensation('PER_HOUR', _hourlyRateController);
-    addCompensation('PER_MONTH', _monthlyRateController);
-    addCompensation('PER_PROCEDURE', _procedureRateController);
-    return <String, Object?>{'compensations': compensations};
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppTextField(
-          controller: _currencyController,
-          labelText: l10n.hrConsultationCurrencyLabel,
-          isRequired: true,
-          textCapitalization: TextCapitalization.characters,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrConsultationCurrencyLabel),
-          ),
-        ),
-        AppTextField(
-          controller: _hourlyRateController,
-          labelText: l10n.hrCompensationHourlyRateLabel,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-        ),
-        AppTextField(
-          controller: _monthlyRateController,
-          labelText: l10n.hrCompensationMonthlyRateLabel,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-        ),
-        AppTextField(
-          controller: _procedureRateController,
-          labelText: l10n.hrCompensationProcedureRateLabel,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-        ),
-        AppDateField(
-          value: _effectiveFrom,
-          labelText: l10n.hrEffectiveFromLabel,
-          isRequired: true,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) =>
-              setState(() => _effectiveFrom = value),
-        ),
-        AppDateField(
-          value: _effectiveTo,
-          labelText: l10n.hrEffectiveToLabel,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          pickerButtonLabel: l10n.hrPickDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _effectiveTo = value),
-        ),
-      ],
-    );
-  }
-}
-
 class _ReasonFields extends StatefulWidget {
   const _ReasonFields({required this.requiredReason, super.key});
 
@@ -2344,15 +2240,6 @@ String _workItemPeriod(BuildContext context, HrWorkItem item) {
   ).ifEmpty(context.l10n.profileUnknownValue);
 }
 
-String _availabilitySlotSummary(HrStaffAvailability availability) {
-  if (availability.timeSlots.isNotEmpty) {
-    return availability.timeSlots
-        .map((HrAvailabilitySlot slot) => '${slot.startTime}-${slot.endTime}')
-        .join(', ');
-  }
-  return _joinDisplay(<String?>[availability.startTime, availability.endTime]);
-}
-
 String _queueLabel(AppLocalizations l10n, HrQueue queue) =>
     hrQueueLabel(l10n, queue);
 
@@ -2478,13 +2365,6 @@ String _dateRange(BuildContext context, DateTime? start, DateTime? end) {
     _formatDate(context, start),
     _formatDate(context, end),
   ]);
-}
-
-String? _datePayload(DateTime? value) {
-  if (value == null) {
-    return null;
-  }
-  return DateTime(value.year, value.month, value.day).toUtc().toIso8601String();
 }
 
 String _joinDisplay(Iterable<String?> values) {

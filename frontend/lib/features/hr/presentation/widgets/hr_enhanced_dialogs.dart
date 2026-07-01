@@ -484,22 +484,44 @@ Future<void> showHrEndAssignmentDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
+  DateTime endDate = DateTime.now();
   final bool? saved = await showAppDialog<bool>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (BuildContext dialogContext) => AppDialog(
       title: Text(l10n.hrEndAssignmentDialogTitle),
       icon: const Icon(Icons.event_busy_outlined),
-      content: Text(l10n.hrEndAssignmentAction),
+      content: AppDateField(
+        value: endDate,
+        labelText: l10n.hrEndAssignmentDateLabel,
+        isRequired: true,
+        firstDate: assignment.startDate ?? DateTime(2020),
+        lastDate: DateTime(2100),
+        currentDate: DateTime.now(),
+        pickerButtonLabel: l10n.hrPickDateAction,
+        invalidDateMessage: l10n.appDateInvalidMessage,
+        onChanged: (DateTime? value) {
+          if (value != null) {
+            endDate = value;
+          }
+        },
+      ),
       actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
         AppButton(
           label: l10n.hrEndAssignmentAction,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
         ),
       ],
     ),
   );
   if (saved == true && context.mounted) {
-    final AppFailure? failure = await controller.endAssignment(assignment);
+    final AppFailure? failure = await controller.endAssignment(
+      assignment,
+      endDate: endDate,
+    );
     if (context.mounted) {
       showHrMutationSnackBar(context, failure);
     }

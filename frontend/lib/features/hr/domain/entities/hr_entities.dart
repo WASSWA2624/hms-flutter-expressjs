@@ -338,6 +338,9 @@ final class HrStaffProfile {
     this.hireDate,
     this.status,
     this.updatedAt,
+    this.separationType,
+    this.separationDate,
+    this.separationNotes,
   });
 
   final String id;
@@ -360,6 +363,13 @@ final class HrStaffProfile {
   final DateTime? hireDate;
   final String? status;
   final DateTime? updatedAt;
+  final String? separationType;
+  final DateTime? separationDate;
+  final String? separationNotes;
+
+  bool get isSeparated =>
+      (status ?? '').trim().toUpperCase() == 'SEPARATED' ||
+      separationDate != null;
 
   String get effectiveId => displayId ?? id;
 
@@ -402,6 +412,9 @@ final class HrStaffProfile {
     DateTime? hireDate,
     String? status,
     DateTime? updatedAt,
+    String? separationType,
+    DateTime? separationDate,
+    String? separationNotes,
   }) {
     return HrStaffProfile(
       id: id,
@@ -424,6 +437,9 @@ final class HrStaffProfile {
       hireDate: hireDate ?? this.hireDate,
       status: status ?? this.status,
       updatedAt: updatedAt ?? this.updatedAt,
+      separationType: separationType ?? this.separationType,
+      separationDate: separationDate ?? this.separationDate,
+      separationNotes: separationNotes ?? this.separationNotes,
     );
   }
 }
@@ -617,11 +633,17 @@ final class HrStaffAssignment {
     this.departmentName,
     this.departmentDisplayId,
     this.unitId,
+    this.unitName,
+    this.unitDisplayId,
     this.roomId,
+    this.roomName,
+    this.roomDisplayId,
     this.startDate,
     this.endDate,
     this.isPrimary = false,
     this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -631,11 +653,17 @@ final class HrStaffAssignment {
   final String? departmentName;
   final String? departmentDisplayId;
   final String? unitId;
+  final String? unitName;
+  final String? unitDisplayId;
   final String? roomId;
+  final String? roomName;
+  final String? roomDisplayId;
   final DateTime? startDate;
   final DateTime? endDate;
   final bool isPrimary;
   final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   String get effectiveId => displayId ?? id;
 }
@@ -741,6 +769,10 @@ final class HrShiftAssignment {
     required this.id,
     this.displayId,
     this.shiftId,
+    this.shiftName,
+    this.shiftType,
+    this.shiftStatus,
+    this.rosterPeriodLabel,
     this.staffProfileId,
     this.assignedAt,
   });
@@ -748,6 +780,10 @@ final class HrShiftAssignment {
   final String id;
   final String? displayId;
   final String? shiftId;
+  final String? shiftName;
+  final String? shiftType;
+  final String? shiftStatus;
+  final String? rosterPeriodLabel;
   final String? staffProfileId;
   final DateTime? assignedAt;
 }

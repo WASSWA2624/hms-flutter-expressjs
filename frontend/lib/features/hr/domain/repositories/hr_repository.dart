@@ -116,6 +116,11 @@ abstract interface class HrRepository {
 
   Future<Result<HrPayrollPreview>> previewPayrollRun(String payrollRunId);
 
+  Future<Result<Object?>> offboardStaff(
+    String staffProfileId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<HrRosterGenerateResult>> generateRosterPreview(
     String rosterId, {
     bool replaceExistingAssignments = true,

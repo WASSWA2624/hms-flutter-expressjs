@@ -98,6 +98,16 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.hr_workspace.resolve_legacy.success', data);
 });
 
+const offboardStaff = asyncHandler(async (req, res) => {
+  const data = await hrWorkspaceService.offboardStaff(
+    req.params.staffProfileIdentifier,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.hr_workspace.staff_offboard.success', data);
+});
+
 module.exports = {
   getWorkspace,
   getWorkItems,
@@ -114,5 +124,6 @@ module.exports = {
   rejectLeave,
   previewPayrollRun,
   processPayrollRun,
+  offboardStaff,
   resolveLegacyRoute,
 };
