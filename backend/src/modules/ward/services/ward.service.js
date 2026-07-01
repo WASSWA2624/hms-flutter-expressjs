@@ -10,6 +10,11 @@
 const wardRepository = require('@repositories/ward/ward.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+  resolveEntityId,
+} = require('@lib/billing/identifiers');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -37,6 +42,77 @@ const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorU
   });
 };
 
+const emptyListResult = (page, limit) => ({
+  wards: [],
+  pagination: {
+    page,
+    limit,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: page > 1,
+  },
+});
+
+const resolveWardFilterId = async (filters, field, model) => {
+  if (!filters?.[field]) return undefined;
+  const resolved = await resolveIdentifierForFilter({
+    value: filters[field],
+    model,
+    where: { deleted_at: null },
+  });
+  if (resolved === null) return null;
+  return resolved;
+};
+
+const normalizeCreatePayload = async (data = {}) => ({
+  ...data,
+  tenant_id: await resolveIdentifierForPayload({
+    value: data.tenant_id,
+    model: 'tenant',
+    field: 'tenant_id',
+    where: { deleted_at: null },
+  }),
+  facility_id: await resolveIdentifierForPayload({
+    value: data.facility_id,
+    model: 'facility',
+    field: 'facility_id',
+    where: { deleted_at: null },
+  }),
+  department_id: await resolveIdentifierForPayload({
+    value: data.department_id,
+    model: 'department',
+    field: 'department_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+});
+
+const normalizeUpdatePayload = async (data = {}) => {
+  const payload = { ...data };
+
+  if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
+    payload.facility_id = await resolveIdentifierForPayload({
+      value: data.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      where: { deleted_at: null },
+    });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'department_id')) {
+    payload.department_id = await resolveIdentifierForPayload({
+      value: data.department_id,
+      model: 'department',
+      field: 'department_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+  }
+
+  return payload;
+};
+
 /**
  * List wards with pagination and filters
  *
@@ -54,20 +130,19 @@ const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorU
  * @returns {Promise<Object>} Paginated wards
  */
 const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
-  // Build repository filters
   const repoFilters = {};
 
-  if (filters.tenant_id) {
-    repoFilters.tenant_id = filters.tenant_id;
-  }
+  const tenantId = await resolveWardFilterId(filters, 'tenant_id', 'tenant');
+  if (filters.tenant_id && tenantId === null) return emptyListResult(page, limit);
+  if (tenantId) repoFilters.tenant_id = tenantId;
 
-  if (filters.facility_id) {
-    repoFilters.facility_id = filters.facility_id;
-  }
+  const facilityId = await resolveWardFilterId(filters, 'facility_id', 'facility');
+  if (filters.facility_id && facilityId === null) return emptyListResult(page, limit);
+  if (facilityId) repoFilters.facility_id = facilityId;
 
-  if (filters.department_id) {
-    repoFilters.department_id = filters.department_id;
-  }
+  const departmentId = await resolveWardFilterId(filters, 'department_id', 'department');
+  if (filters.department_id && departmentId === null) return emptyListResult(page, limit);
+  if (departmentId) repoFilters.department_id = departmentId;
 
   if (filters.ward_type) {
     repoFilters.ward_type = filters.ward_type;
@@ -120,7 +195,12 @@ const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
  * @returns {Promise<Object>} Ward data
  */
 const getWardById = async (id) => {
-  const ward = await wardRepository.findById(id);
+  const resolvedId = await resolveEntityId({
+    model: 'ward',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const ward = await wardRepository.findById(resolvedId);
   
   if (!ward) {
     throw new HttpError('errors.ward.not_found', 404);
@@ -136,8 +216,12 @@ const getWardById = async (id) => {
  * @returns {Promise<Object>} Ward with beds
  */
 const getWardBeds = async (wardId) => {
-  // Verify ward exists
-  const ward = await wardRepository.findById(wardId);
+  const resolvedId = await resolveEntityId({
+    model: 'ward',
+    identifier: wardId,
+    where: { deleted_at: null },
+  });
+  const ward = await wardRepository.findById(resolvedId);
   
   if (!ward) {
     throw new HttpError('errors.ward.not_found', 404);
@@ -165,8 +249,8 @@ const getWardBeds = async (wardId) => {
  * @returns {Promise<Object>} Created ward
  */
 const createWard = async (data, context = {}) => {
-  // Create ward
-  const ward = await wardRepository.create(data);
+  const payload = await normalizeCreatePayload(data);
+  const ward = await wardRepository.create(payload);
 
   // Create audit log
   await createAuditLog({
@@ -216,21 +300,25 @@ const createWard = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated ward
  */
 const updateWard = async (id, data, context = {}) => {
-  // Check if ward exists and get before state
-  const beforeWard = await wardRepository.findById(id);
-  
+  const resolvedId = await resolveEntityId({
+    model: 'ward',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const beforeWard = await wardRepository.findById(resolvedId);
+
   if (!beforeWard) {
     throw new HttpError('errors.ward.not_found', 404);
   }
 
-  // Update ward
-  const ward = await wardRepository.update(id, data);
+  const payload = await normalizeUpdatePayload(data);
+  const ward = await wardRepository.update(beforeWard.id, payload);
 
   // Create audit log
   await createAuditLog({
     action: 'WARD_UPDATED',
     entity: 'ward',
-    entity_id: id,
+    entity_id: beforeWard.id,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -276,21 +364,23 @@ const updateWard = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteWard = async (id, context = {}) => {
-  // Check if ward exists
-  const ward = await wardRepository.findById(id);
-  
+  const resolvedId = await resolveEntityId({
+    model: 'ward',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const ward = await wardRepository.findById(resolvedId);
+
   if (!ward) {
     throw new HttpError('errors.ward.not_found', 404);
   }
 
-  // Soft delete ward
-  await wardRepository.softDelete(id);
+  await wardRepository.softDelete(ward.id);
 
-  // Create audit log
   await createAuditLog({
     action: 'WARD_DELETED',
     entity: 'ward',
-    entity_id: id,
+    entity_id: ward.id,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,

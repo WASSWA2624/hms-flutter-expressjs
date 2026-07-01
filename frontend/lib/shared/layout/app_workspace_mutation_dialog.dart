@@ -47,6 +47,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
   bool initialMaximized = false,
   bool barrierDismissible = false,
   bool showCancelButton = true,
+  bool scrollable = true,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -56,6 +57,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       icon: icon,
       maxWidth: maxWidth,
       initialMaximized: initialMaximized,
+      scrollable: scrollable,
       buildFields: buildFields,
       onSubmit: onSubmit,
       cancelLabel: cancelLabel,
@@ -80,12 +82,14 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
     this.maxWidth = 600,
     this.initialMaximized = false,
     this.showCancelButton = true,
+    this.scrollable = true,
   });
 
   final Widget title;
   final Widget? icon;
   final double maxWidth;
   final bool initialMaximized;
+  final bool scrollable;
   final Widget Function(
     BuildContext context,
     GlobalKey<FormState> formKey,
@@ -190,7 +194,7 @@ class _AppWorkspaceMutationDialogState
     return AppDialog(
       title: widget.title,
       icon: widget.icon,
-      scrollable: true,
+      scrollable: widget.scrollable,
       pinActionsToBottom: true,
       maxWidth: widget.maxWidth,
       initialMaximized: widget.initialMaximized,

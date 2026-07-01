@@ -94,7 +94,7 @@ describe('Unit Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid department_id UUID', () => {
+    it('should reject invalid department_id identifier', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         department_id: 'not-a-uuid',
@@ -102,6 +102,19 @@ describe('Unit Schema Validation', () => {
       };
       const result = createUnitSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
+    });
+
+    it('should validate friendly department_id', () => {
+      const validData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        department_id: 'DEPT001',
+        name: 'ICU Unit',
+      };
+      const result = createUnitSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.department_id).toBe('DEPT001');
+      }
     });
 
     it('should reject missing name', () => {

@@ -36,6 +36,7 @@ Future<void> showHrCompensationDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 720,
+    scrollable: false,
     buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
       AppFailure? failure,
     ]) {
@@ -172,6 +173,20 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     }
   }
 
+  void _focusPayStructure({String? payType}) {
+    final String? focus = payType?.trim().toUpperCase();
+    if (focus != null && focus.isNotEmpty) {
+      final bool hasLine = _lines.any(
+        (HrCompensationLineData line) => !line.removed && line.payType == focus,
+      );
+      if (!hasLine) {
+        _addLine(defaultPayType: focus);
+      }
+    }
+    _tabController.index = 0;
+    setState(() {});
+  }
+
   void _addLine({String? defaultPayType}) {
     final Set<String> used = _lines
         .where((HrCompensationLineData line) => !line.removed)
@@ -246,6 +261,7 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
             controller: _tabController,
             children: <Widget>[
               SingleChildScrollView(
+                primary: false,
                 padding: EdgeInsets.only(top: theme.spacing.md),
                 child: AppFormSection(
                   title: l10n.hrStaffOnboardingCompensationSectionTitle,
@@ -280,6 +296,7 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                 ),
               ),
               ListView(
+                primary: false,
                 padding: EdgeInsets.only(top: theme.spacing.md),
                 children: <Widget>[
                   for (final MapEntry<String, List<HrStaffCompensation>> entry
@@ -320,13 +337,12 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                             onTap: () => showHrCompensationDetailDialog(
                               context,
                               item,
-                              () => showHrCompensationDialog(
-                                context,
-                                ref,
-                                widget.staff,
-                                widget.history,
-                                focusPayType: item.payType,
-                              ),
+                              () {
+                                if (!mounted) {
+                                  return;
+                                }
+                                _focusPayStructure(payType: item.payType);
+                              },
                             ),
                           ),
                       ],

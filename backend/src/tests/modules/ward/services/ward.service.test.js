@@ -10,6 +10,19 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/ward/ward.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
+  resolveIdentifierForPayload: jest.fn(async ({ value, nullable }) => {
+    if (value === undefined) return undefined;
+    if (value === null) return nullable ? null : value;
+    return value;
+  }),
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
+}));
+jest.mock('@lib/websocket', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined),
+  FACILITY_LAYOUT_EVENTS: { FACILITY_LAYOUT_UPDATED: 'facility_layout_updated' },
+}));
 
 const wardRepository = require('@repositories/ward/ward.repository');
 const { createAuditLog } = require('@lib/audit');

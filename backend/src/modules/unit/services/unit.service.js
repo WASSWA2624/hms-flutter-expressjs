@@ -10,64 +10,120 @@
 const unitRepository = require('@repositories/unit/unit.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+  resolveEntityId,
+} = require('@lib/billing/identifiers');
+
+const emptyListResult = (page, limit) => ({
+  units: [],
+  pagination: {
+    page,
+    limit,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: page > 1,
+  },
+});
+
+const resolveUnitFilterId = async (filters, field, model) => {
+  if (!filters?.[field]) return undefined;
+  const resolved = await resolveIdentifierForFilter({
+    value: filters[field],
+    model,
+    where: { deleted_at: null },
+  });
+  if (resolved === null) return null;
+  return resolved;
+};
+
+const normalizeCreatePayload = async (data = {}) => ({
+  ...data,
+  tenant_id: await resolveIdentifierForPayload({
+    value: data.tenant_id,
+    model: 'tenant',
+    field: 'tenant_id',
+    where: { deleted_at: null },
+  }),
+  facility_id: await resolveIdentifierForPayload({
+    value: data.facility_id,
+    model: 'facility',
+    field: 'facility_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+  department_id: await resolveIdentifierForPayload({
+    value: data.department_id,
+    model: 'department',
+    field: 'department_id',
+    where: { deleted_at: null },
+    nullable: true,
+  }),
+});
+
+const normalizeUpdatePayload = async (data = {}) => {
+  const payload = { ...data };
+
+  if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
+    payload.facility_id = await resolveIdentifierForPayload({
+      value: data.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'department_id')) {
+    payload.department_id = await resolveIdentifierForPayload({
+      value: data.department_id,
+      model: 'department',
+      field: 'department_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+  }
+
+  return payload;
+};
 
 /**
  * List units with pagination and filters
- *
- * @param {Object} filters - Filter criteria
- * @param {string} [filters.tenant_id] - Filter by tenant ID
- * @param {string} [filters.facility_id] - Filter by facility ID
- * @param {string} [filters.department_id] - Filter by department ID
- * @param {boolean} [filters.is_active] - Filter by active status
- * @param {string} [filters.search] - Search by name
- * @param {number} page - Page number
- * @param {number} limit - Items per page
- * @param {string} [sort_by] - Field to sort by
- * @param {string} [order] - Sort order (asc/desc)
- * @returns {Promise<Object>} Paginated units
  */
 const listUnits = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
-  // Build repository filters
   const repoFilters = {};
 
-  if (filters.tenant_id) {
-    repoFilters.tenant_id = filters.tenant_id;
-  }
+  const tenantId = await resolveUnitFilterId(filters, 'tenant_id', 'tenant');
+  if (filters.tenant_id && tenantId === null) return emptyListResult(page, limit);
+  if (tenantId) repoFilters.tenant_id = tenantId;
 
-  if (filters.facility_id) {
-    repoFilters.facility_id = filters.facility_id;
-  }
+  const facilityId = await resolveUnitFilterId(filters, 'facility_id', 'facility');
+  if (filters.facility_id && facilityId === null) return emptyListResult(page, limit);
+  if (facilityId) repoFilters.facility_id = facilityId;
 
-  if (filters.department_id) {
-    repoFilters.department_id = filters.department_id;
-  }
+  const departmentId = await resolveUnitFilterId(filters, 'department_id', 'department');
+  if (filters.department_id && departmentId === null) return emptyListResult(page, limit);
+  if (departmentId) repoFilters.department_id = departmentId;
 
   if (filters.is_active !== undefined) {
     repoFilters.is_active = filters.is_active === true || filters.is_active === 'true';
   }
 
-  // Handle search filter
   if (filters.search) {
     repoFilters.name = { contains: filters.search, mode: 'insensitive' };
   }
 
-  // Calculate pagination
   const skip = (page - 1) * limit;
+  const orderBy = { [sort_by]: order };
 
-  // Build sort order
-  const orderBy = {};
-  orderBy[sort_by] = order;
-
-  // Fetch units and count
   const [units, total] = await Promise.all([
     unitRepository.findMany(repoFilters, skip, limit, orderBy),
-    unitRepository.count(repoFilters)
+    unitRepository.count(repoFilters),
   ]);
 
-  // Calculate pagination metadata
   const totalPages = Math.ceil(total / limit);
-  const hasNextPage = page < totalPages;
-  const hasPreviousPage = page > 1;
 
   return {
     units,
@@ -76,21 +132,23 @@ const listUnits = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
       limit,
       total,
       totalPages,
-      hasNextPage,
-      hasPreviousPage
-    }
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
   };
 };
 
 /**
  * Get unit by ID
- *
- * @param {string} id - Unit ID
- * @returns {Promise<Object>} Unit data
  */
 const getUnitById = async (id) => {
-  const unit = await unitRepository.findById(id);
-  
+  const resolvedId = await resolveEntityId({
+    model: 'unit',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const unit = await unitRepository.findById(resolvedId);
+
   if (!unit) {
     throw new HttpError('errors.unit.not_found', 404);
   }
@@ -100,26 +158,11 @@ const getUnitById = async (id) => {
 
 /**
  * Create new unit
- *
- * @param {Object} data - Unit data
- * @param {string} data.tenant_id - Tenant ID
- * @param {string} [data.facility_id] - Facility ID
- * @param {string} [data.department_id] - Department ID
- * @param {string} data.name - Unit name
- * @param {boolean} [data.is_active] - Active status
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<Object>} Created unit
  */
 const createUnit = async (data, context = {}) => {
-  // Create unit
-  const unit = await unitRepository.create(data);
+  const payload = await normalizeCreatePayload(data);
+  const unit = await unitRepository.create(payload);
 
-  // Create audit log
   await createAuditLog({
     action: 'UNIT_CREATED',
     entity: 'unit',
@@ -134,8 +177,8 @@ const createUnit = async (data, context = {}) => {
       facility_id: unit.facility_id,
       department_id: unit.department_id,
       name: unit.name,
-      is_active: unit.is_active
-    }
+      is_active: unit.is_active,
+    },
   });
 
   return unit;
@@ -143,37 +186,26 @@ const createUnit = async (data, context = {}) => {
 
 /**
  * Update unit
- *
- * @param {string} id - Unit ID
- * @param {Object} data - Update data
- * @param {string} [data.facility_id] - Facility ID
- * @param {string} [data.department_id] - Department ID
- * @param {string} [data.name] - Unit name
- * @param {boolean} [data.is_active] - Active status
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<Object>} Updated unit
  */
 const updateUnit = async (id, data, context = {}) => {
-  // Check if unit exists and get before state
-  const beforeUnit = await unitRepository.findById(id);
-  
+  const resolvedId = await resolveEntityId({
+    model: 'unit',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const beforeUnit = await unitRepository.findById(resolvedId);
+
   if (!beforeUnit) {
     throw new HttpError('errors.unit.not_found', 404);
   }
 
-  // Update unit
-  const unit = await unitRepository.update(id, data);
+  const payload = await normalizeUpdatePayload(data);
+  const unit = await unitRepository.update(beforeUnit.id, payload);
 
-  // Create audit log
   await createAuditLog({
     action: 'UNIT_UPDATED',
     entity: 'unit',
-    entity_id: id,
+    entity_id: beforeUnit.id,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -184,15 +216,15 @@ const updateUnit = async (id, data, context = {}) => {
         facility_id: beforeUnit.facility_id,
         department_id: beforeUnit.department_id,
         name: beforeUnit.name,
-        is_active: beforeUnit.is_active
+        is_active: beforeUnit.is_active,
       },
       after: {
         facility_id: unit.facility_id,
         department_id: unit.department_id,
         name: unit.name,
-        is_active: unit.is_active
-      }
-    }
+        is_active: unit.is_active,
+      },
+    },
   });
 
   return unit;
@@ -200,32 +232,25 @@ const updateUnit = async (id, data, context = {}) => {
 
 /**
  * Delete unit (soft delete)
- *
- * @param {string} id - Unit ID
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<void>}
  */
 const deleteUnit = async (id, context = {}) => {
-  // Check if unit exists
-  const unit = await unitRepository.findById(id);
-  
+  const resolvedId = await resolveEntityId({
+    model: 'unit',
+    identifier: id,
+    where: { deleted_at: null },
+  });
+  const unit = await unitRepository.findById(resolvedId);
+
   if (!unit) {
     throw new HttpError('errors.unit.not_found', 404);
   }
 
-  // Soft delete unit
-  await unitRepository.softDelete(id);
+  await unitRepository.softDelete(unit.id);
 
-  // Create audit log
   await createAuditLog({
     action: 'UNIT_DELETED',
     entity: 'unit',
-    entity_id: id,
+    entity_id: unit.id,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -235,8 +260,8 @@ const deleteUnit = async (id, context = {}) => {
       tenant_id: unit.tenant_id,
       facility_id: unit.facility_id,
       department_id: unit.department_id,
-      name: unit.name
-    }
+      name: unit.name,
+    },
   });
 };
 
@@ -245,5 +270,5 @@ module.exports = {
   getUnitById,
   createUnit,
   updateUnit,
-  deleteUnit
+  deleteUnit,
 };

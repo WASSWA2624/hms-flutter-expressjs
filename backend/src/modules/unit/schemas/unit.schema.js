@@ -8,9 +8,9 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidSchema, 
-  listQuerySchema 
+const {
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
@@ -20,11 +20,11 @@ const {
  * Used for POST /units endpoint
  */
 const createUnitSchema = z.object({
-  tenant_id: uuidSchema,
-  facility_id: uuidSchema.optional().nullable(),
-  department_id: uuidSchema.optional().nullable(),
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
-  is_active: z.boolean().optional()
+  is_active: z.boolean().optional(),
 });
 
 /**
@@ -33,10 +33,10 @@ const createUnitSchema = z.object({
  * All fields optional for partial updates
  */
 const updateUnitSchema = z.object({
-  facility_id: uuidSchema.optional().nullable(),
-  department_id: uuidSchema.optional().nullable(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
-  is_active: z.boolean().optional()
+  is_active: z.boolean().optional(),
 });
 
 // ==================== URL Params ====================
@@ -46,7 +46,7 @@ const updateUnitSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const unitIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema,
 });
 
 // ==================== Query Params ====================
@@ -57,16 +57,16 @@ const unitIdParamsSchema = z.object({
  * Extends base listQuerySchema with unit-specific filters
  */
 const listUnitsQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
-  department_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  department_id: uuidOrFriendlyIdentifierSchema.optional(),
   is_active: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
 });
 
 module.exports = {
   createUnitSchema,
   updateUnitSchema,
   unitIdParamsSchema,
-  listUnitsQuerySchema
+  listUnitsQuerySchema,
 };

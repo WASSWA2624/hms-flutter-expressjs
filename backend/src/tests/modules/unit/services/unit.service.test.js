@@ -10,6 +10,15 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/unit/unit.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
+  resolveIdentifierForPayload: jest.fn(async ({ value, nullable }) => {
+    if (value === undefined) return undefined;
+    if (value === null) return nullable ? null : value;
+    return value;
+  }),
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
+}));
 
 const unitRepository = require('@repositories/unit/unit.repository');
 const { createAuditLog } = require('@lib/audit');
