@@ -143,7 +143,7 @@ Future<void> showHrModuleAccessDialog(
           label: l10n.hrManageAccessAction,
           onPressed: () {
             Navigator.of(context).maybePop();
-            unawaited(showHrAccessWorkspaceDialog(context, ref));
+            unawaited(showHrAccessWorkspaceDialog(context));
           },
         ),
       ],

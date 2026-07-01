@@ -78,7 +78,7 @@ class _AccessDialogLauncher extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ElevatedButton(
-      onPressed: () => showHrAccessWorkspaceDialog(context, ref),
+      onPressed: () => showHrAccessWorkspaceDialog(context),
       child: const Text('Open access'),
     );
   }

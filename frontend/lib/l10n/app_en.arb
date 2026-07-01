@@ -17811,7 +17811,7 @@
   "@hrSelectUserLabel": {
     "description": "Label for selecting an existing user when onboarding staff."
   },
-  "hrCreateUserAction": "Create user account",
+  "hrCreateUserAction": "Create staff",
   "@hrCreateUserAction": {
     "description": "Action to create a new user account during staff onboarding."
   },
@@ -17879,7 +17879,7 @@
   "@hrAccessWorkspaceDescription": {
     "description": "Body text for the HR access management dialog."
   },
-  "hrAccessPanelUsers": "Users",
+  "hrAccessPanelUsers": "Staff",
   "@hrAccessPanelUsers": {
     "description": "Users tab in HR access workspace."
   },
@@ -17895,7 +17895,7 @@
   "@hrAccessSearchLabel": {
     "description": "Search field label in HR access workspace."
   },
-  "hrAccessEmptyUsersLabel": "No staff user accounts match your search.",
+  "hrAccessEmptyUsersLabel": "No staff accounts match your search.",
   "@hrAccessEmptyUsersLabel": {
     "description": "Empty state for HR user directory."
   },
@@ -17954,6 +17954,28 @@
   "hrAccessInitialRolesLabel": "Initial roles",
   "@hrAccessInitialRolesLabel": {
     "description": "Section label for assigning roles during user creation."
+  },
+  "hrAccessPermissionCountLabel": "{count, plural, =0{No permissions} other{{count} permissions}}",
+  "@hrAccessPermissionCountLabel": {
+    "description": "Permission count for an access role table column.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrAccessStaffAssignmentCountLabel": "{count, plural, =0{No staff} other{{count} staff}}",
+  "@hrAccessStaffAssignmentCountLabel": {
+    "description": "Staff assignment count for an access role table column.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hrAccessSystemColumnLabel": "System",
+  "@hrAccessSystemColumnLabel": {
+    "description": "Column header for system-critical role indicator."
   },
   "hrAccessRoleSummary": "{permissionCount, plural, =0{No permissions} other{{permissionCount} permissions}} · {userCount, plural, =0{No assignments} other{{userCount} assignments}}",
   "@hrAccessRoleSummary": {
@@ -18359,10 +18381,6 @@
   "hrShiftTemplateNameLabel": "Template name",
   "@hrShiftTemplateNameLabel": {
     "description": "Label for shift template name field."
-  },
-  "hrShiftTypeLabel": "Shift type",
-  "@hrShiftTypeLabel": {
-    "description": "Label for shift type field."
   },
   "hrPreviewPayrollAction": "Preview payroll",
   "@hrPreviewPayrollAction": {

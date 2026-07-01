@@ -238,7 +238,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             tooltip: l10n.hrManageAccessAction,
             onPressed: state.isRefreshing
                 ? null
-                : () => showHrAccessWorkspaceDialog(context, ref),
+                : () => showHrAccessWorkspaceDialog(context),
           ),
           AppButton.secondary(
             label: l10n.hrManageScheduleTemplatesTitle,

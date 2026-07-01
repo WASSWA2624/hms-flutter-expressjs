@@ -13721,7 +13721,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrSelectUserLabel => 'Link user account';
 
   @override
-  String get hrCreateUserAction => 'Create user account';
+  String get hrCreateUserAction => 'Create staff';
 
   @override
   String get hrCreateUserDialogTitle => 'Create user account';
@@ -13773,7 +13773,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage staff user accounts, roles, and permissions for your organization.';
 
   @override
-  String get hrAccessPanelUsers => 'Users';
+  String get hrAccessPanelUsers => 'Staff';
 
   @override
   String get hrAccessPanelRoles => 'Roles';
@@ -13785,8 +13785,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessSearchLabel => 'Search';
 
   @override
-  String get hrAccessEmptyUsersLabel =>
-      'No staff user accounts match your search.';
+  String get hrAccessEmptyUsersLabel => 'No staff accounts match your search.';
 
   @override
   String get hrAccessEmptyRolesLabel => 'No roles match your search.';
@@ -13830,6 +13829,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrAccessInitialRolesLabel => 'Initial roles';
+
+  @override
+  String hrAccessPermissionCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count permissions',
+      zero: 'No permissions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hrAccessStaffAssignmentCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count staff',
+      zero: 'No staff',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hrAccessSystemColumnLabel => 'System';
 
   @override
   String hrAccessRoleSummary(int permissionCount, int userCount) {

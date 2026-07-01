@@ -25806,7 +25806,7 @@ abstract class AppLocalizations {
   /// Action to create a new user account during staff onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Create user account'**
+  /// **'Create staff'**
   String get hrCreateUserAction;
 
   /// Dialog title for creating a user account from HR.
@@ -25908,7 +25908,7 @@ abstract class AppLocalizations {
   /// Users tab in HR access workspace.
   ///
   /// In en, this message translates to:
-  /// **'Users'**
+  /// **'Staff'**
   String get hrAccessPanelUsers;
 
   /// Roles tab in HR access workspace.
@@ -25932,7 +25932,7 @@ abstract class AppLocalizations {
   /// Empty state for HR user directory.
   ///
   /// In en, this message translates to:
-  /// **'No staff user accounts match your search.'**
+  /// **'No staff accounts match your search.'**
   String get hrAccessEmptyUsersLabel;
 
   /// Empty state for HR role list.
@@ -26018,6 +26018,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Initial roles'**
   String get hrAccessInitialRolesLabel;
+
+  /// Permission count for an access role table column.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No permissions} other{{count} permissions}}'**
+  String hrAccessPermissionCountLabel(int count);
+
+  /// Staff assignment count for an access role table column.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No staff} other{{count} staff}}'**
+  String hrAccessStaffAssignmentCountLabel(int count);
+
+  /// Column header for system-critical role indicator.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get hrAccessSystemColumnLabel;
 
   /// Summary line for a role row.
   ///
@@ -26433,7 +26451,7 @@ abstract class AppLocalizations {
   /// **'Shift details'**
   String get hrShiftDetailDialogTitle;
 
-  /// Label for shift type field.
+  /// Label for shift type.
   ///
   /// In en, this message translates to:
   /// **'Shift type'**
