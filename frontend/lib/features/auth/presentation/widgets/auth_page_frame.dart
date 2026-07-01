@@ -71,7 +71,16 @@ class AuthPageFrame extends StatelessWidget {
       showOptionalIndicators: true,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: content,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final Widget frame = content;
+            if (constraints.hasBoundedHeight &&
+                constraints.maxHeight.isFinite) {
+              return SingleChildScrollView(child: frame);
+            }
+            return frame;
+          },
+        ),
       ),
     );
   }

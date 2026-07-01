@@ -27,12 +27,14 @@ class AuthShellLayout extends StatelessWidget {
               _ => constraints.maxWidth.clamp(0, 560),
             };
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(theme.spacing.lg),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxFormWidth),
+            final EdgeInsets pagePadding = EdgeInsets.all(theme.spacing.lg);
+
+            return Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxFormWidth),
+                child: Padding(
+                  padding: pagePadding,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
@@ -41,7 +43,11 @@ class AuthShellLayout extends StatelessWidget {
                         displayName: displayName,
                       ),
                       SizedBox(height: theme.spacing.xl),
-                      child,
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: child,
+                        ),
+                      ),
                     ],
                   ),
                 ),
