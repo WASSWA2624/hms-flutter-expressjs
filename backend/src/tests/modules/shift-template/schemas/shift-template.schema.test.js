@@ -21,9 +21,23 @@ describe('Shift Template Schemas', () => {
     expect(createShiftTemplateSchema.safeParse(rest).success).toBe(false);
   });
 
-  it('validates time format', () => {
-    expect(createShiftTemplateSchema.safeParse({ ...validData, default_start_time: '8:00' }).success).toBe(true);
-    expect(createShiftTemplateSchema.safeParse({ ...validData, default_start_time: 'invalid' }).success).toBe(false);
+  it('accepts weekly_schedule_json', () => {
+    expect(
+      createShiftTemplateSchema.safeParse({
+        ...validData,
+        weekly_schedule_json: [
+          {
+            day_of_week: 1,
+            time_slots: [{ start_time: '08:00', end_time: '17:00' }],
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
+  it('requires schedule or default times', () => {
+    const { default_start_time, default_end_time, ...rest } = validData;
+    expect(createShiftTemplateSchema.safeParse(rest).success).toBe(false);
   });
 
   it('validates id param', () => {

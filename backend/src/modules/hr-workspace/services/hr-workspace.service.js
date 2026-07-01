@@ -1128,7 +1128,13 @@ const getReferenceData = async (filters = {}) => {
           human_friendly_id: true,
           name: true,
           shift_type: true,
+          facility_id: true,
+          default_start_time: true,
+          default_end_time: true,
+          weekly_schedule_json: true,
           is_active: true,
+          created_at: true,
+          updated_at: true,
         },
       }),
       prisma.shift.findMany({
@@ -1320,9 +1326,15 @@ const getReferenceData = async (filters = {}) => {
       .filter(Boolean),
     shift_templates: shiftTemplates
       .map((entry) =>
-        toOption(entry, [normalizeString(entry.name), entry.shift_type, resolvePublicIdentifier(entry.human_friendly_id)].filter(Boolean).join(' | '), {
+        toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
           shift_type: entry.shift_type || null,
+          facility_id: entry.facility_id || null,
+          default_start_time: entry.default_start_time || null,
+          default_end_time: entry.default_end_time || null,
+          weekly_schedule_json: entry.weekly_schedule_json || null,
           is_active: Boolean(entry.is_active),
+          created_at: entry.created_at || null,
+          updated_at: entry.updated_at || null,
         })
       )
       .filter(Boolean),

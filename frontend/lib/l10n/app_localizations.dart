@@ -24759,6 +24759,42 @@ abstract class AppLocalizations {
   /// **'Add slot'**
   String get hrAddAvailabilitySlotAction;
 
+  /// Shared weekly schedule editor action to add a time slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add slot'**
+  String get hrAddScheduleSlotAction;
+
+  /// Shared weekly schedule editor action to remove a time slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove slot'**
+  String get hrRemoveScheduleSlotAction;
+
+  /// Shared weekly schedule editor action to copy slots to other days.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate to…'**
+  String get hrDuplicateScheduleToAction;
+
+  /// Title for the shared weekly schedule duplicate-to dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate schedule'**
+  String get hrScheduleDuplicateToDialogTitle;
+
+  /// Explains that duplicating replaces target day slots in the shared weekly schedule editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the selected days with {dayName}\'s time slots.'**
+  String hrScheduleDuplicateToDialogDescription(String dayName);
+
+  /// Shared section title for the weekly schedule editor in HR flows.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly schedule'**
+  String get hrWeeklyScheduleSectionTitle;
+
   /// Action to copy another staff member's availability schedule into the form.
   ///
   /// In en, this message translates to:
@@ -27093,35 +27129,119 @@ abstract class AppLocalizations {
   /// **'{separationType} · Last day {lastDay}'**
   String hrSeparationBannerMessage(String separationType, String lastDay);
 
-  /// Toolbar action for shift template CRUD.
+  /// Toolbar action that opens the schedule templates manage dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create schedule template'**
+  /// **'Schedule templates'**
   String get hrShiftTemplateAction;
 
   /// Dialog title for shift template create/edit.
   ///
   /// In en, this message translates to:
-  /// **'Schedule template'**
+  /// **'Schedule pattern'**
   String get hrShiftTemplateDialogTitle;
 
-  /// Action to create a shift template.
+  /// Dialog title when creating a schedule pattern.
   ///
   /// In en, this message translates to:
-  /// **'Create template'**
+  /// **'Schedule pattern'**
+  String get hrSchedulePatternCreateTitle;
+
+  /// Dialog title when editing a schedule pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit schedule pattern'**
+  String get hrSchedulePatternEditTitle;
+
+  /// Action to create a schedule pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Create schedule'**
   String get hrCreateShiftTemplateAction;
 
-  /// Action to edit a shift template.
+  /// Legacy action to edit a shift template.
   ///
   /// In en, this message translates to:
-  /// **'Edit template'**
+  /// **'Edit'**
   String get hrEditShiftTemplateAction;
 
-  /// Action to delete a shift template.
+  /// Legacy action to delete a shift template.
   ///
   /// In en, this message translates to:
-  /// **'Delete template'**
+  /// **'Delete'**
   String get hrDeleteShiftTemplateAction;
+
+  /// Icon-only edit action for schedule templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get hrSchedulePatternEditAction;
+
+  /// Icon-only delete action for schedule templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get hrSchedulePatternDeleteAction;
+
+  /// Label for the schedule template human-friendly identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Template ID'**
+  String get hrScheduleTemplateIdLabel;
+
+  /// Active status label for schedule templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get hrScheduleTemplateActiveLabel;
+
+  /// Inactive status label for schedule templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get hrScheduleTemplateInactiveLabel;
+
+  /// Generic status label in HR detail views.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get hrStatusLabel;
+
+  /// Created timestamp label in HR detail views.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get hrCreatedAtLabel;
+
+  /// Updated timestamp label in HR detail views.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get hrUpdatedAtLabel;
+
+  /// Localized label for DAY shift type.
+  ///
+  /// In en, this message translates to:
+  /// **'Day shift'**
+  String get hrShiftTypeDay;
+
+  /// Localized label for NIGHT shift type.
+  ///
+  /// In en, this message translates to:
+  /// **'Night shift'**
+  String get hrShiftTypeNight;
+
+  /// Localized label for SWING shift type.
+  ///
+  /// In en, this message translates to:
+  /// **'Swing shift'**
+  String get hrShiftTypeSwing;
+
+  /// Localized label for ON_CALL shift type.
+  ///
+  /// In en, this message translates to:
+  /// **'On call'**
+  String get hrShiftTypeOnCall;
 
   /// Label for shift template name field.
   ///

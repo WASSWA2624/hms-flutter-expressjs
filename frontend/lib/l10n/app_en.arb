@@ -17084,6 +17084,35 @@
   "@hrAddAvailabilitySlotAction": {
     "description": "Human resources workspace text for hrAddAvailabilitySlotAction."
   },
+  "hrAddScheduleSlotAction": "Add slot",
+  "@hrAddScheduleSlotAction": {
+    "description": "Shared weekly schedule editor action to add a time slot."
+  },
+  "hrRemoveScheduleSlotAction": "Remove slot",
+  "@hrRemoveScheduleSlotAction": {
+    "description": "Shared weekly schedule editor action to remove a time slot."
+  },
+  "hrDuplicateScheduleToAction": "Duplicate to…",
+  "@hrDuplicateScheduleToAction": {
+    "description": "Shared weekly schedule editor action to copy slots to other days."
+  },
+  "hrScheduleDuplicateToDialogTitle": "Duplicate schedule",
+  "@hrScheduleDuplicateToDialogTitle": {
+    "description": "Title for the shared weekly schedule duplicate-to dialog."
+  },
+  "hrScheduleDuplicateToDialogDescription": "Replace the selected days with {dayName}'s time slots.",
+  "@hrScheduleDuplicateToDialogDescription": {
+    "description": "Explains that duplicating replaces target day slots in the shared weekly schedule editor.",
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
+  "hrWeeklyScheduleSectionTitle": "Weekly schedule",
+  "@hrWeeklyScheduleSectionTitle": {
+    "description": "Shared section title for the weekly schedule editor in HR flows."
+  },
   "hrAvailabilityCopyFromStaffAction": "Copy from staff",
   "@hrAvailabilityCopyFromStaffAction": {
     "description": "Action to copy another staff member's availability schedule into the form."
@@ -18580,25 +18609,81 @@
       }
     }
   },
-  "hrShiftTemplateAction": "Create schedule template",
+  "hrShiftTemplateAction": "Schedule templates",
   "@hrShiftTemplateAction": {
-    "description": "Toolbar action for shift template CRUD."
+    "description": "Toolbar action that opens the schedule templates manage dialog."
   },
-  "hrShiftTemplateDialogTitle": "Schedule template",
+  "hrShiftTemplateDialogTitle": "Schedule pattern",
   "@hrShiftTemplateDialogTitle": {
     "description": "Dialog title for shift template create/edit."
   },
-  "hrCreateShiftTemplateAction": "Create template",
+  "hrSchedulePatternCreateTitle": "Schedule pattern",
+  "@hrSchedulePatternCreateTitle": {
+    "description": "Dialog title when creating a schedule pattern."
+  },
+  "hrSchedulePatternEditTitle": "Edit schedule pattern",
+  "@hrSchedulePatternEditTitle": {
+    "description": "Dialog title when editing a schedule pattern."
+  },
+  "hrCreateShiftTemplateAction": "Create schedule",
   "@hrCreateShiftTemplateAction": {
-    "description": "Action to create a shift template."
+    "description": "Action to create a schedule pattern."
   },
-  "hrEditShiftTemplateAction": "Edit template",
+  "hrEditShiftTemplateAction": "Edit",
   "@hrEditShiftTemplateAction": {
-    "description": "Action to edit a shift template."
+    "description": "Legacy action to edit a shift template."
   },
-  "hrDeleteShiftTemplateAction": "Delete template",
+  "hrDeleteShiftTemplateAction": "Delete",
   "@hrDeleteShiftTemplateAction": {
-    "description": "Action to delete a shift template."
+    "description": "Legacy action to delete a shift template."
+  },
+  "hrSchedulePatternEditAction": "Edit",
+  "@hrSchedulePatternEditAction": {
+    "description": "Icon-only edit action for schedule templates."
+  },
+  "hrSchedulePatternDeleteAction": "Delete",
+  "@hrSchedulePatternDeleteAction": {
+    "description": "Icon-only delete action for schedule templates."
+  },
+  "hrScheduleTemplateIdLabel": "Template ID",
+  "@hrScheduleTemplateIdLabel": {
+    "description": "Label for the schedule template human-friendly identifier."
+  },
+  "hrScheduleTemplateActiveLabel": "Active",
+  "@hrScheduleTemplateActiveLabel": {
+    "description": "Active status label for schedule templates."
+  },
+  "hrScheduleTemplateInactiveLabel": "Inactive",
+  "@hrScheduleTemplateInactiveLabel": {
+    "description": "Inactive status label for schedule templates."
+  },
+  "hrStatusLabel": "Status",
+  "@hrStatusLabel": {
+    "description": "Generic status label in HR detail views."
+  },
+  "hrCreatedAtLabel": "Created",
+  "@hrCreatedAtLabel": {
+    "description": "Created timestamp label in HR detail views."
+  },
+  "hrUpdatedAtLabel": "Updated",
+  "@hrUpdatedAtLabel": {
+    "description": "Updated timestamp label in HR detail views."
+  },
+  "hrShiftTypeDay": "Day shift",
+  "@hrShiftTypeDay": {
+    "description": "Localized label for DAY shift type."
+  },
+  "hrShiftTypeNight": "Night shift",
+  "@hrShiftTypeNight": {
+    "description": "Localized label for NIGHT shift type."
+  },
+  "hrShiftTypeSwing": "Swing shift",
+  "@hrShiftTypeSwing": {
+    "description": "Localized label for SWING shift type."
+  },
+  "hrShiftTypeOnCall": "On call",
+  "@hrShiftTypeOnCall": {
+    "description": "Localized label for ON_CALL shift type."
   },
   "hrShiftTemplateNameLabel": "Template name",
   "@hrShiftTemplateNameLabel": {

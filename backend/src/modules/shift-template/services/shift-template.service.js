@@ -6,6 +6,25 @@ const {
   resolveIdentifierForPayload,
   resolveEntityId,
 } = require('@lib/billing/identifiers');
+const { applyWeeklyScheduleToPayload } = require('../lib/weekly-schedule');
+
+const normalizeShiftTemplatePayload = (data = {}) => {
+  try {
+    return applyWeeklyScheduleToPayload(data);
+  } catch (error) {
+    if (error.message === 'weekly_schedule_overlap') {
+      throw new HttpError('errors.validation.failed', 400, [
+        { field: 'weekly_schedule_json', message: 'Time slots on the same day must not overlap' },
+      ]);
+    }
+    if (error.message === 'weekly_schedule_invalid') {
+      throw new HttpError('errors.validation.failed', 400, [
+        { field: 'weekly_schedule_json', message: 'At least one valid day schedule is required' },
+      ]);
+    }
+    throw error;
+  }
+};
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -76,7 +95,7 @@ const getById = async (id) => {
 };
 
 const create = async (data, userId, ipAddress) => {
-  const payload = {
+  const payload = normalizeShiftTemplatePayload({
     ...data,
     tenant_id: await resolveIdentifierForPayload({
       value: data.tenant_id,
@@ -91,7 +110,7 @@ const create = async (data, userId, ipAddress) => {
       where: { deleted_at: null },
       nullable: true,
     }),
-  };
+  });
   const item = await shiftTemplateRepository.create(payload);
   createAuditLog({
     user_id: userId,
@@ -113,7 +132,7 @@ const update = async (id, data, userId, ipAddress) => {
   const before = await shiftTemplateRepository.findById(resolvedId);
   if (!before) throw new HttpError('errors.shift_template.not_found', 404);
 
-  const payload = { ...data };
+  const payload = normalizeShiftTemplatePayload({ ...data });
   if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
     payload.facility_id = await resolveIdentifierForPayload({
       value: data.facility_id,

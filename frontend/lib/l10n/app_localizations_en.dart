@@ -13178,6 +13178,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAddAvailabilitySlotAction => 'Add slot';
 
   @override
+  String get hrAddScheduleSlotAction => 'Add slot';
+
+  @override
+  String get hrRemoveScheduleSlotAction => 'Remove slot';
+
+  @override
+  String get hrDuplicateScheduleToAction => 'Duplicate to…';
+
+  @override
+  String get hrScheduleDuplicateToDialogTitle => 'Duplicate schedule';
+
+  @override
+  String hrScheduleDuplicateToDialogDescription(String dayName) {
+    return 'Replace the selected days with $dayName\'s time slots.';
+  }
+
+  @override
+  String get hrWeeklyScheduleSectionTitle => 'Weekly schedule';
+
+  @override
   String get hrAvailabilityCopyFromStaffAction => 'Copy from staff';
 
   @override
@@ -14434,19 +14454,61 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrShiftTemplateAction => 'Create schedule template';
+  String get hrShiftTemplateAction => 'Schedule templates';
 
   @override
-  String get hrShiftTemplateDialogTitle => 'Schedule template';
+  String get hrShiftTemplateDialogTitle => 'Schedule pattern';
 
   @override
-  String get hrCreateShiftTemplateAction => 'Create template';
+  String get hrSchedulePatternCreateTitle => 'Schedule pattern';
 
   @override
-  String get hrEditShiftTemplateAction => 'Edit template';
+  String get hrSchedulePatternEditTitle => 'Edit schedule pattern';
 
   @override
-  String get hrDeleteShiftTemplateAction => 'Delete template';
+  String get hrCreateShiftTemplateAction => 'Create schedule';
+
+  @override
+  String get hrEditShiftTemplateAction => 'Edit';
+
+  @override
+  String get hrDeleteShiftTemplateAction => 'Delete';
+
+  @override
+  String get hrSchedulePatternEditAction => 'Edit';
+
+  @override
+  String get hrSchedulePatternDeleteAction => 'Delete';
+
+  @override
+  String get hrScheduleTemplateIdLabel => 'Template ID';
+
+  @override
+  String get hrScheduleTemplateActiveLabel => 'Active';
+
+  @override
+  String get hrScheduleTemplateInactiveLabel => 'Inactive';
+
+  @override
+  String get hrStatusLabel => 'Status';
+
+  @override
+  String get hrCreatedAtLabel => 'Created';
+
+  @override
+  String get hrUpdatedAtLabel => 'Updated';
+
+  @override
+  String get hrShiftTypeDay => 'Day shift';
+
+  @override
+  String get hrShiftTypeNight => 'Night shift';
+
+  @override
+  String get hrShiftTypeSwing => 'Swing shift';
+
+  @override
+  String get hrShiftTypeOnCall => 'On call';
 
   @override
   String get hrShiftTemplateNameLabel => 'Template name';

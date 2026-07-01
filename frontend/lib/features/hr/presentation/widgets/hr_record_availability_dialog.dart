@@ -6,26 +6,12 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_enhanced_dialogs.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_weekly_schedule_editor.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-
-/// Monday-first display order; values match API `day_of_week` (0 = Sunday).
-const List<int> kAvailabilityWeekDayOrder = <int>[1, 2, 3, 4, 5, 6, 0];
-
-/// Default weekday schedule for new availability records (Mon–Fri).
-const List<int> kDefaultAvailabilityWeekdays = <int>[1, 2, 3, 4, 5];
-
-const AppTimeValue kDefaultAvailabilityStartTime = AppTimeValue(
-  hour: 8,
-  minute: 0,
-);
-const AppTimeValue kDefaultAvailabilityEndTime = AppTimeValue(
-  hour: 17,
-  minute: 0,
-);
 
 /// Global entry point for recording a staff member's weekly availability.
 Future<void> showHrRecordAvailabilityDialog(
@@ -74,7 +60,8 @@ Future<void> showHrRecordAvailabilityDialog(
     submitLabel: l10n.hrRecordAvailabilityAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 720,
+    initialMaximized: true,
+    maxWidth: 980,
     buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
       AppFailure? failure,
     ]) {
@@ -124,12 +111,9 @@ class _HrRecordAvailabilityFields extends StatefulWidget {
 
 class _HrRecordAvailabilityFieldsState
     extends State<_HrRecordAvailabilityFields> {
-  late final Map<int, _DayScheduleDraft> _days = <int, _DayScheduleDraft>{
-    for (final int day in kAvailabilityWeekDayOrder)
-      day: kDefaultAvailabilityWeekdays.contains(day)
-          ? _DayScheduleDraft.weekdayDefault()
-          : _DayScheduleDraft(),
-  };
+  late final HrWeeklyScheduleDraft _schedule = HrWeeklyScheduleDraft(
+    weekdayDefaults: true,
+  );
 
   String? _preference = 'AVAILABLE';
   DateTime? _effectiveFrom = DateTime.now();
@@ -139,31 +123,17 @@ class _HrRecordAvailabilityFieldsState
 
   @override
   void dispose() {
-    for (final _DayScheduleDraft day in _days.values) {
-      day.clear();
-    }
+    _schedule.dispose();
     super.dispose();
   }
 
   Map<String, Object?> toBatchPayload() {
-    final List<Map<String, Object?>> days = <Map<String, Object?>>[];
-    for (final int day in kAvailabilityWeekDayOrder) {
-      final List<Map<String, Object?>> slots = _days[day]!.toSlotPayloads();
-      if (slots.isEmpty) {
-        continue;
-      }
-      days.add(<String, Object?>{
-        'day_of_week': day,
-        'time_slots': slots,
-      });
-    }
-
     return <String, Object?>{
       'preference': _preference,
       'status': _preference,
       'effective_from': _datePayload(_effectiveFrom),
       'effective_to': _datePayload(_effectiveTo),
-      'days': days,
+      'days': _schedule.toAvailabilityDaysPayload(),
     };
   }
 
@@ -171,35 +141,7 @@ class _HrRecordAvailabilityFieldsState
     if (_effectiveFrom == null) {
       return l10n.hrFieldRequiredLabel(l10n.hrEffectiveFromLabel);
     }
-
-    var scheduledDayCount = 0;
-    for (final int day in kAvailabilityWeekDayOrder) {
-      final _DayScheduleDraft schedule = _days[day]!;
-      final List<_AvailabilitySlotDraft> filledSlots = schedule.filledSlots;
-      if (filledSlots.isEmpty) {
-        continue;
-      }
-      scheduledDayCount += 1;
-
-      for (final _AvailabilitySlotDraft slot in filledSlots) {
-        if (slot.start == null || slot.end == null) {
-          continue;
-        }
-        if (!slot.end!.isAfter(slot.start!)) {
-          return l10n.hrAvailabilityEndAfterStartError;
-        }
-      }
-
-      if (_slotsOverlap(filledSlots)) {
-        return l10n.hrAvailabilitySlotOverlapError;
-      }
-    }
-
-    if (scheduledDayCount == 0) {
-      return l10n.hrAvailabilityNoDaysSelectedError;
-    }
-
-    return null;
+    return _schedule.validate(l10n);
   }
 
   Future<void> _copyFromStaff(String? staffProfileId) async {
@@ -219,18 +161,14 @@ class _HrRecordAvailabilityFieldsState
 
     result.when(
       success: (List<HrStaffAvailability> availabilities) {
-        _applyCopiedSchedule(_activeAvailabilitiesByDay(availabilities));
+        setState(() {
+          _schedule.applyEntitySlotsByDay(
+            _activeAvailabilitiesByDay(availabilities),
+          );
+        });
       },
       failure: (_) {},
     );
-  }
-
-  void _applyCopiedSchedule(Map<int, List<HrAvailabilitySlot>> slotsByDay) {
-    setState(() {
-      for (final int day in kAvailabilityWeekDayOrder) {
-        _days[day]!.replaceSlots(slotsByDay[day] ?? const <HrAvailabilitySlot>[]);
-      }
-    });
   }
 
   Map<int, List<HrAvailabilitySlot>> _activeAvailabilitiesByDay(
@@ -299,78 +237,6 @@ class _HrRecordAvailabilityFieldsState
     return const <HrAvailabilitySlot>[];
   }
 
-  Future<void> _showDuplicateDialog(int sourceDay) async {
-    final AppLocalizations l10n = context.l10n;
-    final Set<int> selectedDays = <int>{};
-
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            return AppDialog(
-              title: Text(l10n.hrAvailabilityDuplicateToDialogTitle),
-              icon: const Icon(Icons.content_copy_outlined),
-              scrollable: true,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    l10n.hrAvailabilityDuplicateToDialogDescription(
-                      hrDayLabel(l10n, sourceDay),
-                    ),
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  for (final int day in kAvailabilityWeekDayOrder)
-                    if (day != sourceDay)
-                      AppCheckboxField(
-                        title: hrDayLabel(l10n, day),
-                        value: selectedDays.contains(day),
-                        onChanged: (bool checked) {
-                          setDialogState(() {
-                            if (checked) {
-                              selectedDays.add(day);
-                            } else {
-                              selectedDays.remove(day);
-                            }
-                          });
-                        },
-                      ),
-                ],
-              ),
-              actions: <Widget>[
-                AppButton.tertiary(
-                  label: l10n.commonCancelActionLabel,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                ),
-                AppButton.primary(
-                  label: l10n.hrAvailabilityDuplicateToAction,
-                  enabled: selectedDays.isNotEmpty,
-                  onPressed: selectedDays.isEmpty
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(true),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    final List<HrAvailabilitySlot> sourceSlots =
-        _days[sourceDay]!.toEntitySlots();
-    setState(() {
-      for (final int day in selectedDays) {
-        _days[day]!.replaceSlots(sourceSlots);
-      }
-    });
-  }
-
   List<AppSelectOption<String>> get _staffOptions {
     final String? currentId = widget.currentStaffId?.trim();
     return <AppSelectOption<String>>[
@@ -414,32 +280,10 @@ class _HrRecordAvailabilityFieldsState
           ),
           SizedBox(height: theme.spacing.sm),
         ],
-        Text(
-          l10n.hrAvailabilityWeekScheduleTitle,
-          style: theme.textTheme.titleSmall,
+        HrWeeklyScheduleEditor(
+          schedule: _schedule,
+          onChanged: () => setState(() {}),
         ),
-        SizedBox(height: theme.spacing.xs),
-        for (final int day in kAvailabilityWeekDayOrder)
-          _DayScheduleSection(
-            day: day,
-            dayLabel: hrDayLabel(l10n, day),
-            schedule: _days[day]!,
-            onChanged: () => setState(() {}),
-            onDuplicate: () => _showDuplicateDialog(day),
-            duplicateLabel: l10n.hrAvailabilityDuplicateToAction,
-            addSlotLabel: l10n.hrAddAvailabilitySlotAction,
-            removeSlotLabel: l10n.hrRemoveAvailabilitySlotAction,
-            startTimeLabel: l10n.hrStartTimeLabel,
-            endTimeLabel: l10n.hrEndTimeLabel,
-            pickerButtonLabel: l10n.appTimePickerAction,
-            invalidTimeMessage: l10n.appTimeInvalidMessage,
-            hourLabelText: l10n.appTimeHourLabel,
-            minuteLabelText: l10n.appTimeMinuteLabel,
-            hour12LabelText: l10n.appTime12HourLabel,
-            hour24LabelText: l10n.appTime24HourLabel,
-            timeHint: l10n.hrTimeHint,
-            requiredFieldMessage: l10n.hrFieldRequiredLabel,
-          ),
         AppSelectField<String>(
           value: _preference,
           labelText: l10n.hrAvailabilityPreferenceLabel,
@@ -486,326 +330,9 @@ class _HrRecordAvailabilityFieldsState
   }
 }
 
-class _DayScheduleSection extends StatelessWidget {
-  const _DayScheduleSection({
-    required this.day,
-    required this.dayLabel,
-    required this.schedule,
-    required this.onChanged,
-    required this.onDuplicate,
-    required this.duplicateLabel,
-    required this.addSlotLabel,
-    required this.removeSlotLabel,
-    required this.startTimeLabel,
-    required this.endTimeLabel,
-    required this.pickerButtonLabel,
-    required this.invalidTimeMessage,
-    required this.hourLabelText,
-    required this.minuteLabelText,
-    required this.hour12LabelText,
-    required this.hour24LabelText,
-    required this.timeHint,
-    required this.requiredFieldMessage,
-  });
-
-  final int day;
-  final String dayLabel;
-  final _DayScheduleDraft schedule;
-  final VoidCallback onChanged;
-  final VoidCallback onDuplicate;
-  final String duplicateLabel;
-  final String addSlotLabel;
-  final String removeSlotLabel;
-  final String startTimeLabel;
-  final String endTimeLabel;
-  final String pickerButtonLabel;
-  final String invalidTimeMessage;
-  final String hourLabelText;
-  final String minuteLabelText;
-  final String hour12LabelText;
-  final String hour24LabelText;
-  final String timeHint;
-  final String Function(String fieldLabel) requiredFieldMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: ExpansionTile(
-        initiallyExpanded: schedule.filledSlots.isNotEmpty,
-        title: Text(dayLabel),
-        subtitle: schedule.filledSlots.isEmpty
-            ? null
-            : Text(
-                schedule.filledSlots
-                    .map(
-                      (_AvailabilitySlotDraft slot) =>
-                          '${slot.start!.format24()}-${slot.end!.format24()}',
-                    )
-                    .join(', '),
-              ),
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              theme.spacing.md,
-              0,
-              theme.spacing.md,
-              theme.spacing.md,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (schedule.filledSlots.isNotEmpty)
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: AppButton.secondary(
-                      label: duplicateLabel,
-                      leadingIcon: Icons.content_copy_outlined,
-                      onPressed: onDuplicate,
-                    ),
-                  ),
-                for (var index = 0; index < schedule.slots.length; index += 1)
-                  _AvailabilitySlotFields(
-                    slot: schedule.slots[index],
-                    canRemove: schedule.slots.length > 1,
-                    startTimeLabel: startTimeLabel,
-                    endTimeLabel: endTimeLabel,
-                    pickerButtonLabel: pickerButtonLabel,
-                    invalidTimeMessage: invalidTimeMessage,
-                    hourLabelText: hourLabelText,
-                    minuteLabelText: minuteLabelText,
-                    hour12LabelText: hour12LabelText,
-                    hour24LabelText: hour24LabelText,
-                    timeHint: timeHint,
-                    removeSlotLabel: removeSlotLabel,
-                    requiredFieldMessage: requiredFieldMessage,
-                    onChanged: onChanged,
-                    onRemove: () {
-                      schedule.removeSlotAt(index);
-                      onChanged();
-                    },
-                  ),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: AppButton.secondary(
-                    label: addSlotLabel,
-                    leadingIcon: Icons.add,
-                    onPressed: () {
-                      schedule.addSlot();
-                      onChanged();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final class _DayScheduleDraft {
-  _DayScheduleDraft() : slots = <_AvailabilitySlotDraft>[_AvailabilitySlotDraft()];
-
-  factory _DayScheduleDraft.weekdayDefault() {
-    final _DayScheduleDraft schedule = _DayScheduleDraft();
-    final _AvailabilitySlotDraft slot = schedule.slots.first;
-    slot.start = kDefaultAvailabilityStartTime;
-    slot.end = kDefaultAvailabilityEndTime;
-    return schedule;
-  }
-
-  final List<_AvailabilitySlotDraft> slots;
-
-  List<_AvailabilitySlotDraft> get filledSlots => <_AvailabilitySlotDraft>[
-    for (final _AvailabilitySlotDraft slot in slots)
-      if (slot.start != null && slot.end != null) slot,
-  ];
-
-  void addSlot() => slots.add(_AvailabilitySlotDraft());
-
-  void removeSlotAt(int index) {
-    slots.removeAt(index);
-  }
-
-  void clear() {
-    slots.clear();
-    slots.add(_AvailabilitySlotDraft());
-  }
-
-  List<Map<String, Object?>> toSlotPayloads() => <Map<String, Object?>>[
-    for (final _AvailabilitySlotDraft slot in filledSlots)
-      <String, Object?>{
-        'start_time': slot.start!.format24(),
-        'end_time': slot.end!.format24(),
-      },
-  ];
-
-  List<HrAvailabilitySlot> toEntitySlots() => <HrAvailabilitySlot>[
-    for (final _AvailabilitySlotDraft slot in filledSlots)
-      HrAvailabilitySlot(
-        startTime: slot.start!.format24(),
-        endTime: slot.end!.format24(),
-      ),
-  ];
-
-  void replaceSlots(List<HrAvailabilitySlot> source) {
-    slots.clear();
-    if (source.isEmpty) {
-      slots.add(_AvailabilitySlotDraft());
-      return;
-    }
-    for (final HrAvailabilitySlot slot in source) {
-      final _AvailabilitySlotDraft draft = _AvailabilitySlotDraft();
-      draft.start = AppTimeValue.parse(slot.startTime);
-      draft.end = AppTimeValue.parse(slot.endTime);
-      slots.add(draft);
-    }
-  }
-}
-
-final class _AvailabilitySlotDraft {
-  AppTimeValue? start;
-  AppTimeValue? end;
-}
-
-class _AvailabilitySlotFields extends StatelessWidget {
-  const _AvailabilitySlotFields({
-    required this.slot,
-    required this.canRemove,
-    required this.onRemove,
-    required this.onChanged,
-    required this.startTimeLabel,
-    required this.endTimeLabel,
-    required this.pickerButtonLabel,
-    required this.invalidTimeMessage,
-    required this.hourLabelText,
-    required this.minuteLabelText,
-    required this.hour12LabelText,
-    required this.hour24LabelText,
-    required this.timeHint,
-    required this.removeSlotLabel,
-    required this.requiredFieldMessage,
-  });
-
-  final _AvailabilitySlotDraft slot;
-  final bool canRemove;
-  final VoidCallback onRemove;
-  final VoidCallback onChanged;
-  final String startTimeLabel;
-  final String endTimeLabel;
-  final String pickerButtonLabel;
-  final String invalidTimeMessage;
-  final String hourLabelText;
-  final String minuteLabelText;
-  final String hour12LabelText;
-  final String hour24LabelText;
-  final String timeHint;
-  final String removeSlotLabel;
-  final String Function(String fieldLabel) requiredFieldMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: AppTimeField(
-              value: slot.start,
-              labelText: startTimeLabel,
-              hintText: timeHint,
-              hourLabelText: hourLabelText,
-              minuteLabelText: minuteLabelText,
-              hour12LabelText: hour12LabelText,
-              hour24LabelText: hour24LabelText,
-              pickerButtonLabel: pickerButtonLabel,
-              invalidTimeMessage: invalidTimeMessage,
-              isRequired: true,
-              validator: AppValidators.requiredValue<AppTimeValue>(
-                requiredFieldMessage(startTimeLabel),
-              ),
-              onChanged: (AppTimeValue? value) {
-                slot.start = value;
-                onChanged();
-              },
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: AppTimeField(
-              value: slot.end,
-              labelText: endTimeLabel,
-              hintText: timeHint,
-              hourLabelText: hourLabelText,
-              minuteLabelText: minuteLabelText,
-              hour12LabelText: hour12LabelText,
-              hour24LabelText: hour24LabelText,
-              pickerButtonLabel: pickerButtonLabel,
-              invalidTimeMessage: invalidTimeMessage,
-              isRequired: true,
-              validator: AppValidators.requiredValue<AppTimeValue>(
-                requiredFieldMessage(endTimeLabel),
-              ),
-              onChanged: (AppTimeValue? value) {
-                slot.end = value;
-                onChanged();
-              },
-            ),
-          ),
-          if (canRemove) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.remove_circle_outline,
-              label: removeSlotLabel,
-              semanticLabel: removeSlotLabel,
-              tooltip: removeSlotLabel,
-              onPressed: onRemove,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-String hrDayLabel(AppLocalizations l10n, int day) {
-  return switch (day) {
-    0 => l10n.hrSundayLabel,
-    1 => l10n.hrMondayLabel,
-    2 => l10n.hrTuesdayLabel,
-    3 => l10n.hrWednesdayLabel,
-    4 => l10n.hrThursdayLabel,
-    5 => l10n.hrFridayLabel,
-    6 => l10n.hrSaturdayLabel,
-    _ => l10n.profileUnknownValue,
-  };
-}
-
 String? _datePayload(DateTime? value) {
   if (value == null) {
     return null;
   }
   return DateTime(value.year, value.month, value.day).toUtc().toIso8601String();
-}
-
-bool _slotsOverlap(List<_AvailabilitySlotDraft> slots) {
-  final List<List<int>> ranges = <List<int>>[
-    for (final _AvailabilitySlotDraft slot in slots)
-      if (slot.start != null && slot.end != null)
-        <int>[slot.start!.totalMinutes, slot.end!.totalMinutes],
-  ]..sort((List<int> a, List<int> b) => a[0].compareTo(b[0]));
-
-  for (var index = 1; index < ranges.length; index += 1) {
-    if (ranges[index][0] < ranges[index - 1][1]) {
-      return true;
-    }
-  }
-  return false;
 }

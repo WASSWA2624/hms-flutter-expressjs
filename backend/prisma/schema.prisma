@@ -4472,9 +4472,10 @@ model shift_template {
   facility_id        String?   @db.VarChar(36)
   name               String    @db.VarChar(120)
   shift_type         ShiftType
-  default_start_time String    @db.VarChar(10)
-  default_end_time   String    @db.VarChar(10)
-  duration_minutes   Int?
+  default_start_time    String    @db.VarChar(10)
+  default_end_time      String    @db.VarChar(10)
+  weekly_schedule_json  Json?
+  duration_minutes      Int?
   is_active          Boolean   @default(true)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
