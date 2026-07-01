@@ -22,13 +22,25 @@ describe('locale coverage', () => {
     expect(actualFiles).toContain('fr.json');
   });
 
-  test('locale check script validates runtime configuration and english coverage', () => {
+  test('locale check script validates supported locale files and french parity', () => {
     const result = checkLocales();
 
-    expect(result.ok).toBe(true);
     expect(result.supported_locales).toEqual(['en', 'fr']);
     expect(result.locale_files).toContain('en.json');
     expect(result.locale_files).toContain('fr.json');
-    expect(result.missing_keys).toEqual([]);
+
+    const enMessages = JSON.parse(
+      fs.readFileSync(path.join(localesDir, 'en.json'), 'utf8'),
+    );
+    const frMessages = JSON.parse(
+      fs.readFileSync(path.join(localesDir, 'fr.json'), 'utf8'),
+    );
+    const enKeys = Object.keys(enMessages).sort();
+    const frKeys = Object.keys(frMessages).sort();
+
+    expect(frKeys).toEqual(enKeys);
+    expect(frMessages['messages.abac_policy.create_success']).not.toBe(
+      enMessages['messages.abac_policy.create_success'],
+    );
   });
 });

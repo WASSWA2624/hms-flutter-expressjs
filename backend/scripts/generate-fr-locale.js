@@ -214,6 +214,13 @@ const generateFrontendFr = async () => {
   saveCache(cache);
   fs.writeFileSync(targetPath, `${JSON.stringify(output, null, 2)}\n`);
   console.log(`[fr] Wrote ${targetPath}`);
+
+  const { execSync } = require('child_process');
+  const fixScript = path.join(repoRoot, 'frontend', 'tool', 'fix_fr_arb_icu.js');
+  if (fs.existsSync(fixScript)) {
+    console.log('[fr] Repairing ICU placeholders in app_fr.arb...');
+    execSync(`node "${fixScript}"`, { stdio: 'inherit', cwd: path.join(repoRoot, 'frontend') });
+  }
 };
 
 const main = async () => {

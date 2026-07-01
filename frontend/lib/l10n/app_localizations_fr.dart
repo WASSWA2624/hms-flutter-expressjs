@@ -9,7 +9,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'HOSSPI Hospital Management System';
+  String get appTitle => 'HOSSPI Système de gestion hospitalière';
 
   @override
   String get appShortTitle => 'HOSSPI HMS';
@@ -21,16 +21,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get startupLoadingBody => 'Preparing local services.';
 
   @override
-  String get startupErrorTitle => 'The app could not start';
+  String get startupErrorTitle => 'Le app n\'un pas pu start';
 
   @override
-  String get startupErrorBody => 'Restart the app or try again.';
+  String get startupErrorBody => 'Restart le app ou réessayer.';
 
   @override
-  String get commonRetryActionLabel => 'Try again';
+  String get commonRetryActionLabel => 'Réessayer';
 
   @override
-  String get commonRefreshActionLabel => 'Refresh';
+  String get commonRefreshActionLabel => 'Actualiser';
 
   @override
   String get workspaceToolbarOverflowLabel => 'More actions';
@@ -40,11 +40,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String workspaceToolbarOverflowAttentionTooltip(int count) {
-    return 'More actions — $count items need attention';
+    return 'More actions — $count éléments need attention';
   }
 
   @override
-  String get workspaceToolbarSectionStaffAccess => 'Staff & access';
+  String get workspaceToolbarSectionStaffAccess => 'Staff & accès';
 
   @override
   String get workspaceToolbarSectionScheduling => 'Scheduling & roster';
@@ -63,7 +63,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workspaceNotificationsToolbarTooltip =>
-      'Jump directly to queues that need your attention.';
+      'Jump directly à queues cette need votre attention.';
 
   @override
   String get workspaceFullscreenEnterLabel => 'Full screen';
@@ -72,13 +72,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workspaceFullscreenExitLabel => 'Exit full screen';
 
   @override
-  String get workspaceGlobalFaultReportAction => 'Report equipment fault';
+  String get workspaceGlobalFaultReportAction => 'Report équipement fault';
 
   @override
   String get workspaceGlobalHousekeepingRequestAction => 'Request maintenance';
 
   @override
-  String get commonTableSettingsActionLabel => 'Table settings';
+  String get commonTableSettingsActionLabel => 'Table paramètres';
 
   @override
   String get emergencyCaseDialogTitle => 'Emergency case';
@@ -91,10 +91,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuLoadingBoardBody =>
-      'Loading intensive care patients and alert state.';
+      'Loading intensive soins patients et alert state.';
 
   @override
-  String get icuLiveSyncLabel => 'Live sync';
+  String get icuLiveSyncLabel => 'Live synchronisation';
 
   @override
   String get icuSavingLabel => 'Saving';
@@ -124,25 +124,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuEndedStaysLabel => 'Ended stays';
 
   @override
-  String get icuTransferPendingLabel => 'Transfer pending';
+  String get icuTransferPendingLabel => 'Transfer en attente';
 
   @override
   String get icuBoardTitle => 'ICU board';
 
   @override
-  String get icuBoardDescription => 'Grouped by bed state and alert level.';
+  String get icuBoardDescription => 'Grouped by lit state et alert level.';
 
   @override
-  String get icuSearchHint => 'Search patient, admission, bed, or alert';
+  String get icuSearchHint => 'Search patient, admission, lit, ou alert';
 
   @override
   String get icuBoardScopeLabel => 'Board scope';
 
   @override
-  String get icuBoardFiltersTitle => 'ICU board filters';
+  String get icuBoardFiltersTitle => 'ICU board filtres';
 
   @override
-  String get icuColumnBedLabel => 'Bed';
+  String get icuColumnBedLabel => 'Lit';
 
   @override
   String get icuColumnAlertLabel => 'Alert';
@@ -161,7 +161,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuNoPatientsBody =>
-      'Active ICU admissions will appear here after IPD admission and ICU transfer.';
+      'Active ICU admissions will appear here après IPD admission et ICU transfert.';
 
   @override
   String get icuNoAlertLabel => 'No alert';
@@ -171,14 +171,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuDetailEmptyBody =>
-      'Select an ICU patient to review observations, orders, alerts, and transfer readiness.';
+      'Select un ICU patient à review observations, commandes, alerts, et transfert readiness.';
 
   @override
   String get icuDetailLoadingTitle => 'Loading ICU stay';
 
   @override
   String get icuDetailLoadingBody =>
-      'Loading observations, alerts, and transfer state.';
+      'Loading observations, alerts, et transfert state.';
 
   @override
   String get icuAdmissionLabel => 'Admission';
@@ -205,7 +205,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuCriticalAlertsPanelTitle => 'Critical alerts';
 
   @override
-  String get icuNoActiveAlertsLabel => 'No active ICU critical alerts.';
+  String get icuNoActiveAlertsLabel => 'No actif ICU critique alerts.';
 
   @override
   String icuHighestSeverityLabel(String severity) {
@@ -213,14 +213,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get icuNoActiveAlertsListLabel => 'No active alerts';
+  String get icuNoActiveAlertsListLabel => 'No actif alerts';
 
   @override
   String get icuObservationsPanelTitle => 'Observations';
 
   @override
   String get icuObservationsPanelDescription =>
-      'Recent intensive observations for this ICU stay.';
+      'Recent intensive observations pour ce ICU stay.';
 
   @override
   String get icuNoObservationsLabel => 'No ICU observations recorded';
@@ -230,31 +230,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuVitalsTrendDescription =>
-      'Latest recorded vital values for the admission encounter.';
+      'Latest recorded vital valeurs pour le admission consultation.';
 
   @override
-  String get icuNoVitalsLabel => 'No vitals recorded';
+  String get icuNoVitalsLabel => 'No signes vitaux recorded';
 
   @override
-  String get icuCarePanelTitle => 'Rounds, nursing, and orders';
+  String get icuCarePanelTitle => 'Rounds, soins infirmiers, et commandes';
 
   @override
   String get icuCarePanelDescription =>
-      'Recent care notes and medication tasks linked to IPD.';
+      'Recent soins notes et médicament tasks linked à IPD.';
 
   @override
-  String get icuNoCareTasksLabel => 'No care tasks recorded';
+  String get icuNoCareTasksLabel => 'No soins tasks recorded';
 
   @override
-  String get icuTransferPanelTitle => 'Transfer and readiness';
+  String get icuTransferPanelTitle => 'Transfer et readiness';
 
   @override
   String get icuTransferPanelDescription =>
-      'ICU stay movement, planned discharge, and handoff state.';
+      'ICU stay movement, planned sortie, et passation state.';
 
   @override
   String get icuNoTransferRecordsLabel =>
-      'No transfer or discharge readiness records';
+      'No transfert ou sortie readiness dossiers';
 
   @override
   String get icuRoundNoteFallback => 'Round note';
@@ -283,7 +283,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuTransferRecordLabel => 'Transfer';
 
   @override
-  String get icuDischargeRecordLabel => 'Discharge';
+  String get icuDischargeRecordLabel => 'Sortie';
 
   @override
   String get icuActionStartStay => 'Start ICU stay';
@@ -304,7 +304,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuActionRound => 'ICU round';
 
   @override
-  String get icuActionOrderLab => 'Order lab';
+  String get icuActionOrderLab => 'Order laboratoire';
 
   @override
   String get icuActionOrderImaging => 'Order imaging';
@@ -313,13 +313,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuActionPrescribe => 'Prescribe';
 
   @override
-  String get icuActionRequestTransfer => 'Request transfer';
+  String get icuActionRequestTransfer => 'Request transfert';
 
   @override
-  String get icuActionManageTransfer => 'Manage transfer';
+  String get icuActionManageTransfer => 'Manage transfert';
 
   @override
-  String get icuActionAssignBed => 'Assign ICU bed';
+  String get icuActionAssignBed => 'Assign ICU lit';
 
   @override
   String get icuActionMarkReadiness => 'Discharge readiness';
@@ -328,7 +328,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuActionOpenIpd => 'Open in IPD';
 
   @override
-  String get icuActionOpenDischargeClearance => 'Open discharge clearance';
+  String get icuActionOpenDischargeClearance => 'Open sortie clearance';
 
   @override
   String get icuActionOpenBilling => 'Open billing';
@@ -340,7 +340,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuActionEndStay => 'End ICU stay';
 
   @override
-  String get icuPrintSummaryLabel => 'Print summary';
+  String get icuPrintSummaryLabel => 'Print résumé';
 
   @override
   String get icuObservationDialogTitle => 'Record ICU observation';
@@ -352,13 +352,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuRecordActionLabel => 'Record';
 
   @override
-  String get icuVitalsDialogTitle => 'Update vitals';
+  String get icuVitalsDialogTitle => 'Update signes vitaux';
 
   @override
-  String get icuVitalsUpdateActionLabel => 'Update';
+  String get icuVitalsUpdateActionLabel => 'Mettre à jour';
 
   @override
-  String get icuAlertDialogTitle => 'Add critical alert';
+  String get icuAlertDialogTitle => 'Add critique alert';
 
   @override
   String get icuAlertSeverityLabel => 'Severity';
@@ -379,26 +379,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuRoundAddActionLabel => 'Add note';
 
   @override
-  String get icuTransferDialogTitle => 'Request transfer';
+  String get icuTransferDialogTitle => 'Request transfert';
 
   @override
-  String get icuTransferTargetWardLabel => 'Target ward';
+  String get icuTransferTargetWardLabel => 'Target service';
 
   @override
-  String get icuTransferTargetWardIdLabel => 'Target ward ID';
+  String get icuTransferTargetWardIdLabel => 'Target service ID';
 
   @override
   String get icuTransferRequestActionLabel => 'Request';
 
   @override
-  String get icuReadinessDialogTitle => 'Mark discharge readiness';
+  String get icuReadinessDialogTitle => 'Mark sortie readiness';
 
   @override
   String get icuReadinessNoteLabel => 'Readiness note';
 
   @override
   String get icuReadinessDescription =>
-      'This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.';
+      'Ce dossiers un planned sortie readiness note et keeps le patient in le IPD sortie workflow.';
 
   @override
   String get icuReadinessMarkActionLabel => 'Mark ready';
@@ -408,7 +408,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuStartStayBody =>
-      'This opens an active ICU stay on the IPD admission so critical-care documentation can begin.';
+      'Ce opens un actif ICU stay on le IPD admission so critique-soins documentation can begin.';
 
   @override
   String get icuStartStayActionLabel => 'Start stay';
@@ -418,20 +418,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get icuAcknowledgeBody =>
-      'This clears the selected critical alert from the active ICU board.';
+      'Ce clears le selected critique alert de le actif ICU board.';
 
   @override
   String get icuEndStayTitle => 'End ICU stay';
 
   @override
   String get icuEndStayBody =>
-      'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.';
+      'Ce ends le actif ICU stay. Continue only après le receiving service ou sortie workflow is ready.';
 
   @override
-  String get icuAssignBedDialogTitle => 'Assign ICU bed';
+  String get icuAssignBedDialogTitle => 'Assign ICU lit';
 
   @override
-  String get icuManageTransferDialogTitle => 'Manage transfer';
+  String get icuManageTransferDialogTitle => 'Manage transfert';
 
   @override
   String get icuTransferActionApprove => 'Approve';
@@ -440,65 +440,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuTransferActionStart => 'Start';
 
   @override
-  String get icuTransferActionComplete => 'Complete with bed';
+  String get icuTransferActionComplete => 'Complete avec lit';
 
   @override
-  String get icuTransferActionCancel => 'Cancel transfer';
+  String get icuTransferActionCancel => 'Cancel transfert';
 
   @override
-  String get icuTransferSelectBedLabel => 'Target bed';
+  String get icuTransferSelectBedLabel => 'Target lit';
 
   @override
-  String get icuTransferNoOpenLabel => 'No open transfer to manage.';
+  String get icuTransferNoOpenLabel => 'No ouvrir transfert à manage.';
 
   @override
   String get icuStepDownPromptTitle => 'End ICU stay?';
 
   @override
   String get icuStepDownPromptBody =>
-      'The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.';
+      'Le transfert is complete. End le actif ICU stay now cette le patient has stepped down à service soins.';
 
   @override
   String get icuChangesSavedMessage => 'ICU changes saved.';
 
   @override
-  String get icuBedBoardTitle => 'ICU bed board';
+  String get icuBedBoardTitle => 'ICU lit board';
 
   @override
   String get icuBedBoardDescription =>
-      'ICU ward bed occupancy and bed operations.';
+      'ICU service lit occupation et lit operations.';
 
   @override
-  String get icuBedBoardAllWards => 'All ICU wards';
+  String get icuBedBoardAllWards => 'All ICU services';
 
   @override
   String icuBedAvailableLabel(int count) {
-    return '$count available';
+    return '$count disponible';
   }
 
   @override
   String icuBedOccupiedLabel(int count) {
-    return '$count occupied';
+    return '$count occupé';
   }
 
   @override
-  String get icuBedColumnWard => 'Ward';
+  String get icuBedColumnWard => 'Service';
 
   @override
-  String get icuBedColumnBed => 'Room / bed';
+  String get icuBedColumnBed => 'Room / lit';
 
   @override
-  String get icuBedColumnStatus => 'Status';
+  String get icuBedColumnStatus => 'Statut';
 
   @override
   String get icuBedColumnPatient => 'Patient';
 
   @override
-  String get icuBedNoBedsTitle => 'No ICU beds';
+  String get icuBedNoBedsTitle => 'No ICU lits';
 
   @override
   String get icuBedNoBedsBody =>
-      'No ICU beds are configured for this facility.';
+      'No ICU lits are configured pour ce établissement.';
 
   @override
   String get icuBedVacantLabel => 'Vacant';
@@ -513,7 +513,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get icuPrintVitalsSection => 'Vitals';
 
   @override
-  String get icuPrintTransferSection => 'Transfer and readiness';
+  String get icuPrintTransferSection => 'Transfer et readiness';
 
   @override
   String get ipdOpenIcuAction => 'Open in ICU';
@@ -522,7 +522,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdOpenTheaterAction => 'Open in Theater';
 
   @override
-  String get ipdStatusInProcedureOt => 'In procedure / OT';
+  String get ipdStatusInProcedureOt => 'In procédure / OT';
 
   @override
   String get ipdNextCompleteTheatreHandover => 'Complete theatre handover';
@@ -535,28 +535,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdStartIcuStayBody =>
-      'This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.';
+      'Ce opens un actif ICU stay on ce admission so le ICU team can begin critique-soins documentation.';
 
   @override
-  String get commonGoHomeActionLabel => 'Go to dashboard';
+  String get commonGoHomeActionLabel => 'Go à tableau de bord';
 
   @override
-  String get commonCancelActionLabel => 'Cancel';
+  String get commonCancelActionLabel => 'Annuler';
 
   @override
-  String get commonCloseActionLabel => 'Close';
+  String get commonCloseActionLabel => 'Fermer';
 
   @override
-  String get appDateInvalidMessage => 'Enter a valid date.';
+  String get appDateInvalidMessage => 'Enter un valid date.';
 
   @override
   String get appDateFormatHint => 'DD/MM/YYYY';
 
   @override
-  String get appTimePickerAction => 'Select time';
+  String get appTimePickerAction => 'Select heure';
 
   @override
-  String get appTimeInvalidMessage => 'Enter a valid time.';
+  String get appTimeInvalidMessage => 'Enter un valid heure.';
 
   @override
   String get appTimeFormatHint => 'HH:MM';
@@ -589,7 +589,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appPhoneCountrySearchLabel => 'Search country';
 
   @override
-  String get appPhoneCountryNoResults => 'No countries found';
+  String get appPhoneCountryNoResults => 'Aucun countries trouvé';
 
   @override
   String get appPhoneNumberLabel => 'Phone number';
@@ -598,7 +598,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appPhoneNumberHint => 'Remaining number digits';
 
   @override
-  String get appPhoneInvalidMessage => 'Enter a valid phone number.';
+  String get appPhoneInvalidMessage => 'Enter un valid téléphone number.';
 
   @override
   String get appStatusOnlineLabel => 'Online';
@@ -622,10 +622,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appNavigationSearchHint => 'Search menu';
 
   @override
-  String get appNavigationSearchNoResultsLabel => 'No menu items found';
+  String get appNavigationSearchNoResultsLabel => 'Aucun menu items trouvé';
 
   @override
-  String get appAccountTooltip => 'Account';
+  String get appAccountTooltip => 'Compte';
 
   @override
   String get appNotificationsTooltip => 'Notifications';
@@ -643,31 +643,31 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get appUserMenuProfileLabel => 'Profile';
+  String get appUserMenuProfileLabel => 'Profil';
 
   @override
-  String get appUserMenuSettingsLabel => 'Settings';
+  String get appUserMenuSettingsLabel => 'Paramètres';
 
   @override
-  String get appUserMenuChangePasswordLabel => 'Change password';
+  String get appUserMenuChangePasswordLabel => 'Change mot de passe';
 
   @override
-  String get appUserMenuLogoutLabel => 'Logout';
+  String get appUserMenuLogoutLabel => 'Déconnexion';
 
   @override
   String get appUserMenuSignedInLabel => 'Signed in';
 
   @override
-  String get navigationHomeLabel => 'Dashboard';
+  String get navigationHomeLabel => 'Tableau de bord';
 
   @override
-  String get navigationHomeShortLabel => 'Dashboard';
+  String get navigationHomeShortLabel => 'Tableau de bord';
 
   @override
-  String get navigationSettingsLabel => 'Settings';
+  String get navigationSettingsLabel => 'Paramètres';
 
   @override
-  String get navigationSettingsShortLabel => 'Settings';
+  String get navigationSettingsShortLabel => 'Paramètres';
 
   @override
   String get navigationSetupLabel => 'Tenant setup';
@@ -682,20 +682,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationPatientsShortLabel => 'Patients';
 
   @override
-  String get navigationBillingLabel => 'Billing';
+  String get navigationBillingLabel => 'Facturation';
 
   @override
-  String get navigationBillingShortLabel => 'Billing';
+  String get navigationBillingShortLabel => 'Facturation';
 
   @override
-  String get billingWorkspaceTitle => 'Billing';
+  String get billingWorkspaceTitle => 'Facturation';
 
   @override
-  String get billingLoadingTitle => 'Loading billing workspace';
+  String get billingLoadingTitle => 'Loading billing espace de travail';
 
   @override
   String get billingLoadingBody =>
-      'Fetching invoices, payments, refunds, and closeout queues.';
+      'Fetching factures, paiements, refunds, et closeout queues.';
 
   @override
   String get billingStatusLive => 'Live';
@@ -705,19 +705,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get billingWorklistDescription =>
-      'Cashier worklist for invoices, payments, claims, and approvals.';
+      'Cashier worklist pour factures, paiements, réclamations, et approvals.';
 
   @override
-  String get billingAllWorkItems => 'All billing work items';
+  String get billingAllWorkItems => 'All billing work éléments';
 
   @override
-  String get billingAwaitingPayment => 'Awaiting payment';
+  String get billingAwaitingPayment => 'Awaiting paiement';
 
   @override
   String get billingIssueQueue => 'Issue queue';
 
   @override
-  String get billingClaimsPending => 'Claims pending';
+  String get billingClaimsPending => 'Claims en attente';
 
   @override
   String get billingApprovals => 'Approvals';
@@ -729,35 +729,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingNeedsIssue => 'Needs issue';
 
   @override
-  String get billingApprovalRequired => 'Approval required';
+  String get billingApprovalRequired => 'Approval requis';
 
   @override
   String get billingQueueLabel => 'Queue';
 
   @override
-  String get billingSearchHint => 'Invoice, patient, or reference';
+  String get billingSearchHint => 'Invoice, patient, ou référence';
 
   @override
   String get billingSearchSemanticLabel => 'Search billing worklist';
 
   @override
-  String get billingClearSearch => 'Clear billing search';
+  String get billingClearSearch => 'Clear billing recherche';
 
   @override
-  String get billingFiltersTitle => 'Billing filters';
+  String get billingFiltersTitle => 'Billing filtres';
 
   @override
-  String get billingEmptyTitle => 'No billing items';
+  String get billingEmptyTitle => 'No billing éléments';
 
   @override
   String get billingEmptyBody =>
-      'This queue has no invoices or billing actions right now.';
+      'Ce queue has non factures ou billing actions right now.';
 
   @override
   String get billingPatientColumn => 'Patient';
 
   @override
-  String get billingStatusColumn => 'Status';
+  String get billingStatusColumn => 'Statut';
 
   @override
   String get billingAmountColumn => 'Amount';
@@ -775,7 +775,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingInvoiceLabel => 'Invoice';
 
   @override
-  String get billingReceivePayment => 'Receive payment';
+  String get billingReceivePayment => 'Receive paiement';
 
   @override
   String get billingIssueAction => 'Issue';
@@ -793,19 +793,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingSendAction => 'Send';
 
   @override
-  String get billingCloseShift => 'Close shift';
+  String get billingCloseShift => 'Close quart';
 
   @override
   String get billingCloseDay => 'Close day';
 
   @override
-  String get billingIssueInvoice => 'Issue invoice';
+  String get billingIssueInvoice => 'Issue facture';
 
   @override
-  String get billingSendInvoice => 'Send invoice';
+  String get billingSendInvoice => 'Send facture';
 
   @override
-  String get billingVoidInvoice => 'Void invoice';
+  String get billingVoidInvoice => 'Void facture';
 
   @override
   String get billingRequestAdjustment => 'Request adjustment';
@@ -817,16 +817,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingDueLabel => 'Due';
 
   @override
-  String get billingNoLineItems => 'No line items returned for this invoice.';
+  String get billingNoLineItems => 'No line éléments returned pour ce facture.';
 
   @override
-  String get billingNoPayments => 'No payments recorded for this invoice.';
+  String get billingNoPayments => 'No paiements recorded pour ce facture.';
 
   @override
   String get billingNoAdjustments => 'No billing adjustments recorded.';
 
   @override
-  String get billingLineItemsTitle => 'Line items';
+  String get billingLineItemsTitle => 'Line éléments';
 
   @override
   String get billingPaymentsTitle => 'Payments';
@@ -835,19 +835,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingAdjustmentsTitle => 'Adjustments';
 
   @override
-  String get billingFinancialSummaryTitle => 'Financial summary';
+  String get billingFinancialSummaryTitle => 'Financial résumé';
 
   @override
   String get billingInvoiceDetailTitle => 'Invoice detail';
 
   @override
-  String get billingItemDetailTitle => 'Billing item';
+  String get billingItemDetailTitle => 'Billing élément';
 
   @override
-  String get billingClaimDetailTitle => 'Insurance claim';
+  String get billingClaimDetailTitle => 'Insurance réclamation';
 
   @override
-  String get billingApprovalDetailTitle => 'Approval request';
+  String get billingApprovalDetailTitle => 'Approval demande';
 
   @override
   String get billingPreAuthDetailTitle => 'Pre-authorization';
@@ -857,17 +857,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get billingActionPendingApproval =>
-      'Submitted. Pending approval before it takes effect.';
+      'Submitted. Pending approbation avant it takes effect.';
 
   @override
   String get billingDocumentDownloaded => 'Invoice document saved.';
 
   @override
   String get billingDocumentUnavailable =>
-      'Invoice document could not be saved on this device.';
+      'Invoice document n\'a pas pu être saved on this device.';
 
   @override
-  String get billingDocumentTooltip => 'Download invoice PDF';
+  String get billingDocumentTooltip => 'Download facture PDF';
 
   @override
   String get billingViewLedgerAction => 'View ledger';
@@ -877,7 +877,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get billingLedgerEmpty =>
-      'No ledger entries for this patient in the selected period.';
+      'No ledger entries pour ce patient in le selected period.';
 
   @override
   String get billingApproveAction => 'Approve';
@@ -886,23 +886,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingRejectAction => 'Reject';
 
   @override
-  String get billingSubmitClaimAction => 'Submit claim';
+  String get billingSubmitClaimAction => 'Submit réclamation';
 
   @override
-  String get billingReconcileClaimAction => 'Record insurer response';
+  String get billingReconcileClaimAction => 'Record insurer réponse';
 
   @override
   String get billingFinalizeEncounterAction => 'Finalize financial clearance';
 
   @override
   String get billingFinalizeEncounterBody =>
-      'All linked charges are issued and settled. Confirm financial clearance for this encounter.';
+      'All linked charges are issued et settled. Confirm financial clearance pour ce consultation.';
 
   @override
   String get billingEncounterLabel => 'Encounter';
 
   @override
-  String get billingCoveragePlanLabel => 'Coverage plan';
+  String get billingCoveragePlanLabel => 'Coverage forfait';
 
   @override
   String get billingRequestTypeLabel => 'Request type';
@@ -914,7 +914,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingReasonLabel => 'Reason';
 
   @override
-  String get billingLinkedInvoiceLabel => 'Linked invoice';
+  String get billingLinkedInvoiceLabel => 'Linked facture';
 
   @override
   String get billingClearanceCleared => 'Cleared';
@@ -938,7 +938,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingNotRecorded => 'Not recorded';
 
   @override
-  String get billingUnknownValue => 'Unknown';
+  String get billingUnknownValue => 'Inconnu';
 
   @override
   String get billingPreviousPageLabel => 'Previous page';
@@ -947,23 +947,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingNextPageLabel => 'Next page';
 
   @override
-  String get billingClearFilters => 'Clear';
+  String get billingClearFilters => 'Effacer';
 
   @override
   String get billingPaymentReferenceHint =>
-      'Mobile money, card, or bank reference';
+      'Mobile money, card, ou bank référence';
 
   @override
-  String get billingPayerHint => 'Patient, sponsor, insurer, or contact';
+  String get billingPayerHint => 'Patient, sponsor, insurer, ou contact';
 
   @override
   String get billingPdfFileTypeLabel => 'PDF document';
 
   @override
-  String get billingClaimStatusApproved => 'Approved';
+  String get billingClaimStatusApproved => 'Approuvé';
 
   @override
-  String get billingClaimStatusRejected => 'Rejected';
+  String get billingClaimStatusRejected => 'Rejeté';
 
   @override
   String get billingClaimStatusPaid => 'Paid';
@@ -996,47 +996,47 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingPayerLabel => 'Payer';
 
   @override
-  String get billingGenerateReceiptLabel => 'Generate receipt after payment';
+  String get billingGenerateReceiptLabel => 'Generate receipt après paiement';
 
   @override
   String get billingPaymentLabel => 'Payment';
 
   @override
-  String get billingRefundAmountLabel => 'Refund amount';
+  String get billingRefundAmountLabel => 'Refund montant';
 
   @override
-  String get billingRefundReasonValidation => 'Enter a refund reason.';
+  String get billingRefundReasonValidation => 'Enter un refund reason.';
 
   @override
   String get billingNotesLabel => 'Notes';
 
   @override
-  String get billingAdjustmentAmountLabel => 'Adjustment amount (+/-)';
+  String get billingAdjustmentAmountLabel => 'Adjustment montant (+/-)';
 
   @override
   String get billingAdjustmentAmountValidation =>
-      'Enter a signed amount, for example -10.00 or 25.00.';
+      'Enter un signed montant, pour example -10.00 ou 25.00.';
 
   @override
-  String get billingAppliedStatusLabel => 'Applied status';
+  String get billingAppliedStatusLabel => 'Applied statut';
 
   @override
-  String get billingAdjustmentReasonValidation => 'Enter an adjustment reason.';
+  String get billingAdjustmentReasonValidation => 'Enter un adjustment reason.';
 
   @override
-  String get billingReasonValidation => 'Enter a reason.';
+  String get billingReasonValidation => 'Enter un reason.';
 
   @override
-  String get billingRecipientEmailLabel => 'Recipient email';
+  String get billingRecipientEmailLabel => 'Recipient e-mail';
 
   @override
-  String get billingExpectedAmountLabel => 'Expected amount';
+  String get billingExpectedAmountLabel => 'Expected montant';
 
   @override
-  String get billingActualAmountLabel => 'Actual amount';
+  String get billingActualAmountLabel => 'Actual montant';
 
   @override
-  String get billingSubmitForApprovalLabel => 'Submit for approval';
+  String get billingSubmitForApprovalLabel => 'Submit pour approbation';
 
   @override
   String get billingRequestVoidAction => 'Request void';
@@ -1053,7 +1053,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get navigationSubscriptionsLabel => 'Subscription plans';
+  String get navigationSubscriptionsLabel => 'Subscription forfaits';
 
   @override
   String get navigationSubscriptionsShortLabel => 'Plans';
@@ -1070,35 +1070,35 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get subscriptionHeaderExpiredLabel => 'Subscription expired';
+  String get subscriptionHeaderExpiredLabel => 'Subscription expiré';
 
   @override
   String get subscriptionHeaderUpgradeLabel => 'Upgrade';
 
   @override
-  String get subscriptionHeaderTooltip => 'Manage subscription and billing';
+  String get subscriptionHeaderTooltip => 'Manage abonnement et billing';
 
   @override
-  String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
+  String get subscriptionUpgradeDialogTitle => 'Upgrade abonnement';
 
   @override
-  String get subscriptionRenewDialogTitle => 'Renew subscription';
+  String get subscriptionRenewDialogTitle => 'Renew abonnement';
 
   @override
   String get subscriptionUpgradeDialogBody =>
-      'Choose a plan and submit payment to keep full access after your trial or renewal date.';
+      'Choose un forfait et soumettre paiement à keep full accès après votre trial ou renewal date.';
 
   @override
   String get subscriptionRenewDialogBody =>
-      'Confirm your current plan and submit payment to extend your subscription.';
+      'Confirm votre actuel forfait et soumettre paiement à extend votre abonnement.';
 
   @override
   String get subscriptionUpgradeIntentBanner =>
-      'You are upgrading to a higher plan.';
+      'You are upgrading à un higher forfait.';
 
   @override
   String subscriptionRenewIntentBanner(String plan) {
-    return 'You are renewing your $plan plan.';
+    return 'You are renewing votre $plan forfait.';
   }
 
   @override
@@ -1111,13 +1111,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subscriptionUpgradeAmountLabel => 'Amount paid';
 
   @override
-  String get subscriptionUpgradeReferenceLabel => 'Payment reference';
+  String get subscriptionUpgradeReferenceLabel => 'Payment référence';
 
   @override
   String get subscriptionUpgradeNotesLabel => 'Notes';
 
   @override
-  String get subscriptionUpgradeProofLabel => 'Proof of payment';
+  String get subscriptionUpgradeProofLabel => 'Proof sur paiement';
 
   @override
   String get subscriptionUpgradeAttachProofAction => 'Attach proof';
@@ -1130,29 +1130,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get subscriptionUpgradeAdminContactBody =>
-      'If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.';
+      'If votre compte is not activated après paiement, contact our platform administrators en utilisant le détails below. Support is disponible at any heure.';
 
   @override
-  String get subscriptionUpgradeAdminContactEmailLabel => 'Email';
+  String get subscriptionUpgradeAdminContactEmailLabel => 'E-mail';
 
   @override
   String get subscriptionUpgradeAdminContactPhoneLabel => 'Phone';
 
   @override
-  String get subscriptionUpgradeSubmitAction => 'Submit payment';
+  String get subscriptionUpgradeSubmitAction => 'Submit paiement';
 
   @override
   String get subscriptionRenewSubmitAction => 'Submit renewal';
 
   @override
   String get subscriptionUpgradePaymentMethodSectionTitle =>
-      'How would you like to pay?';
+      'How would you like à pay?';
 
   @override
-  String get subscriptionUpgradePaymentDetailsTitle => 'Payment details';
+  String get subscriptionUpgradePaymentDetailsTitle => 'Payment détails';
 
   @override
-  String get subscriptionMobileMoneyProviderLabel => 'Mobile money provider';
+  String get subscriptionMobileMoneyProviderLabel => 'Mobile money prestataire';
 
   @override
   String get subscriptionMobileMoneyPhoneLabel => 'Mobile money number';
@@ -1179,16 +1179,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subscriptionMobileMoneyZamtel => 'Zamtel Kwacha';
 
   @override
-  String get subscriptionMobileMoneyGovernment => 'Government payment portal';
+  String get subscriptionMobileMoneyGovernment => 'Government paiement portal';
 
   @override
-  String get subscriptionBankNameLabel => 'Your bank name';
+  String get subscriptionBankNameLabel => 'Votre bank nom';
 
   @override
-  String get subscriptionBankTransferDetailsTitle => 'Transfer to this account';
+  String get subscriptionBankTransferDetailsTitle => 'Transfer à ce compte';
 
   @override
-  String get subscriptionBankAccountNameLabel => 'Account name';
+  String get subscriptionBankAccountNameLabel => 'Account nom';
 
   @override
   String get subscriptionPlatformBankNameLabel => 'Bank';
@@ -1207,7 +1207,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get subscriptionFxRateErrorMessage =>
-      'Could not load exchange rate — amount shown in USD.';
+      'Impossible de load exchange rate — montant shown in USD.';
 
   @override
   String get subscriptionCardHolderNameLabel => 'Name on card';
@@ -1217,18 +1217,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get subscriptionPaymentReferenceHint =>
-      'Transaction ID or receipt number';
+      'Transaction ID ou receipt number';
 
   @override
   String get subscriptionProofRequiredMessage =>
-      'Attach proof of payment for this method.';
+      'Attach proof sur paiement pour ce method.';
 
   @override
   String get subscriptionUpgradeSubmittedMessage =>
-      'Payment submitted. The platform team will review and activate your subscription.';
+      'Payment submitted. Le platform team will review et activate votre abonnement.';
 
   @override
-  String get subscriptionPaymentMethodBankTransfer => 'Bank transfer';
+  String get subscriptionPaymentMethodBankTransfer => 'Bank transfert';
 
   @override
   String get subscriptionPaymentMethodMobileMoney => 'Mobile money';
@@ -1243,16 +1243,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get subscriptionPaymentMethodCash => 'Cash';
 
   @override
-  String get subscriptionPaymentMethodOther => 'Other';
+  String get subscriptionPaymentMethodOther => 'Autre';
 
   @override
-  String get navigationEmergencyLabel => 'Emergency';
+  String get navigationEmergencyLabel => 'Urgences';
 
   @override
-  String get navigationEmergencyShortLabel => 'Emergency';
+  String get navigationEmergencyShortLabel => 'Urgences';
 
   @override
-  String get navigationIcuLabel => 'Intensive care (ICU)';
+  String get navigationIcuLabel => 'Intensive soins (ICU)';
 
   @override
   String get navigationIcuShortLabel => 'ICU';
@@ -1270,14 +1270,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationGroupPatientAccessLabel => 'Patient intake';
 
   @override
-  String get navigationGroupInpatientCareLabel => 'Inpatient care';
+  String get navigationGroupInpatientCareLabel => 'Inpatient soins';
 
   @override
-  String get navigationGroupClinicalServicesLabel => 'Clinical care';
+  String get navigationGroupClinicalServicesLabel => 'Clinical soins';
 
   @override
   String get navigationGroupDiagnosticsMedicationLabel =>
-      'Diagnostics & pharmacy';
+      'Diagnostics & pharmacie';
 
   @override
   String get navigationGroupRevenueCycleLabel => 'Billing & revenue';
@@ -1295,7 +1295,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationOpdShortLabel => 'OPD';
 
   @override
-  String get navigationTheaterLabel => 'Operating theater';
+  String get navigationTheaterLabel => 'Operating bloc opératoire';
 
   @override
   String get navigationTheaterShortLabel => 'Theater';
@@ -1328,7 +1328,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationReportsShortLabel => 'Reports';
 
   @override
-  String get navigationRoomsBedsLabel => 'Rooms & beds';
+  String get navigationRoomsBedsLabel => 'Rooms & lits';
 
   @override
   String get navigationRoomsBedsShortLabel => 'Beds';
@@ -1344,17 +1344,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get theaterDescription =>
-      'Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.';
+      'Manage daily cases, readiness, chambre et team allocation, anesthesia, post-op notes, et handover.';
 
   @override
-  String get theaterLoadingTitle => 'Loading theater';
+  String get theaterLoadingTitle => 'Loading bloc opératoire';
 
   @override
   String get theaterLoadingBody =>
-      'Loading theater cases and clinical records.';
+      'Loading bloc opératoire cases et clinique dossiers.';
 
   @override
-  String get theaterLiveStatus => 'Live sync';
+  String get theaterLiveStatus => 'Live synchronisation';
 
   @override
   String get theaterSavingStatus => 'Saving';
@@ -1369,13 +1369,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterScheduledSummaryLabel => 'Scheduled';
 
   @override
-  String get theaterInTheaterSummaryLabel => 'In theater';
+  String get theaterInTheaterSummaryLabel => 'In bloc opératoire';
 
   @override
   String get theaterReadySummaryLabel => 'Ready';
 
   @override
-  String get theaterCompletedSummaryLabel => 'Completed';
+  String get theaterCompletedSummaryLabel => 'Terminé';
 
   @override
   String get theaterAllCasesSummaryLabel => 'All cases';
@@ -1393,7 +1393,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterSourceContextLabel => 'Source';
 
   @override
-  String get theaterSourceEmergency => 'Emergency';
+  String get theaterSourceEmergency => 'Urgences';
 
   @override
   String get theaterSourceOpd => 'OPD elective';
@@ -1411,7 +1411,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterHandoverDestinationLabel => 'Recovery destination';
 
   @override
-  String get theaterHandoverToWard => 'Ward';
+  String get theaterHandoverToWard => 'Service';
 
   @override
   String get theaterHandoverToIcu => 'ICU';
@@ -1435,65 +1435,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterRoleCoordinator => 'Theater coordinator';
 
   @override
-  String get theaterFiltersLabel => 'Theater filters';
+  String get theaterFiltersLabel => 'Theater filtres';
 
   @override
-  String get theaterSearchLabel => 'Search theater';
+  String get theaterSearchLabel => 'Search bloc opératoire';
 
   @override
   String get theaterSearchHint =>
-      'Search patient, case, encounter, notes, or record text';
+      'Search patient, case, consultation, notes, ou dossier text';
 
   @override
   String get theaterScheduleDateFilterLabel => 'Schedule date';
 
   @override
-  String get theaterPickScheduleDateAction => 'Pick schedule date';
+  String get theaterPickScheduleDateAction => 'Pick planning date';
 
   @override
-  String get theaterStatusFilterLabel => 'Status';
+  String get theaterStatusFilterLabel => 'Statut';
 
   @override
   String get theaterStageFilterLabel => 'Stage';
 
   @override
-  String get theaterResourceFiltersAction => 'Resource filters';
+  String get theaterResourceFiltersAction => 'Resource filtres';
 
   @override
-  String get theaterClearFiltersAction => 'Clear filters';
+  String get theaterClearFiltersAction => 'Clear filtres';
 
   @override
   String get theaterCasesTitle => 'Daily cases';
 
   @override
   String get theaterCasesDescription =>
-      'Select a case to review readiness, records, resources, and handover.';
+      'Select un case à review readiness, dossiers, resources, et handover.';
 
   @override
-  String get theaterNoCasesTitle => 'No theater cases';
+  String get theaterNoCasesTitle => 'No bloc opératoire cases';
 
   @override
   String get theaterNoCasesBody =>
-      'Scheduled and active theater cases will appear here.';
+      'Scheduled et actif bloc opératoire cases will appear here.';
 
   @override
   String get theaterNoCaseSelectedTitle => 'No case selected';
 
   @override
   String get theaterNoCaseSelectedBody =>
-      'Select a theater case to review readiness, records, and handover.';
+      'Select un bloc opératoire case à review readiness, dossiers, et handover.';
 
   @override
   String get theaterPatientColumnLabel => 'Patient';
 
   @override
-  String get theaterTimeColumnLabel => 'Time';
+  String get theaterTimeColumnLabel => 'Heure';
 
   @override
-  String get theaterRoomColumnLabel => 'Room';
+  String get theaterRoomColumnLabel => 'Chambre';
 
   @override
-  String get theaterStatusColumnLabel => 'Status';
+  String get theaterStatusColumnLabel => 'Statut';
 
   @override
   String get theaterReadinessColumnLabel => 'Readiness';
@@ -1522,62 +1522,63 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterPatientLabel => 'Patient';
 
   @override
-  String get theaterPatientSearchHint => 'Search by name, MRN, or phone';
+  String get theaterPatientSearchHint => 'Search by nom, MRN, ou téléphone';
 
   @override
-  String get theaterEncounterSearchHint => 'Select an active encounter';
+  String get theaterEncounterSearchHint => 'Select un actif consultation';
 
   @override
   String get theaterEmergencyCaseLabel => 'Emergency case';
 
   @override
-  String get theaterEmergencyCaseSearchHint => 'Link the active emergency case';
+  String get theaterEmergencyCaseSearchHint => 'Link le actif urgence case';
 
   @override
   String get theaterEmergencyCaseSelectPatientFirstHint =>
-      'Select a patient first';
+      'Select un patient first';
 
   @override
   String get theaterScheduleEmergencyHint =>
-      'Emergency cases require linking the active ED case so theater billing and handoff context stay connected.';
+      'Emergency cases require linking le actif ED case so bloc opératoire billing et passation context stay connected.';
 
   @override
   String get theaterScheduleEmergencyPanelTitle => 'Emergency scheduling';
 
   @override
-  String get theaterScheduledTimeLabel => 'Scheduled time';
+  String get theaterScheduledTimeLabel => 'Scheduled heure';
 
   @override
-  String get theaterOperatingRoomHint => 'Search operating theatre rooms';
+  String get theaterOperatingRoomHint => 'Search operating theatre chambres';
 
   @override
-  String get theaterSurgeonSearchHint => 'Search surgeons by name or staff ID';
+  String get theaterSurgeonSearchHint =>
+      'Search surgeons by nom ou personnel ID';
 
   @override
   String get theaterAnesthetistSearchHint =>
-      'Search anesthetists by name or staff ID';
+      'Search anesthetists by nom ou personnel ID';
 
   @override
   String get theaterProceduresSectionLabel => 'Procedures';
 
   @override
-  String get theaterAddProcedureAction => 'Add procedure';
+  String get theaterAddProcedureAction => 'Add procédure';
 
   @override
   String get theaterNoProceduresSelectedLabel =>
-      'Add one or more procedures to bill for this case.';
+      'Add one ou more procedures à bill pour ce case.';
 
   @override
   String get theaterScheduledAtLabel => 'Scheduled at';
 
   @override
-  String get theaterRoomLabel => 'Room';
+  String get theaterRoomLabel => 'Chambre';
 
   @override
   String get theaterReadinessLabel => 'Readiness';
 
   @override
-  String get theaterTeamTitle => 'Team and flow';
+  String get theaterTeamTitle => 'Team et flow';
 
   @override
   String get theaterSurgeonLabel => 'Surgeon';
@@ -1589,7 +1590,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterStageLabel => 'Stage';
 
   @override
-  String get theaterStatusLabel => 'Status';
+  String get theaterStatusLabel => 'Statut';
 
   @override
   String get theaterStageNotesLabel => 'Stage notes';
@@ -1622,16 +1623,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterChecklistTitle => 'Readiness checklist';
 
   @override
-  String get theaterNoChecklistItemsLabel => 'No checklist items recorded';
+  String get theaterNoChecklistItemsLabel => 'No checklist éléments recorded';
 
   @override
-  String get theaterRecordsTitle => 'Clinical records';
+  String get theaterRecordsTitle => 'Clinical dossiers';
 
   @override
-  String get theaterAnesthesiaStatusLabel => 'Anesthesia status';
+  String get theaterAnesthesiaStatusLabel => 'Anesthesia statut';
 
   @override
-  String get theaterPostOpStatusLabel => 'Post-op status';
+  String get theaterPostOpStatusLabel => 'Post-op statut';
 
   @override
   String get theaterAnesthesiaNotesLabel => 'Anesthesia notes';
@@ -1647,7 +1648,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterResourcesTitle => 'Resources';
 
   @override
-  String get theaterNoResourcesLabel => 'No resources assigned';
+  String get theaterNoResourcesLabel => 'No resources assigné';
 
   @override
   String get theaterTimelineTitle => 'Timeline';
@@ -1656,33 +1657,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterNoTimelineLabel => 'No timeline entries';
 
   @override
-  String get theaterScheduleCaseDialogTitle => 'Schedule theater case';
+  String get theaterScheduleCaseDialogTitle => 'Schedule bloc opératoire case';
 
   @override
   String get theaterScheduleCaseDialogBody =>
-      'Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.';
+      'Search pour le patient et their actif consultation, then set le planning, team, procedures, et billing.';
 
   @override
   String get theaterSchedulePatientContextSection => 'Patient context';
 
   @override
-  String get theaterScheduleDetailsSection => 'Schedule and team';
+  String get theaterScheduleDetailsSection => 'Schedule et team';
 
   @override
-  String get theaterScheduleBillingSection => 'Procedures and billing';
+  String get theaterScheduleBillingSection => 'Procedures et billing';
 
   @override
   String get theaterScheduleBillingSectionBody =>
-      'Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.';
+      'Add catalog procedures à build line éléments. Bill later sends charges à le Billing espace de travail.';
 
   @override
-  String get theaterEncounterSelectPatientFirstHint => 'Select a patient first';
+  String get theaterEncounterSelectPatientFirstHint =>
+      'Select un patient first';
 
   @override
-  String get theaterRescheduleDialogTitle => 'Reschedule theater case';
+  String get theaterRescheduleDialogTitle => 'Reschedule bloc opératoire case';
 
   @override
-  String get theaterUpdateStageDialogTitle => 'Update theater stage';
+  String get theaterUpdateStageDialogTitle => 'Update bloc opératoire stage';
 
   @override
   String get theaterHandoverDialogTitle => 'Complete handover';
@@ -1691,35 +1693,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterHandoverNotesLabel => 'Handover notes';
 
   @override
-  String get theaterCancelCaseDialogTitle => 'Cancel theater case';
+  String get theaterCancelCaseDialogTitle => 'Cancel bloc opératoire case';
 
   @override
   String get theaterCancellationReasonLabel => 'Cancellation reason';
 
   @override
-  String get theaterAssignResourceDialogTitle => 'Assign theater resource';
+  String get theaterAssignResourceDialogTitle =>
+      'Assign bloc opératoire resource';
 
   @override
   String get theaterReadinessDialogTitle => 'Update readiness';
 
   @override
-  String get theaterAnesthesiaDialogTitle => 'Anesthesia record';
+  String get theaterAnesthesiaDialogTitle => 'Anesthesia dossier';
 
   @override
   String get theaterPostOpDialogTitle => 'Post-op note';
 
   @override
-  String get theaterFinalizeDialogTitle => 'Finalize records';
+  String get theaterFinalizeDialogTitle => 'Finalize dossiers';
 
   @override
-  String get theaterResourceFiltersDialogTitle => 'Resource filters';
+  String get theaterResourceFiltersDialogTitle => 'Resource filtres';
 
   @override
   String get theaterEncounterIdLabel => 'Encounter ID';
 
   @override
   String get theaterEncounterIdHint =>
-      'Encounter UUID or case source identifier';
+      'Encounter UUID ou case source identifiant';
 
   @override
   String get theaterDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
@@ -1728,10 +1731,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterRoomIdLabel => 'Room ID';
 
   @override
-  String get theaterSurgeonIdLabel => 'Surgeon user ID';
+  String get theaterSurgeonIdLabel => 'Surgeon utilisateur ID';
 
   @override
-  String get theaterAnesthetistIdLabel => 'Anesthetist user ID';
+  String get theaterAnesthetistIdLabel => 'Anesthetist utilisateur ID';
 
   @override
   String get theaterResourceTypeLabel => 'Resource type';
@@ -1740,7 +1743,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterResourceIdLabel => 'Resource ID';
 
   @override
-  String get theaterStaffRoleLabel => 'Staff role';
+  String get theaterStaffRoleLabel => 'Staff rôle';
 
   @override
   String get theaterNotesLabel => 'Notes';
@@ -1752,45 +1755,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterChecklistItemCodeLabel => 'Item code';
 
   @override
-  String get theaterChecklistItemLabel => 'Item label';
+  String get theaterChecklistItemLabel => 'Item libellé';
 
   @override
-  String get theaterChecklistCheckedLabel => 'Completed';
+  String get theaterChecklistCheckedLabel => 'Terminé';
 
   @override
-  String get theaterRecordStatusLabel => 'Record status';
+  String get theaterRecordStatusLabel => 'Record statut';
 
   @override
-  String get theaterSaveRecordAction => 'Save record';
+  String get theaterSaveRecordAction => 'Save dossier';
 
   @override
   String get theaterRecordTypeLabel => 'Record type';
 
   @override
-  String get theaterApplyFiltersAction => 'Apply filters';
+  String get theaterApplyFiltersAction => 'Apply filtres';
 
   @override
   String theaterFieldRequiredLabel(String label) {
-    return '$label is required.';
+    return '$label est requis.';
   }
 
   @override
   String get theaterStatusScheduled => 'Scheduled';
 
   @override
-  String get theaterStatusInTheater => 'In theater';
+  String get theaterStatusInTheater => 'In bloc opératoire';
 
   @override
-  String get theaterStatusCompleted => 'Completed';
+  String get theaterStatusCompleted => 'Terminé';
 
   @override
-  String get theaterStatusCancelled => 'Cancelled';
+  String get theaterStatusCancelled => 'Annulé';
 
   @override
   String get theaterStagePreOp => 'Pre-op';
 
   @override
-  String get theaterStageSignIn => 'Sign in';
+  String get theaterStageSignIn => 'Se connecter';
 
   @override
   String get theaterStageTimeOut => 'Time out';
@@ -1799,7 +1802,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterStageIntraOp => 'Intra-op';
 
   @override
-  String get theaterStageSignOut => 'Sign out';
+  String get theaterStageSignOut => 'Se déconnecter';
 
   @override
   String get theaterStagePostOp => 'Post-op';
@@ -1808,7 +1811,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get theaterStagePacuHandoff => 'PACU handover';
 
   @override
-  String get theaterStageCompleted => 'Completed';
+  String get theaterStageCompleted => 'Terminé';
 
   @override
   String get theaterRecordDraft => 'Draft';
@@ -1829,32 +1832,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get opdDescription =>
-      'Manage arrivals, queues, staff readiness, and outpatient clinical handoffs.';
+      'Manage arrivals, queues, personnel readiness, et ambulatoire clinique passations.';
 
   @override
   String get opdLoadingTitle => 'Loading OPD flow';
 
   @override
-  String get opdLoadingBody => 'Loading outpatient queue and encounter data.';
+  String get opdLoadingBody =>
+      'Loading ambulatoire queue et consultation data.';
 
   @override
-  String get opdLiveStatus => 'Live sync';
+  String get opdLiveStatus => 'Live synchronisation';
 
   @override
   String get opdSavingStatus => 'Saving';
 
   @override
-  String get opdStartWalkInAction => 'Start OPD encounter';
+  String get opdStartWalkInAction => 'Start OPD consultation';
 
   @override
-  String get opdStartEncounterAction => 'Start encounter';
+  String get opdStartEncounterAction => 'Start consultation';
 
   @override
-  String get opdOpenActiveEncounterAction => 'Update encounter';
+  String get opdOpenActiveEncounterAction => 'Update consultation';
 
   @override
   String get opdStartEncounterTooltip =>
-      'Create or continue an OPD encounter for this patient';
+      'Create ou continuer un OPD consultation pour ce patient';
 
   @override
   String get opdSavedMessage => 'OPD changes saved.';
@@ -1869,22 +1873,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdActiveFlowSummaryLabel => 'Active flows';
 
   @override
-  String get opdCompletedFlowSummaryLabel => 'Completed';
+  String get opdCompletedFlowSummaryLabel => 'Terminé';
 
   @override
-  String get opdFiltersLabel => 'OPD filters';
+  String get opdFiltersLabel => 'OPD filtres';
 
   @override
-  String get opdFilterAction => 'Filter OPD table';
+  String get opdFilterAction => 'Filter OPD tableau';
 
   @override
-  String get opdFilterDialogTitle => 'Filter OPD table';
+  String get opdFilterDialogTitle => 'Filter OPD tableau';
 
   @override
   String get opdSearchFieldFilterLabel => 'Search in';
 
   @override
-  String get opdAllFieldsFilterLabel => 'All fields';
+  String get opdAllFieldsFilterLabel => 'All champs';
 
   @override
   String get opdArrivalDateFilterLabel => 'Arrival date';
@@ -1899,7 +1903,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdDatePickerButtonLabel => 'Choose date';
 
   @override
-  String get opdInvalidDateMessage => 'Enter a valid date.';
+  String get opdInvalidDateMessage => 'Enter un valid date.';
 
   @override
   String get opdArrivalRangeFilterLabel => 'Arrival range';
@@ -1923,7 +1927,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdCategoryFilterLabel => 'Category';
 
   @override
-  String get opdStatusFilterLabel => 'Status';
+  String get opdStatusFilterLabel => 'Statut';
 
   @override
   String get opdVisitTypeFilterLabel => 'Visit type';
@@ -1932,34 +1936,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdQueueFilterLabel => 'Queue';
 
   @override
-  String get opdProviderFilterLabel => 'Assigned staff';
+  String get opdProviderFilterLabel => 'Assigned personnel';
 
   @override
-  String get opdBillingFilterLabel => 'Billing';
+  String get opdBillingFilterLabel => 'Facturation';
 
   @override
   String get opdNextActionFilterLabel => 'Next action';
 
   @override
-  String get opdAllCategoriesOption => 'All categories';
+  String get opdAllCategoriesOption => 'All catégories';
 
   @override
   String get opdAllStatusesOption => 'All statuses';
 
   @override
-  String get opdAllVisitTypesOption => 'All visit types';
+  String get opdAllVisitTypesOption => 'All visite types';
 
   @override
   String get opdAllQueuesOption => 'All queues';
 
   @override
-  String get opdAllProvidersOption => 'All staff';
+  String get opdAllProvidersOption => 'All personnel';
 
   @override
   String get opdAllBillingStatesOption => 'All billing states';
 
   @override
-  String get opdAllNextActionsOption => 'All next actions';
+  String get opdAllNextActionsOption => 'All suivant actions';
 
   @override
   String get opdSummaryAllPatientsLabel => 'All Patients';
@@ -1980,22 +1984,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdSummaryWithDoctorLabel => 'With doctor';
 
   @override
-  String get opdSummaryLabPendingLabel => 'Lab pending';
+  String get opdSummaryLabPendingLabel => 'Lab en attente';
 
   @override
-  String get opdSummaryImagingPendingLabel => 'Imaging pending';
+  String get opdSummaryImagingPendingLabel => 'Imaging en attente';
 
   @override
-  String get opdSummaryPharmacyPendingLabel => 'Pharmacy pending';
+  String get opdSummaryPharmacyPendingLabel => 'Pharmacy en attente';
 
   @override
   String get opdSummaryDecisionNeededLabel => 'Decision needed';
 
   @override
-  String get opdSummaryAdmissionPendingLabel => 'Admission pending';
+  String get opdSummaryAdmissionPendingLabel => 'Admission en attente';
 
   @override
-  String get opdSummaryDischargedTodayLabel => 'Discharged today';
+  String get opdSummaryDischargedTodayLabel => 'Discharged aujourd\'hui';
 
   @override
   String get opdStatusPaymentDueLabel => 'Payment due';
@@ -2013,31 +2017,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdStatusDoctorReviewLabel => 'Doctor review';
 
   @override
-  String get opdStatusLabPendingLabel => 'Lab pending';
+  String get opdStatusLabPendingLabel => 'Lab en attente';
 
   @override
-  String get opdStatusSamplePendingLabel => 'Sample pending';
+  String get opdStatusSamplePendingLabel => 'Sample en attente';
 
   @override
-  String get opdStatusInLabLabel => 'In lab';
+  String get opdStatusInLabLabel => 'In laboratoire';
 
   @override
   String get opdStatusResultsReadyLabel => 'Results ready';
 
   @override
-  String get opdStatusImagingPendingLabel => 'Imaging pending';
+  String get opdStatusImagingPendingLabel => 'Imaging en attente';
 
   @override
-  String get opdStatusReportPendingLabel => 'Report pending';
+  String get opdStatusReportPendingLabel => 'Report en attente';
 
   @override
   String get opdStatusReportReadyLabel => 'Report ready';
 
   @override
-  String get opdStatusLabAndImagingPendingLabel => 'Lab & imaging pending';
+  String get opdStatusLabAndImagingPendingLabel => 'Lab & imaging en attente';
 
   @override
-  String get opdStatusPharmacyPendingLabel => 'Pharmacy pending';
+  String get opdStatusPharmacyPendingLabel => 'Pharmacy en attente';
 
   @override
   String get opdStatusDispensingLabel => 'Dispensing';
@@ -2049,7 +2053,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdStatusDecisionNeededLabel => 'Decision needed';
 
   @override
-  String get opdStatusAdmissionPendingLabel => 'Admission pending';
+  String get opdStatusAdmissionPendingLabel => 'Admission en attente';
 
   @override
   String get opdStatusAdmittedLabel => 'Admitted';
@@ -2061,81 +2065,82 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdNextCollectSampleLabel => 'Collect sample';
 
   @override
-  String get opdNextProcessLabLabel => 'Process lab';
+  String get opdNextProcessLabLabel => 'Process laboratoire';
 
   @override
-  String get opdNextReviewResultsLabel => 'Review results';
+  String get opdNextReviewResultsLabel => 'Review résultats';
 
   @override
-  String get opdNextLabHandoffLabel => 'Lab handoff';
+  String get opdNextLabHandoffLabel => 'Lab passation';
 
   @override
   String get opdNextPerformImagingLabel => 'Perform imaging';
 
   @override
-  String get opdNextCompleteImagingReportLabel => 'Complete imaging report';
+  String get opdNextCompleteImagingReportLabel => 'Complete imaging rapport';
 
   @override
-  String get opdNextReviewReportLabel => 'Review report';
+  String get opdNextReviewReportLabel => 'Review rapport';
 
   @override
-  String get opdNextImagingHandoffLabel => 'Imaging handoff';
+  String get opdNextImagingHandoffLabel => 'Imaging passation';
 
   @override
-  String get opdNextDiagnosticsPendingLabel => 'Diagnostics pending';
+  String get opdNextDiagnosticsPendingLabel => 'Diagnostics en attente';
 
   @override
   String get opdNextDispenseMedicineLabel => 'Dispense medicine';
 
   @override
-  String get opdNextPharmacyHandoffLabel => 'Pharmacy handoff';
+  String get opdNextPharmacyHandoffLabel => 'Pharmacy passation';
 
   @override
   String get opdNextDispositionLabel => 'Disposition';
 
   @override
-  String get opdNextAdmissionHandoffLabel => 'Admission handoff';
+  String get opdNextAdmissionHandoffLabel => 'Admission passation';
 
   @override
-  String get opdOpenAdmissionAction => 'Open inpatient admission';
+  String get opdOpenAdmissionAction => 'Open hospitalisé admission';
 
   @override
-  String get opdAdmissionHandoffTitle => 'Patient admitted';
+  String get opdAdmissionHandoffTitle => 'Patient admis';
 
   @override
   String get opdAdmissionHandoffBody =>
-      'This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.';
+      'Ce ambulatoire visite has been admis à hospitalisé soins. Open le hospitalisé espace de travail à allocate un lit et continuer le admission. Le OPD consultation stays linked as le source visite.';
 
   @override
   String get opdAdmissionHandoffStayAction => 'Stay in OPD';
 
   @override
-  String get opdPhysiotherapyHandoffTitle => 'Physiotherapy referral placed';
+  String get opdPhysiotherapyHandoffTitle => 'Physiotherapy orientation placed';
 
   @override
   String get opdPhysiotherapyHandoffBody =>
-      'The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.';
+      'Le patient has been referred à physiothérapie on ce visite. Open le physiothérapie espace de travail à accept le orientation et begin assessment.';
 
   @override
-  String get opdOpenPhysiotherapyAction => 'Open physiotherapy';
+  String get opdOpenPhysiotherapyAction => 'Open physiothérapie';
 
   @override
   String get opdSearchLabel => 'Search OPD';
 
   @override
-  String get opdSearchHint => 'Search patient, identifier, or assigned staff';
+  String get opdSearchHint =>
+      'Search patient, identifiant, ou assigné personnel';
 
   @override
-  String get opdApplyFiltersAction => 'Apply filters';
+  String get opdApplyFiltersAction => 'Apply filtres';
 
   @override
-  String get opdClearFiltersAction => 'Clear filters';
+  String get opdClearFiltersAction => 'Clear filtres';
 
   @override
-  String get opdAppointmentStatusFilterLabel => 'Appointment status';
+  String get opdAppointmentStatusFilterLabel => 'Appointment statut';
 
   @override
-  String get opdQueueStatusFilterLabel => 'Queue status';
+  String get opdQueueStatusFilterLabel => 'Queue statut';
 
   @override
   String get opdFlowStageFilterLabel => 'Flow stage';
@@ -2147,11 +2152,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdQueueBoardTitle => 'Queue board';
 
   @override
-  String get opdFlowsTitle => 'OPD encounters';
+  String get opdFlowsTitle => 'OPD consultations';
 
   @override
   String get opdTableDescription =>
-      'Track arrivals, queue status, billing state, assigned staff, and next steps.';
+      'Track arrivals, queue statut, billing state, assigné personnel, et suivant steps.';
 
   @override
   String get opdProviderReadinessTitle => 'Staff readiness';
@@ -2161,14 +2166,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get opdActivityDescription =>
-      'Latest visible outpatient flow changes.';
+      'Latest visible ambulatoire flow changes.';
 
   @override
   String get opdNoArrivalsTitle => 'No arrivals';
 
   @override
   String get opdNoArrivalsBody =>
-      'Scheduled and checked-in patients will appear here.';
+      'Scheduled et checked-in patients will appear here.';
 
   @override
   String get opdNoQueueTitle => 'No queued patients';
@@ -2178,32 +2183,32 @@ class AppLocalizationsFr extends AppLocalizations {
       'Reception queue entries will appear here as patients are routed.';
 
   @override
-  String get opdNoFlowsTitle => 'No OPD encounters';
+  String get opdNoFlowsTitle => 'No OPD consultations';
 
   @override
   String get opdNoFlowsBody =>
-      'Started outpatient encounters will appear here.';
+      'Started ambulatoire consultations will appear here.';
 
   @override
-  String get opdNoFlowSelectedTitle => 'No encounter selected';
+  String get opdNoFlowSelectedTitle => 'No consultation selected';
 
   @override
   String get opdNoFlowSelectedBody =>
-      'Select an OPD encounter to review actions and related records.';
+      'Select un OPD consultation à review actions et related dossiers.';
 
   @override
-  String get opdNoProvidersTitle => 'No staff ready';
+  String get opdNoProvidersTitle => 'No personnel ready';
 
   @override
   String get opdNoProvidersBody =>
-      'Staff schedules and available slots will appear here.';
+      'Staff schedules et disponible slots will appear here.';
 
   @override
   String get opdNoActivityTitle => 'No recent activity';
 
   @override
   String get opdNoActivityBody =>
-      'OPD activity appears once encounters start moving.';
+      'OPD activity appears once consultations start moving.';
 
   @override
   String get opdNoSummaryPatientsTitle => 'No patients';
@@ -2219,22 +2224,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdCategoryColumnLabel => 'Category';
 
   @override
-  String get opdStatusColumnLabel => 'Status';
+  String get opdStatusColumnLabel => 'Statut';
 
   @override
   String get opdVisitTypeColumnLabel => 'Visit type';
 
   @override
-  String get opdQueueStatusColumnLabel => 'Queue / status';
+  String get opdQueueStatusColumnLabel => 'Queue / statut';
 
   @override
-  String get opdTimeColumnLabel => 'Arrival time';
+  String get opdTimeColumnLabel => 'Arrival heure';
 
   @override
-  String get opdWaitingTimeColumnLabel => 'Wait time';
+  String get opdWaitingTimeColumnLabel => 'Wait heure';
 
   @override
-  String get opdProviderColumnLabel => 'Assigned staff';
+  String get opdProviderColumnLabel => 'Assigned personnel';
 
   @override
   String get opdPayerBillingColumnLabel => 'Payer / billing';
@@ -2255,7 +2260,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdQueueEmptyColumnLabel => 'No patients';
 
   @override
-  String get opdNoRelatedRecordsLabel => 'No related records';
+  String get opdNoRelatedRecordsLabel => 'No related dossiers';
 
   @override
   String get opdNoTimelineLabel => 'No timeline entries';
@@ -2276,13 +2281,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdPaymentPaidLabel => 'Paid';
 
   @override
-  String get opdPaymentRequiredLabel => 'Payment required';
+  String get opdPaymentRequiredLabel => 'Payment requis';
 
   @override
-  String get opdPaymentNotRequiredLabel => 'Not required';
+  String get opdPaymentNotRequiredLabel => 'Not requis';
 
   @override
-  String get opdBillingRequiredAmountLabel => 'Required amount';
+  String get opdBillingRequiredAmountLabel => 'Required montant';
 
   @override
   String get opdBillingAmountPaidLabel => 'Amount paid';
@@ -2294,10 +2299,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdClinicalServicesTitle => 'Clinical services';
 
   @override
-  String get opdClinicalServicesEmpty => 'No clinical services recorded yet.';
+  String get opdClinicalServicesEmpty => 'No clinique services recorded yet.';
 
   @override
-  String get clinicalReferralDetailsTitle => 'Referral details';
+  String get clinicalReferralDetailsTitle => 'Referral détails';
 
   @override
   String get clinicalReferralNotesTitle => 'Additional notes';
@@ -2309,7 +2314,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdCopyPatientIdAction => 'Copy patient ID';
 
   @override
-  String get opdCopyEncounterIdAction => 'Copy encounter ID';
+  String get opdCopyEncounterIdAction => 'Copy consultation ID';
 
   @override
   String get opdEncounterIdCopiedMessage => 'Encounter ID copied.';
@@ -2331,14 +2336,14 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count open slots',
-      one: '1 open slot',
-      zero: 'No open slots',
+      one: '1 ouvrir slot',
+      zero: 'No ouvrir slots',
     );
     return '$_temp0';
   }
 
   @override
-  String get opdWalkInDialogTitle => 'Start OPD encounter';
+  String get opdWalkInDialogTitle => 'Start OPD consultation';
 
   @override
   String get opdPatientSectionTitle => 'Patient';
@@ -2347,7 +2352,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdRoutingSectionTitle => 'Routing';
 
   @override
-  String get opdBillingSectionTitle => 'Billing';
+  String get opdBillingSectionTitle => 'Facturation';
 
   @override
   String get opdExistingPatientModeLabel => 'Existing patient';
@@ -2362,48 +2367,48 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdSearchPatientLabel => 'Search patient';
 
   @override
-  String get opdAppointmentPatientLabel => 'Search appointment';
+  String get opdAppointmentPatientLabel => 'Search rendez-vous';
 
   @override
   String get opdAppointmentPatientHelper =>
-      'Select a scheduled appointment to check the patient into OPD.';
+      'Select un planifié rendez-vous à check le patient into OPD.';
 
   @override
   String get opdActiveEncounterCheckingLabel =>
-      'Checking for an active OPD encounter...';
+      'Checking pour un actif OPD consultation...';
 
   @override
-  String get opdActiveEncounterFoundTitle => 'Active OPD encounter found';
+  String get opdActiveEncounterFoundTitle => 'Active OPD consultation found';
 
   @override
   String get opdActiveEncounterFoundBody =>
-      'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.';
+      'Ce patient already has un actif OPD consultation. Update le actif consultation instead sur creating un duplicate.';
 
   @override
   String get opdInactiveEncounterActionReason =>
-      'Start or update an OPD encounter first.';
+      'Start ou mettre à jour un OPD consultation first.';
 
   @override
   String get opdSearchProviderLabel => 'Search doctor';
 
   @override
-  String get opdSearchProviderHelper => 'This doctor will handle the patient.';
+  String get opdSearchProviderHelper => 'Ce doctor will handle le patient.';
 
   @override
   String get opdNoProvidersHelper =>
-      'No registered doctors were found. Check doctor setup or staff permissions.';
+      'No enregistré doctors were found. Check doctor setup ou personnel autorisations.';
 
   @override
-  String get opdRegisterNewPatientLabel => 'Register a new patient';
+  String get opdRegisterNewPatientLabel => 'Register un nouveau patient';
 
   @override
   String get opdPatientIdLabel => 'Patient ID';
 
   @override
-  String get opdFirstNameLabel => 'First name';
+  String get opdFirstNameLabel => 'First nom';
 
   @override
-  String get opdLastNameLabel => 'Last name';
+  String get opdLastNameLabel => 'Last nom';
 
   @override
   String get opdGenderLabel => 'Gender';
@@ -2427,28 +2432,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdRescheduleAction => 'Reschedule';
 
   @override
-  String get opdCancelAction => 'Cancel';
+  String get opdCancelAction => 'Annuler';
 
   @override
-  String get opdCheckInAction => 'Start OPD encounter';
+  String get opdCheckInAction => 'Start OPD consultation';
 
   @override
-  String get opdAppointmentStartLabel => 'Start time';
+  String get opdAppointmentStartLabel => 'Start heure';
 
   @override
-  String get opdAppointmentEndLabel => 'End time';
+  String get opdAppointmentEndLabel => 'End heure';
 
   @override
   String get opdDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
 
   @override
-  String get opdSaveAction => 'Save';
+  String get opdSaveAction => 'Enregistrer';
 
   @override
   String get opdCancellationReasonLabel => 'Cancellation reason';
 
   @override
-  String get opdQueueStatusLabel => 'Queue status';
+  String get opdQueueStatusLabel => 'Queue statut';
 
   @override
   String get opdReasonLabel => 'Reason';
@@ -2498,7 +2503,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdPaymentMethodLabel => 'Payment method';
 
   @override
-  String get opdTransactionReferenceLabel => 'Transaction reference';
+  String get opdTransactionReferenceLabel => 'Transaction référence';
 
   @override
   String get opdStageLabel => 'Stage';
@@ -2511,16 +2516,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get opdStageCorrectionReasonRequiredMessage =>
-      'Enter a reason for this stage correction.';
+      'Enter un reason pour ce stage correction.';
 
   @override
-  String get opdExternalFacilityLabel => 'External facility';
+  String get opdExternalFacilityLabel => 'External établissement';
 
   @override
   String get opdFollowUpDateLabel => 'Follow-up date';
 
   @override
-  String get opdFollowUpTimeLabel => 'Follow-up time';
+  String get opdFollowUpTimeLabel => 'Follow-up heure';
 
   @override
   String get opdDecisionLabel => 'Decision';
@@ -2553,7 +2558,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdTriageLevel5Label => 'Level 5 · Routine';
 
   @override
-  String get opdTriagePendingLabel => 'Triage pending';
+  String get opdTriagePendingLabel => 'Triage en attente';
 
   @override
   String get opdChiefComplaintLabel => 'Chief complaint';
@@ -2562,7 +2567,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdEmergencyIndicatorsLabel => 'Emergency indicators';
 
   @override
-  String get opdWorkflowReceptionTitle => 'Reception and queue';
+  String get opdWorkflowReceptionTitle => 'Reception et queue';
 
   @override
   String get opdWorkflowTriageTitle => 'Triage';
@@ -2577,43 +2582,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdWorkflowPrintTitle => 'Printing';
 
   @override
-  String get opdSendToTriageAction => 'Send to triage';
+  String get opdSendToTriageAction => 'Send à triage';
 
   @override
-  String get opdSendToDoctorAction => 'Send to doctor';
+  String get opdSendToDoctorAction => 'Send à doctor';
 
   @override
-  String get opdRecordVitalsAction => 'Record vitals';
+  String get opdRecordVitalsAction => 'Record signes vitaux';
 
   @override
-  String get opdEditVitalsAction => 'Edit vitals';
+  String get opdEditVitalsAction => 'Edit signes vitaux';
 
   @override
   String get opdDoctorReviewAction => 'Doctor review';
 
   @override
-  String get opdRouteLabAction => 'Send to lab';
+  String get opdRouteLabAction => 'Send à laboratoire';
 
   @override
-  String get opdRouteRadiologyAction => 'Send to radiology';
+  String get opdRouteRadiologyAction => 'Send à radiologie';
 
   @override
-  String get opdRoutePharmacyAction => 'Send to pharmacy';
+  String get opdRoutePharmacyAction => 'Send à pharmacie';
 
   @override
-  String get opdPrintSummaryAction => 'Print summary';
+  String get opdPrintSummaryAction => 'Print résumé';
 
   @override
-  String get opdPrintAction => 'Print';
+  String get opdPrintAction => 'Imprimer';
 
   @override
-  String get opdCopySummaryAction => 'Copy summary';
+  String get opdCopySummaryAction => 'Copy résumé';
 
   @override
   String get opdVitalsSummaryLabel => 'Vitals';
 
   @override
-  String get opdAbnormalVitalsSummaryLabel => 'Abnormal vitals';
+  String get opdAbnormalVitalsSummaryLabel => 'Abnormal signes vitaux';
 
   @override
   String get opdClinicalAlertsSummaryLabel => 'Clinical alerts';
@@ -2640,7 +2645,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdDiagnosisCodeLabel => 'Diagnosis code';
 
   @override
-  String get opdProcedureLabel => 'Procedure or minor surgery';
+  String get opdProcedureLabel => 'Procedure ou minor surgery';
 
   @override
   String get opdProcedureCodeLabel => 'Procedure code';
@@ -2649,7 +2654,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdLabTestIdsLabel => 'Lab test IDs';
 
   @override
-  String get opdLabPanelIdsLabel => 'Lab panel IDs';
+  String get opdLabPanelIdsLabel => 'Lab panneau IDs';
 
   @override
   String get opdRadiologyTestIdsLabel => 'Radiology test IDs';
@@ -2709,7 +2714,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdTriageScopeUrgent => 'Urgent';
 
   @override
-  String get opdTriageScopeEmergency => 'Emergency';
+  String get opdTriageScopeEmergency => 'Urgences';
 
   @override
   String get opdTriageScopeRoutine => 'Routine';
@@ -2757,14 +2762,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsBody =>
-      'Find, register, and maintain patient records across front desk and care workflows.';
+      'Find, register, et maintain patient dossiers across front desk et soins workflows.';
 
   @override
-  String get patientsTableTitle => 'Patient records';
+  String get patientsTableTitle => 'Patient dossiers';
 
   @override
   String get patientsTableDescription =>
-      'Browse registered patients, visit context, alerts, status, and available next actions.';
+      'Browse enregistré patients, visite context, alerts, statut, et disponible suivant actions.';
 
   @override
   String get patientsLoadingTitle => 'Loading patients';
@@ -2779,16 +2784,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAddAction => 'Add patient';
 
   @override
-  String get patientsEmergencyRegisterAction => 'Emergency registration';
+  String get patientsEmergencyRegisterAction => 'Emergency inscription';
 
   @override
-  String get patientsEditAction => 'Edit';
+  String get patientsEditAction => 'Modifier';
 
   @override
-  String get patientsDeleteAction => 'Delete';
+  String get patientsDeleteAction => 'Supprimer';
 
   @override
-  String get patientsSaveAction => 'Save';
+  String get patientsSaveAction => 'Enregistrer';
 
   @override
   String get patientsSaveAnywayAction => 'Save anyway';
@@ -2798,13 +2803,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsEmergencySavedMessage =>
-      'Emergency patient registered for completion.';
+      'Emergency patient enregistré pour completion.';
 
   @override
-  String get patientsDeletedMessage => 'Patient registry record deleted.';
+  String get patientsDeletedMessage => 'Patient registry dossier supprimé.';
 
   @override
-  String get patientsMergedMessage => 'Patient records merged.';
+  String get patientsMergedMessage => 'Patient dossiers merged.';
 
   @override
   String get patientsDuplicateDismissedMessage => 'Duplicate review dismissed.';
@@ -2814,21 +2819,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsTotalSummaryBody =>
-      'All visible patient records in scope.';
+      'All visible patient dossiers in scope.';
 
   @override
   String get patientsActiveSummaryLabel => 'Active patients';
 
   @override
   String get patientsActiveSummaryBody =>
-      'Patients available for current workflows.';
+      'Patients disponible pour actuel workflows.';
 
   @override
   String get patientsQueueSummaryLabel => 'Waiting queue';
 
   @override
   String get patientsQueueSummaryBody =>
-      'Patients currently waiting for service.';
+      'Patients currently waiting pour service.';
 
   @override
   String get patientsDuplicateSummaryLabel => 'Duplicate review';
@@ -2838,13 +2843,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Potential matches needing review.';
 
   @override
-  String get patientsFiltersLabel => 'Patient filters';
+  String get patientsFiltersLabel => 'Patient filtres';
 
   @override
-  String get patientsSearchLabel => 'Search';
+  String get patientsSearchLabel => 'Rechercher';
 
   @override
-  String get patientsSearchHint => 'Name, phone, email, identifier, or contact';
+  String get patientsSearchHint =>
+      'Name, téléphone, e-mail, identifiant, ou contact';
 
   @override
   String get patientsPatientIdFilterLabel => 'Patient ID';
@@ -2853,7 +2859,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsGenderFilterLabel => 'Gender';
 
   @override
-  String get patientsStatusFilterLabel => 'Status';
+  String get patientsStatusFilterLabel => 'Statut';
 
   @override
   String get patientsConsentFilterLabel => 'Consent';
@@ -2865,22 +2871,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsVisitDateFilterLabel => 'Visit date';
 
   @override
-  String get patientsVisitFromFilterLabel => 'Visit from';
+  String get patientsVisitFromFilterLabel => 'Visit de';
 
   @override
-  String get patientsVisitToFilterLabel => 'Visit to';
+  String get patientsVisitToFilterLabel => 'Visit à';
 
   @override
-  String get patientsDobFromFilterLabel => 'DOB from';
+  String get patientsDobFromFilterLabel => 'DOB de';
 
   @override
-  String get patientsDobToFilterLabel => 'DOB to';
+  String get patientsDobToFilterLabel => 'DOB à';
 
   @override
-  String get patientsCreatedFromFilterLabel => 'Registered from';
+  String get patientsCreatedFromFilterLabel => 'Registered de';
 
   @override
-  String get patientsCreatedToFilterLabel => 'Registered to';
+  String get patientsCreatedToFilterLabel => 'Registered à';
 
   @override
   String get patientsActiveAdmissionFilterLabel => 'Active admission';
@@ -2889,10 +2895,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsOutstandingBalanceFilterLabel => 'Outstanding balance';
 
   @override
-  String get patientsYesFilterLabel => 'Yes';
+  String get patientsYesFilterLabel => 'Oui';
 
   @override
-  String get patientsNoFilterLabel => 'No';
+  String get patientsNoFilterLabel => 'Non';
 
   @override
   String get patientsFilterIdentitySectionTitle => 'Identity';
@@ -2907,31 +2913,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsApplyFiltersAction => 'Apply';
 
   @override
-  String get patientsClearFiltersAction => 'Clear';
+  String get patientsClearFiltersAction => 'Effacer';
 
   @override
-  String get patientsAdvancedFiltersAction => 'Advanced filters';
+  String get patientsAdvancedFiltersAction => 'Advanced filtres';
 
   @override
-  String get patientsAdvancedFiltersTitle => 'Advanced filters';
+  String get patientsAdvancedFiltersTitle => 'Advanced filtres';
 
   @override
   String get patientsSummaryLoadingTitle => 'Loading patients';
 
   @override
-  String get patientsSummaryLoadingBody => 'Loading related patient records.';
+  String get patientsSummaryLoadingBody => 'Loading related patient dossiers.';
 
   @override
-  String get patientsActiveFilter => 'Active';
+  String get patientsActiveFilter => 'Actif';
 
   @override
-  String get patientsInactiveFilter => 'Inactive';
+  String get patientsInactiveFilter => 'Inactif';
 
   @override
   String get patientsPatientColumnLabel => 'Patient';
 
   @override
-  String get patientsPatientNumberColumnLabel => 'Patient no.';
+  String get patientsPatientNumberColumnLabel => 'Patient non.';
 
   @override
   String get patientsAgeSexColumnLabel => 'Age / sex';
@@ -2958,7 +2964,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsDobColumnLabel => 'DOB';
 
   @override
-  String get patientsStatusColumnLabel => 'Status';
+  String get patientsStatusColumnLabel => 'Statut';
 
   @override
   String get patientsNoAlertsLabel => 'No alerts';
@@ -2967,13 +2973,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAllergyAlertLabel => 'Allergy';
 
   @override
-  String get patientsNoVisitLabel => 'No visit';
+  String get patientsNoVisitLabel => 'No visite';
 
   @override
-  String get patientsCompleteRecordAction => 'Complete record';
+  String get patientsCompleteRecordAction => 'Complete dossier';
 
   @override
-  String get patientsOpenRecordAction => 'Open record';
+  String get patientsOpenRecordAction => 'Open dossier';
 
   @override
   String patientsPageLabel(int from, int to, int total) {
@@ -2987,36 +2993,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsNextPageLabel => 'Next patients page';
 
   @override
-  String get patientsEmptyTitle => 'No patients found';
+  String get patientsEmptyTitle => 'Aucun patients trouvé';
 
   @override
-  String get patientsEmptyBody => 'Adjust the filters or register a patient.';
+  String get patientsEmptyBody => 'Adjust le filtres ou register un patient.';
 
   @override
-  String get patientsDetailTitle => 'Patient details';
+  String get patientsDetailTitle => 'Patient détails';
 
   @override
   String get patientsDetailLoadingTitle => 'Loading patient';
 
   @override
   String get patientsDetailLoadingBody =>
-      'Loading demographics and related records.';
+      'Loading demographics et related dossiers.';
 
   @override
-  String get patientsNoSelectionTitle => 'Select a patient';
+  String get patientsNoSelectionTitle => 'Select un patient';
 
   @override
   String get patientsNoSelectionBody =>
-      'Open a patient to review demographics, contacts, clinical flags, documents, and visits.';
+      'Open un patient à review demographics, contacts, clinique flags, documents, et visites.';
 
   @override
-  String get patientsNameLabel => 'Name';
+  String get patientsNameLabel => 'Nom';
 
   @override
   String get patientsIdentifierLabel => 'Identifier';
 
   @override
-  String get patientsDobLabel => 'Date of birth';
+  String get patientsDobLabel => 'Date sur naissance';
 
   @override
   String get patientsGenderLabel => 'Gender';
@@ -3025,7 +3031,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsPhoneLabel => 'Phone';
 
   @override
-  String get patientsEmailLabel => 'Email';
+  String get patientsEmailLabel => 'E-mail';
 
   @override
   String get patientsFacilityLabel => 'Facility';
@@ -3037,19 +3043,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsRegistrationIncompleteValue => 'Completion needed';
 
   @override
-  String get patientsFirstNameLabel => 'First name';
+  String get patientsFirstNameLabel => 'First nom';
 
   @override
-  String get patientsLastNameLabel => 'Last name';
+  String get patientsLastNameLabel => 'Last nom';
 
   @override
   String get patientsIdentifierTypeLabel => 'Identifier type';
 
   @override
-  String get patientsIdentifierValueLabel => 'Identifier value';
+  String get patientsIdentifierValueLabel => 'Identifier valeur';
 
   @override
-  String get patientsActiveCheckboxLabel => 'Patient is active';
+  String get patientsActiveCheckboxLabel => 'Patient is actif';
 
   @override
   String get patientsDatePickerAction => 'Select date';
@@ -3058,20 +3064,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAddTitle => 'Add patient';
 
   @override
-  String get patientsEmergencyRegisterTitle => 'Emergency registration';
+  String get patientsEmergencyRegisterTitle => 'Emergency inscription';
 
   @override
   String get patientsEmergencyRegisterBody =>
-      'Create a minimal patient record now; demographics and documents can be completed after urgent care starts.';
+      'Create un minimal patient dossier now; demographics et documents can be terminé après urgent soins starts.';
 
   @override
-  String get patientsEmergencyFirstNameLabel => 'Known first name';
+  String get patientsEmergencyFirstNameLabel => 'Known first nom';
 
   @override
-  String get patientsEmergencyLastNameLabel => 'Known last name';
+  String get patientsEmergencyLastNameLabel => 'Known last nom';
 
   @override
-  String get patientsEmergencySaveAction => 'Register emergency patient';
+  String get patientsEmergencySaveAction => 'Register urgence patient';
 
   @override
   String get patientsEditTitle => 'Edit patient';
@@ -3081,20 +3087,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String patientsDeleteBody(String name) {
-    return 'Delete $name from active patient records?';
+    return 'Delete $name de actif patient dossiers?';
   }
 
   @override
-  String get patientsGenderMale => 'Male';
+  String get patientsGenderMale => 'Homme';
 
   @override
-  String get patientsGenderFemale => 'Female';
+  String get patientsGenderFemale => 'Femme';
 
   @override
-  String get patientsGenderOther => 'Other';
+  String get patientsGenderOther => 'Autre';
 
   @override
-  String get patientsGenderUnknown => 'Unknown';
+  String get patientsGenderUnknown => 'Inconnu';
 
   @override
   String get patientsQuickActionsTitle => 'Quick actions';
@@ -3112,43 +3118,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsQuickTriageAction => 'Triage';
 
   @override
-  String get patientsQuickClinicalAction => 'Clinical visit';
+  String get patientsQuickClinicalAction => 'Clinical visite';
 
   @override
-  String get patientsQuickBillingAction => 'Billing';
+  String get patientsQuickBillingAction => 'Facturation';
 
   @override
   String get patientsQuickAdmissionAction => 'Admission';
 
   @override
-  String get patientsQuickReportAction => 'Patient report';
+  String get patientsQuickReportAction => 'Patient rapport';
 
   @override
   String get patientsQuickActionQueuedMessage =>
-      'The patient context is ready for the selected workflow.';
+      'Le patient context is ready pour le selected workflow.';
 
   @override
-  String get patientsQuickActionSavedMessage => 'Patient workflow updated.';
+  String get patientsQuickActionSavedMessage => 'Patient workflow mis à jour.';
 
   @override
   String patientsWorkflowValidationMessage(String fields) {
-    return 'Check these fields and try again: $fields.';
+    return 'Check these champs et réessayer: $fields.';
   }
 
   @override
-  String get patientsAppointmentDialogTitle => 'Schedule appointment';
+  String get patientsAppointmentDialogTitle => 'Schedule rendez-vous';
 
   @override
   String get patientsAppointmentDateLabel => 'Appointment date';
 
   @override
-  String get patientsAppointmentTimeLabel => 'Start time';
+  String get patientsAppointmentTimeLabel => 'Start heure';
 
   @override
   String get patientsAppointmentDurationLabel => 'Duration minutes';
 
   @override
-  String get patientsAppointmentStatusLabel => 'Appointment status';
+  String get patientsAppointmentStatusLabel => 'Appointment statut';
 
   @override
   String get patientsAppointmentReasonLabel => 'Reason';
@@ -3157,7 +3163,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsProviderLabel => 'Provider';
 
   @override
-  String get patientsProviderOptionalHelper => 'Optional provider assignment.';
+  String get patientsProviderOptionalHelper =>
+      'Optional prestataire assignment.';
 
   @override
   String get patientsWorkflowSectionTitle => 'Workflow';
@@ -3166,7 +3173,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsArrivalSectionTitle => 'Arrival';
 
   @override
-  String get patientsTriagePrioritySectionTitle => 'Triage priority';
+  String get patientsTriagePrioritySectionTitle => 'Triage priorité';
 
   @override
   String get patientsVitalsSectionTitle => 'Vital signs';
@@ -3175,10 +3182,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsClinicalAssessmentSectionTitle => 'Assessment';
 
   @override
-  String get patientsBillingSectionTitle => 'Billing details';
+  String get patientsBillingSectionTitle => 'Billing détails';
 
   @override
-  String get patientsAdmissionClinicalSectionTitle => 'Clinical approval';
+  String get patientsAdmissionClinicalSectionTitle => 'Clinical approbation';
 
   @override
   String get patientsAdmissionLocationSectionTitle => 'Admission location';
@@ -3187,13 +3194,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsNotesSectionTitle => 'Notes';
 
   @override
-  String get patientsOpdCheckInDialogTitle => 'Start OPD encounter';
+  String get patientsOpdCheckInDialogTitle => 'Start OPD consultation';
 
   @override
   String get patientsTriageDialogTitle => 'Triage intake';
 
   @override
-  String get patientsClinicalDialogTitle => 'Clinical visit';
+  String get patientsClinicalDialogTitle => 'Clinical visite';
 
   @override
   String get patientsBillingDialogTitle => 'Consultation billing';
@@ -3239,7 +3246,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsVitalsRequiredMessage =>
-      'Enter at least one vital sign before completing triage.';
+      'Enter at least one vital sign avant completing triage.';
 
   @override
   String get patientsVitalUnitLabel => 'Unit';
@@ -3251,16 +3258,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsVitalAbnormalLabel => 'Abnormal';
 
   @override
-  String get patientsVitalNumberInvalidMessage => 'Enter a valid number.';
+  String get patientsVitalNumberInvalidMessage => 'Enter un valid number.';
 
   @override
   String patientsVitalRangeSuggestion(String profile, String range) {
-    return 'Expected for $profile: $range';
+    return 'Expected pour $profile: $range';
   }
 
   @override
   String patientsVitalLimitMessage(String range) {
-    return 'Enter a value between $range.';
+    return 'Enter un valeur between $range.';
   }
 
   @override
@@ -3285,28 +3292,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsPaymentMethodLabel => 'Payment method';
 
   @override
-  String get patientsTransactionReferenceLabel => 'Transaction reference';
+  String get patientsTransactionReferenceLabel => 'Transaction référence';
 
   @override
   String get patientsAdmissionReasonLabel => 'Admission reason';
 
   @override
-  String get patientsWardLabel => 'Ward';
+  String get patientsWardLabel => 'Service';
 
   @override
-  String get patientsRoomLabel => 'Room';
+  String get patientsRoomLabel => 'Chambre';
 
   @override
-  String get patientsBedLabel => 'Bed';
+  String get patientsBedLabel => 'Lit';
 
   @override
-  String get patientsReportDialogTitle => 'Patient report';
+  String get patientsReportDialogTitle => 'Patient rapport';
 
   @override
-  String get patientsPrintReportAction => 'Print report';
+  String get patientsPrintReportAction => 'Print rapport';
 
   @override
-  String get patientsAppointmentsSectionTitle => 'Appointments';
+  String get patientsAppointmentsSectionTitle => 'Rendez-vous';
 
   @override
   String get patientsEncountersSectionTitle => 'Encounters';
@@ -3324,7 +3331,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsReportGeneratedSectionTitle => 'Generated';
 
   @override
-  String get patientsReportPreviewDialogTitle => 'Print preview';
+  String get patientsReportPreviewDialogTitle => 'Print aperçu';
 
   @override
   String get patientsReportPeriodLabel => 'Report period';
@@ -3372,13 +3379,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsReportNoRecordsForSection =>
-      'No records available for the selected period.';
+      'No dossiers disponible pour le selected period.';
 
   @override
   String get patientsReportPreparedOnLabel => 'Prepared on';
 
   @override
-  String get patientsReportHospitalNameLabel => 'Hospital name';
+  String get patientsReportHospitalNameLabel => 'Hospital nom';
 
   @override
   String get patientsReportHospitalContactLabel => 'Contact information';
@@ -3390,21 +3397,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsReportHospitalAddressLabel => 'Address';
 
   @override
-  String get patientsReportPrintNowAction => 'Print';
+  String get patientsReportPrintNowAction => 'Imprimer';
 
   @override
   String get patientsReportDateRangeInvalidMessage =>
-      'Start date must be on or before end date.';
+      'Start date doit être on or before end date.';
 
   @override
-  String get patientsTimeInvalidMessage => 'Enter time as HH:MM.';
+  String get patientsTimeInvalidMessage => 'Enter heure as HH:MM.';
 
   @override
   String get patientsTimeHint => 'HH:MM';
 
   @override
   String get patientsDurationInvalidMessage =>
-      'Enter a duration between 1 and 720 minutes.';
+      'Enter un duration between 1 et 720 minutes.';
 
   @override
   String get patientsIdentifiersSectionTitle => 'Identifiers';
@@ -3419,7 +3426,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAllergiesSectionTitle => 'Allergies';
 
   @override
-  String get patientsMedicalHistorySectionTitle => 'Medical history';
+  String get patientsMedicalHistorySectionTitle => 'Medical historique';
 
   @override
   String get patientsDocumentsSectionTitle => 'Documents';
@@ -3431,7 +3438,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsTimelineSectionTitle => 'Timeline';
 
   @override
-  String get patientsNoIdentifiers => 'No identifiers recorded.';
+  String get patientsNoIdentifiers => 'No identifiants recorded.';
 
   @override
   String get patientsNoContacts => 'No contacts recorded.';
@@ -3443,7 +3450,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsNoAllergies => 'No allergies recorded.';
 
   @override
-  String get patientsNoMedicalHistory => 'No medical history recorded.';
+  String get patientsNoMedicalHistory => 'No médical historique recorded.';
 
   @override
   String get patientsNoDocuments => 'No documents recorded.';
@@ -3455,34 +3462,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsNoTimeline => 'No timeline entries recorded.';
 
   @override
-  String get patientsAddRelatedAction => 'Add record';
+  String get patientsAddRelatedAction => 'Add dossier';
 
   @override
-  String get patientsAddRelatedTitle => 'Add patient record';
+  String get patientsAddRelatedTitle => 'Add patient dossier';
 
   @override
-  String get patientsEditRelatedTitle => 'Edit patient record';
+  String get patientsEditRelatedTitle => 'Edit patient dossier';
 
   @override
-  String get patientsRelatedDeleteTitle => 'Delete patient record';
+  String get patientsRelatedDeleteTitle => 'Delete patient dossier';
 
   @override
-  String get patientsRelatedDeleteBody => 'Delete this patient record?';
+  String get patientsRelatedDeleteBody => 'Delete ce patient dossier?';
 
   @override
   String get patientsContactTypeLabel => 'Contact type';
 
   @override
-  String get patientsContactValueLabel => 'Contact value';
+  String get patientsContactValueLabel => 'Contact valeur';
 
   @override
-  String get patientsContactInvalidMessage => 'Enter a valid contact value.';
+  String get patientsContactInvalidMessage => 'Enter un valid contact valeur.';
 
   @override
-  String get patientsPrimaryRecordLabel => 'Primary record';
+  String get patientsPrimaryRecordLabel => 'Primary dossier';
 
   @override
-  String get patientsGuardianNameLabel => 'Guardian name';
+  String get patientsGuardianNameLabel => 'Guardian nom';
 
   @override
   String get patientsGuardianRelationshipLabel => 'Relationship';
@@ -3516,20 +3523,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsStorageKeyAdvancedHelper =>
-      'Upload a file instead. Only enter this when referencing an existing stored document.';
+      'Upload un file instead. Only enter ce lorsque referencing un existing stored document.';
 
   @override
   String get patientsDocumentUploadTitle => 'Document upload';
 
   @override
   String get patientsDocumentUploadEmpty =>
-      'No file selected. PDF, JPG, and PNG files up to 10 MB are supported.';
+      'No file selected. PDF, JPG, et PNG files up à 10 MB are supported.';
 
   @override
   String get patientsChooseDocumentAction => 'Choose file';
 
   @override
-  String get patientsFileNameLabel => 'File name';
+  String get patientsFileNameLabel => 'File nom';
 
   @override
   String get patientsContentTypeLabel => 'Content type';
@@ -3538,7 +3545,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsConsentTypeLabel => 'Consent type';
 
   @override
-  String get patientsConsentStatusLabel => 'Consent status';
+  String get patientsConsentStatusLabel => 'Consent statut';
 
   @override
   String get patientsConsentDateLabel => 'Consent date';
@@ -3548,24 +3555,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsDuplicateWarningBody =>
-      'Review the matches before creating another patient record. Continue only when this is a different patient.';
+      'Review le matches avant creating another patient dossier. Continue only lorsque ce is un different patient.';
 
   @override
   String get patientsDuplicateReviewTitle => 'Duplicate review';
 
   @override
-  String get patientsNoDuplicateReviewsTitle => 'No duplicates to review';
+  String get patientsNoDuplicateReviewsTitle => 'No duplicates à review';
 
   @override
   String get patientsNoDuplicateReviewsBody =>
-      'Potential duplicate patient records will appear here.';
+      'Potential duplicate patient dossiers will appear here.';
 
   @override
-  String get patientsMergePreviewLoadingTitle => 'Loading merge preview';
+  String get patientsMergePreviewLoadingTitle => 'Loading merge aperçu';
 
   @override
   String get patientsMergePreviewLoadingBody =>
-      'Checking which records will move to the retained patient.';
+      'Checking which dossiers will move à le retained patient.';
 
   @override
   String patientsDuplicateScoreLabel(int score) {
@@ -3579,7 +3586,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsDismissDuplicateAction => 'Dismiss';
 
   @override
-  String get patientsMergePreviewTitle => 'Merge preview';
+  String get patientsMergePreviewTitle => 'Merge aperçu';
 
   @override
   String patientsMergeTransferCountLabel(String resource, int count) {
@@ -3594,14 +3601,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsActivityBody =>
-      'Patient record issues that may need review.';
+      'Patient dossier issues cette may need review.';
 
   @override
   String get patientsActivityEmptyTitle => 'No registry issues';
 
   @override
   String get patientsActivityEmptyBody =>
-      'No duplicate, consent, or document alerts are visible.';
+      'No duplicate, consent, ou document alerts are visible.';
 
   @override
   String get patientsDuplicateActivityTitle => 'Possible duplicate';
@@ -3634,17 +3641,17 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count patients have no documents',
-      one: '1 patient has no documents',
+      one: '1 patient has non documents',
     );
     return '$_temp0';
   }
 
   @override
-  String get homeReadyTitle => 'Hospital operations workspace';
+  String get homeReadyTitle => 'Hospital operations espace de travail';
 
   @override
   String get homeReadyBody =>
-      'Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.';
+      'Coordinate patient inscription, clinique soins, pharmacie, billing, diagnostics, operations, et compliance de one responsive HMS shell.';
 
   @override
   String get homeEntryPointsLabel => 'Core entry points';
@@ -3654,57 +3661,57 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get homeFeatureResponsiveBody =>
-      'Register patients, book appointments, and manage queues for OPD and emergency intake.';
+      'Register patients, book appointments, et manage queues pour OPD et urgence intake.';
 
   @override
-  String get homeFeatureNavigationTitle => 'Clinical workspace';
+  String get homeFeatureNavigationTitle => 'Clinical espace de travail';
 
   @override
   String get homeFeatureNavigationBody =>
-      'Open encounters, clinical notes, diagnoses, care plans, orders, and inpatient handovers.';
+      'Open consultations, clinique notes, diagnoses, soins forfaits, commandes, et hospitalisé handovers.';
 
   @override
   String get homeFeatureLocalizationTitle => 'Revenue cycle';
 
   @override
   String get homeFeatureLocalizationBody =>
-      'Track invoices, cashier payments, refunds, coverage, pre-authorizations, and claims.';
+      'Track factures, cashier paiements, refunds, coverage, pre-authorizations, et réclamations.';
 
   @override
   String get homeFeatureSettingsTitle => 'Facility operations';
 
   @override
   String get homeFeatureSettingsBody =>
-      'Coordinate wards, beds, departments, equipment, housekeeping, maintenance, and staff rosters.';
+      'Coordinate services, lits, départements, équipement, entretien, maintenance, et personnel rosters.';
 
   @override
-  String get homeLoadingTitle => 'Preparing dashboard';
+  String get homeLoadingTitle => 'Preparing tableau de bord';
 
   @override
   String get homeLoadingBody => 'Loading readiness.';
 
   @override
-  String get homeTodayAtAGlanceTitle => 'Today at a glance';
+  String get homeTodayAtAGlanceTitle => 'Today at un glance';
 
   @override
   String homeMetricCardSemantics(String label, String value) {
-    return '$label: $value. View details.';
+    return '$label: $value. View détails.';
   }
 
   @override
-  String get homeOpenHrWorkspaceLink => 'Open HR workspace';
+  String get homeOpenHrWorkspaceLink => 'Open HR espace de travail';
 
   @override
-  String get homeMetricActiveStaffCompact => 'Active staff';
+  String get homeMetricActiveStaffCompact => 'Active personnel';
 
   @override
-  String get homeMetricShiftsTodayCompact => 'Shifts today';
+  String get homeMetricShiftsTodayCompact => 'Shifts aujourd\'hui';
 
   @override
-  String get homeMetricPendingLeavesCompact => 'Pending leave';
+  String get homeMetricPendingLeavesCompact => 'Pending congé';
 
   @override
-  String get homeMetricOnLeaveTodayCompact => 'On leave';
+  String get homeMetricOnLeaveTodayCompact => 'On congé';
 
   @override
   String get homeMetricUnassignedShiftsCompact => 'Unassigned';
@@ -3716,94 +3723,94 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeMetricMissedShiftsTodayCompact => 'Missed shifts';
 
   @override
-  String get homeMetricPayrollPendingCompact => 'Payroll pending';
+  String get homeMetricPayrollPendingCompact => 'Payroll en attente';
 
   @override
-  String get homeViewAllAction => 'View all';
+  String get homeViewAllAction => 'View tous';
 
   @override
   String get homeTrendLast7Days => 'Last 7 days';
 
   @override
   String get homeTrendDefaultSubtitle =>
-      'Role-focused changes over the latest reporting window.';
+      'Role-focused changes over le latest reporting window.';
 
   @override
-  String get homeTrendEmptyMessage => 'No trend data is available yet.';
+  String get homeTrendEmptyMessage => 'No trend data is disponible yet.';
 
   @override
   String get homeDistributionWorkforceMix => 'Staff availability mix';
 
   @override
   String get homeDistributionDefaultSubtitle =>
-      'Live mix of the records behind this dashboard.';
+      'Live mix sur le dossiers behind ce tableau de bord.';
 
   @override
   String get homeDistributionEmptyMessage =>
-      'No distribution data is available yet.';
+      'No distribution data is disponible yet.';
 
   @override
-  String get homeLoadErrorTitle => 'Dashboard could not load';
+  String get homeLoadErrorTitle => 'Dashboard n\'un pas pu load';
 
   @override
-  String get homeLoadErrorBody => 'Try the request again.';
+  String get homeLoadErrorBody => 'Try le demande again.';
 
   @override
   String get homeServiceAreasLabel => 'Service areas';
 
   @override
   String get homeServiceAreaOutpatient =>
-      'Outpatient, triage, emergency, and ambulance';
+      'Outpatient, triage, urgence, et ambulance';
 
   @override
   String get homeServiceAreaInpatient =>
-      'Inpatient, ICU, theater, nursing, and discharge';
+      'Inpatient, ICU, bloc opératoire, soins infirmiers, et sortie';
 
   @override
   String get homeServiceAreaDiagnostics =>
-      'Laboratory, radiology, pharmacy, and medication dispensing';
+      'Laboratory, radiologie, pharmacie, et médicament dispensing';
 
   @override
   String get homeServiceAreaAdministration =>
-      'Billing, claims, subscriptions, reports, audit, and integrations';
+      'Billing, réclamations, subscriptions, rapports, audit, et intégrations';
 
   @override
-  String get profileTitle => 'Profile';
+  String get profileTitle => 'Profil';
 
   @override
-  String get profileBody => 'Review your account, role, and facility details.';
+  String get profileBody =>
+      'Review votre compte, rôle, et établissement détails.';
 
   @override
-  String get profileAccountSectionTitle => 'Account';
+  String get profileAccountSectionTitle => 'Compte';
 
   @override
-  String get profileAccountSectionBody =>
-      'Core identity and login information.';
+  String get profileAccountSectionBody => 'Core identity et login information.';
 
   @override
-  String get profileProfessionalSectionTitle => 'Professional details';
+  String get profileProfessionalSectionTitle => 'Professional détails';
 
   @override
   String get profileProfessionalSectionBody =>
-      'Role, title, user type, and facility context.';
+      'Role, titre, utilisateur type, et établissement context.';
 
   @override
-  String get profileNameLabel => 'Name';
+  String get profileNameLabel => 'Nom';
 
   @override
-  String get profileEmailLabel => 'Email';
+  String get profileEmailLabel => 'E-mail';
 
   @override
   String get profilePhoneLabel => 'Phone';
 
   @override
-  String get profileStatusLabel => 'Status';
+  String get profileStatusLabel => 'Statut';
 
   @override
   String get profileTitleLabel => 'Title';
 
   @override
-  String get profileOverallRoleLabel => 'Overall role';
+  String get profileOverallRoleLabel => 'Overall rôle';
 
   @override
   String get profileUserTypeLabel => 'User type';
@@ -3829,49 +3836,49 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count direct permissions',
-      one: '1 direct permission',
-      zero: 'No direct permissions',
+      one: '1 direct autorisation',
+      zero: 'No direct autorisations',
     );
     return '$_temp0';
   }
 
   @override
-  String get profileUnavailableTitle => 'Profile unavailable';
+  String get profileUnavailableTitle => 'Profile indisponible';
 
   @override
   String get profileUnavailableBody =>
-      'Sign in again to reload your account details.';
+      'Sign in again à reload votre compte détails.';
 
   @override
-  String get profileUnknownValue => 'Not available';
+  String get profileUnknownValue => 'Not disponible';
 
   @override
-  String get profileLoadingTitle => 'Loading profile';
+  String get profileLoadingTitle => 'Loading profil';
 
   @override
   String get profileLoadingBody =>
-      'Refreshing account, role, and permission details.';
+      'Refreshing compte, rôle, et autorisation détails.';
 
   @override
-  String get profileRolesSectionTitle => 'Assigned roles';
+  String get profileRolesSectionTitle => 'Assigned rôles';
 
   @override
   String get profileRolesSectionBody =>
-      'Roles currently linked to your account.';
+      'Roles currently linked à votre compte.';
 
   @override
-  String get profileRolesEmpty => 'No roles are assigned to this account.';
+  String get profileRolesEmpty => 'No rôles are assigné à ce compte.';
 
   @override
-  String get profilePermissionsSectionTitle => 'Direct permissions';
+  String get profilePermissionsSectionTitle => 'Direct autorisations';
 
   @override
   String get profilePermissionsSectionBody =>
-      'Permissions granted directly to your account.';
+      'Permissions granted directly à votre compte.';
 
   @override
   String get profilePermissionsEmpty =>
-      'No direct permissions are assigned to this account.';
+      'No direct autorisations are assigné à ce compte.';
 
   @override
   String profileRoleCountLabel(int count) {
@@ -3879,134 +3886,138 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count roles',
-      one: '1 role',
-      zero: 'No roles',
+      one: '1 rôle',
+      zero: 'No rôles',
     );
     return '$_temp0';
   }
 
   @override
-  String get profileChangePasswordActionTitle => 'Change password';
+  String get profileChangePasswordActionTitle => 'Change mot de passe';
 
   @override
-  String get profileEditActionTitle => 'Edit profile';
+  String get profileEditActionTitle => 'Edit profil';
 
   @override
-  String get profileEditDialogTitle => 'Edit profile';
+  String get profileEditDialogTitle => 'Edit profil';
 
   @override
   String get profileEditDialogBody =>
-      'Update the name and demographic details stored in your user profile.';
+      'Update le nom et demographic détails stored in votre utilisateur profil.';
 
   @override
-  String get profileEditFirstNameLabel => 'First name';
+  String get profileEditFirstNameLabel => 'First nom';
 
   @override
-  String get profileEditMiddleNameLabel => 'Middle name';
+  String get profileEditMiddleNameLabel => 'Middle nom';
 
   @override
-  String get profileEditLastNameLabel => 'Last name';
+  String get profileEditLastNameLabel => 'Last nom';
 
   @override
   String get profileEditGenderLabel => 'Gender';
 
   @override
-  String get profileGenderMale => 'Male';
+  String get profileGenderMale => 'Homme';
 
   @override
-  String get profileGenderFemale => 'Female';
+  String get profileGenderFemale => 'Femme';
 
   @override
-  String get profileGenderOther => 'Other';
+  String get profileGenderOther => 'Autre';
 
   @override
-  String get profileGenderUnknown => 'Unknown';
+  String get profileGenderUnknown => 'Inconnu';
 
   @override
-  String get profileSaveSuccessMessage => 'Profile updated.';
+  String get profileSaveSuccessMessage => 'Profil mis à jour.';
 
   @override
-  String get profileSaveErrorMessage => 'Profile could not be updated.';
+  String get profileSaveErrorMessage =>
+      'Le profil n\'a pas pu être mis à jour.';
 
   @override
-  String get settingsTitle => 'Settings';
+  String get settingsTitle => 'Paramètres';
 
   @override
-  String get settingsBody => 'Set HOSSPI HMS preferences.';
+  String get settingsBody => 'Définir les préférences HOSSPI HMS.';
 
   @override
-  String get settingsPreferencesSectionTitle => 'Preferences';
+  String get settingsPreferencesSectionTitle => 'Préférences';
 
   @override
   String get settingsPreferencesSectionBody =>
-      'Theme, language, and local display choices.';
+      'Thème, langue et choix d\'affichage locaux.';
 
   @override
-  String get settingsLanguageSectionTitle => 'Language';
+  String get settingsLanguageSectionTitle => 'Langue';
 
   @override
   String get settingsLanguageSectionBody =>
-      'Choose English or French for the app interface.';
+      'Choisissez l\'anglais ou le français pour l\'interface de l\'application.';
 
   @override
-  String get settingsLanguageFieldLabel => 'App language';
+  String get settingsLanguageFieldLabel => 'Langue de l\'application';
 
   @override
-  String get settingsLanguageEnglish => 'English';
+  String get settingsLanguageEnglish => 'Anglais';
 
   @override
-  String get settingsLanguageFrench => 'French';
+  String get settingsLanguageFrench => 'Français';
 
   @override
-  String get settingsThemeSectionTitle => 'Theme';
+  String get settingsThemeSectionTitle => 'Thème';
 
   @override
-  String get settingsThemeSectionBody => 'Use system, light, or dark mode.';
+  String get settingsThemeSectionBody =>
+      'Utiliser le mode système, clair ou sombre.';
 
   @override
   String get settingsThemeModeFieldLabel => 'App theme';
 
   @override
-  String get settingsThemeModeSystem => 'System';
+  String get settingsThemeModeSystem => 'Système';
 
   @override
-  String get settingsThemeModeSystemDescription => 'Follow the device setting.';
+  String get settingsThemeModeSystemDescription =>
+      'Suivre le réglage de l\'appareil.';
 
   @override
-  String get settingsThemeModeLight => 'Light';
+  String get settingsThemeModeLight => 'Clair';
 
   @override
-  String get settingsThemeModeLightDescription => 'Use the light color scheme.';
+  String get settingsThemeModeLightDescription => 'Use le light color scheme.';
 
   @override
-  String get settingsThemeModeDark => 'Dark';
+  String get settingsThemeModeDark => 'Sombre';
 
   @override
-  String get settingsThemeModeDarkDescription => 'Use the dark color scheme.';
+  String get settingsThemeModeDarkDescription => 'Use le dark color scheme.';
 
   @override
-  String get settingsSaveErrorMessage => 'The preference could not be saved.';
+  String get settingsSaveErrorMessage =>
+      'The preference n\'a pas pu être saved.';
 
   @override
   String get settingsAccessibilitySectionTitle => 'Accessibility';
 
   @override
   String get settingsAccessibilitySectionBody =>
-      'Improve readability and reduce motion across clinical workspaces.';
+      'Improve readability et reduce motion across clinique workspaces.';
 
   @override
   String get settingsReduceMotionLabel => 'Reduce motion';
 
   @override
   String get settingsReduceMotionDescription =>
-      'Use simpler transitions and fewer animations.';
+      'Use simpler transitions et fewer animations.';
 
   @override
   String get settingsBoldTextLabel => 'Bold text';
 
   @override
   String get settingsBoldTextDescription =>
-      'Increase text weight for easier reading.';
+      'Increase text weight pour easier reading.';
 
   @override
   String get settingsTextScaleFieldLabel => 'Text size';
@@ -4022,28 +4033,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsSubscriptionsActionBody =>
-      'Review plans, module entitlements, invoices, licenses, and renewal state.';
+      'Review forfaits, module entitlements, factures, licenses, et renewal state.';
 
   @override
-  String get settingsAccountSectionTitle => 'Account and security';
+  String get settingsAccountSectionTitle => 'Account et sécurité';
 
   @override
   String get settingsAccountSectionBody =>
-      'Profile and sign-in controls stay with the user account.';
+      'Profile et sign-in controls stay avec le utilisateur compte.';
 
   @override
-  String get settingsProfileActionTitle => 'Profile';
+  String get settingsProfileActionTitle => 'Profil';
 
   @override
   String get settingsProfileActionBody =>
-      'Review identity, role, and facility context.';
+      'Review identity, rôle, et établissement context.';
 
   @override
-  String get settingsChangePasswordActionTitle => 'Change password';
+  String get settingsChangePasswordActionTitle => 'Change mot de passe';
 
   @override
   String get settingsChangePasswordActionBody =>
-      'Update your password and restart the session.';
+      'Update votre mot de passe et restart le session.';
 
   @override
   String get settingsAdministrationSectionTitle => 'Administration boundaries';
@@ -4053,54 +4064,54 @@ class AppLocalizationsFr extends AppLocalizations {
       'Workspace administration stays in dedicated modules.';
 
   @override
-  String get settingsTenantBoundaryLabel => 'Tenant settings';
+  String get settingsTenantBoundaryLabel => 'Tenant paramètres';
 
   @override
-  String get settingsFacilityBoundaryLabel => 'Facility settings';
+  String get settingsFacilityBoundaryLabel => 'Facility paramètres';
 
   @override
-  String get settingsSecurityBoundaryLabel => 'User and security settings';
+  String get settingsSecurityBoundaryLabel => 'User et sécurité paramètres';
 
   @override
   String get settingsSecurityBoundaryBody =>
-      'Review administrator access before opening user management.';
+      'Review administrator accès avant opening utilisateur management.';
 
   @override
   String get settingsTenantFacilitySetupActionTitle =>
-      'Tenant and facility setup';
+      'Tenant et établissement setup';
 
   @override
   String get settingsTenantFacilitySetupActionBody =>
-      'Configure organization identity, facility profile, departments, units, and physical locations.';
+      'Configure organization identity, établissement profil, départements, unités, et physical locations.';
 
   @override
-  String get tenantFacilitySetupTitle => 'Tenant and facility setup';
+  String get tenantFacilitySetupTitle => 'Tenant et établissement setup';
 
   @override
   String get tenantFacilitySetupBody =>
-      'Prepare the organization and facility before daily hospital operations begin.';
+      'Prepare le organization et établissement avant daily hôpital operations begin.';
 
   @override
   String get tenantFacilitySetupLoadingTitle => 'Loading setup';
 
   @override
   String get tenantFacilitySetupLoadingBody =>
-      'Loading organization and facility configuration.';
+      'Loading organization et établissement configuration.';
 
   @override
-  String get tenantFacilityHrSetupTitle => 'Facility structure for HR';
+  String get tenantFacilityHrSetupTitle => 'Facility structure pour HR';
 
   @override
   String get tenantFacilityHrSetupBody =>
-      'Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.';
+      'Maintain départements et unités pour le actuel établissement so personnel onboarding et assignments stay accurate.';
 
   @override
   String get tenantFacilityHrSetupDepartmentsBody =>
-      'Departments group staff and rosters by service area.';
+      'Departments group personnel et rosters by service area.';
 
   @override
   String get tenantFacilityHrSetupUnitsBody =>
-      'Units refine department coverage for shift and ward assignments.';
+      'Units refine département coverage pour quart et service assignments.';
 
   @override
   String get tenantFacilityHrSetupManageAction => 'Manage';
@@ -4112,10 +4123,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilitySummaryNeedsSetup => 'Needs setup';
 
   @override
-  String get tenantFacilitySummaryNoTenant => 'No tenant profile';
+  String get tenantFacilitySummaryNoTenant => 'No locataire profil';
 
   @override
-  String get tenantFacilitySummaryNoFacility => 'No facility selected';
+  String get tenantFacilitySummaryNoFacility => 'No établissement selected';
 
   @override
   String tenantFacilitySummaryRecordCount(int count) {
@@ -4123,8 +4134,8 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count records',
-      one: '1 record',
-      zero: 'No records',
+      one: '1 dossier',
+      zero: 'No dossiers',
     );
     return '$_temp0';
   }
@@ -4135,15 +4146,15 @@ class AppLocalizationsFr extends AppLocalizations {
       departments,
       locale: localeName,
       other: '$departments departments',
-      one: '1 department',
-      zero: 'No departments',
+      one: '1 département',
+      zero: 'No départements',
     );
     String _temp1 = intl.Intl.pluralLogic(
       units,
       locale: localeName,
       other: '$units units',
-      one: '1 unit',
-      zero: 'no units',
+      one: '1 unité',
+      zero: 'non unités',
     );
     return '$_temp0, $_temp1';
   }
@@ -4154,22 +4165,22 @@ class AppLocalizationsFr extends AppLocalizations {
       wards,
       locale: localeName,
       other: '$wards wards',
-      one: '1 ward',
-      zero: 'No wards',
+      one: '1 service',
+      zero: 'No services',
     );
     String _temp1 = intl.Intl.pluralLogic(
       rooms,
       locale: localeName,
       other: '$rooms rooms',
-      one: '1 room',
-      zero: 'no rooms',
+      one: '1 chambre',
+      zero: 'non chambres',
     );
     String _temp2 = intl.Intl.pluralLogic(
       beds,
       locale: localeName,
       other: '$beds beds',
-      one: '1 bed',
-      zero: 'no beds',
+      one: '1 lit',
+      zero: 'non lits',
     );
     return '$_temp0, $_temp1, $_temp2';
   }
@@ -4183,21 +4194,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tenantFacilityChecklistTenant => 'Tenant profile is configured';
+  String get tenantFacilityChecklistTenant => 'Tenant profil is configured';
 
   @override
   String get tenantFacilityChecklistIdentity =>
-      'Facility identity and contacts are configured';
+      'Facility identity et contacts are configured';
 
   @override
   String get tenantFacilityChecklistDepartments => 'Departments are configured';
 
   @override
   String get tenantFacilityChecklistBranches =>
-      'Branches are configured (optional)';
+      'Branches are configured (facultatif)';
 
   @override
-  String get tenantFacilityChecklistUnits => 'Units are configured (optional)';
+  String get tenantFacilityChecklistUnits =>
+      'Units are configured (facultatif)';
 
   @override
   String get tenantFacilityChecklistWards => 'Wards are configured';
@@ -4210,17 +4222,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tenantFacilityChecklistLocations =>
-      'Rooms, wards, or beds are configured';
+      'Rooms, services, ou lits are configured';
 
   @override
   String get tenantFacilityWizardTitle => 'Guided setup';
 
   @override
   String get tenantFacilityWizardBody =>
-      'Complete the main setup flow in order before daily operations begin.';
+      'Complete le main setup flow in commande avant daily operations begin.';
 
   @override
-  String get tenantFacilityWizardStepTenant => 'Tenant profile';
+  String get tenantFacilityWizardStepTenant => 'Tenant profil';
 
   @override
   String get tenantFacilityWizardStepFacility => 'Facility identity';
@@ -4244,67 +4256,67 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityWizardStepBeds => 'Beds';
 
   @override
-  String get tenantFacilityWizardStepOrganization => 'Departments and units';
+  String get tenantFacilityWizardStepOrganization => 'Departments et unités';
 
   @override
-  String get tenantFacilityWizardStepCareSpaces => 'Wards, rooms, and beds';
+  String get tenantFacilityWizardStepCareSpaces => 'Wards, chambres, et lits';
 
   @override
   String get tenantFacilityWizardContinueAction => 'Continue setup';
 
   @override
   String get tenantFacilityBranchesOptionalHint =>
-      'Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.';
+      'Branches are facultatif pour single-site établissements. Skip ce step lorsque le établissement acts as le only site.';
 
   @override
   String get tenantFacilityGateNeedFacility =>
-      'Configure facility identity before adding departments.';
+      'Configure établissement identity avant adding départements.';
 
   @override
   String get tenantFacilityGateNeedDepartmentForUnits =>
-      'Create at least one department before adding units.';
+      'Create at least one département avant adding unités.';
 
   @override
   String get tenantFacilityGateNeedDepartmentForWards =>
-      'Create at least one department before adding wards.';
+      'Create at least one département avant adding services.';
 
   @override
   String get tenantFacilityGateNeedWardOrDepartmentForRooms =>
-      'Create at least one department or ward before adding rooms.';
+      'Create at least one département ou service avant adding chambres.';
 
   @override
   String get tenantFacilityGateNeedWardsForBeds =>
-      'Create at least one ward before adding beds.';
+      'Create at least one service avant adding lits.';
 
   @override
   String get tenantFacilityRoomWardOptionalHint =>
-      'Leave unassigned for outpatient or department consult rooms.';
+      'Leave non assigné pour ambulatoire ou département consult chambres.';
 
   @override
   String get tenantFacilityRoomOutpatientLabel =>
-      'Outpatient / department area';
+      'Outpatient / département area';
 
   @override
   String get tenantFacilityInvalidBranchSelection =>
-      'Select a branch that belongs to this facility.';
+      'Select un succursale cette belongs à ce établissement.';
 
   @override
   String get tenantFacilityInvalidDepartmentSelection =>
-      'Select a department that belongs to this facility.';
+      'Select un département cette belongs à ce établissement.';
 
   @override
   String get tenantFacilityInvalidWardSelection =>
-      'Select a ward that belongs to this facility.';
+      'Select un service cette belongs à ce établissement.';
 
   @override
   String get tenantFacilityInvalidRoomSelection =>
-      'Select a room that belongs to this facility.';
+      'Select un chambre cette belongs à ce établissement.';
 
   @override
-  String get tenantFacilitySubscriptionSummaryTitle => 'Subscription status';
+  String get tenantFacilitySubscriptionSummaryTitle => 'Subscription statut';
 
   @override
-  String get tenantFacilitySubscriptionNoPlan => 'No active subscription';
+  String get tenantFacilitySubscriptionNoPlan => 'No actif abonnement';
 
   @override
   String tenantFacilitySubscriptionModulesCount(int count) {
@@ -4312,7 +4324,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count active modules',
-      one: '1 active module',
+      one: '1 actif module',
     );
     return '$_temp0';
   }
@@ -4322,7 +4334,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tenantFacilityPermissionsBody =>
-      'Write actions require tenant or facility administrator permissions.';
+      'Write actions require locataire ou établissement administrator autorisations.';
 
   @override
   String get tenantFacilityTenantAdminPermission => 'Tenant administrator';
@@ -4338,53 +4350,53 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tenantFacilityPermissionRequired =>
-      'Administrator permission is required for this action.';
+      'Administrator autorisation est requis pour ce action.';
 
   @override
-  String get tenantFacilityTenantSectionTitle => 'Tenant profile';
+  String get tenantFacilityTenantSectionTitle => 'Tenant profil';
 
   @override
   String get tenantFacilityTenantSectionBody =>
-      'Organization details shared across facilities.';
+      'Organization détails shared across établissements.';
 
   @override
-  String get tenantFacilityTenantNameLabel => 'Tenant name';
+  String get tenantFacilityTenantNameLabel => 'Tenant nom';
 
   @override
   String get tenantFacilityTenantSlugLabel => 'Tenant slug';
 
   @override
-  String get tenantFacilityActiveLabel => 'Active';
+  String get tenantFacilityActiveLabel => 'Actif';
 
   @override
-  String get tenantFacilitySaveTenantAction => 'Save tenant';
+  String get tenantFacilitySaveTenantAction => 'Save locataire';
 
   @override
-  String get tenantFacilityFacilitySectionTitle => 'Facility profile';
+  String get tenantFacilityFacilitySectionTitle => 'Facility profil';
 
   @override
   String get tenantFacilityFacilitySectionBody =>
-      'Facility name, logo reference, contact details, address, type, and active state.';
+      'Facility nom, logo référence, contact détails, adresse, type, et actif state.';
 
   @override
   String get tenantFacilityLogoLabel => 'Facility logo';
 
   @override
   String get tenantFacilityLogoHelper =>
-      'Upload a square image (JPG, PNG, or WebP, up to 5 MB).';
+      'Upload un square image (JPG, PNG, ou WebP, up à 5 MB).';
 
   @override
   String get tenantFacilityChooseLogoAction => 'Choose image';
 
   @override
-  String get tenantFacilityRemoveLogoAction => 'Remove';
+  String get tenantFacilityRemoveLogoAction => 'Retirer';
 
   @override
   String get tenantFacilityLogoUrlLabel => 'Logo storage URL';
 
   @override
   String get tenantFacilityLogoUrlHelper =>
-      'Use a URL created by the approved storage service.';
+      'Use un URL créé by le approuvé storage service.';
 
   @override
   String get tenantFacilityAddressLineLabel => 'Address line';
@@ -4396,120 +4408,120 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityCountryLabel => 'Country';
 
   @override
-  String get tenantFacilitySaveFacilityAction => 'Save facility';
+  String get tenantFacilitySaveFacilityAction => 'Save établissement';
 
   @override
   String get tenantFacilityFacilitySelectLabel => 'Facility';
 
   @override
-  String get tenantFacilityCreateAction => 'Create';
+  String get tenantFacilityCreateAction => 'Créer';
 
   @override
-  String get tenantFacilitySaveAction => 'Save';
+  String get tenantFacilitySaveAction => 'Enregistrer';
 
   @override
-  String get tenantFacilityEditAction => 'Edit';
+  String get tenantFacilityEditAction => 'Modifier';
 
   @override
-  String get tenantFacilityDeleteAction => 'Delete';
+  String get tenantFacilityDeleteAction => 'Supprimer';
 
   @override
-  String get tenantFacilityDeleteConfirmAction => 'Delete';
+  String get tenantFacilityDeleteConfirmAction => 'Supprimer';
 
   @override
-  String get tenantFacilityDeleteConfirmationTitle => 'Delete record';
+  String get tenantFacilityDeleteConfirmationTitle => 'Delete dossier';
 
   @override
   String get tenantFacilityDeleteConfirmationBody =>
-      'This setup record will be removed.';
+      'Ce setup dossier will be removed.';
 
   @override
-  String get tenantFacilityNoSelectionLabel => 'None';
+  String get tenantFacilityNoSelectionLabel => 'Aucun';
 
   @override
-  String get tenantFacilitySearchLabel => 'Search';
+  String get tenantFacilitySearchLabel => 'Rechercher';
 
   @override
-  String get tenantFacilityClearSearchAction => 'Clear search';
+  String get tenantFacilityClearSearchAction => 'Clear recherche';
 
   @override
-  String get tenantFacilitySearchNoResults => 'No matching records found.';
+  String get tenantFacilitySearchNoResults => 'No matching dossiers found.';
 
   @override
-  String get tenantFacilityStatusActive => 'Active';
+  String get tenantFacilityStatusActive => 'Actif';
 
   @override
-  String get tenantFacilityStatusInactive => 'Inactive';
+  String get tenantFacilityStatusInactive => 'Inactif';
 
   @override
   String get tenantFacilityBranchesSectionTitle => 'Branches';
 
   @override
   String get tenantFacilityBranchesSectionBody =>
-      'Add branch entry points for facilities that operate across sites.';
+      'Add succursale entry points pour établissements cette operate across sites.';
 
   @override
-  String get tenantFacilityNoBranches => 'No branches have been added.';
+  String get tenantFacilityNoBranches => 'No succursales have been added.';
 
   @override
-  String get tenantFacilityBranchNameLabel => 'Branch name';
+  String get tenantFacilityBranchNameLabel => 'Branch nom';
 
   @override
-  String get tenantFacilityBranchesListTitle => 'Branch records';
+  String get tenantFacilityBranchesListTitle => 'Branch dossiers';
 
   @override
   String get tenantFacilityBranchSearchHint =>
-      'Search branches by name or status';
+      'Search succursales by nom ou statut';
 
   @override
-  String get tenantFacilityAddBranchAction => 'Add branch';
+  String get tenantFacilityAddBranchAction => 'Add succursale';
 
   @override
-  String get tenantFacilityAddBranchTitle => 'Add branch';
+  String get tenantFacilityAddBranchTitle => 'Add succursale';
 
   @override
-  String get tenantFacilityEditBranchTitle => 'Edit branch';
+  String get tenantFacilityEditBranchTitle => 'Edit succursale';
 
   @override
-  String get tenantFacilityDepartmentsSectionTitle => 'Departments and units';
+  String get tenantFacilityDepartmentsSectionTitle => 'Departments et unités';
 
   @override
   String get tenantFacilityDepartmentsSectionBody =>
-      'Create departments first, then add units under the facility.';
+      'Create départements first, then ajouter unités under le établissement.';
 
   @override
-  String get tenantFacilityNoDepartments => 'No departments have been added.';
+  String get tenantFacilityNoDepartments => 'No départements have been added.';
 
   @override
-  String get tenantFacilityNoUnits => 'No units have been added.';
+  String get tenantFacilityNoUnits => 'No unités have been added.';
 
   @override
   String get tenantFacilityDepartmentsListTitle => 'Departments';
 
   @override
   String get tenantFacilityDepartmentsModalBody =>
-      'Manage department records for the selected facility.';
+      'Manage département dossiers pour le selected établissement.';
 
   @override
   String get tenantFacilityDepartmentSearchHint =>
-      'Search departments by name, type, branch, or status';
+      'Search départements by nom, type, succursale, ou statut';
 
   @override
   String get tenantFacilityUnitsListTitle => 'Units';
 
   @override
   String get tenantFacilityUnitsModalBody =>
-      'Manage units under facility departments.';
+      'Manage unités under établissement départements.';
 
   @override
   String get tenantFacilityUnitSearchHint =>
-      'Search units by name, department, or status';
+      'Search unités by nom, département, ou statut';
 
   @override
-  String get tenantFacilityDepartmentNameLabel => 'Department name';
+  String get tenantFacilityDepartmentNameLabel => 'Department nom';
 
   @override
-  String get tenantFacilityDepartmentShortNameLabel => 'Short name';
+  String get tenantFacilityDepartmentShortNameLabel => 'Short nom';
 
   @override
   String get tenantFacilityDepartmentTypeLabel => 'Department type';
@@ -4530,38 +4542,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityDepartmentTypeDiagnostics => 'Diagnostics';
 
   @override
-  String get tenantFacilityDepartmentTypeOther => 'Other';
+  String get tenantFacilityDepartmentTypeOther => 'Autre';
 
   @override
-  String get tenantFacilityAddDepartmentAction => 'Add department';
+  String get tenantFacilityAddDepartmentAction => 'Add département';
 
   @override
-  String get tenantFacilityAddDepartmentTitle => 'Add department';
+  String get tenantFacilityAddDepartmentTitle => 'Add département';
 
   @override
-  String get tenantFacilityEditDepartmentTitle => 'Edit department';
+  String get tenantFacilityEditDepartmentTitle => 'Edit département';
 
   @override
-  String get tenantFacilityUnitNameLabel => 'Unit name';
+  String get tenantFacilityUnitNameLabel => 'Unit nom';
 
   @override
   String get tenantFacilityUnitDepartmentLabel => 'Department';
 
   @override
-  String get tenantFacilityAddUnitAction => 'Add unit';
+  String get tenantFacilityAddUnitAction => 'Add unité';
 
   @override
-  String get tenantFacilityAddUnitTitle => 'Add unit';
+  String get tenantFacilityAddUnitTitle => 'Add unité';
 
   @override
-  String get tenantFacilityEditUnitTitle => 'Edit unit';
+  String get tenantFacilityEditUnitTitle => 'Edit unité';
 
   @override
-  String get tenantFacilityLocationsSectionTitle => 'Rooms, wards, and beds';
+  String get tenantFacilityLocationsSectionTitle => 'Rooms, services, et lits';
 
   @override
   String get tenantFacilityLocationsSectionBody =>
-      'Use the location setup entry points after facility identity and departments are in place.';
+      'Use le location setup entry points après établissement identity et départements are in place.';
 
   @override
   String get tenantFacilityRoomsLabel => 'Rooms';
@@ -4573,49 +4585,49 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityBedsLabel => 'Beds';
 
   @override
-  String get tenantFacilityNoWards => 'No wards have been added.';
+  String get tenantFacilityNoWards => 'No services have been added.';
 
   @override
   String get tenantFacilityWardsModalBody =>
-      'Manage ward records and department assignments.';
+      'Manage service dossiers et département assignments.';
 
   @override
   String get tenantFacilityWardSearchHint =>
-      'Search wards by name, type, department, or status';
+      'Search services by nom, type, département, ou statut';
 
   @override
-  String get tenantFacilityNoRooms => 'No rooms have been added.';
+  String get tenantFacilityNoRooms => 'No chambres have been added.';
 
   @override
   String get tenantFacilityRoomsModalBody =>
-      'Manage rooms and their ward assignments.';
+      'Manage chambres et their service assignments.';
 
   @override
   String get tenantFacilityRoomSearchHint =>
-      'Search rooms by name, ward, floor, or status';
+      'Search chambres by nom, service, floor, ou statut';
 
   @override
-  String get tenantFacilityNoBeds => 'No beds have been added.';
+  String get tenantFacilityNoBeds => 'No lits have been added.';
 
   @override
   String get tenantFacilityBedsModalBody =>
-      'Manage bed labels, room links, and availability status.';
+      'Manage lit libellés, chambre links, et availability statut.';
 
   @override
   String get tenantFacilityBedSearchHint =>
-      'Search beds by label, ward, room, or status';
+      'Search lits by libellé, service, chambre, ou statut';
 
   @override
-  String get tenantFacilityAddWardAction => 'Add ward';
+  String get tenantFacilityAddWardAction => 'Add service';
 
   @override
-  String get tenantFacilityAddWardTitle => 'Add ward';
+  String get tenantFacilityAddWardTitle => 'Add service';
 
   @override
-  String get tenantFacilityEditWardTitle => 'Edit ward';
+  String get tenantFacilityEditWardTitle => 'Edit service';
 
   @override
-  String get tenantFacilityWardNameLabel => 'Ward name';
+  String get tenantFacilityWardNameLabel => 'Ward nom';
 
   @override
   String get tenantFacilityWardTypeLabel => 'Ward type';
@@ -4639,46 +4651,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityWardTypeSurgical => 'Surgical';
 
   @override
-  String get tenantFacilityWardTypeOther => 'Other';
+  String get tenantFacilityWardTypeOther => 'Autre';
 
   @override
-  String get tenantFacilityAddRoomAction => 'Add room';
+  String get tenantFacilityAddRoomAction => 'Add chambre';
 
   @override
-  String get tenantFacilityAddRoomTitle => 'Add room';
+  String get tenantFacilityAddRoomTitle => 'Add chambre';
 
   @override
-  String get tenantFacilityEditRoomTitle => 'Edit room';
+  String get tenantFacilityEditRoomTitle => 'Edit chambre';
 
   @override
-  String get tenantFacilityRoomNameLabel => 'Room name';
+  String get tenantFacilityRoomNameLabel => 'Room nom';
 
   @override
-  String get tenantFacilityRoomWardLabel => 'Ward';
+  String get tenantFacilityRoomWardLabel => 'Service';
 
   @override
   String get tenantFacilityRoomFloorLabel => 'Floor';
 
   @override
-  String get tenantFacilityAddBedAction => 'Add bed';
+  String get tenantFacilityAddBedAction => 'Add lit';
 
   @override
-  String get tenantFacilityAddBedTitle => 'Add bed';
+  String get tenantFacilityAddBedTitle => 'Add lit';
 
   @override
-  String get tenantFacilityEditBedTitle => 'Edit bed';
+  String get tenantFacilityEditBedTitle => 'Edit lit';
 
   @override
-  String get tenantFacilityBedLabelLabel => 'Bed label';
+  String get tenantFacilityBedLabelLabel => 'Bed libellé';
 
   @override
-  String get tenantFacilityBedWardLabel => 'Ward';
+  String get tenantFacilityBedWardLabel => 'Service';
 
   @override
-  String get tenantFacilityBedRoomLabel => 'Room';
+  String get tenantFacilityBedRoomLabel => 'Chambre';
 
   @override
-  String get tenantFacilityBedStatusLabel => 'Bed status';
+  String get tenantFacilityBedStatusLabel => 'Bed statut';
 
   @override
   String get tenantFacilityBedStatusAvailable => 'Available';
@@ -4690,7 +4702,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tenantFacilityBedStatusReserved => 'Reserved';
 
   @override
-  String get tenantFacilityBedStatusOutOfService => 'Out of service';
+  String get tenantFacilityBedStatusOutOfService => 'Out sur service';
 
   @override
   String get tenantFacilityBedStatusCleaning => 'Cleaning';
@@ -4711,128 +4723,128 @@ class AppLocalizationsFr extends AppLocalizations {
   String get routeSessionRestoringBody => 'Finish session restore first.';
 
   @override
-  String get routeAuthRequiredTitle => 'Sign-in required';
+  String get routeAuthRequiredTitle => 'Sign-in requis';
 
   @override
-  String get routeAuthRequiredBody => 'Sign in to open this page.';
+  String get routeAuthRequiredBody => 'Sign in à ouvrir ce page.';
 
   @override
   String get routeForbiddenTitle => 'Access denied';
 
   @override
-  String get routeForbiddenBody => 'You do not have access to this page.';
+  String get routeForbiddenBody => 'You do not have accès à ce page.';
 
   @override
-  String get routeNotFoundTitle => 'Page not found';
+  String get routeNotFoundTitle => 'Page introuvable';
 
   @override
-  String get routeNotFoundBody => 'This route is not available.';
+  String get routeNotFoundBody => 'Ce route is not disponible.';
 
   @override
-  String get authLoginTitle => 'Sign in';
+  String get authLoginTitle => 'Se connecter';
 
   @override
   String get authLoginBody =>
-      'Use your facility account to open the HMS workspace.';
+      'Use votre établissement compte à ouvrir le HMS espace de travail.';
 
   @override
-  String get authIdentifierLabel => 'Email or phone';
+  String get authIdentifierLabel => 'Email ou téléphone';
 
   @override
-  String get authEmailLabel => 'Email';
+  String get authEmailLabel => 'E-mail';
 
   @override
-  String get authPasswordLabel => 'Password';
+  String get authPasswordLabel => 'Mot de passe';
 
   @override
-  String get authShowPasswordLabel => 'Show password';
+  String get authShowPasswordLabel => 'Show mot de passe';
 
   @override
-  String get authHidePasswordLabel => 'Hide password';
+  String get authHidePasswordLabel => 'Hide mot de passe';
 
   @override
-  String get authLoginActionLabel => 'Sign in';
+  String get authLoginActionLabel => 'Se connecter';
 
   @override
-  String get authCreateAccountActionLabel => 'Create account';
+  String get authCreateAccountActionLabel => 'Create compte';
 
   @override
-  String get authRegisterTitle => 'Create facility account';
+  String get authRegisterTitle => 'Create établissement compte';
 
   @override
   String get authRegisterBody =>
-      'Register the first administrator for a facility workspace.';
+      'Register le first administrator pour un établissement espace de travail.';
 
   @override
-  String get authRegisterActionLabel => 'Create account';
+  String get authRegisterActionLabel => 'Create compte';
 
   @override
-  String get authBackToLoginActionLabel => 'Back to sign in';
+  String get authBackToLoginActionLabel => 'Back à se connecter';
 
   @override
   String get authVerifyEmailActionLabel => 'Verify';
 
   @override
-  String get authSendNewCodeActionLabel => 'Send new code';
+  String get authSendNewCodeActionLabel => 'Send nouveau code';
 
   @override
-  String get authVerifyEmailTitle => 'Verify your email';
+  String get authVerifyEmailTitle => 'Verify votre e-mail';
 
   @override
-  String get authEmailVerifiedTitle => 'Email verified';
+  String get authEmailVerifiedTitle => 'Email vérifié';
 
   @override
   String authVerifyEmailBody(String email) {
-    return 'Enter the verification code sent to $email.';
+    return 'Enter le vérification code sent à $email.';
   }
 
   @override
   String authPendingVerificationBody(String email) {
-    return 'This email is already registered but has not been verified. Enter the verification code sent to $email.';
+    return 'This email est déjà registered but has not been verified. Enter the verification code sent to $email.';
   }
 
   @override
   String get authVerifyEmailBodyNoEmail =>
-      'Enter the verification code sent to your email.';
+      'Enter le vérification code sent à votre e-mail.';
 
   @override
   String get authEmailVerifiedBody =>
-      'Your account is verified. You can now sign in.';
+      'Votre compte is vérifié. You can now se connecter.';
 
   @override
   String get authEmailVerifiedAwaitingApprovalBody =>
-      'Your email is verified. A platform administrator will review your registration before you can sign in.';
+      'Votre e-mail is vérifié. Un platform administrator will review votre inscription avant you can se connecter.';
 
   @override
   String get authAccountPendingApprovalMessage =>
-      'Your email is verified. Your account is awaiting platform approval before you can sign in.';
+      'Votre e-mail is vérifié. Votre compte is en attente de platform approbation avant you can se connecter.';
 
   @override
-  String get authTenantNameLabel => 'Organization name';
+  String get authTenantNameLabel => 'Organization nom';
 
   @override
   String get authPhoneLabel => 'Phone';
 
   @override
   String get authVerificationCodeResentMessage =>
-      'A new verification code has been sent.';
+      'Un nouveau vérification code has been sent.';
 
   @override
   String get authVerificationCodeLabel => 'Verification code';
 
   @override
   String get authVerificationCodeInvalidMessage =>
-      'Enter the 6-digit verification code.';
+      'Enter le 6-digit vérification code.';
 
   @override
   String get authAccountPendingMessage =>
-      'This email is already registered but has not been verified. Enter the email verification code we sent to continue.';
+      'This email est déjà registered but has not been verified. Enter the email verification code we sent to continue.';
 
   @override
-  String get authAdminNameLabel => 'Administrator name';
+  String get authAdminNameLabel => 'Administrator nom';
 
   @override
-  String get authFacilityNameLabel => 'Facility name';
+  String get authFacilityNameLabel => 'Facility nom';
 
   @override
   String get authFacilityTypeLabel => 'Facility type';
@@ -4847,64 +4859,64 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authFacilityTypeLab => 'Lab';
 
   @override
-  String get authFacilityTypePharmacy => 'Pharmacy';
+  String get authFacilityTypePharmacy => 'Pharmacie';
 
   @override
-  String get authFacilityTypeOther => 'Other';
+  String get authFacilityTypeOther => 'Autre';
 
   @override
-  String get authPhoneOptionalLabel => 'Phone (optional)';
+  String get authPhoneOptionalLabel => 'Phone (facultatif)';
 
   @override
-  String get authLocationOptionalLabel => 'Location (optional)';
+  String get authLocationOptionalLabel => 'Location (facultatif)';
 
   @override
-  String get authRegistrationSubmittedTitle => 'Check your email';
+  String get authRegistrationSubmittedTitle => 'Check votre e-mail';
 
   @override
   String get authRegistrationSubmittedBody =>
-      'We sent a verification code before the workspace can be used.';
+      'We sent un vérification code avant le espace de travail can be utilisé.';
 
   @override
-  String get authChangePasswordTitle => 'Change password';
+  String get authChangePasswordTitle => 'Change mot de passe';
 
   @override
-  String get authCurrentPasswordLabel => 'Current password';
+  String get authCurrentPasswordLabel => 'Current mot de passe';
 
   @override
-  String get authNewPasswordLabel => 'New password';
+  String get authNewPasswordLabel => 'New mot de passe';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'Confirm mot de passe';
 
   @override
-  String get authChangePasswordActionLabel => 'Change password';
+  String get authChangePasswordActionLabel => 'Change mot de passe';
 
   @override
   String get authPasswordChangedMessage => 'Password changed. Sign in again.';
 
   @override
   String get authInvalidCredentialsMessage =>
-      'The sign-in details are not valid.';
+      'Le sign-in détails are not valid.';
 
   @override
   String get authAccountNotFoundMessage =>
-      'No account exists for that email or phone. Check the details or create an account.';
+      'No compte exists pour cette e-mail ou téléphone. Check le détails ou créer un compte.';
 
   @override
   String get authWrongPasswordMessage =>
-      'The password is incorrect for this account.';
+      'Le mot de passe is incorrect pour ce compte.';
 
   @override
   String get authRateLimitedMessage =>
-      'Too many sign-in attempts. Please wait a moment and try again.';
+      'Too many sign-in attempts. Please wait un moment et réessayer.';
 
   @override
   String get authForbiddenMessage =>
-      'This account cannot complete that action.';
+      'Ce compte ne peut pas complete cette action.';
 
   @override
-  String get authEmailInvalidMessage => 'Enter a valid email address.';
+  String get authEmailInvalidMessage => 'Enter un valid e-mail adresse.';
 
   @override
   String get authPasswordMinLengthMessage => 'Use at least 8 characters.';
@@ -4913,75 +4925,76 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authPasswordMismatchMessage => 'Passwords do not match.';
 
   @override
-  String get authForgotPasswordTitle => 'Reset your password';
+  String get authForgotPasswordTitle => 'Reset votre mot de passe';
 
   @override
   String get authForgotPasswordBody =>
-      'Enter the email on your facility account. If it matches an account, we will send reset instructions.';
+      'Enter le e-mail on votre établissement compte. If it matches un compte, we will send reset instructions.';
 
   @override
-  String get authForgotPasswordActionLabel => 'Forgot password?';
+  String get authForgotPasswordActionLabel => 'Forgot mot de passe?';
 
   @override
   String get authForgotPasswordSubmitLabel => 'Send reset instructions';
 
   @override
   String get authForgotPasswordTenantPrompt =>
-      'Choose the workspace for this account.';
+      'Choose le espace de travail pour ce compte.';
 
   @override
-  String get authForgotPasswordSubmittedTitle => 'Check your email';
+  String get authForgotPasswordSubmittedTitle => 'Check votre e-mail';
 
   @override
   String get authForgotPasswordSubmittedBody =>
-      'If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.';
+      'If un compte exists pour cette e-mail, reset instructions avec un secure link et un six-digit code have been sent.';
 
   @override
   String get authResetPasswordWithCodeActionLabel => 'Enter reset code';
 
   @override
-  String get authResetPasswordTitle => 'Choose a new password';
+  String get authResetPasswordTitle => 'Choose un nouveau mot de passe';
 
   @override
-  String get authResetPasswordBody => 'Enter a new password for your account.';
+  String get authResetPasswordBody =>
+      'Enter un nouveau mot de passe pour votre compte.';
 
   @override
   String get authResetPasswordCodeModeBody =>
-      'Enter your email, the six-digit reset code from your email, and a new password.';
+      'Enter votre e-mail, le six-digit reset code de votre e-mail, et un nouveau mot de passe.';
 
   @override
   String get authResetPasswordCodeLabel => 'Reset code';
 
   @override
   String get authResetPasswordCodeInvalidMessage =>
-      'Enter the six-digit reset code from your email.';
+      'Enter le six-digit reset code de votre e-mail.';
 
   @override
-  String get authResetPasswordActionLabel => 'Reset password';
+  String get authResetPasswordActionLabel => 'Reset mot de passe';
 
   @override
   String get authResetPasswordMissingTokenMessage =>
-      'This reset link is missing or invalid. Request a new password reset from the sign-in page.';
+      'Ce reset link is missing ou invalide. Request un nouveau mot de passe reset de le sign-in page.';
 
   @override
-  String get authResetPasswordCompletedTitle => 'Password updated';
+  String get authResetPasswordCompletedTitle => 'Password mis à jour';
 
   @override
   String get authResetPasswordCompletedBody =>
-      'Your password has been changed. Sign in with the new password.';
+      'Votre mot de passe has been changed. Sign in avec le nouveau mot de passe.';
 
   @override
   String get authResetPasswordInvalidTokenMessage =>
-      'This reset link has expired or is invalid. Request a new password reset.';
+      'Ce reset link has expiré ou is invalide. Request un nouveau mot de passe reset.';
 
   @override
   String opdFieldRequiredLabel(String label) {
-    return '$label (required)';
+    return '$label (requis)';
   }
 
   @override
   String opdFieldOptionalLabel(String label) {
-    return '$label (optional)';
+    return '$label (facultatif)';
   }
 
   @override
@@ -4989,68 +5002,68 @@ class AppLocalizationsFr extends AppLocalizations {
       'Enter at least one vital sign.';
 
   @override
-  String get validationRequired => 'This field is required.';
+  String get validationRequired => 'Ce champ est requis.';
 
   @override
   String get errorNetworkTitle => 'Connection problem';
 
   @override
-  String get errorNetworkMessage => 'Check your connection and try again.';
+  String get errorNetworkMessage => 'Check votre connexion et réessayer.';
 
   @override
   String get errorTimeoutTitle => 'Request timed out';
 
   @override
-  String get errorTimeoutMessage => 'The request took too long. Try again.';
+  String get errorTimeoutMessage => 'Le demande took too long. Try again.';
 
   @override
-  String get errorOfflineTitle => 'No connection';
+  String get errorOfflineTitle => 'No connexion';
 
   @override
-  String get errorOfflineMessage => 'Connect to the internet and try again.';
+  String get errorOfflineMessage => 'Connect à le internet et réessayer.';
 
   @override
-  String get errorCancelledTitle => 'Request cancelled';
+  String get errorCancelledTitle => 'Request annulé';
 
   @override
-  String get errorCancelledMessage => 'The request was cancelled.';
+  String get errorCancelledMessage => 'Le demande was annulé.';
 
   @override
-  String get errorUnauthorizedTitle => 'Sign-in required';
+  String get errorUnauthorizedTitle => 'Sign-in requis';
 
   @override
-  String get errorUnauthorizedMessage => 'Sign in again to continue.';
+  String get errorUnauthorizedMessage => 'Sign in again à continuer.';
 
   @override
   String get errorForbiddenTitle => 'Access denied';
 
   @override
-  String get errorForbiddenMessage => 'You do not have permission.';
+  String get errorForbiddenMessage => 'You do not have autorisation.';
 
   @override
   String get errorNotFoundTitle => 'Not found';
 
   @override
-  String get errorNotFoundMessage => 'The item is not available.';
+  String get errorNotFoundMessage => 'Le élément is not disponible.';
 
   @override
-  String get errorValidationTitle => 'Check the details';
+  String get errorValidationTitle => 'Check le détails';
 
   @override
-  String get errorValidationMessage => 'Check the highlighted details.';
+  String get errorValidationMessage => 'Check le highlighted détails.';
 
   @override
-  String get errorUnexpectedResponseTitle => 'Unexpected response';
+  String get errorUnexpectedResponseTitle => 'Unexpected réponse';
 
   @override
   String get errorUnexpectedResponseMessage => 'Try again later.';
 
   @override
-  String get errorStorageTitle => 'Storage unavailable';
+  String get errorStorageTitle => 'Storage indisponible';
 
   @override
   String get errorStorageMessage =>
-      'Local data could not be accessed. Try again.';
+      'Local data n\'a pas pu être accessed. Try again.';
 
   @override
   String get errorUnexpectedTitle => 'Something went wrong';
@@ -5065,21 +5078,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationClinicalShortLabel => 'Clinical';
 
   @override
-  String get clinicalTitle => 'Clinical workspace';
+  String get clinicalTitle => 'Clinical espace de travail';
 
   @override
   String get clinicalDescription =>
-      'Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.';
+      'Review clinique queues, document soins, commande services, prescribe, refer, admettre, et complete consultations.';
 
   @override
-  String get clinicalLoadingTitle => 'Loading clinical workspace';
+  String get clinicalLoadingTitle => 'Loading clinique espace de travail';
 
   @override
   String get clinicalLoadingBody =>
-      'Loading provider worklist and encounter context.';
+      'Loading prestataire worklist et consultation context.';
 
   @override
-  String get clinicalLiveStatus => 'Live sync';
+  String get clinicalLiveStatus => 'Live synchronisation';
 
   @override
   String get clinicalSavingStatus => 'Saving';
@@ -5091,20 +5104,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalPatientIdCopiedMessage => 'Patient ID copied.';
 
   @override
-  String get clinicalFiltersLabel => 'Clinical filters';
+  String get clinicalFiltersLabel => 'Clinical filtres';
 
   @override
-  String get clinicalSearchLabel => 'Search clinical worklist';
+  String get clinicalSearchLabel => 'Search clinique worklist';
 
   @override
   String get clinicalSearchHint =>
-      'Patient, encounter, queue, provider, or location';
+      'Patient, consultation, queue, prestataire, ou location';
 
   @override
   String get clinicalScopeFilterLabel => 'Queue scope';
 
   @override
-  String get clinicalAllScopeLabel => 'All active work';
+  String get clinicalAllScopeLabel => 'All actif work';
 
   @override
   String get clinicalTodayScopeLabel => 'Today';
@@ -5122,28 +5135,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalInConsultationSummaryLabel => 'In consultation';
 
   @override
-  String get clinicalCompletedSummaryLabel => 'Completed';
+  String get clinicalCompletedSummaryLabel => 'Terminé';
 
   @override
   String get clinicalWorklistTitle => 'Provider worklist';
 
   @override
   String get clinicalWorklistDescription =>
-      'Open consultations, admissions, triage handoffs, and result-review queues.';
+      'Open consultations, admissions, triage passations, et résultat-review queues.';
 
   @override
-  String get clinicalNoWorklistTitle => 'No clinical work';
+  String get clinicalNoWorklistTitle => 'No clinique work';
 
   @override
   String get clinicalNoWorklistBody =>
-      'No encounters match the current search and queue scope.';
+      'No consultations match le actuel recherche et queue scope.';
 
   @override
-  String get clinicalNoSelectionTitle => 'No encounter selected';
+  String get clinicalNoSelectionTitle => 'No consultation selected';
 
   @override
   String get clinicalNoSelectionBody =>
-      'Open a patient from the worklist to review context, document care, and place orders.';
+      'Open un patient de le worklist à review context, document soins, et place commandes.';
 
   @override
   String get clinicalSourceQueueLabel => 'Queue';
@@ -5152,7 +5165,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalEncounterQueueLabel => 'Encounter queue';
 
   @override
-  String get clinicalLastUpdatedLabel => 'Last updated';
+  String get clinicalLastUpdatedLabel => 'Last mis à jour';
 
   @override
   String get clinicalEncounterNumberLabel => 'Encounter';
@@ -5173,20 +5186,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalActionsTitle => 'Clinical actions';
 
   @override
-  String get clinicalAddNoteAction => 'Add clinical note';
+  String get clinicalAddNoteAction => 'Add clinique note';
 
   @override
-  String get clinicalAddNoteTitle => 'Add patient clinical note';
+  String get clinicalAddNoteTitle => 'Add patient clinique note';
 
   @override
-  String get clinicalAddDiagnosisAction => 'Add diagnosis';
+  String get clinicalAddDiagnosisAction => 'Add diagnostic';
 
   @override
-  String get clinicalDiagnosisSearchLabel => 'Search diagnosis';
+  String get clinicalDiagnosisSearchLabel => 'Search diagnostic';
 
   @override
   String get clinicalDiagnosisSearchHint =>
-      'Search by diagnosis name, code, type, status, or source';
+      'Search by diagnostic nom, code, type, statut, ou source';
 
   @override
   String get clinicalCatalogSourceAll => 'All sources';
@@ -5205,7 +5218,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalCatalogConfigurationBody =>
-      'Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.';
+      'Choose which diagnoses, procedures, laboratoire tests, radiologie tests, et prescriptions ce établissement offers.';
 
   @override
   String get clinicalDiagnosisSelectedTitle => 'Selected diagnoses';
@@ -5224,13 +5237,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get clinicalDiagnosisNoCatalogOptions => 'No matching diagnosis terms';
+  String get clinicalDiagnosisNoCatalogOptions =>
+      'No matching diagnostic terms';
 
   @override
-  String get clinicalRequestLabAction => 'Request lab';
+  String get clinicalRequestLabAction => 'Request laboratoire';
 
   @override
-  String get clinicalUpdateLabOrderAction => 'Update lab order';
+  String get clinicalUpdateLabOrderAction => 'Update laboratoire commande';
 
   @override
   String get clinicalLabRequestTestsModeLabel => 'Individual tests';
@@ -5239,14 +5253,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalLabRequestPanelsModeLabel => 'Lab panels';
 
   @override
-  String get clinicalLabRequestSearchLabel => 'Search lab catalog';
+  String get clinicalLabRequestSearchLabel => 'Search laboratoire catalog';
 
   @override
   String get clinicalLabRequestSearchHint =>
-      'Search by name, code, category, specimen, or status';
+      'Search by nom, code, catégorie, specimen, ou statut';
 
   @override
-  String get clinicalLabRequestSelectedTitle => 'Selected lab requests';
+  String get clinicalLabRequestSelectedTitle => 'Selected laboratoire demandes';
 
   @override
   String clinicalLabRequestSelectedCount(int count) {
@@ -5254,22 +5268,23 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get clinicalLabRequestNoSelection => 'No lab requests selected';
+  String get clinicalLabRequestNoSelection =>
+      'No laboratoire demandes selected';
 
   @override
-  String get clinicalLabRequestAddSelectionAction => 'Add';
+  String get clinicalLabRequestAddSelectionAction => 'Ajouter';
 
   @override
-  String get clinicalLabRequestUpdateSelectionAction => 'Update';
+  String get clinicalLabRequestUpdateSelectionAction => 'Mettre à jour';
 
   @override
-  String get clinicalLabRequestCancelEditAction => 'Cancel edit';
+  String get clinicalLabRequestCancelEditAction => 'Cancel modifier';
 
   @override
-  String get clinicalLabRequestEditSelectionAction => 'Edit';
+  String get clinicalLabRequestEditSelectionAction => 'Modifier';
 
   @override
-  String get clinicalLabRequestDeleteSelectionAction => 'Delete';
+  String get clinicalLabRequestDeleteSelectionAction => 'Supprimer';
 
   @override
   String get clinicalLabRequestTestTypeLabel => 'Test';
@@ -5284,30 +5299,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalLabRequestNoCatalogOptions =>
-      'No matching lab catalog items';
+      'No matching laboratoire catalog éléments';
 
   @override
-  String get clinicalLabOrdersTitle => 'Lab orders';
+  String get clinicalLabOrdersTitle => 'Lab commandes';
 
   @override
-  String get clinicalLabOrdersBody => 'Requested lab orders for this patient.';
+  String get clinicalLabOrdersBody =>
+      'Requested laboratoire commandes pour ce patient.';
 
   @override
   String get clinicalNoLabOrdersLabel =>
-      'No lab orders have been requested for this patient.';
+      'No laboratoire commandes have been requested pour ce patient.';
 
   @override
-  String get clinicalLabOrderTestsLabel => 'Requested lab tests';
+  String get clinicalLabOrderTestsLabel => 'Requested laboratoire tests';
 
   @override
-  String get clinicalLabOrderPanelsLabel => 'Requested lab panels';
+  String get clinicalLabOrderPanelsLabel => 'Requested laboratoire panels';
 
   @override
-  String get clinicalNoLabOrderTestsLabel => 'No requested lab tests recorded.';
+  String get clinicalNoLabOrderTestsLabel =>
+      'No requested laboratoire tests recorded.';
 
   @override
   String get clinicalNoLabOrderPanelsLabel =>
-      'No requested lab panels recorded.';
+      'No requested laboratoire panels recorded.';
 
   @override
   String clinicalLabOrderItemCount(int count) {
@@ -5320,52 +5337,52 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get clinicalEditLabOrderAction => 'Edit order';
+  String get clinicalEditLabOrderAction => 'Edit commande';
 
   @override
-  String get clinicalCancelLabOrderAction => 'Cancel order';
+  String get clinicalCancelLabOrderAction => 'Cancel commande';
 
   @override
-  String get clinicalDeleteLabOrderAction => 'Delete order';
+  String get clinicalDeleteLabOrderAction => 'Delete commande';
 
   @override
-  String get clinicalCancelLabOrderDialogTitle => 'Cancel lab order';
+  String get clinicalCancelLabOrderDialogTitle => 'Cancel laboratoire commande';
 
   @override
   String get clinicalCancelLabOrderDialogBody =>
-      'Cancel this lab order and mark its requested tests as cancelled?';
+      'Cancel ce laboratoire commande et mark its requested tests as annulé?';
 
   @override
-  String get clinicalDeleteLabOrderDialogTitle => 'Delete lab order';
+  String get clinicalDeleteLabOrderDialogTitle => 'Delete laboratoire commande';
 
   @override
   String get clinicalDeleteLabOrderDialogBody =>
-      'Delete this lab order from the active patient record?';
+      'Delete ce laboratoire commande de le actif patient dossier?';
 
   @override
-  String get clinicalRadiologyOrdersTitle => 'Radiology orders';
+  String get clinicalRadiologyOrdersTitle => 'Radiology commandes';
 
   @override
-  String get clinicalCancelRadiologyOrderAction => 'Cancel order';
+  String get clinicalCancelRadiologyOrderAction => 'Cancel commande';
 
   @override
-  String get clinicalDeleteRadiologyOrderAction => 'Delete order';
+  String get clinicalDeleteRadiologyOrderAction => 'Delete commande';
 
   @override
   String get clinicalCancelRadiologyOrderDialogTitle =>
-      'Cancel radiology order';
+      'Cancel radiologie commande';
 
   @override
   String get clinicalCancelRadiologyOrderDialogBody =>
-      'Cancel this radiology order and mark it as cancelled?';
+      'Cancel ce radiologie commande et mark it as annulé?';
 
   @override
   String get clinicalDeleteRadiologyOrderDialogTitle =>
-      'Delete radiology order';
+      'Delete radiologie commande';
 
   @override
   String get clinicalDeleteRadiologyOrderDialogBody =>
-      'Delete this radiology order from the active patient record?';
+      'Delete ce radiologie commande de le actif patient dossier?';
 
   @override
   String clinicalRadiologyOrderItemCount(int count) {
@@ -5373,7 +5390,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get clinicalPharmacyOrdersTitle => 'Pharmacy orders';
+  String get clinicalPharmacyOrdersTitle => 'Pharmacy commandes';
 
   @override
   String clinicalPharmacyOrderItemCount(int count) {
@@ -5381,38 +5398,40 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get clinicalCancelPharmacyOrderAction => 'Cancel order';
+  String get clinicalCancelPharmacyOrderAction => 'Cancel commande';
 
   @override
-  String get clinicalDeletePharmacyOrderAction => 'Delete order';
+  String get clinicalDeletePharmacyOrderAction => 'Delete commande';
 
   @override
-  String get clinicalCancelPharmacyOrderDialogTitle => 'Cancel pharmacy order';
+  String get clinicalCancelPharmacyOrderDialogTitle =>
+      'Cancel pharmacie commande';
 
   @override
   String get clinicalCancelPharmacyOrderDialogBody =>
-      'Cancel this pharmacy order and mark it as cancelled?';
+      'Cancel ce pharmacie commande et mark it as annulé?';
 
   @override
-  String get clinicalDeletePharmacyOrderDialogTitle => 'Delete pharmacy order';
+  String get clinicalDeletePharmacyOrderDialogTitle =>
+      'Delete pharmacie commande';
 
   @override
   String get clinicalDeletePharmacyOrderDialogBody =>
-      'Delete this pharmacy order from the active patient record?';
+      'Delete ce pharmacie commande de le actif patient dossier?';
 
   @override
-  String get clinicalRequestRadiologyAction => 'Request radiology';
+  String get clinicalRequestRadiologyAction => 'Request radiologie';
 
   @override
-  String get clinicalRadiologyRequestSearchLabel => 'Search radiology catalog';
+  String get clinicalRadiologyRequestSearchLabel => 'Search radiologie catalog';
 
   @override
   String get clinicalRadiologyRequestSearchHint =>
-      'Search by test, intervention, modality, region, code, or priority';
+      'Search by test, intervention, modality, region, code, ou priorité';
 
   @override
   String get clinicalRadiologyRequestSelectedTitle =>
-      'Selected radiology requests';
+      'Selected radiologie demandes';
 
   @override
   String clinicalRadiologyRequestSelectedCount(int count) {
@@ -5421,22 +5440,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalRadiologyRequestNoSelection =>
-      'No radiology requests selected';
+      'No radiologie demandes selected';
 
   @override
-  String get clinicalRadiologyAddSelectionAction => 'Add';
+  String get clinicalRadiologyAddSelectionAction => 'Ajouter';
 
   @override
-  String get clinicalRadiologyUpdateSelectionAction => 'Update';
+  String get clinicalRadiologyUpdateSelectionAction => 'Mettre à jour';
 
   @override
-  String get clinicalRadiologyCancelEditAction => 'Cancel edit';
+  String get clinicalRadiologyCancelEditAction => 'Cancel modifier';
 
   @override
-  String get clinicalRadiologyEditSelectionAction => 'Edit';
+  String get clinicalRadiologyEditSelectionAction => 'Modifier';
 
   @override
-  String get clinicalRadiologyDeleteSelectionAction => 'Delete';
+  String get clinicalRadiologyDeleteSelectionAction => 'Supprimer';
 
   @override
   String clinicalRadiologyRequestMatchesLabel(int shown, int total) {
@@ -5445,25 +5464,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalRadiologyRequestNoCatalogOptions =>
-      'No matching radiology catalog items';
+      'No matching radiologie catalog éléments';
 
   @override
   String get clinicalRadiologyCatalogSelectTitle => 'Radiology catalog';
 
   @override
   String get clinicalRadiologyCatalogSelectBody =>
-      'Search and select one matching imaging test, then add it to the request list.';
+      'Search et sélectionner one matching imaging test, then ajouter it à le demande liste.';
 
   @override
   String get clinicalRadiologyCatalogSelectLabel => 'Imaging test';
 
   @override
   String get clinicalRadiologyCatalogSelectHint =>
-      'Search and select an imaging test';
+      'Search et sélectionner un imaging test';
 
   @override
   String get clinicalRadiologyDuplicateSelectionMessage =>
-      'This imaging request is already selected.';
+      'This imaging request est déjà selected.';
 
   @override
   String get clinicalRadiologyPriorityLabel => 'Priority';
@@ -5478,11 +5497,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalPrescribeAction => 'Prescribe';
 
   @override
-  String get clinicalPrescriptionHeaderTitle => 'Build prescription';
+  String get clinicalPrescriptionHeaderTitle => 'Build ordonnance';
 
   @override
   String get clinicalPrescriptionHeaderBody =>
-      'Add one or more medicines, then send them together to pharmacy.';
+      'Add one ou more medicines, then send them together à pharmacie.';
 
   @override
   String get clinicalPrescriptionDrugLabel => 'Available drug';
@@ -5492,10 +5511,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalPrescriptionItemDescription =>
-      'Select a drug and complete the prescription details.';
+      'Select un drug et complete le ordonnance détails.';
 
   @override
-  String get clinicalPrescriptionQuantityUnitLabel => 'Quantity unit';
+  String get clinicalPrescriptionQuantityUnitLabel => 'Quantity unité';
 
   @override
   String get clinicalPrescriptionAddMedicineAction => 'Add medicine';
@@ -5504,21 +5523,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalPrescriptionRemoveMedicineAction => 'Remove medicine';
 
   @override
-  String get clinicalRequestProcedureAction => 'Record procedure';
+  String get clinicalRequestProcedureAction => 'Record procédure';
 
   @override
   String get clinicalProcedureDialogHelp =>
-      'Search the procedure catalog, add one or more procedures to the review list, then save them together.';
+      'Search le procédure catalog, ajouter one ou more procedures à le review liste, then enregistrer them together.';
 
   @override
-  String get clinicalProcedureSearchLabel => 'Procedure or minor surgery';
+  String get clinicalProcedureSearchLabel => 'Procedure ou minor surgery';
 
   @override
   String get clinicalProcedureSearchHint =>
-      'Search by name, body area, or minor surgery type';
+      'Search by nom, corps area, ou minor surgery type';
 
   @override
-  String get clinicalProcedureCodeSearchHint => 'Search by procedure code';
+  String get clinicalProcedureCodeSearchHint => 'Search by procédure code';
 
   @override
   String get clinicalProcedureSelectedTitle => 'Selected procedures';
@@ -5532,7 +5551,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalProcedureNoSelection => 'No procedures selected';
 
   @override
-  String get clinicalCarePlanAction => 'Care plan';
+  String get clinicalCarePlanAction => 'Care forfait';
 
   @override
   String get clinicalRequestAdmissionAction => 'Request admission';
@@ -5544,25 +5563,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalCompleteDispositionAction => 'Complete disposition';
 
   @override
-  String get clinicalPrintSummaryAction => 'Print summary';
+  String get clinicalPrintSummaryAction => 'Print résumé';
 
   @override
   String get clinicalResultReviewTitle => 'Result review';
 
   @override
   String get clinicalResultReviewBody =>
-      'Released diagnostic results are ready for clinical review.';
+      'Released diagnostic résultats are ready pour clinique review.';
 
   @override
   String get clinicalNoResultsReadyBody =>
-      'No released lab or radiology results are ready for review.';
+      'No released laboratoire ou radiologie résultats are ready pour review.';
 
   @override
-  String get clinicalPatientNotesTitle => 'Patient clinical notes';
+  String get clinicalPatientNotesTitle => 'Patient clinique notes';
 
   @override
   String get clinicalNoPatientNotesLabel =>
-      'No patient clinical notes have been recorded yet.';
+      'No patient clinique notes have been recorded yet.';
 
   @override
   String get clinicalDiagnosesTitle => 'Diagnoses';
@@ -5572,13 +5591,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalNoPatientDiagnosesLabel =>
-      'No diagnoses have been recorded for this patient yet.';
+      'No diagnoses have been recorded pour ce patient yet.';
 
   @override
-  String get clinicalDiagnosisFormTitle => 'Diagnosis details';
+  String get clinicalDiagnosisFormTitle => 'Diagnosis détails';
 
   @override
-  String get clinicalCarePlansTitle => 'Care plans';
+  String get clinicalCarePlansTitle => 'Care forfaits';
 
   @override
   String get clinicalOrdersTitle => 'Orders';
@@ -5590,65 +5609,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalTermSearchLabel => 'Clinical term';
 
   @override
-  String get clinicalCarePlanLabel => 'Care plan';
+  String get clinicalCarePlanLabel => 'Care forfait';
 
   @override
-  String get clinicalDoseAmountLabel => 'Dose amount';
+  String get clinicalDoseAmountLabel => 'Dose montant';
 
   @override
-  String get clinicalDoseUnitLabel => 'Dose unit';
+  String get clinicalDoseUnitLabel => 'Dose unité';
 
   @override
   String get clinicalDurationValueLabel => 'Duration';
 
   @override
-  String get clinicalDurationUnitLabel => 'Duration unit';
+  String get clinicalDurationUnitLabel => 'Duration unité';
 
   @override
   String get clinicalInstructionsLabel => 'Instructions';
 
   @override
-  String get clinicalAvailableBedLabel => 'Available bed';
+  String get clinicalAvailableBedLabel => 'Available lit';
 
   @override
-  String get clinicalAdmissionDetailsTitle => 'Admission details';
+  String get clinicalAdmissionDetailsTitle => 'Admission détails';
 
   @override
-  String get clinicalAdmissionWardLabel => 'Ward';
+  String get clinicalAdmissionWardLabel => 'Service';
 
   @override
-  String get clinicalAdmissionRoomLabel => 'Room';
+  String get clinicalAdmissionRoomLabel => 'Chambre';
 
   @override
-  String get clinicalAdmissionBedLabel => 'Bed';
+  String get clinicalAdmissionBedLabel => 'Lit';
 
   @override
   String get clinicalAdmissionAvailabilityLabel => 'Bed availability';
 
   @override
-  String get clinicalAdmissionNoBedsTitle => 'No available beds';
+  String get clinicalAdmissionNoBedsTitle => 'No disponible lits';
 
   @override
   String get clinicalAdmissionNoBedsMessage =>
-      'No available beds found. Refresh bed availability before requesting admission.';
+      'No disponible lits found. Refresh lit availability avant requesting admission.';
 
   @override
   String get clinicalAdmissionNoRoomsMessage =>
-      'No rooms with available beds match this ward.';
+      'No chambres avec disponible lits match ce service.';
 
   @override
   String get clinicalAdmissionNoBedsForRoomMessage =>
-      'No available beds match this room.';
+      'No disponible lits match ce chambre.';
 
   @override
   String get clinicalAdmissionBedUnavailableMessage =>
-      'This bed is no longer available. Please choose another bed.';
+      'Ce lit is non longer disponible. Please choose another lit.';
 
   @override
   String get clinicalDispositionReasonLabel => 'Disposition reason';
 
   @override
-  String get clinicalConsultationSummaryTitle => 'Consultation summary';
+  String get clinicalConsultationSummaryTitle => 'Consultation résumé';
 
   @override
   String get navigationIpdLabel => 'Inpatient (IPD)';
@@ -5657,20 +5676,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navigationIpdShortLabel => 'IPD';
 
   @override
-  String get ipdTitle => 'Inpatient workspace';
+  String get ipdTitle => 'Inpatient espace de travail';
 
   @override
   String get ipdDescription =>
-      'Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.';
+      'Manage admission queues, lits, transferts, service rounds, soins infirmiers passations, médicament dossiers, et sortie readiness.';
 
   @override
-  String get ipdLoadingTitle => 'Loading inpatient workspace';
+  String get ipdLoadingTitle => 'Loading hospitalisé espace de travail';
 
   @override
-  String get ipdLoadingBody => 'Loading admissions, beds, and ward context.';
+  String get ipdLoadingBody => 'Loading admissions, lits, et service context.';
 
   @override
-  String get ipdLiveStatus => 'Live sync';
+  String get ipdLiveStatus => 'Live synchronisation';
 
   @override
   String get ipdSavingStatus => 'Saving';
@@ -5679,10 +5698,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdSavedMessage => 'Inpatient changes saved.';
 
   @override
-  String get ipdAdmissionQueueSummaryLabel => 'Waiting bed';
+  String get ipdAdmissionQueueSummaryLabel => 'Waiting lit';
 
   @override
-  String get ipdActivePatientsSummaryLabel => 'In beds';
+  String get ipdActivePatientsSummaryLabel => 'In lits';
 
   @override
   String get ipdTransferPendingSummaryLabel => 'Transfers';
@@ -5694,39 +5713,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdCriticalAlertsSummaryLabel => 'Critical alerts';
 
   @override
-  String get ipdFiltersLabel => 'Inpatient filters';
+  String get ipdFiltersLabel => 'Inpatient filtres';
 
   @override
   String get ipdSearchLabel => 'Search admissions';
 
   @override
-  String get ipdSearchHint => 'Patient, admission, encounter, ward, or bed';
+  String get ipdSearchHint =>
+      'Patient, admission, consultation, service, ou lit';
 
   @override
   String get ipdScopeFilterLabel => 'Board scope';
 
   @override
-  String get ipdWardFilterLabel => 'Ward';
+  String get ipdWardFilterLabel => 'Service';
 
   @override
-  String get ipdAllWardsOption => 'All wards';
+  String get ipdAllWardsOption => 'All services';
 
   @override
   String get ipdBoardTitle => 'Inpatient board';
 
   @override
   String get ipdBoardDescription =>
-      'Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.';
+      'Track waiting admissions, bedded patients, transferts, service activity, et sortie forfaits.';
 
   @override
   String get ipdNoAdmissionsTitle => 'No admissions';
 
   @override
   String get ipdNoAdmissionsBody =>
-      'No inpatient admissions match the current filters.';
+      'No hospitalisé admissions match le actuel filtres.';
 
   @override
-  String get ipdLocationColumnLabel => 'Ward and bed';
+  String get ipdLocationColumnLabel => 'Ward et lit';
 
   @override
   String get ipdPendingActionColumnLabel => 'Next action';
@@ -5739,14 +5759,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdAdmissionDetailDescription =>
-      'Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.';
+      'Review lit statut, transferts, service rounds, médicament dossiers, soins infirmiers notes, et sortie state.';
 
   @override
   String get ipdNoSelectionTitle => 'No admission selected';
 
   @override
   String get ipdNoSelectionBody =>
-      'Open an admission from the board to manage inpatient care.';
+      'Open un admission de le board à manage hospitalisé soins.';
 
   @override
   String get ipdPatientContextLabel => 'Patient context';
@@ -5758,49 +5778,49 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdEncounterIdLabel => 'Encounter';
 
   @override
-  String get ipdWardBedLabel => 'Ward and bed';
+  String get ipdWardBedLabel => 'Ward et lit';
 
   @override
   String get ipdFacilityLabel => 'Facility';
 
   @override
-  String get ipdIcuStatusLabel => 'ICU status';
+  String get ipdIcuStatusLabel => 'ICU statut';
 
   @override
-  String get ipdAssignBedAction => 'Assign bed';
+  String get ipdAssignBedAction => 'Assign lit';
 
   @override
-  String get ipdReleaseBedAction => 'Release bed';
+  String get ipdReleaseBedAction => 'Release lit';
 
   @override
   String get ipdRejectAdmissionAction => 'Reject admission';
 
   @override
-  String get ipdRequestTransferAction => 'Request transfer';
+  String get ipdRequestTransferAction => 'Request transfert';
 
   @override
-  String get ipdRequestTherapyAction => 'Request physiotherapy';
+  String get ipdRequestTherapyAction => 'Request physiothérapie';
 
   @override
-  String get ipdOpenPhysiotherapyAction => 'Open physiotherapy';
+  String get ipdOpenPhysiotherapyAction => 'Open physiothérapie';
 
   @override
-  String get ipdManageTransferAction => 'Manage transfer';
+  String get ipdManageTransferAction => 'Manage transfert';
 
   @override
-  String get ipdAddWardRoundAction => 'Add ward round';
+  String get ipdAddWardRoundAction => 'Add service round';
 
   @override
-  String get ipdAddNursingNoteAction => 'Add nursing note';
+  String get ipdAddNursingNoteAction => 'Add soins infirmiers note';
 
   @override
-  String get ipdRecordMedicationAction => 'Record medication';
+  String get ipdRecordMedicationAction => 'Record médicament';
 
   @override
-  String get ipdPlanDischargeAction => 'Plan discharge';
+  String get ipdPlanDischargeAction => 'Plan sortie';
 
   @override
-  String get ipdFinalizeDischargeAction => 'Finalize discharge';
+  String get ipdFinalizeDischargeAction => 'Finalize sortie';
 
   @override
   String get ipdTransfersSectionTitle => 'Transfers';
@@ -5818,7 +5838,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdBedSectionTitle => 'Bed allocation';
 
   @override
-  String get ipdDischargeSectionTitle => 'Discharge';
+  String get ipdDischargeSectionTitle => 'Sortie';
 
   @override
   String get ipdPharmacyClearanceLabel => 'Pharmacy clearance';
@@ -5832,7 +5852,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count open orders',
-      one: '1 open order',
+      one: '1 ouvrir commande',
     );
     return '$_temp0';
   }
@@ -5841,59 +5861,59 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdTimelineSectionTitle => 'Timeline';
 
   @override
-  String get ipdNoTransfersTitle => 'No transfers';
+  String get ipdNoTransfersTitle => 'No transferts';
 
   @override
   String get ipdNoTransfersBody =>
-      'No transfer requests are recorded for this admission.';
+      'No transfert demandes are recorded pour ce admission.';
 
   @override
-  String get ipdNoRoundsTitle => 'No ward rounds';
+  String get ipdNoRoundsTitle => 'No service rounds';
 
   @override
-  String get ipdNoRoundsBody => 'No ward rounds have been documented yet.';
+  String get ipdNoRoundsBody => 'No service rounds have been documented yet.';
 
   @override
-  String get ipdNoNursingNotesTitle => 'No nursing notes';
+  String get ipdNoNursingNotesTitle => 'No soins infirmiers notes';
 
   @override
   String get ipdNoNursingNotesBody =>
-      'No nursing notes have been documented yet.';
+      'No soins infirmiers notes have been documented yet.';
 
   @override
-  String get ipdNoMedicationTitle => 'No medication records';
+  String get ipdNoMedicationTitle => 'No médicament dossiers';
 
   @override
   String get ipdNoMedicationBody =>
-      'No medication administrations are recorded for this admission.';
+      'No médicament administrations are recorded pour ce admission.';
 
   @override
   String get ipdNoTimelineTitle => 'No timeline entries';
 
   @override
-  String get ipdNoTimelineBody => 'No care activity has been recorded yet.';
+  String get ipdNoTimelineBody => 'No soins activity has been recorded yet.';
 
   @override
-  String get ipdBedFieldLabel => 'Bed';
+  String get ipdBedFieldLabel => 'Lit';
 
   @override
-  String get ipdSelectBedHint => 'Select a bed';
+  String get ipdSelectBedHint => 'Select un lit';
 
   @override
   String get ipdReleaseBedConfirmationBody =>
-      'Release the current bed assignment for this admission?';
+      'Release le actuel lit assignment pour ce admission?';
 
   @override
-  String get ipdTargetWardFieldLabel => 'Target ward';
+  String get ipdTargetWardFieldLabel => 'Target service';
 
   @override
-  String get ipdSelectWardHint => 'Select a ward';
+  String get ipdSelectWardHint => 'Select un service';
 
   @override
   String get ipdTransferActionFieldLabel => 'Transfer action';
 
   @override
-  String get ipdDestinationBedFieldLabel => 'Destination bed';
+  String get ipdDestinationBedFieldLabel => 'Destination lit';
 
   @override
   String get ipdNotesFieldLabel => 'Notes';
@@ -5905,10 +5925,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdReasonFieldLabel => 'Reason';
 
   @override
-  String get ipdMedicationOrderFieldLabel => 'Medication order';
+  String get ipdMedicationOrderFieldLabel => 'Medication commande';
 
   @override
-  String get ipdMedicationOrderHint => 'Select a suggested order';
+  String get ipdMedicationOrderHint => 'Select un suggested commande';
 
   @override
   String get ipdMedicationFieldLabel => 'Medication';
@@ -5926,16 +5946,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdFrequencyFieldLabel => 'Frequency';
 
   @override
-  String get ipdMedicationStatusFieldLabel => 'Status';
+  String get ipdMedicationStatusFieldLabel => 'Statut';
 
   @override
   String get ipdDischargedAtLabel => 'Discharged';
 
   @override
-  String get ipdScopeAdmissionQueue => 'Waiting bed';
+  String get ipdScopeAdmissionQueue => 'Waiting lit';
 
   @override
-  String get ipdScopeActivePatients => 'In beds';
+  String get ipdScopeActivePatients => 'In lits';
 
   @override
   String get ipdScopeTransferPending => 'Transfers';
@@ -5953,10 +5973,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdScopeAll => 'All admissions';
 
   @override
-  String get ipdStatusAdmittedPendingBed => 'Waiting bed';
+  String get ipdStatusAdmittedPendingBed => 'Waiting lit';
 
   @override
-  String get ipdStatusAdmittedInBed => 'In bed';
+  String get ipdStatusAdmittedInBed => 'In lit';
 
   @override
   String get ipdStatusTransferRequested => 'Transfer requested';
@@ -5971,28 +5991,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdStatusDischarged => 'Discharged';
 
   @override
-  String get ipdStatusCancelled => 'Cancelled';
+  String get ipdStatusCancelled => 'Annulé';
 
   @override
-  String get ipdNextAssignBed => 'Assign bed';
+  String get ipdNextAssignBed => 'Assign lit';
 
   @override
-  String get ipdNextRecordNursingNote => 'Record nursing note';
+  String get ipdNextRecordNursingNote => 'Record soins infirmiers note';
 
   @override
-  String get ipdNextApproveTransfer => 'Approve transfer';
+  String get ipdNextApproveTransfer => 'Approve transfert';
 
   @override
-  String get ipdNextStartTransfer => 'Start transfer';
+  String get ipdNextStartTransfer => 'Start transfert';
 
   @override
-  String get ipdNextCompleteTransfer => 'Complete transfer';
+  String get ipdNextCompleteTransfer => 'Complete transfert';
 
   @override
-  String get ipdNextFinalizeDischarge => 'Finalize discharge';
+  String get ipdNextFinalizeDischarge => 'Finalize sortie';
 
   @override
-  String get ipdNextContinueCare => 'Continue care';
+  String get ipdNextContinueCare => 'Continue soins';
 
   @override
   String get ipdBedStatusAvailable => 'Available';
@@ -6004,7 +6024,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdBedStatusReserved => 'Reserved';
 
   @override
-  String get ipdBedStatusOutOfService => 'Out of service';
+  String get ipdBedStatusOutOfService => 'Out sur service';
 
   @override
   String get ipdBedStatusCleaning => 'Cleaning';
@@ -6026,29 +6046,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdBedBoardDescription =>
-      'Live ward bed occupancy and bed operations.';
+      'Live service lit occupation et lit operations.';
 
   @override
-  String get ipdBedBoardSearchLabel => 'Search beds';
+  String get ipdBedBoardSearchLabel => 'Search lits';
 
   @override
-  String get ipdBedBoardSearchHint => 'Search by bed, ward, room, or patient';
+  String get ipdBedBoardSearchHint =>
+      'Search by lit, service, chambre, ou patient';
 
   @override
-  String get ipdBedBoardEmptyTitle => 'No beds match';
+  String get ipdBedBoardEmptyTitle => 'No lits match';
 
   @override
   String get ipdBedBoardEmptyBody =>
-      'Adjust the ward or status filter to see more beds.';
+      'Adjust le service ou statut filtre à see more lits.';
 
   @override
-  String get ipdBedColumnLabel => 'Bed';
+  String get ipdBedColumnLabel => 'Lit';
 
   @override
-  String get ipdWardColumnLabel => 'Ward';
+  String get ipdWardColumnLabel => 'Service';
 
   @override
-  String get ipdRoomColumnLabel => 'Room';
+  String get ipdRoomColumnLabel => 'Chambre';
 
   @override
   String get ipdCurrentPatientColumnLabel => 'Current patient';
@@ -6057,28 +6078,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdNextActionColumnLabel => 'Next action';
 
   @override
-  String get ipdBedStatusFilterLabel => 'Bed status';
+  String get ipdBedStatusFilterLabel => 'Bed statut';
 
   @override
-  String get ipdBedBoardManageBedsAction => 'Manage beds';
+  String get ipdBedBoardManageBedsAction => 'Manage lits';
 
   @override
-  String get ipdBedActionReserve => 'Reserve bed';
+  String get ipdBedActionReserve => 'Reserve lit';
 
   @override
-  String get ipdBedActionMarkAvailable => 'Mark available';
+  String get ipdBedActionMarkAvailable => 'Mark disponible';
 
   @override
-  String get ipdBedActionMarkCleaning => 'Send for cleaning';
+  String get ipdBedActionMarkCleaning => 'Send pour cleaning';
 
   @override
-  String get ipdBedActionBlock => 'Block bed';
+  String get ipdBedActionBlock => 'Block lit';
 
   @override
   String get ipdBedActionMaintenance => 'Mark maintenance';
 
   @override
-  String get ipdBedActionReturnToService => 'Return to service';
+  String get ipdBedActionReturnToService => 'Return à service';
 
   @override
   String get ipdBedActionOpenAdmission => 'Open admission';
@@ -6096,19 +6117,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdStartAdmissionPatientLabel => 'Patient';
 
   @override
-  String get ipdStartAdmissionPatientHint => 'Search patient by name or ID';
+  String get ipdStartAdmissionPatientHint => 'Search patient by nom ou ID';
 
   @override
   String get ipdStartAdmissionNoPatients => 'No matching patients';
 
   @override
-  String get ipdStartAdmissionWardLabel => 'Recommended ward (optional)';
+  String get ipdStartAdmissionWardLabel => 'Recommended service (facultatif)';
 
   @override
-  String get ipdStartAdmissionBedLabel => 'Bed (optional)';
+  String get ipdStartAdmissionBedLabel => 'Bed (facultatif)';
 
   @override
-  String get ipdLengthOfStayColumnLabel => 'Length of stay';
+  String get ipdLengthOfStayColumnLabel => 'Length sur stay';
 
   @override
   String ipdLengthOfStayDays(int count) {
@@ -6124,10 +6145,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdDischargeStatusPlanned => 'Planned';
 
   @override
-  String get ipdDischargeStatusCompleted => 'Completed';
+  String get ipdDischargeStatusCompleted => 'Terminé';
 
   @override
-  String get ipdManageDischargeTitle => 'Manage discharge';
+  String get ipdManageDischargeTitle => 'Manage sortie';
 
   @override
   String get ipdDischargeClearanceTitle => 'Discharge clearance';
@@ -6136,10 +6157,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdDischargeClearancePhaseLabel => 'Clearance phase';
 
   @override
-  String get ipdPendingOrdersTitle => 'Pending orders';
+  String get ipdPendingOrdersTitle => 'Pending commandes';
 
   @override
-  String get ipdClearancePendingOrders => 'Pending orders reviewed';
+  String get ipdClearancePendingOrders => 'Pending commandes reviewed';
 
   @override
   String get ipdClearancePharmacy => 'Pharmacy clearance';
@@ -6161,46 +6182,46 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdDischargeOverrideHint =>
-      'Required only when clearing with incomplete steps';
+      'Required only lorsque clearing avec incomplete steps';
 
   @override
   String get ipdSaveClearanceAction => 'Save clearance';
 
   @override
-  String get ipdClearancePhaseSummaryPending => 'Summary pending';
+  String get ipdClearancePhaseSummaryPending => 'Summary en attente';
 
   @override
-  String get ipdClearancePhasePendingOrders => 'Pending orders review';
+  String get ipdClearancePhasePendingOrders => 'Pending commandes review';
 
   @override
-  String get ipdClearancePhaseMedication => 'Medication pending';
+  String get ipdClearancePhaseMedication => 'Medication en attente';
 
   @override
-  String get ipdClearancePhaseBilling => 'Billing pending';
+  String get ipdClearancePhaseBilling => 'Billing en attente';
 
   @override
-  String get ipdClearancePhaseNursing => 'Nursing clearance pending';
+  String get ipdClearancePhaseNursing => 'Nursing clearance en attente';
 
   @override
-  String get ipdClearancePhaseDocuments => 'Documents pending';
+  String get ipdClearancePhaseDocuments => 'Documents en attente';
 
   @override
-  String get ipdClearancePhasePatientExit => 'Patient exit pending';
+  String get ipdClearancePhasePatientExit => 'Patient exit en attente';
 
   @override
-  String get ipdClearancePhaseReadyForExit => 'Ready for exit';
+  String get ipdClearancePhaseReadyForExit => 'Ready pour exit';
 
   @override
-  String get ipdOrderLabAction => 'Order lab';
+  String get ipdOrderLabAction => 'Order laboratoire';
 
   @override
-  String get ipdOrderRadiologyAction => 'Order radiology';
+  String get ipdOrderRadiologyAction => 'Order radiologie';
 
   @override
-  String get ipdOrderPrescriptionAction => 'Prescribe medication';
+  String get ipdOrderPrescriptionAction => 'Prescribe médicament';
 
   @override
-  String get ipdOpenNursingAction => 'Open nursing workspace';
+  String get ipdOpenNursingAction => 'Open soins infirmiers espace de travail';
 
   @override
   String get ipdSourceContextTitle => 'Admission source';
@@ -6212,7 +6233,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdEncounterTypeLabel => 'Encounter type';
 
   @override
-  String get ipdSourceKindOpd => 'OPD handoff';
+  String get ipdSourceKindOpd => 'OPD passation';
 
   @override
   String get ipdSourceKindEmergency => 'Emergency admission';
@@ -6224,7 +6245,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdSourceKindDirect => 'Direct admission';
 
   @override
-  String get ipdIcuStatusActive => 'Active';
+  String get ipdIcuStatusActive => 'Actif';
 
   @override
   String get ipdIcuStatusEnded => 'Ended';
@@ -6268,13 +6289,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdTransferApproveAction => 'Approve';
 
   @override
-  String get ipdTransferStartAction => 'Start transfer';
+  String get ipdTransferStartAction => 'Start transfert';
 
   @override
-  String get ipdTransferCompleteAction => 'Complete transfer';
+  String get ipdTransferCompleteAction => 'Complete transfert';
 
   @override
-  String get ipdTransferCancelAction => 'Cancel transfer';
+  String get ipdTransferCancelAction => 'Cancel transfert';
 
   @override
   String get ipdRouteOral => 'Oral';
@@ -6292,7 +6313,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdRouteInhalation => 'Inhalation';
 
   @override
-  String get ipdRouteOther => 'Other';
+  String get ipdRouteOther => 'Autre';
 
   @override
   String get ipdFrequencyOnce => 'Once';
@@ -6328,27 +6349,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdMedicationRefused => 'Refused';
 
   @override
-  String get navigationNursingLabel => 'Nursing';
+  String get navigationNursingLabel => 'Soins infirmiers';
 
   @override
-  String get navigationNursingShortLabel => 'Nursing';
+  String get navigationNursingShortLabel => 'Soins infirmiers';
 
   @override
-  String get nursingTitle => 'Nursing';
+  String get nursingTitle => 'Soins infirmiers';
 
   @override
   String get nursingDescription =>
-      'Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.';
+      'Monitor service queues, observations, médicament administration, handovers, transferts, et escalation.';
 
   @override
-  String get nursingLoadingTitle => 'Loading nursing workspace';
+  String get nursingLoadingTitle =>
+      'Loading soins infirmiers espace de travail';
 
   @override
   String get nursingLoadingBody =>
-      'Loading ward patients, observations, medications, and handovers.';
+      'Loading service patients, observations, médicaments, et handovers.';
 
   @override
-  String get nursingLiveStatus => 'Live sync';
+  String get nursingLiveStatus => 'Live synchronisation';
 
   @override
   String get nursingSavingStatus => 'Saving';
@@ -6357,7 +6379,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingSavedMessage => 'Nursing changes saved.';
 
   @override
-  String get nursingAssignedWardSummaryLabel => 'Assigned ward';
+  String get nursingAssignedWardSummaryLabel => 'Assigned service';
 
   @override
   String get nursingUrgentSummaryLabel => 'Urgent';
@@ -6366,35 +6388,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingMedicationDueSummaryLabel => 'Medication due';
 
   @override
-  String get nursingHandoverPendingSummaryLabel => 'Handover pending';
+  String get nursingHandoverPendingSummaryLabel => 'Handover en attente';
 
   @override
-  String get nursingTransferPendingSummaryLabel => 'Transfer pending';
+  String get nursingTransferPendingSummaryLabel => 'Transfer en attente';
 
   @override
-  String get nursingDischargePendingSummaryLabel => 'Discharge pending';
+  String get nursingDischargePendingSummaryLabel => 'Discharge en attente';
 
   @override
-  String get nursingFiltersLabel => 'Nursing filters';
+  String get nursingFiltersLabel => 'Nursing filtres';
 
   @override
-  String get nursingSearchLabel => 'Search nursing worklist';
+  String get nursingSearchLabel => 'Search soins infirmiers worklist';
 
   @override
   String get nursingSearchHint =>
-      'Patient, admission, encounter, ward, bed, or observation';
+      'Patient, admission, consultation, service, lit, ou observation';
 
   @override
   String get nursingScopeFilterLabel => 'Queue scope';
 
   @override
-  String get nursingWardFilterLabel => 'Ward or bed';
+  String get nursingWardFilterLabel => 'Ward ou lit';
 
   @override
-  String get nursingWardFilterHint => 'Filter by ward or bed';
+  String get nursingWardFilterHint => 'Filter by service ou lit';
 
   @override
-  String get nursingScopeAssignedWardLabel => 'Assigned ward';
+  String get nursingScopeAssignedWardLabel => 'Assigned service';
 
   @override
   String get nursingScopeUrgentLabel => 'Urgent';
@@ -6403,40 +6425,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingScopeMedicationDueLabel => 'Medication due';
 
   @override
-  String get nursingScopeHandoverPendingLabel => 'Handover pending';
+  String get nursingScopeHandoverPendingLabel => 'Handover en attente';
 
   @override
-  String get nursingScopeTransferPendingLabel => 'Transfer pending';
+  String get nursingScopeTransferPendingLabel => 'Transfer en attente';
 
   @override
-  String get nursingScopeDischargePendingLabel => 'Discharge pending';
+  String get nursingScopeDischargePendingLabel => 'Discharge en attente';
 
   @override
-  String get nursingScopeAllLabel => 'All';
+  String get nursingScopeAllLabel => 'Tous';
 
   @override
   String get nursingWorklistTitle => 'Ward worklist';
 
   @override
   String get nursingWorklistDescription =>
-      'Patients needing observations, medication, handover, transfer, or discharge coordination.';
+      'Patients needing observations, médicament, handover, transfert, ou sortie coordination.';
 
   @override
-  String get nursingNoWorklistTitle => 'No nursing work';
+  String get nursingNoWorklistTitle => 'No soins infirmiers work';
 
   @override
   String get nursingNoWorklistBody =>
-      'No ward patients match the current search and queue scope.';
+      'No service patients match le actuel recherche et queue scope.';
 
   @override
-  String get nursingNoSelectionTitle => 'No ward patient selected';
+  String get nursingNoSelectionTitle => 'No service patient selected';
 
   @override
   String get nursingNoSelectionBody =>
-      'Open a patient from the worklist to review observations, medications, handovers, and ward activity.';
+      'Open un patient de le worklist à review observations, médicaments, handovers, et service activity.';
 
   @override
-  String get nursingPatientContextLabel => 'Selected nursing patient context';
+  String get nursingPatientContextLabel =>
+      'Selected soins infirmiers patient context';
 
   @override
   String get nursingLocationColumnLabel => 'Location';
@@ -6463,19 +6486,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingIcuLabel => 'ICU';
 
   @override
-  String get nursingBedLabel => 'Bed';
+  String get nursingBedLabel => 'Lit';
 
   @override
   String get nursingActionsTitle => 'Nursing actions';
 
   @override
-  String get nursingActionRecordVitals => 'Record vitals';
+  String get nursingActionRecordVitals => 'Record signes vitaux';
 
   @override
   String get nursingActionAddNote => 'Add note';
 
   @override
-  String get nursingActionAdministerMedication => 'Administer medication';
+  String get nursingActionAdministerMedication => 'Administer médicament';
 
   @override
   String get nursingActionCompleteTask => 'Complete task';
@@ -6487,20 +6510,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingActionEscalate => 'Escalate';
 
   @override
-  String get nursingActionAcknowledgeTransfer => 'Acknowledge transfer';
+  String get nursingActionAcknowledgeTransfer => 'Acknowledge transfert';
 
   @override
   String get nursingActionAcceptHandover => 'Accept handover';
 
   @override
-  String get nursingActionPrintSummary => 'Print nursing summary';
+  String get nursingActionPrintSummary => 'Print soins infirmiers résumé';
 
   @override
-  String get nursingReportTitle => 'Nursing care summary';
+  String get nursingReportTitle => 'Nursing soins résumé';
 
   @override
   String get nursingReportFooter =>
-      'Generated from the nursing report template for clinical audit.';
+      'Generated de le soins infirmiers rapport modèle pour clinique audit.';
 
   @override
   String get nursingObservationsTitle => 'Observations';
@@ -6512,7 +6535,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingNotesTitle => 'Nursing notes';
 
   @override
-  String get nursingCarePlansTitle => 'Care plans';
+  String get nursingCarePlansTitle => 'Care forfaits';
 
   @override
   String get nursingHandoversTitle => 'Handovers';
@@ -6521,7 +6544,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingWardActivityTitle => 'Ward activity';
 
   @override
-  String get nursingNoRecordsLabel => 'No records yet';
+  String get nursingNoRecordsLabel => 'No dossiers yet';
 
   @override
   String get nursingVitalsTypeLabel => 'Vital type';
@@ -6566,7 +6589,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingRouteLabel => 'Route';
 
   @override
-  String get nursingAdministrationStatusLabel => 'Administration status';
+  String get nursingAdministrationStatusLabel => 'Administration statut';
 
   @override
   String get nursingFrequencyLabel => 'Frequency';
@@ -6579,11 +6602,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nursingConfirmMedicationLabel =>
-      'Confirm medication administration';
+      'Confirm médicament administration';
 
   @override
   String get nursingConfirmMedicationSubtitle =>
-      'Verify the patient, medication, dose, route, and time before saving.';
+      'Verify le patient, médicament, dose, route, et heure avant saving.';
 
   @override
   String get nursingHandoverToUserLabel => 'Recipient';
@@ -6601,31 +6624,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingTransferActionLabel => 'Transfer action';
 
   @override
-  String get nursingToBedLabel => 'To bed ID';
+  String get nursingToBedLabel => 'To lit ID';
 
   @override
-  String get nursingConfirmTransferLabel => 'Confirm transfer update';
+  String get nursingConfirmTransferLabel => 'Confirm transfert mettre à jour';
 
   @override
-  String get nursingAdvancedFiltersLabel => 'Filters';
+  String get nursingAdvancedFiltersLabel => 'Filtres';
 
   @override
-  String get nursingAdvancedFiltersTitle => 'Nursing worklist filters';
+  String get nursingAdvancedFiltersTitle => 'Nursing worklist filtres';
 
   @override
-  String get nursingApplyFiltersLabel => 'Apply filters';
+  String get nursingApplyFiltersLabel => 'Apply filtres';
 
   @override
-  String get nursingResetFiltersLabel => 'Reset filters';
+  String get nursingResetFiltersLabel => 'Reset filtres';
 
   @override
-  String get nursingSearchFieldLabel => 'Search fields';
+  String get nursingSearchFieldLabel => 'Search champs';
 
   @override
-  String get nursingAllFieldsLabel => 'All';
+  String get nursingAllFieldsLabel => 'Tous';
 
   @override
-  String get nursingDateFilterLabel => 'Due or observation date';
+  String get nursingDateFilterLabel => 'Due ou observation date';
 
   @override
   String get nursingDateFromLabel => 'From';
@@ -6637,48 +6660,48 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingDatePickerLabel => 'Choose date';
 
   @override
-  String get nursingInvalidDateMessage => 'Enter a valid date.';
+  String get nursingInvalidDateMessage => 'Enter un valid date.';
 
   @override
   String get nursingPatientFilterLabel => 'Patient';
 
   @override
   String get nursingPatientFilterHint =>
-      'Name, number, admission, or encounter';
+      'Name, number, admission, ou consultation';
 
   @override
   String get nursingUnitFilterLabel => 'Unit';
 
   @override
-  String get nursingUnitFilterHint => 'Ward, ICU, recovery, or unit';
+  String get nursingUnitFilterHint => 'Ward, ICU, recovery, ou unité';
 
   @override
   String get nursingShiftFilterLabel => 'Shift';
 
   @override
   String get nursingShiftFilterHint =>
-      'Morning, evening, night, or current shift';
+      'Morning, evening, night, ou actuel quart';
 
   @override
   String get nursingCareTaskFilterLabel => 'Care task';
 
   @override
   String get nursingCareTaskFilterHint =>
-      'Vitals, medication, handover, transfer, or discharge';
+      'Vitals, médicament, handover, transfert, ou sortie';
 
   @override
-  String get nursingAdmissionStatusFilterLabel => 'Admission status';
+  String get nursingAdmissionStatusFilterLabel => 'Admission statut';
 
   @override
   String get nursingAdmissionStatusFilterHint =>
-      'Active, admitted, transfer, or discharge status';
+      'Active, admis, transfert, ou sortie statut';
 
   @override
   String get nursingDischargeReadinessFilterLabel => 'Discharge readiness';
 
   @override
   String get nursingDischargeReadinessFilterHint =>
-      'Planned, pending, ready, or blocked';
+      'Planned, en attente, ready, ou blocked';
 
   @override
   String get nursingPriorityFilterLabel => 'Priority';
@@ -6702,7 +6725,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingPriorityColumnLabel => 'Priority';
 
   @override
-  String get nursingDueTimeColumnLabel => 'Due time';
+  String get nursingDueTimeColumnLabel => 'Due heure';
 
   @override
   String get nursingResponsibleNurseColumnLabel => 'Responsible nurse';
@@ -6711,82 +6734,83 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingDueNowLabel => 'Now';
 
   @override
-  String get nursingAssignedShiftLabel => 'Assigned shift';
+  String get nursingAssignedShiftLabel => 'Assigned quart';
 
   @override
   String get nursingWardAdmissionChecklistTitle => 'Ward admission checklist';
 
   @override
   String get nursingWardAdmissionChecklistDescription =>
-      'Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.';
+      'Checks tied à lit location, admission handover, observations, soins forfait, médicament, et sortie readiness.';
 
   @override
   String get nursingChecklistCompleteStatus => 'Complete';
 
   @override
-  String get nursingChecklistPendingStatus => 'Pending';
+  String get nursingChecklistPendingStatus => 'En attente';
 
   @override
   String get nursingChecklistLocationTitle => 'Location confirmed';
 
   @override
   String get nursingChecklistLocationReadyBody =>
-      'Patient location is available.';
+      'Patient location is disponible.';
 
   @override
   String get nursingChecklistLocationPendingBody =>
-      'Waiting for bed allocation or authorized holding area.';
+      'Waiting pour lit allocation ou authorized holding area.';
 
   @override
   String get nursingChecklistHandoverTitle => 'Admission handover';
 
   @override
   String get nursingChecklistHandoverReadyBody =>
-      'A nursing handover is linked to this admission.';
+      'Un soins infirmiers handover is linked à ce admission.';
 
   @override
   String get nursingChecklistHandoverPendingBody =>
-      'Record or accept the admission handover before ward care continues.';
+      'Record ou accept le admission handover avant service soins continues.';
 
   @override
   String get nursingChecklistVitalsTitle => 'Initial observations';
 
   @override
   String get nursingChecklistVitalsPendingBody =>
-      'Record baseline vital signs for the admission.';
+      'Record baseline vital signs pour le admission.';
 
   @override
-  String get nursingChecklistCarePlanTitle => 'Care plan started';
+  String get nursingChecklistCarePlanTitle => 'Care forfait started';
 
   @override
   String get nursingChecklistCarePlanReadyBody =>
-      'At least one care task or plan is recorded.';
+      'At least one soins task ou forfait is recorded.';
 
   @override
   String get nursingChecklistCarePlanPendingBody =>
-      'Add a care task or plan for ward follow-up.';
+      'Add un soins task ou forfait pour service follow-up.';
 
   @override
   String get nursingChecklistMedicationTitle => 'Medication queue clear';
 
   @override
   String get nursingChecklistMedicationReadyBody =>
-      'No medication administration is currently due.';
+      'No médicament administration is currently due.';
 
   @override
   String get nursingChecklistMedicationPendingBody =>
-      'Medication administration remains due for this patient.';
+      'Medication administration remains due pour ce patient.';
 
   @override
-  String get nursingChecklistDischargeTitle => 'Discharge nursing readiness';
+  String get nursingChecklistDischargeTitle =>
+      'Discharge soins infirmiers readiness';
 
   @override
   String get nursingChecklistDischargeReadyBody =>
-      'No discharge nursing checklist is pending.';
+      'No sortie soins infirmiers checklist is en attente.';
 
   @override
   String get nursingChecklistDischargePendingBody =>
-      'Discharge nursing checks are pending; do not close the admission here.';
+      'Discharge soins infirmiers checks are en attente; do not fermer le admission here.';
 
   @override
   String get nursingChecklistIdentityTitle => 'Identity confirmed';
@@ -6797,18 +6821,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nursingChecklistIdentityPendingBody =>
-      'Confirm patient name, admission number, and ward/bed.';
+      'Confirm patient nom, admission number, et service/lit.';
 
   @override
-  String get nursingChecklistAllergiesTitle => 'Allergies and risk flags';
+  String get nursingChecklistAllergiesTitle => 'Allergies et risk flags';
 
   @override
   String get nursingChecklistAllergiesReadyBody =>
-      'Allergies and risk flags have been reviewed.';
+      'Allergies et risk flags have been reviewed.';
 
   @override
   String get nursingChecklistAllergiesPendingBody =>
-      'Review and record patient allergies and risk flags.';
+      'Review et dossier patient allergies et risk flags.';
 
   @override
   String get nursingChecklistBelongingsTitle => 'Belongings';
@@ -6819,21 +6843,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nursingChecklistBelongingsPendingBody =>
-      'Record patient belongings per hospital policy.';
+      'Record patient belongings per hôpital policy.';
 
   @override
   String get nursingChecklistDoctorTitle => 'Doctor notified';
 
   @override
   String get nursingChecklistDoctorReadyBody =>
-      'The responsible doctor has been notified.';
+      'Le responsible doctor has been notified.';
 
   @override
   String get nursingChecklistDoctorPendingBody =>
-      'Notify the responsible doctor of the ward admission.';
+      'Notify le responsible doctor sur le service admission.';
 
   @override
-  String get nursingActionOrderLab => 'Order lab tests';
+  String get nursingActionOrderLab => 'Order laboratoire tests';
 
   @override
   String get nursingActionOrderRadiology => 'Order imaging';
@@ -6842,7 +6866,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingActionDischargeClearance => 'Discharge clearance';
 
   @override
-  String get nursingActionOpenIcu => 'Open ICU workspace';
+  String get nursingActionOpenIcu => 'Open ICU espace de travail';
 
   @override
   String get nursingActionConfirmIdentity => 'Confirm identity';
@@ -6857,37 +6881,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nursingActionNotifyDoctor => 'Notify doctor';
 
   @override
-  String get nursingAllergiesLabel => 'Allergies and risk flags';
+  String get nursingAllergiesLabel => 'Allergies et risk flags';
 
   @override
   String get nursingBelongingsLabel => 'Belongings';
 
   @override
-  String get nursingNotifyDoctorLabel => 'Notification details';
+  String get nursingNotifyDoctorLabel => 'Notification détails';
 
   @override
-  String get nursingCarePlanLabel => 'Care plan';
+  String get nursingCarePlanLabel => 'Care forfait';
 
   @override
-  String get nursingDischargeClearanceTitle => 'Discharge nursing clearance';
+  String get nursingDischargeClearanceTitle =>
+      'Discharge soins infirmiers clearance';
 
   @override
   String get nursingDischargeClearanceDescription =>
-      'Complete ward checks and patient education before IPD finalizes discharge.';
+      'Complete service checks et patient education avant IPD finalizes sortie.';
 
   @override
   String get nursingDischargeClearanceNotesLabel => 'Additional notes';
 
   @override
   String get nursingDischargeClearanceConfirmLabel =>
-      'I confirm nursing clearance is complete';
+      'I confirmer soins infirmiers clearance is complete';
 
   @override
   String get nursingClearanceMedicationEducationLabel =>
       'Medication education provided';
 
   @override
-  String get nursingClearanceWoundCareLabel => 'Wound care instructions given';
+  String get nursingClearanceWoundCareLabel => 'Wound soins instructions given';
 
   @override
   String get nursingClearanceFollowUpLabel => 'Follow-up appointments arranged';
@@ -6903,7 +6928,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nursingShiftContextDescription =>
-      'Current roster and handover items stay visible without opening another module.';
+      'Current roster et handover éléments stay visible sans opening another module.';
 
   @override
   String get nursingRosterTitle => 'Roster assignments';
@@ -6913,44 +6938,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get nursingNoRosterLabel =>
-      'No roster assignments found for this shift.';
+      'No roster assignments found pour ce quart.';
 
   @override
   String get navigationDischargeLabel => 'Discharge planning';
 
   @override
-  String get navigationDischargeShortLabel => 'Discharge';
+  String get navigationDischargeShortLabel => 'Sortie';
 
   @override
-  String get dischargeWorkspaceTitle => 'Discharge workspace';
+  String get dischargeWorkspaceTitle => 'Discharge espace de travail';
 
   @override
   String get dischargeWorkspaceDescription =>
-      'Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.';
+      'Coordinate sortie forfaits, clearances, medicines, final billing, documents, et lit release.';
 
   @override
-  String get dischargeOperationalStatusLabel => 'Discharge desk active';
+  String get dischargeOperationalStatusLabel => 'Discharge desk actif';
 
   @override
   String get dischargePlannedSummaryLabel => 'Planned';
 
   @override
-  String get dischargeSummaryPendingSummaryLabel => 'Summary pending';
+  String get dischargeSummaryPendingSummaryLabel => 'Summary en attente';
 
   @override
   String get dischargeDocumentsReadySummaryLabel => 'Documents ready';
 
   @override
-  String get dischargeCompletedSummaryLabel => 'Completed';
+  String get dischargeCompletedSummaryLabel => 'Terminé';
 
   @override
-  String get dischargeQueueSearchLabel => 'Search discharge queue';
+  String get dischargeQueueSearchLabel => 'Search sortie queue';
 
   @override
-  String get dischargeQueueSearchHint => 'Search patient, admission, or ward';
+  String get dischargeQueueSearchHint =>
+      'Search patient, admission, ou service';
 
   @override
-  String get dischargeStatusFilterLabel => 'Discharge status';
+  String get dischargeStatusFilterLabel => 'Discharge statut';
 
   @override
   String get dischargeStatusAll => 'All discharges';
@@ -6959,32 +6985,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeStatusPlanned => 'Planned';
 
   @override
-  String get dischargeStatusSummaryPending => 'Summary pending';
+  String get dischargeStatusSummaryPending => 'Summary en attente';
 
   @override
-  String get dischargeStatusPharmacyPending => 'Pharmacy pending';
+  String get dischargeStatusPharmacyPending => 'Pharmacy en attente';
 
   @override
-  String get dischargeStatusNursingPending => 'Nursing pending';
+  String get dischargeStatusNursingPending => 'Nursing en attente';
 
   @override
-  String get dischargeStatusBillingPending => 'Billing pending';
+  String get dischargeStatusBillingPending => 'Billing en attente';
 
   @override
-  String get dischargeStatusInsurancePending => 'Insurance pending';
+  String get dischargeStatusInsurancePending => 'Insurance en attente';
 
   @override
   String get dischargeStatusDocumentsReady => 'Documents ready';
 
   @override
-  String get dischargeStatusCompleted => 'Completed';
+  String get dischargeStatusCompleted => 'Terminé';
 
   @override
   String get dischargeWorklistTitle => 'Discharge worklist';
 
   @override
   String get dischargeWorklistDescription =>
-      'Patients with a discharge plan, pending clearance, or recent completion.';
+      'Patients avec un sortie forfait, en attente clearance, ou recent completion.';
 
   @override
   String get dischargePreviousPageLabel => 'Previous discharges';
@@ -6998,20 +7024,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dischargeEmptyQueueTitle => 'No discharges in this view';
+  String get dischargeEmptyQueueTitle => 'No discharges in ce voir';
 
   @override
   String get dischargeEmptyQueueBody =>
-      'Adjust the status filter or search term to find discharge work.';
+      'Adjust le statut filtre ou recherche term à find sortie work.';
 
   @override
   String get dischargePatientColumnLabel => 'Patient';
 
   @override
-  String get dischargeLocationColumnLabel => 'Ward and bed';
+  String get dischargeLocationColumnLabel => 'Ward et lit';
 
   @override
-  String get dischargeStatusColumnLabel => 'Status';
+  String get dischargeStatusColumnLabel => 'Statut';
 
   @override
   String get dischargeNextActionColumnLabel => 'Next action';
@@ -7023,24 +7049,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeDetailTitle => 'Discharge detail';
 
   @override
-  String get dischargeDetailLoadingTitle => 'Loading discharge detail';
+  String get dischargeDetailLoadingTitle => 'Loading sortie detail';
 
   @override
   String get dischargeDetailLoadingBody =>
-      'Loading patient context, clearance, medicines, billing, and documents.';
+      'Loading patient context, clearance, medicines, billing, et documents.';
 
   @override
-  String get dischargeNoSelectionTitle => 'Select a discharge';
+  String get dischargeNoSelectionTitle => 'Select un sortie';
 
   @override
   String get dischargeNoSelectionBody =>
-      'Choose a patient from the worklist to coordinate discharge.';
+      'Choose un patient de le worklist à coordinate sortie.';
 
   @override
-  String get dischargePrintSummaryAction => 'Print discharge summary';
+  String get dischargePrintSummaryAction => 'Print sortie résumé';
 
   @override
-  String get dischargePatientContextLabel => 'Patient discharge context';
+  String get dischargePatientContextLabel => 'Patient sortie context';
 
   @override
   String get dischargeAdmissionFieldLabel => 'Admission';
@@ -7052,13 +7078,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeLocationFieldLabel => 'Location';
 
   @override
-  String get dischargeTargetFieldLabel => 'Target discharge';
+  String get dischargeTargetFieldLabel => 'Target sortie';
 
   @override
-  String get dischargeStartPlanAction => 'Start discharge plan';
+  String get dischargeStartPlanAction => 'Start sortie forfait';
 
   @override
-  String get dischargeEditSummaryAction => 'Edit summary';
+  String get dischargeEditSummaryAction => 'Edit résumé';
 
   @override
   String get dischargeRequestBillingAction => 'Request final billing';
@@ -7067,20 +7093,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeRequestPharmacyAction => 'Request medicines';
 
   @override
-  String get dischargeCompleteAction => 'Complete discharge';
+  String get dischargeCompleteAction => 'Complete sortie';
 
   @override
   String get dischargeChecklistTitle => 'Clearance checklist';
 
   @override
   String get dischargeChecklistBody =>
-      'Track clinical, nursing, pharmacy, billing, documents, and bed release readiness.';
+      'Track clinique, soins infirmiers, pharmacie, billing, documents, et lit release readiness.';
 
   @override
   String get dischargeClearanceComplete => 'Complete';
 
   @override
-  String get dischargeClearancePending => 'Pending';
+  String get dischargeClearancePending => 'En attente';
 
   @override
   String get dischargeClearanceBackendGap => 'Unavailable';
@@ -7089,7 +7115,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeClearanceUnavailable => 'Unavailable';
 
   @override
-  String get dischargeClearanceDoctor => 'Doctor summary';
+  String get dischargeClearanceDoctor => 'Doctor résumé';
 
   @override
   String get dischargeClearanceNursing => 'Nursing handover';
@@ -7113,46 +7139,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeClearanceHousekeeping => 'Housekeeping';
 
   @override
-  String get dischargeSummarySectionTitle => 'Clinical summary';
+  String get dischargeSummarySectionTitle => 'Clinical résumé';
 
   @override
   String get dischargeSummarySectionBody =>
-      'Capture diagnosis, treatment, medicines, advice, follow-up, warnings, and signature context.';
+      'Capture diagnostic, traitement, medicines, advice, follow-up, warnings, et signature context.';
 
   @override
-  String get dischargeEmptySummaryTitle => 'No summary recorded';
+  String get dischargeEmptySummaryTitle => 'No résumé recorded';
 
   @override
   String get dischargeEmptySummaryBody =>
-      'Start a discharge plan to prepare the printable summary.';
+      'Start un sortie forfait à prepare le printable résumé.';
 
   @override
-  String get dischargeGeneratedDocumentsTitle => 'Generated document preview';
+  String get dischargeGeneratedDocumentsTitle => 'Generated document aperçu';
 
   @override
   String get dischargeMedicinesSectionTitle => 'Discharge medicines';
 
   @override
   String get dischargeNoMedicinesBody =>
-      'No discharge medicine orders are linked to this admission.';
+      'No sortie medicine commandes are linked à ce admission.';
 
   @override
   String get dischargePharmacyUnavailableBody =>
-      'Pharmacy orders could not be loaded. Refresh before completing discharge.';
+      'Pharmacy orders n\'a pas pu être loaded. Refresh before completing discharge.';
 
   @override
   String get dischargeBillingSectionTitle => 'Billing clearance';
 
   @override
   String get dischargeNoInvoicesBody =>
-      'No final invoices are linked to this admission.';
+      'No final factures are linked à ce admission.';
 
   @override
   String get dischargeBillingUnavailableBody =>
-      'Billing records could not be loaded. Refresh before completing discharge.';
+      'Billing records n\'a pas pu être loaded. Refresh before completing discharge.';
 
   @override
-  String get dischargeNoRecordsTitle => 'No records';
+  String get dischargeNoRecordsTitle => 'No dossiers';
 
   @override
   String get dischargeTimelineSectionTitle => 'Admission timeline';
@@ -7162,122 +7188,122 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dischargeNoTimelineBody =>
-      'Admission timeline events will appear after activity is recorded.';
+      'Admission timeline events will appear après activity is recorded.';
 
   @override
   String get dischargeBackendGapsTitle => 'Unavailable workflows';
 
   @override
   String get dischargeBackendGapsBody =>
-      'These workflow actions are unavailable until system support is enabled for this facility.';
+      'These workflow actions are indisponible until system support is activé pour ce établissement.';
 
   @override
-  String get dischargeGapBackendSubtitle => 'Workflow support unavailable';
+  String get dischargeGapBackendSubtitle => 'Workflow support indisponible';
 
   @override
   String get dischargeGapChecklistTitle => 'Persistent clearance checklist';
 
   @override
   String get dischargeGapChecklistBody =>
-      'Individual doctor, nursing, pharmacy, billing, document, and exit checklist decisions are not available in this workflow yet.';
+      'Individual doctor, soins infirmiers, pharmacie, billing, document, et exit checklist decisions are not disponible in ce workflow yet.';
 
   @override
   String get dischargeGapInsuranceTitle => 'Insurance clearance workflow';
 
   @override
   String get dischargeGapInsuranceBody =>
-      'Insurance clearance is not connected to this discharge workflow yet.';
+      'Insurance clearance is not connected à ce sortie workflow yet.';
 
   @override
   String get dischargeGapDocumentsTitle => 'Document ready state';
 
   @override
   String get dischargeGapDocumentsBody =>
-      'Discharge documents can be generated from the summary. Handover readiness is not available yet.';
+      'Discharge documents can be generated de le résumé. Handover readiness is not disponible yet.';
 
   @override
-  String get dischargeGapHousekeepingTitle => 'Housekeeping task handoff';
+  String get dischargeGapHousekeepingTitle => 'Housekeeping task passation';
 
   @override
   String get dischargeGapHousekeepingBody =>
-      'Final discharge releases the bed. Housekeeping handoff is unavailable for this workflow.';
+      'Final sortie releases le lit. Housekeeping passation is indisponible pour ce workflow.';
 
   @override
-  String get dischargePlanDialogTitle => 'Discharge plan';
+  String get dischargePlanDialogTitle => 'Discharge forfait';
 
   @override
   String get dischargePlanDialogBody =>
-      'Prepare the clinical discharge summary and target discharge date.';
+      'Prepare le clinique sortie résumé et target sortie date.';
 
   @override
-  String get dischargeSummaryFieldLabel => 'Discharge summary';
+  String get dischargeSummaryFieldLabel => 'Discharge résumé';
 
   @override
   String get dischargeSummaryHelperText =>
-      'Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.';
+      'Include diagnostic, traitement, medicines, advice, follow-up, avertissement signs, et signature context.';
 
   @override
-  String get dischargeSummaryRequiredMessage => 'Enter the discharge summary.';
+  String get dischargeSummaryRequiredMessage => 'Enter le sortie résumé.';
 
   @override
-  String get dischargeTargetDateLabel => 'Target discharge date';
+  String get dischargeTargetDateLabel => 'Target sortie date';
 
   @override
   String get dischargeDatePickerLabel => 'Choose date';
 
   @override
-  String get dischargeInvalidDateMessage => 'Enter a valid discharge date.';
+  String get dischargeInvalidDateMessage => 'Enter un valid sortie date.';
 
   @override
-  String get dischargeSavePlanAction => 'Save plan';
+  String get dischargeSavePlanAction => 'Save forfait';
 
   @override
-  String get dischargeBillingDialogTitle => 'Final billing request';
+  String get dischargeBillingDialogTitle => 'Final billing demande';
 
   @override
   String get dischargeBillingDialogBody =>
-      'Create a final invoice request for billing clearance.';
+      'Create un final facture demande pour billing clearance.';
 
   @override
   String get dischargeBillingAmountLabel => 'Amount';
 
   @override
   String get dischargeBillingAmountRequiredMessage =>
-      'Enter the final billing amount.';
+      'Enter le final billing montant.';
 
   @override
   String get dischargeBillingCurrencyLabel => 'Currency';
 
   @override
   String get dischargeBillingCurrencyRequiredMessage =>
-      'Enter the billing currency.';
+      'Enter le billing devise.';
 
   @override
-  String get dischargeRequestBillingSubmitAction => 'Create invoice request';
+  String get dischargeRequestBillingSubmitAction => 'Create facture demande';
 
   @override
   String get dischargePharmacyDialogTitle => 'Discharge medicines';
 
   @override
   String get dischargePharmacyDialogBody =>
-      'Send discharge medicines to pharmacy.';
+      'Send sortie medicines à pharmacie.';
 
   @override
   String get dischargeDrugFieldLabel => 'Medicine';
 
   @override
-  String get dischargeDrugRequiredMessage => 'Select a medicine.';
+  String get dischargeDrugRequiredMessage => 'Select un medicine.';
 
   @override
   String get dischargePrescriptionFieldLabel => 'Prescription';
 
   @override
   String get dischargePrescriptionHelperText =>
-      'State dose, duration, and any patient instructions.';
+      'State dose, duration, et any patient instructions.';
 
   @override
   String get dischargePrescriptionRequiredMessage =>
-      'Enter the discharge prescription.';
+      'Enter le sortie ordonnance.';
 
   @override
   String get dischargeQuantityFieldLabel => 'Quantity';
@@ -7292,41 +7318,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeMedicineInstructionsLabel => 'Instructions';
 
   @override
-  String get dischargeRequestPharmacySubmitAction => 'Send to pharmacy';
+  String get dischargeRequestPharmacySubmitAction => 'Send à pharmacie';
 
   @override
-  String get dischargeCompleteDialogTitle => 'Complete discharge';
+  String get dischargeCompleteDialogTitle => 'Complete sortie';
 
   @override
   String get dischargeCompleteDialogBody =>
-      'Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.';
+      'Confirm le patient exit only après requis clinique, soins infirmiers, pharmacie, billing, et document checks are complete.';
 
   @override
-  String get dischargeCompletionBlockersTitle => 'Clearance still pending';
+  String get dischargeCompletionBlockersTitle => 'Clearance still en attente';
 
   @override
   String get dischargeCompletionBlockersBody =>
-      'Resolve pending or unavailable clearance items before finalizing the admission.';
+      'Resolve en attente ou indisponible clearance éléments avant finalizing le admission.';
 
   @override
   String get dischargeCompleteConfirmLabel =>
-      'I confirm the patient has exited and documents were handed over.';
+      'I confirmer le patient has exited et documents were handed over.';
 
   @override
   String get dischargeCompleteConfirmRequiredMessage =>
-      'Confirm patient exit before completing discharge.';
+      'Confirm patient exit avant completing sortie.';
 
   @override
-  String get dischargeCompleteSubmitAction => 'Finalize discharge';
+  String get dischargeCompleteSubmitAction => 'Finalize sortie';
 
   @override
-  String get dischargeNextActionCompleted => 'Discharge completed';
+  String get dischargeNextActionCompleted => 'Discharge terminé';
 
   @override
-  String get dischargeNextActionClearance => 'Clear pending items';
+  String get dischargeNextActionClearance => 'Clear en attente éléments';
 
   @override
-  String get dischargeNextActionStartPlan => 'Start summary';
+  String get dischargeNextActionStartPlan => 'Start résumé';
 
   @override
   String dischargePatientAgeSexLabel(String age, String sex) {
@@ -7334,7 +7360,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dischargeSavedMessage => 'Discharge workflow updated.';
+  String get dischargeSavedMessage => 'Discharge workflow mis à jour.';
 
   @override
   String get dischargeManageClearanceAction => 'Manage clearance';
@@ -7346,36 +7372,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeSaveClearanceAction => 'Save clearance';
 
   @override
-  String get dischargePendingOrdersTitle => 'Pending clinical orders';
+  String get dischargePendingOrdersTitle => 'Pending clinique commandes';
 
   @override
   String get dischargePendingOrdersBody =>
-      'Review lab, radiology, medication, and nursing orders before finalizing discharge.';
+      'Review laboratoire, radiologie, médicament, et soins infirmiers commandes avant finalizing sortie.';
 
   @override
   String get dischargeCrossModuleLinksTitle => 'Related workspaces';
 
   @override
   String get dischargeCrossModuleLinksBody =>
-      'Open billing, pharmacy, nursing, IPD, or housekeeping with this admission context.';
+      'Open billing, pharmacie, soins infirmiers, IPD, ou entretien avec ce admission context.';
 
   @override
   String get dischargeOpenIpdAction => 'Open IPD';
 
   @override
-  String get dischargeOpenNursingAction => 'Open nursing';
+  String get dischargeOpenNursingAction => 'Open soins infirmiers';
 
   @override
-  String get dischargeOpenPharmacyAction => 'Open pharmacy';
+  String get dischargeOpenPharmacyAction => 'Open pharmacie';
 
   @override
   String get dischargeOpenBillingAction => 'Open billing';
 
   @override
-  String get dischargeOpenHousekeepingAction => 'Open housekeeping';
+  String get dischargeOpenHousekeepingAction => 'Open entretien';
 
   @override
-  String get dischargeReportTitle => 'Discharge summary';
+  String get dischargeReportTitle => 'Discharge résumé';
 
   @override
   String get dischargeReportPatientLabel => 'Patient';
@@ -7399,44 +7425,44 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dischargeNurseSignatureLabel => 'Nurse signature';
 
   @override
-  String get dischargeReportFooter => 'Generated from discharge workflow data.';
+  String get dischargeReportFooter => 'Generated de sortie workflow data.';
 
   @override
-  String get dischargeLoadingTitle => 'Loading discharge workspace';
+  String get dischargeLoadingTitle => 'Loading sortie espace de travail';
 
   @override
-  String get dischargeLoadingBody =>
-      'Loading discharge queue and reference data.';
+  String get dischargeLoadingBody => 'Loading sortie queue et référence data.';
 
   @override
-  String get dischargeLoadErrorTitle => 'Discharge workspace unavailable';
+  String get dischargeLoadErrorTitle =>
+      'Discharge espace de travail indisponible';
 
   @override
   String get dischargeLoadErrorBody =>
-      'The discharge queue could not be loaded. Refresh to try again.';
+      'The discharge queue n\'a pas pu être loaded. Refresh to try again.';
 
   @override
-  String get radiologyTitle => 'Radiology';
+  String get radiologyTitle => 'Radiologie';
 
   @override
   String get radiologyDescription =>
-      'Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.';
+      'Manage imaging demandes, modality worklists, study capture, PACS links, reporting, et release.';
 
   @override
-  String get radiologyLoadingTitle => 'Loading radiology workspace';
+  String get radiologyLoadingTitle => 'Loading radiologie espace de travail';
 
   @override
   String get radiologyLoadingBody =>
-      'Loading imaging orders, reports, studies, and reference data.';
+      'Loading imaging commandes, rapports, studies, et référence data.';
 
   @override
-  String get radiologyLiveStatus => 'Live sync';
+  String get radiologyLiveStatus => 'Live synchronisation';
 
   @override
   String get radiologySavingStatus => 'Saving';
 
   @override
-  String get radiologySavedMessage => 'Radiology workflow updated.';
+  String get radiologySavedMessage => 'Radiology workflow mis à jour.';
 
   @override
   String get radiologyRequestImagingAction => 'Request imaging';
@@ -7445,7 +7471,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyRefreshCatalogAction => 'Refresh catalog';
 
   @override
-  String get radiologyTotalOrdersSummaryLabel => 'Total orders';
+  String get radiologyTotalOrdersSummaryLabel => 'Total commandes';
 
   @override
   String get radiologyWaitingImagingSummaryLabel => 'Waiting imaging';
@@ -7457,48 +7483,48 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyReleasedSummaryLabel => 'Released';
 
   @override
-  String get radiologyUnsyncedSummaryLabel => 'PACS sync due';
+  String get radiologyUnsyncedSummaryLabel => 'PACS synchronisation due';
 
   @override
-  String get radiologyFiltersLabel => 'Radiology filters';
+  String get radiologyFiltersLabel => 'Radiology filtres';
 
   @override
-  String get radiologySearchLabel => 'Search radiology';
+  String get radiologySearchLabel => 'Search radiologie';
 
   @override
   String get radiologySearchHint =>
-      'Search patient, order, encounter, study, report, or PACS text';
+      'Search patient, commande, consultation, study, rapport, ou PACS text';
 
   @override
   String get radiologyOrderDateFilterLabel => 'Order date';
 
   @override
-  String get radiologyPickOrderDateAction => 'Pick order date';
+  String get radiologyPickOrderDateAction => 'Pick commande date';
 
   @override
   String get radiologyStageFilterLabel => 'Stage';
 
   @override
-  String get radiologyStatusFilterLabel => 'Status';
+  String get radiologyStatusFilterLabel => 'Statut';
 
   @override
   String get radiologyModalityFilterLabel => 'Modality';
 
   @override
-  String get radiologyClearFiltersAction => 'Clear filters';
+  String get radiologyClearFiltersAction => 'Clear filtres';
 
   @override
   String get radiologyWorklistTitle => 'Imaging worklist';
 
   @override
   String get radiologyWorklistDescription =>
-      'System imaging orders with modality workflow and report status.';
+      'System imaging commandes avec modality workflow et rapport statut.';
 
   @override
-  String get radiologyPreviousPageLabel => 'Previous orders';
+  String get radiologyPreviousPageLabel => 'Previous commandes';
 
   @override
-  String get radiologyNextPageLabel => 'Next orders';
+  String get radiologyNextPageLabel => 'Next commandes';
 
   @override
   String radiologyPageLabel(int from, int to, int total) {
@@ -7506,11 +7532,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get radiologyNoOrdersTitle => 'No radiology orders';
+  String get radiologyNoOrdersTitle => 'No radiologie commandes';
 
   @override
   String get radiologyNoOrdersBody =>
-      'Orders matching this search and filter will appear here.';
+      'Orders matching ce recherche et filtre will appear here.';
 
   @override
   String get radiologyPatientColumnLabel => 'Patient';
@@ -7525,10 +7551,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyPriorityColumnLabel => 'Priority';
 
   @override
-  String get radiologyPaymentAuthColumnLabel => 'Billing';
+  String get radiologyPaymentAuthColumnLabel => 'Facturation';
 
   @override
-  String get radiologyStatusColumnLabel => 'Status';
+  String get radiologyStatusColumnLabel => 'Statut';
 
   @override
   String get radiologyNextActionColumnLabel => 'Next action';
@@ -7537,23 +7563,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyDetailTitle => 'Radiology workflow';
 
   @override
-  String get radiologyDetailLoadingTitle => 'Loading order';
+  String get radiologyDetailLoadingTitle => 'Loading commande';
 
   @override
   String get radiologyDetailLoadingBody => 'Loading selected imaging workflow.';
 
   @override
-  String get radiologyNoSelectionTitle => 'Select an order';
+  String get radiologyNoSelectionTitle => 'Select un commande';
 
   @override
   String get radiologyNoSelectionBody =>
-      'Choose an imaging request to view study, report, and release details.';
+      'Choose un imaging demande à voir study, rapport, et release détails.';
 
   @override
   String get radiologyPatientContextLabel => 'Radiology patient context';
 
   @override
-  String get radiologyBillingGateUnavailable => 'Billing gate unavailable';
+  String get radiologyBillingGateUnavailable => 'Billing gate indisponible';
 
   @override
   String get radiologyEncounterLabel => 'Encounter';
@@ -7577,7 +7603,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyStartImagingAction => 'Start imaging';
 
   @override
-  String get radiologyStartDialogTitle => 'Start imaging order';
+  String get radiologyStartDialogTitle => 'Start imaging commande';
 
   @override
   String get radiologyNotesLabel => 'Notes';
@@ -7586,22 +7612,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyPerformStudyAction => 'Perform study';
 
   @override
-  String get radiologyCancelOrderAction => 'Cancel order';
+  String get radiologyCancelOrderAction => 'Cancel commande';
 
   @override
-  String get radiologyRequestDetailsTitle => 'Request details';
+  String get radiologyRequestDetailsTitle => 'Request détails';
 
   @override
-  String get radiologyWorkflowSummaryTitle => 'Workflow summary';
+  String get radiologyWorkflowSummaryTitle => 'Workflow résumé';
 
   @override
-  String get radiologyEditRequestDetailsAction => 'Edit request details';
+  String get radiologyEditRequestDetailsAction => 'Edit demande détails';
 
   @override
-  String get radiologyEditRequestDetailsDialogTitle => 'Edit request details';
+  String get radiologyEditRequestDetailsDialogTitle => 'Edit demande détails';
 
   @override
-  String get radiologySaveRequestDetailsAction => 'Save request details';
+  String get radiologySaveRequestDetailsAction => 'Save demande détails';
 
   @override
   String get radiologyStudyLabel => 'Study';
@@ -7644,55 +7670,55 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalRadiologyBodyRegionPickerHint =>
-      'Select a body region to filter the imaging catalog.';
+      'Select un corps region à filtre le imaging catalog.';
 
   @override
   String get radiologyWorkflowProgressTitle => 'Workflow progress';
 
   @override
-  String get radiologyWorkflowStepReceive => 'Receive imaging request';
+  String get radiologyWorkflowStepReceive => 'Receive imaging demande';
 
   @override
-  String get radiologyWorkflowStepReview => 'Review study details';
+  String get radiologyWorkflowStepReview => 'Review study détails';
 
   @override
   String get radiologyWorkflowStepPerform => 'Perform imaging study';
 
   @override
-  String get radiologyWorkflowStepUpload => 'Upload study assets';
+  String get radiologyWorkflowStepUpload => 'Upload study actifs';
 
   @override
-  String get radiologyWorkflowStepReport => 'Enter findings and conclusions';
+  String get radiologyWorkflowStepReport => 'Enter findings et conclusions';
 
   @override
-  String get radiologyWorkflowStepRelease => 'Finalize and release report';
+  String get radiologyWorkflowStepRelease => 'Finalize et release rapport';
 
   @override
   String get radiologyReportSectionTitle => 'Report';
 
   @override
   String get radiologyReportSectionBody =>
-      'Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.';
+      'Draft, finalize, attest, et amend radiologie rapports avec clear findings, impression, narrative, et references.';
 
   @override
-  String get radiologyDraftReportAction => 'Draft report';
+  String get radiologyDraftReportAction => 'Draft rapport';
 
   @override
-  String get radiologyReleaseReportAction => 'Release report';
+  String get radiologyReleaseReportAction => 'Release rapport';
 
   @override
   String get radiologyRequestFinalizationAction => 'Request finalization';
 
   @override
   String get radiologyRequestFinalizationDialogTitle =>
-      'Request report finalization';
+      'Request rapport finalization';
 
   @override
   String get radiologyAttestFinalizationAction => 'Attest finalization';
 
   @override
   String get radiologyAttestFinalizationDialogTitle =>
-      'Attest report finalization';
+      'Attest rapport finalization';
 
   @override
   String get radiologyAddendumAction => 'Add addendum';
@@ -7701,34 +7727,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyPendingAttestationLabel => 'Pending attestation';
 
   @override
-  String get radiologyNoReportTitle => 'No report yet';
+  String get radiologyNoReportTitle => 'No rapport yet';
 
   @override
   String get radiologyNoReportBody =>
-      'A draft or final report will appear after reporting begins.';
+      'Un brouillon ou final rapport will appear après reporting begins.';
 
   @override
   String get radiologyReportedAtLabel => 'Reported';
 
   @override
-  String get radiologyGeneratedReportPreviewTitle => 'Report preview';
+  String get radiologyGeneratedReportPreviewTitle => 'Report aperçu';
 
   @override
-  String get radiologyEmptyReportBody => 'No report text captured.';
+  String get radiologyEmptyReportBody => 'No rapport text captured.';
 
   @override
-  String get radiologyStudiesAssetsTitle => 'Studies and assets';
+  String get radiologyStudiesAssetsTitle => 'Studies et actifs';
 
   @override
   String get radiologyStudiesAssetsBody =>
-      'Track performed imaging studies, available assets, and PACS synchronization state.';
+      'Track performed imaging studies, disponible actifs, et PACS synchronization state.';
 
   @override
   String get radiologyNoStudiesTitle => 'No imaging studies';
 
   @override
   String get radiologyNoStudiesBody =>
-      'Studies and assets will appear after imaging is performed and saved.';
+      'Studies et actifs will appear après imaging is performed et saved.';
 
   @override
   String get radiologySyncPacsAction => 'Sync PACS';
@@ -7737,7 +7763,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyAssetsLabel => 'Assets';
 
   @override
-  String get radiologyNoAssetsLabel => 'No assets recorded';
+  String get radiologyNoAssetsLabel => 'No actifs recorded';
 
   @override
   String get radiologyPacsLinksLabel => 'PACS links';
@@ -7750,14 +7776,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyDoctorReviewReleasedBody =>
-      'The final radiology report is ready for the requesting clinician or doctor to review.';
+      'Le final radiologie rapport is ready pour le requesting clinician ou doctor à review.';
 
   @override
   String get radiologyDoctorReviewPendingBody =>
-      'No final radiology report is available for doctor review yet.';
+      'No final radiologie rapport is disponible pour doctor review yet.';
 
   @override
-  String get radiologyDoctorReviewReadyLabel => 'Ready for review';
+  String get radiologyDoctorReviewReadyLabel => 'Ready pour review';
 
   @override
   String get radiologyDoctorReviewPendingLabel => 'Pending release';
@@ -7770,41 +7796,41 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyNoTimelineBody =>
-      'Workflow events will appear as the order progresses.';
+      'Workflow events will appear as le commande progresses.';
 
   @override
   String get radiologyBackendGapsTitle => 'Unavailable workflows';
 
   @override
   String get radiologyBackendGapsBody =>
-      'These controls are unavailable until system support is enabled for this facility.';
+      'These controls are indisponible until system support is activé pour ce établissement.';
 
   @override
   String get radiologyGapSchedulingTitle => 'Room scheduling';
 
   @override
-  String get radiologyGapBackendSubtitle => 'Action unavailable';
+  String get radiologyGapBackendSubtitle => 'Action indisponible';
 
   @override
   String get radiologyGapSchedulingBody =>
-      'Room and appointment assignment is not available for current imaging orders.';
+      'Room et rendez-vous assignment is not disponible pour actuel imaging commandes.';
 
   @override
   String get radiologyGapBillingTitle => 'Billing authorization';
 
   @override
   String get radiologyGapBillingBody =>
-      'Payment and authorization status appears when available for this order.';
+      'Payment et authorization statut appears lorsque disponible pour ce commande.';
 
   @override
   String get radiologyCreateOrderDialogTitle => 'Request imaging';
 
   @override
-  String get radiologyReferenceSearchLabel => 'Catalog search';
+  String get radiologyReferenceSearchLabel => 'Catalog recherche';
 
   @override
   String get radiologyReferenceSearchHint =>
-      'Search test code, name, modality, or body region';
+      'Search test code, nom, modality, ou corps region';
 
   @override
   String get radiologySearchReferenceAction => 'Search catalog';
@@ -7814,11 +7840,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String radiologyFieldRequiredLabel(String label) {
-    return '$label is required.';
+    return '$label est requis.';
   }
 
   @override
-  String get radiologyAssignDialogTitle => 'Assign imaging order';
+  String get radiologyAssignDialogTitle => 'Assign imaging commande';
 
   @override
   String get radiologyAssigneeLabel => 'Assignee';
@@ -7833,7 +7859,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyDateTimeHint => 'YYYY-MM-DD HH:MM';
 
   @override
-  String get radiologyReportDialogTitle => 'Draft radiology report';
+  String get radiologyReportDialogTitle => 'Draft radiologie rapport';
 
   @override
   String get radiologyFindingsLabel => 'Findings';
@@ -7846,10 +7872,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyReportTextHelper =>
-      'Leave blank to combine findings and impression.';
+      'Leave blank à combine findings et impression.';
 
   @override
-  String get radiologyReleaseReportDialogTitle => 'Release report';
+  String get radiologyReleaseReportDialogTitle => 'Release rapport';
 
   @override
   String get radiologyReleaseNotesLabel => 'Release notes';
@@ -7861,25 +7887,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyFinalizationReasonLabel => 'Reason';
 
   @override
-  String get radiologyAddendumDialogTitle => 'Add report addendum';
+  String get radiologyAddendumDialogTitle => 'Add rapport addendum';
 
   @override
   String get radiologyAddendumTextLabel => 'Addendum text';
 
   @override
-  String get radiologyCancelDialogTitle => 'Cancel radiology order';
+  String get radiologyCancelDialogTitle => 'Cancel radiologie commande';
 
   @override
   String get radiologyCancellationReasonLabel => 'Cancellation reason';
 
   @override
-  String get radiologyPacsSyncDialogTitle => 'Sync study to PACS';
+  String get radiologyPacsSyncDialogTitle => 'Sync study à PACS';
 
   @override
   String get radiologyStudyUidLabel => 'Study UID';
 
   @override
-  String get radiologyStageAll => 'All';
+  String get radiologyStageAll => 'Tous';
 
   @override
   String get radiologyStageOrdered => 'Ordered';
@@ -7891,10 +7917,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyStageReporting => 'Reporting';
 
   @override
-  String get radiologyStageCompleted => 'Completed';
+  String get radiologyStageCompleted => 'Terminé';
 
   @override
-  String get radiologyStageCancelled => 'Cancelled';
+  String get radiologyStageCancelled => 'Annulé';
 
   @override
   String get radiologyStatusOrdered => 'Ordered';
@@ -7903,10 +7929,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyStatusInProcess => 'In process';
 
   @override
-  String get radiologyStatusCompleted => 'Completed';
+  String get radiologyStatusCompleted => 'Terminé';
 
   @override
-  String get radiologyStatusCancelled => 'Cancelled';
+  String get radiologyStatusCancelled => 'Annulé';
 
   @override
   String get radiologyResultDraft => 'Draft';
@@ -7957,64 +7983,64 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyNextActionPerformStudy => 'Perform study';
 
   @override
-  String get radiologyNextActionReleaseReport => 'Release report';
+  String get radiologyNextActionReleaseReport => 'Release rapport';
 
   @override
   String get radiologyNextActionDoctorReview => 'Doctor review';
 
   @override
-  String get radiologyNextActionReportPending => 'Report pending';
+  String get radiologyNextActionReportPending => 'Report en attente';
 
   @override
-  String get navigationPharmacyLabel => 'Pharmacy';
+  String get navigationPharmacyLabel => 'Pharmacie';
 
   @override
-  String get navigationPharmacyShortLabel => 'Pharmacy';
+  String get navigationPharmacyShortLabel => 'Pharmacie';
 
   @override
-  String get navigationLabLabel => 'Laboratory';
+  String get navigationLabLabel => 'Laboratoire';
 
   @override
   String get navigationLabShortLabel => 'Lab';
 
   @override
-  String get navigationRadiologyLabel => 'Radiology';
+  String get navigationRadiologyLabel => 'Radiologie';
 
   @override
   String get navigationRadiologyShortLabel => 'Imaging';
 
   @override
-  String get pharmacyLoadingTitle => 'Loading pharmacy workspace';
+  String get pharmacyLoadingTitle => 'Loading pharmacie espace de travail';
 
   @override
   String get pharmacyLoadingBody =>
-      'Loading pharmacy orders, dispense state, and stock visibility.';
+      'Loading pharmacie commandes, dispense state, et stock visibility.';
 
   @override
-  String get pharmacyTitle => 'Pharmacy';
+  String get pharmacyTitle => 'Pharmacie';
 
   @override
   String get pharmacyDescription =>
-      'Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.';
+      'Manage prescriptions, dispense passation, returns, et drug stock visibility de one queue.';
 
   @override
   String get pharmacyStatusSaving => 'Saving';
 
   @override
-  String get pharmacyStatusLiveSync => 'Live sync';
+  String get pharmacyStatusLiveSync => 'Live synchronisation';
 
   @override
-  String get pharmacyFiltersSemanticLabel => 'Pharmacy queue filters';
+  String get pharmacyFiltersSemanticLabel => 'Pharmacy queue filtres';
 
   @override
-  String get pharmacySearchLabel => 'Search pharmacy';
+  String get pharmacySearchLabel => 'Search pharmacie';
 
   @override
   String get pharmacySearchHint =>
-      'Search patient, order, encounter, medication, or batch';
+      'Search patient, commande, consultation, médicament, ou batch';
 
   @override
-  String get pharmacyQueueFilterLabel => 'Queue filter';
+  String get pharmacyQueueFilterLabel => 'Queue filtre';
 
   @override
   String get pharmacySummaryReadyLabel => 'Ready';
@@ -8026,21 +8052,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacySummaryAttestationLabel => 'Awaiting attest';
 
   @override
-  String get pharmacySummaryCompletedLabel => 'Completed';
+  String get pharmacySummaryCompletedLabel => 'Terminé';
 
   @override
   String get pharmacyQueuePanelTitle => 'Order queue';
 
   @override
   String get pharmacyQueuePanelDescription =>
-      'System pharmacy orders with dispense and return actions.';
+      'System pharmacie commandes avec dispense et return actions.';
 
   @override
-  String get pharmacyNoOrdersTitle => 'No pharmacy orders';
+  String get pharmacyNoOrdersTitle => 'No pharmacie commandes';
 
   @override
   String get pharmacyNoOrdersBody =>
-      'Orders matching this search and filter will appear here.';
+      'Orders matching ce recherche et filtre will appear here.';
 
   @override
   String get pharmacyPatientColumnLabel => 'Patient';
@@ -8055,31 +8081,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyDispenseColumnLabel => 'Dispense';
 
   @override
-  String get pharmacyStatusColumnLabel => 'Status';
+  String get pharmacyStatusColumnLabel => 'Statut';
 
   @override
   String get pharmacyPendingBatchLabel => 'Pending batch';
 
   @override
-  String get pharmacyDetailLoadingTitle => 'Loading prescription';
+  String get pharmacyDetailLoadingTitle => 'Loading ordonnance';
 
   @override
   String get pharmacyDetailLoadingBody =>
-      'Loading medicines, dispense history, and workflow actions.';
+      'Loading medicines, dispense historique, et workflow actions.';
 
   @override
   String get pharmacyPrescriptionDetailTitle => 'Prescription detail';
 
   @override
-  String get pharmacyNoSelectionTitle => 'No prescription selected';
+  String get pharmacyNoSelectionTitle => 'No ordonnance selected';
 
   @override
   String get pharmacyNoSelectionBody =>
-      'Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.';
+      'Select un commande à review medicines, stock mapping, billing gate visibility, et dispense historique.';
 
   @override
   String get pharmacyBillingGateUnavailableTitle =>
-      'Payment clearance unavailable';
+      'Payment clearance indisponible';
 
   @override
   String get pharmacyOrderFieldLabel => 'Order';
@@ -8109,7 +8135,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyReturnAction => 'Return';
 
   @override
-  String get pharmacyCancelOrderAction => 'Cancel order';
+  String get pharmacyCancelOrderAction => 'Cancel commande';
 
   @override
   String get pharmacyPrintInstructionsAction => 'Print instructions';
@@ -8119,14 +8145,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pharmacyMedicationPanelDescription =>
-      'Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.';
+      'Drug, dose, route, frequency, duration, quantity, instructions, et dispense state.';
 
   @override
   String get pharmacyNoMedicationTitle => 'No medicines';
 
   @override
   String get pharmacyNoMedicationBody =>
-      'This order has no medicines available in the pharmacy workflow.';
+      'Ce commande has non medicines disponible in le pharmacie workflow.';
 
   @override
   String get pharmacyMedicationColumnLabel => 'Medication';
@@ -8145,59 +8171,60 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pharmacyBackendGapsBody =>
-      'This order uses the current pharmacy workflow state to determine safe actions.';
+      'Ce commande uses le actuel pharmacie workflow state à determine safe actions.';
 
   @override
   String get pharmacyGapPaymentAuthorization =>
-      'Payment and authorization are checked before dispense actions are enabled.';
+      'Payment et authorization are checked avant dispense actions are activé.';
 
   @override
   String get pharmacyGapBatchAvailability =>
-      'Stock mapping is checked before dispense actions are enabled.';
+      'Stock mapping is checked avant dispense actions are activé.';
 
   @override
   String get pharmacyGapHoldSubstitution =>
-      'Hold and substitution decisions follow the current pharmacy order status.';
+      'Hold et substitution decisions follow le actuel pharmacie commande statut.';
 
   @override
   String get pharmacyGapReportTemplates =>
-      'Medication printouts use the configured print workflow.';
+      'Medication printouts utiliser le configured print workflow.';
 
   @override
-  String get pharmacyTimelinePanelTitle => 'Dispense history';
+  String get pharmacyTimelinePanelTitle => 'Dispense historique';
 
   @override
   String get pharmacyTimelinePanelDescription =>
-      'Order placement, prepare, attest, dispense, and return events from the workflow.';
+      'Order placement, prepare, attest, dispense, et return events de le workflow.';
 
   @override
-  String get pharmacyNoTimelineBody => 'No dispense history is available yet.';
+  String get pharmacyNoTimelineBody =>
+      'No dispense historique is disponible yet.';
 
   @override
-  String get pharmacyDrugPanelTitle => 'Formulary and stock';
+  String get pharmacyDrugPanelTitle => 'Formulary et stock';
 
   @override
   String get pharmacyDrugPanelDescription =>
-      'Search configured drugs and review aggregate stock visibility.';
+      'Search configured drugs et review aggregate stock visibility.';
 
   @override
-  String get pharmacyDrugFiltersSemanticLabel => 'Drug stock filters';
+  String get pharmacyDrugFiltersSemanticLabel => 'Drug stock filtres';
 
   @override
   String get pharmacyDrugSearchLabel => 'Search drugs';
 
   @override
-  String get pharmacyDrugSearchHint => 'Search drug, code, form, or strength';
+  String get pharmacyDrugSearchHint => 'Search drug, code, form, ou strength';
 
   @override
-  String get pharmacyStockStatusFilterLabel => 'Stock status';
+  String get pharmacyStockStatusFilterLabel => 'Stock statut';
 
   @override
-  String get pharmacyNoDrugsTitle => 'No drugs found';
+  String get pharmacyNoDrugsTitle => 'Aucun drugs trouvé';
 
   @override
   String get pharmacyNoDrugsBody =>
-      'Matching formulary drugs and stock rows will appear here.';
+      'Matching formulary drugs et stock lignes will appear here.';
 
   @override
   String get pharmacyDrugColumnLabel => 'Drug';
@@ -8206,11 +8233,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyAvailableColumnLabel => 'Available';
 
   @override
-  String get pharmacyStockStatusColumnLabel => 'Stock status';
+  String get pharmacyStockStatusColumnLabel => 'Stock statut';
 
   @override
   String pharmacyAvailableQuantityLabel(String quantity) {
-    return '$quantity available';
+    return '$quantity disponible';
   }
 
   @override
@@ -8221,25 +8248,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pharmacyAttestDialogBody =>
-      'Confirm the prepared batch after physical medication handoff.';
+      'Confirm le prepared batch après physical médicament passation.';
 
   @override
   String get pharmacyReturnDialogTitle => 'Return medicines';
 
   @override
   String get pharmacyReturnDialogBody =>
-      'Record returned quantities so order status and stock are synchronized.';
+      'Record returned quantities so commande statut et stock are synchronisé.';
 
   @override
-  String get pharmacyCancelDialogTitle => 'Cancel pharmacy order';
+  String get pharmacyCancelDialogTitle => 'Cancel pharmacie commande';
 
   @override
   String get pharmacyCancelDialogBody =>
-      'Cancel only when the order should no longer be dispensed.';
+      'Cancel only lorsque le commande should non longer be dispensed.';
 
   @override
   String get pharmacyBillingGateUnavailableBody =>
-      'Payment clearance is unavailable for this order.';
+      'Payment clearance is indisponible pour ce commande.';
 
   @override
   String get pharmacyPaymentColumnLabel => 'Payment';
@@ -8251,14 +8278,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyPaymentAmountLabel => 'Amount due';
 
   @override
-  String get pharmacyRecordPaymentAction => 'Record payment';
+  String get pharmacyRecordPaymentAction => 'Record paiement';
 
   @override
   String get pharmacyNextActionConfirmBilling => 'Confirm billing';
 
   @override
   String get pharmacyDispenseBlockedPaymentBody =>
-      'Collect or confirm payment before dispensing this order.';
+      'Collect ou confirmer paiement avant dispensing ce commande.';
 
   @override
   String get pharmacyPriorityFieldLabel => 'Priority';
@@ -8273,7 +8300,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyCatalogTabInventory => 'Inventory';
 
   @override
-  String get pharmacyCatalogPanelTitle => 'Catalog and stock';
+  String get pharmacyCatalogPanelTitle => 'Catalog et stock';
 
   @override
   String get pharmacyAddDrugAction => 'Add drug';
@@ -8285,7 +8312,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyDeleteDrugAction => 'Delete drug';
 
   @override
-  String get pharmacyDrugNameLabel => 'Drug name';
+  String get pharmacyDrugNameLabel => 'Drug nom';
 
   @override
   String get pharmacyDrugCodeLabel => 'Drug code';
@@ -8297,34 +8324,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyDrugStrengthLabel => 'Strength';
 
   @override
-  String get pharmacyAddFormularyAction => 'Add formulary item';
+  String get pharmacyAddFormularyAction => 'Add formulary élément';
 
   @override
   String get pharmacyFormularyDrugLabel => 'Drug';
 
   @override
-  String get pharmacyFormularyActiveLabel => 'Active';
+  String get pharmacyFormularyActiveLabel => 'Actif';
 
   @override
-  String get pharmacyNoFormularyTitle => 'No formulary items';
+  String get pharmacyNoFormularyTitle => 'No formulary éléments';
 
   @override
   String get pharmacyNoFormularyBody =>
-      'Formulary entries linking drugs to prescribing will appear here.';
+      'Formulary entries linking drugs à prescribing will appear here.';
 
   @override
   String get pharmacyInventoryPanelTitle => 'Inventory stock';
 
   @override
   String get pharmacyInventoryPanelDescription =>
-      'Review on-hand quantities and post controlled adjustments.';
+      'Review on-hand quantities et post controlled adjustments.';
 
   @override
-  String get pharmacyNoInventoryTitle => 'No inventory rows';
+  String get pharmacyNoInventoryTitle => 'No inventaire lignes';
 
   @override
   String get pharmacyNoInventoryBody =>
-      'Matching inventory stock rows will appear here.';
+      'Matching inventaire stock lignes will appear here.';
 
   @override
   String get pharmacyInventoryQuantityColumnLabel => 'On hand';
@@ -8336,7 +8363,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyAdjustStockAction => 'Adjust stock';
 
   @override
-  String get pharmacyAdjustStockDialogTitle => 'Adjust inventory';
+  String get pharmacyAdjustStockDialogTitle => 'Adjust inventaire';
 
   @override
   String get pharmacyQuantityDeltaLabel => 'Quantity change';
@@ -8351,15 +8378,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyDeleteDrugDialogTitle => 'Delete drug';
 
   @override
-  String get pharmacyDeleteDrugDialogBody =>
-      'Remove this drug from the catalog?';
+  String get pharmacyDeleteDrugDialogBody => 'Remove ce drug de le catalog?';
 
   @override
   String get pharmacyDispenseDialogBody =>
-      'Enter dispense quantities and optional stock mapping for each medicine line.';
+      'Enter dispense quantities et facultatif stock mapping pour each medicine line.';
 
   @override
-  String get pharmacyBatchRefLabel => 'Batch reference';
+  String get pharmacyBatchRefLabel => 'Batch référence';
 
   @override
   String get pharmacyStatementLabel => 'Statement';
@@ -8374,18 +8400,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyQuantityFieldLabel => 'Quantity';
 
   @override
-  String get pharmacyInventoryItemLabel => 'Inventory item';
+  String get pharmacyInventoryItemLabel => 'Inventory élément';
 
   @override
   String pharmacyQuantityValidationLabel(String maximum) {
-    return 'Enter a quantity from 0 to $maximum.';
+    return 'Enter un quantity de 0 à $maximum.';
   }
 
   @override
-  String get pharmacySavedMessage => 'Pharmacy workflow updated.';
+  String get pharmacySavedMessage => 'Pharmacy workflow mis à jour.';
 
   @override
-  String get pharmacyFilterAll => 'All orders';
+  String get pharmacyFilterAll => 'All commandes';
 
   @override
   String get pharmacyFilterReady => 'Ready';
@@ -8394,13 +8420,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyFilterPartial => 'Partial';
 
   @override
-  String get pharmacyFilterCompleted => 'Completed';
+  String get pharmacyFilterCompleted => 'Terminé';
 
   @override
-  String get pharmacyFilterCancelled => 'Cancelled';
+  String get pharmacyFilterCancelled => 'Annulé';
 
   @override
-  String get pharmacyFilterPendingPayment => 'Pending payment';
+  String get pharmacyFilterPendingPayment => 'Pending paiement';
 
   @override
   String get pharmacyFilterPartialStock => 'Partial stock';
@@ -8415,7 +8441,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyFilterOutpatient => 'Outpatient';
 
   @override
-  String get pharmacyFilterWard => 'Ward';
+  String get pharmacyFilterWard => 'Service';
 
   @override
   String get pharmacyLocationFieldLabel => 'Care location';
@@ -8430,16 +8456,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyStockLow => 'Low stock';
 
   @override
-  String get pharmacyStockOut => 'Out of stock';
+  String get pharmacyStockOut => 'Out sur stock';
 
   @override
-  String get pharmacyStockUnknown => 'Stock unknown';
+  String get pharmacyStockUnknown => 'Stock inconnu';
 
   @override
-  String get pharmacyUnknownStatusLabel => 'Unknown';
+  String get pharmacyUnknownStatusLabel => 'Inconnu';
 
   @override
-  String get pharmacyStockMappingUnavailable => 'Stock mapping unavailable';
+  String get pharmacyStockMappingUnavailable => 'Stock mapping indisponible';
 
   @override
   String pharmacyTimelineMedicationEvent(String medication, String status) {
@@ -8472,20 +8498,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pharmacyReportGeneratedLabel => 'Generated';
 
   @override
-  String get pharmacyReportFooter => 'Generated from pharmacy workflow data.';
+  String get pharmacyReportFooter => 'Generated de pharmacie workflow data.';
 
   @override
-  String get navigationClaimsLabel => 'Insurance claims';
+  String get navigationClaimsLabel => 'Insurance réclamations';
 
   @override
   String get navigationClaimsShortLabel => 'Claims';
 
   @override
-  String get claimsWorkspaceTitle => 'Insurance and claims';
+  String get claimsWorkspaceTitle => 'Insurance et réclamations';
 
   @override
   String get claimsWorkspaceDescription =>
-      'Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.';
+      'Manage authorizations, payer responses, réclamation submission, resubmission, et facture follow-up.';
 
   @override
   String get claimsOperationalStatusLabel => 'Billing synced';
@@ -8494,47 +8520,50 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsNeedsAttentionStatusLabel => 'Needs attention';
 
   @override
-  String get claimsLoadingTitle => 'Loading claims';
+  String get claimsLoadingTitle => 'Loading réclamations';
 
   @override
-  String get claimsLoadingBody => 'Fetching authorization and claim queues.';
+  String get claimsLoadingBody =>
+      'Fetching authorization et réclamation queues.';
 
   @override
-  String get claimsLoadErrorTitle => 'Claims unavailable';
+  String get claimsLoadErrorTitle => 'Claims indisponible';
 
   @override
-  String get claimsLoadErrorBody => 'The claims workspace could not be loaded.';
+  String get claimsLoadErrorBody =>
+      'The claims workspace n\'a pas pu être loaded.';
 
   @override
   String get claimsRequestAuthorizationAction => 'Request authorization';
 
   @override
-  String get claimsPrepareClaimAction => 'Prepare claim';
+  String get claimsPrepareClaimAction => 'Prepare réclamation';
 
   @override
-  String get claimsAuthorizationPendingSummaryLabel => 'Auth pending';
+  String get claimsAuthorizationPendingSummaryLabel => 'Auth en attente';
 
   @override
-  String get claimsAuthorizationApprovedSummaryLabel => 'Auth approved';
+  String get claimsAuthorizationApprovedSummaryLabel => 'Auth approuvé';
 
   @override
   String get claimsSubmittedSummaryLabel => 'Submitted';
 
   @override
-  String get claimsRejectedSummaryLabel => 'Rejected';
+  String get claimsRejectedSummaryLabel => 'Rejeté';
 
   @override
-  String get claimsApprovedSummaryLabel => 'Approved';
+  String get claimsApprovedSummaryLabel => 'Approuvé';
 
   @override
-  String get claimsPaidClosedSummaryLabel => 'Paid/closed';
+  String get claimsPaidClosedSummaryLabel => 'Paid/fermé';
 
   @override
-  String get claimsSearchSemanticLabel => 'Search claims and authorizations';
+  String get claimsSearchSemanticLabel =>
+      'Search réclamations et authorizations';
 
   @override
   String get claimsSearchHint =>
-      'Search reference, coverage, invoice, or patient';
+      'Search référence, coverage, facture, ou patient';
 
   @override
   String get claimsQueueFilterLabel => 'Queue';
@@ -8544,13 +8573,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsWorklistDescription =>
-      'Review pre-authorizations and claim records backed by billing data.';
+      'Review pre-authorizations et réclamation dossiers backed by billing data.';
 
   @override
-  String get claimsPreviousPageLabel => 'Previous claims page';
+  String get claimsPreviousPageLabel => 'Previous réclamations page';
 
   @override
-  String get claimsNextPageLabel => 'Next claims page';
+  String get claimsNextPageLabel => 'Next réclamations page';
 
   @override
   String claimsPageLabel(int start, int end, int total) {
@@ -8558,11 +8587,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get claimsEmptyQueueTitle => 'No claims found';
+  String get claimsEmptyQueueTitle => 'Aucun claims trouvé';
 
   @override
   String get claimsEmptyQueueBody =>
-      'No authorization or claim records match the current queue.';
+      'No authorization ou réclamation dossiers match le actuel queue.';
 
   @override
   String get claimsTypeColumnLabel => 'Type';
@@ -8577,7 +8606,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsInvoiceColumnLabel => 'Invoice';
 
   @override
-  String get claimsStatusColumnLabel => 'Status';
+  String get claimsStatusColumnLabel => 'Statut';
 
   @override
   String get claimsTimelineColumnLabel => 'Updated';
@@ -8595,20 +8624,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsDetailLoadingBody =>
-      'Fetching payer, invoice, and coverage context.';
+      'Fetching payer, facture, et coverage context.';
 
   @override
-  String get claimsNoSelectionTitle => 'Select a record';
+  String get claimsNoSelectionTitle => 'Select un dossier';
 
   @override
   String get claimsNoSelectionBody =>
-      'Choose a row to review coverage, billing impact, and next actions.';
+      'Choose un ligne à review coverage, billing impact, et suivant actions.';
 
   @override
   String get claimsPrintStatementAction => 'Print statement';
 
   @override
-  String get claimsPatientContextLabel => 'Claim patient and coverage context';
+  String get claimsPatientContextLabel => 'Claim patient et coverage context';
 
   @override
   String get claimsCoverageFieldLabel => 'Coverage';
@@ -8630,7 +8659,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsAuthorizationBillingImpactBody =>
-      'Service clearance should wait for payer response where authorization is required.';
+      'Service clearance should wait pour payer réponse where authorization est requis.';
 
   @override
   String get claimsCoveragePercentLabel => 'Coverage';
@@ -8641,57 +8670,57 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get claimsInvoiceStatusLabel => 'Invoice status';
+  String get claimsInvoiceStatusLabel => 'Invoice statut';
 
   @override
   String get claimsPatientBalanceLabel => 'Patient balance';
 
   @override
   String get claimsBillingInvoiceUnavailableBody =>
-      'Invoice details are not available, so the patient balance cannot be confirmed here.';
+      'Invoice détails are not disponible, so le patient balance ne peut pas be confirmed here.';
 
   @override
   String get claimsBillingAuthorizedBody =>
-      'Authorized by payer. Confirm any uncovered balance before final clearance.';
+      'Authorized by payer. Confirm any uncovered balance avant final clearance.';
 
   @override
   String get claimsBillingPaidBody =>
-      'Claim is paid or closed. Billing can use the latest invoice status for follow-up.';
+      'Claim is paid ou fermé. Billing can utiliser le latest facture statut pour follow-up.';
 
   @override
   String get claimsBillingRejectedBody =>
-      'Rejected by payer. Billing staff should prepare resubmission or patient balance follow-up.';
+      'Rejected by payer. Billing personnel should prepare resubmission ou patient balance follow-up.';
 
   @override
   String get claimsBillingPendingBody =>
-      'Pending payer response. Keep billing clearance visible until the response is recorded.';
+      'Pending payer réponse. Keep billing clearance visible until le réponse is recorded.';
 
   @override
   String get claimsBillingNeutralBody =>
-      'Review invoice and payer state before clearing the service.';
+      'Review facture et payer state avant clearing le service.';
 
   @override
   String get claimsRequiredDocumentsTitle => 'Required documents';
 
   @override
   String get claimsRequiredDocumentsBody =>
-      'Document readiness is shown from available claim, invoice, and coverage data.';
+      'Document readiness is shown de disponible réclamation, facture, et coverage data.';
 
   @override
-  String get claimsDocumentInvoiceSummary => 'Invoice summary';
+  String get claimsDocumentInvoiceSummary => 'Invoice résumé';
 
   @override
-  String get claimsDocumentCoveragePlan => 'Coverage plan';
+  String get claimsDocumentCoveragePlan => 'Coverage forfait';
 
   @override
-  String get claimsDocumentPayerResponse => 'Payer response';
+  String get claimsDocumentPayerResponse => 'Payer réponse';
 
   @override
   String get claimsTimelineTitle => 'Activity';
 
   @override
   String get claimsTimelineDescription =>
-      'Authorization, submission, and response timestamps from the claims workflow.';
+      'Authorization, submission, et réponse timestamps de le réclamations workflow.';
 
   @override
   String get claimsTimelineAuthorizationRequested => 'Authorization requested';
@@ -8703,94 +8732,94 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsTimelineClaimSubmitted => 'Claim submitted';
 
   @override
-  String get claimsTimelineCurrentStatus => 'Current status';
+  String get claimsTimelineCurrentStatus => 'Current statut';
 
   @override
   String get claimsBackendGapTitle => 'Unavailable workflows';
 
   @override
   String get claimsBackendGapDescription =>
-      'These items are unavailable in the current claims workflow.';
+      'These éléments are indisponible in le actuel réclamations workflow.';
 
   @override
-  String get claimsBackendGapDraftTitle => 'Claim draft queue';
+  String get claimsBackendGapDraftTitle => 'Claim brouillon queue';
 
   @override
   String get claimsBackendGapDraftBody =>
-      'The draft queue is not available in the current claims workflow.';
+      'Le brouillon queue is not disponible in le actuel réclamations workflow.';
 
   @override
-  String get claimsBackendGapDocumentsTitle => 'Document upload and requests';
+  String get claimsBackendGapDocumentsTitle => 'Document upload et demandes';
 
   @override
   String get claimsBackendGapDocumentsBody =>
-      'Required document tracking is not available yet.';
+      'Required document tracking is not disponible yet.';
 
   @override
   String get claimsBackendGapReportsTitle => 'Generated payer packs';
 
   @override
   String get claimsBackendGapReportsBody =>
-      'Printable payer packs are unavailable until report templates are enabled.';
+      'Printable payer packs are indisponible until rapport modèles are activé.';
 
   @override
-  String get claimsCoveragePlanFieldLabel => 'Coverage plan';
+  String get claimsCoveragePlanFieldLabel => 'Coverage forfait';
 
   @override
   String get claimsCoveragePlanHint => 'Select payer coverage';
 
   @override
-  String get claimsCoveragePlanRequiredMessage => 'Select a coverage plan.';
+  String get claimsCoveragePlanRequiredMessage => 'Select un coverage forfait.';
 
   @override
-  String get claimsCoverageUnavailableTitle => 'Coverage plans unavailable';
+  String get claimsCoverageUnavailableTitle => 'Coverage forfaits indisponible';
 
   @override
   String get claimsCoverageUnavailableBody =>
-      'Coverage plans could not be loaded, so authorization cannot be requested yet.';
+      'Coverage plans n\'a pas pu être loaded, so authorization cannot be requested yet.';
 
   @override
   String get claimsRequestAuthorizationSubmitAction => 'Request authorization';
 
   @override
-  String get claimsPrepareClaimDialogTitle => 'Prepare claim';
+  String get claimsPrepareClaimDialogTitle => 'Prepare réclamation';
 
   @override
-  String get claimsPrepareClaimSubmitAction => 'Prepare and submit';
+  String get claimsPrepareClaimSubmitAction => 'Prepare et soumettre';
 
   @override
-  String get claimsInvoiceHint => 'Select invoice';
+  String get claimsInvoiceHint => 'Select facture';
 
   @override
-  String get claimsInvoiceRequiredMessage => 'Select an invoice.';
+  String get claimsInvoiceRequiredMessage => 'Select un facture.';
 
   @override
-  String get claimsPrepareClaimUnavailableTitle => 'Claim inputs unavailable';
+  String get claimsPrepareClaimUnavailableTitle => 'Claim inputs indisponible';
 
   @override
   String get claimsPrepareClaimUnavailableBody =>
-      'A coverage plan and invoice are required before a claim can be prepared.';
+      'Un coverage forfait et facture sont requis avant un réclamation can be prepared.';
 
   @override
-  String get claimsAuthorizationStatusFieldLabel => 'Authorization status';
+  String get claimsAuthorizationStatusFieldLabel => 'Authorization statut';
 
   @override
-  String get claimsStatusRequiredMessage => 'Select a status.';
+  String get claimsStatusRequiredMessage => 'Select un statut.';
 
   @override
-  String get claimsUpdateStatusSubmitAction => 'Update status';
+  String get claimsUpdateStatusSubmitAction => 'Update statut';
 
   @override
   String get claimsNotesFieldLabel => 'Notes';
 
   @override
-  String get claimsSubmitClaimSubmitAction => 'Submit claim';
+  String get claimsSubmitClaimSubmitAction => 'Submit réclamation';
 
   @override
-  String get claimsClaimResponseFieldLabel => 'Payer response';
+  String get claimsClaimResponseFieldLabel => 'Payer réponse';
 
   @override
-  String get claimsSavedMessage => 'Claims workspace updated.';
+  String get claimsSavedMessage => 'Claims espace de travail mis à jour.';
 
   @override
   String get claimsRequestAuthorizationDialogTitle =>
@@ -8798,34 +8827,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsUpdateAuthorizationDialogTitle =>
-      'Update authorization status';
+      'Update authorization statut';
 
   @override
-  String get claimsSubmitClaimDialogTitle => 'Submit claim';
+  String get claimsSubmitClaimDialogTitle => 'Submit réclamation';
 
   @override
-  String get claimsRecordResponseDialogTitle => 'Record payer response';
+  String get claimsRecordResponseDialogTitle => 'Record payer réponse';
 
   @override
-  String get claimsRecordResponseSubmitAction => 'Record response';
+  String get claimsRecordResponseSubmitAction => 'Record réponse';
 
   @override
-  String get claimsCloseClaimDialogTitle => 'Close claim';
+  String get claimsCloseClaimDialogTitle => 'Close réclamation';
 
   @override
   String get claimsCloseClaimSubmitAction => 'Close as paid';
 
   @override
-  String get claimsUpdateStatusAction => 'Update status';
+  String get claimsUpdateStatusAction => 'Update statut';
 
   @override
-  String get claimsSubmitClaimAction => 'Submit claim';
+  String get claimsSubmitClaimAction => 'Submit réclamation';
 
   @override
-  String get claimsResubmitClaimAction => 'Resubmit claim';
+  String get claimsResubmitClaimAction => 'Resubmit réclamation';
 
   @override
-  String get claimsRecordResponseAction => 'Record response';
+  String get claimsRecordResponseAction => 'Record réponse';
 
   @override
   String get claimsCloseClaimAction => 'Close as paid';
@@ -8835,10 +8864,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsInsuranceAuthorizationEmpty =>
-      'No authorization on file. Request pre-authorization before high-cost orders or elective admission.';
+      'No authorization on file. Request pre-authorization avant élevé-cost commandes ou elective admission.';
 
   @override
-  String get claimsApprovedAmountLabel => 'Approved';
+  String get claimsApprovedAmountLabel => 'Approuvé';
 
   @override
   String get claimsConsumedAmountLabel => 'Consumed';
@@ -8851,21 +8880,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get claimsCoveragePlansUnavailable =>
-      'Coverage plans are unavailable. Verify insurance setup before proceeding.';
+      'Coverage forfaits are indisponible. Verify insurance setup avant proceeding.';
 
   @override
-  String get opdCoverageVerificationTitle => 'Coverage verification';
+  String get opdCoverageVerificationTitle => 'Coverage vérification';
 
   @override
   String get opdCoverageVerificationBody =>
-      'Confirm the patient\'s active coverage plan before recording an insurance consultation payment.';
+      'Confirm le patient\'s actif coverage forfait avant recording un insurance consultation paiement.';
 
   @override
-  String get opdCoverageVerifiedLabel => 'Coverage verified for this visit';
+  String get opdCoverageVerifiedLabel => 'Coverage vérifié pour ce visite';
 
   @override
   String get opdCoverageVerificationRequiredMessage =>
-      'Verify coverage before paying with insurance.';
+      'Verify coverage avant paying avec insurance.';
 
   @override
   String get billingPreAuthApproveAction => 'Approve authorization';
@@ -8874,46 +8903,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingPreAuthDenyAction => 'Deny authorization';
 
   @override
-  String get billingPreAuthApprovedAmountLabel => 'Approved amount';
+  String get billingPreAuthApprovedAmountLabel => 'Approved montant';
 
   @override
-  String get billingPreAuthConsumedAmountLabel => 'Consumed amount';
+  String get billingPreAuthConsumedAmountLabel => 'Consumed montant';
 
   @override
   String get claimsFilterAll => 'All queues';
 
   @override
-  String get claimsFilterAuthorizationPending => 'Authorization pending';
+  String get claimsFilterAuthorizationPending => 'Authorization en attente';
 
   @override
-  String get claimsFilterAuthorizationApproved => 'Authorization approved';
+  String get claimsFilterAuthorizationApproved => 'Authorization approuvé';
 
   @override
   String get claimsFilterAuthorizationDenied => 'Authorization denied';
 
   @override
-  String get claimsFilterAuthorizationExpired => 'Authorization expired';
+  String get claimsFilterAuthorizationExpired => 'Authorization expiré';
 
   @override
   String get claimsFilterClaimSubmitted => 'Claim submitted';
 
   @override
-  String get claimsFilterClaimApproved => 'Claim approved';
+  String get claimsFilterClaimApproved => 'Claim approuvé';
 
   @override
-  String get claimsFilterClaimRejected => 'Claim rejected';
+  String get claimsFilterClaimRejected => 'Claim rejeté';
 
   @override
   String get claimsFilterClaimPaid => 'Claim paid';
 
   @override
-  String get claimsFilterClaimCancelled => 'Claim cancelled';
+  String get claimsFilterClaimCancelled => 'Claim annulé';
 
   @override
-  String get claimsStatusPending => 'Pending';
+  String get claimsStatusPending => 'En attente';
 
   @override
-  String get claimsStatusApproved => 'Approved';
+  String get claimsStatusApproved => 'Approuvé';
 
   @override
   String get claimsStatusDenied => 'Denied';
@@ -8925,13 +8954,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsStatusSubmitted => 'Submitted';
 
   @override
-  String get claimsStatusRejected => 'Rejected';
+  String get claimsStatusRejected => 'Rejeté';
 
   @override
   String get claimsStatusPaid => 'Paid';
 
   @override
-  String get claimsStatusCancelled => 'Cancelled';
+  String get claimsStatusCancelled => 'Annulé';
 
   @override
   String get claimsAuthorizationTypeLabel => 'Authorization';
@@ -8946,7 +8975,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsClaimPatientTitle => 'Claim patient';
 
   @override
-  String get claimsAuthorizationSubtitle => 'Payer coverage request';
+  String get claimsAuthorizationSubtitle => 'Payer coverage demande';
 
   @override
   String claimsClaimSubtitle(String claimId) {
@@ -8963,48 +8992,48 @@ class AppLocalizationsFr extends AppLocalizations {
   String get claimsReportGeneratedLabel => 'Generated';
 
   @override
-  String get claimsReportFooter => 'Generated from claims and billing data.';
+  String get claimsReportFooter => 'Generated de réclamations et billing data.';
 
   @override
-  String get labTitle => 'Laboratory';
+  String get labTitle => 'Laboratoire';
 
   @override
   String get labDescription =>
-      'Manage lab requests, result entry, backend interpretation, verification, reference ranges, reports, and clinician handoff.';
+      'Manage laboratoire demandes, résultat entry, backend interpretation, vérification, référence ranges, rapports, et clinician passation.';
 
   @override
   String get labLoadingTitle => 'Loading laboratory';
 
   @override
   String get labLoadingBody =>
-      'Loading lab queues, catalog configuration, results, and QC logs.';
+      'Loading laboratoire queues, catalog configuration, résultats, et QC logs.';
 
   @override
-  String get labLiveStatus => 'Live sync';
+  String get labLiveStatus => 'Live synchronisation';
 
   @override
   String get labSavingStatus => 'Saving';
 
   @override
-  String get labSavedMessage => 'Laboratory workflow updated.';
+  String get labSavedMessage => 'Laboratory workflow mis à jour.';
 
   @override
-  String get labRequestOrderAction => 'Request lab';
+  String get labRequestOrderAction => 'Request laboratoire';
 
   @override
   String get labRecordQcAction => 'Record QC';
 
   @override
-  String get labTotalOrdersSummaryLabel => 'Total orders';
+  String get labTotalOrdersSummaryLabel => 'Total commandes';
 
   @override
-  String get labWaitingSampleSummaryLabel => 'Awaiting results';
+  String get labWaitingSampleSummaryLabel => 'Awaiting résultats';
 
   @override
   String get labProcessingSummaryLabel => 'Processing';
 
   @override
-  String get labResultPendingSummaryLabel => 'Pending verification';
+  String get labResultPendingSummaryLabel => 'Pending vérification';
 
   @override
   String get labCriticalSummaryLabel => 'Critical';
@@ -9013,28 +9042,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labCompletedSummaryLabel => 'Verified';
 
   @override
-  String get labFiltersLabel => 'Laboratory filters';
+  String get labFiltersLabel => 'Laboratory filtres';
 
   @override
   String get labSearchLabel => 'Search laboratory';
 
   @override
-  String get labSearchHint => 'Search patient, order, test, or encounter';
+  String get labSearchHint => 'Search patient, commande, test, ou consultation';
 
   @override
   String get labScopeFilterLabel => 'Queue';
 
   @override
-  String get labScopeAll => 'All';
+  String get labScopeAll => 'Tous';
 
   @override
-  String get labScopeCollection => 'Awaiting results';
+  String get labScopeCollection => 'Awaiting résultats';
 
   @override
   String get labScopeProcessing => 'Processing';
 
   @override
-  String get labScopeResults => 'Pending verification';
+  String get labScopeResults => 'Pending vérification';
 
   @override
   String get labScopeCritical => 'Critical';
@@ -9043,21 +9072,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labScopeCompleted => 'Verified';
 
   @override
-  String get labScopeCancelled => 'Cancelled';
+  String get labScopeCancelled => 'Annulé';
 
   @override
   String get labWorklistTitle => 'Lab queue';
 
   @override
   String get labWorklistDescription =>
-      'Actionable lab orders with requested tests, result entry state, verification state, and report readiness.';
+      'Actionable laboratoire commandes avec requested tests, résultat entry state, vérification state, et rapport readiness.';
 
   @override
-  String get labNoOrdersTitle => 'No lab orders';
+  String get labNoOrdersTitle => 'No laboratoire commandes';
 
   @override
   String get labNoOrdersBody =>
-      'Adjust the queue filter or search term to find laboratory work.';
+      'Adjust le queue filtre ou recherche term à find laboratory work.';
 
   @override
   String get labPatientColumnLabel => 'Patient';
@@ -9069,7 +9098,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labTestsColumnLabel => 'Tests';
 
   @override
-  String get labSampleColumnLabel => 'Entry status';
+  String get labSampleColumnLabel => 'Entry statut';
 
   @override
   String get labResultColumnLabel => 'Result';
@@ -9083,23 +9112,23 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get labPreviousPageLabel => 'Previous lab page';
+  String get labPreviousPageLabel => 'Previous laboratoire page';
 
   @override
-  String get labNextPageLabel => 'Next lab page';
+  String get labNextPageLabel => 'Next laboratoire page';
 
   @override
   String get labDetailTitle => 'Lab detail';
 
   @override
-  String get labDetailLoadingTitle => 'Loading lab detail';
+  String get labDetailLoadingTitle => 'Loading laboratoire detail';
 
   @override
   String get labDetailLoadingBody =>
-      'Loading order details, ordered tests, results, timeline, and available actions.';
+      'Loading commande détails, ordered tests, résultats, timeline, et disponible actions.';
 
   @override
-  String get labResultEntryDialogTitle => 'Lab result entry';
+  String get labResultEntryDialogTitle => 'Lab résultat entry';
 
   @override
   String labResultEntryDialogSubtitle(String patientName, String orderId) {
@@ -9107,36 +9136,36 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get labSaveDraftAction => 'Save draft';
+  String get labSaveDraftAction => 'Save brouillon';
 
   @override
-  String get labSubmitResultsAction => 'Submit results';
+  String get labSubmitResultsAction => 'Submit résultats';
 
   @override
-  String get labDraftSavedMessage => 'Draft results saved.';
+  String get labDraftSavedMessage => 'Draft résultats saved.';
 
   @override
   String labBatchPartialSaveMessage(int savedCount, int skippedCount) {
-    return 'Saved $savedCount results. $skippedCount entries need attention.';
+    return 'Saved $savedCount résultats. $skippedCount entries need attention.';
   }
 
   @override
   String labBatchPartialSubmitMessage(int savedCount, int skippedCount) {
-    return 'Submitted $savedCount results. $skippedCount entries need attention.';
+    return 'Submitted $savedCount résultats. $skippedCount entries need attention.';
   }
 
   @override
   String labBatchPartialVerifyMessage(int savedCount, int skippedCount) {
-    return 'Verified $savedCount results. $skippedCount entries need attention.';
+    return 'Verified $savedCount résultats. $skippedCount entries need attention.';
   }
 
   @override
   String get labBatchEntryValidationMessage =>
-      'Correct the highlighted value before continuing.';
+      'Correct le highlighted valeur avant continuing.';
 
   @override
   String get labResultEntryRequiredMessage =>
-      'Enter a result value before saving, submitting, or verifying.';
+      'Enter un résultat valeur avant saving, submitting, ou verifying.';
 
   @override
   String labBatchValidationSummaryMessage(int count) {
@@ -9145,44 +9174,44 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other:
           '$count selected tests need attention before this action can continue.',
-      one: '1 selected test needs attention before this action can continue.',
+      one: '1 selected test needs attention avant ce action can continuer.',
     );
     return '$_temp0';
   }
 
   @override
   String get labBatchValidationSummaryHint =>
-      'Check the highlighted tests below and complete any missing or invalid values.';
+      'Check le highlighted tests below et complete any missing ou invalide valeurs.';
 
   @override
   String labBatchActionFailedMessage(String actionLabel) {
-    return '$actionLabel could not be completed.';
+    return '$actionLabel n\'a pas pu être completed.';
   }
 
   @override
   String labBatchActionValidationMessage(String actionLabel) {
-    return '$actionLabel could not run because some selected tests still need attention.';
+    return '$actionLabel n\'un pas pu run because some selected tests still need attention.';
   }
 
   @override
   String labBatchActionFailedDetailMessage(String actionLabel, String detail) {
-    return '$actionLabel failed: $detail';
+    return '$actionLabel échoué: $detail';
   }
 
   @override
   String get labBatchInvalidTransitionMessage =>
-      'Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.';
+      'Some selected tests ne peut pas be vérifié yet. Enter et soumettre résultats pour le highlighted tests first, ou retirer rejeté tests de le selection.';
 
   @override
   String get labBatchItemNotFoundMessage =>
-      'One or more selected tests are no longer available. Refresh the order and try again.';
+      'One ou more selected tests are non longer disponible. Refresh le commande et réessayer.';
 
   @override
   String get labBatchOrderNotSelectedMessage =>
-      'The lab order could not be found. Close this dialog, reopen the order, and try again.';
+      'The lab order n\'a pas pu être found. Close this dialog, reopen the order, and try again.';
 
   @override
-  String get labApplyingResultChangesMessage => 'Updating results…';
+  String get labApplyingResultChangesMessage => 'Updating résultats…';
 
   @override
   String get labResultLifecycleDraft => 'Draft';
@@ -9218,13 +9247,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labWorkflowNextReceiveSample => 'Receive sample';
 
   @override
-  String get labWorkflowNextEnterResults => 'Enter results';
+  String get labWorkflowNextEnterResults => 'Enter résultats';
 
   @override
-  String get labWorkflowNextVerifyResults => 'Verify results';
+  String get labWorkflowNextVerifyResults => 'Verify résultats';
 
   @override
-  String get labWorkflowNextReviewItems => 'Review pending items';
+  String get labWorkflowNextReviewItems => 'Review en attente éléments';
 
   @override
   String get labReferenceRangeOverrideLabel => 'Reference range override';
@@ -9237,36 +9266,36 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String clinicalLabResultReadyNotice(String patientName) {
-    return 'Lab results are ready for $patientName.';
+    return 'Lab résultats are ready pour $patientName.';
   }
 
   @override
   String clinicalLabResultUpdatedNotice(String patientName) {
-    return 'Lab results updated for $patientName.';
+    return 'Lab résultats mis à jour pour $patientName.';
   }
 
   @override
   String clinicalLabResultCriticalNotice(String patientName) {
-    return 'Critical lab result for $patientName needs review.';
+    return 'Critical laboratoire résultat pour $patientName needs review.';
   }
 
   @override
-  String get labOrderFavoriteTestsLabel => 'Frequently used tests';
+  String get labOrderFavoriteTestsLabel => 'Frequently utilisé tests';
 
   @override
   String get labBulkResultActionsTitle => 'Bulk actions';
 
   @override
-  String get labSubmitResultAction => 'Submit result';
+  String get labSubmitResultAction => 'Submit résultat';
 
   @override
   String get labResultsSubmittedMessage => 'Results submitted.';
 
   @override
-  String get labResultsVerifiedMessage => 'Results verified.';
+  String get labResultsVerifiedMessage => 'Results vérifié.';
 
   @override
-  String get labSelectAllTestsAction => 'Select all';
+  String get labSelectAllTestsAction => 'Select tous';
 
   @override
   String get labClearSelectionAction => 'Clear selection';
@@ -9277,29 +9306,29 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get labRejectAllTestsAction => 'Reject all tests';
+  String get labRejectAllTestsAction => 'Reject tous tests';
 
   @override
   String get labRemoveAllDraftsAction => 'Remove drafts';
 
   @override
-  String get labSaveAllDraftsAction => 'Save all drafts';
+  String get labSaveAllDraftsAction => 'Save tous drafts';
 
   @override
-  String get labSubmitAllResultsAction => 'Submit all';
+  String get labSubmitAllResultsAction => 'Submit tous';
 
   @override
-  String get labRemoveAllDraftsDialogTitle => 'Remove draft results?';
+  String get labRemoveAllDraftsDialogTitle => 'Remove brouillon résultats?';
 
   @override
   String get labRemoveAllDraftsDialogBody =>
-      'This will remove all saved or entered draft results that have not been verified.';
+      'Ce will retirer tous saved ou entered brouillon résultats cette have not been vérifié.';
 
   @override
-  String get labOrderStatusFieldLabel => 'Order status';
+  String get labOrderStatusFieldLabel => 'Order statut';
 
   @override
-  String get labTestStatusColumnLabel => 'Test status';
+  String get labTestStatusColumnLabel => 'Test statut';
 
   @override
   String get labReferenceRangeColumnLabel => 'Reference range';
@@ -9308,24 +9337,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labResultInputColumnLabel => 'Result';
 
   @override
-  String get labNoOrderItemsEntryTitle => 'No tests on this order';
+  String get labNoOrderItemsEntryTitle => 'No tests on ce commande';
 
   @override
   String get labNoOrderItemsEntryBody =>
-      'This order does not have any requested tests to enter results for.';
+      'Ce commande does not have any requested tests à enter résultats pour.';
 
   @override
-  String get labNoSelectionTitle => 'Select an order';
+  String get labNoSelectionTitle => 'Select un commande';
 
   @override
   String get labNoSelectionBody =>
-      'Choose a lab order from the queue to enter, verify, and report results.';
+      'Choose un laboratoire commande de le queue à enter, verify, et rapport résultats.';
 
   @override
   String get labPatientContextLabel => 'Lab patient context';
 
   @override
-  String get labOrderFieldLabel => 'Lab order';
+  String get labOrderFieldLabel => 'Lab commande';
 
   @override
   String get labEncounterFieldLabel => 'Encounter';
@@ -9349,7 +9378,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labNoSamplesLabel => 'No samples recorded';
 
   @override
-  String get labNoResultsLabel => 'No verified results';
+  String get labNoResultsLabel => 'No vérifié résultats';
 
   @override
   String get labNoTimelineLabel => 'No timeline entries';
@@ -9370,7 +9399,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labRejectSampleAction => 'Reject sample';
 
   @override
-  String get labReleaseResultAction => 'Verify result';
+  String get labReleaseResultAction => 'Verify résultat';
 
   @override
   String get labReverseWorkflowAction => 'Reverse step';
@@ -9379,7 +9408,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labViewCatalogAction => 'View catalog';
 
   @override
-  String get labCatalogQcTitle => 'Catalog and QC';
+  String get labCatalogQcTitle => 'Catalog et QC';
 
   @override
   String get labCatalogTitle => 'Lab catalog';
@@ -9392,10 +9421,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get labBackendGapsBody =>
-      'No unavailable workflow is blocking the displayed lab queue.';
+      'No indisponible workflow is blocking le displayed laboratoire queue.';
 
   @override
-  String get labNoCatalogItemsLabel => 'No catalog items found';
+  String get labNoCatalogItemsLabel => 'Aucun catalog items trouvé';
 
   @override
   String get labNoQcLogsLabel => 'No QC logs recorded';
@@ -9407,7 +9436,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labPanelsTabLabel => 'Panels';
 
   @override
-  String get labRequestOrderDialogTitle => 'Request lab order';
+  String get labRequestOrderDialogTitle => 'Request laboratoire commande';
 
   @override
   String get labPatientIdLabel => 'Patient ID';
@@ -9417,36 +9446,38 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get labOrderContextDialogBody =>
-      'Search and select an existing patient. Encounter and existing order context are optional where available.';
+      'Search et sélectionner un existing patient. Encounter et existing commande context are facultatif where disponible.';
 
   @override
   String get labPatientSearchLabel => 'Patient';
 
   @override
   String get labPatientSearchHint =>
-      'Search patient name, ID, phone, or identifier';
+      'Search patient nom, ID, téléphone, ou identifiant';
 
   @override
   String get labEncounterContextLabel => 'Encounter';
 
   @override
-  String get labEncounterContextHint => 'Search or select encounter';
+  String get labEncounterContextHint => 'Search ou sélectionner consultation';
 
   @override
-  String get labExistingOrderContextLabel => 'Existing lab order context';
+  String get labExistingOrderContextLabel =>
+      'Existing laboratoire commande context';
 
   @override
-  String get labExistingOrderContextHint => 'Search or select order context';
+  String get labExistingOrderContextHint =>
+      'Search ou sélectionner commande context';
 
   @override
-  String get labCatalogSearchLabel => 'Search lab catalog';
+  String get labCatalogSearchLabel => 'Search laboratoire catalog';
 
   @override
   String get labCatalogSearchHint =>
-      'Search tests, panels, codes, category, or specimen';
+      'Search tests, panels, codes, catégorie, ou specimen';
 
   @override
-  String get labCreateOrderSubmitAction => 'Create lab order';
+  String get labCreateOrderSubmitAction => 'Create laboratoire commande';
 
   @override
   String get labCollectDialogTitle => 'Collect sample';
@@ -9476,19 +9507,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labRejectReasonLabel => 'Rejection reason';
 
   @override
-  String get labReleaseDialogTitle => 'Verify lab result';
+  String get labReleaseDialogTitle => 'Verify laboratoire résultat';
 
   @override
-  String get labOrderItemFieldLabel => 'Order item';
+  String get labOrderItemFieldLabel => 'Order élément';
 
   @override
-  String get labResultStatusLabel => 'Result status';
+  String get labResultStatusLabel => 'Result statut';
 
   @override
-  String get labResultValueLabel => 'Result value';
+  String get labResultValueLabel => 'Result valeur';
 
   @override
-  String get labResultUnitLabel => 'Result unit';
+  String get labResultUnitLabel => 'Result unité';
 
   @override
   String get labResultTextLabel => 'Result text';
@@ -9497,7 +9528,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labReportedAtInputLabel => 'Reported at';
 
   @override
-  String get labReverseDialogTitle => 'Reverse lab workflow';
+  String get labReverseDialogTitle => 'Reverse laboratoire workflow';
 
   @override
   String get labReverseReasonLabel => 'Reason';
@@ -9509,7 +9540,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labQcTestFieldLabel => 'Lab test';
 
   @override
-  String get labQcStatusFieldLabel => 'QC status';
+  String get labQcStatusFieldLabel => 'QC statut';
 
   @override
   String get labLoggedAtLabel => 'Logged at';
@@ -9530,10 +9561,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labStatusCompleted => 'Verified';
 
   @override
-  String get labStatusCancelled => 'Cancelled';
+  String get labStatusCancelled => 'Annulé';
 
   @override
-  String get labStatusPending => 'Pending';
+  String get labStatusPending => 'En attente';
 
   @override
   String get labStatusNormal => 'Normal';
@@ -9545,40 +9576,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labStatusCritical => 'Critical';
 
   @override
-  String get labStatusRejected => 'Rejected';
+  String get labStatusRejected => 'Rejeté';
 
   @override
   String get labStatusReceived => 'Received';
 
   @override
-  String get labNextActionCancelled => 'Order cancelled';
+  String get labNextActionCancelled => 'Order annulé';
 
   @override
-  String get labNextActionCollect => 'Enter result';
+  String get labNextActionCollect => 'Enter résultat';
 
   @override
-  String get labNextActionReceive => 'Enter result';
+  String get labNextActionReceive => 'Enter résultat';
 
   @override
-  String get labNextActionRelease => 'Verify result';
+  String get labNextActionRelease => 'Verify résultat';
 
   @override
-  String get labNextActionReviewCritical => 'Escalate critical result';
+  String get labNextActionReviewCritical => 'Escalate critique résultat';
 
   @override
-  String get labNextActionCompleted => 'Ready for doctor review';
+  String get labNextActionCompleted => 'Ready pour doctor review';
 
   @override
-  String get labNextActionWatch => 'Review order';
+  String get labNextActionWatch => 'Review commande';
 
   @override
-  String get labReportPreviewTitle => 'Result report preview';
+  String get labReportPreviewTitle => 'Result rapport aperçu';
 
   @override
-  String get labReportTitle => 'Laboratory result report';
+  String get labReportTitle => 'Laboratory résultat rapport';
 
   @override
-  String get labCopyReportAction => 'Copy report';
+  String get labCopyReportAction => 'Copy rapport';
 
   @override
   String get labReportPatientLabel => 'Patient';
@@ -9596,28 +9627,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labReportVerifiedLabel => 'Verified';
 
   @override
-  String get labReportFooter => 'Generated from laboratory workflow data.';
+  String get labReportFooter => 'Generated de laboratory workflow data.';
 
   @override
-  String get labGapBillingTitle => 'Payment and authorization gate';
+  String get labGapBillingTitle => 'Payment et authorization gate';
 
   @override
   String get labGapBillingBody =>
-      'Payment or authorization blockers are not available for this lab workbench.';
+      'Payment ou authorization blockers are not disponible pour ce laboratoire workbench.';
 
   @override
-  String get labGapVerificationTitle => 'Separate verification step';
+  String get labGapVerificationTitle => 'Separate vérification step';
 
   @override
   String get labGapVerificationBody =>
-      'Order item results can be released. A separate verified-before-release state is not available.';
+      'Order élément résultats can be released. Un separate vérifié-avant-release state is not disponible.';
 
   @override
-  String get labGapReportGenerationTitle => 'Generated report';
+  String get labGapReportGenerationTitle => 'Generated rapport';
 
   @override
   String get labGapReportGenerationBody =>
-      'The shared report preview is available. A lab-specific generated document is not available yet.';
+      'Le shared rapport aperçu is disponible. Un laboratoire-specific generated document is not disponible yet.';
 
   @override
   String get navigationOperationsLabel => 'Operations';
@@ -9633,10 +9664,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get operationsLoadingBody =>
-      'Loading maintenance requests, assets, and service logs.';
+      'Loading maintenance demandes, actifs, et service logs.';
 
   @override
-  String get operationsLiveStatus => 'Live sync';
+  String get operationsLiveStatus => 'Live synchronisation';
 
   @override
   String get operationsSavingStatus => 'Saving';
@@ -9645,25 +9676,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsSavedMessage => 'Operations changes saved.';
 
   @override
-  String get operationsCreateRequestAction => 'Create request';
+  String get operationsCreateRequestAction => 'Create demande';
 
   @override
   String get operationsOpenReportAction => 'Report';
 
   @override
-  String get operationsAllRequestsSummaryLabel => 'All requests';
+  String get operationsAllRequestsSummaryLabel => 'All demandes';
 
   @override
-  String get operationsOpenSummaryLabel => 'Open';
+  String get operationsOpenSummaryLabel => 'Ouvrir';
 
   @override
   String get operationsInProgressSummaryLabel => 'In progress';
 
   @override
-  String get operationsCompletedSummaryLabel => 'Completed';
+  String get operationsCompletedSummaryLabel => 'Terminé';
 
   @override
-  String get operationsCancelledSummaryLabel => 'Cancelled';
+  String get operationsCancelledSummaryLabel => 'Annulé';
 
   @override
   String get operationsAssetsSummaryLabel => 'Assets';
@@ -9673,41 +9704,41 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get operationsQueueDescription =>
-      'Track facility repairs, assets, safety notes, and readiness work.';
+      'Track établissement repairs, actifs, safety notes, et readiness work.';
 
   @override
   String get operationsSearchLabel => 'Search operations';
 
   @override
   String get operationsSearchHint =>
-      'Search request, location, system, priority, status, assignee, or notes';
+      'Search demande, location, system, priorité, statut, assignee, ou notes';
 
   @override
-  String get operationsClearFiltersAction => 'Clear filters';
+  String get operationsClearFiltersAction => 'Clear filtres';
 
   @override
-  String get operationsFiltersLabel => 'Operations filters';
+  String get operationsFiltersLabel => 'Operations filtres';
 
   @override
-  String get operationsSearchFieldsLabel => 'Search fields';
+  String get operationsSearchFieldsLabel => 'Search champs';
 
   @override
-  String get operationsAllFilterOption => 'All';
+  String get operationsAllFilterOption => 'Tous';
 
   @override
   String get operationsReportedDateFilterLabel => 'Reported date';
 
   @override
-  String get operationsReportedFromLabel => 'Reported from';
+  String get operationsReportedFromLabel => 'Reported de';
 
   @override
-  String get operationsReportedToLabel => 'Reported to';
+  String get operationsReportedToLabel => 'Reported à';
 
   @override
-  String get operationsPickReportedDateAction => 'Pick reported date';
+  String get operationsPickReportedDateAction => 'Pick signalé date';
 
   @override
-  String get operationsStatusFilterLabel => 'Status';
+  String get operationsStatusFilterLabel => 'Statut';
 
   @override
   String get operationsPriorityFilterLabel => 'Priority';
@@ -9720,25 +9751,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String operationsPageLabel(int first, int last, int total) {
-    return '$first - $last of $total requests';
+    return '$first - $last of $total demandes';
   }
 
   @override
-  String get operationsNoRequestsTitle => 'No maintenance requests';
+  String get operationsNoRequestsTitle => 'No maintenance demandes';
 
   @override
   String get operationsNoRequestsBody =>
-      'Create a request or adjust the filters.';
+      'Create un demande ou adjust le filtres.';
 
   @override
   String get operationsDetailTitle => 'Request detail';
 
   @override
-  String get operationsNoSelectionTitle => 'Select a request';
+  String get operationsNoSelectionTitle => 'Select un demande';
 
   @override
   String get operationsNoSelectionBody =>
-      'Choose a queue row to review assignments, service logs, and readiness notes.';
+      'Choose un queue ligne à review assignments, service logs, et readiness notes.';
 
   @override
   String get operationsRequestColumnLabel => 'Request';
@@ -9756,10 +9787,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsAssigneeColumnLabel => 'Assignee/team';
 
   @override
-  String get operationsStatusColumnLabel => 'Status';
+  String get operationsStatusColumnLabel => 'Statut';
 
   @override
-  String get operationsDueColumnLabel => 'Due time';
+  String get operationsDueColumnLabel => 'Due heure';
 
   @override
   String get operationsNextActionColumnLabel => 'Next action';
@@ -9768,7 +9799,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsCategoryLabel => 'Category';
 
   @override
-  String get operationsIssueTitle => 'Issue and notes';
+  String get operationsIssueTitle => 'Issue et notes';
 
   @override
   String get operationsActionsTitle => 'Actions';
@@ -9777,7 +9808,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsAssignAction => 'Assign';
 
   @override
-  String get operationsUpdateStatusAction => 'Update status';
+  String get operationsUpdateStatusAction => 'Update statut';
 
   @override
   String get operationsAddServiceLogAction => 'Add service log';
@@ -9798,7 +9829,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsCloseoutNoteAction => 'Closeout note';
 
   @override
-  String get operationsPartsVendorNoteLabel => 'Parts or vendor note';
+  String get operationsPartsVendorNoteLabel => 'Parts ou vendor note';
 
   @override
   String get operationsSafetyNoteLabel => 'Safety note';
@@ -9823,16 +9854,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get operationsNoServiceLogsBody =>
-      'Service logs appear after an asset-backed repair is recorded.';
+      'Service logs appear après un actif-backed repair is recorded.';
 
   @override
-  String get operationsUnknownValue => 'Unknown';
+  String get operationsUnknownValue => 'Inconnu';
 
   @override
   String get operationsUnassignedValue => 'Unassigned';
 
   @override
-  String get operationsNoDueTimeValue => 'No due time';
+  String get operationsNoDueTimeValue => 'No due heure';
 
   @override
   String get operationsNoNotesValue => 'No notes recorded.';
@@ -9847,10 +9878,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsNotesLabel => 'Notes';
 
   @override
-  String get operationsCreateRequestSubmitAction => 'Create request';
+  String get operationsCreateRequestSubmitAction => 'Create demande';
 
   @override
-  String get operationsAssigneeFieldLabel => 'Technician or team';
+  String get operationsAssigneeFieldLabel => 'Technician ou team';
 
   @override
   String get operationsSlaHoursFieldLabel => 'SLA hours';
@@ -9865,7 +9896,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsStatusNoteLabel => 'Status note';
 
   @override
-  String get operationsUpdateStatusSubmitAction => 'Save status';
+  String get operationsUpdateStatusSubmitAction => 'Save statut';
 
   @override
   String get operationsServiceNotesLabel => 'Service notes';
@@ -9874,19 +9905,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsAddServiceLogSubmitAction => 'Save service log';
 
   @override
-  String get operationsNoConfiguredAssetsOption => 'No configured assets';
+  String get operationsNoConfiguredAssetsOption => 'No configured actifs';
 
   @override
-  String get operationsStatusOpen => 'Open';
+  String get operationsStatusOpen => 'Ouvrir';
 
   @override
   String get operationsStatusInProgress => 'In progress';
 
   @override
-  String get operationsStatusCompleted => 'Completed';
+  String get operationsStatusCompleted => 'Terminé';
 
   @override
-  String get operationsStatusCancelled => 'Cancelled';
+  String get operationsStatusCancelled => 'Annulé';
 
   @override
   String get operationsPriorityUrgent => 'Urgent';
@@ -9916,37 +9947,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get operationsCategoryHvac => 'HVAC';
 
   @override
-  String get operationsCategoryGeneralAsset => 'General asset';
+  String get operationsCategoryGeneralAsset => 'General actif';
 
   @override
   String get operationsCategorySafety => 'Safety';
 
   @override
-  String get operationsCategoryOther => 'Other';
+  String get operationsCategoryOther => 'Autre';
 
   @override
-  String get operationsNextActionAssign => 'Assign technician or team';
+  String get operationsNextActionAssign => 'Assign technician ou team';
 
   @override
   String get operationsNextActionServiceLog => 'Record service work';
 
   @override
-  String get operationsNextActionUpdateStatus => 'Update repair status';
+  String get operationsNextActionUpdateStatus => 'Update repair statut';
 
   @override
   String get operationsNextActionCloseout => 'Add closeout note if needed';
 
   @override
-  String get operationsNextActionCancelled => 'Request cancelled';
+  String get operationsNextActionCancelled => 'Request annulé';
 
   @override
-  String get operationsNextActionReview => 'Review request';
+  String get operationsNextActionReview => 'Review demande';
 
   @override
-  String get operationsReportTitle => 'Operations report';
+  String get operationsReportTitle => 'Operations rapport';
 
   @override
-  String get operationsReportPreviewTitle => 'Report preview';
+  String get operationsReportPreviewTitle => 'Report aperçu';
 
   @override
   String operationsGeneratedAtLabel(String generatedAt) {
@@ -9960,7 +9991,7 @@ class AppLocalizationsFr extends AppLocalizations {
     int inProgress,
     int completed,
   ) {
-    return '$total requests: $open open, $inProgress in progress, $completed completed.';
+    return '$total demandes: $open ouvrir, $inProgress in progress, $completed terminé.';
   }
 
   @override
@@ -9973,14 +10004,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalTitle => 'Biomedical';
 
   @override
-  String get biomedicalLoadingTitle => 'Loading biomedical';
+  String get biomedicalLoadingTitle => 'Loading biomédical';
 
   @override
   String get biomedicalLoadingBody =>
-      'Loading equipment registry, work orders, and compliance records.';
+      'Loading équipement registry, work commandes, et compliance dossiers.';
 
   @override
-  String get biomedicalLiveStatus => 'Live sync';
+  String get biomedicalLiveStatus => 'Live synchronisation';
 
   @override
   String get biomedicalSavingStatus => 'Saving';
@@ -9989,19 +10020,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalSavedMessage => 'Biomedical changes saved.';
 
   @override
-  String get biomedicalRegisterAssetAction => 'Register asset';
+  String get biomedicalRegisterAssetAction => 'Register actif';
 
   @override
   String get biomedicalReportFaultAction => 'Report fault';
 
   @override
-  String get biomedicalTotalEquipmentSummaryLabel => 'Total equipment';
+  String get biomedicalTotalEquipmentSummaryLabel => 'Total équipement';
 
   @override
   String get biomedicalOverduePmSummaryLabel => 'Overdue PM';
 
   @override
-  String get biomedicalOpenWorkOrdersSummaryLabel => 'Open work orders';
+  String get biomedicalOpenWorkOrdersSummaryLabel => 'Open work commandes';
 
   @override
   String get biomedicalCriticalDowntimeSummaryLabel => 'Critical downtime';
@@ -10014,23 +10045,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get biomedicalAssetListDescription =>
-      'Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.';
+      'Search équipement, schedules, work commandes, downtime, recalls, et lifecycle dossiers.';
 
   @override
-  String get biomedicalSearchLabel => 'Search biomedical';
+  String get biomedicalSearchLabel => 'Search biomédical';
 
   @override
   String get biomedicalSearchHint =>
-      'Search asset tag, equipment, category, location, status, date, or provider';
+      'Search actif tag, équipement, catégorie, location, statut, date, ou prestataire';
 
   @override
-  String get biomedicalFiltersLabel => 'Biomedical filters';
+  String get biomedicalFiltersLabel => 'Biomedical filtres';
 
   @override
   String get biomedicalPanelFilterLabel => 'Panel';
 
   @override
-  String get biomedicalStatusFilterLabel => 'Status';
+  String get biomedicalStatusFilterLabel => 'Statut';
 
   @override
   String get biomedicalPriorityFilterLabel => 'Priority';
@@ -10057,7 +10088,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalRiskColumnLabel => 'Risk';
 
   @override
-  String get biomedicalStatusColumnLabel => 'Status';
+  String get biomedicalStatusColumnLabel => 'Statut';
 
   @override
   String get biomedicalOwnerColumnLabel => 'Owner';
@@ -10066,10 +10097,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalNextActionColumnLabel => 'Next action';
 
   @override
-  String get biomedicalPreviousPageLabel => 'Previous equipment';
+  String get biomedicalPreviousPageLabel => 'Previous équipement';
 
   @override
-  String get biomedicalNextPageLabel => 'Next equipment';
+  String get biomedicalNextPageLabel => 'Next équipement';
 
   @override
   String biomedicalPageLabel(int from, int to, int total) {
@@ -10077,21 +10108,21 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get biomedicalNoAssetsTitle => 'No equipment records';
+  String get biomedicalNoAssetsTitle => 'No équipement dossiers';
 
   @override
   String get biomedicalNoAssetsBody =>
-      'Equipment records matching this search and filter will appear here.';
+      'Equipment dossiers matching ce recherche et filtre will appear here.';
 
   @override
   String get biomedicalDetailTitle => 'Equipment detail';
 
   @override
-  String get biomedicalNoSelectionTitle => 'Select equipment';
+  String get biomedicalNoSelectionTitle => 'Select équipement';
 
   @override
   String get biomedicalNoSelectionBody =>
-      'Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.';
+      'Choose équipement ou un related dossier à review readiness, work commandes, compliance, et lifecycle actions.';
 
   @override
   String get biomedicalRegistrySectionTitle => 'Registry';
@@ -10109,7 +10140,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalLifecycleSectionTitle => 'Lifecycle';
 
   @override
-  String get biomedicalReportsSectionTitle => 'Report preview';
+  String get biomedicalReportsSectionTitle => 'Report aperçu';
 
   @override
   String get biomedicalNotAvailableLabel => '-';
@@ -10133,7 +10164,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalOwnerLabel => 'Owner';
 
   @override
-  String get biomedicalStatusLabel => 'Status';
+  String get biomedicalStatusLabel => 'Statut';
 
   @override
   String get biomedicalPriorityLabel => 'Priority';
@@ -10142,13 +10173,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalNextDueLabel => 'Next due';
 
   @override
-  String get biomedicalLastUpdatedLabel => 'Last updated';
+  String get biomedicalLastUpdatedLabel => 'Last mis à jour';
 
   @override
   String get biomedicalTargetPathLabel => 'Audit path';
 
   @override
-  String get biomedicalEditAssetAction => 'Edit asset';
+  String get biomedicalEditAssetAction => 'Edit actif';
 
   @override
   String get biomedicalTransferLocationAction => 'Transfer location';
@@ -10157,16 +10188,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalScheduleMaintenanceAction => 'Schedule maintenance';
 
   @override
-  String get biomedicalCreateWorkOrderAction => 'Create work order';
+  String get biomedicalCreateWorkOrderAction => 'Create work commande';
 
   @override
-  String get biomedicalUpdateWorkOrderAction => 'Update work order';
+  String get biomedicalUpdateWorkOrderAction => 'Update work commande';
 
   @override
-  String get biomedicalStartWorkOrderAction => 'Start work order';
+  String get biomedicalStartWorkOrderAction => 'Start work commande';
 
   @override
-  String get biomedicalReturnToServiceAction => 'Return to service';
+  String get biomedicalReturnToServiceAction => 'Return à service';
 
   @override
   String get biomedicalRecordCalibrationAction => 'Record calibration';
@@ -10187,36 +10218,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalAcknowledgeRecallAction => 'Acknowledge recall';
 
   @override
-  String get biomedicalDisposeTransferAction => 'Dispose or transfer';
+  String get biomedicalDisposeTransferAction => 'Dispose ou transfert';
 
   @override
-  String get biomedicalPrintReportAction => 'Preview report';
+  String get biomedicalPrintReportAction => 'Preview rapport';
 
   @override
-  String get biomedicalRegisterAssetDialogTitle => 'Register equipment';
+  String get biomedicalRegisterAssetDialogTitle => 'Register équipement';
 
   @override
-  String get biomedicalEditAssetDialogTitle => 'Edit equipment';
+  String get biomedicalEditAssetDialogTitle => 'Edit équipement';
 
   @override
   String get biomedicalTransferLocationDialogTitle =>
-      'Transfer equipment location';
+      'Transfer équipement location';
 
   @override
   String get biomedicalScheduleMaintenanceDialogTitle => 'Schedule maintenance';
 
   @override
-  String get biomedicalWorkOrderDialogTitle => 'Create work order';
+  String get biomedicalWorkOrderDialogTitle => 'Create work commande';
 
   @override
-  String get biomedicalUpdateWorkOrderDialogTitle => 'Update work order';
+  String get biomedicalUpdateWorkOrderDialogTitle => 'Update work commande';
 
   @override
-  String get biomedicalStartWorkOrderDialogTitle => 'Start work order';
+  String get biomedicalStartWorkOrderDialogTitle => 'Start work commande';
 
   @override
   String get biomedicalReturnToServiceDialogTitle =>
-      'Return equipment to service';
+      'Return équipement à service';
 
   @override
   String get biomedicalCalibrationDialogTitle => 'Record calibration';
@@ -10237,16 +10268,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalRecallDialogTitle => 'Acknowledge recall';
 
   @override
-  String get biomedicalDisposalDialogTitle => 'Dispose or transfer equipment';
+  String get biomedicalDisposalDialogTitle => 'Dispose ou transfert équipement';
 
   @override
-  String get biomedicalFaultDialogTitle => 'Report equipment fault';
+  String get biomedicalFaultDialogTitle => 'Report équipement fault';
 
   @override
-  String get biomedicalPrintReportDialogTitle => 'Biomedical report';
+  String get biomedicalPrintReportDialogTitle => 'Biomedical rapport';
 
   @override
-  String get biomedicalAssetNameLabel => 'Equipment name';
+  String get biomedicalAssetNameLabel => 'Equipment nom';
 
   @override
   String get biomedicalAssetCodeLabel => 'Asset code';
@@ -10255,7 +10286,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalSerialNumberLabel => 'Serial number';
 
   @override
-  String get biomedicalRoomLabel => 'Room';
+  String get biomedicalRoomLabel => 'Chambre';
 
   @override
   String get biomedicalNotesLabel => 'Notes';
@@ -10264,13 +10295,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalDescriptionLabel => 'Description';
 
   @override
-  String get biomedicalWorkOrderTitleLabel => 'Work order title';
+  String get biomedicalWorkOrderTitleLabel => 'Work commande titre';
 
   @override
   String get biomedicalEngineerLabel => 'Engineer';
 
   @override
-  String get biomedicalPlanNameLabel => 'Plan name';
+  String get biomedicalPlanNameLabel => 'Plan nom';
 
   @override
   String get biomedicalMaintenanceTypeLabel => 'Maintenance type';
@@ -10312,7 +10343,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalEffectiveAtLabel => 'Effective at';
 
   @override
-  String get biomedicalReportedEquipmentNameLabel => 'Temporary equipment name';
+  String get biomedicalReportedEquipmentNameLabel => 'Temporary équipement nom';
 
   @override
   String get biomedicalPatientSafetyRiskLabel => 'Patient safety risk';
@@ -10321,17 +10352,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalDateTimeHint => 'YYYY-MM-DDTHH:MM';
 
   @override
-  String get biomedicalSubmitAction => 'Submit';
+  String get biomedicalSubmitAction => 'Soumettre';
 
   @override
-  String get biomedicalSaveAction => 'Save';
+  String get biomedicalSaveAction => 'Enregistrer';
 
   @override
-  String get biomedicalCreateAction => 'Create';
+  String get biomedicalCreateAction => 'Créer';
 
   @override
   String biomedicalFieldRequiredLabel(String label) {
-    return '$label is required.';
+    return '$label est requis.';
   }
 
   @override
@@ -10344,7 +10375,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalPanelPreventive => 'Preventive';
 
   @override
-  String get biomedicalPanelWorkOrders => 'Work orders';
+  String get biomedicalPanelWorkOrders => 'Work commandes';
 
   @override
   String get biomedicalPanelCompliance => 'Compliance';
@@ -10365,7 +10396,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalDatePresetOverdue => 'Overdue';
 
   @override
-  String get biomedicalDatePresetThisMonth => 'This month';
+  String get biomedicalDatePresetThisMonth => 'Ce month';
 
   @override
   String get biomedicalNextActionMaintain => 'Perform maintenance';
@@ -10374,40 +10405,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get biomedicalNextActionCalibrate => 'Review compliance';
 
   @override
-  String get biomedicalNextActionReturnService => 'Return to service';
+  String get biomedicalNextActionReturnService => 'Return à service';
 
   @override
   String get biomedicalNextActionReviewRecall => 'Review recall';
 
   @override
-  String get biomedicalNextActionWorkOrder => 'Work order follow-up';
+  String get biomedicalNextActionWorkOrder => 'Work commande follow-up';
 
   @override
-  String get biomedicalNextActionReview => 'Review record';
+  String get biomedicalNextActionReview => 'Review dossier';
 
   @override
   String get biomedicalPrintReportBody =>
-      'Generated from biomedical registry, readiness, compliance, and lifecycle data.';
+      'Generated de biomédical registry, readiness, compliance, et lifecycle data.';
 
   @override
-  String get integrationsLoadErrorTitle => 'Integrations could not load';
+  String get integrationsLoadErrorTitle => 'Integrations n\'un pas pu load';
 
   @override
   String get integrationsLoadErrorBody =>
-      'Refresh the workspace or check service availability.';
+      'Refresh le espace de travail ou check service availability.';
 
   @override
-  String get integrationsLoadingTitle => 'Loading integrations';
+  String get integrationsLoadingTitle => 'Loading intégrations';
 
   @override
   String get integrationsLoadingBody =>
-      'Preparing integrations, API keys, webhooks, and logs.';
+      'Preparing intégrations, API keys, webhooks, et logs.';
 
   @override
   String get integrationsFailedStatusLabel => 'Failed';
 
   @override
-  String get integrationsWarningStatusLabel => 'Warning';
+  String get integrationsWarningStatusLabel => 'Avertissement';
 
   @override
   String get integrationsOperationalStatusLabel => 'Operational';
@@ -10416,7 +10447,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsWorkspaceTitle => 'Integrations';
 
   @override
-  String get integrationsCreateIntegrationAction => 'Create integration';
+  String get integrationsCreateIntegrationAction => 'Create intégration';
 
   @override
   String get integrationsCreateApiKeyAction => 'Create API key';
@@ -10425,10 +10456,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsCreateWebhookAction => 'Create webhook';
 
   @override
-  String get integrationsAllSummaryLabel => 'Total items';
+  String get integrationsAllSummaryLabel => 'Total éléments';
 
   @override
-  String get integrationsActiveSummaryLabel => 'Active';
+  String get integrationsActiveSummaryLabel => 'Actif';
 
   @override
   String get integrationsWarningsSummaryLabel => 'Warnings';
@@ -10447,20 +10478,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsWorklistDescription =>
-      'Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.';
+      'Review intégrations, API keys, webhooks, sanitized logs, et interoperability readiness.';
 
   @override
-  String get integrationsSearchLabel => 'Search integrations';
+  String get integrationsSearchLabel => 'Search intégrations';
 
   @override
   String get integrationsSearchHint =>
-      'Search by name, type, status, owner, or reference';
+      'Search by nom, type, statut, owner, ou référence';
 
   @override
-  String get integrationsFiltersLabel => 'Filters';
+  String get integrationsFiltersLabel => 'Filtres';
 
   @override
-  String get integrationsFilterAll => 'All';
+  String get integrationsFilterAll => 'Tous';
 
   @override
   String get integrationsFilterGroupLabel => 'Group';
@@ -10477,20 +10508,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get integrationsEmptyTitle => 'No integration items';
+  String get integrationsEmptyTitle => 'No intégration éléments';
 
   @override
   String get integrationsEmptyBody =>
-      'Create an integration, API key, or webhook to populate this workspace.';
+      'Create un intégration, API key, ou webhook à populate ce espace de travail.';
 
   @override
   String get integrationsTypeColumnLabel => 'Type';
 
   @override
-  String get integrationsNameColumnLabel => 'Name';
+  String get integrationsNameColumnLabel => 'Nom';
 
   @override
-  String get integrationsStatusColumnLabel => 'Status';
+  String get integrationsStatusColumnLabel => 'Statut';
 
   @override
   String get integrationsOwnerColumnLabel => 'Owner';
@@ -10510,17 +10541,17 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get integrationsNoSelectionTitle => 'Select an integration item';
+  String get integrationsNoSelectionTitle => 'Select un intégration élément';
 
   @override
   String get integrationsNoSelectionBody =>
-      'Choose a row to review configuration, keys, webhooks, logs, and available actions.';
+      'Choose un ligne à review configuration, keys, webhooks, logs, et disponible actions.';
 
   @override
   String get integrationsConfigureAction => 'Configure';
 
   @override
-  String get integrationsTestConnectionAction => 'Test connection';
+  String get integrationsTestConnectionAction => 'Test connexion';
 
   @override
   String get integrationsSyncNowAction => 'Sync now';
@@ -10532,7 +10563,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsEnableAction => 'Enable';
 
   @override
-  String get integrationsManagePermissionsAction => 'Manage permissions';
+  String get integrationsManagePermissionsAction => 'Manage autorisations';
 
   @override
   String get integrationsRevokeApiKeyAction => 'Revoke key';
@@ -10550,17 +10581,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsReferenceLabel => 'Reference';
 
   @override
-  String get integrationsActionResultTitle => 'Latest action result';
+  String get integrationsActionResultTitle => 'Latest action résultat';
 
   @override
   String get integrationsMaskedSecretTitle => 'Masked key';
 
   @override
-  String get integrationsRotationGapTitle => 'Key rotation unavailable';
+  String get integrationsRotationGapTitle => 'Key rotation indisponible';
 
   @override
   String get integrationsRotationGapBody =>
-      'Create a replacement key, update downstream systems, then revoke the old key.';
+      'Create un replacement key, mettre à jour downstream systems, then revoke le ancien key.';
 
   @override
   String get integrationsEventLabel => 'Event';
@@ -10576,21 +10607,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsInteropReadyBody =>
-      'Interoperability actions are available.';
+      'Interoperability actions are disponible.';
 
   @override
   String get integrationsConfigurationTitle => 'Configuration';
 
   @override
   String get integrationsConfigurationMaskedBody =>
-      'Sensitive values are masked in this response.';
+      'Sensitive valeurs are masked in ce réponse.';
 
   @override
   String get integrationsConfigurationEmptyBody =>
-      'No configuration values are available for this integration.';
+      'No configuration valeurs are disponible pour ce intégration.';
 
   @override
-  String get integrationsNoConfigurationRows => 'No configuration rows';
+  String get integrationsNoConfigurationRows => 'No configuration lignes';
 
   @override
   String get integrationsRelatedWebhooksTitle => 'Related webhooks';
@@ -10608,23 +10639,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsPermissionsTitle => 'Permissions';
 
   @override
-  String get integrationsNoPermissions => 'No permissions granted';
+  String get integrationsNoPermissions => 'No autorisations granted';
 
   @override
-  String get integrationsRemovePermissionDialogTitle => 'Remove permission?';
+  String get integrationsRemovePermissionDialogTitle => 'Remove autorisation?';
 
   @override
   String get integrationsRemovePermissionDialogBody =>
-      'This API key will immediately lose the selected permission.';
+      'Ce API key will immediately lose le selected autorisation.';
 
   @override
-  String get integrationsRemovePermissionAction => 'Remove permission';
+  String get integrationsRemovePermissionAction => 'Remove autorisation';
 
   @override
-  String get integrationsNameFieldLabel => 'Name';
+  String get integrationsNameFieldLabel => 'Nom';
 
   @override
-  String get integrationsNameRequiredMessage => 'Enter a name.';
+  String get integrationsNameRequiredMessage => 'Enter un nom.';
 
   @override
   String get integrationsTypeFieldLabel => 'Type';
@@ -10634,29 +10665,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsConfigCreateHelper =>
-      'Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.';
+      'Enter one key=valeur setting per line. Sensitive keys are accepted but are not shown again.';
 
   @override
   String get integrationsConfigUpdateHelper =>
-      'Enter only settings to change. Existing sensitive values are not shown here.';
+      'Enter only paramètres à change. Existing sensitive valeurs are not shown here.';
 
   @override
-  String get integrationsCreateIntegrationSubmitAction => 'Create integration';
+  String get integrationsCreateIntegrationSubmitAction => 'Create intégration';
 
   @override
-  String get integrationsSaveIntegrationAction => 'Save integration';
+  String get integrationsSaveIntegrationAction => 'Save intégration';
 
   @override
-  String get integrationsApiKeyNameFieldLabel => 'Key name';
+  String get integrationsApiKeyNameFieldLabel => 'Key nom';
 
   @override
-  String get integrationsApiKeyNameRequiredMessage => 'Enter a key name.';
+  String get integrationsApiKeyNameRequiredMessage => 'Enter un key nom.';
 
   @override
   String get integrationsExpiresAtFieldLabel => 'Expires at';
 
   @override
-  String get integrationsIsoDateHint => 'YYYY-MM-DD or ISO timestamp';
+  String get integrationsIsoDateHint => 'YYYY-MM-DD ou ISO timestamp';
 
   @override
   String get integrationsCreateApiKeySubmitAction => 'Create API key';
@@ -10668,16 +10699,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsEventFieldLabel => 'Event';
 
   @override
-  String get integrationsEventRequiredMessage => 'Enter an event name.';
+  String get integrationsEventRequiredMessage => 'Enter un event nom.';
 
   @override
   String get integrationsTargetUrlFieldLabel => 'Target URL';
 
   @override
-  String get integrationsTargetUrlRequiredMessage => 'Enter a target URL.';
+  String get integrationsTargetUrlRequiredMessage => 'Enter un target URL.';
 
   @override
-  String get integrationsWebhookActiveFieldLabel => 'Webhook active';
+  String get integrationsWebhookActiveFieldLabel => 'Webhook actif';
 
   @override
   String get integrationsCreateWebhookSubmitAction => 'Create webhook';
@@ -10689,23 +10720,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsApiKeyFieldLabel => 'API key';
 
   @override
-  String get integrationsApiKeyRequiredMessage => 'Choose an API key.';
+  String get integrationsApiKeyRequiredMessage => 'Choose un API key.';
 
   @override
   String get integrationsPermissionFieldLabel => 'Permission';
 
   @override
-  String get integrationsPermissionRequiredMessage => 'Choose a permission.';
+  String get integrationsPermissionRequiredMessage => 'Choose un autorisation.';
 
   @override
-  String get integrationsAddPermissionAction => 'Add permission';
+  String get integrationsAddPermissionAction => 'Add autorisation';
 
   @override
-  String get integrationsCreateIntegrationDialogTitle => 'Create integration';
+  String get integrationsCreateIntegrationDialogTitle => 'Create intégration';
 
   @override
   String get integrationsConfigureIntegrationDialogTitle =>
-      'Configure integration';
+      'Configure intégration';
 
   @override
   String get integrationsCreateApiKeyDialogTitle => 'Create API key';
@@ -10718,52 +10749,52 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsManagePermissionsDialogTitle =>
-      'Manage API key permissions';
+      'Manage API key autorisations';
 
   @override
   String get integrationsSecretMissing => 'Secret not returned';
 
   @override
-  String get integrationsApiKeyCreatedDialogTitle => 'API key created';
+  String get integrationsApiKeyCreatedDialogTitle => 'API key créé';
 
   @override
-  String get integrationsApiKeyCreatedSecretTitle => 'One-time secret';
+  String get integrationsApiKeyCreatedSecretTitle => 'One-heure secret';
 
   @override
   String get integrationsApiKeyCreatedSecretBody =>
-      'This value is shown once. Store it securely before closing this dialog.';
+      'Ce valeur is shown once. Store it securely avant closing ce dialog.';
 
   @override
   String get integrationsCopySecretAction => 'Copy secret';
 
   @override
-  String get integrationsTestConnectionDialogTitle => 'Test connection?';
+  String get integrationsTestConnectionDialogTitle => 'Test connexion?';
 
   @override
   String get integrationsTestConnectionDialogBody =>
-      'The system will run the integration connection test.';
+      'Le system will run le intégration connexion test.';
 
   @override
   String get integrationsSyncNowDialogTitle => 'Sync now?';
 
   @override
   String get integrationsSyncNowDialogBody =>
-      'The system will enqueue an immediate integration sync.';
+      'Le system will enqueue un immediate intégration synchronisation.';
 
   @override
-  String get integrationsEnableIntegrationDialogTitle => 'Enable integration?';
+  String get integrationsEnableIntegrationDialogTitle => 'Enable intégration?';
 
   @override
   String get integrationsDisableIntegrationDialogTitle =>
-      'Disable integration?';
+      'Disable intégration?';
 
   @override
   String get integrationsEnableIntegrationDialogBody =>
-      'This integration will become available for downstream workflows.';
+      'Ce intégration will become disponible pour downstream workflows.';
 
   @override
   String get integrationsDisableIntegrationDialogBody =>
-      'This integration will stop participating in downstream workflows.';
+      'Ce intégration will stop participating in downstream workflows.';
 
   @override
   String get integrationsEnableApiKeyDialogTitle => 'Enable API key?';
@@ -10773,11 +10804,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsEnableApiKeyDialogBody =>
-      'This API key can authenticate requests again.';
+      'Ce API key can authenticate demandes again.';
 
   @override
   String get integrationsDisableApiKeyDialogBody =>
-      'This API key will stop authenticating requests.';
+      'Ce API key will stop authenticating demandes.';
 
   @override
   String get integrationsEnableWebhookDialogTitle => 'Enable webhook?';
@@ -10787,32 +10818,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsEnableWebhookDialogBody =>
-      'This webhook will receive matching events again.';
+      'Ce webhook will receive matching events again.';
 
   @override
   String get integrationsDisableWebhookDialogBody =>
-      'This webhook will stop receiving matching events.';
+      'Ce webhook will stop receiving matching events.';
 
   @override
   String get integrationsRevokeApiKeyDialogTitle => 'Revoke API key?';
 
   @override
   String get integrationsRevokeApiKeyDialogBody =>
-      'This permanently deletes the API key and its local permission grants.';
+      'Ce permanently deletes le API key et its local autorisation grants.';
 
   @override
   String get integrationsReplayWebhookDialogTitle => 'Replay webhook?';
 
   @override
   String get integrationsReplayWebhookDialogBody =>
-      'The system will replay the webhook delivery.';
+      'Le system will replay le webhook delivery.';
 
   @override
   String get integrationsReplayLogDialogTitle => 'Replay log?';
 
   @override
   String get integrationsReplayLogDialogBody =>
-      'The system will retry the logged integration event.';
+      'Le system will réessayer le logged intégration event.';
 
   @override
   String get integrationsFilterIntegrations => 'Integrations';
@@ -10830,10 +10861,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsFilterInterop => 'Interop';
 
   @override
-  String get integrationsFilterActive => 'Active';
+  String get integrationsFilterActive => 'Actif';
 
   @override
-  String get integrationsFilterWarning => 'Warning';
+  String get integrationsFilterWarning => 'Avertissement';
 
   @override
   String get integrationsFilterFailed => 'Failed';
@@ -10851,22 +10882,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsTypeLab => 'Lab';
 
   @override
-  String get integrationsTypeRadiology => 'Radiology';
+  String get integrationsTypeRadiology => 'Radiologie';
 
   @override
-  String get integrationsTypeBilling => 'Billing';
+  String get integrationsTypeBilling => 'Facturation';
 
   @override
-  String get integrationsTypeOther => 'Other';
+  String get integrationsTypeOther => 'Autre';
 
   @override
-  String get integrationsStatusActive => 'Active';
+  String get integrationsStatusActive => 'Actif';
 
   @override
-  String get integrationsStatusInactive => 'Inactive';
+  String get integrationsStatusInactive => 'Inactif';
 
   @override
-  String get integrationsStatusError => 'Error';
+  String get integrationsStatusError => 'Erreur';
 
   @override
   String get integrationsStatusFailed => 'Failed';
@@ -10914,10 +10945,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsInteropDicomScope => 'DICOM linking';
 
   @override
-  String get integrationsInteropMigrationScope => 'Migration import and export';
+  String get integrationsInteropMigrationScope => 'Migration import et export';
 
   @override
-  String get integrationsInteropStatusScope => 'Readiness status';
+  String get integrationsInteropStatusScope => 'Readiness statut';
 
   @override
   String integrationsManyScopesLabel(String count) {
@@ -10925,10 +10956,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get integrationsNextActionReviewFailure => 'Review failure';
+  String get integrationsNextActionReviewFailure => 'Review échec';
 
   @override
-  String get integrationsNextActionEnable => 'Enable item';
+  String get integrationsNextActionEnable => 'Enable élément';
 
   @override
   String get integrationsNextActionMonitor => 'Monitor';
@@ -10937,7 +10968,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsNextActionReviewKey => 'Review key';
 
   @override
-  String get integrationsNextActionRotateOrMonitor => 'Rotate or monitor';
+  String get integrationsNextActionRotateOrMonitor => 'Rotate ou monitor';
 
   @override
   String get integrationsNextActionEnableWebhook => 'Enable webhook';
@@ -10946,7 +10977,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsNextActionMonitorDelivery => 'Monitor delivery';
 
   @override
-  String get integrationsNextActionReplayOrEscalate => 'Replay or escalate';
+  String get integrationsNextActionReplayOrEscalate => 'Replay ou escalate';
 
   @override
   String get integrationsNextActionReview => 'Review';
@@ -10955,7 +10986,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get integrationsNextActionRunEndpoint => 'Run action';
 
   @override
-  String get integrationsNextActionUseStatusLogs => 'Use status logs';
+  String get integrationsNextActionUseStatusLogs => 'Use statut logs';
 
   @override
   String get integrationsInteropFhirTitle => 'FHIR exchange';
@@ -10974,20 +11005,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get integrationsInteropReadinessGapBody =>
-      'No dedicated interoperability readiness signal is available. Use integration status and sanitized logs.';
+      'No dedicated interoperability readiness signal is disponible. Use intégration statut et sanitized logs.';
 
   @override
   String get integrationsSavedMessage => 'Integration changes saved.';
 
   @override
-  String get reportsTitle => 'Reports and audit';
+  String get reportsTitle => 'Reports et audit';
 
   @override
-  String get reportsLoadingTitle => 'Loading reports workspace';
+  String get reportsLoadingTitle => 'Loading rapports espace de travail';
 
   @override
   String get reportsLoadingBody =>
-      'Fetching report definitions, runs, schedules, dashboards, and audit evidence.';
+      'Fetching rapport definitions, runs, schedules, dashboards, et audit evidence.';
 
   @override
   String get reportsLiveStatus => 'Live';
@@ -10996,7 +11027,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsSavingStatus => 'Saving';
 
   @override
-  String get reportsRunAction => 'Run report';
+  String get reportsRunAction => 'Run rapport';
 
   @override
   String get reportsScheduleAction => 'Schedule';
@@ -11008,36 +11039,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsCancelRunAction => 'Cancel run';
 
   @override
-  String get reportsDownloadAction => 'Download';
+  String get reportsDownloadAction => 'Télécharger';
 
   @override
-  String get reportsPrintAction => 'Print';
+  String get reportsPrintAction => 'Imprimer';
 
   @override
   String get reportsExportEvidenceAction => 'Export evidence';
 
   @override
-  String get reportsSearchLabel => 'Search reports and logs';
+  String get reportsSearchLabel => 'Search rapports et logs';
 
   @override
   String get reportsSearchHint =>
-      'Search report name, module, owner, status, or record';
+      'Search rapport nom, module, owner, statut, ou dossier';
 
   @override
   String get reportsComplianceSearchHint =>
-      'Search user, action, record, patient, purpose, or reason';
+      'Search utilisateur, action, dossier, patient, purpose, ou reason';
 
   @override
-  String get reportsClearSearchLabel => 'Clear reports search';
+  String get reportsClearSearchLabel => 'Clear rapports recherche';
 
   @override
-  String get reportsFiltersLabel => 'Report filters';
+  String get reportsFiltersLabel => 'Report filtres';
 
   @override
-  String get reportsPanelFilterLabel => 'Workspace panel';
+  String get reportsPanelFilterLabel => 'Workspace panneau';
 
   @override
-  String get reportsStatusFilterLabel => 'Status';
+  String get reportsStatusFilterLabel => 'Statut';
 
   @override
   String get reportsFormatFilterLabel => 'Format';
@@ -11058,7 +11089,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsDatePickerLabel => 'Choose date';
 
   @override
-  String get reportsInvalidDateMessage => 'Enter a valid date.';
+  String get reportsInvalidDateMessage => 'Enter un valid date.';
 
   @override
   String get reportsComplianceTypeFilterLabel => 'Event type';
@@ -11079,7 +11110,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsPanelCatalog => 'Catalog';
 
   @override
-  String get reportsPanelDelivery => 'Runs and delivery';
+  String get reportsPanelDelivery => 'Runs et delivery';
 
   @override
   String get reportsPanelDashboards => 'Dashboards';
@@ -11094,49 +11125,49 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsPanelAudit => 'Audit logs';
 
   @override
-  String get reportsPanelPhi => 'PHI access';
+  String get reportsPanelPhi => 'PHI accès';
 
   @override
   String get reportsPanelProcessing => 'Processing logs';
 
   @override
   String get reportsWorklistDescription =>
-      'Search, filter, preview, run, schedule, print, and export report records.';
+      'Search, filtre, aperçu, run, planning, print, et export rapport dossiers.';
 
   @override
   String get reportsComplianceDescription =>
-      'Search and review audit, PHI access, and data processing logs within permitted scope.';
+      'Search et review audit, PHI accès, et data traitement logs within permitted scope.';
 
   @override
   String get reportsSchedulesTitle => 'Schedules';
 
   @override
   String get reportsSchedulesDescription =>
-      'Saved schedules refresh independently from report runs.';
+      'Saved schedules actualiser independently de rapport runs.';
 
   @override
-  String get reportsNoItemsTitle => 'No report records';
+  String get reportsNoItemsTitle => 'No rapport dossiers';
 
   @override
   String get reportsNoItemsBody =>
-      'No report records match the current filters.';
+      'No rapport dossiers match le actuel filtres.';
 
   @override
   String get reportsNoSchedulesTitle => 'No schedules';
 
   @override
   String get reportsNoSchedulesBody =>
-      'No saved report schedules match this view.';
+      'No saved rapport schedules match ce voir.';
 
   @override
   String get reportsNoComplianceLogsTitle => 'No compliance logs';
 
   @override
   String get reportsNoComplianceLogsBody =>
-      'No audit or compliance evidence matches the current filters.';
+      'No audit ou compliance evidence matches le actuel filtres.';
 
   @override
-  String get reportsPreviewTitle => 'Report preview';
+  String get reportsPreviewTitle => 'Report aperçu';
 
   @override
   String get reportsComplianceDetailTitle => 'Evidence detail';
@@ -11146,17 +11177,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsNoSelectionBody =>
-      'Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.';
+      'Choose un rapport definition, run, widget, KPI, event, ou planning à aperçu generated détails.';
 
   @override
   String get reportsNoComplianceSelectionBody =>
-      'Choose an audit, PHI access, or processing log to review evidence details.';
+      'Choose un audit, PHI accès, ou traitement log à review evidence détails.';
 
   @override
-  String get reportsNameColumnLabel => 'Name';
+  String get reportsNameColumnLabel => 'Nom';
 
   @override
-  String get reportsStatusColumnLabel => 'Status';
+  String get reportsStatusColumnLabel => 'Statut';
 
   @override
   String get reportsReferenceLabel => 'Reference';
@@ -11183,7 +11214,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsValueLabel => 'Value';
 
   @override
-  String get reportsErrorLabel => 'Error';
+  String get reportsErrorLabel => 'Erreur';
 
   @override
   String get reportsEventColumnLabel => 'Event';
@@ -11216,10 +11247,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsLegalBasisLabel => 'Legal basis';
 
   @override
-  String get reportsIpAddressLabel => 'IP address';
+  String get reportsIpAddressLabel => 'IP adresse';
 
   @override
-  String get reportsDetailsLabel => 'Details';
+  String get reportsDetailsLabel => 'Détails';
 
   @override
   String get reportsPreviousPageLabel => 'Previous page';
@@ -11233,20 +11264,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get reportsTimelineTitle => 'Recent report activity';
+  String get reportsTimelineTitle => 'Recent rapport activity';
 
   @override
   String get reportsTimelineDescription =>
-      'Latest report runs, schedules, KPI snapshots, and analytics events.';
+      'Latest rapport runs, schedules, KPI snapshots, et analytics events.';
 
   @override
-  String get reportsRunDialogTitle => 'Run report';
+  String get reportsRunDialogTitle => 'Run rapport';
 
   @override
-  String get reportsRetryDialogTitle => 'Retry report run';
+  String get reportsRetryDialogTitle => 'Retry rapport run';
 
   @override
-  String get reportsScheduleDialogTitle => 'Schedule report';
+  String get reportsScheduleDialogTitle => 'Schedule rapport';
 
   @override
   String get reportsFormatFieldLabel => 'Output format';
@@ -11255,19 +11286,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsRetentionDaysFieldLabel => 'Retention days';
 
   @override
-  String get reportsScheduleNameFieldLabel => 'Schedule name';
+  String get reportsScheduleNameFieldLabel => 'Schedule nom';
 
   @override
   String get reportsFrequencyFieldLabel => 'Frequency';
 
   @override
-  String get reportsTimeOfDayFieldLabel => 'Time of day';
+  String get reportsTimeOfDayFieldLabel => 'Time sur day';
 
   @override
   String get reportsTimeOfDayHint => 'HH:mm';
 
   @override
-  String get reportsCreateScheduleAction => 'Create schedule';
+  String get reportsCreateScheduleAction => 'Create planning';
 
   @override
   String get reportsFrequencyDaily => 'Daily';
@@ -11279,28 +11310,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportsFrequencyMonthly => 'Monthly';
 
   @override
-  String get reportsCancelRunDialogTitle => 'Cancel report run';
+  String get reportsCancelRunDialogTitle => 'Cancel rapport run';
 
   @override
   String get reportsCancelRunDialogBody =>
-      'Cancel this queued or processing report run? The run row will refresh after the system confirms the change.';
+      'Cancel ce queued ou traitement rapport run? Le run ligne will actualiser après le system confirms le change.';
 
   @override
   String get reportsExportEvidenceDialogTitle => 'Export evidence';
 
   @override
   String get reportsExportEvidenceDialogBody =>
-      'Generate a facility-branded evidence document from this audit record.';
+      'Generate un établissement-branded evidence document de ce audit dossier.';
 
   @override
-  String get reportsSavedMessage => 'Reports workspace updated.';
+  String get reportsSavedMessage => 'Reports espace de travail mis à jour.';
 
   @override
   String get reportsDownloadRequestedMessage =>
       'Report download was requested.';
 
   @override
-  String get reportsPrintSubtitle => 'Generated report metadata';
+  String get reportsPrintSubtitle => 'Generated rapport metadata';
 
   @override
   String get reportsEvidenceSubtitle => 'Compliance evidence';
@@ -11310,11 +11341,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsPrintFooter =>
-      'Confidential report document generated from system data.';
+      'Confidential rapport document generated de system data.';
 
   @override
   String get reportsEvidenceFooter =>
-      'Compliance evidence generated from audit data.';
+      'Compliance evidence generated de audit data.';
 
   @override
   String get navigationPhysiotherapyLabel => 'Physiotherapy';
@@ -11327,13 +11358,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsLoadingBody =>
-      'Loading notifications, conversations, delivery state, and templates.';
+      'Loading notifications, conversations, delivery state, et modèles.';
 
   @override
   String get communicationsWorkspaceTitle => 'Communications';
 
   @override
-  String get communicationsLiveStatus => 'Live sync';
+  String get communicationsLiveStatus => 'Live synchronisation';
 
   @override
   String get communicationsSavingStatus => 'Saving';
@@ -11373,29 +11404,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsListDescription =>
-      'Find alerts, threads, delivery state, and message templates.';
+      'Find alerts, threads, delivery state, et message modèles.';
 
   @override
   String get communicationsSearchSemanticLabel => 'Search communications';
 
   @override
   String get communicationsSearchHint =>
-      'Search alert, patient, source, sender, recipient, or message';
+      'Search alert, patient, source, sender, recipient, ou message';
 
   @override
-  String get communicationsClearSearchAction => 'Clear communications search';
+  String get communicationsClearSearchAction =>
+      'Clear communications recherche';
 
   @override
-  String get communicationsAdvancedFiltersLabel => 'Communication filters';
+  String get communicationsAdvancedFiltersLabel => 'Communication filtres';
 
   @override
-  String get communicationsAdvancedFiltersTitle => 'Communication filters';
+  String get communicationsAdvancedFiltersTitle => 'Communication filtres';
 
   @override
-  String get communicationsApplyFiltersAction => 'Apply filters';
+  String get communicationsApplyFiltersAction => 'Apply filtres';
 
   @override
-  String get communicationsResetFiltersAction => 'Reset filters';
+  String get communicationsResetFiltersAction => 'Reset filtres';
 
   @override
   String get communicationsQueueFilterLabel => 'Queue';
@@ -11404,7 +11436,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communicationsFlagsFilterLabel => 'Flags';
 
   @override
-  String get communicationsAllFilterLabel => 'All';
+  String get communicationsAllFilterLabel => 'Tous';
 
   @override
   String get communicationsUnreadFilterLabel => 'Unread';
@@ -11430,13 +11462,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communicationsParticipantsColumnLabel => 'Participants';
 
   @override
-  String get communicationsStatusColumnLabel => 'Status';
+  String get communicationsStatusColumnLabel => 'Statut';
 
   @override
   String get communicationsLastMessageColumnLabel => 'Last message';
 
   @override
-  String get communicationsTimeColumnLabel => 'Time';
+  String get communicationsTimeColumnLabel => 'Heure';
 
   @override
   String get communicationsAlertColumnLabel => 'Alert';
@@ -11480,7 +11512,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsNoNotificationsBody =>
-      'Matching workflow alerts and reminders will appear here.';
+      'Matching workflow alerts et reminders will appear here.';
 
   @override
   String get communicationsNoDeliveriesTitle => 'No deliveries';
@@ -11490,11 +11522,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Notification channel delivery attempts will appear here.';
 
   @override
-  String get communicationsNoTemplatesTitle => 'No templates';
+  String get communicationsNoTemplatesTitle => 'No modèles';
 
   @override
   String get communicationsNoTemplatesBody =>
-      'Reusable communication templates will appear here.';
+      'Reusable communication modèles will appear here.';
 
   @override
   String get communicationsConversationDetailTitle => 'Conversation detail';
@@ -11510,33 +11542,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsNoConversationSelectedTitle =>
-      'Select a conversation';
+      'Select un conversation';
 
   @override
   String get communicationsNoConversationSelectedBody =>
-      'Choose a thread to review messages, participants, and linked records.';
+      'Choose un thread à review messages, participants, et linked dossiers.';
 
   @override
   String get communicationsNoNotificationSelectedTitle =>
-      'Select a notification';
+      'Select un notification';
 
   @override
   String get communicationsNoNotificationSelectedBody =>
-      'Choose an alert to review delivery history and quick actions.';
+      'Choose un alert à review delivery historique et quick actions.';
 
   @override
-  String get communicationsNoDeliverySelectedTitle => 'Select a delivery';
+  String get communicationsNoDeliverySelectedTitle => 'Select un delivery';
 
   @override
   String get communicationsNoDeliverySelectedBody =>
-      'Choose a delivery attempt to review channel, recipient, and error details.';
+      'Choose un delivery attempt à review channel, recipient, et erreur détails.';
 
   @override
-  String get communicationsNoTemplateSelectedTitle => 'Select a template';
+  String get communicationsNoTemplateSelectedTitle => 'Select un modèle';
 
   @override
   String get communicationsNoTemplateSelectedBody =>
-      'Choose a template to review channel, subject, variables, and preview.';
+      'Choose un modèle à review channel, subject, variables, et aperçu.';
 
   @override
   String get communicationsSubjectLabel => 'Subject';
@@ -11584,7 +11616,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communicationsFailedAtLabel => 'Failed at';
 
   @override
-  String get communicationsStatusLabel => 'Status';
+  String get communicationsStatusLabel => 'Statut';
 
   @override
   String get communicationsVariablesLabel => 'Variables';
@@ -11597,16 +11629,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsNoMessagesBody =>
-      'No messages are available for this thread.';
+      'No messages are disponible pour ce thread.';
 
   @override
-  String get communicationsDeliveryHistoryTitle => 'Delivery history';
+  String get communicationsDeliveryHistoryTitle => 'Delivery historique';
 
   @override
-  String get communicationsDeliveryErrorTitle => 'Delivery error';
+  String get communicationsDeliveryErrorTitle => 'Delivery erreur';
 
   @override
-  String get communicationsOpenLinkedRecordAction => 'Open linked record';
+  String get communicationsOpenLinkedRecordAction => 'Open linked dossier';
 
   @override
   String get communicationsMarkReadAction => 'Mark read';
@@ -11643,27 +11675,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsMarkConversationReadDialogBody =>
-      'Mark this conversation read for your account.';
+      'Mark ce conversation read pour votre compte.';
 
   @override
   String get communicationsMarkNotificationReadDialogBody =>
-      'Mark this notification read for your account.';
+      'Mark ce notification read pour votre compte.';
 
   @override
   String get communicationsMarkNotificationUnreadDialogBody =>
-      'Move this notification back to unread.';
+      'Move ce notification retour à unread.';
 
   @override
   String get communicationsArchiveConversationDialogBody =>
-      'Archive this conversation from your active inbox.';
+      'Archive ce conversation de votre actif inbox.';
 
   @override
   String get communicationsUnarchiveConversationDialogBody =>
-      'Return this conversation to your active inbox.';
+      'Return ce conversation à votre actif inbox.';
 
   @override
   String get communicationsArchiveNotificationDialogBody =>
-      'Archive this notification from your active alerts.';
+      'Archive ce notification de votre actif alerts.';
 
   @override
   String get communicationsUnreadStatus => 'Unread';
@@ -11678,10 +11710,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communicationsSensitiveStatus => 'Sensitive';
 
   @override
-  String get communicationsActiveStatus => 'Active';
+  String get communicationsActiveStatus => 'Actif';
 
   @override
-  String get communicationsInactiveStatus => 'Inactive';
+  String get communicationsInactiveStatus => 'Inactif';
 
   @override
   String get communicationsJustNowLabel => 'Just now';
@@ -11727,29 +11759,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communicationsComposeReadOnlyBody =>
-      'You can view this thread but cannot send messages.';
+      'You can voir ce thread but ne peut pas send messages.';
 
   @override
   String get communicationsFirstMessageHint =>
-      'Send the first message to start this conversation.';
+      'Send le first message à start ce conversation.';
 
   @override
   String get communicationsGroupMembersRequiredHelper =>
-      'Add at least one member to create the group.';
+      'Add at least one member à créer le group.';
 
   @override
   String get communicationsConversationStartedMessage =>
-      'Conversation started — send your first message.';
+      'Conversation started — send votre first message.';
 
   @override
   String get communicationsClientFilterNotice =>
-      'Some filters are applied locally until server support is available.';
+      'Some filtres are applied locally until server support is disponible.';
 
   @override
   String get communicationsLoadMoreAction => 'Load more';
 
   @override
-  String get communicationsBackToInboxAction => 'Back to inbox';
+  String get communicationsBackToInboxAction => 'Back à inbox';
 
   @override
   String communicationsGroupMembersLabel(int count) {
@@ -11792,7 +11824,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communicationsStartConversationAction => 'Start conversation';
 
   @override
-  String get communicationsGroupNameLabel => 'Group name';
+  String get communicationsGroupNameLabel => 'Group nom';
 
   @override
   String get communicationsSensitiveConversationLabel =>
@@ -11805,14 +11837,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingTitle => 'Housekeeping';
 
   @override
-  String get housekeepingLoadingTitle => 'Loading housekeeping';
+  String get housekeepingLoadingTitle => 'Loading entretien';
 
   @override
   String get housekeepingLoadingBody =>
-      'Preparing cleaning tasks, schedules, bed turnover, and readiness.';
+      'Preparing cleaning tasks, schedules, lit turnover, et readiness.';
 
   @override
-  String get housekeepingLiveStatus => 'Live sync';
+  String get housekeepingLiveStatus => 'Live synchronisation';
 
   @override
   String get housekeepingSavingStatus => 'Saving';
@@ -11824,7 +11856,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingCreateTaskAction => 'Create task';
 
   @override
-  String get housekeepingCreateScheduleAction => 'Create schedule';
+  String get housekeepingCreateScheduleAction => 'Create planning';
 
   @override
   String get housekeepingRequestMaintenanceAction => 'Request maintenance';
@@ -11836,42 +11868,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingPendingTasksSummaryLabel => 'Pending tasks';
 
   @override
-  String get housekeepingCompletedTodaySummaryLabel => 'Completed today';
+  String get housekeepingCompletedTodaySummaryLabel => 'Completed aujourd\'hui';
 
   @override
-  String get housekeepingOpenRequestsSummaryLabel => 'Open requests';
+  String get housekeepingOpenRequestsSummaryLabel => 'Open demandes';
 
   @override
-  String get housekeepingOverdueRequestsSummaryLabel => 'Overdue requests';
+  String get housekeepingOverdueRequestsSummaryLabel => 'Overdue demandes';
 
   @override
   String get housekeepingAssetsSummaryLabel => 'Assets';
 
   @override
   String get housekeepingWorklistDescription =>
-      'Track cleaning tasks, schedules, bed turnover, and maintenance handoffs.';
+      'Track cleaning tasks, schedules, lit turnover, et maintenance passations.';
 
   @override
-  String get housekeepingSearchLabel => 'Search housekeeping';
+  String get housekeepingSearchLabel => 'Search entretien';
 
   @override
   String get housekeepingSearchHint =>
-      'Search location, room, bed, assignee, status, priority, or date';
+      'Search location, chambre, lit, assignee, statut, priorité, ou date';
 
   @override
-  String get housekeepingClearSearchAction => 'Clear search';
+  String get housekeepingClearSearchAction => 'Clear recherche';
 
   @override
-  String get housekeepingFiltersAction => 'Filters';
+  String get housekeepingFiltersAction => 'Filtres';
 
   @override
-  String get housekeepingFiltersTitle => 'Housekeeping filters';
+  String get housekeepingFiltersTitle => 'Housekeeping filtres';
 
   @override
-  String get housekeepingApplyFiltersAction => 'Apply filters';
+  String get housekeepingApplyFiltersAction => 'Apply filtres';
 
   @override
-  String get housekeepingClearFiltersAction => 'Clear filters';
+  String get housekeepingClearFiltersAction => 'Clear filtres';
 
   @override
   String get housekeepingPreviousPageLabel => 'Previous page';
@@ -11881,15 +11913,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String housekeepingPageLabel(int first, int last, int total) {
-    return '$first - $last of $total items';
+    return '$first - $last of $total éléments';
   }
 
   @override
-  String get housekeepingEmptyQueueTitle => 'No housekeeping items';
+  String get housekeepingEmptyQueueTitle => 'No entretien éléments';
 
   @override
   String get housekeepingEmptyQueueBody =>
-      'No tasks, schedules, or maintenance handoffs match the current filters.';
+      'No tasks, schedules, ou maintenance passations match le actuel filtres.';
 
   @override
   String get housekeepingTaskColumnLabel => 'Task';
@@ -11901,20 +11933,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingAssigneeColumnLabel => 'Assignee';
 
   @override
-  String get housekeepingDueColumnLabel => 'Due time';
+  String get housekeepingDueColumnLabel => 'Due heure';
 
   @override
-  String get housekeepingStatusColumnLabel => 'Status';
+  String get housekeepingStatusColumnLabel => 'Statut';
 
   @override
   String get housekeepingNextActionColumnLabel => 'Next action';
 
   @override
-  String get housekeepingNoSelectionTitle => 'Select a housekeeping item';
+  String get housekeepingNoSelectionTitle => 'Select un entretien élément';
 
   @override
   String get housekeepingNoSelectionBody =>
-      'Choose a task, schedule, or maintenance handoff to review readiness and available actions.';
+      'Choose un task, planning, ou maintenance passation à review readiness et disponible actions.';
 
   @override
   String get housekeepingDetailTitle => 'Housekeeping detail';
@@ -11945,7 +11977,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get housekeepingStartDialogBody =>
-      'Mark this housekeeping task as in progress.';
+      'Mark ce entretien task as in progress.';
 
   @override
   String get housekeepingCompleteAction => 'Complete';
@@ -11955,91 +11987,91 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get housekeepingCompleteDialogBody =>
-      'Mark this cleaning task as completed and refresh readiness.';
+      'Mark ce cleaning task as terminé et actualiser readiness.';
 
   @override
-  String get housekeepingCancelAction => 'Cancel';
+  String get housekeepingCancelAction => 'Annuler';
 
   @override
   String get housekeepingCancelDialogTitle => 'Cancel task';
 
   @override
-  String get housekeepingCancelDialogBody => 'Cancel this housekeeping task.';
+  String get housekeepingCancelDialogBody => 'Cancel ce entretien task.';
 
   @override
   String get housekeepingMarkReadyAction => 'Mark ready';
 
   @override
   String get housekeepingBackendGapTooltip =>
-      'This workflow is not available yet.';
+      'Ce workflow is not disponible yet.';
 
   @override
   String get housekeepingTriageAction => 'Triage';
 
   @override
-  String get housekeepingCompleteRequestAction => 'Complete request';
+  String get housekeepingCompleteRequestAction => 'Complete demande';
 
   @override
   String get housekeepingCompleteRequestDialogTitle =>
-      'Complete maintenance request';
+      'Complete maintenance demande';
 
   @override
   String get housekeepingCompleteRequestDialogBody =>
-      'Mark this maintenance handoff as completed.';
+      'Mark ce maintenance passation as terminé.';
 
   @override
-  String get housekeepingCancelRequestAction => 'Cancel request';
+  String get housekeepingCancelRequestAction => 'Cancel demande';
 
   @override
   String get housekeepingCancelRequestDialogTitle =>
-      'Cancel maintenance request';
+      'Cancel maintenance demande';
 
   @override
   String get housekeepingCancelRequestDialogBody =>
-      'Cancel this maintenance handoff.';
+      'Cancel ce maintenance passation.';
 
   @override
   String get housekeepingTaskReadinessBody =>
-      'Cleaning progress and readiness are refreshed from the housekeeping task record.';
+      'Cleaning progress et readiness are refreshed de le entretien task dossier.';
 
   @override
   String get housekeepingScheduleReadinessBody =>
-      'Scheduled cleaning keeps this location on a recurring readiness plan.';
+      'Scheduled cleaning keeps ce location on un recurring readiness forfait.';
 
   @override
   String get housekeepingMaintenanceReadinessBody =>
-      'Maintenance handoffs keep cleaning issues visible without losing location context.';
+      'Maintenance passations keep cleaning issues visible sans losing location context.';
 
   @override
   String get housekeepingUnavailableWorkflowsTitle => 'Unavailable workflows';
 
   @override
   String get housekeepingUnavailableWorkflowsBody =>
-      'This workspace only exposes actions available for the current facility.';
+      'Ce espace de travail only exposes actions disponible pour le actuel établissement.';
 
   @override
   String get housekeepingFacilityFieldLabel => 'Facility';
 
   @override
-  String get housekeepingFacilityFieldHint => 'Select a facility';
+  String get housekeepingFacilityFieldHint => 'Select un établissement';
 
   @override
-  String get housekeepingRoomFieldLabel => 'Room or bed';
+  String get housekeepingRoomFieldLabel => 'Room ou lit';
 
   @override
-  String get housekeepingRoomFieldHint => 'Select a room or bed';
+  String get housekeepingRoomFieldHint => 'Select un chambre ou lit';
 
   @override
-  String get housekeepingAssigneeFieldLabel => 'Assignee or team';
+  String get housekeepingAssigneeFieldLabel => 'Assignee ou team';
 
   @override
-  String get housekeepingAssigneeFieldHint => 'Select staff or team';
+  String get housekeepingAssigneeFieldHint => 'Select personnel ou team';
 
   @override
-  String get housekeepingStatusFieldLabel => 'Status';
+  String get housekeepingStatusFieldLabel => 'Statut';
 
   @override
-  String get housekeepingStatusRequiredMessage => 'Select a status.';
+  String get housekeepingStatusRequiredMessage => 'Select un statut.';
 
   @override
   String get housekeepingScheduledDateFieldLabel => 'Scheduled date';
@@ -12052,11 +12084,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get housekeepingFrequencyFieldHint =>
-      'Daily, weekly, terminal clean, or custom';
+      'Daily, weekly, terminal clean, ou personnalisé';
 
   @override
   String get housekeepingFrequencyRequiredMessage =>
-      'Enter a cleaning frequency.';
+      'Enter un cleaning frequency.';
 
   @override
   String get housekeepingStartDateFieldLabel => 'Start date';
@@ -12065,26 +12097,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingEndDateFieldLabel => 'End date';
 
   @override
-  String get housekeepingCreateScheduleSubmitAction => 'Create schedule';
+  String get housekeepingCreateScheduleSubmitAction => 'Create planning';
 
   @override
   String get housekeepingAssetFieldLabel => 'Asset';
 
   @override
-  String get housekeepingAssetFieldHint => 'Select asset or fixture';
+  String get housekeepingAssetFieldHint => 'Select actif ou fixture';
 
   @override
   String get housekeepingDescriptionFieldLabel => 'Description';
 
   @override
   String get housekeepingDescriptionFieldHint =>
-      'Describe the issue or cleaning concern';
+      'Describe le issue ou cleaning concern';
 
   @override
-  String get housekeepingDescriptionRequiredMessage => 'Enter a description.';
+  String get housekeepingDescriptionRequiredMessage => 'Enter un description.';
 
   @override
-  String get housekeepingRequestMaintenanceSubmitAction => 'Create request';
+  String get housekeepingRequestMaintenanceSubmitAction => 'Create demande';
 
   @override
   String get housekeepingAssignSubmitAction => 'Save assignment';
@@ -12102,30 +12134,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingPickDateAction => 'Pick date';
 
   @override
-  String get housekeepingCreateTaskDialogTitle => 'Create housekeeping task';
+  String get housekeepingCreateTaskDialogTitle => 'Create entretien task';
 
   @override
   String get housekeepingCreateScheduleDialogTitle =>
-      'Create cleaning schedule';
+      'Create cleaning planning';
 
   @override
   String get housekeepingRequestMaintenanceDialogTitle => 'Request maintenance';
 
   @override
-  String get housekeepingAssignDialogTitle => 'Assign housekeeping task';
+  String get housekeepingAssignDialogTitle => 'Assign entretien task';
 
   @override
-  String get housekeepingTriageDialogTitle => 'Triage maintenance handoff';
+  String get housekeepingTriageDialogTitle => 'Triage maintenance passation';
 
   @override
-  String get housekeepingReportSummaryTitle => 'Housekeeping report';
+  String get housekeepingReportSummaryTitle => 'Housekeeping rapport';
 
   @override
-  String get housekeepingReportPreviewTitle => 'Report preview';
+  String get housekeepingReportPreviewTitle => 'Report aperçu';
 
   @override
   String get housekeepingReportPreviewBody =>
-      'Generated housekeeping report templates are not available yet.';
+      'Generated entretien rapport modèles are not disponible yet.';
 
   @override
   String get housekeepingResourceFilterLabel => 'Resource';
@@ -12137,13 +12169,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingResourceSchedules => 'Schedules';
 
   @override
-  String get housekeepingResourceMaintenanceRequests => 'Maintenance requests';
+  String get housekeepingResourceMaintenanceRequests => 'Maintenance demandes';
 
   @override
   String get housekeepingQueueFilterLabel => 'Queue';
 
   @override
-  String get housekeepingQueueAll => 'All';
+  String get housekeepingQueueAll => 'Tous';
 
   @override
   String get housekeepingQueueToday => 'Today';
@@ -12152,28 +12184,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingQueueOverdueTasks => 'Overdue tasks';
 
   @override
-  String get housekeepingQueueOpenRequests => 'Open requests';
+  String get housekeepingQueueOpenRequests => 'Open demandes';
 
   @override
-  String get housekeepingQueueOverdueRequests => 'Overdue requests';
+  String get housekeepingQueueOverdueRequests => 'Overdue demandes';
 
   @override
-  String get housekeepingStatusFilterLabel => 'Status';
+  String get housekeepingStatusFilterLabel => 'Statut';
 
   @override
   String get housekeepingStatusAll => 'All statuses';
 
   @override
-  String get housekeepingAllFacilities => 'All facilities';
+  String get housekeepingAllFacilities => 'All établissements';
 
   @override
   String get housekeepingFacilityFilterLabel => 'Facility';
 
   @override
-  String get housekeepingRoomFilterLabel => 'Room or bed';
+  String get housekeepingRoomFilterLabel => 'Room ou lit';
 
   @override
-  String get housekeepingAllRooms => 'All rooms and beds';
+  String get housekeepingAllRooms => 'All chambres et lits';
 
   @override
   String get housekeepingAssigneeFilterLabel => 'Assignee';
@@ -12197,37 +12229,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingDateOverdue => 'Overdue';
 
   @override
-  String get housekeepingDateThisMonth => 'This month';
+  String get housekeepingDateThisMonth => 'Ce month';
 
   @override
   String get housekeepingStatusScheduled => 'Scheduled';
 
   @override
-  String get housekeepingStatusPending => 'Pending';
+  String get housekeepingStatusPending => 'En attente';
 
   @override
   String get housekeepingStatusInProgress => 'In progress';
 
   @override
-  String get housekeepingStatusCompleted => 'Completed';
+  String get housekeepingStatusCompleted => 'Terminé';
 
   @override
-  String get housekeepingStatusCancelled => 'Cancelled';
+  String get housekeepingStatusCancelled => 'Annulé';
 
   @override
-  String get housekeepingStatusUnknown => 'Unknown';
+  String get housekeepingStatusUnknown => 'Inconnu';
 
   @override
-  String get housekeepingStatusOpen => 'Open';
+  String get housekeepingStatusOpen => 'Ouvrir';
 
   @override
-  String get housekeepingStatusOpenLabel => 'Open';
+  String get housekeepingStatusOpenLabel => 'Ouvrir';
 
   @override
   String get housekeepingStatusInProgressLabel => 'In progress';
 
   @override
-  String get housekeepingNextActionAssign => 'Assign staff or team';
+  String get housekeepingNextActionAssign => 'Assign personnel ou team';
 
   @override
   String get housekeepingNextActionStart => 'Start cleaning';
@@ -12236,16 +12268,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get housekeepingNextActionComplete => 'Complete cleaning';
 
   @override
-  String get housekeepingNextActionTriage => 'Triage handoff';
+  String get housekeepingNextActionTriage => 'Triage passation';
 
   @override
-  String get housekeepingNextActionReviewSchedule => 'Review schedule';
+  String get housekeepingNextActionReviewSchedule => 'Review planning';
 
   @override
   String get housekeepingNextActionNoAction => 'No action needed';
 
   @override
-  String get housekeepingNextActionView => 'View details';
+  String get housekeepingNextActionView => 'View détails';
 
   @override
   String get housekeepingLocationNotSet => 'Location not set';
@@ -12260,11 +12292,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyTitle => 'Physiotherapy';
 
   @override
-  String get physiotherapyLoadingTitle => 'Loading physiotherapy workspace';
+  String get physiotherapyLoadingTitle =>
+      'Loading physiothérapie espace de travail';
 
   @override
   String get physiotherapyLoadingBody =>
-      'Preparing referrals, sessions, care plans, notes, and follow-ups.';
+      'Preparing orientations, sessions, soins forfaits, notes, et follow-ups.';
 
   @override
   String get physiotherapyLiveStatus => 'Live';
@@ -12273,7 +12306,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapySavingStatus => 'Saving';
 
   @override
-  String get physiotherapySavedMessage => 'Physiotherapy record saved.';
+  String get physiotherapySavedMessage => 'Physiotherapy dossier saved.';
 
   @override
   String get physiotherapyReferralsSummaryLabel => 'Referrals';
@@ -12285,42 +12318,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyMissedSummaryLabel => 'Missed';
 
   @override
-  String get physiotherapyActivePlansSummaryLabel => 'Active plans';
+  String get physiotherapyActivePlansSummaryLabel => 'Active forfaits';
 
   @override
   String get physiotherapyFollowUpDueSummaryLabel => 'Follow-up due';
 
   @override
-  String get physiotherapyCompletedSummaryLabel => 'Completed';
+  String get physiotherapyCompletedSummaryLabel => 'Terminé';
 
   @override
   String get physiotherapyWorklistTitle => 'Therapy worklist';
 
   @override
   String get physiotherapyWorklistDescription =>
-      'Referrals, therapy sessions, plans, notes, and follow-up work from available clinical records.';
+      'Referrals, therapy sessions, forfaits, notes, et follow-up work de disponible clinique dossiers.';
 
   @override
-  String get physiotherapySearchLabel => 'Search physiotherapy worklist';
+  String get physiotherapySearchLabel => 'Search physiothérapie worklist';
 
   @override
   String get physiotherapySearchHint =>
-      'Search patient, encounter, therapist, plan, or session';
+      'Search patient, consultation, therapist, forfait, ou session';
 
   @override
-  String get physiotherapyFiltersLabel => 'Filters';
+  String get physiotherapyFiltersLabel => 'Filtres';
 
   @override
-  String get physiotherapyApplyFiltersAction => 'Apply filters';
+  String get physiotherapyApplyFiltersAction => 'Apply filtres';
 
   @override
-  String get physiotherapyClearFiltersAction => 'Clear filters';
+  String get physiotherapyClearFiltersAction => 'Clear filtres';
 
   @override
   String get physiotherapySearchFieldLabel => 'Search in';
 
   @override
-  String get physiotherapyAllFieldsLabel => 'All fields';
+  String get physiotherapyAllFieldsLabel => 'All champs';
 
   @override
   String get physiotherapyDateFilterLabel => 'Date';
@@ -12335,13 +12368,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyTherapistFilterLabel => 'Therapist';
 
   @override
-  String get physiotherapyTherapistFilterHint => 'Therapist name or user ID';
+  String get physiotherapyTherapistFilterHint =>
+      'Therapist nom ou utilisateur ID';
 
   @override
   String get physiotherapyQueueFilterLabel => 'Queue';
 
   @override
-  String get physiotherapyFilterAll => 'All';
+  String get physiotherapyFilterAll => 'Tous';
 
   @override
   String get physiotherapyScopeReferrals => 'Referrals';
@@ -12353,13 +12387,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyScopeMissed => 'Missed';
 
   @override
-  String get physiotherapyScopeActivePlans => 'Active plans';
+  String get physiotherapyScopeActivePlans => 'Active forfaits';
 
   @override
   String get physiotherapyScopeFollowUpDue => 'Follow-up due';
 
   @override
-  String get physiotherapyScopeCompleted => 'Completed';
+  String get physiotherapyScopeCompleted => 'Terminé';
 
   @override
   String get physiotherapyScopeAll => 'All work';
@@ -12374,7 +12408,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapySessionColumnLabel => 'Session';
 
   @override
-  String get physiotherapyStatusColumnLabel => 'Status';
+  String get physiotherapyStatusColumnLabel => 'Statut';
 
   @override
   String get physiotherapyPlanColumnLabel => 'Plan';
@@ -12383,7 +12417,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyAttendanceColumnLabel => 'Attendance';
 
   @override
-  String get physiotherapyBillingColumnLabel => 'Billing';
+  String get physiotherapyBillingColumnLabel => 'Facturation';
 
   @override
   String get physiotherapyTherapistColumnLabel => 'Therapist';
@@ -12392,34 +12426,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyNextActionColumnLabel => 'Next action';
 
   @override
-  String get physiotherapyTableColumnsTitle => 'Therapy table columns';
+  String get physiotherapyTableColumnsTitle => 'Therapy tableau colonnes';
 
   @override
-  String get physiotherapyApplyColumnsAction => 'Apply columns';
+  String get physiotherapyApplyColumnsAction => 'Apply colonnes';
 
   @override
-  String get physiotherapyResetColumnsAction => 'Reset columns';
+  String get physiotherapyResetColumnsAction => 'Reset colonnes';
 
   @override
-  String get physiotherapyNoWorkTitle => 'No physiotherapy work';
+  String get physiotherapyNoWorkTitle => 'No physiothérapie work';
 
   @override
   String get physiotherapyNoWorkBody =>
-      'No referrals, sessions, plans, or follow-ups match the current filters.';
+      'No orientations, sessions, forfaits, ou follow-ups match le actuel filtres.';
 
   @override
-  String get physiotherapyDetailLoadingTitle => 'Loading therapy record';
+  String get physiotherapyDetailLoadingTitle => 'Loading therapy dossier';
 
   @override
   String get physiotherapyDetailLoadingBody =>
-      'Fetching session history, plan, notes, and follow-up details.';
+      'Fetching session historique, forfait, notes, et follow-up détails.';
 
   @override
-  String get physiotherapyNoSelectionTitle => 'Select a therapy item';
+  String get physiotherapyNoSelectionTitle => 'Select un therapy élément';
 
   @override
   String get physiotherapyNoSelectionBody =>
-      'Choose a referral or session to review assessment, plan, attendance, and follow-up actions.';
+      'Choose un orientation ou session à review assessment, forfait, attendance, et follow-up actions.';
 
   @override
   String get physiotherapyPatientNumberLabel => 'Patient number';
@@ -12440,13 +12474,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyActionsTitle => 'Therapy actions';
 
   @override
-  String get physiotherapyReferralPanelTitle => 'Referral and plan';
+  String get physiotherapyReferralPanelTitle => 'Referral et forfait';
 
   @override
   String get physiotherapySourceLabel => 'Source';
 
   @override
-  String get physiotherapyStatusLabel => 'Status';
+  String get physiotherapyStatusLabel => 'Statut';
 
   @override
   String get physiotherapyAttendanceLabel => 'Attendance';
@@ -12461,10 +12495,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyInstructionsLabel => 'Instructions';
 
   @override
-  String get physiotherapySessionsPanelTitle => 'Session history';
+  String get physiotherapySessionsPanelTitle => 'Session historique';
 
   @override
-  String get physiotherapyPlanPanelTitle => 'Care plan';
+  String get physiotherapyPlanPanelTitle => 'Care forfait';
 
   @override
   String get physiotherapyProgressNotesPanelTitle => 'Progress notes';
@@ -12477,17 +12511,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get physiotherapyBackendGapBody =>
-      'This workspace uses available shared clinical records and lists unavailable dedicated physiotherapy workflows here.';
+      'Ce espace de travail uses disponible shared clinique dossiers et lists indisponible dedicated physiothérapie workflows here.';
 
   @override
-  String get physiotherapyNoRecordsLabel => 'No records yet.';
+  String get physiotherapyNoRecordsLabel => 'No dossiers yet.';
 
   @override
   String get physiotherapyNoInstructionsLabel =>
       'No therapy instructions recorded.';
 
   @override
-  String get physiotherapyAcceptReferralAction => 'Accept referral';
+  String get physiotherapyAcceptReferralAction => 'Accept orientation';
 
   @override
   String get physiotherapyScheduleSessionAction => 'Schedule session';
@@ -12502,7 +12536,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyMarkAttendanceAction => 'Mark attendance';
 
   @override
-  String get physiotherapyUpdatePlanAction => 'Update plan';
+  String get physiotherapyUpdatePlanAction => 'Update forfait';
 
   @override
   String get physiotherapyAddProgressNoteAction => 'Add progress note';
@@ -12518,7 +12552,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get physiotherapyAcceptReferralDialogTitle =>
-      'Accept physiotherapy referral';
+      'Accept physiothérapie orientation';
 
   @override
   String get physiotherapyScheduleSessionDialogTitle =>
@@ -12536,7 +12570,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Mark session attendance';
 
   @override
-  String get physiotherapyUpdatePlanDialogTitle => 'Update therapy plan';
+  String get physiotherapyUpdatePlanDialogTitle => 'Update therapy forfait';
 
   @override
   String get physiotherapyAddProgressNoteDialogTitle => 'Add progress note';
@@ -12569,7 +12603,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapySessionNoteFieldLabel => 'Session note';
 
   @override
-  String get physiotherapyAttendanceStatusFieldLabel => 'Attendance status';
+  String get physiotherapyAttendanceStatusFieldLabel => 'Attendance statut';
 
   @override
   String get physiotherapySummaryFieldLabel => 'Summary';
@@ -12578,22 +12612,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyStartDateFieldLabel => 'Start date';
 
   @override
-  String get physiotherapyStartTimeFieldLabel => 'Start time';
+  String get physiotherapyStartTimeFieldLabel => 'Start heure';
 
   @override
   String get physiotherapyEndDateFieldLabel => 'End date';
 
   @override
-  String get physiotherapyEndTimeFieldLabel => 'End time';
+  String get physiotherapyEndTimeFieldLabel => 'End heure';
 
   @override
   String get physiotherapyDateFieldLabel => 'Date';
 
   @override
-  String get physiotherapyTimeFieldLabel => 'Time';
+  String get physiotherapyTimeFieldLabel => 'Heure';
 
   @override
-  String get physiotherapySaveAction => 'Save';
+  String get physiotherapySaveAction => 'Enregistrer';
 
   @override
   String get physiotherapyStatusReferral => 'Referral';
@@ -12608,10 +12642,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyStatusToday => 'Today';
 
   @override
-  String get physiotherapyStatusInTreatment => 'In treatment';
+  String get physiotherapyStatusInTreatment => 'In traitement';
 
   @override
-  String get physiotherapyStatusActivePlan => 'Active plan';
+  String get physiotherapyStatusActivePlan => 'Active forfait';
 
   @override
   String get physiotherapyStatusFollowUpDue => 'Follow-up due';
@@ -12620,10 +12654,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyStatusMissed => 'Missed';
 
   @override
-  String get physiotherapyStatusCompleted => 'Completed';
+  String get physiotherapyStatusCompleted => 'Terminé';
 
   @override
-  String get physiotherapyUnknownStatusLabel => 'Unknown';
+  String get physiotherapyUnknownStatusLabel => 'Inconnu';
 
   @override
   String get physiotherapySourceReferral => 'Referral';
@@ -12632,7 +12666,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapySourceAppointment => 'Appointment';
 
   @override
-  String get physiotherapySourceCarePlan => 'Care plan';
+  String get physiotherapySourceCarePlan => 'Care forfait';
 
   @override
   String get physiotherapySourceProcedure => 'Procedure';
@@ -12650,36 +12684,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyAttendanceInProgress => 'In progress';
 
   @override
-  String get physiotherapyAttendanceCompleted => 'Completed';
+  String get physiotherapyAttendanceCompleted => 'Terminé';
 
   @override
-  String get physiotherapyAttendanceCancelled => 'Cancelled';
+  String get physiotherapyAttendanceCancelled => 'Annulé';
 
   @override
-  String get physiotherapyAttendanceNoShow => 'No-show';
+  String get physiotherapyAttendanceNoShow => 'No-afficher';
 
   @override
   String get physiotherapyBillingBackendGap =>
-      'Billing authorization unavailable';
+      'Billing authorization indisponible';
 
   @override
   String get physiotherapyMissingValueLabel => 'Not recorded';
 
   @override
   String get physiotherapyBackendGapStatusEndpoint =>
-      'Dedicated physiotherapy episode and therapy status are not available. Status is derived from procedures, care plans, appointments, and follow-ups.';
+      'Dedicated physiothérapie episode et therapy statut are not disponible. Status is derived de procedures, soins forfaits, appointments, et follow-ups.';
 
   @override
   String get physiotherapyBackendGapBillingEndpoint =>
-      'Billing authorization is unavailable for this physiotherapy context.';
+      'Billing authorization is indisponible pour ce physiothérapie context.';
 
   @override
   String get physiotherapyBackendGapReportEndpoint =>
-      'Generated physiotherapy assessment and discharge reports are not available. Printing uses the shared report template.';
+      'Generated physiothérapie assessment et sortie rapports are not disponible. Printing uses le shared rapport modèle.';
 
   @override
   String get physiotherapyBackendGapUnknown =>
-      'An unavailable physiotherapy workflow was recorded.';
+      'Un indisponible physiothérapie workflow was recorded.';
 
   @override
   String get physiotherapyInstructionsReportTitle =>
@@ -12692,7 +12726,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get physiotherapyReportEncounterLabel => 'Encounter';
 
   @override
-  String get physiotherapyReportPlanLabel => 'Plan and goals';
+  String get physiotherapyReportPlanLabel => 'Plan et goals';
 
   @override
   String get physiotherapyReportInstructionsLabel => 'Instructions';
@@ -12702,24 +12736,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get physiotherapyReportFooterNote =>
-      'Generated from shared clinical workflow data.';
+      'Generated de shared clinique workflow data.';
 
   @override
   String get mortuaryTitle => 'Mortuary';
 
   @override
-  String get mortuaryLoadErrorTitle => 'Mortuary workspace unavailable';
+  String get mortuaryLoadErrorTitle =>
+      'Mortuary espace de travail indisponible';
 
   @override
   String get mortuaryLoadErrorBody =>
-      'The mortuary workspace could not be loaded. Try again or contact an administrator if the issue continues.';
+      'The mortuary workspace n\'a pas pu être loaded. Try again or contact an administrator if the issue continues.';
 
   @override
-  String get mortuaryLoadingTitle => 'Loading mortuary workspace';
+  String get mortuaryLoadingTitle => 'Loading morgue espace de travail';
 
   @override
   String get mortuaryLoadingBody =>
-      'Retrieving cases, storage, custody, release, and billing information.';
+      'Retrieving cases, storage, custody, release, et billing information.';
 
   @override
   String get mortuaryOperationalStatusLabel => 'Operational';
@@ -12756,17 +12791,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mortuaryActionsUnavailableTooltip =>
-      'This action is not available yet.';
+      'Ce action is not disponible yet.';
 
   @override
   String get mortuaryWorklistTitle => 'Mortuary worklist';
 
   @override
-  String get mortuaryWorklistEmptyTitle => 'No mortuary records found';
+  String get mortuaryWorklistEmptyTitle => 'Aucun mortuary records trouvé';
 
   @override
   String get mortuaryWorklistEmptyBody =>
-      'Adjust the filters or search terms to view matching mortuary records.';
+      'Adjust le filtres ou recherche terms à voir matching morgue dossiers.';
 
   @override
   String get mortuaryReferenceColumnLabel => 'Case';
@@ -12781,7 +12816,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryStorageColumnLabel => 'Storage';
 
   @override
-  String get mortuaryStatusColumnLabel => 'Status';
+  String get mortuaryStatusColumnLabel => 'Statut';
 
   @override
   String get mortuaryDateColumnLabel => 'Date';
@@ -12801,26 +12836,26 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get mortuarySearchLabel => 'Search mortuary records';
+  String get mortuarySearchLabel => 'Search morgue dossiers';
 
   @override
   String get mortuarySearchHint =>
-      'Search case, name, source, storage, or status';
+      'Search case, nom, source, storage, ou statut';
 
   @override
-  String get mortuarySearchFieldLabel => 'Search';
+  String get mortuarySearchFieldLabel => 'Rechercher';
 
   @override
-  String get mortuaryFiltersLabel => 'Filters';
+  String get mortuaryFiltersLabel => 'Filtres';
 
   @override
   String get mortuaryApplyFiltersAction => 'Apply';
 
   @override
-  String get mortuaryResetFiltersAction => 'Reset';
+  String get mortuaryResetFiltersAction => 'Réinitialiser';
 
   @override
-  String get mortuaryAllFieldsLabel => 'All';
+  String get mortuaryAllFieldsLabel => 'Tous';
 
   @override
   String get mortuaryDateFilterLabel => 'Date';
@@ -12835,7 +12870,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryDatePickerButtonLabel => 'Choose date';
 
   @override
-  String get mortuaryInvalidDateMessage => 'Enter a valid date.';
+  String get mortuaryInvalidDateMessage => 'Enter un valid date.';
 
   @override
   String get mortuaryPanelFilterLabel => 'Panel';
@@ -12847,7 +12882,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryQueueFilterLabel => 'Queue';
 
   @override
-  String get mortuaryStatusFilterLabel => 'Status';
+  String get mortuaryStatusFilterLabel => 'Statut';
 
   @override
   String get mortuaryIdentificationFilterLabel => 'Identification';
@@ -12856,7 +12891,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryFacilityFilterLabel => 'Facility';
 
   @override
-  String get mortuaryStorageUnitFilterLabel => 'Storage unit';
+  String get mortuaryStorageUnitFilterLabel => 'Storage unité';
 
   @override
   String get mortuaryStorageSlotFilterLabel => 'Storage slot';
@@ -12874,14 +12909,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryDatePresetOverdueLabel => 'Overdue';
 
   @override
-  String get mortuaryDatePresetThisMonthLabel => 'This month';
+  String get mortuaryDatePresetThisMonthLabel => 'Ce month';
 
   @override
   String get mortuaryTotalCasesSummaryLabel => 'Total cases';
 
   @override
   String get mortuaryIdentificationPendingSummaryLabel =>
-      'Identification pending';
+      'Identification en attente';
 
   @override
   String get mortuaryInStorageSummaryLabel => 'In storage';
@@ -12914,7 +12949,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryResourceCasesLabel => 'Cases';
 
   @override
-  String get mortuaryResourceStorageUnitsLabel => 'Storage units';
+  String get mortuaryResourceStorageUnitsLabel => 'Storage unités';
 
   @override
   String get mortuaryResourceStorageSlotsLabel => 'Storage slots';
@@ -12929,7 +12964,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryResourceViewingsLabel => 'Viewings';
 
   @override
-  String get mortuaryResourcePostMortemRequestsLabel => 'Post-mortem requests';
+  String get mortuaryResourcePostMortemRequestsLabel => 'Post-mortem demandes';
 
   @override
   String get mortuaryResourceReleaseAuthorisationsLabel =>
@@ -12940,7 +12975,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mortuaryQueueIdentificationPendingLabel =>
-      'Identification pending';
+      'Identification en attente';
 
   @override
   String get mortuaryQueueStorageExceptionsLabel => 'Storage exceptions';
@@ -12952,17 +12987,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryQueueUnsettledBillingLabel => 'Unsettled billing';
 
   @override
-  String get mortuaryQueuePostMortemPendingLabel => 'Post-mortem pending';
+  String get mortuaryQueuePostMortemPendingLabel => 'Post-mortem en attente';
 
   @override
   String get mortuaryDetailTitle => 'Case detail';
 
   @override
-  String get mortuaryNoSelectionTitle => 'Select a case';
+  String get mortuaryNoSelectionTitle => 'Select un case';
 
   @override
   String get mortuaryNoSelectionBody =>
-      'Choose a record from the worklist to review identity, storage, custody, release, billing, and documents.';
+      'Choose un dossier de le worklist à review identity, storage, custody, release, billing, et documents.';
 
   @override
   String get mortuaryUnknownDeceasedLabel => 'Name not recorded';
@@ -12980,7 +13015,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryIdentificationFieldLabel => 'Identification';
 
   @override
-  String get mortuaryBillingFieldLabel => 'Billing';
+  String get mortuaryBillingFieldLabel => 'Facturation';
 
   @override
   String get mortuaryStorageSlotFieldLabel => 'Storage slot';
@@ -12989,14 +13024,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryFacilityFieldLabel => 'Facility';
 
   @override
-  String get mortuaryActionGapTitle => 'Actions unavailable';
+  String get mortuaryActionGapTitle => 'Actions indisponible';
 
   @override
   String get mortuaryActionGapBody =>
-      'Mortuary lookup data is available. Action buttons remain disabled until the workflow is enabled for this facility.';
+      'Mortuary lookup data is disponible. Action buttons remain désactivé until le workflow is activé pour ce établissement.';
 
   @override
-  String get mortuaryIdentitySectionTitle => 'Identity and source';
+  String get mortuaryIdentitySectionTitle => 'Identity et source';
 
   @override
   String get mortuaryStorageSectionTitle => 'Storage';
@@ -13014,7 +13049,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryReleaseSectionTitle => 'Release';
 
   @override
-  String get mortuaryBillingSectionTitle => 'Billing';
+  String get mortuaryBillingSectionTitle => 'Facturation';
 
   @override
   String get mortuaryDocumentsSectionTitle => 'Documents';
@@ -13029,7 +13064,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryPatientFieldLabel => 'Patient';
 
   @override
-  String get mortuaryStatusFieldLabel => 'Status';
+  String get mortuaryStatusFieldLabel => 'Statut';
 
   @override
   String get mortuaryReceivedAtFieldLabel => 'Received';
@@ -13038,19 +13073,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuarySourceWorkflowFieldLabel => 'Source workflow';
 
   @override
-  String get mortuarySourceDepartmentFieldLabel => 'Source department';
+  String get mortuarySourceDepartmentFieldLabel => 'Source département';
 
   @override
-  String get mortuarySourceReferenceFieldLabel => 'Source reference';
+  String get mortuarySourceReferenceFieldLabel => 'Source référence';
 
   @override
-  String get mortuaryReceivedFromFieldLabel => 'Received from';
+  String get mortuaryReceivedFromFieldLabel => 'Received de';
 
   @override
-  String get mortuaryStorageUnitFieldLabel => 'Storage unit';
+  String get mortuaryStorageUnitFieldLabel => 'Storage unité';
 
   @override
-  String get mortuaryStorageStatusFieldLabel => 'Storage status';
+  String get mortuaryStorageStatusFieldLabel => 'Storage statut';
 
   @override
   String get mortuaryAssignedAtFieldLabel => 'Assigned';
@@ -13075,39 +13110,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mortuaryNoCustodyEventsBody =>
-      'Custody movements and handovers will appear here when recorded.';
+      'Custody movements et handovers will appear here lorsque recorded.';
 
   @override
-  String get mortuaryNoViewingsLabel => 'No viewings scheduled';
+  String get mortuaryNoViewingsLabel => 'No viewings planifié';
 
   @override
   String get mortuaryNoViewingsBody =>
-      'Viewing appointments will appear here when scheduled.';
+      'Viewing appointments will appear here lorsque planifié.';
 
   @override
-  String get mortuaryNoPostMortemLabel => 'No post-mortem request recorded';
+  String get mortuaryNoPostMortemLabel => 'No post-mortem demande recorded';
 
   @override
   String get mortuaryNoPostMortemBody =>
-      'Post-mortem requests and reports will appear here when available.';
+      'Post-mortem demandes et rapports will appear here lorsque disponible.';
 
   @override
   String get mortuaryNoReleaseLabel => 'No release recorded';
 
   @override
   String get mortuaryNoReleaseBody =>
-      'Release authorisations and handover details will appear here when available.';
+      'Release authorisations et handover détails will appear here lorsque disponible.';
 
   @override
   String get mortuaryNoBillingLabel => 'No billing events recorded';
 
   @override
   String get mortuaryNoBillingBody =>
-      'Storage, post-mortem, and release billing events will appear here when available.';
+      'Storage, post-mortem, et release billing events will appear here lorsque disponible.';
 
   @override
   String get mortuaryNoDocumentsBody =>
-      'Generated intake, custody, release, and billing documents are available from the print action when case data is selected.';
+      'Generated intake, custody, release, et billing documents are disponible de le print action lorsque case data is selected.';
 
   @override
   String get mortuaryIntakeDocumentLabel => 'Intake form';
@@ -13140,23 +13175,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mortuaryNextActionReview => 'Review case';
 
   @override
-  String get mortuaryReportTitle => 'Mortuary case record';
+  String get mortuaryReportTitle => 'Mortuary case dossier';
 
   @override
-  String get mortuaryReportFooter => 'Generated from mortuary workspace data.';
+  String get mortuaryReportFooter =>
+      'Generated de morgue espace de travail data.';
 
   @override
   String get mortuaryReportGeneratedMessage => 'Mortuary document generated.';
 
   @override
-  String get roomsBedsTitle => 'Rooms and beds';
+  String get roomsBedsTitle => 'Rooms et lits';
 
   @override
-  String get roomsBedsLoadingTitle => 'Loading rooms and beds';
+  String get roomsBedsLoadingTitle => 'Loading chambres et lits';
 
   @override
   String get roomsBedsLoadingBody =>
-      'Retrieving wards, rooms, beds, assignments, and facility context.';
+      'Retrieving services, chambres, lits, assignments, et établissement context.';
 
   @override
   String get roomsBedsSavingStatus => 'Saving';
@@ -13165,14 +13201,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsLiveStatus => 'Live board';
 
   @override
-  String get roomsBedsTotalSummaryLabel => 'Total beds';
+  String get roomsBedsTotalSummaryLabel => 'Total lits';
 
   @override
-  String get roomsBedsBackendGapsTitle => 'Bed readiness status unavailable';
+  String get roomsBedsBackendGapsTitle => 'Bed readiness statut indisponible';
 
   @override
   String get roomsBedsBackendGapsBody =>
-      'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.';
+      'Cleaning, maintenance, block, isolation, et detailed readiness states are not disponible pour ce établissement. Current actions utiliser disponible service, chambre, lit, lit assignment, et IPD flow workflows only.';
 
   @override
   String get roomsBedsManageCatalogAction => 'Manage catalog';
@@ -13181,13 +13217,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsOpenIpdAdmissionAction => 'Open IPD admission';
 
   @override
-  String get roomsBedsManageTransferAction => 'Manage transfer';
+  String get roomsBedsManageTransferAction => 'Manage transfert';
 
   @override
-  String get roomsBedsTransferUpdateDialogTitle => 'Update transfer';
+  String get roomsBedsTransferUpdateDialogTitle => 'Update transfert';
 
   @override
-  String get roomsBedsOpenHousekeepingAction => 'Open housekeeping';
+  String get roomsBedsOpenHousekeepingAction => 'Open entretien';
 
   @override
   String get roomsBedsOpenOperationsAction => 'Open operations';
@@ -13202,10 +13238,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsMarkBlockedAction => 'Mark blocked';
 
   @override
-  String get roomsBedsNextActionCompleteTransfer => 'Complete transfer';
+  String get roomsBedsNextActionCompleteTransfer => 'Complete transfert';
 
   @override
-  String get roomsBedsNextActionMarkAvailable => 'Mark available';
+  String get roomsBedsNextActionMarkAvailable => 'Mark disponible';
 
   @override
   String get roomsBedsNextActionResolveMaintenance => 'Resolve maintenance';
@@ -13220,7 +13256,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsBlockedReadinessLabel => 'Blocked';
 
   @override
-  String get roomsBedsOccupiedReadinessLabel => 'In use';
+  String get roomsBedsOccupiedReadinessLabel => 'In utiliser';
 
   @override
   String get roomsBedsReservedReadinessLabel => 'Held';
@@ -13230,41 +13266,41 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get roomsBedsBoardDescription =>
-      'Track availability, occupancy, reservations, and bed readiness by facility location.';
+      'Track availability, occupation, reservations, et lit readiness by établissement location.';
 
   @override
-  String get roomsBedsSearchLabel => 'Search rooms and beds';
+  String get roomsBedsSearchLabel => 'Search chambres et lits';
 
   @override
   String get roomsBedsSearchHint =>
-      'Search bed, ward, room, patient admission, status, or facility';
+      'Search lit, service, chambre, patient admission, statut, ou établissement';
 
   @override
-  String get roomsBedsFiltersLabel => 'Filters';
+  String get roomsBedsFiltersLabel => 'Filtres';
 
   @override
-  String get roomsBedsAllFilterLabel => 'All';
+  String get roomsBedsAllFilterLabel => 'Tous';
 
   @override
   String get roomsBedsFacilityFilterLabel => 'Facility';
 
   @override
-  String get roomsBedsAllFacilitiesLabel => 'All facilities';
+  String get roomsBedsAllFacilitiesLabel => 'All établissements';
 
   @override
-  String get roomsBedsWardFilterLabel => 'Ward';
+  String get roomsBedsWardFilterLabel => 'Service';
 
   @override
-  String get roomsBedsAllWardsLabel => 'All wards';
+  String get roomsBedsAllWardsLabel => 'All services';
 
   @override
-  String get roomsBedsRoomFilterLabel => 'Room';
+  String get roomsBedsRoomFilterLabel => 'Chambre';
 
   @override
-  String get roomsBedsAllRoomsLabel => 'All rooms';
+  String get roomsBedsAllRoomsLabel => 'All chambres';
 
   @override
-  String get roomsBedsStatusFilterLabel => 'Status';
+  String get roomsBedsStatusFilterLabel => 'Statut';
 
   @override
   String get roomsBedsAllStatusesLabel => 'All statuses';
@@ -13281,20 +13317,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get roomsBedsEmptyTitle => 'No beds found';
+  String get roomsBedsEmptyTitle => 'Aucun beds trouvé';
 
   @override
   String get roomsBedsEmptyBody =>
-      'Adjust the filters or add beds from facility setup to start using the operational board.';
+      'Adjust le filtres ou ajouter lits de établissement setup à start en utilisant le operational board.';
 
   @override
-  String get roomsBedsBedColumnLabel => 'Bed';
+  String get roomsBedsBedColumnLabel => 'Lit';
 
   @override
   String get roomsBedsLocationColumnLabel => 'Location';
 
   @override
-  String get roomsBedsStatusColumnLabel => 'Status';
+  String get roomsBedsStatusColumnLabel => 'Statut';
 
   @override
   String get roomsBedsAssignmentColumnLabel => 'Assignment';
@@ -13315,25 +13351,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsReserveAction => 'Reserve';
 
   @override
-  String get roomsBedsMarkAvailableAction => 'Mark available';
+  String get roomsBedsMarkAvailableAction => 'Mark disponible';
 
   @override
-  String get roomsBedsMarkOutOfServiceAction => 'Mark out of service';
+  String get roomsBedsMarkOutOfServiceAction => 'Mark out sur service';
 
   @override
-  String get roomsBedsAssignAction => 'Assign bed';
+  String get roomsBedsAssignAction => 'Assign lit';
 
   @override
-  String get roomsBedsReleaseAction => 'Release bed';
+  String get roomsBedsReleaseAction => 'Release lit';
 
   @override
-  String get roomsBedsRequestTransferAction => 'Request transfer';
+  String get roomsBedsRequestTransferAction => 'Request transfert';
 
   @override
-  String get roomsBedsAssignmentHistoryTitle => 'Assignment history';
+  String get roomsBedsAssignmentHistoryTitle => 'Assignment historique';
 
   @override
-  String get roomsBedsNoAssignmentsLabel => 'No assignment history recorded';
+  String get roomsBedsNoAssignmentsLabel => 'No assignment historique recorded';
 
   @override
   String get roomsBedsCurrentAssignmentLabel => 'Current';
@@ -13345,32 +13381,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsAdmissionFieldLabel => 'Admission number';
 
   @override
-  String get roomsBedsAdmissionFieldHint => 'Enter the admission number';
+  String get roomsBedsAdmissionFieldHint => 'Enter le admission number';
 
   @override
-  String get roomsBedsDestinationWardLabel => 'Destination ward';
+  String get roomsBedsDestinationWardLabel => 'Destination service';
 
   @override
-  String get roomsBedsAssignDialogTitle => 'Assign bed';
+  String get roomsBedsAssignDialogTitle => 'Assign lit';
 
   @override
   String roomsBedsAssignWardSuitabilityHint(String wardType) {
-    return 'Confirm patient suitability for $wardType before assigning this bed.';
+    return 'Confirm patient suitability pour $wardType avant assigning ce lit.';
   }
 
   @override
-  String get roomsBedsReleaseDialogTitle => 'Release bed';
+  String get roomsBedsReleaseDialogTitle => 'Release lit';
 
   @override
   String get roomsBedsReleaseDialogBody =>
-      'Releasing the bed sends the admission through the bed release flow.';
+      'Releasing le lit sends le admission through le lit release flow.';
 
   @override
-  String get roomsBedsTransferDialogTitle => 'Request transfer';
+  String get roomsBedsTransferDialogTitle => 'Request transfert';
 
   @override
   String get roomsBedsTransferDialogBody =>
-      'Choose the destination ward. Bed selection is completed by the IPD transfer workflow after approval.';
+      'Choose le destination service. Bed selection is terminé by le IPD transfert workflow après approbation.';
 
   @override
   String roomsBedsAdmissionAssignment(String admissionId) {
@@ -13381,13 +13417,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roomsBedsAssignmentNotLinked => 'Assignment not linked';
 
   @override
-  String get roomsBedsNextActionAssign => 'Assign next admission';
+  String get roomsBedsNextActionAssign => 'Assign suivant admission';
 
   @override
-  String get roomsBedsNextActionReleaseOrTransfer => 'Release or transfer';
+  String get roomsBedsNextActionReleaseOrTransfer => 'Release ou transfert';
 
   @override
-  String get roomsBedsNextActionAssignOrReleaseHold => 'Assign or release hold';
+  String get roomsBedsNextActionAssignOrReleaseHold => 'Assign ou release hold';
 
   @override
   String get roomsBedsNextActionResolveBlock => 'Resolve block';
@@ -13400,50 +13436,51 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get roomsBedsReadinessBackendGapLabel =>
-      'Readiness status unavailable';
+      'Readiness statut indisponible';
 
   @override
-  String get roomsBedsSavedMessage => 'Rooms and beds updated.';
+  String get roomsBedsSavedMessage => 'Rooms et lits mis à jour.';
 
   @override
   String roomsBedsRequiredMessage(String field) {
-    return '$field is required.';
+    return '$field est requis.';
   }
 
   @override
   String get hrActivityDescription =>
-      'Audit-style feed of recent HR updates, roster publishes, and shift changes.';
+      'Audit-style feed sur recent HR updates, roster publishes, et quart changes.';
 
   @override
   String get hrActivityTitle => 'HR activity';
 
   @override
-  String get hrAddStaffAction => 'Add staff';
+  String get hrAddStaffAction => 'Add personnel';
 
   @override
-  String get hrAddStaffDialogTitle => 'Add staff profile';
+  String get hrAddStaffDialogTitle => 'Add personnel profil';
 
   @override
-  String get hrStaffOnboardingPersonSectionTitle => 'Staff details and access';
+  String get hrStaffOnboardingPersonSectionTitle => 'Staff détails et accès';
 
   @override
-  String get hrStaffFirstNameLabel => 'Staff first name';
+  String get hrStaffFirstNameLabel => 'Staff first nom';
 
   @override
-  String get hrStaffLastNameLabel => 'Staff last name';
+  String get hrStaffLastNameLabel => 'Staff last nom';
 
   @override
-  String get hrStaffEmailLabel => 'Staff email';
+  String get hrStaffEmailLabel => 'Staff e-mail';
 
   @override
-  String get hrStaffPhoneLabel => 'Staff phone';
+  String get hrStaffPhoneLabel => 'Staff téléphone';
 
   @override
-  String get hrStaffTemporaryPasswordLabel => 'Temporary password (optional)';
+  String get hrStaffTemporaryPasswordLabel =>
+      'Temporary mot de passe (facultatif)';
 
   @override
   String get hrStaffPasswordOptionalHint =>
-      'Leave blank to auto-generate a secure password.';
+      'Leave blank à auto-generate un secure mot de passe.';
 
   @override
   String get hrStaffNumberGenerateLabel => 'Generate';
@@ -13453,48 +13490,51 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrStaffNumberAutoGenerateLabel =>
-      'Automatically generate staff number';
+      'Automatically generate personnel number';
 
   @override
-  String get hrStaffNumberManualEntryLabel => 'Enter staff number manually';
+  String get hrStaffNumberManualEntryLabel => 'Enter personnel number manually';
 
   @override
   String get hrStaffGenerateNumberAction => 'Generate';
 
   @override
-  String get hrStaffOnboardingRolesSectionTitle => 'Roles and access';
+  String get hrStaffOnboardingRolesSectionTitle => 'Roles et accès';
 
   @override
   String get hrStaffOnboardingCompensationEditHint =>
-      'Update compensation for this staff member. New staff can set pay later from staff detail.';
+      'Update rémunération pour ce personnel member. New personnel can set pay later de personnel detail.';
 
   @override
-  String get hrRoleAssignmentSearchLabel => 'Search roles';
+  String get hrRoleAssignmentSearchLabel => 'Search rôles';
 
   @override
-  String get hrRoleAssignmentAddRoleLabel => 'Add role';
+  String get hrRoleAssignmentAddRoleLabel => 'Add rôle';
 
   @override
-  String get hrRoleAssignmentEmptySelectedLabel => 'No roles selected yet.';
+  String get hrRoleAssignmentEmptySelectedLabel => 'No rôles selected yet.';
 
   @override
-  String get hrRoleAssignmentRemoveRoleAction => 'Remove role';
+  String get hrRoleAssignmentRemoveRoleAction => 'Remove rôle';
 
   @override
   String get hrStaffOnboardingEmploymentSectionTitle => 'Employment';
 
   @override
-  String get hrStaffOnboardingCreateNewUserLabel => 'Create new user';
+  String get hrStaffOnboardingCreateNewUserLabel =>
+      'Create nouveau utilisateur';
 
   @override
-  String get hrStaffOnboardingLinkExistingUserLabel => 'Link existing user';
+  String get hrStaffOnboardingLinkExistingUserLabel =>
+      'Link existing utilisateur';
 
   @override
-  String get hrStaffOnboardingSelectUserHint => 'Search staff by name or email';
+  String get hrStaffOnboardingSelectUserHint =>
+      'Search personnel by nom ou e-mail';
 
   @override
   String get hrStaffOnboardingNoRolesWarning =>
-      'No roles assigned yet. This staff member will have limited access until roles are assigned.';
+      'No rôles assigné yet. Ce personnel member will have limited accès until rôles are assigné.';
 
   @override
   String get hrStaffOnboardingPayTypeLabel => 'Pay type';
@@ -13503,18 +13543,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrStaffOnboardingDailyRateLabel => 'Daily rate';
 
   @override
-  String get hrStaffOnboardingAddressLabel => 'Address (optional)';
+  String get hrStaffOnboardingAddressLabel => 'Address (facultatif)';
 
   @override
   String get hrStaffOnboardingPermissionsPreviewEmpty =>
-      'Select roles above to preview effective permissions.';
+      'Select rôles above à aperçu effective autorisations.';
 
   @override
   String get hrStaffOnboardingCompensationSectionTitle => 'Compensation';
 
   @override
   String get hrStaffOnboardingCompensationCreateHint =>
-      'Optional. Set pay rate and effective date when onboarding this staff member.';
+      'Optional. Set pay rate et effective date lorsque onboarding ce personnel member.';
 
   @override
   String get hrStaffOnboardingConsultationSectionTitle =>
@@ -13524,22 +13564,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrAllowPartialPublishLabel => 'Allow partial publish';
 
   @override
-  String get hrApproveLeaveAction => 'Approve leave';
+  String get hrApproveLeaveAction => 'Approve congé';
 
   @override
-  String get hrApproveLeaveDialogTitle => 'Approve leave';
+  String get hrApproveLeaveDialogTitle => 'Approve congé';
 
   @override
   String get hrApproveSwapAction => 'Approve swap';
 
   @override
-  String get hrApproveSwapDialogTitle => 'Approve shift swap';
+  String get hrApproveSwapDialogTitle => 'Approve quart swap';
 
   @override
-  String get hrAssignDepartmentAction => 'Assign department';
+  String get hrAssignDepartmentAction => 'Assign département';
 
   @override
-  String get hrAssignDepartmentDialogTitle => 'Assign department';
+  String get hrAssignDepartmentDialogTitle => 'Assign département';
 
   @override
   String get hrAssignmentLabel => 'Assignment';
@@ -13554,10 +13594,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrAssignPositionDialogTitle => 'Assign position';
 
   @override
-  String get hrAssignShiftAction => 'Assign shift';
+  String get hrAssignShiftAction => 'Assign quart';
 
   @override
-  String get hrAssignShiftDialogTitle => 'Assign shift';
+  String get hrAssignShiftDialogTitle => 'Assign quart';
 
   @override
   String get hrAvailabilityAvailable => 'Available';
@@ -13587,18 +13627,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrRemoveScheduleSlotAction => 'Remove slot';
 
   @override
-  String get hrDuplicateScheduleToAction => 'Duplicate to…';
+  String get hrDuplicateScheduleToAction => 'Duplicate à…';
 
   @override
-  String get hrScheduleDuplicateToDialogTitle => 'Duplicate schedule';
+  String get hrScheduleDuplicateToDialogTitle => 'Duplicate planning';
 
   @override
   String hrScheduleDuplicateToDialogDescription(String dayName) {
-    return 'Replace the selected days with $dayName\'s time slots.';
+    return 'Replace le selected days avec $dayName\'s heure slots.';
   }
 
   @override
-  String get hrWeeklyScheduleSectionTitle => 'Weekly schedule';
+  String get hrWeeklyScheduleSectionTitle => 'Weekly planning';
 
   @override
   String get hrAvailabilityScheduleSourceLabel => 'Schedule source';
@@ -13607,66 +13647,66 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrAvailabilitySourceManual => 'Manual';
 
   @override
-  String get hrAvailabilitySourceFromStaff => 'From staff';
+  String get hrAvailabilitySourceFromStaff => 'From personnel';
 
   @override
-  String get hrAvailabilitySourceFromTemplate => 'From template';
+  String get hrAvailabilitySourceFromTemplate => 'From modèle';
 
   @override
-  String get hrAvailabilityCopyFromStaffAction => 'Copy from staff';
+  String get hrAvailabilityCopyFromStaffAction => 'Copy de personnel';
 
   @override
-  String get hrAvailabilityCopyFromStaffLabel => 'Source staff';
+  String get hrAvailabilityCopyFromStaffLabel => 'Source personnel';
 
   @override
-  String get hrAvailabilityCopyFromTemplateAction => 'Apply template';
+  String get hrAvailabilityCopyFromTemplateAction => 'Apply modèle';
 
   @override
-  String get hrAvailabilityCopyFromTemplateLabel => 'Schedule template';
+  String get hrAvailabilityCopyFromTemplateLabel => 'Schedule modèle';
 
   @override
-  String get hrAvailabilityDuplicateToAction => 'Duplicate to…';
+  String get hrAvailabilityDuplicateToAction => 'Duplicate à…';
 
   @override
-  String get hrAvailabilityDuplicateToDialogTitle => 'Duplicate schedule';
+  String get hrAvailabilityDuplicateToDialogTitle => 'Duplicate planning';
 
   @override
   String hrAvailabilityDuplicateToDialogDescription(String dayName) {
-    return 'Replace the selected days with $dayName\'s time slots.';
+    return 'Replace le selected days avec $dayName\'s heure slots.';
   }
 
   @override
   String get hrAvailabilityEndAfterStartError =>
-      'End time must be after start time';
+      'End time doit être after start time';
 
   @override
   String get hrAvailabilityNoDaysSelectedError =>
-      'Add at least one time slot on any day';
+      'Add at least one heure slot on any day';
 
   @override
   String get hrAvailabilitySlotOverlapError =>
-      'Time slots on the same day must not overlap';
+      'Time slots on le same day ne doit pas overlap';
 
   @override
-  String get hrAvailabilityWeekScheduleTitle => 'Weekly schedule';
+  String get hrAvailabilityWeekScheduleTitle => 'Weekly planning';
 
   @override
   String get hrRemoveAvailabilitySlotAction => 'Remove slot';
 
   @override
-  String get hrClearFiltersAction => 'Clear filters';
+  String get hrClearFiltersAction => 'Clear filtres';
 
   @override
-  String get hrConsultationCurrencyLabel => 'Consultation currency';
+  String get hrConsultationCurrencyLabel => 'Consultation devise';
 
   @override
   String get hrConsultationFeeLabel => 'Consultation fee';
 
   @override
-  String get hrCreateStaffAction => 'Create staff';
+  String get hrCreateStaffAction => 'Create personnel';
 
   @override
-  String get hrDayOfWeekLabel => 'Day of week';
+  String get hrDayOfWeekLabel => 'Day sur week';
 
   @override
   String get hrDepartmentColumnLabel => 'Department';
@@ -13678,30 +13718,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrDepartmentLabel => 'Department';
 
   @override
-  String get hrEditStaffAction => 'Edit staff';
+  String get hrEditStaffAction => 'Edit personnel';
 
   @override
-  String get hrEditStaffDialogTitle => 'Edit staff profile';
+  String get hrEditStaffDialogTitle => 'Edit personnel profil';
 
   @override
-  String get hrEffectiveFromLabel => 'Effective from';
+  String get hrEffectiveFromLabel => 'Effective de';
 
   @override
-  String get hrEffectiveToLabel => 'Effective to';
+  String get hrEffectiveToLabel => 'Effective à';
 
   @override
   String get hrEndDateLabel => 'End date';
 
   @override
-  String get hrEndTimeLabel => 'End time';
+  String get hrEndTimeLabel => 'End heure';
 
   @override
   String hrFieldRequiredLabel(String label) {
-    return '$label is required.';
+    return '$label est requis.';
   }
 
   @override
-  String get hrFiltersLabel => 'Filters';
+  String get hrFiltersLabel => 'Filtres';
 
   @override
   String get hrFridayLabel => 'Friday';
@@ -13713,34 +13753,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrHireDateLabel => 'Hire date';
 
   @override
-  String get hrLeaveDialogTitle => 'Request leave';
+  String get hrLeaveDialogTitle => 'Request congé';
 
   @override
   String get hrLeaveLabel => 'Leave';
 
   @override
-  String get hrLeaveDaysLabel => 'Number of days';
+  String get hrLeaveDaysLabel => 'Number sur days';
 
   @override
   String get hrLeaveDaysHelper =>
-      'Auto-calculates the end date from the start date.';
+      'Auto-calculates le end date de le start date.';
 
   @override
   String get hrLeaveTypeLabel => 'Leave type';
 
   @override
-  String get hrLeaveHalfDayLabel => 'Half-day leave';
+  String get hrLeaveHalfDayLabel => 'Half-day congé';
 
   @override
   String get hrLeaveHalfDayHelper =>
-      'Use for a single morning or afternoon away from work.';
+      'Use pour un single morning ou afternoon away de work.';
 
   @override
   String get hrLeaveHalfDayPeriodLabel => 'Half-day period';
 
   @override
   String get hrLeaveHalfDaySingleDayError =>
-      'Half-day leave must start and end on the same day.';
+      'Half-day congé must start et end on le same day.';
 
   @override
   String hrLeaveHalfDaySummary(String period) {
@@ -13760,31 +13800,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrHandoverNotesHelper =>
-      'Tasks, patients, or shift details the covering colleague should know.';
+      'Tasks, patients, ou quart détails le covering colleague should know.';
 
   @override
-  String get hrAddNewPositionLabel => 'Add a new position';
+  String get hrAddNewPositionLabel => 'Add un nouveau position';
 
   @override
-  String get hrNewPositionLabel => 'New position name';
+  String get hrNewPositionLabel => 'New position nom';
 
   @override
   String get hrSelectShiftLabel => 'Shift';
 
   @override
-  String get hrSelectShiftHint => 'Search shifts by name, time, or department';
+  String get hrSelectShiftHint => 'Search shifts by nom, heure, ou département';
 
   @override
   String get hrStaffOverviewSectionTitle => 'Overview';
 
   @override
-  String get hrRoomLabel => 'Room';
+  String get hrRoomLabel => 'Chambre';
 
   @override
   String get hrCompensationAction => 'Compensation';
 
   @override
-  String get hrCompensationDialogTitle => 'Update compensation';
+  String get hrCompensationDialogTitle => 'Update rémunération';
 
   @override
   String get hrCompensationSectionTitle => 'Compensation';
@@ -13793,7 +13833,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrCompensationLabel => 'Compensation';
 
   @override
-  String get hrNoCompensationLabel => 'No compensation records';
+  String get hrNoCompensationLabel => 'No rémunération dossiers';
 
   @override
   String get hrCompensationHourlyRateLabel => 'Hourly rate';
@@ -13811,13 +13851,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrCompensationCurrencyLabel => 'Currency';
 
   @override
-  String get hrLeaveReportLabel => 'Leave summary';
+  String get hrLeaveReportLabel => 'Leave résumé';
 
   @override
-  String get hrLeaveRequestsSummaryLabel => 'Leave requests';
+  String get hrLeaveRequestsSummaryLabel => 'Leave demandes';
 
   @override
-  String get hrLeaveRequestTitle => 'Leave request';
+  String get hrLeaveRequestTitle => 'Leave demande';
 
   @override
   String get hrLeaveSectionTitle => 'Leave';
@@ -13826,16 +13866,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrLiveStatus => 'Live';
 
   @override
-  String get hrLoadingBody => 'Loading staff records and rosters.';
+  String get hrLoadingBody => 'Loading personnel dossiers et rosters.';
 
   @override
-  String get hrLoadingTitle => 'Loading HR workspace';
+  String get hrLoadingTitle => 'Loading HR espace de travail';
 
   @override
   String get hrMondayLabel => 'Monday';
 
   @override
-  String get hrNextActionAssignDepartment => 'Assign department';
+  String get hrNextActionAssignDepartment => 'Assign département';
 
   @override
   String get hrNextActionAssignPosition => 'Assign position';
@@ -13844,10 +13884,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrNextActionColumnLabel => 'Next action';
 
   @override
-  String get hrNextActionReviewProfile => 'Review profile';
+  String get hrNextActionReviewProfile => 'Review profil';
 
   @override
-  String get hrNextPageLabel => 'Next staff page';
+  String get hrNextPageLabel => 'Next personnel page';
 
   @override
   String get hrNextQueuePageLabel => 'Next queue page';
@@ -13865,42 +13905,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrNoAvailabilityLabel => 'No availability recorded.';
 
   @override
-  String get hrNoLeaveLabel => 'No leave recorded.';
+  String get hrNoLeaveLabel => 'No congé recorded.';
 
   @override
   String get hrNoQueueItemsBody =>
-      'No HR queue items match the current filter.';
+      'No HR queue éléments match le actuel filtre.';
 
   @override
-  String get hrNoQueueItemsTitle => 'No queue items';
+  String get hrNoQueueItemsTitle => 'No queue éléments';
 
   @override
-  String get hrNoShiftsLabel => 'No shifts assigned.';
+  String get hrNoShiftsLabel => 'No shifts assigné.';
 
   @override
-  String get hrNoStaffBody => 'No staff profiles match the current filters.';
+  String get hrNoStaffBody => 'No personnel profiles match le actuel filtres.';
 
   @override
   String get hrNoStaffSelectedBody =>
-      'Select a staff member to review assignments, availability, leave, shifts, and payroll links.';
+      'Select un personnel member à review assignments, availability, congé, shifts, et paie links.';
 
   @override
-  String get hrNoStaffSelectedTitle => 'No staff selected';
+  String get hrNoStaffSelectedTitle => 'No personnel selected';
 
   @override
-  String get hrNoStaffTitle => 'No staff found';
+  String get hrNoStaffTitle => 'Aucun staff trouvé';
 
   @override
   String get hrNotesLabel => 'Notes';
 
   @override
-  String get hrNotifyStaffLabel => 'Notify staff';
+  String get hrNotifyStaffLabel => 'Notify personnel';
 
   @override
-  String get hrOverrideShiftAction => 'Override shift';
+  String get hrOverrideShiftAction => 'Override quart';
 
   @override
-  String get hrOverrideShiftDialogTitle => 'Override shift';
+  String get hrOverrideShiftDialogTitle => 'Override quart';
 
   @override
   String hrPageLabel(int from, int to, int total) {
@@ -13911,13 +13951,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrPayrollDraftsSummaryLabel => 'Payroll drafts';
 
   @override
-  String get hrPayrollDraftTitle => 'Payroll draft';
+  String get hrPayrollDraftTitle => 'Payroll brouillon';
 
   @override
-  String get hrPayrollReportLabel => 'Payroll summary';
+  String get hrPayrollReportLabel => 'Payroll résumé';
 
   @override
-  String get hrPayrollRunDialogTitle => 'Run payroll';
+  String get hrPayrollRunDialogTitle => 'Run paie';
 
   @override
   String get hrPeriodColumnLabel => 'Period';
@@ -13944,19 +13984,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrPractitionerTypeLabel => 'Practitioner type';
 
   @override
-  String get hrPreviewStaffProfileReportAction => 'Preview staff profile';
+  String get hrPreviewStaffProfileReportAction => 'Preview personnel profil';
 
   @override
-  String get hrPreviousPageLabel => 'Previous staff page';
+  String get hrPreviousPageLabel => 'Previous personnel page';
 
   @override
   String get hrPreviousQueuePageLabel => 'Previous queue page';
 
   @override
-  String get hrProcessPayrollAction => 'Process payroll';
+  String get hrProcessPayrollAction => 'Process paie';
 
   @override
-  String get hrProcessPayrollDialogTitle => 'Process payroll';
+  String get hrProcessPayrollDialogTitle => 'Process paie';
 
   @override
   String get hrPublishNoteLabel => 'Publish note';
@@ -13974,7 +14014,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrQueueItemColumnLabel => 'Item';
 
   @override
-  String get hrQueueLeaveRequests => 'Leave requests';
+  String get hrQueueLeaveRequests => 'Leave demandes';
 
   @override
   String get hrQueueOverdueShifts => 'Overdue shifts';
@@ -13986,7 +14026,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrQueueRosterDrafts => 'Roster drafts';
 
   @override
-  String get hrQueueSwapRequests => 'Swap requests';
+  String get hrQueueSwapRequests => 'Swap demandes';
 
   @override
   String get hrQueueUnassignedShifts => 'Unassigned shifts';
@@ -13998,25 +14038,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrRecordAvailabilityAction => 'Record availability';
 
   @override
-  String get hrRejectLeaveAction => 'Reject leave';
+  String get hrRejectLeaveAction => 'Reject congé';
 
   @override
-  String get hrRejectLeaveDialogTitle => 'Reject leave';
+  String get hrRejectLeaveDialogTitle => 'Reject congé';
 
   @override
   String get hrRejectSwapAction => 'Reject swap';
 
   @override
-  String get hrRejectSwapDialogTitle => 'Reject shift swap';
+  String get hrRejectSwapDialogTitle => 'Reject quart swap';
 
   @override
-  String get hrReplacePayrollItemsLabel => 'Replace existing payroll items';
+  String get hrReplacePayrollItemsLabel => 'Replace existing paie éléments';
 
   @override
   String get hrReportsSectionTitle => 'Reports';
 
   @override
-  String get hrRequestLeaveAction => 'Request leave';
+  String get hrRequestLeaveAction => 'Request congé';
 
   @override
   String get hrRolePositionColumnLabel => 'Role / position';
@@ -14025,13 +14065,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrRosterDraftsSummaryLabel => 'Roster drafts';
 
   @override
-  String get hrRosterDraftTitle => 'Roster draft';
+  String get hrRosterDraftTitle => 'Roster brouillon';
 
   @override
-  String get hrRosterReportLabel => 'Roster report';
+  String get hrRosterReportLabel => 'Roster rapport';
 
   @override
-  String get hrRunPayrollAction => 'Run payroll';
+  String get hrRunPayrollAction => 'Run paie';
 
   @override
   String get hrSaturdayLabel => 'Saturday';
@@ -14040,16 +14080,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrSavedMessage => 'HR changes saved.';
 
   @override
-  String get hrSaveStaffAction => 'Save staff';
+  String get hrSaveStaffAction => 'Save personnel';
 
   @override
   String get hrSavingStatus => 'Saving';
 
   @override
-  String get hrSearchHint => 'Search staff, department, role, shift, or status';
+  String get hrSearchHint =>
+      'Search personnel, département, rôle, quart, ou statut';
 
   @override
-  String get hrSearchLabel => 'Search HR records';
+  String get hrSearchLabel => 'Search HR dossiers';
 
   @override
   String get hrShiftIdLabel => 'Shift ID';
@@ -14058,7 +14099,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrShiftLabel => 'Shift';
 
   @override
-  String get hrShiftQueueTitle => 'Shift queue item';
+  String get hrShiftQueueTitle => 'Shift queue élément';
 
   @override
   String get hrShiftsSectionTitle => 'Shifts';
@@ -14079,15 +14120,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrStaffActionsAccessTitle => 'Access';
 
   @override
-  String get hrManageScheduleTemplatesTitle => 'Schedule templates';
+  String get hrManageScheduleTemplatesTitle => 'Schedule modèles';
 
   @override
   String get hrManageScheduleTemplatesDescription =>
-      'Reusable shift patterns for roster generation and staff scheduling.';
+      'Reusable quart patterns pour roster generation et personnel scheduling.';
 
   @override
   String get hrNoShiftTemplatesLabel =>
-      'No schedule templates yet. Create one to reuse shift patterns.';
+      'No planning modèles yet. Create one à reuse quart patterns.';
 
   @override
   String get hrStaffColumnLabel => 'Staff';
@@ -14097,7 +14138,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrStaffDirectoryDescription =>
-      'Search staff by name, department, position, role, and status.';
+      'Search personnel by nom, département, position, rôle, et statut.';
 
   @override
   String get hrStaffDirectoryTitle => 'Staff directory';
@@ -14106,40 +14147,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrStaffLabel => 'Staff';
 
   @override
-  String get hrStaffListReportLabel => 'Staff list';
+  String get hrStaffListReportLabel => 'Staff liste';
 
   @override
-  String get hrStaffNameLabel => 'Staff name';
+  String get hrStaffNameLabel => 'Staff nom';
 
   @override
   String get hrStaffNumberLabel => 'Staff number';
 
   @override
-  String get hrStaffProfileReportTitle => 'Staff profile';
+  String get hrStaffProfileReportTitle => 'Staff profil';
 
   @override
   String get hrStartDateLabel => 'Start date';
 
   @override
-  String get hrStartTimeLabel => 'Start time';
+  String get hrStartTimeLabel => 'Start heure';
 
   @override
-  String get hrStatusColumnLabel => 'Status';
+  String get hrStatusColumnLabel => 'Statut';
 
   @override
   String get hrSundayLabel => 'Sunday';
 
   @override
-  String get hrSwapRequestTitle => 'Shift swap request';
+  String get hrSwapRequestTitle => 'Shift swap demande';
 
   @override
-  String get hrSwapShiftAction => 'Swap shift';
+  String get hrSwapShiftAction => 'Swap quart';
 
   @override
-  String get hrSwapShiftDialogTitle => 'Request shift swap';
+  String get hrSwapShiftDialogTitle => 'Request quart swap';
 
   @override
-  String get hrTargetStaffLabel => 'Target staff';
+  String get hrTargetStaffLabel => 'Target personnel';
 
   @override
   String get hrTenantIdLabel => 'Tenant ID';
@@ -14151,7 +14192,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrTimeHint => 'HH:MM';
 
   @override
-  String get hrTotalStaffSummaryLabel => 'Total staff';
+  String get hrTotalStaffSummaryLabel => 'Total personnel';
 
   @override
   String get hrTuesdayLabel => 'Tuesday';
@@ -14169,71 +14210,71 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrRoomsLabel => 'Rooms';
 
   @override
-  String get hrSelectAllRoomsAction => 'Select all';
+  String get hrSelectAllRoomsAction => 'Select tous';
 
   @override
-  String get hrClearRoomsAction => 'Clear';
+  String get hrClearRoomsAction => 'Effacer';
 
   @override
   String get hrUserIdLabel => 'User ID';
 
   @override
-  String get hrLinkedUserLabel => 'Linked user';
+  String get hrLinkedUserLabel => 'Linked utilisateur';
 
   @override
-  String get hrSelectUserLabel => 'Link user account';
+  String get hrSelectUserLabel => 'Link utilisateur compte';
 
   @override
-  String get hrCreateUserAction => 'Create staff';
+  String get hrCreateUserAction => 'Create personnel';
 
   @override
-  String get hrCreateUserDialogTitle => 'Create user account';
+  String get hrCreateUserDialogTitle => 'Create utilisateur compte';
 
   @override
-  String get hrAssignRoleAction => 'Assign role';
+  String get hrAssignRoleAction => 'Assign rôle';
 
   @override
-  String get hrAssignRoleDialogTitle => 'Assign role';
+  String get hrAssignRoleDialogTitle => 'Assign rôle';
 
   @override
-  String get hrRevokeRoleAction => 'Revoke role';
+  String get hrRevokeRoleAction => 'Revoke rôle';
 
   @override
-  String get hrRevokeRoleDialogTitle => 'Revoke role';
+  String get hrRevokeRoleDialogTitle => 'Revoke rôle';
 
   @override
-  String get hrRolesSectionTitle => 'Roles and access';
+  String get hrRolesSectionTitle => 'Roles et accès';
 
   @override
-  String get hrNoRolesLabel => 'No roles assigned.';
+  String get hrNoRolesLabel => 'No rôles assigné.';
 
   @override
-  String get hrModuleAccessAction => 'View module access';
+  String get hrModuleAccessAction => 'View module accès';
 
   @override
-  String get hrModuleAccessDialogTitle => 'Module access';
+  String get hrModuleAccessDialogTitle => 'Module accès';
 
   @override
   String get hrModuleAccessSectionTitle => 'Subscribed modules';
 
   @override
-  String get hrEffectivePermissionsTitle => 'Effective permissions';
+  String get hrEffectivePermissionsTitle => 'Effective autorisations';
 
   @override
-  String get hrNoModuleAccessLabel => 'No active module entitlements.';
+  String get hrNoModuleAccessLabel => 'No actif module entitlements.';
 
   @override
   String get hrOpenAccessAdminAction => 'Open in Users/Roles';
 
   @override
-  String get hrManageAccessAction => 'Manage users and roles';
+  String get hrManageAccessAction => 'Manage utilisateurs et rôles';
 
   @override
-  String get hrAccessWorkspaceTitle => 'Staff access';
+  String get hrAccessWorkspaceTitle => 'Staff accès';
 
   @override
   String get hrAccessWorkspaceDescription =>
-      'Manage staff user accounts, roles, and permissions for your organization.';
+      'Manage personnel utilisateur accounts, rôles, et autorisations pour votre organization.';
 
   @override
   String get hrAccessPanelUsers => 'Staff';
@@ -14245,21 +14286,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrAccessPanelPermissions => 'Permissions';
 
   @override
-  String get hrAccessSearchLabel => 'Search';
+  String get hrAccessSearchLabel => 'Rechercher';
 
   @override
-  String get hrAccessSearchHint => 'Search staff, roles, or permissions';
+  String get hrAccessSearchHint => 'Search personnel, rôles, ou autorisations';
 
   @override
-  String get hrPermissionAssignmentAddPermissionLabel => 'Add permission';
+  String get hrPermissionAssignmentAddPermissionLabel => 'Add autorisation';
 
   @override
   String get hrPermissionAssignmentEmptySelectedLabel =>
-      'No permissions selected.';
+      'No autorisations selected.';
 
   @override
   String get hrPermissionAssignmentRemovePermissionAction =>
-      'Remove permission';
+      'Remove autorisation';
 
   @override
   String get hrPermissionAssignmentAvailableByModuleLabel =>
@@ -14373,7 +14414,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get permissionCatalogMortuaryPostMortemRequest =>
-      'Mortuary — Post-mortem request';
+      'Mortuary — Post-mortem demande';
 
   @override
   String get permissionCatalogMortuaryApprove => 'Mortuary — Approve';
@@ -14464,50 +14505,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get permissionCatalogSystemAdmin => 'System — Admin';
 
   @override
-  String get hrAccessEmptyUsersLabel => 'No staff accounts match your search.';
+  String get hrAccessEmptyUsersLabel =>
+      'No personnel accounts match votre recherche.';
 
   @override
-  String get hrAccessEmptyRolesLabel => 'No roles match your search.';
+  String get hrAccessEmptyRolesLabel => 'No rôles match votre recherche.';
 
   @override
   String get hrAccessEmptyPermissionsLabel =>
-      'No permissions match your search.';
+      'No autorisations match votre recherche.';
 
   @override
-  String get hrAccessCreateRoleAction => 'Create role';
+  String get hrAccessCreateRoleAction => 'Create rôle';
 
   @override
-  String get hrAccessCreatePermissionAction => 'Create permission';
+  String get hrAccessCreatePermissionAction => 'Create autorisation';
 
   @override
-  String get hrAccessEditUserAction => 'Edit user';
+  String get hrAccessEditUserAction => 'Edit utilisateur';
 
   @override
-  String get hrAccessEditRoleAction => 'Edit role';
+  String get hrAccessEditRoleAction => 'Edit rôle';
 
   @override
-  String get hrAccessEditPermissionAction => 'Edit permission';
+  String get hrAccessEditPermissionAction => 'Edit autorisation';
 
   @override
-  String get hrAccessAssignPermissionsAction => 'Assign permissions';
+  String get hrAccessAssignPermissionsAction => 'Assign autorisations';
 
   @override
-  String get hrAccessRoleNameLabel => 'Role name';
+  String get hrAccessRoleNameLabel => 'Role nom';
 
   @override
   String get hrAccessRoleDescriptionLabel => 'Description';
 
   @override
-  String get hrAccessPermissionNameLabel => 'Permission name';
+  String get hrAccessPermissionNameLabel => 'Permission nom';
 
   @override
   String get hrAccessPermissionDescriptionLabel => 'Description';
 
   @override
-  String get hrAccessPositionTitleLabel => 'Position title';
+  String get hrAccessPositionTitleLabel => 'Position titre';
 
   @override
-  String get hrAccessInitialRolesLabel => 'Initial roles';
+  String get hrAccessInitialRolesLabel => 'Initial rôles';
 
   @override
   String hrAccessPermissionCountLabel(int count) {
@@ -14515,7 +14557,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count permissions',
-      zero: 'No permissions',
+      zero: 'No autorisations',
     );
     return '$_temp0';
   }
@@ -14526,13 +14568,13 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count staff',
-      zero: 'No staff',
+      zero: 'No personnel',
     );
     return '$_temp0';
   }
 
   @override
-  String get hrAccessSystemColumnLabel => 'System';
+  String get hrAccessSystemColumnLabel => 'Système';
 
   @override
   String hrAccessRoleSummary(int permissionCount, int userCount) {
@@ -14540,7 +14582,7 @@ class AppLocalizationsFr extends AppLocalizations {
       permissionCount,
       locale: localeName,
       other: '$permissionCount permissions',
-      zero: 'No permissions',
+      zero: 'No autorisations',
     );
     String _temp1 = intl.Intl.pluralLogic(
       userCount,
@@ -14557,63 +14599,63 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count roles',
-      zero: 'no roles',
+      zero: 'non rôles',
     );
     return 'Used by $_temp0';
   }
 
   @override
-  String get hrAccessUserDetailTitle => 'User account';
+  String get hrAccessUserDetailTitle => 'User compte';
 
   @override
-  String get hrAccessViewUserAction => 'View';
+  String get hrAccessViewUserAction => 'Voir';
 
   @override
   String get hrAccessManageRolesPermissionsAction =>
-      'Manage roles & permissions';
+      'Manage rôles & autorisations';
 
   @override
-  String get hrAccessDirectPermissionsLabel => 'Direct permissions';
+  String get hrAccessDirectPermissionsLabel => 'Direct autorisations';
 
   @override
-  String get hrAccessAssignedRolesLabel => 'Assigned roles';
+  String get hrAccessAssignedRolesLabel => 'Assigned rôles';
 
   @override
-  String get hrAccessEffectivePermissionsLabel => 'Effective permissions';
+  String get hrAccessEffectivePermissionsLabel => 'Effective autorisations';
 
   @override
-  String get hrAccessOpenStaffProfileAction => 'Open staff profile';
+  String get hrAccessOpenStaffProfileAction => 'Open personnel profil';
 
   @override
-  String get hrAccessLinkedStaffLabel => 'Linked staff';
+  String get hrAccessLinkedStaffLabel => 'Linked personnel';
 
   @override
-  String get hrAccessTenantContextRequiredTitle => 'Tenant context required';
+  String get hrAccessTenantContextRequiredTitle => 'Tenant context requis';
 
   @override
   String get hrAccessTenantContextRequiredBody =>
-      'Select a staff member or sign in with a tenant account before managing users, roles, and permissions.';
+      'Select un personnel member ou se connecter avec un locataire compte avant managing utilisateurs, rôles, et autorisations.';
 
   @override
-  String get hrAccessRoleSyncSuccessMessage => 'Role permissions updated.';
+  String get hrAccessRoleSyncSuccessMessage => 'Role autorisations mis à jour.';
 
   @override
-  String get hrAccessSystemCriticalRoleBadge => 'System critical';
+  String get hrAccessSystemCriticalRoleBadge => 'System critique';
 
   @override
   String get hrAccessNonSystemRoleLabel => 'Non-system';
 
   @override
-  String get hrAccessSelectAllRolesAction => 'Select all roles';
+  String get hrAccessSelectAllRolesAction => 'Select tous rôles';
 
   @override
-  String get hrAccessClearRolesAction => 'Clear roles';
+  String get hrAccessClearRolesAction => 'Clear rôles';
 
   @override
-  String get hrAccessSelectAllPermissionsAction => 'Select all permissions';
+  String get hrAccessSelectAllPermissionsAction => 'Select tous autorisations';
 
   @override
-  String get hrAccessClearPermissionsAction => 'Clear permissions';
+  String get hrAccessClearPermissionsAction => 'Clear autorisations';
 
   @override
   String get hrAccessLoadMoreAction => 'Load more';
@@ -14631,7 +14673,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrEndAssignmentDateLabel => 'End date';
 
   @override
-  String get hrAssignmentDetailDialogTitle => 'Assignment details';
+  String get hrAssignmentDetailDialogTitle => 'Assignment détails';
 
   @override
   String get hrAssignmentIdLabel => 'Assignment ID';
@@ -14640,7 +14682,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrEditAssignmentAction => 'Edit assignment';
 
   @override
-  String get hrAssignmentActiveLabel => 'Active';
+  String get hrAssignmentActiveLabel => 'Actif';
 
   @override
   String get hrAssignmentEndedLabel => 'Ended';
@@ -14649,14 +14691,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrDateRangeOngoingLabel => 'Ongoing';
 
   @override
-  String get hrAvailabilityWeekViewLabel => 'Week view';
+  String get hrAvailabilityWeekViewLabel => 'Week voir';
 
   @override
-  String get hrAvailabilityMonthViewLabel => 'Month view';
+  String get hrAvailabilityMonthViewLabel => 'Month voir';
 
   @override
   String get hrAvailabilityCalendarEmptyBody =>
-      'Record weekly availability to see the calendar.';
+      'Record weekly availability à see le calendar.';
 
   @override
   String get hrAvailabilityLegendAvailableLabel => 'Available';
@@ -14665,11 +14707,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrAvailabilityLegendUnavailableLabel => 'Unavailable';
 
   @override
-  String get hrAvailabilityLegendLeaveLabel => 'Approved leave';
+  String get hrAvailabilityLegendLeaveLabel => 'Approved congé';
 
   @override
   String get hrAvailabilityDayEmptyLabel =>
-      'No time slots recorded for this day.';
+      'No heure slots recorded pour ce day.';
 
   @override
   String get hrAvailabilityAddSlotAction => 'Add slot';
@@ -14679,15 +14721,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrCompensationActionTooltip =>
-      'Define or update pay structure for this staff member.';
+      'Define ou mettre à jour pay structure pour ce personnel member.';
 
   @override
   String get hrRunPayrollActionTooltip =>
-      'Calculate and process pay for a pay period. Requires Financial Approve permission.';
+      'Calculate et process pay pour un pay period. Requires Financial Approve autorisation.';
 
   @override
   String get hrPayrollMissingCompensationTooltip =>
-      'Add compensation before running payroll.';
+      'Add rémunération avant running paie.';
 
   @override
   String get hrCompensationPayStructureTabLabel => 'Pay structure';
@@ -14714,10 +14756,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrCompensationDailyRateLabel => 'Daily rate';
 
   @override
-  String get hrCompensationDetailDialogTitle => 'Compensation details';
+  String get hrCompensationDetailDialogTitle => 'Compensation détails';
 
   @override
-  String get hrCompensationAddNewRateAction => 'Add new rate';
+  String get hrCompensationAddNewRateAction => 'Add nouveau rate';
 
   @override
   String get hrCompensationAddPayLineAction => 'Add pay line';
@@ -14726,7 +14768,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrCompensationRemovePayLineAction => 'Remove pay line';
 
   @override
-  String get hrCompensationActiveStatusLabel => 'Active';
+  String get hrCompensationActiveStatusLabel => 'Actif';
 
   @override
   String get hrCompensationEndedStatusLabel => 'Ended';
@@ -14744,12 +14786,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String hrPayrollZeroQuantityWarning(String payType) {
-    return 'No recorded activity for $payType in this period.';
+    return 'No recorded activity pour $payType in ce period.';
   }
 
   @override
   String get hrPayrollMixedCurrencyWarning =>
-      'Some compensation lines use a different currency and were excluded from the total.';
+      'Some rémunération lines utiliser un different devise et were excluded de le total.';
 
   @override
   String get hrPayrollWizardTitle => 'Payroll run';
@@ -14768,10 +14810,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrPayrollWizardNoStaffItemsLabel =>
-      'No payroll line items for this staff member in the selected period.';
+      'No paie line éléments pour ce personnel member in le selected period.';
 
   @override
-  String get hrPayrollStaffCountLabel => 'Staff count';
+  String get hrPayrollStaffCountLabel => 'Staff nombre';
 
   @override
   String get hrGrossPayLabel => 'Gross pay';
@@ -14784,7 +14826,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrPayrollWizardProcessStepBody =>
-      'Process will create payroll items and advance the run toward paid status.';
+      'Process will créer paie éléments et advance le run toward paid statut.';
 
   @override
   String get hrPayrollWizardPreviewAction => 'Preview';
@@ -14793,10 +14835,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrPayrollWizardReviewAction => 'Review';
 
   @override
-  String get hrLeaveDetailDialogTitle => 'Leave details';
+  String get hrLeaveDetailDialogTitle => 'Leave détails';
 
   @override
-  String get hrLeaveCoveringStaffLabel => 'Covering staff';
+  String get hrLeaveCoveringStaffLabel => 'Covering personnel';
 
   @override
   String get hrLeaveHandoverNotesLabel => 'Handover notes';
@@ -14805,7 +14847,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrLeaveReasonLabel => 'Reason';
 
   @override
-  String get hrShiftDetailDialogTitle => 'Shift details';
+  String get hrShiftDetailDialogTitle => 'Shift détails';
 
   @override
   String get hrShiftTypeLabel => 'Shift type';
@@ -14824,14 +14866,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrOffboardStaffActionTooltip =>
-      'Record separation and optionally end assignments and revoke access.';
+      'Record separation et optionally end assignments et revoke accès.';
 
   @override
   String get hrOffboardStaffDialogTitle => 'End employment';
 
   @override
   String get hrOffboardStaffDialogHint =>
-      'This ends employment for the staff member. Active assignments can be closed on the last working day.';
+      'Ce ends employment pour le personnel member. Active assignments can be fermé on le last working day.';
 
   @override
   String get hrSeparationTypeLabel => 'Separation type';
@@ -14861,13 +14903,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrSeparationNotesLabel => 'Reason / notes';
 
   @override
-  String get hrOffboardEndAssignmentsLabel => 'End all active assignments';
+  String get hrOffboardEndAssignmentsLabel => 'End tous actif assignments';
 
   @override
-  String get hrOffboardRevokeAccessLabel => 'Revoke system access';
+  String get hrOffboardRevokeAccessLabel => 'Revoke system accès';
 
   @override
-  String get hrOffboardFinalPayrollLabel => 'Schedule final payroll';
+  String get hrOffboardFinalPayrollLabel => 'Schedule final paie';
 
   @override
   String hrSeparationBannerMessage(String separationType, String lastDay) {
@@ -14875,7 +14917,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get hrShiftTemplateAction => 'Schedule templates';
+  String get hrShiftTemplateAction => 'Schedule modèles';
 
   @override
   String get hrShiftTemplateDialogTitle => 'Schedule pattern';
@@ -14884,34 +14926,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrSchedulePatternCreateTitle => 'Schedule pattern';
 
   @override
-  String get hrSchedulePatternEditTitle => 'Edit schedule pattern';
+  String get hrSchedulePatternEditTitle => 'Edit planning pattern';
 
   @override
-  String get hrCreateShiftTemplateAction => 'Create schedule';
+  String get hrCreateShiftTemplateAction => 'Create planning';
 
   @override
-  String get hrEditShiftTemplateAction => 'Edit';
+  String get hrEditShiftTemplateAction => 'Modifier';
 
   @override
-  String get hrDeleteShiftTemplateAction => 'Delete';
+  String get hrDeleteShiftTemplateAction => 'Supprimer';
 
   @override
-  String get hrSchedulePatternEditAction => 'Edit';
+  String get hrSchedulePatternEditAction => 'Modifier';
 
   @override
-  String get hrSchedulePatternDeleteAction => 'Delete';
+  String get hrSchedulePatternDeleteAction => 'Supprimer';
 
   @override
   String get hrScheduleTemplateIdLabel => 'Template ID';
 
   @override
-  String get hrScheduleTemplateActiveLabel => 'Active';
+  String get hrScheduleTemplateActiveLabel => 'Actif';
 
   @override
-  String get hrScheduleTemplateInactiveLabel => 'Inactive';
+  String get hrScheduleTemplateInactiveLabel => 'Inactif';
 
   @override
-  String get hrStatusLabel => 'Status';
+  String get hrStatusLabel => 'Statut';
 
   @override
   String get hrCreatedAtLabel => 'Created';
@@ -14920,31 +14962,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrUpdatedAtLabel => 'Updated';
 
   @override
-  String get hrShiftTypeDay => 'Day shift';
+  String get hrShiftTypeDay => 'Day quart';
 
   @override
-  String get hrShiftTypeNight => 'Night shift';
+  String get hrShiftTypeNight => 'Night quart';
 
   @override
-  String get hrShiftTypeSwing => 'Swing shift';
+  String get hrShiftTypeSwing => 'Swing quart';
 
   @override
   String get hrShiftTypeOnCall => 'On call';
 
   @override
-  String get hrShiftTemplateNameLabel => 'Template name';
+  String get hrShiftTemplateNameLabel => 'Template nom';
 
   @override
-  String get hrPreviewPayrollAction => 'Preview payroll';
+  String get hrPreviewPayrollAction => 'Preview paie';
 
   @override
-  String get hrPreviewPayrollDialogTitle => 'Payroll preview';
+  String get hrPreviewPayrollDialogTitle => 'Payroll aperçu';
 
   @override
   String get hrPreviewRosterAction => 'Preview roster generation';
 
   @override
-  String get hrPreviewRosterDialogTitle => 'Roster generation preview';
+  String get hrPreviewRosterDialogTitle => 'Roster generation aperçu';
 
   @override
   String get hrRosterCoverageLabel => 'Coverage';
@@ -14953,16 +14995,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrRosterGapsLabel => 'Staffing gaps';
 
   @override
-  String get hrPasswordLabel => 'Temporary password';
+  String get hrPasswordLabel => 'Temporary mot de passe';
 
   @override
-  String get hrEmailLabel => 'Email';
+  String get hrEmailLabel => 'E-mail';
 
   @override
-  String get hrOnboardingModeExistingUser => 'Link existing user';
+  String get hrOnboardingModeExistingUser => 'Link existing utilisateur';
 
   @override
-  String get hrOnboardingModeCreateUser => 'Create new user';
+  String get hrOnboardingModeCreateUser => 'Create nouveau utilisateur';
 
   @override
   String get hrWednesdayLabel => 'Wednesday';
@@ -14972,16 +15014,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrWorkQueuesToolbarTooltip =>
-      'Browse and act on all queue types in one dialog.';
+      'Browse et act on tous queue types in one dialog.';
 
   @override
   String get copyAdmissionIdAction => 'Copy admission ID';
 
   @override
-  String get copyUserIdAction => 'Copy user ID';
+  String get copyUserIdAction => 'Copy utilisateur ID';
 
   @override
-  String get copyIdentifierAction => 'Copy identifier';
+  String get copyIdentifierAction => 'Copy identifiant';
 
   @override
   String get admissionIdCopiedMessage => 'Admission ID copied.';
@@ -14993,31 +15035,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get identifierCopiedMessage => 'Identifier copied.';
 
   @override
-  String get settingsWorkspaceSectionTitle => 'Administrative setup workspace';
+  String get settingsWorkspaceSectionTitle =>
+      'Administrative setup espace de travail';
 
   @override
   String get settingsWorkspaceSectionBody =>
-      'Review tenant, facility, access, and security setup readiness.';
+      'Review locataire, établissement, accès, et sécurité setup readiness.';
 
   @override
-  String get settingsWorkspaceLoadingTitle => 'Loading settings workspace';
+  String get settingsWorkspaceLoadingTitle =>
+      'Loading paramètres espace de travail';
 
   @override
   String get settingsWorkspaceLoadingBody =>
-      'Loading setup readiness, actions, and reference data.';
+      'Loading setup readiness, actions, et référence data.';
 
   @override
-  String get settingsWorkspaceErrorTitle => 'Settings workspace unavailable';
+  String get settingsWorkspaceErrorTitle =>
+      'Settings espace de travail indisponible';
 
   @override
-  String get settingsWorkspaceEmptyTitle => 'No setup modules found';
+  String get settingsWorkspaceEmptyTitle => 'Aucun setup modules trouvé';
 
   @override
   String get settingsWorkspaceEmptyBody =>
-      'No setup modules match the current filters.';
+      'No setup modules match le actuel filtres.';
 
   @override
-  String get settingsWorkspaceContextTitle => 'Context summary';
+  String get settingsWorkspaceContextTitle => 'Context résumé';
 
   @override
   String get settingsWorkspaceTenantLabel => 'Tenant';
@@ -15044,7 +15089,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceConfiguredLabel => 'Configured';
 
   @override
-  String get settingsWorkspaceTotalRecordsLabel => 'Total records';
+  String get settingsWorkspaceTotalRecordsLabel => 'Total dossiers';
 
   @override
   String get settingsWorkspaceChecklistTitle => 'Setup checklist';
@@ -15059,7 +15104,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceSearchLabel => 'Search setup modules';
 
   @override
-  String get settingsWorkspaceSearchHint => 'Search by module, group, or route';
+  String get settingsWorkspaceSearchHint => 'Search by module, group, ou route';
 
   @override
   String get settingsWorkspaceGroupFilterLabel => 'Group';
@@ -15086,25 +15131,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceApplyContextAction => 'Apply context';
 
   @override
-  String get settingsWorkspaceOpenAction => 'Open';
+  String get settingsWorkspaceOpenAction => 'Ouvrir';
 
   @override
-  String get settingsWorkspaceCreateAction => 'Create';
+  String get settingsWorkspaceCreateAction => 'Créer';
 
   @override
   String get settingsWorkspaceRouteUnavailableLabel => 'Unavailable';
 
   @override
   String get settingsWorkspaceRouteUnavailableBody =>
-      'This setup action is not available from this page yet.';
+      'Ce setup action is not disponible de ce page yet.';
 
   @override
   String get settingsWorkspaceTenantContextRequiredTitle =>
-      'Tenant context required';
+      'Tenant context requis';
 
   @override
   String get settingsWorkspaceTenantContextRequiredBody =>
-      'Select a tenant to load administrative setup readiness.';
+      'Select un locataire à load administrative setup readiness.';
 
   @override
   String get settingsWorkspaceReadyStatus => 'Ready';
@@ -15125,7 +15170,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceOrganizationGroup => 'Organization';
 
   @override
-  String get settingsWorkspaceUsersAndAccessGroup => 'Users and access';
+  String get settingsWorkspaceUsersAndAccessGroup => 'Users et accès';
 
   @override
   String get settingsWorkspaceSecurityGroup => 'Security';
@@ -15135,7 +15180,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsWorkspaceDependencyBlockedLabel =>
-      'Waiting for required setup';
+      'Waiting pour requis setup';
 
   @override
   String get settingsWorkspaceRequiredSetupLabel => 'Required setup';
@@ -15145,14 +15190,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsWorkspaceNoQuickActionsBody =>
-      'No setup action is currently available for the selected context.';
+      'No setup action is currently disponible pour le selected context.';
 
   @override
   String get settingsWorkspaceNoModulesBody =>
-      'No modules match the selected filters.';
+      'No modules match le selected filtres.';
 
   @override
-  String get settingsWorkspaceSelectTenantAction => 'Select tenant';
+  String get settingsWorkspaceSelectTenantAction => 'Select locataire';
 
   @override
   String get settingsWorkspaceModuleTenant => 'Tenant';
@@ -15170,13 +15215,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceModuleUnit => 'Unit';
 
   @override
-  String get settingsWorkspaceModuleRoom => 'Room';
+  String get settingsWorkspaceModuleRoom => 'Chambre';
 
   @override
-  String get settingsWorkspaceModuleWard => 'Ward';
+  String get settingsWorkspaceModuleWard => 'Service';
 
   @override
-  String get settingsWorkspaceModuleBed => 'Bed';
+  String get settingsWorkspaceModuleBed => 'Lit';
 
   @override
   String get settingsWorkspaceModuleAddress => 'Address';
@@ -15188,7 +15233,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceModuleUser => 'User';
 
   @override
-  String get settingsWorkspaceModuleUserProfile => 'User profile';
+  String get settingsWorkspaceModuleUserProfile => 'User profil';
 
   @override
   String get settingsWorkspaceModuleRole => 'Role';
@@ -15197,10 +15242,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceModulePermission => 'Permission';
 
   @override
-  String get settingsWorkspaceModuleRolePermission => 'Role permission';
+  String get settingsWorkspaceModuleRolePermission => 'Role autorisation';
 
   @override
-  String get settingsWorkspaceModuleUserRole => 'User role';
+  String get settingsWorkspaceModuleUserRole => 'User rôle';
 
   @override
   String get settingsWorkspaceModuleUserSession => 'User session';
@@ -15209,113 +15254,113 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsWorkspaceModuleApiKey => 'API key';
 
   @override
-  String get settingsWorkspaceModuleApiKeyPermission => 'API key permission';
+  String get settingsWorkspaceModuleApiKeyPermission => 'API key autorisation';
 
   @override
   String get settingsWorkspaceModuleUserMfa => 'User MFA';
 
   @override
-  String get settingsWorkspaceModuleOauthAccount => 'OAuth account';
+  String get settingsWorkspaceModuleOauthAccount => 'OAuth compte';
 
   @override
   String get pharmacyWorkflowReadinessTitle => 'Pharmacy workflow readiness';
 
   @override
   String get pharmacyWorkflowReadinessBody =>
-      'Actions below follow the current order, stock, batch, and attestation state.';
+      'Actions below follow le actuel commande, stock, batch, et attestation state.';
 
   @override
   String get pharmacyReadinessDispenseAvailable =>
-      'Dispense is available for the current order state.';
+      'Dispense is disponible pour le actuel commande state.';
 
   @override
   String get pharmacyReadinessDispenseBlocked =>
-      'Dispense is blocked by the current order, payment, stock, or authorization state.';
+      'Dispense is blocked by le actuel commande, paiement, stock, ou authorization state.';
 
   @override
   String get pharmacyReadinessStockMapped =>
-      'Medication items have stock mapping available.';
+      'Medication éléments have stock mapping disponible.';
 
   @override
   String get pharmacyReadinessStockMissing =>
-      'Some medication items need stock mapping before dispense.';
+      'Some médicament éléments need stock mapping avant dispense.';
 
   @override
   String get pharmacyReadinessAttestationRequired =>
-      'Prepared batches require attestation before completion.';
+      'Prepared batches require attestation avant completion.';
 
   @override
   String get pharmacyReadinessAttestationClear =>
-      'No prepared batch attestation is pending.';
+      'No prepared batch attestation is en attente.';
 
   @override
   String get pharmacyReadinessPrintReady =>
-      'Medication printouts use the configured print workflow.';
+      'Medication printouts utiliser le configured print workflow.';
 
   @override
-  String get commonSelectActionLabel => 'Select';
+  String get commonSelectActionLabel => 'Sélectionner';
 
   @override
-  String get commonSaveActionLabel => 'Save';
+  String get commonSaveActionLabel => 'Enregistrer';
 
   @override
-  String get commonNextActionLabel => 'Next';
+  String get commonNextActionLabel => 'Suivant';
 
   @override
-  String get commonRemoveActionLabel => 'Remove';
+  String get commonRemoveActionLabel => 'Retirer';
 
   @override
-  String get labOrdersViewAction => 'Orders view';
+  String get labOrdersViewAction => 'Orders voir';
 
   @override
-  String get labPatientsViewAction => 'Patients view';
+  String get labPatientsViewAction => 'Patients voir';
 
   @override
   String get labReferenceRangesAction => 'Lab Configurations';
 
   @override
-  String get labTableColumnsTitle => 'Lab table columns';
+  String get labTableColumnsTitle => 'Lab tableau colonnes';
 
   @override
-  String get labApplyColumnsAction => 'Apply columns';
+  String get labApplyColumnsAction => 'Apply colonnes';
 
   @override
-  String get labResetColumnsAction => 'Reset columns';
+  String get labResetColumnsAction => 'Reset colonnes';
 
   @override
   String get labPatientsSummaryLabel => 'Patients';
 
   @override
   String get labPatientsAwaitingResultsSummaryLabel =>
-      'Patients awaiting results';
+      'Patients en attente de résultats';
 
   @override
-  String get labPatientsProcessingSummaryLabel => 'Patients in processing';
+  String get labPatientsProcessingSummaryLabel => 'Patients in traitement';
 
   @override
   String get labPatientsPendingVerificationSummaryLabel =>
-      'Patients pending verification';
+      'Patients en attente vérification';
 
   @override
   String get labPatientsCriticalSummaryLabel =>
-      'Patients with critical results';
+      'Patients avec critique résultats';
 
   @override
-  String get labPatientsCompletedSummaryLabel => 'Patients completed';
+  String get labPatientsCompletedSummaryLabel => 'Patients terminé';
 
   @override
-  String get labPatientsWorklistTitle => 'Patient lab worklist';
+  String get labPatientsWorklistTitle => 'Patient laboratoire worklist';
 
   @override
   String get labPatientsWorklistDescription =>
-      'Patients with active lab orders and result-entry work.';
+      'Patients avec actif laboratoire commandes et résultat-entry work.';
 
   @override
-  String get labNoPatientsTitle => 'No patients in lab worklist';
+  String get labNoPatientsTitle => 'No patients in laboratoire worklist';
 
   @override
   String get labNoPatientsBody =>
-      'Adjust the queue filter or search term to find patient lab work.';
+      'Adjust le queue filtre ou recherche term à find patient laboratoire work.';
 
   @override
   String get labOrdersColumnLabel => 'Orders';
@@ -15324,74 +15369,75 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labPatientIdFieldLabel => 'Patient ID';
 
   @override
-  String get labVerifyAllAction => 'Verify all';
+  String get labVerifyAllAction => 'Verify tous';
 
   @override
-  String get labEntryStatusColumnLabel => 'Entry status';
+  String get labEntryStatusColumnLabel => 'Entry statut';
 
   @override
-  String get labSelectOrderDialogTitle => 'Select lab order';
+  String get labSelectOrderDialogTitle => 'Select laboratoire commande';
 
   @override
   String get labSelectOrderDialogBody =>
-      'This patient has multiple active lab orders. Select the order to review.';
+      'Ce patient has multiple actif laboratoire commandes. Select le commande à review.';
 
   @override
-  String get labNoOrderItemsLabel => 'No ordered tests found';
+  String get labNoOrderItemsLabel => 'Aucun ordered tests trouvé';
 
   @override
   String get labTestCodeLabel => 'Test code';
 
   @override
-  String get labVerifyResultAction => 'Verify result';
+  String get labVerifyResultAction => 'Verify résultat';
 
   @override
-  String get labEditVerifiedResultAction => 'Edit verified result';
+  String get labEditVerifiedResultAction => 'Edit vérifié résultat';
 
   @override
-  String get labReopenVerifiedResultDialogTitle => 'Edit verified result';
+  String get labReopenVerifiedResultDialogTitle => 'Edit vérifié résultat';
 
   @override
   String get labReopenVerifiedResultDialogBody =>
-      'Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.';
+      'Update le résultat valeur et provide un reason pour changing un vérifié résultat. Le corrected valeur is re-vérifié lorsque you enregistrer.';
 
   @override
-  String get labReopenVerifiedReasonLabel => 'Reason for edit';
+  String get labReopenVerifiedReasonLabel => 'Reason pour modifier';
 
   @override
-  String get labVerifiedResultReopenedMessage => 'Result reopened for editing.';
+  String get labVerifiedResultReopenedMessage =>
+      'Result reopened pour editing.';
 
   @override
   String get labRestoreOrderItemAction => 'Restore test';
 
   @override
-  String get labRestoreOrderItemDialogTitle => 'Restore cancelled test';
+  String get labRestoreOrderItemDialogTitle => 'Restore annulé test';
 
   @override
   String labRestoreOrderItemDialogBody(String testName) {
-    return 'Restore \"$testName\"? It was cancelled and will return to the active worklist for processing.';
+    return 'Restore \"$testName\"? It was annulé et will return à le actif worklist pour traitement.';
   }
 
   @override
-  String get labDeleteOrderItemAction => 'Delete request';
+  String get labDeleteOrderItemAction => 'Delete demande';
 
   @override
-  String get labDeleteOrderItemDialogTitle => 'Delete test request';
+  String get labDeleteOrderItemDialogTitle => 'Delete test demande';
 
   @override
   String labDeleteOrderItemDialogBody(String testName) {
-    return 'Delete \"$testName\" from this order? This removes the requested test entirely and cannot be undone.';
+    return 'Delete \"$testName\" de ce commande? Ce removes le requested test entirely et ne peut pas be undone.';
   }
 
   @override
-  String get labDeletePanelAction => 'Delete panel';
+  String get labDeletePanelAction => 'Delete panneau';
 
   @override
-  String get labDeletePanelDialogTitle => 'Delete lab panel';
+  String get labDeletePanelDialogTitle => 'Delete laboratoire panneau';
 
   @override
   String labDeletePanelDialogBody(String panelName) {
-    return 'This will remove $panelName from the configurable lab catalog. A reason is required for the audit trail.';
+    return 'Ce will retirer $panelName de le configurable laboratoire catalog. Un reason est requis pour le audit trail.';
   }
 
   @override
@@ -15401,13 +15447,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labResultFlagLabel => 'Flag';
 
   @override
-  String get labVerifyResultDialogTitle => 'Enter and verify result';
+  String get labVerifyResultDialogTitle => 'Enter et verify résultat';
 
   @override
-  String get labNumericRangeValidationMessage => 'Enter a valid number.';
+  String get labNumericRangeValidationMessage => 'Enter un valid number.';
 
   @override
-  String get labVerifyAllDialogTitle => 'Verify entered results';
+  String get labVerifyAllDialogTitle => 'Verify entered résultats';
 
   @override
   String get labRejectOrderItemDialogTitle => 'Reject requested test';
@@ -15419,7 +15465,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labRejectReasonInsufficientInfo => 'Insufficient information';
 
   @override
-  String get labRejectReasonInvalidRequest => 'Invalid request';
+  String get labRejectReasonInvalidRequest => 'request invalide';
 
   @override
   String get labRejectReasonOther => 'Other reason';
@@ -15432,7 +15478,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get labReferenceRangesDialogBody =>
-      'Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.';
+      'Manage laboratoire tests, panels, unités, qualitative options, et référence ranges utilisé by backend résultat interpretation.';
 
   @override
   String get labConfigureTestAction => 'Configure test';
@@ -15441,10 +15487,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labQcLogsAction => 'QC logs';
 
   @override
-  String get labConfigureTestDialogTitle => 'Configure lab test';
+  String get labConfigureTestDialogTitle => 'Configure laboratoire test';
 
   @override
-  String get labTestNameLabel => 'Test name';
+  String get labTestNameLabel => 'Test nom';
 
   @override
   String get labCategoryLabel => 'Category';
@@ -15465,16 +15511,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labResultKindText => 'Text';
 
   @override
-  String get labDefaultUnitLabel => 'Default unit';
+  String get labDefaultUnitLabel => 'Default unité';
 
   @override
   String get labUnitOptionsLabel => 'Unit options';
 
   @override
-  String get labCommaSeparatedHelper => 'Separate multiple values with commas.';
+  String get labCommaSeparatedHelper =>
+      'Separate multiple valeurs avec commas.';
 
   @override
-  String get labQualitativeOptionsLabel => 'Qualitative result options';
+  String get labQualitativeOptionsLabel => 'Qualitative résultat options';
 
   @override
   String get labGenderApplicabilityLabel => 'Gender applicability';
@@ -15483,10 +15530,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labGenderAnyLabel => 'Any';
 
   @override
-  String get labGenderMaleLabel => 'Male';
+  String get labGenderMaleLabel => 'Homme';
 
   @override
-  String get labGenderFemaleLabel => 'Female';
+  String get labGenderFemaleLabel => 'Femme';
 
   @override
   String get labAgeMinLabel => 'Age min';
@@ -15495,7 +15542,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labAgeMaxLabel => 'Age max';
 
   @override
-  String get labAgeUnitLabel => 'Age unit';
+  String get labAgeUnitLabel => 'Age unité';
 
   @override
   String get labAgeUnitDays => 'Days';
@@ -15522,7 +15569,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labReferenceTextLabel => 'Reference text';
 
   @override
-  String get labStatusPendingResults => 'Pending results';
+  String get labStatusPendingResults => 'Pending résultats';
 
   @override
   String get labStatusVerified => 'Verified';
@@ -15534,53 +15581,53 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labStatusHigh => 'High';
 
   @override
-  String get labNextActionVerify => 'Verify result';
+  String get labNextActionVerify => 'Verify résultat';
 
   @override
-  String get labNextActionEnterResult => 'Enter result';
+  String get labNextActionEnterResult => 'Enter résultat';
 
   @override
   String get labCreateAction => 'Create Lab Order';
 
   @override
-  String get labCreateChoiceDialogTitle => 'Create laboratory item';
+  String get labCreateChoiceDialogTitle => 'Create laboratory élément';
 
   @override
   String get labCreateChoiceDialogBody =>
-      'Choose the laboratory record you want to create.';
+      'Choose le laboratory dossier you want à créer.';
 
   @override
-  String get labCreateOrderAction => 'Create lab order';
+  String get labCreateOrderAction => 'Create laboratoire commande';
 
   @override
   String get labCreateOrderChoiceBody =>
-      'Request tests or panels for a patient.';
+      'Request tests ou panels pour un patient.';
 
   @override
-  String get labCreateOrderDialogTitle => 'Create lab order';
+  String get labCreateOrderDialogTitle => 'Create laboratoire commande';
 
   @override
   String get labCreateTestAction => 'Add test';
 
   @override
   String get labCreateTestChoiceBody =>
-      'Add a configurable test to the lab catalog.';
+      'Add un configurable test à le laboratoire catalog.';
 
   @override
-  String get labCreateTestDialogTitle => 'Create lab test';
+  String get labCreateTestDialogTitle => 'Create laboratoire test';
 
   @override
-  String get labCreatePanelAction => 'Add panel';
+  String get labCreatePanelAction => 'Add panneau';
 
   @override
   String get labCreatePanelChoiceBody =>
-      'Group existing tests into a reusable panel.';
+      'Group existing tests into un reusable panneau.';
 
   @override
-  String get labCreatePanelDialogTitle => 'Create lab panel';
+  String get labCreatePanelDialogTitle => 'Create laboratoire panneau';
 
   @override
-  String get labPanelNameLabel => 'Panel name';
+  String get labPanelNameLabel => 'Panel nom';
 
   @override
   String get labPanelCodeLabel => 'Panel code';
@@ -15590,7 +15637,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get labReferenceRangesSearchHint =>
-      'Search test, panel, code, category, specimen, unit, or range';
+      'Search test, panneau, code, catégorie, specimen, unité, ou range';
 
   @override
   String get labActionColumnLabel => 'Action';
@@ -15599,31 +15646,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labUnitRangeCountColumnLabel => 'Unit / ranges';
 
   @override
-  String get labGenderOtherLabel => 'Other';
+  String get labGenderOtherLabel => 'Autre';
 
   @override
-  String get labGenderUnknownLabel => 'Unknown';
+  String get labGenderUnknownLabel => 'Inconnu';
 
   @override
   String get labAgeUnitWeeks => 'Weeks';
 
   @override
-  String get labAddValueAction => 'Add value';
+  String get labAddValueAction => 'Add valeur';
 
   @override
-  String get labAddValueFieldHint => 'Type a value, then add it';
+  String get labAddValueFieldHint => 'Type un valeur, then ajouter it';
 
   @override
-  String get labEditOrderAction => 'Edit order';
+  String get labEditOrderAction => 'Edit commande';
 
   @override
-  String get labEditOrderDialogTitle => 'Edit lab order context';
+  String get labEditOrderDialogTitle => 'Edit laboratoire commande context';
 
   @override
-  String get labUpdateOrderSubmitAction => 'Update lab order';
+  String get labUpdateOrderSubmitAction => 'Update laboratoire commande';
 
   @override
-  String get labDeleteOrderAction => 'Delete order';
+  String get labDeleteOrderAction => 'Delete commande';
 
   @override
   String get labDeleteTestAction => 'Delete test';
@@ -15633,51 +15680,51 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get labDeleteReasonHint =>
-      'Explain why this lab record should be deleted';
+      'Explain why ce laboratoire dossier should be supprimé';
 
   @override
-  String get labDeleteReasonValidationMessage => 'Enter a deletion reason.';
+  String get labDeleteReasonValidationMessage => 'Enter un deletion reason.';
 
   @override
-  String get labDeleteOrderDialogTitle => 'Delete lab order';
+  String get labDeleteOrderDialogTitle => 'Delete laboratoire commande';
 
   @override
   String labDeleteOrderDialogBody(String orderId) {
-    return 'This will remove lab order $orderId from the active laboratory queue. A reason is required for the audit trail.';
+    return 'Ce will retirer laboratoire commande $orderId de le actif laboratory queue. Un reason est requis pour le audit trail.';
   }
 
   @override
-  String get labDeleteTestDialogTitle => 'Delete lab test';
+  String get labDeleteTestDialogTitle => 'Delete laboratoire test';
 
   @override
   String labDeleteTestDialogBody(String testName) {
-    return 'This will remove $testName from the configurable lab catalog. A reason is required for the audit trail.';
+    return 'Ce will retirer $testName de le configurable laboratoire catalog. Un reason est requis pour le audit trail.';
   }
 
   @override
-  String get labDeletedMessage => 'Laboratory record deleted.';
+  String get labDeletedMessage => 'Laboratory dossier supprimé.';
 
   @override
   String get labDuplicateTestNameMessage =>
-      'A lab test with this name already exists.';
+      'Un laboratoire test avec ce nom existe déjà.';
 
   @override
   String get labDuplicateTestCodeMessage =>
-      'A lab test with this code already exists.';
+      'Un laboratoire test avec ce code existe déjà.';
 
   @override
   String get labDuplicatePanelNameMessage =>
-      'A lab panel with this name already exists.';
+      'Un laboratoire panneau avec ce nom existe déjà.';
 
   @override
   String get labDuplicatePanelCodeMessage =>
-      'A lab panel with this code already exists.';
+      'Un laboratoire panneau avec ce code existe déjà.';
 
   @override
-  String get labUpdatePanelDialogTitle => 'Edit lab panel';
+  String get labUpdatePanelDialogTitle => 'Edit laboratoire panneau';
 
   @override
-  String get labUpdatePanelAction => 'Edit panel';
+  String get labUpdatePanelAction => 'Edit panneau';
 
   @override
   String get labPanelTestsLabel => 'Panel tests';
@@ -15692,7 +15739,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labPanelSelectedTestsTitle => 'Selected tests';
 
   @override
-  String get labPanelNoSelectedTests => 'No tests selected for this panel.';
+  String get labPanelNoSelectedTests => 'No tests selected pour ce panneau.';
 
   @override
   String get labTestDescriptionLabel => 'Test description';
@@ -15721,33 +15768,33 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count active orders',
-      one: '1 active order',
+      one: '1 actif commande',
     );
     return '$_temp0';
   }
 
   @override
-  String get labPreviewReportAction => 'Preview report';
+  String get labPreviewReportAction => 'Preview rapport';
 
   @override
-  String get labPrintReportAction => 'Print report';
+  String get labPrintReportAction => 'Print rapport';
 
   @override
   String get labResetReportSelectionAction => 'Reset selection';
 
   @override
-  String get labReportSelectionTitle => 'Select tests for the report';
+  String get labReportSelectionTitle => 'Select tests pour le rapport';
 
   @override
   String get labReportSelectionHint =>
-      'Use the checkboxes on each result row below to choose what to print.';
+      'Use le checkboxes on each résultat ligne below à choose what à print.';
 
   @override
-  String get labReportOrderDetailsToggleLabel => 'Include order details';
+  String get labReportOrderDetailsToggleLabel => 'Include commande détails';
 
   @override
   String get labReportOrderDetailsToggleHint =>
-      'Show order identifiers and dates above each results table.';
+      'Show commande identifiants et dates above each résultats tableau.';
 
   @override
   String labReportSelectedTestCount(int selectedCount, int totalCount) {
@@ -15758,20 +15805,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labReportIncludeColumnLabel => 'Include';
 
   @override
-  String get labReportNoSelectionLabel => 'No report items selected';
+  String get labReportNoSelectionLabel => 'No rapport éléments selected';
 
   @override
   String get labOrdersIncludedLabel => 'Orders included';
 
   @override
-  String get labRemoveDraftResultAction => 'Remove result';
+  String get labRemoveDraftResultAction => 'Remove résultat';
 
   @override
-  String get labRemoveDraftResultDialogTitle => 'Remove lab result?';
+  String get labRemoveDraftResultDialogTitle => 'Remove laboratoire résultat?';
 
   @override
   String get labRemoveDraftResultDialogBody =>
-      'This draft result will be removed from the selected test.';
+      'Ce brouillon résultat will be removed de le selected test.';
 
   @override
   String get labDraftRemovedMessage => 'Result removed.';
@@ -15800,16 +15847,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get commonYesLabel => 'Yes';
+  String get commonYesLabel => 'Oui';
 
   @override
-  String get commonNoLabel => 'No';
+  String get commonNoLabel => 'Non';
 
   @override
-  String get radiologyOrdersViewAction => 'Orders view';
+  String get radiologyOrdersViewAction => 'Orders voir';
 
   @override
-  String get radiologyPatientsViewAction => 'Patients view';
+  String get radiologyPatientsViewAction => 'Patients voir';
 
   @override
   String get radiologyConfigurationsAction => 'Configurations';
@@ -15819,14 +15866,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyConfigurationsDialogBody =>
-      'Manage persisted imaging tests and customize standard catalog tests for radiology workflows.';
+      'Manage persisted imaging tests et customize standard catalog tests pour radiologie workflows.';
 
   @override
   String get radiologyConfigurationsLoadingTitle => 'Loading configurations';
 
   @override
   String get radiologyConfigurationsLoadingBody =>
-      'Loading imaging tests and standard catalog entries.';
+      'Loading imaging tests et standard catalog entries.';
 
   @override
   String get radiologyPatientsSummaryLabel => 'Radiology patients';
@@ -15840,33 +15887,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyPatientsWorklistDescription =>
-      'Patients grouped by active imaging orders, reporting status, and next action.';
+      'Patients grouped by actif imaging commandes, reporting statut, et suivant action.';
 
   @override
-  String get radiologyNoPatientsTitle => 'No radiology patients';
+  String get radiologyNoPatientsTitle => 'No radiologie patients';
 
   @override
   String get radiologyNoPatientsBody =>
-      'Patients with imaging requests matching this search and filter will appear here.';
+      'Patients avec imaging demandes matching ce recherche et filtre will appear here.';
 
   @override
-  String get radiologyTableColumnsTitle => 'Radiology columns';
+  String get radiologyTableColumnsTitle => 'Radiology colonnes';
 
   @override
-  String get radiologyApplyColumnsAction => 'Apply columns';
+  String get radiologyApplyColumnsAction => 'Apply colonnes';
 
   @override
-  String get radiologyResetColumnsAction => 'Reset columns';
+  String get radiologyResetColumnsAction => 'Reset colonnes';
 
   @override
   String get radiologyOrdersColumnLabel => 'Order(s)';
 
   @override
-  String get radiologyOneActiveOrderLabel => '1 active order';
+  String get radiologyOneActiveOrderLabel => '1 actif commande';
 
   @override
   String get radiologyReferenceSearchOptionalLabel =>
-      'Catalog search (optional)';
+      'Catalog recherche (facultatif)';
 
   @override
   String get radiologySelectImagingTestsAction => 'Select imaging tests';
@@ -15899,11 +15946,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyConfigurationSearchLabel =>
-      'Search radiology configurations';
+      'Search radiologie configurations';
 
   @override
   String get radiologyConfigurationSearchHint =>
-      'Search tests, modality, code, source, or status';
+      'Search tests, modality, code, source, ou statut';
 
   @override
   String get radiologyCreateImagingTestAction => 'Create imaging test';
@@ -15924,13 +15971,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyCustomCatalogBadge => 'Custom';
 
   @override
-  String get radiologyTestNameLabel => 'Name';
+  String get radiologyTestNameLabel => 'Nom';
 
   @override
   String get radiologyTestCodeLabel => 'Code';
 
   @override
-  String get radiologyTestCodeOptionalLabel => 'Code (optional)';
+  String get radiologyTestCodeOptionalLabel => 'Code (facultatif)';
 
   @override
   String get radiologySourceColumnLabel => 'Source';
@@ -15946,28 +15993,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyNoImagingTestsBody =>
-      'Create a custom imaging test or refresh the standard catalog.';
+      'Create un personnalisé imaging test ou actualiser le standard catalog.';
 
   @override
   String get radiologyReadOnlyStandardTestTitle => 'Standard test is read-only';
 
   @override
   String get radiologyReadOnlyStandardTestMessage =>
-      'Standard catalog rows cannot be edited directly. Copy one to save a custom test.';
+      'Standard catalog lignes ne peut pas be edited directly. Copy one à enregistrer un personnalisé test.';
 
   @override
   String get radiologyDeleteImagingTestDialogTitle => 'Delete imaging test?';
 
   @override
   String get radiologyTenantRequiredForConfigMessage =>
-      'Tenant context is required before a custom imaging test can be saved.';
+      'Tenant context est requis avant un personnalisé imaging test can be saved.';
 
   @override
-  String get radiologyEquipmentRecordsTitle => 'Equipment records';
+  String get radiologyEquipmentRecordsTitle => 'Equipment dossiers';
 
   @override
   String get radiologyEquipmentRecordsBody =>
-      'Equipment is managed through the existing equipment registry.';
+      'Equipment is managed through le existing équipement registry.';
 
   @override
   String get radiologyEquipmentNameColumnLabel => 'Equipment';
@@ -15986,22 +16033,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyEquipmentSearchHint =>
-      'Search equipment name, code, serial, manufacturer, model, category, or status';
+      'Search équipement nom, code, serial, manufacturer, model, catégorie, ou statut';
 
   @override
-  String get radiologyNoEquipmentTitle => 'No equipment records';
+  String get radiologyNoEquipmentTitle => 'No équipement dossiers';
 
   @override
   String get radiologyNoEquipmentBody =>
-      'Equipment registry records matching this search will appear here.';
+      'Equipment registry dossiers matching ce recherche will appear here.';
 
   @override
   String get radiologyEquipmentLinkGapTitle =>
-      'Test equipment mapping unavailable';
+      'Test équipement mapping indisponible';
 
   @override
   String get radiologyEquipmentLinkGapBody =>
-      'The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.';
+      'Le actuel backend schema does not persist un direct imaging-test-à-équipement relationship, so ce espace de travail does not enregistrer local-only mappings.';
 
   @override
   String get radiologySaveConfigurationAction => 'Save configuration';
@@ -16011,7 +16058,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyAttachImagesBody =>
-      'Choose one or more images, add captions, then upload to attach them to this study.';
+      'Choose one ou more images, ajouter captions, then upload à attach them à ce study.';
 
   @override
   String get radiologyUploadImagesAction => 'Upload images';
@@ -16036,48 +16083,48 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyReportReferencesBody =>
-      'Insert an existing asset or PACS reference into the report text.';
+      'Insert un existing actif ou PACS référence into le rapport text.';
 
   @override
   String get radiologyNoReportReferencesLabel =>
-      'No asset or PACS references available.';
+      'No actif ou PACS references disponible.';
 
   @override
-  String get radiologyAssetReferencePrefix => 'Asset reference';
+  String get radiologyAssetReferencePrefix => 'Asset référence';
 
   @override
-  String get radiologyPacsReferencePrefix => 'PACS reference';
+  String get radiologyPacsReferencePrefix => 'PACS référence';
 
   @override
-  String get radiologyPrintReportAction => 'Print report';
+  String get radiologyPrintReportAction => 'Print rapport';
 
   @override
-  String get radiologyPrintReportDialogTitle => 'Print radiology report';
+  String get radiologyPrintReportDialogTitle => 'Print radiologie rapport';
 
   @override
   String get radiologyPrintReportDialogBody =>
-      'Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.';
+      'Choose clinique rapport sections à include. Patient context, test détails, findings, impression, et signer are selected by par défaut; metadata is facultatif.';
 
   @override
-  String get radiologyPrintPreviewTitle => 'Print preview';
+  String get radiologyPrintPreviewTitle => 'Print aperçu';
 
   @override
-  String get radiologyPrintAction => 'Print';
+  String get radiologyPrintAction => 'Imprimer';
 
   @override
-  String get radiologyPrintIncludeHeaderLabel => 'Facility/app header';
+  String get radiologyPrintIncludeHeaderLabel => 'Facility/app en-tête';
 
   @override
-  String get radiologyPrintIncludePatientLabel => 'Patient details';
+  String get radiologyPrintIncludePatientLabel => 'Patient détails';
 
   @override
-  String get radiologyPrintIncludeOrderLabel => 'Encounter/order details';
+  String get radiologyPrintIncludeOrderLabel => 'Encounter/commande détails';
 
   @override
   String get radiologyPrintIncludeStudiesLabel => 'Imaging tests/studies';
 
   @override
-  String get radiologyPrintIncludeReportLabel => 'Findings and report text';
+  String get radiologyPrintIncludeReportLabel => 'Findings et rapport text';
 
   @override
   String get radiologyPrintIncludeReferencesLabel => 'Image/PACS references';
@@ -16090,32 +16137,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyPrintFooterNote =>
-      'Generated from HMS Radiology workspace.';
+      'Generated de HMS Radiology espace de travail.';
 
   @override
-  String get radiologyPrintReportTitle => 'Radiology report';
+  String get radiologyPrintReportTitle => 'Radiology rapport';
 
   @override
-  String get radiologyPrintPatientSectionTitle => 'Patient details';
+  String get radiologyPrintPatientSectionTitle => 'Patient détails';
 
   @override
-  String get radiologyPrintOrderSectionTitle => 'Encounter and order details';
+  String get radiologyPrintOrderSectionTitle => 'Encounter et commande détails';
 
   @override
-  String get radiologyPrintStudiesSectionTitle => 'Imaging tests and studies';
+  String get radiologyPrintStudiesSectionTitle => 'Imaging tests et studies';
 
   @override
-  String get radiologyPrintReportSectionTitle => 'Findings and report';
+  String get radiologyPrintReportSectionTitle => 'Findings et rapport';
 
   @override
-  String get radiologyPrintReferencesSectionTitle =>
-      'Image and PACS references';
+  String get radiologyPrintReferencesSectionTitle => 'Image et PACS references';
 
   @override
-  String get radiologyPrintSignerSectionTitle => 'Signer and reporter';
+  String get radiologyPrintSignerSectionTitle => 'Signer et reporter';
 
   @override
-  String get radiologyPrintNoSectionsSelected => 'No report sections selected.';
+  String get radiologyPrintNoSectionsSelected =>
+      'No rapport sections selected.';
 
   @override
   String get radiologyPatientIdLabel => 'Patient ID';
@@ -16128,17 +16175,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String radiologyActiveOrdersLabel(int count) {
-    return '$count active orders';
+    return '$count actif commandes';
   }
 
   @override
   String radiologyDeleteImagingTestDialogBody(String name) {
-    return 'Delete $name? This custom imaging test will no longer be available for new requests.';
+    return 'Delete $name? Ce personnalisé imaging test will non longer be disponible pour nouveau demandes.';
   }
 
   @override
   String radiologyInsertAssetReferenceAction(String label) {
-    return 'Insert asset: $label';
+    return 'Insert actif: $label';
   }
 
   @override
@@ -16155,7 +16202,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalRequestBillingSectionTitle => 'Request billing';
 
   @override
-  String get clinicalRequestAddCatalogItemsAction => 'Add items';
+  String get clinicalRequestAddCatalogItemsAction => 'Add éléments';
 
   @override
   String get clinicalRequestReviewBillingAction => 'Review billing';
@@ -16165,7 +16212,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clinicalRequestMainPanelHelp =>
-      'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.';
+      'Review votre selection below. Use Add éléments à browse le catalog, then review billing avant submitting.';
 
   @override
   String clinicalRequestFlowItemCountLabel(int count) {
@@ -16173,14 +16220,14 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count items',
-      one: '1 item',
-      zero: 'No items',
+      one: '1 élément',
+      zero: 'No éléments',
     );
     return '$_temp0';
   }
 
   @override
-  String get clinicalLabRequestCatalogPickerTitle => 'Choose lab tests';
+  String get clinicalLabRequestCatalogPickerTitle => 'Choose laboratoire tests';
 
   @override
   String get clinicalRadiologyCatalogPickerTitle => 'Choose imaging study';
@@ -16201,7 +16248,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalPrescriptionNoMedicinesLabel => 'No medicines added yet';
 
   @override
-  String get clinicalRequestBillingNoItemsLabel => 'Add items to see pricing.';
+  String get clinicalRequestBillingNoItemsLabel =>
+      'Add éléments à see pricing.';
 
   @override
   String get clinicalRequestBillingTotalLabel => 'Total';
@@ -16210,23 +16258,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clinicalRequestPriceNotSetLabel => 'Price not set';
 
   @override
-  String get clinicalRequestPriceWarningLabel => 'Some items have no price set';
+  String get clinicalRequestPriceWarningLabel =>
+      'Some éléments have non prix set';
 
   @override
-  String get clinicalRequestUnitPriceLabel => 'Unit price';
+  String get clinicalRequestUnitPriceLabel => 'Unit prix';
 
   @override
   String get clinicalRequestQuantityLabel => 'Qty';
 
   @override
   String get clinicalRequestEditPricesHint =>
-      'Set or adjust prices per item, or charge a single amount.';
+      'Set ou adjust prices per élément, ou charge un single montant.';
 
   @override
   String get ipdWardRoundFeeLabel => 'Doctor review fee';
 
   @override
-  String get theaterCaseFeeLabel => 'Operation / procedure fee';
+  String get theaterCaseFeeLabel => 'Operation / procédure fee';
 
   @override
   String get clinicalProcedureFeeLabel => 'Procedure fee';
@@ -16254,7 +16303,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyOrderMetadataSubtitle =>
-      'Timing, modality, and payment context';
+      'Timing, modality, et paiement context';
 
   @override
   String get radiologyViewModeImagingFloorLabel => 'Imaging floor';
@@ -16267,27 +16316,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyWorkflowStepReceiveDescription =>
-      'Acknowledge the incoming imaging request';
+      'Acknowledge le incoming imaging demande';
 
   @override
   String get radiologyWorkflowStepReviewDescription =>
-      'Review study details and clinical notes';
+      'Review study détails et clinique notes';
 
   @override
   String get radiologyWorkflowStepPerformDescription =>
-      'Mark the imaging study as performed';
+      'Mark le imaging study as performed';
 
   @override
   String get radiologyWorkflowStepUploadDescription =>
-      'Upload images and sync assets';
+      'Upload images et synchronisation actifs';
 
   @override
   String get radiologyWorkflowStepReportDescription =>
-      'Draft and edit the radiology report';
+      'Draft et modifier le radiologie rapport';
 
   @override
   String get radiologyWorkflowStepReleaseDescription =>
-      'Release the finalized report';
+      'Release le finalized rapport';
 
   @override
   String radiologyWorkflowProgressCollapsedSummary(int completed, int total) {
@@ -16302,34 +16351,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radiologyStudiesPerformFirstHint =>
-      'Perform the study before uploading images.';
+      'Perform le study avant uploading images.';
 
   @override
-  String get radiologyStudiesReportPreviewTitle => 'Report preview';
+  String get radiologyStudiesReportPreviewTitle => 'Report aperçu';
 
   @override
-  String get radiologyDoctorReviewOpenReportAction => 'Open report';
+  String get radiologyDoctorReviewOpenReportAction => 'Open rapport';
 
   @override
   String get radiologyDoctorReviewAcknowledgeAction => 'Acknowledge review';
 
   @override
   String get radiologyReportInlineEditHelper =>
-      'Edit the draft below or open the full editor.';
+      'Edit le brouillon below ou ouvrir le full editor.';
 
   @override
-  String get radiologyReportLivePreviewTitle => 'Live preview';
+  String get radiologyReportLivePreviewTitle => 'Live aperçu';
 
   @override
   String get radiologyStudyFormHelper =>
-      'Optional details can be adjusted before saving.';
+      'Optional détails can be adjusted avant saving.';
 
   @override
-  String get radiologyReleaseReportSummaryTitle => 'Report summary';
+  String get radiologyReleaseReportSummaryTitle => 'Report résumé';
 
   @override
   String get radiologyReleaseEmptyDraftMessage =>
-      'Add report content before releasing.';
+      'Add rapport content avant releasing.';
 
   @override
   String get radiologyPrescriptionBillOnDispenseLabel => 'Bill on dispense';
@@ -16338,20 +16387,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radiologyPrescriptionPayAtPrescribeLabel => 'Pay at prescribe';
 
   @override
-  String get accessAdminTitle => 'Users and access';
+  String get accessAdminTitle => 'Users et accès';
 
   @override
-  String get accessAdminLoadingTitle => 'Loading access workspace';
+  String get accessAdminLoadingTitle => 'Loading accès espace de travail';
 
   @override
   String get accessAdminLoadingBody =>
-      'Fetching users, roles, permissions, and entitlements.';
+      'Fetching utilisateurs, rôles, autorisations, et entitlements.';
 
   @override
-  String get accessAdminSavingStatus => 'Saving access changes';
+  String get accessAdminSavingStatus => 'Saving accès changes';
 
   @override
-  String get accessAdminLiveStatus => 'Access workspace live';
+  String get accessAdminLiveStatus => 'Access espace de travail en direct';
 
   @override
   String get accessAdminPanelOverview => 'Overview';
@@ -16378,13 +16427,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accessAdminPhoneLabel => 'Phone';
 
   @override
-  String get accessAdminActivateRegistrationAction => 'Activate account';
+  String get accessAdminActivateRegistrationAction => 'Activate compte';
 
   @override
   String get accessAdminRejectRegistrationAction => 'Reject';
 
   @override
-  String get accessAdminActiveUsersLabel => 'Active users';
+  String get accessAdminActiveUsersLabel => 'Active utilisateurs';
 
   @override
   String get accessAdminRolesLabel => 'Roles';
@@ -16396,106 +16445,106 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accessAdminModulesLabel => 'Active modules';
 
   @override
-  String get accessAdminSearchLabel => 'Search access records';
+  String get accessAdminSearchLabel => 'Search accès dossiers';
 
   @override
   String get accessAdminSearchHint =>
-      'Search by name, email, role, or permission';
+      'Search by nom, e-mail, rôle, ou autorisation';
 
   @override
-  String get accessAdminStatusLabel => 'Status';
+  String get accessAdminStatusLabel => 'Statut';
 
   @override
   String get accessAdminAllStatusesLabel => 'All statuses';
 
   @override
-  String get accessAdminEmptyTitle => 'No access records found';
+  String get accessAdminEmptyTitle => 'Aucun access records trouvé';
 
   @override
   String get accessAdminEmptyBody =>
-      'Adjust filters or create users and roles to populate this workspace.';
+      'Adjust filtres ou créer utilisateurs et rôles à populate ce espace de travail.';
 
   @override
   String get accessAdminColumnId => 'ID';
 
   @override
-  String get accessAdminColumnName => 'Name';
+  String get accessAdminColumnName => 'Nom';
 
   @override
-  String get accessAdminColumnDetails => 'Details';
+  String get accessAdminColumnDetails => 'Détails';
 
   @override
-  String get accessAdminColumnStatus => 'Status';
+  String get accessAdminColumnStatus => 'Statut';
 
   @override
-  String get accessAdminDetailTitle => 'Access record';
+  String get accessAdminDetailTitle => 'Access dossier';
 
   @override
-  String get accessAdminCreateUserAction => 'Create user';
+  String get accessAdminCreateUserAction => 'Create utilisateur';
 
   @override
-  String get accessAdminCreateRoleAction => 'Create role';
+  String get accessAdminCreateRoleAction => 'Create rôle';
 
   @override
-  String get accessAdminEmailLabel => 'Email';
+  String get accessAdminEmailLabel => 'E-mail';
 
   @override
-  String get accessAdminPositionLabel => 'Position title';
+  String get accessAdminPositionLabel => 'Position titre';
 
   @override
-  String get accessAdminPasswordLabel => 'Password';
+  String get accessAdminPasswordLabel => 'Mot de passe';
 
   @override
   String get accessAdminPasswordHint =>
-      'Password must be at least 8 characters.';
+      'Password doit être at least 8 characters.';
 
   @override
-  String get accessAdminRoleNameLabel => 'Role name';
+  String get accessAdminRoleNameLabel => 'Role nom';
 
   @override
   String get accessAdminRoleDescriptionLabel => 'Description';
 
   @override
-  String get accessAdminAssignedRolesLabel => 'Assigned roles';
+  String get accessAdminAssignedRolesLabel => 'Assigned rôles';
 
   @override
-  String get accessAdminEffectivePermissionsLabel => 'Effective permissions';
+  String get accessAdminEffectivePermissionsLabel => 'Effective autorisations';
 
   @override
-  String get accessAdminOpenHrProfileAction => 'Open HR profile';
+  String get accessAdminOpenHrProfileAction => 'Open HR profil';
 
   @override
   String get accessAdminClinicalRoleHint =>
-      'This role unlocks OPD/IPD clinical workflow actions.';
+      'Ce rôle unlocks OPD/IPD clinique workflow actions.';
 
   @override
-  String get accessAdminDeactivateAction => 'Deactivate user';
+  String get accessAdminDeactivateAction => 'Deactivate utilisateur';
 
   @override
-  String get accessAdminActivateAction => 'Activate user';
+  String get accessAdminActivateAction => 'Activate utilisateur';
 
   @override
-  String get accessAdminResetDemoPasswordAction => 'Reset demo password';
+  String get accessAdminResetDemoPasswordAction => 'Reset démo mot de passe';
 
   @override
-  String get accessAdminDeleteRoleAction => 'Delete role';
+  String get accessAdminDeleteRoleAction => 'Delete rôle';
 
   @override
-  String get accessAdminTenantContextRequiredTitle => 'Tenant context required';
+  String get accessAdminTenantContextRequiredTitle => 'Tenant context requis';
 
   @override
   String get accessAdminTenantContextRequiredBody =>
-      'Select a tenant and facility before managing users and roles.';
+      'Select un locataire et établissement avant managing utilisateurs et rôles.';
 
   @override
-  String get settingsAccessAdminActionTitle => 'Users and access';
+  String get settingsAccessAdminActionTitle => 'Users et accès';
 
   @override
   String get settingsAccessAdminActionBody =>
-      'Manage staff accounts, role assignments, permissions, and demo users.';
+      'Manage personnel accounts, rôle assignments, autorisations, et démo utilisateurs.';
 
   @override
-  String get hrReferenceStaffPositionNurse => 'Nurse';
+  String get hrReferenceStaffPositionNurse => 'Infirmier';
 
   @override
   String get hrReferenceStaffPositionSeniorNurse => 'Senior Nurse';
@@ -16519,7 +16568,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hrReferenceStaffPositionNursingAssistant => 'Nursing Assistant';
 
   @override
-  String get hrReferenceStaffPositionDoctor => 'Doctor';
+  String get hrReferenceStaffPositionDoctor => 'Médecin';
 
   @override
   String get hrReferenceStaffPositionConsultantPhysician =>
@@ -16951,35 +17000,35 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hrReferenceCompensationPayTypePerProcedure =>
-      'Per procedure / per task';
+      'Per procédure / per task';
 
   @override
-  String get hrReferenceLeaveTypeAnnual => 'Annual leave';
+  String get hrReferenceLeaveTypeAnnual => 'Annual congé';
 
   @override
-  String get hrReferenceLeaveTypeSick => 'Sick leave';
+  String get hrReferenceLeaveTypeSick => 'Sick congé';
 
   @override
-  String get hrReferenceLeaveTypeMaternity => 'Maternity leave';
+  String get hrReferenceLeaveTypeMaternity => 'Maternity congé';
 
   @override
-  String get hrReferenceLeaveTypePaternity => 'Paternity leave';
+  String get hrReferenceLeaveTypePaternity => 'Paternity congé';
 
   @override
   String get hrReferenceLeaveTypeCompassionate =>
-      'Compassionate / bereavement leave';
+      'Compassionate / bereavement congé';
 
   @override
-  String get hrReferenceLeaveTypeUnpaid => 'Unpaid leave';
+  String get hrReferenceLeaveTypeUnpaid => 'Unpaid congé';
 
   @override
-  String get hrReferenceLeaveTypeStudy => 'Study / training leave';
+  String get hrReferenceLeaveTypeStudy => 'Study / training congé';
 
   @override
-  String get hrReferenceLeaveTypeEmergency => 'Emergency leave';
+  String get hrReferenceLeaveTypeEmergency => 'Emergency congé';
 
   @override
-  String get hrReferenceLeaveTypeOther => 'Other leave';
+  String get hrReferenceLeaveTypeOther => 'Other congé';
 
   @override
   String get hrReferenceLeaveHalfDayPeriodMorning => 'Morning';
