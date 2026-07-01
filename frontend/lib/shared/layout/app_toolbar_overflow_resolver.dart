@@ -178,9 +178,7 @@ IconData? _segmentIcon(Widget? iconWidget) {
 /// Whether a toolbar action should appear in the overflow menu (permission-gated globals).
 bool isToolbarOverflowActionVisible(Widget action, WidgetRef ref) {
   if (action is AppGlobalFaultReportAction) {
-    return _faultReportRequirement.isAllowed(
-      ref.read(appAccessPolicyProvider),
-    );
+    return _faultReportRequirement.isAllowed(ref.read(appAccessPolicyProvider));
   }
   if (action is AppGlobalHousekeepingRequestAction) {
     return _housekeepingRequestRequirement.isAllowed(

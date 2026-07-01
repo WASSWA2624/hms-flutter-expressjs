@@ -21369,6 +21369,168 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get communicationsInactiveStatus;
 
+  /// Relative timestamp for messages sent moments ago.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get communicationsJustNowLabel;
+
+  /// Relative timestamp for messages sent minutes ago.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String communicationsMinutesAgoLabel(int minutes);
+
+  /// Relative timestamp for messages sent hours ago.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String communicationsHoursAgoLabel(int hours);
+
+  /// Relative timestamp for messages sent days ago.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String communicationsDaysAgoLabel(int days);
+
+  /// Action label for attaching a file to a message.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get communicationsAttachFileAction;
+
+  /// Action label for starting a direct message.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get communicationsNewMessageAction;
+
+  /// Action label for creating a group conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get communicationsNewGroupAction;
+
+  /// Inbox filter label for favorite conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get communicationsFavoritesFilterLabel;
+
+  /// Inbox filter label for flagged conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Flagged'**
+  String get communicationsFlaggedFilterLabel;
+
+  /// Inbox filter label for archived conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get communicationsArchivedFilterLabel;
+
+  /// Action label for loading more conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get communicationsLoadMoreAction;
+
+  /// Action label for returning to the conversation list on narrow layouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to inbox'**
+  String get communicationsBackToInboxAction;
+
+  /// Subtitle showing how many members are in a group thread.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members'**
+  String communicationsGroupMembersLabel(int count);
+
+  /// Tooltip for the conversation overflow menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation actions'**
+  String get communicationsThreadMenuAction;
+
+  /// Action label for favoriting a conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite'**
+  String get communicationsFavoriteAction;
+
+  /// Action label for removing a conversation favorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove favorite'**
+  String get communicationsUnfavoriteAction;
+
+  /// Action label for flagging a conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get communicationsFlagAction;
+
+  /// Action label for removing a conversation flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove flag'**
+  String get communicationsUnflagAction;
+
+  /// Action label for managing group members.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage members'**
+  String get communicationsManageMembersAction;
+
+  /// Dialog title for managing group members.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage members'**
+  String get communicationsManageMembersTitle;
+
+  /// Field label for adding a group member.
+  ///
+  /// In en, this message translates to:
+  /// **'Add member'**
+  String get communicationsAddMemberLabel;
+
+  /// Action label for confirming a new group member.
+  ///
+  /// In en, this message translates to:
+  /// **'Add member'**
+  String get communicationsAddMemberAction;
+
+  /// Participant metadata showing last read time.
+  ///
+  /// In en, this message translates to:
+  /// **'Last read {timestamp}'**
+  String communicationsLastReadLabel(String timestamp);
+
+  /// Action label for creating a direct conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start conversation'**
+  String get communicationsStartConversationAction;
+
+  /// Field label for a group conversation name.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get communicationsGroupNameLabel;
+
+  /// Toggle label for marking a group as sensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive conversation'**
+  String get communicationsSensitiveConversationLabel;
+
+  /// Action label for creating a group conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Create group'**
+  String get communicationsCreateGroupAction;
+
   /// Localized text for housekeepingTitle.
   ///
   /// In en, this message translates to:

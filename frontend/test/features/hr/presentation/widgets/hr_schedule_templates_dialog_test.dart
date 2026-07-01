@@ -37,12 +37,8 @@ const HrOption _template = HrOption(
 
 const HrReferenceData _referenceData = HrReferenceData(
   shiftTemplates: <HrOption>[_template],
-  facilities: <HrOption>[
-    HrOption(value: 'fac-1', label: 'Biomedical dept'),
-  ],
-  shiftTypes: <HrOption>[
-    HrOption(value: 'DAY', label: 'DAY'),
-  ],
+  facilities: <HrOption>[HrOption(value: 'fac-1', label: 'Biomedical dept')],
+  shiftTypes: <HrOption>[HrOption(value: 'DAY', label: 'DAY')],
 );
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
@@ -74,15 +70,15 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
       ),
     ),
   );
-  when(() => repository.createShiftTemplate(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(<String, Object?>{}),
-  );
-  when(() => repository.updateShiftTemplate(any(), any())).thenAnswer(
-    (_) async => const Result<Object?>.success(<String, Object?>{}),
-  );
-  when(() => repository.deleteShiftTemplate(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(null),
-  );
+  when(
+    () => repository.createShiftTemplate(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(<String, Object?>{}));
+  when(
+    () => repository.updateShiftTemplate(any(), any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(<String, Object?>{}));
+  when(
+    () => repository.deleteShiftTemplate(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(null));
 }
 
 class _ManageTemplatesLauncher extends ConsumerStatefulWidget {

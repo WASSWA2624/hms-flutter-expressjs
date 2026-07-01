@@ -246,7 +246,8 @@ void main() {
               'errors': <Object?>[
                 <String, Object?>{
                   'field': 'email',
-                  'message': 'A user with this email already exists in this tenant',
+                  'message':
+                      'A user with this email already exists in this tenant',
                 },
               ],
             },

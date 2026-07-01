@@ -364,30 +364,38 @@ class _HrAccessWorkspaceDialogState
   List<HrAccessUser> get _filteredUsers {
     final String? status = _accessFilters.option(_accessStatusFilterKey);
     final String positionQuery =
-        (_accessFilters.text(_accessPositionFilterKey) ?? '').trim().toLowerCase();
-    return _users.where((HrAccessUser user) {
-      if (status != null &&
-          status.isNotEmpty &&
-          (user.status ?? 'ACTIVE').toUpperCase() != status.toUpperCase()) {
-        return false;
-      }
-      if (positionQuery.isNotEmpty &&
-          !(user.positionTitle ?? '').toLowerCase().contains(positionQuery)) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
+        (_accessFilters.text(_accessPositionFilterKey) ?? '')
+            .trim()
+            .toLowerCase();
+    return _users
+        .where((HrAccessUser user) {
+          if (status != null &&
+              status.isNotEmpty &&
+              (user.status ?? 'ACTIVE').toUpperCase() != status.toUpperCase()) {
+            return false;
+          }
+          if (positionQuery.isNotEmpty &&
+              !(user.positionTitle ?? '').toLowerCase().contains(
+                positionQuery,
+              )) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
   }
 
   List<HrAccessRole> get _filteredRoles {
     final String? system = _accessFilters.option(_accessSystemRoleFilterKey);
     return switch (system) {
-      'yes' => _roles
-          .where((HrAccessRole role) => role.isSystemCritical)
-          .toList(growable: false),
-      'no' => _roles
-          .where((HrAccessRole role) => !role.isSystemCritical)
-          .toList(growable: false),
+      'yes' =>
+        _roles
+            .where((HrAccessRole role) => role.isSystemCritical)
+            .toList(growable: false),
+      'no' =>
+        _roles
+            .where((HrAccessRole role) => !role.isSystemCritical)
+            .toList(growable: false),
       _ => _roles,
     };
   }
@@ -1039,10 +1047,7 @@ Future<void> showHrAccessUserDetailDialog(
   await showAppDialog<void>(
     context: context,
     builder: (BuildContext dialogContext) {
-      return _HrAccessUserDetailDialog(
-        user: user,
-        onChanged: onChanged,
-      );
+      return _HrAccessUserDetailDialog(user: user, onChanged: onChanged);
     },
   );
 }
@@ -1104,8 +1109,7 @@ class _HrAccessUserDetailDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final bool canWrite = canWriteHrAccess(ref);
-    final String title = _detail?.profileName ??
-        widget.user.displayLabel;
+    final String title = _detail?.profileName ?? widget.user.displayLabel;
 
     if (_loading) {
       return AppDialog(
@@ -1772,14 +1776,17 @@ Future<void> showHrCreatePermissionDialog(
         .toSet(),
     failure: (_) => <String>{},
   );
-  final List<AppPermission> catalogOptions = AppPermissions.all
-      .where(
-        (AppPermission permission) =>
-            !provisionedCodes.contains(permission.value),
-      )
-      .toList(growable: false)
-    ..sort((AppPermission left, AppPermission right) =>
-        left.value.compareTo(right.value));
+  final List<AppPermission> catalogOptions =
+      AppPermissions.all
+          .where(
+            (AppPermission permission) =>
+                !provisionedCodes.contains(permission.value),
+          )
+          .toList(growable: false)
+        ..sort(
+          (AppPermission left, AppPermission right) =>
+              left.value.compareTo(right.value),
+        );
 
   String? selectedPermissionCode;
   final TextEditingController descriptionController = TextEditingController();
@@ -1904,10 +1911,10 @@ Future<void> showHrEditPermissionDialog(
             ],
           );
         },
-    onSubmit: () => controller
-        .updateAccessPermission(permission.effectiveId, <String, Object?>{
-          'description': descriptionController.text.trim(),
-        }),
+    onSubmit: () => controller.updateAccessPermission(
+      permission.effectiveId,
+      <String, Object?>{'description': descriptionController.text.trim()},
+    ),
   );
   descriptionController.dispose();
   if (saved == true && context.mounted) {

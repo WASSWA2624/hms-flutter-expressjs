@@ -59,7 +59,9 @@ class _ClinicalFollowUpActionDialogState
         widget.initialScheduledAt ??
         DateTime.now().add(const Duration(days: 7));
     _followUpDate = _dateOnly(defaultAt);
-    _followUpTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(defaultAt));
+    _followUpTime = AppTimeValue.fromTimeOfDay(
+      TimeOfDay.fromDateTime(defaultAt),
+    );
     _notesController = TextEditingController();
   }
 

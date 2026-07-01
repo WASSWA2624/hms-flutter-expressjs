@@ -67,8 +67,9 @@ class HrStaffDetailActions extends ConsumerWidget {
       ...detail.compensations,
       ...profile.compensations,
     ].any((HrStaffCompensation row) => row.isActive);
-    final bool hasLinkedUser =
-        (profile.userId ?? profile.userDisplayId ?? '').trim().isNotEmpty;
+    final bool hasLinkedUser = (profile.userId ?? profile.userDisplayId ?? '')
+        .trim()
+        .isNotEmpty;
 
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
       if (!separated) ...<AppPermissionActionItem>[

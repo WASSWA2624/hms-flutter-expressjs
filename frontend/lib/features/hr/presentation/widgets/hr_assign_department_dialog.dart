@@ -48,14 +48,18 @@ Future<void> showHrAssignDepartmentDialog(
     submitLabel: l10n.hrAssignDepartmentAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrAssignDepartmentFields(
-        key: fieldsKey,
-        referenceData: referenceData,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrAssignDepartmentFields(
+            key: fieldsKey,
+            referenceData: referenceData,
+          );
+        },
     onSubmit: () => controller.createAssignment(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),
@@ -102,15 +106,11 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
     });
   }
 
-  List<HrOption> get _scopedUnits => _scopedOptions(
-    widget.referenceData.units,
-    departmentId: _departmentId,
-  );
+  List<HrOption> get _scopedUnits =>
+      _scopedOptions(widget.referenceData.units, departmentId: _departmentId);
 
-  List<HrOption> get _scopedRooms => _scopedOptions(
-    widget.referenceData.rooms,
-    departmentId: _departmentId,
-  );
+  List<HrOption> get _scopedRooms =>
+      _scopedOptions(widget.referenceData.rooms, departmentId: _departmentId);
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +136,7 @@ class _HrAssignDepartmentFieldsState extends State<_HrAssignDepartmentFields> {
           onChanged: (String? value) => setState(() => _unitId = value),
         ),
         if (_departmentId != null && _scopedRooms.isNotEmpty) ...<Widget>[
-          Text(
-            l10n.hrRoomsLabel,
-            style: theme.textTheme.titleSmall,
-          ),
+          Text(l10n.hrRoomsLabel, style: theme.textTheme.titleSmall),
           SizedBox(height: theme.spacing.xs),
           _HrRoomMultiSelectHeader(
             selectAllLabel: l10n.hrSelectAllRoomsAction,
@@ -218,10 +215,7 @@ class _HrRoomMultiSelectHeader extends StatelessWidget {
   }
 }
 
-List<HrOption> _scopedOptions(
-  List<HrOption> options, {
-  String? departmentId,
-}) {
+List<HrOption> _scopedOptions(List<HrOption> options, {String? departmentId}) {
   final String selectedDepartment = departmentId?.trim() ?? '';
   return <HrOption>[
     for (final HrOption option in options)

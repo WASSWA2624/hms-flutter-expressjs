@@ -461,10 +461,11 @@ final class HrRepositoryImpl implements HrRepository {
     String staffProfileId,
     Map<String, Object?> payload,
   ) {
-    return _postHrAction(
-      <String>['staff', staffProfileId, 'offboard'],
-      payload,
-    );
+    return _postHrAction(<String>[
+      'staff',
+      staffProfileId,
+      'offboard',
+    ], payload);
   }
 
   @override

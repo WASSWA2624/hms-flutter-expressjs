@@ -70,117 +70,117 @@ class HrCompensationLineEditor extends StatelessWidget {
     return AppContentPanel(
       density: AppContentPanelDensity.compact,
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.hrReferenceCompensationPayTypeLabel(
-                      line.payType,
-                      fallback: line.payType,
-                    ),
-                    style: theme.textTheme.titleSmall,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  l10n.hrReferenceCompensationPayTypeLabel(
+                    line.payType,
+                    fallback: line.payType,
                   ),
+                  style: theme.textTheme.titleSmall,
                 ),
-                IconButton(
-                  tooltip: l10n.hrCompensationRemovePayLineAction,
-                  onPressed: onRemove,
-                  icon: const Icon(Icons.delete_outline),
+              ),
+              IconButton(
+                tooltip: l10n.hrCompensationRemovePayLineAction,
+                onPressed: onRemove,
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+          AppSelectField<String>(
+            value: line.payType,
+            labelText: l10n.hrStaffOnboardingPayTypeLabel,
+            options: kHrCompensationPayTypeCodes
+                .where(
+                  (String code) =>
+                      code == line.payType || !usedPayTypes.contains(code),
+                )
+                .map(
+                  (String code) => AppSelectOption<String>(
+                    value: code,
+                    label: l10n.hrReferenceCompensationPayTypeLabel(
+                      code,
+                      fallback: code,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (String? value) {
+              if (value == null) {
+                return;
+              }
+              line.payType = value;
+              onChanged();
+            },
+          ),
+          if (line.payType == 'PER_MONTH')
+            AppSelectField<String>(
+              value: line.payFrequency,
+              labelText: l10n.hrCompensationPayFrequencyLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: 'MONTHLY',
+                  label: l10n.hrCompensationFrequencyMonthlyLabel,
+                ),
+                AppSelectOption<String>(
+                  value: 'BIWEEKLY',
+                  label: l10n.hrCompensationFrequencyBiweeklyLabel,
+                ),
+                AppSelectOption<String>(
+                  value: 'WEEKLY',
+                  label: l10n.hrCompensationFrequencyWeeklyLabel,
                 ),
               ],
-            ),
-            AppSelectField<String>(
-              value: line.payType,
-              labelText: l10n.hrStaffOnboardingPayTypeLabel,
-              options: kHrCompensationPayTypeCodes
-                  .where(
-                    (String code) =>
-                        code == line.payType || !usedPayTypes.contains(code),
-                  )
-                  .map(
-                    (String code) => AppSelectOption<String>(
-                      value: code,
-                      label: l10n.hrReferenceCompensationPayTypeLabel(
-                        code,
-                        fallback: code,
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
               onChanged: (String? value) {
-                if (value == null) {
-                  return;
+                if (value != null) {
+                  line.payFrequency = value;
+                  onChanged();
                 }
-                line.payType = value;
-                onChanged();
               },
             ),
-            if (line.payType == 'PER_MONTH')
-              AppSelectField<String>(
-                value: line.payFrequency,
-                labelText: l10n.hrCompensationPayFrequencyLabel,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: 'MONTHLY',
-                    label: l10n.hrCompensationFrequencyMonthlyLabel,
-                  ),
-                  AppSelectOption<String>(
-                    value: 'BIWEEKLY',
-                    label: l10n.hrCompensationFrequencyBiweeklyLabel,
-                  ),
-                  AppSelectOption<String>(
-                    value: 'WEEKLY',
-                    label: l10n.hrCompensationFrequencyWeeklyLabel,
-                  ),
-                ],
-                onChanged: (String? value) {
-                  if (value != null) {
-                    line.payFrequency = value;
-                    onChanged();
-                  }
-                },
-              ),
-            AppCurrencyAmountField(
-              amountController: line.rateController,
-              currency: line.currency,
-              onCurrencyChanged: (String? value) {
-                line.currency = value ?? appDefaultCurrencyCode;
-                onChanged();
-              },
-              amountLabelText: l10n.hrCompensationBaseRateLabel,
-              currencyLabelText: l10n.hrCompensationCurrencyLabel,
-              currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
-            ),
-            AppDateField(
-              value: line.effectiveFrom,
-              labelText: l10n.hrEffectiveFromLabel,
-              isRequired: true,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2100),
-              currentDate: DateTime.now(),
-              pickerButtonLabel: l10n.hrPickDateAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              onChanged: (DateTime? value) {
-                line.effectiveFrom = value;
-                onChanged();
-              },
-            ),
-            AppDateField(
-              value: line.effectiveTo,
-              labelText: l10n.hrEffectiveToLabel,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2100),
-              currentDate: DateTime.now(),
-              pickerButtonLabel: l10n.hrPickDateAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              onChanged: (DateTime? value) {
-                line.effectiveTo = value;
-                onChanged();
-              },
-            ),
-          ],
-        ),
+          AppCurrencyAmountField(
+            amountController: line.rateController,
+            currency: line.currency,
+            onCurrencyChanged: (String? value) {
+              line.currency = value ?? appDefaultCurrencyCode;
+              onChanged();
+            },
+            amountLabelText: l10n.hrCompensationBaseRateLabel,
+            currencyLabelText: l10n.hrCompensationCurrencyLabel,
+            currencySearchLabelText: l10n.appPhoneCountrySearchLabel,
+          ),
+          AppDateField(
+            value: line.effectiveFrom,
+            labelText: l10n.hrEffectiveFromLabel,
+            isRequired: true,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) {
+              line.effectiveFrom = value;
+              onChanged();
+            },
+          ),
+          AppDateField(
+            value: line.effectiveTo,
+            labelText: l10n.hrEffectiveToLabel,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.hrPickDateAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) {
+              line.effectiveTo = value;
+              onChanged();
+            },
+          ),
+        ],
+      ),
     );
   }
 }

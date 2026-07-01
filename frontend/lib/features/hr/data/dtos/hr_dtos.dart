@@ -441,7 +441,8 @@ final class HrShiftAssignmentDto {
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       shiftId: _string(json['shift_id']),
-      shiftName: _string(shift['name']) ??
+      shiftName:
+          _string(shift['name']) ??
           _string(shift['shift_type']) ??
           _string(shift['human_friendly_id']),
       shiftType: _string(shift['shift_type']),

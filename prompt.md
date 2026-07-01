@@ -1,32 +1,36 @@
-# HR Workspace — More Actions Menu Information Architecture
+# Communications Module — Staff Messaging & In-App Coordination
 
 ## Objective
 
-Reorganize the **Human resources** workspace toolbar overflow menu (`More actions` ⋮) so HR administrators can **quickly find the right workflow** on first visit. Group related items into labeled sections, assign **consistent Material outlined icons** to every action (inline toolbar and overflow rows), clarify overlapping entries (work queues vs. notifications), and separate **HR-specific** actions from **global workspace** actions — without changing underlying mutation handlers.
+Transform **Communications** from a read-mostly admin workspace (thread tables, notification logs, delivery audit, template preview) into a **first-class in-app messaging experience** for hospital staff — direct messages, groups, @mentions, attachments, read state, and system notifications — while keeping the existing four-panel shell and backend contracts.
 
-**Entry point:** `/hr` → toolbar **More actions** overflow (screenshot: flat list of Work queues, Manage users and roles, Schedule templates, HR activity, Refresh, Request maintenance, Report equipment fault, Notifications).
+**Entry point:** `/communications` (sidebar → **Communications**)
 
-**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md) §Phase 1 Toolbar; companion [prompt2.md](./prompt2.md) (dialog resize) should land first if not already done.
+**Screenshot (current UI):** four tabs — **Inbox**, **Notifications**, **Deliveries**, **Templates** — with a searchable `AppListTable` on the left and a static detail panel on the right (e.g. template preview for *Recall Alert*). Messaging today is table-centric, not chat-centric.
+
+**Parent context:** [prompts/29-communications-module-prompt.md](./prompts/29-communications-module-prompt.md) — platform standards, RBAC, deep links, realtime, and quality gate. This prompt **extends** that document with product UX for staff messaging.
+
+**Initial rollout persona:** HR administrator (current test account), but the module must work for **any staff role** with `communications:write` — not HR-only.
 
 ---
 
-## Problem Statement (from current UI)
+## Problem Statement (from current UI & requirements)
 
-On the HR staff directory screen, the overflow menu presents a **single undifferentiated list** of eight items spanning unrelated domains:
+| Area | Current behavior | Issue |
+|------|------------------|-------|
+| Inbox layout | `AppListTable` of threads; detail shows metadata tiles + up to 8 `AppListItemRow` messages | Feels like an audit log, not a messenger; no persistent compose bar |
+| New conversation | `createConversation` exists on controller/repository | **No UI** to start a DM or group |
+| Compose / reply | `AppTextActionDialog` — plain text only | No rich input, no inline reply, no draft persistence |
+| @mentions | Not implemented | User expects `@` → staff picker dropdown; mentioned users get notified |
+| Attachments | Backend multipart supported; frontend JSON-only | Cannot attach files, images, or captured screenshots |
+| Groups | `ConversationType.GROUP` in schema | No create-group flow, no member management UI |
+| Read receipts | `last_read_at` on participants | Not surfaced per message or per participant in thread |
+| Notifications tab | System/task alerts (lab, assignments, facility events) | Correct separation from messages, but list UX should mirror inbox polish |
+| Inbox actions | Archive/unarchive, unread/sensitive filters | Missing **favorite/star**, **flag**, and quick filters users expect in messaging apps |
+| Responsive | `AppWorkspace` two-pane on wide; table in list slot | Narrow widths need chat-first single-pane with back navigation |
+| Templates / Deliveries | Read-only admin surfaces | Keep as-is for v1 of this prompt; do not block messaging work |
 
-| Item | Icon (target) | Domain | Issue |
-|------|---------------|--------|-------|
-| Add staff | `person_add_outlined` | HR directory | Primary CTA; must stay visible inline |
-| Work queues | `pending_actions_outlined` | HR scheduling / approvals | Overlaps with **Notifications** submenu (same queue shortcuts) |
-| Manage users and roles | `manage_accounts_outlined` | HR ↔ Access Admin | Buried mid-list; high-frequency for new HR admins |
-| Schedule templates | `view_week_outlined` | HR roster setup | Label implies full management; dialog is create-focused today |
-| HR activity | `timeline_outlined` | HR audit | No visual grouping with other monitoring items |
-| Refresh | `refresh` | Workspace utility | Mixed with HR workflows |
-| Request maintenance | `cleaning_services_outlined` | Housekeeping module | Non-HR; appears alongside staffing actions |
-| Report equipment fault | `report_problem_outlined` | Biomedical module | Non-HR; same confusion |
-| Notifications | `notifications_outlined` | HR summary badges | Submenu with leave/roster/shift/payroll counts; relationship to **Work queues** unclear |
-
-A first-time HR user cannot tell **where staffing ends and facilities begin**, or whether **Work queues** and **Notifications** are different features.
+Staff coordinating handoffs (e.g. HR ↔ department heads) should experience something closer to **Teams / Slack / WhatsApp** — simple, fast, familiar — not a data grid with a send dialog.
 
 ---
 
@@ -34,191 +38,225 @@ A first-time HR user cannot tell **where staffing ends and facilities begin**, o
 
 | Area | Location |
 |------|----------|
-| HR toolbar secondary actions | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` — `appWorkspaceToolbarWithLabels` `secondary` list |
-| Summary notification definitions | Same file — `_summaryNotifications` (leave, roster drafts, unassigned shifts, payroll drafts) |
-| Shared toolbar + overflow renderer | `frontend/lib/shared/layout/app_workspace_toolbar.dart` — `_ToolbarOverflowMenu`, `_ToolbarNotificationsSubmenu` |
-| Overflow action → menu entry resolver | `frontend/lib/shared/layout/app_toolbar_overflow_resolver.dart` |
-| Toolbar widget tests | `frontend/test/shared/layout/app_workspace_toolbar_test.dart` |
-| Strings | `frontend/lib/l10n/app_en.arb` |
+| Workspace page | `frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart` |
+| Controller | `frontend/lib/features/communications/presentation/controllers/communications_workspace_controller.dart` |
+| Entities / drafts | `frontend/lib/features/communications/domain/entities/communications_entities.dart` — `CommunicationConversationDraft`, `CommunicationMessageDraft` |
+| Repository / API | `frontend/lib/features/communications/data/repositories/communications_repository_impl.dart` |
+| Backend models | `conversation`, `message`, `conversation_participant`, `message_attachment`, `notification`, `template` — `backend/prisma/schema.prisma` |
+| Workspace API | `backend/src/modules/communications-workspace/` |
+| Conversation API | `backend/src/modules/conversation/` |
+| Feature flag | `communications_workspace_v1` |
+| File upload pattern | `frontend/lib/shared/components/app_file_upload_panel.dart` (used in patients, radiology, nursing) |
+| Searchable pickers | `AppSelectField.searchable` (HR onboarding, availability) |
+| Modal mutations | `showAppWorkspaceMutationDialog`, `AppDialog` — per `frontend/.cursor/ui-workspace.mdc` |
 
-**Toolbar order today (secondary):** Add staff → Work queues → Manage users and roles → Schedule templates → HR activity.
+**Send message today:** detail panel → **Send message** → `AppTextActionDialog` → `controller.sendMessage(content)`.
 
-**Overflow composition:** Remaining secondary actions + global actions (Refresh, Request maintenance, Report equipment fault) + Notifications submenu. Default `maxVisibleScreenActions: 3` keeps the first three secondary buttons inline on md+; the rest collapse into overflow.
-
----
-
-## Target Information Architecture
-
-Follow patterns common in workforce / hospital admin systems (Workday, BambooHR, UKG): **group by job-to-be-done**, **primary CTA stays visible**, **alerts are scannable**, **utilities last**.
-
-### Inline toolbar (md+, unchanged intent)
-
-Keep **Add staff** as the primary labeled action. Promote **Work queues** inline when space allows (it is the main operational entry). Other groups live in overflow.
-
-### Overflow menu — grouped sections
-
-Render **section headers** (non-interactive labels) and **dividers** between groups inside `_ToolbarOverflowMenu`. Proposed structure:
-
-#### 1. Staff & access
-| Item | Icon | Notes |
-|------|------|-------|
-| Add staff *(inline)* | `Icons.person_add_outlined` | Primary CTA; keep in toolbar, not overflow-only |
-| Manage users and roles | `Icons.manage_accounts_outlined` | Opens `showHrAccessWorkspaceDialog`; keep permission-gated |
-| *(optional future)* Open Users/Roles admin | `Icons.admin_panel_settings_outlined` | Only if deep-link already exists; do not add net-new routing in this task |
-
-#### 2. Scheduling & roster
-| Item | Icon | Notes |
-|------|------|-------|
-| Work queues | `Icons.pending_actions_outlined` | Opens full work-queue dialog (`showHrWorkQueueDialog`) |
-| Schedule templates | `Icons.view_week_outlined` | Opens `showHrManageScheduleTemplatesDialog`; rename label to **Create schedule template** if manage list is not yet built (per parent prompt) |
-
-#### 3. Approvals & alerts
-| Item | Icon | Notes |
-|------|------|-------|
-| Notifications *(submenu parent)* | `Icons.notifications_outlined` | Existing submenu with aggregate count badge |
-| Leave requests *(child)* | `Icons.event_busy_outlined` | Warning tone when count > 0 |
-| Roster drafts *(child)* | `Icons.calendar_month_outlined` | |
-| Unassigned shifts *(child)* | `Icons.event_available_outlined` | Use **distinct** icon from Work queues parent to reduce visual duplication |
-| Payroll drafts *(child)* | `Icons.payments_outlined` | |
-| *(do not duplicate)* | — | Notification child items must **not** also appear as top-level overflow rows |
-
-**Clarify the distinction in copy (tooltips or section subtitle):**
-- **Work queues** = browse and act on all queue types in one dialog.
-- **Notifications** = jump directly to queues that need attention (badge-driven shortcuts).
-
-#### 4. Activity & audit
-| Item | Icon | Notes |
-|------|------|-------|
-| HR activity | `Icons.timeline_outlined` | Opens activity timeline dialog (`_showActivityDialog`) |
-
-#### 5. Workspace
-| Item | Icon | Notes |
-|------|------|-------|
-| Refresh | `Icons.refresh` | Existing `onRefresh` handler; show loading state via disabled row while `isRefreshing` |
-
-#### 6. Facilities *(show only when module + permission allow)*
-| Item | Icon | Notes |
-|------|------|-------|
-| Request maintenance | `Icons.cleaning_services_outlined` | Existing global action; already gated in resolver |
-| Report equipment fault | `Icons.report_problem_outlined` | Existing global action; already gated in resolver |
-
-If both facilities items are hidden, **omit the entire Facilities section** (no empty header).
-
-### Icon standards
-
-Every actionable row — inline toolbar button, overflow `MenuItemButton`, and notification submenu child — must show an icon via `AppMenuItemLabel`.
-
-| Rule | Detail |
-|------|--------|
-| Style | Material **outlined** icons (`Icons.*_outlined`) except `Icons.refresh` (no outlined variant in common use) |
-| Source of truth | Set `leadingIcon` on each `AppButton.secondary` in `hr_workspace_page.dart`; overflow inherits via `app_toolbar_overflow_resolver.dart` |
-| Consistency | **Same icon** for the same action whether inline or collapsed into overflow — never swap icons by viewport |
-| Rendering | Overflow rows use `AppMenuItemLabel(icon: entry.icon, label: entry.label)`; notification children keep `iconTone` for warning/info badges |
-| Section headers | **Text only** — no icons on group headers (keeps scan hierarchy clean) |
-| Accessibility | Icon is decorative when label is present; retain `semanticLabel` on toolbar buttons |
-| Differentiation | Avoid reusing the same icon for unrelated items in one menu; change **Unassigned shifts** child to `event_available_outlined` so it does not mirror the Work queues parent (`pending_actions_outlined`) |
+**Message thread today:** `_MessageThread` renders max 8 rows with sender name, preview, timestamp — no bubbles, no scroll-to-latest, no read ticks.
 
 ---
 
-## Implementation Requirements
+## Target UX
 
-### 1. Sectioned overflow menu (shared component)
+### 1. Information architecture (keep four panels)
 
-Extend the toolbar overflow system to support **ordered groups** instead of a flat `List<Widget>`:
+| Panel | Purpose | Messaging prompt scope |
+|-------|---------|------------------------|
+| **Inbox** | Staff DMs + groups | **Primary focus** — redesign as chat workspace |
+| **Notifications** | System events (tasks assigned, facility alerts, module deep links) | Polish list + detail; not composeable messages |
+| **Deliveries** | Channel delivery audit (SMS, email, in-app) | Read-only; no change required for messaging v1 |
+| **Templates** | Message templates (SMS, in-app) | Read-only; no change required for messaging v1 |
 
-- Add an `AppToolbarOverflowSection` model: `{ String? headerLabel, List<Widget> actions }`.
-- Update `_ToolbarOverflowMenu` to render:
-  - Section header — `MenuLabel` or styled `Text` matching design tokens (`onSurfaceVariant`, `labelSmall`).
-  - `Divider` between sections (not before first / after last).
-  - Existing `MenuItemButton` rows per action, each with `AppMenuItemLabel` icon + label.
-  - Notifications submenu remains the **last item in Approvals & alerts** (or immediately after that section’s header).
-- Preserve existing behavior: permission gating, disabled states, attention badge on ⋮ trigger, click-to-open notifications submenu (fix from parent prompt if still broken).
-- Audit `resolveToolbarOverflowEntries` — every HR `AppButton` with `leadingIcon` must resolve to a non-null `AppToolbarOverflowEntry` with matching icon; global actions (`AppWorkspaceRefreshAction`, housekeeping, fault) already map icons in the resolver.
+### 2. Inbox — chat-first two-pane layout
 
-**Prefer a shared abstraction** so other modules can adopt grouped overflow later; HR is the first consumer.
+**Wide layout (`AppWorkspace`):**
 
-### 2. HR workspace toolbar wiring
+| Left pane | Right pane |
+|-----------|------------|
+| Conversation list (not `AppListTable` for inbox) | Active thread |
 
-In `hr_workspace_page.dart`, replace the flat `secondary` list passed to `appWorkspaceToolbarWithLabels` with an explicit **section map** (or ordered sections) matching the IA above.
+**Left pane — conversation list**
 
-- Reorder overflow entries to match target groups even when actions collapse from inline → overflow.
-- Set `maxVisibleScreenActions` deliberately (recommend `2`: Add staff + Work queues) so high-frequency paths stay visible on desktop.
-- Pass global actions (Refresh, maintenance, fault) in a **Workspace** / **Facilities** section rather than appending them blindly at the end of screen actions.
+- Toolbar actions: **New message** (DM), **New group**
+- Search (reuse `AppSearchBar` patterns)
+- Quick filters: All · Unread · Favorites · Flagged · Archived
+- Each row: avatar(s), title (person name or group name), last-message preview, relative timestamp, unread badge, favorite/flag icons
+- Row tap selects thread and loads messages in right pane
+- Sort by `last_message_at` descending
 
-### 3. Icons on all menu items
+**Right pane — thread view**
 
-- Ensure every `AppButton.secondary` in the HR toolbar `secondary` list sets `leadingIcon` per the **Target Information Architecture** tables above.
-- Update `_summaryNotifications` in `hr_workspace_page.dart`: change unassigned-shifts icon from `pending_actions_outlined` → `event_available_outlined`.
-- Verify overflow menu renders icons for all rows (including Refresh and global facility actions).
-- Optional section header affordance: a single muted `Icons.more_horiz` is **not** required — headers stay label-only.
+- Header: participant(s) or group name; member count for groups; overflow menu (view members, mute/archive, mark unread)
+- Scrollable message list (newest at bottom); load older on scroll-up
+- Message bubble layout: own messages aligned end, others start; show sender name in groups
+- Every message: **timestamp** (absolute on hover/long-press, relative in bubble footer)
+- **Read receipts** on own messages: sent ✓ / read ✓✓ derived from participants' `last_read_message_id` or `last_read_at`
+- **Reply** to a specific message (quote snippet above composer)
+- Sticky **composer** at bottom (not a modal):
+  - Multiline text field
+  - `@` mention: typing `@` opens staff search overlay (`AppSelectField.searchable` or dedicated mention overlay); selected user inserted as token; backend notified on send (see §4)
+  - Attach: file picker + image paste/drag (web) + camera/gallery (mobile) via `AppFileUploadPanel`
+  - Send button; disabled when empty and no pending attachments
 
-### 4. Copy and accessibility
+**Narrow layout (phone / narrow web):**
 
-- Add l10n keys for section headers, e.g.:
-  - `workspaceToolbarSectionStaffAccess`
-  - `workspaceToolbarSectionScheduling`
-  - `workspaceToolbarSectionApprovals`
-  - `workspaceToolbarSectionActivity`
-  - `workspaceToolbarSectionWorkspace`
-  - `workspaceToolbarSectionFacilities`
-- Add short tooltips where Work queues vs. Notifications could still confuse.
-- Section headers are **presentational only** — exclude from keyboard action count; menu items retain `semanticLabel`s.
+- Single pane: conversation list **or** thread (not both)
+- Back chevron from thread to list
+- Composer remains sticky at bottom of thread
 
-### 5. Deduplication rules
+### 3. New direct message
 
-- **No duplicate queue shortcuts** at the top level and inside Notifications.
-- **Do not remove** Work queues or Notifications — clarify roles via grouping and copy.
-- **Do not merge** Manage users and roles into staff row actions; it is a workspace-level admin entry.
+Modal (`AppDialog` / `showAppWorkspaceMutationDialog`):
 
-### 6. Tests
+1. **To:** searchable staff picker (tenant/facility scoped; reuse HR staff search API or communications reference-data endpoint)
+2. Optional subject
+3. If a DM already exists with that participant, open existing thread instead of creating duplicate
+4. On create → select thread in right pane with composer focused
 
-- Update `app_workspace_toolbar_test.dart`:
-  - Section headers render in expected order.
-  - Dividers appear between sections.
-  - Facilities section hidden when both global actions are disallowed.
-  - Notifications submenu still shows aggregate badge and child counts.
-  - Each overflow `MenuItemButton` exposes the expected `Icon` widget (e.g. `find.byIcon(Icons.manage_accounts_outlined)` after opening overflow).
-- Add HR-focused widget test (optional, lightweight): pump `HrWorkspacePage` at narrow width → open overflow → assert section headers and key action labels.
+### 4. New group
 
-### 7. Quality gate
+Modal (multi-step or single scrollable form):
 
-- `flutter analyze` clean for touched files.
-- `flutter test` for `app_workspace_toolbar_test.dart` and any new HR toolbar test.
+1. **Group name** (required)
+2. **Members:** multi-select staff picker with search
+3. Optional: mark as sensitive (maps to `is_sensitive`)
+4. On create → open group thread; creator is participant
+
+**Group management** (overflow menu → **Manage members**):
+
+- Add/remove participants (respect backend permissions)
+- Show join date and last-read per member (admin view)
+
+### 5. @mentions
+
+- Composer detects `@` + query text → dropdown of matching staff (name, role, department)
+- Insert mention as structured token in message body (plain-text fallback: `@Display Name`)
+- On send: parse mentions; create in-app notification for each mentioned user (even if not in thread)
+- Render mentions with distinct style in message bubbles
+- If backend lacks mention table, store in message metadata or extend API in backend pass (document in PR)
+
+### 6. Attachments
+
+- Wire `sendMessage` to multipart upload when attachments present (mirror backend conversation message endpoint)
+- Show attachment chips in composer before send
+- In thread: image thumbnails (tap to preview); file rows with name, size, download/open
+- Support screenshot paste on web/desktop where platform allows
+
+### 7. Notifications panel (secondary)
+
+- Keep separate from Inbox — these are **not** user-composed chats
+- Examples: task assigned, recall due, bed released, lab critical
+- Row: icon by type, title, snippet, timestamp, unread state
+- Detail: full body, deep link to source module (`target_path`), mark read/unread, archive
+- Tapping deep link navigates to OPD/IPD/etc. without mutating clinical state in Communications
+
+### 8. Inbox metadata actions
+
+| Action | Behavior |
+|--------|----------|
+| Favorite | Pin/star thread; filter **Favorites** |
+| Flag | Mark for follow-up; filter **Flagged** |
+| Archive | Existing archive flow; hide from default list |
+| Mark read/unread | Per thread |
+
+Implement via conversation flags on backend if missing (`is_favorite`, `is_flagged` per participant or conversation-level fields); add migration only if needed.
+
+### 9. Visual & accessibility standards
+
+- Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`
+- Light/dark/system themes; all strings in `app_en.arb`
+- Touch targets ≥ 44dp; composer accessible labels; screen-reader friendly thread structure
+- Responsive on Android, iOS, web, Windows, macOS, Linux
+- Peer apps for interaction patterns: inline composer, mention autocomplete, read receipts, group threads — **not** for branding copy
 
 ---
 
-## Global Standards
+## Architecture & Conventions
 
-- Hospital workflow language — no raw enum names in labels.
-- Reuse `frontend/lib/shared/*` (`AppButton`, `AppMenuItemLabel`, `AppMenuCountBadge`, theme spacing/radius).
-- Icons: outlined Material set; inherit toolbar → overflow via `leadingIcon` + `app_toolbar_overflow_resolver.dart`.
-- All new strings in `frontend/lib/l10n/app_en.arb`.
-- **No new routes** — all actions keep existing dialog handlers.
-- **No handler rewiring** — layout/IA/copy only unless a label rename is required.
-- Permission gates unchanged (`hrRead`, `hrWrite`, module entitlements for global actions).
+| Rule | Requirement |
+|------|-------------|
+| Layering | Extract new UI to `frontend/lib/features/communications/presentation/widgets/` — e.g. `communications_conversation_list.dart`, `communications_thread_view.dart`, `communications_compose_bar.dart`, `communications_new_conversation_dialog.dart` |
+| State | Keep `CommunicationsWorkspaceController`; add methods for favorites/flags/attachments as needed |
+| No API in widgets | Repository → API only |
+| Modal-first | New DM, new group, manage members, attachment preview — dialogs/sheets; **do not** add routes for within-module flows |
+| Realtime | Existing `RealtimeEventGroups.communications` subscription — refresh active thread and conversation list on new messages |
+| Permissions | `AppPermissions.communicationsWrite` for compose; `AccessGate` + backend auth |
+| Clinical boundary | Notifications deep-link only; Communications does not own clinical mutations |
+
+---
+
+## Suggested Implementation Phases
+
+### Phase A — Inbox chat shell (MVP visible improvement)
+
+- [ ] Replace inbox `AppListTable` with conversation list component
+- [ ] Thread view with scrollable bubbles + sticky composer (text only)
+- [ ] New DM dialog wired to `createConversation`
+- [ ] Narrow-width single-pane navigation
+
+### Phase B — Rich messaging
+
+- [ ] @mention autocomplete + notification side effect
+- [ ] Multipart attachments via `AppFileUploadPanel`
+- [ ] Reply-to-message
+- [ ] Read receipt indicators
+
+### Phase C — Groups & organization
+
+- [ ] New group dialog + member management
+- [ ] Favorite / flag filters and actions
+- [ ] Group header with participant list
+
+### Phase D — Polish & tests
+
+- [ ] Widget tests for composer, mention picker, thread selection
+- [ ] Controller tests for attachment + group flows
+- [ ] Manual QA on web + one mobile target
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Overflow menu shows **labeled sections** in the order defined above.
-- [ ] **Every menu item** (inline and overflow) displays the correct outlined icon per the IA tables; icons match between inline and overflow for the same action.
-- [ ] Notification submenu children each show distinct, meaningful icons (unassigned shifts uses `event_available_outlined`).
-- [ ] HR-specific actions are grouped separately from **Workspace** and **Facilities** utilities.
-- [ ] **Add staff** and **Work queues** remain inline on md+ viewports; overflow contains the rest.
-- [ ] **Notifications** submenu works via click (stable submenu); badge reflects attention total.
-- [ ] Work queues vs. Notifications distinction is clear from section placement + tooltip/copy.
-- [ ] Facilities section omitted when user lacks both maintenance and fault-report access.
-- [ ] No duplicate menu entries; all existing actions still reachable.
-- [ ] Widget tests cover section rendering and notifications behavior.
-- [ ] Manual QA: `.\tool\run_web_5201.ps1` → `/hr` → resize to trigger overflow → verify grouping at 1280px and 900px widths.
+- [ ] HR (or any `communications:write` user) can start a DM from Inbox without developer workarounds
+- [ ] User can create a group, add members, and all members see group messages
+- [ ] Composer supports `@` staff mention with dropdown; mentioned user receives notification
+- [ ] User can attach at least one file/image per message; attachment visible in thread
+- [ ] Thread shows time-tagged messages; user can see read state on sent messages
+- [ ] Tapping a conversation/group on the left shows the full thread on the right (wide) or navigates to thread (narrow)
+- [ ] Notifications remain distinct from Inbox and deep-link to source modules
+- [ ] UI is usable and attractive on desktop and mobile widths
+- [ ] No regression: Deliveries and Templates panels still work read-only
 
 ---
 
-## Out of Scope
+## Quality Gate
 
-- Full schedule-template list/edit/delete CRUD.
-- Changing work-queue dialog internals or queue mutation logic.
-- Staff detail action grouping (separate item in parent prompt).
-- Backend API changes.
-- Replacing overflow with a permanent sidebar or command palette.
+From `frontend/`:
+
+```sh
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+From `backend/` when touching API or schema:
+
+```sh
+npm test -- --testPathPattern="conversation|communications-workspace|notification"
+```
+
+Apply Prisma migrations per backend workflow before merging schema changes.
+
+---
+
+## Key File References
+
+```
+frontend/lib/features/communications/
+frontend/lib/shared/components/app_file_upload_panel.dart
+backend/src/modules/communications-workspace/
+backend/src/modules/conversation/
+backend/prisma/schema.prisma  (conversation, message, message_attachment)
+prompts/29-communications-module-prompt.md
+```

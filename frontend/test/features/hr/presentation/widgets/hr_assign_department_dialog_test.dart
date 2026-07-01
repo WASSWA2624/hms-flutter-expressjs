@@ -85,9 +85,9 @@ void _stubWorkspaceBootstrap(_MockHrRepository repository) {
     (_) async =>
         const Result<HrStaffAccessSummary>.success(HrStaffAccessSummary()),
   );
-  when(() => repository.createStaffAssignment(any())).thenAnswer(
-    (_) async => const Result<Object?>.success(<String, Object?>{}),
-  );
+  when(
+    () => repository.createStaffAssignment(any()),
+  ).thenAnswer((_) async => const Result<Object?>.success(<String, Object?>{}));
 }
 
 class _AssignDepartmentLauncher extends ConsumerStatefulWidget {
@@ -162,7 +162,9 @@ void main() {
     registerFallbackValue(_selectedStaff);
   });
 
-  testWidgets('shows assign department form fields', (WidgetTester tester) async {
+  testWidgets('shows assign department form fields', (
+    WidgetTester tester,
+  ) async {
     await _pumpAssignDepartmentDialog(tester, repository);
 
     expect(find.text('Assign department'), findsWidgets);

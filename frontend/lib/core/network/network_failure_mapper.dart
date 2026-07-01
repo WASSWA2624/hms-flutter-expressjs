@@ -143,7 +143,9 @@ final class NetworkFailureMapper {
     if (errors is List<Object?>) {
       return errors
           .whereType<Map<Object?, Object?>>()
-          .map((Map<Object?, Object?> entry) => entry['field']?.toString().trim())
+          .map(
+            (Map<Object?, Object?> entry) => entry['field']?.toString().trim(),
+          )
           .whereType<String>()
           .where((String field) => field.isNotEmpty)
           .toSet();
@@ -169,7 +171,10 @@ final class NetworkFailureMapper {
       }
       final String? field = entry['field']?.toString().trim();
       final String? message = entry['message']?.toString().trim();
-      if (field == null || field.isEmpty || message == null || message.isEmpty) {
+      if (field == null ||
+          field.isEmpty ||
+          message == null ||
+          message.isEmpty) {
         continue;
       }
       messages.putIfAbsent(field, () => message);

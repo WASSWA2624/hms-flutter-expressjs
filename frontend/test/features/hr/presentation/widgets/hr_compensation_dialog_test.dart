@@ -4,7 +4,9 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_compensation_line
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('HrCompensationLineEditor renders pay type fields', (WidgetTester tester) async {
+  testWidgets('HrCompensationLineEditor renders pay type fields', (
+    WidgetTester tester,
+  ) async {
     final HrCompensationLineData line = HrCompensationLineData(
       payType: 'PER_MONTH',
       rateController: TextEditingController(text: '3000'),

@@ -53,13 +53,15 @@ final class HrWeeklyScheduleDraft {
   HrWeeklyScheduleDraft({
     Map<int, HrDayScheduleDraft>? days,
     bool weekdayDefaults = false,
-  }) : days = days ??
-            <int, HrDayScheduleDraft>{
-              for (final int day in kHrWeekDayOrder)
-                day: weekdayDefaults && kDefaultAvailabilityWeekdays.contains(day)
-                    ? HrDayScheduleDraft.weekdayDefault()
-                    : HrDayScheduleDraft(),
-            };
+  }) : days =
+           days ??
+           <int, HrDayScheduleDraft>{
+             for (final int day in kHrWeekDayOrder)
+               day:
+                   weekdayDefaults && kDefaultAvailabilityWeekdays.contains(day)
+                   ? HrDayScheduleDraft.weekdayDefault()
+                   : HrDayScheduleDraft(),
+           };
 
   final Map<int, HrDayScheduleDraft> days;
 
@@ -76,10 +78,7 @@ final class HrWeeklyScheduleDraft {
       if (slots.isEmpty) {
         continue;
       }
-      result.add(<String, Object?>{
-        'day_of_week': day,
-        'time_slots': slots,
-      });
+      result.add(<String, Object?>{'day_of_week': day, 'time_slots': slots});
     }
     return result;
   }
@@ -145,10 +144,7 @@ final class HrWeeklyScheduleDraft {
   void applyLegacyDefaultTimes(String? startTime, String? endTime) {
     final String? start = startTime?.trim();
     final String? end = endTime?.trim();
-    if (start == null ||
-        start.isEmpty ||
-        end == null ||
-        end.isEmpty) {
+    if (start == null || start.isEmpty || end == null || end.isEmpty) {
       return;
     }
     applyEntitySlotsByDay(<int, List<HrAvailabilitySlot>>{
@@ -266,15 +262,18 @@ List<HrAvailabilitySlot> _parseTimeSlots(Object? raw) {
     return const <HrAvailabilitySlot>[];
   }
   return <HrAvailabilitySlot>[
-    for (final Object? slot in raw)
-      if (slot is Map)
-        HrAvailabilitySlot(
-          startTime: slot['start_time']?.toString() ?? '',
-          endTime: slot['end_time']?.toString() ?? '',
-        ),
-  ].where((HrAvailabilitySlot slot) {
-    return slot.startTime.trim().isNotEmpty && slot.endTime.trim().isNotEmpty;
-  }).toList(growable: false);
+        for (final Object? slot in raw)
+          if (slot is Map)
+            HrAvailabilitySlot(
+              startTime: slot['start_time']?.toString() ?? '',
+              endTime: slot['end_time']?.toString() ?? '',
+            ),
+      ]
+      .where((HrAvailabilitySlot slot) {
+        return slot.startTime.trim().isNotEmpty &&
+            slot.endTime.trim().isNotEmpty;
+      })
+      .toList(growable: false);
 }
 
 /// Reusable weekly schedule editor for availability and schedule templates.
@@ -357,8 +356,8 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
       return;
     }
 
-    final List<HrAvailabilitySlot> sourceSlots =
-        schedule.days[sourceDay]!.toEntitySlots();
+    final List<HrAvailabilitySlot> sourceSlots = schedule.days[sourceDay]!
+        .toEntitySlots();
     for (final int day in selectedDays) {
       schedule.days[day]!.replaceSlots(sourceSlots);
     }
@@ -386,7 +385,9 @@ class HrWeeklyScheduleEditor extends StatelessWidget {
             schedule: schedule.days[day]!,
             readOnly: readOnly,
             onChanged: onChanged,
-            onDuplicate: readOnly ? null : () => _showDuplicateDialog(context, day),
+            onDuplicate: readOnly
+                ? null
+                : () => _showDuplicateDialog(context, day),
             duplicateLabel: l10n.hrDuplicateScheduleToAction,
             addSlotLabel: l10n.hrAddScheduleSlotAction,
             removeSlotLabel: l10n.hrRemoveScheduleSlotAction,

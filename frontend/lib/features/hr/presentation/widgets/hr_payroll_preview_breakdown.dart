@@ -27,7 +27,9 @@ class HrPayrollPreviewBreakdown extends StatelessWidget {
     return Card(
       margin: EdgeInsets.only(bottom: theme.spacing.sm),
       child: ExpansionTile(
-        title: Text(item.staffName ?? defaultStaffName ?? item.staffNumber ?? ''),
+        title: Text(
+          item.staffName ?? defaultStaffName ?? item.staffNumber ?? '',
+        ),
         subtitle: Text(
           hrJoinDisplay(<String?>[
             l10n.hrGrossPayLabel,
@@ -60,7 +62,8 @@ class HrPayrollPreviewBreakdown extends StatelessWidget {
                   ),
                 ),
               ),
-          for (final HrPayrollPreviewWarning warning in calculation?.warnings ?? const <HrPayrollPreviewWarning>[])
+          for (final HrPayrollPreviewWarning warning
+              in calculation?.warnings ?? const <HrPayrollPreviewWarning>[])
             Padding(
               padding: EdgeInsets.fromLTRB(
                 theme.spacing.md,

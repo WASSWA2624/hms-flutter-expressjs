@@ -75,8 +75,7 @@ class AppPhoneField extends StatefulWidget {
 
   /// Commits the in-progress national digits to [controller] before submit.
   static void commitPhone(GlobalKey<State<AppPhoneField>> key) {
-    final _AppPhoneFieldState? state =
-        key.currentState as _AppPhoneFieldState?;
+    final _AppPhoneFieldState? state = key.currentState as _AppPhoneFieldState?;
     state?.commitPhoneToController();
   }
 }
@@ -488,15 +487,15 @@ class _UnifiedPhoneInput extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-        return LayoutBuilder(
+    return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double countryWidth = constraints.maxWidth < 360
             ? 104
             : constraints.maxWidth < 520
             ? 124
             : 148;
-        final double inputHeight = constraints.hasBoundedHeight &&
-                constraints.maxHeight.isFinite
+        final double inputHeight =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : theme.inputDecorationTheme.constraints?.minHeight ?? 48;
 

@@ -242,12 +242,14 @@ class _AppTimeFieldState extends State<AppTimeField> {
                 ),
                 suffixIcon: _TimePickerButton(
                   label: widget.pickerButtonLabel,
-                  onPressed:
-                      canChange ? () => _selectTime(context, field) : null,
+                  onPressed: canChange
+                      ? () => _selectTime(context, field)
+                      : null,
                 ),
                 suffixIconConstraints: BoxConstraints(
                   minWidth:
-                      theme.appTokens.minInteractiveDimension + theme.spacing.md,
+                      theme.appTokens.minInteractiveDimension +
+                      theme.spacing.md,
                   minHeight:
                       theme.inputDecorationTheme.constraints?.minHeight ?? 48,
                 ),
@@ -256,80 +258,80 @@ class _AppTimeFieldState extends State<AppTimeField> {
                 textDirection: TextDirection.ltr,
                 child: Row(
                   children: <Widget>[
-                Flexible(
-                  flex: 2,
-                  child: SizedBox(
-                    width: 30,
-                    child: _TimePartTextField(
-                      controller: _hourController,
-                      focusNode: _hourFocusNode,
-                      nextFocusNode: _minuteFocusNode,
-                      labelText: widget.hourLabelText,
-                      hintText: _partHint(0, widget.hourLabelText),
-                      maxLength: _hourMaxLength,
-                      enabled: canChange,
-                      restorationId: _partRestorationId('hour'),
-                      textInputAction: TextInputAction.next,
-                      onChanged: () => _handlePartsChanged(field),
-                    ),
-                  ),
-                ),
-                _TimePartSeparator(enabled: canChange),
-                Flexible(
-                  flex: 2,
-                  child: SizedBox(
-                    width: 30,
-                    child: _TimePartTextField(
-                      controller: _minuteController,
-                      focusNode: _minuteFocusNode,
-                      nextFocusNode: widget.showSeconds
-                          ? _secondFocusNode
-                          : (_uses24Hour ? null : _hourFocusNode),
-                      labelText: widget.minuteLabelText,
-                      hintText: _partHint(1, widget.minuteLabelText),
-                      maxLength: 2,
-                      enabled: canChange,
-                      restorationId: _partRestorationId('minute'),
-                      textInputAction: widget.showSeconds
-                          ? TextInputAction.next
-                          : TextInputAction.done,
-                      onChanged: () => _handlePartsChanged(field),
-                    ),
-                  ),
-                ),
-                if (widget.showSeconds) ...<Widget>[
-                  _TimePartSeparator(enabled: canChange),
-                  Flexible(
-                    flex: 2,
-                    child: SizedBox(
-                      width: 30,
-                      child: _TimePartTextField(
-                        controller: _secondController,
-                        focusNode: _secondFocusNode,
-                        labelText: widget.secondLabelText,
-                        hintText: _partHint(2, widget.secondLabelText),
-                        maxLength: 2,
-                        enabled: canChange,
-                        restorationId: _partRestorationId('second'),
-                        textInputAction: TextInputAction.done,
-                        onChanged: () => _handlePartsChanged(field),
+                    Flexible(
+                      flex: 2,
+                      child: SizedBox(
+                        width: 30,
+                        child: _TimePartTextField(
+                          controller: _hourController,
+                          focusNode: _hourFocusNode,
+                          nextFocusNode: _minuteFocusNode,
+                          labelText: widget.hourLabelText,
+                          hintText: _partHint(0, widget.hourLabelText),
+                          maxLength: _hourMaxLength,
+                          enabled: canChange,
+                          restorationId: _partRestorationId('hour'),
+                          textInputAction: TextInputAction.next,
+                          onChanged: () => _handlePartsChanged(field),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-                if (!_uses24Hour) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  _TimePeriodToggle(
-                    amLabel: widget.amLabelText,
-                    pmLabel: widget.pmLabelText,
-                    period: _period,
-                    enabled: canChange,
-                    onChanged: (_AppTimePeriod value) {
-                      setState(() => _period = value);
-                      _handlePartsChanged(field);
-                    },
-                  ),
-                ],
+                    _TimePartSeparator(enabled: canChange),
+                    Flexible(
+                      flex: 2,
+                      child: SizedBox(
+                        width: 30,
+                        child: _TimePartTextField(
+                          controller: _minuteController,
+                          focusNode: _minuteFocusNode,
+                          nextFocusNode: widget.showSeconds
+                              ? _secondFocusNode
+                              : (_uses24Hour ? null : _hourFocusNode),
+                          labelText: widget.minuteLabelText,
+                          hintText: _partHint(1, widget.minuteLabelText),
+                          maxLength: 2,
+                          enabled: canChange,
+                          restorationId: _partRestorationId('minute'),
+                          textInputAction: widget.showSeconds
+                              ? TextInputAction.next
+                              : TextInputAction.done,
+                          onChanged: () => _handlePartsChanged(field),
+                        ),
+                      ),
+                    ),
+                    if (widget.showSeconds) ...<Widget>[
+                      _TimePartSeparator(enabled: canChange),
+                      Flexible(
+                        flex: 2,
+                        child: SizedBox(
+                          width: 30,
+                          child: _TimePartTextField(
+                            controller: _secondController,
+                            focusNode: _secondFocusNode,
+                            labelText: widget.secondLabelText,
+                            hintText: _partHint(2, widget.secondLabelText),
+                            maxLength: 2,
+                            enabled: canChange,
+                            restorationId: _partRestorationId('second'),
+                            textInputAction: TextInputAction.done,
+                            onChanged: () => _handlePartsChanged(field),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (!_uses24Hour) ...<Widget>[
+                      SizedBox(width: theme.spacing.sm),
+                      _TimePeriodToggle(
+                        amLabel: widget.amLabelText,
+                        pmLabel: widget.pmLabelText,
+                        period: _period,
+                        enabled: canChange,
+                        onChanged: (_AppTimePeriod value) {
+                          setState(() => _period = value);
+                          _handlePartsChanged(field);
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -434,9 +436,7 @@ class _AppTimeFieldState extends State<AppTimeField> {
 
     final int? hourPart = int.tryParse(hourText);
     final int? minutePart = int.tryParse(minuteText);
-    final int? secondPart = widget.showSeconds
-        ? int.tryParse(secondText)
-        : 0;
+    final int? secondPart = widget.showSeconds ? int.tryParse(secondText) : 0;
     if (hourPart == null || minutePart == null || secondPart == null) {
       return const _TimePartsValidationResult.invalid();
     }
@@ -445,9 +445,7 @@ class _AppTimeFieldState extends State<AppTimeField> {
       return const _TimePartsValidationResult.invalid();
     }
 
-    final int hour24 = _uses24Hour
-        ? hourPart
-        : _to24Hour(hourPart, _period);
+    final int hour24 = _uses24Hour ? hourPart : _to24Hour(hourPart, _period);
     if (_uses24Hour) {
       if (hourPart < _hourMinValue || hourPart > _hourMaxValue) {
         return const _TimePartsValidationResult.invalid();

@@ -54,7 +54,9 @@ class _HrAvailabilityCalendarState extends State<HrAvailabilityCalendar> {
       final DateTime cursor = DateTime.now();
       for (int offset = 0; offset < 7; offset++) {
         final DateTime date = cursor.add(Duration(days: offset));
-        if (date.weekday % 7 == day && !date.isBefore(start) && !date.isAfter(end!)) {
+        if (date.weekday % 7 == day &&
+            !date.isBefore(start) &&
+            !date.isAfter(end!)) {
           return true;
         }
       }
@@ -189,7 +191,9 @@ class _HrAvailabilityCalendarState extends State<HrAvailabilityCalendar> {
               label: l10n.hrAvailabilityLegendUnavailableLabel,
             ),
             _LegendDot(
-              color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.65),
+              color: theme.colorScheme.tertiaryContainer.withValues(
+                alpha: 0.65,
+              ),
               label: l10n.hrAvailabilityLegendLeaveLabel,
             ),
           ],

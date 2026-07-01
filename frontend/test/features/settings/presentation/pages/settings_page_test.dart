@@ -17,58 +17,59 @@ import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.da
 import '../../../../helpers/test_harness.dart';
 
 void main() {
-  testWidgets('HR policy sees personal settings and HR facility setup workspace', (
-    WidgetTester tester,
-  ) async {
-    final AuthSession session = AuthSession(
-      tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
-        roles: <String>['HR'],
-      ),
-      moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(code: 'hr-rosters'),
-      ],
-    );
-    final AppAccessPolicy policy = AppAccessPolicy.fromSession(
-      session,
-    ).copyWithPermissions(<AppPermission>[AppPermissions.hrWrite]);
-
-    await pumpLocalizedWidget(
-      tester,
-      ProviderScope(
-        overrides: [
-          appAccessPolicyProvider.overrideWithValue(policy),
-          initialSessionStateProvider.overrideWithValue(
-            SessionState.authenticated(session: session),
-          ),
-          settingsWorkspaceRepositoryProvider.overrideWithValue(
-            _FakeSettingsWorkspaceRepository(
-              workspace: _hrWorkspace(),
-              referenceData: _referenceData(),
-            ),
-          ),
+  testWidgets(
+    'HR policy sees personal settings and HR facility setup workspace',
+    (WidgetTester tester) async {
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['HR'],
+        ),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'hr-rosters'),
         ],
-        child: const SettingsPage(),
-      ),
-      size: const Size(1280, 1400),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        session,
+      ).copyWithPermissions(<AppPermission>[AppPermissions.hrWrite]);
 
-    expect(find.text('Preferences'), findsOneWidget);
-    expect(find.text('Accessibility'), findsOneWidget);
-    expect(find.text('Account and security'), findsOneWidget);
-    expect(find.text('Administration boundaries'), findsOneWidget);
-    expect(find.text('Tenant and facility setup'), findsOneWidget);
-    expect(find.text('Administrative setup workspace'), findsOneWidget);
-    expect(find.text('Department'), findsWidgets);
-    expect(find.text('Unit'), findsWidgets);
-    expect(find.text('Subscriptions'), findsNothing);
-    expect(find.text('Users and access'), findsNothing);
-    expect(find.text('User and security settings'), findsNothing);
-  });
+      await pumpLocalizedWidget(
+        tester,
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(policy),
+            initialSessionStateProvider.overrideWithValue(
+              SessionState.authenticated(session: session),
+            ),
+            settingsWorkspaceRepositoryProvider.overrideWithValue(
+              _FakeSettingsWorkspaceRepository(
+                workspace: _hrWorkspace(),
+                referenceData: _referenceData(),
+              ),
+            ),
+          ],
+          child: const SettingsPage(),
+        ),
+        size: const Size(1280, 1400),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Preferences'), findsOneWidget);
+      expect(find.text('Accessibility'), findsOneWidget);
+      expect(find.text('Account and security'), findsOneWidget);
+      expect(find.text('Administration boundaries'), findsOneWidget);
+      expect(find.text('Tenant and facility setup'), findsOneWidget);
+      expect(find.text('Administrative setup workspace'), findsOneWidget);
+      expect(find.text('Department'), findsWidgets);
+      expect(find.text('Unit'), findsWidgets);
+      expect(find.text('Subscriptions'), findsNothing);
+      expect(find.text('Users and access'), findsNothing);
+      expect(find.text('User and security settings'), findsNothing);
+    },
+  );
 }
 
 final class _FakeSettingsWorkspaceRepository

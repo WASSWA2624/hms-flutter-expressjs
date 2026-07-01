@@ -11399,6 +11399,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communicationsInactiveStatus => 'Inactive';
 
   @override
+  String get communicationsJustNowLabel => 'Just now';
+
+  @override
+  String communicationsMinutesAgoLabel(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String communicationsHoursAgoLabel(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String communicationsDaysAgoLabel(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String get communicationsAttachFileAction => 'Attach file';
+
+  @override
+  String get communicationsNewMessageAction => 'New message';
+
+  @override
+  String get communicationsNewGroupAction => 'New group';
+
+  @override
+  String get communicationsFavoritesFilterLabel => 'Favorites';
+
+  @override
+  String get communicationsFlaggedFilterLabel => 'Flagged';
+
+  @override
+  String get communicationsArchivedFilterLabel => 'Archived';
+
+  @override
+  String get communicationsLoadMoreAction => 'Load more';
+
+  @override
+  String get communicationsBackToInboxAction => 'Back to inbox';
+
+  @override
+  String communicationsGroupMembersLabel(int count) {
+    return '$count members';
+  }
+
+  @override
+  String get communicationsThreadMenuAction => 'Conversation actions';
+
+  @override
+  String get communicationsFavoriteAction => 'Favorite';
+
+  @override
+  String get communicationsUnfavoriteAction => 'Remove favorite';
+
+  @override
+  String get communicationsFlagAction => 'Flag';
+
+  @override
+  String get communicationsUnflagAction => 'Remove flag';
+
+  @override
+  String get communicationsManageMembersAction => 'Manage members';
+
+  @override
+  String get communicationsManageMembersTitle => 'Manage members';
+
+  @override
+  String get communicationsAddMemberLabel => 'Add member';
+
+  @override
+  String get communicationsAddMemberAction => 'Add member';
+
+  @override
+  String communicationsLastReadLabel(String timestamp) {
+    return 'Last read $timestamp';
+  }
+
+  @override
+  String get communicationsStartConversationAction => 'Start conversation';
+
+  @override
+  String get communicationsGroupNameLabel => 'Group name';
+
+  @override
+  String get communicationsSensitiveConversationLabel =>
+      'Sensitive conversation';
+
+  @override
+  String get communicationsCreateGroupAction => 'Create group';
+
+  @override
   String get housekeepingTitle => 'Housekeeping';
 
   @override

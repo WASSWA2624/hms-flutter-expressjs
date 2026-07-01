@@ -249,6 +249,9 @@ final class CommunicationsParticipantDto {
       joinedAt: _date(json['joined_at']),
       archivedAt: _date(json['archived_at']),
       lastReadAt: _date(json['last_read_at']),
+      lastReadMessageId: _string(json['last_read_message_id']),
+      isFavorite: _bool(json['is_favorite']),
+      isFlagged: _bool(json['is_flagged']),
       user: _map(json['user']).isEmpty
           ? null
           : CommunicationUserDto(_map(json['user'])).toEntity(),
@@ -279,6 +282,8 @@ final class CommunicationsConversationDto {
       isSensitive: _bool(json['is_sensitive']),
       archived: _bool(json['archived']),
       unread: _bool(json['unread']),
+      isFavorite: _bool(json['is_favorite']),
+      isFlagged: _bool(json['is_flagged']),
       lastMessageAt: _date(json['last_message_at']),
       createdAt: _date(json['created_at']),
       targetPath: _string(json['target_path']),

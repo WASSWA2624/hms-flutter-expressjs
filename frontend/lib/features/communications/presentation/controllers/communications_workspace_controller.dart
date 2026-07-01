@@ -269,17 +269,83 @@ final class CommunicationsWorkspaceController
     );
   }
 
-  Future<AppFailure?> sendMessage(String content) {
+  Future<AppFailure?> sendMessage(CommunicationMessageDraft draft) {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    final String content = draft.content.trim();
+    if (content.isEmpty && draft.attachments.isEmpty) {
+      return Future<AppFailure?>.value(
+        AppFailure.validation(validationFields: <String>{'content'}),
+      );
+    }
+    return _submitConversationMutation(
+      () => _repository.sendMessage(selected.id, draft),
+    );
+  }
+
+  Future<AppFailure?> toggleSelectedConversationFavorite() {
     final CommunicationsConversation? selected =
         _currentState?.selectedConversation;
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
     return _submitConversationMutation(
-      () => _repository.sendMessage(
-        selected.id,
-        CommunicationMessageDraft(content: content),
-      ),
+      () => _repository.toggleConversationFavorite(selected.id),
+    );
+  }
+
+  Future<AppFailure?> toggleSelectedConversationFlag() {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitConversationMutation(
+      () => _repository.toggleConversationFlag(selected.id),
+    );
+  }
+
+  Future<AppFailure?> addParticipantToSelected(String userId) {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitConversationMutation(
+      () => _repository.addParticipant(selected.id, userId),
+    );
+  }
+
+  Future<AppFailure?> removeParticipantFromSelected(String participantId) {
+    final CommunicationsConversation? selected =
+        _currentState?.selectedConversation;
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return _submitConversationMutation(
+      () => _repository.removeParticipant(selected.id, participantId),
+    );
+  }
+
+  void clearSelectedConversation() {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(
+      current.copyWith(clearSelectedConversation: true, clearLastFailure: true),
+    );
+  }
+
+  Future<List<CommunicationStaffOption>> searchStaff(String query) async {
+    final Result<List<CommunicationStaffOption>> result = await _repository
+        .getReferenceStaff(search: query);
+    return result.when(
+      success: (List<CommunicationStaffOption> value) => value,
+      failure: (_) => const <CommunicationStaffOption>[],
     );
   }
 

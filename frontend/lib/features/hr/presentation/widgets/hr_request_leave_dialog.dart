@@ -34,16 +34,15 @@ Future<void> showHrRequestLeaveDialog(
           ) ??
       const HrReferenceData();
 
-  final String? currentStaffId =
-      ref
-          .read(hrWorkspaceControllerProvider)
-          .asData
-          ?.value
-          .when(
-            success: (HrWorkspaceState state) =>
-                state.selectedStaff?.profile.effectiveId,
-            failure: (_) => null,
-          );
+  final String? currentStaffId = ref
+      .read(hrWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (HrWorkspaceState state) =>
+            state.selectedStaff?.profile.effectiveId,
+        failure: (_) => null,
+      );
 
   final GlobalKey<_HrRequestLeaveFieldsState> fieldsKey =
       GlobalKey<_HrRequestLeaveFieldsState>();
@@ -60,15 +59,19 @@ Future<void> showHrRequestLeaveDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 640,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrRequestLeaveFields(
-        key: fieldsKey,
-        referenceData: referenceData,
-        currentStaffId: currentStaffId,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrRequestLeaveFields(
+            key: fieldsKey,
+            referenceData: referenceData,
+            currentStaffId: currentStaffId,
+          );
+        },
     onSubmit: () {
       final _HrRequestLeaveFieldsState? state = fieldsKey.currentState;
       final String? validationError = state?.validate(context.l10n);
@@ -77,7 +80,9 @@ Future<void> showHrRequestLeaveDialog(
           AppFailure.validation(detailMessage: validationError),
         );
       }
-      return controller.createLeave(state?.toPayload() ?? const <String, Object?>{});
+      return controller.createLeave(
+        state?.toPayload() ?? const <String, Object?>{},
+      );
     },
   );
 

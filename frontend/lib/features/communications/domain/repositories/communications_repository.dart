@@ -22,6 +22,12 @@ abstract interface class CommunicationsRepository {
 
   Future<Result<CommunicationsConversation>> unarchiveConversation(String id);
 
+  Future<Result<CommunicationsConversation>> toggleConversationFavorite(
+    String id,
+  );
+
+  Future<Result<CommunicationsConversation>> toggleConversationFlag(String id);
+
   Future<Result<CommunicationsConversation>> sendMessage(
     String conversationId,
     CommunicationMessageDraft draft,
@@ -29,5 +35,19 @@ abstract interface class CommunicationsRepository {
 
   Future<Result<CommunicationsConversation>> createConversation(
     CommunicationConversationDraft draft,
+  );
+
+  Future<Result<List<CommunicationStaffOption>>> getReferenceStaff({
+    String search = '',
+  });
+
+  Future<Result<CommunicationsConversation>> addParticipant(
+    String conversationId,
+    String userId,
+  );
+
+  Future<Result<CommunicationsConversation>> removeParticipant(
+    String conversationId,
+    String participantId,
   );
 }

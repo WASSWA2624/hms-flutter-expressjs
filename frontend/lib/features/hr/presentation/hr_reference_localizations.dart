@@ -408,7 +408,8 @@ extension HrReferenceLocalizations on AppLocalizations {
       'SOCIAL_WORKER' => hrReferenceRoleSocialWorker,
       'CLINICAL_PSYCHOLOGIST' => hrReferenceRoleClinicalPsychologist,
       'LAB_TECH' => hrReferenceRoleLabTech,
-      'MEDICAL_LABORATORY_SCIENTIST' => hrReferenceRoleMedicalLaboratoryScientist,
+      'MEDICAL_LABORATORY_SCIENTIST' =>
+        hrReferenceRoleMedicalLaboratoryScientist,
       'PATHOLOGIST' => hrReferenceRolePathologist,
       'RADIOLOGY_TECH' => hrReferenceRoleRadiologyTech,
       'SONOGRAPHER' => hrReferenceRoleSonographer,
@@ -514,7 +515,8 @@ extension HrReferenceLocalizations on AppLocalizations {
       'labels.hr.reference.role.unit_manager' => hrReferenceRoleUnitManager,
       'labels.hr.reference.role.ward_manager' => hrReferenceRoleWardManager,
       'labels.hr.reference.role.icu_manager' => hrReferenceRoleIcuManager,
-      'labels.hr.reference.role.theatre_manager' => hrReferenceRoleTheatreManager,
+      'labels.hr.reference.role.theatre_manager' =>
+        hrReferenceRoleTheatreManager,
       'labels.hr.reference.role.mortuary_staff' => hrReferenceRoleMortuaryStaff,
       'labels.hr.reference.role.mortuary_manager' =>
         hrReferenceRoleMortuaryManager,

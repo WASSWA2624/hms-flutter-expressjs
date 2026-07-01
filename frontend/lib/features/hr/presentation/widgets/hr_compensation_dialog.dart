@@ -37,16 +37,20 @@ Future<void> showHrCompensationDialog(
     submitIcon: Icons.save_outlined,
     maxWidth: 720,
     scrollable: false,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrCompensationForm(
-        key: fieldsKey,
-        staff: staff,
-        history: history,
-        focusPayType: focusPayType,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrCompensationForm(
+            key: fieldsKey,
+            staff: staff,
+            history: history,
+            focusPayType: focusPayType,
+          );
+        },
     onSubmit: () => controller.updateSelectedStaffProfile(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),
@@ -129,7 +133,8 @@ class _HrCompensationForm extends ConsumerStatefulWidget {
   final String? focusPayType;
 
   @override
-  ConsumerState<_HrCompensationForm> createState() => _HrCompensationFormState();
+  ConsumerState<_HrCompensationForm> createState() =>
+      _HrCompensationFormState();
 }
 
 class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
@@ -144,7 +149,9 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     _hydrateLines();
     final String? focus = widget.focusPayType?.trim().toUpperCase();
     if (focus != null && focus.isNotEmpty) {
-      final bool hasLine = _lines.any((HrCompensationLineData line) => line.payType == focus);
+      final bool hasLine = _lines.any(
+        (HrCompensationLineData line) => line.payType == focus,
+      );
       if (!hasLine) {
         _addLine(defaultPayType: focus);
       }
@@ -163,7 +170,9 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
       _lines.add(
         HrCompensationLineData(
           payType: row.payType ?? 'PER_MONTH',
-          rateController: TextEditingController(text: row.rate?.toString() ?? ''),
+          rateController: TextEditingController(
+            text: row.rate?.toString() ?? '',
+          ),
           currency: row.currency ?? appDefaultCurrencyCode,
           payFrequency: row.payFrequency ?? 'MONTHLY',
           effectiveFrom: row.effectiveFrom ?? DateTime.now(),
@@ -192,7 +201,8 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
         .where((HrCompensationLineData line) => !line.removed)
         .map((HrCompensationLineData line) => line.payType)
         .toSet();
-    final String payType = defaultPayType ??
+    final String payType =
+        defaultPayType ??
         kHrCompensationPayTypeCodes.firstWhere(
           (String code) => !used.contains(code),
           orElse: () => kHrCompensationPayTypeCodes.first,
@@ -243,7 +253,8 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final Map<String, List<HrStaffCompensation>> groupedHistory = _groupedHistory();
+    final Map<String, List<HrStaffCompensation>> groupedHistory =
+        _groupedHistory();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -276,7 +287,9 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                           onRemove: () {
                             setState(() {
                               line.removed = true;
-                              if (_lines.every((HrCompensationLineData row) => row.removed)) {
+                              if (_lines.every(
+                                (HrCompensationLineData row) => row.removed,
+                              )) {
                                 _addLine();
                               }
                             });
@@ -287,7 +300,9 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                       child: AppButton.secondary(
                         label: l10n.hrCompensationAddPayLineAction,
                         leadingIcon: Icons.add,
-                        onPressed: _usedPayTypes.length >= kHrCompensationPayTypeCodes.length
+                        onPressed:
+                            _usedPayTypes.length >=
+                                kHrCompensationPayTypeCodes.length
                             ? null
                             : () => setState(() => _addLine()),
                       ),

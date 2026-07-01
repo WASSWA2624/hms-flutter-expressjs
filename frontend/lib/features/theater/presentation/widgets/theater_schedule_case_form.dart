@@ -146,7 +146,9 @@ class TheaterScheduleCaseFormState
         theaterCase?.scheduledAt ??
         DateTime.now().add(const Duration(hours: 1));
     _scheduledDate = _dateOnly(defaultAt);
-    _scheduledTime = AppTimeValue.fromTimeOfDay(TimeOfDay.fromDateTime(defaultAt));
+    _scheduledTime = AppTimeValue.fromTimeOfDay(
+      TimeOfDay.fromDateTime(defaultAt),
+    );
     _notesController = TextEditingController(text: theaterCase?.stageNotes);
     _selectedPatientId = _emptyToNull(
       widget.initialPatientId ?? theaterCase?.patientDisplayId,

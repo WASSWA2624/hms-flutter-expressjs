@@ -74,7 +74,8 @@ class _HrAssignmentDetailDialog extends ConsumerWidget {
               ),
               AppInfoTileData(
                 label: l10n.hrDepartmentLabel,
-                value: assignment.departmentName ?? assignment.departmentDisplayId,
+                value:
+                    assignment.departmentName ?? assignment.departmentDisplayId,
                 icon: Icons.account_tree_outlined,
               ),
               if ((assignment.unitName ?? assignment.unitDisplayId ?? '')

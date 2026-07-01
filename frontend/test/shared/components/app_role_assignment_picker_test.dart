@@ -27,8 +27,9 @@ void main() {
       ),
     ];
 
-    testWidgets('shows empty selected state without warning by default',
-        (tester) async {
+    testWidgets('shows empty selected state without warning by default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(
@@ -62,8 +63,9 @@ void main() {
       expect(find.text('Assign at least one role.'), findsOneWidget);
     });
 
-    testWidgets('filters roles via consolidated searchable select',
-        (tester) async {
+    testWidgets('filters roles via consolidated searchable select', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(

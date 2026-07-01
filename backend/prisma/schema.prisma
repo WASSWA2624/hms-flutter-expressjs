@@ -5915,6 +5915,8 @@ model conversation_participant {
   joined_at            DateTime  @default(now())
   last_read_message_id String?   @db.VarChar(36)
   last_read_at         DateTime?
+  is_favorite          Boolean   @default(false)
+  is_flagged           Boolean   @default(false)
   archived_at          DateTime?
   muted_at             DateTime?
   deleted_at           DateTime?

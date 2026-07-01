@@ -37,16 +37,15 @@ Future<void> showHrRecordAvailabilityDialog(
           ) ??
       const HrReferenceData();
 
-  final String? currentStaffId =
-      ref
-          .read(hrWorkspaceControllerProvider)
-          .asData
-          ?.value
-          .when(
-            success: (HrWorkspaceState state) =>
-                state.selectedStaff?.profile.effectiveId,
-            failure: (_) => null,
-          );
+  final String? currentStaffId = ref
+      .read(hrWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (HrWorkspaceState state) =>
+            state.selectedStaff?.profile.effectiveId,
+        failure: (_) => null,
+      );
 
   final GlobalKey<_HrRecordAvailabilityFieldsState> fieldsKey =
       GlobalKey<_HrRecordAvailabilityFieldsState>();
@@ -64,16 +63,20 @@ Future<void> showHrRecordAvailabilityDialog(
     submitIcon: Icons.save_outlined,
     initialMaximized: true,
     maxWidth: 980,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrRecordAvailabilityFields(
-        key: fieldsKey,
-        referenceData: referenceData,
-        currentStaffId: currentStaffId,
-        onLoadStaffSchedule: controller.loadStaffAvailabilities,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrRecordAvailabilityFields(
+            key: fieldsKey,
+            referenceData: referenceData,
+            currentStaffId: currentStaffId,
+            onLoadStaffSchedule: controller.loadStaffAvailabilities,
+          );
+        },
     onSubmit: () {
       final _HrRecordAvailabilityFieldsState? state = fieldsKey.currentState;
       final String? validationError = state?.validateSchedule(context.l10n);
@@ -103,7 +106,9 @@ class _HrRecordAvailabilityFields extends StatefulWidget {
 
   final HrReferenceData referenceData;
   final String? currentStaffId;
-  final Future<Result<List<HrStaffAvailability>>> Function(String staffProfileId)
+  final Future<Result<List<HrStaffAvailability>>> Function(
+    String staffProfileId,
+  )
   onLoadStaffSchedule;
 
   @override
@@ -195,8 +200,8 @@ class _HrRecordAvailabilityFieldsState
     }
 
     setState(() => _isLoadingCopy = true);
-    final Result<List<HrStaffAvailability>> result =
-        await widget.onLoadStaffSchedule(sourceId);
+    final Result<List<HrStaffAvailability>> result = await widget
+        .onLoadStaffSchedule(sourceId);
     if (!mounted) {
       return;
     }
@@ -239,7 +244,8 @@ class _HrRecordAvailabilityFieldsState
       return true;
     }
 
-    final Map<int, HrStaffAvailability> latestByDay = <int, HrStaffAvailability>{};
+    final Map<int, HrStaffAvailability> latestByDay =
+        <int, HrStaffAvailability>{};
     for (final HrStaffAvailability item in availabilities) {
       final int? day = item.dayOfWeek;
       if (day == null || !isActive(item)) {
@@ -259,7 +265,8 @@ class _HrRecordAvailabilityFieldsState
     }
 
     return <int, List<HrAvailabilitySlot>>{
-      for (final MapEntry<int, HrStaffAvailability> entry in latestByDay.entries)
+      for (final MapEntry<int, HrStaffAvailability> entry
+          in latestByDay.entries)
         entry.key: _slotsForAvailability(entry.value),
     };
   }
@@ -270,10 +277,7 @@ class _HrRecordAvailabilityFieldsState
     }
     final String? start = item.startTime?.trim();
     final String? end = item.endTime?.trim();
-    if (start != null &&
-        start.isNotEmpty &&
-        end != null &&
-        end.isNotEmpty) {
+    if (start != null && start.isNotEmpty && end != null && end.isNotEmpty) {
       return <HrAvailabilitySlot>[
         HrAvailabilitySlot(startTime: start, endTime: end),
       ];
@@ -331,12 +335,10 @@ class _HrRecordAvailabilityFieldsState
           onChanged: _onScheduleSourceChanged,
         ),
         SizedBox(height: theme.spacing.sm),
-        if (_scheduleSource == _HrAvailabilityScheduleSource.fromStaff) ...<Widget>[
+        if (_scheduleSource ==
+            _HrAvailabilityScheduleSource.fromStaff) ...<Widget>[
           if (_staffOptions.isEmpty)
-            Text(
-              l10n.hrNoStaffTitle,
-              style: theme.textTheme.bodyMedium,
-            )
+            Text(l10n.hrNoStaffTitle, style: theme.textTheme.bodyMedium)
           else ...<Widget>[
             AppSelectField<String>.searchable(
               value: _copyFromStaffId,

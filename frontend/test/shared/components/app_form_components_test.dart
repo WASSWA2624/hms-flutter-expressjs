@@ -205,10 +205,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.descendant(
-        of: find.byType(MenuItemButton),
-        matching: find.text('Study 119'),
-      ).hitTestable(),
+      find
+          .descendant(
+            of: find.byType(MenuItemButton),
+            matching: find.text('Study 119'),
+          )
+          .hitTestable(),
       findsOneWidget,
     );
   });

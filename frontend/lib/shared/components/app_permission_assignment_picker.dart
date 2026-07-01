@@ -106,12 +106,10 @@ class _AppPermissionAssignmentPickerState
         <String, List<AppPermissionAssignmentOption>>{};
     for (final AppPermissionAssignmentOption permission
         in _availablePermissions) {
-      final String key = widget.groupByModule
-          ? permission.modulePrefix
-          : '';
-      grouped.putIfAbsent(key, () => <AppPermissionAssignmentOption>[]).add(
-        permission,
-      );
+      final String key = widget.groupByModule ? permission.modulePrefix : '';
+      grouped
+          .putIfAbsent(key, () => <AppPermissionAssignmentOption>[])
+          .add(permission);
     }
     return grouped;
   }
@@ -122,8 +120,7 @@ class _AppPermissionAssignmentPickerState
     final ThemeData theme = Theme.of(context);
     final Map<String, List<AppPermissionAssignmentOption>> grouped =
         _groupedAvailable();
-    final List<String> groupKeys = grouped.keys.toList(growable: false)
-      ..sort();
+    final List<String> groupKeys = grouped.keys.toList(growable: false)..sort();
 
     return AppFormSection(
       children: <Widget>[
@@ -177,7 +174,8 @@ class _AppPermissionAssignmentPickerState
                 ),
             ],
           ),
-        if (_availablePermissions.isNotEmpty && widget.groupByModule) ...<Widget>[
+        if (_availablePermissions.isNotEmpty &&
+            widget.groupByModule) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           Text(
             l10n.hrPermissionAssignmentAvailableByModuleLabel,

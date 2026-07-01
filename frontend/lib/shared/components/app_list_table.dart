@@ -702,7 +702,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return widget.emptyBuilder!(context);
     }
 
-        return LayoutBuilder(
+    return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool hasBoundedHeight = constraints.hasBoundedHeight;
         final bool effectiveShrinkWrap = widget.shrinkWrap || !hasBoundedHeight;
@@ -742,9 +742,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
         return Scrollbar(
           thumbVisibility: true,
-          child: SingleChildScrollView(
-            child: desktopTable,
-          ),
+          child: SingleChildScrollView(child: desktopTable),
         );
       },
     );

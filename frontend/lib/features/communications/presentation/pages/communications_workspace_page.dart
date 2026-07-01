@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
+import 'package:hosspi_hms/features/communications/presentation/widgets/communications_inbox_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -179,6 +180,7 @@ class _CommunicationsWorkspaceContentState
           _CommunicationsListPanel(
             state: state,
             searchController: _searchController,
+            canWrite: canWrite,
             conversationColumns: _conversationColumns,
             notificationColumns: _notificationColumns,
             deliveryColumns: _deliveryColumns,
@@ -186,7 +188,9 @@ class _CommunicationsWorkspaceContentState
           ),
         ],
       ),
-      detail: _CommunicationsDetailPanel(state: state, canWrite: canWrite),
+      detail: state.query.panel == CommunicationsPanel.inbox
+          ? null
+          : _CommunicationsDetailPanel(state: state, canWrite: canWrite),
     );
   }
 
@@ -248,6 +252,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
   const _CommunicationsListPanel({
     required this.state,
     required this.searchController,
+    required this.canWrite,
     required this.conversationColumns,
     required this.notificationColumns,
     required this.deliveryColumns,
@@ -256,6 +261,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
 
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
+  final bool canWrite;
   final AppListTableColumnVisibilityController<CommunicationsConversation>
   conversationColumns;
   final AppListTableColumnVisibilityController<NotificationItem>
@@ -268,6 +274,21 @@ class _CommunicationsListPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+
+    if (state.query.panel == CommunicationsPanel.inbox) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PanelSelector(selected: state.query.panel),
+          SizedBox(height: Theme.of(context).spacing.sm),
+          CommunicationsInboxPanel(
+            state: state,
+            searchController: searchController,
+            canWrite: canWrite,
+          ),
+        ],
+      );
+    }
 
     return AppWorkspaceDetailPanel(
       title: _panelTitle(l10n, state.query.panel),
@@ -285,11 +306,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
 
   Widget _tableForPanel(BuildContext context, WidgetRef ref) {
     return switch (state.query.panel) {
-      CommunicationsPanel.inbox => _ConversationsTable(
-        state: state,
-        searchController: searchController,
-        columnVisibilityController: conversationColumns,
-      ),
+      CommunicationsPanel.inbox => const SizedBox.shrink(),
       CommunicationsPanel.notifications => _NotificationsTable(
         state: state,
         searchController: searchController,
@@ -337,144 +354,6 @@ class _PanelSelector extends ConsumerWidget {
                 : () => controller.applyPanel(panel),
           ),
       ],
-    );
-  }
-}
-
-class _ConversationsTable extends ConsumerWidget {
-  const _ConversationsTable({
-    required this.state,
-    required this.searchController,
-    required this.columnVisibilityController,
-  });
-
-  final CommunicationsWorkspaceState state;
-  final TextEditingController searchController;
-  final AppListTableColumnVisibilityController<CommunicationsConversation>
-  columnVisibilityController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
-
-    return AppListTable<CommunicationsConversation>(
-      page: state.conversations,
-      isLoading: state.isRefreshing,
-      columnVisibilityController: columnVisibilityController,
-      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      search: _tableSearch<CommunicationsConversation>(
-        context,
-        ref,
-        state,
-        searchController,
-      ),
-      itemKeyBuilder: (CommunicationsConversation item) =>
-          ValueKey<String>(item.id),
-      previousPageLabel: l10n.communicationsPreviousPageLabel,
-      nextPageLabel: l10n.communicationsNextPageLabel,
-      pageLabelBuilder: (AppPage<CommunicationsConversation> page) {
-        return _pageLabel(context, page);
-      },
-      onPageChanged: controller.changePage,
-      onRowSelected: controller.selectConversation,
-      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: l10n.communicationsNoConversationsTitle,
-        body: l10n.communicationsNoConversationsBody,
-        icon: Icons.forum_outlined,
-      ),
-      columns: <AppListTableColumn<CommunicationsConversation>>[
-        AppListTableColumn<CommunicationsConversation>(
-          label: l10n.communicationsThreadColumnLabel,
-          sortComparator:
-              (
-                CommunicationsConversation left,
-                CommunicationsConversation right,
-              ) => appListTableCompareText(left.title, right.title),
-          cellBuilder: (_, CommunicationsConversation item) {
-            return AppListItemText(title: item.title, subtitle: item.preview);
-          },
-        ),
-        AppListTableColumn<CommunicationsConversation>(
-          label: l10n.communicationsParticipantsColumnLabel,
-          sortComparator:
-              (
-                CommunicationsConversation left,
-                CommunicationsConversation right,
-              ) => appListTableCompareNumber(
-                left.participants.length,
-                right.participants.length,
-              ),
-          cellBuilder: (BuildContext context, CommunicationsConversation item) {
-            return Text(_participantsLabel(context, item.participants));
-          },
-        ),
-        AppListTableColumn<CommunicationsConversation>(
-          label: l10n.communicationsStatusColumnLabel,
-          sortComparator:
-              (
-                CommunicationsConversation left,
-                CommunicationsConversation right,
-              ) => appListTableCompareText(left.status, right.status),
-          cellBuilder: (BuildContext context, CommunicationsConversation item) {
-            return AppWorkspaceStatusBadge(
-              status: _conversationStatus(context, item),
-            );
-          },
-        ),
-        AppListTableColumn<CommunicationsConversation>(
-          label: l10n.communicationsLastMessageColumnLabel,
-          sortComparator:
-              (
-                CommunicationsConversation left,
-                CommunicationsConversation right,
-              ) => appListTableCompareText(left.preview, right.preview),
-          cellBuilder: (_, CommunicationsConversation item) {
-            return Text(item.preview);
-          },
-        ),
-        AppListTableColumn<CommunicationsConversation>(
-          label: l10n.communicationsTimeColumnLabel,
-          sortComparator:
-              (
-                CommunicationsConversation left,
-                CommunicationsConversation right,
-              ) => appListTableCompareDateTime(
-                left.lastMessageAt,
-                right.lastMessageAt,
-              ),
-          cellBuilder: (BuildContext context, CommunicationsConversation item) {
-            return Text(_dateTimeLabel(context, item.lastMessageAt));
-          },
-        ),
-      ],
-      mobileItemBuilder:
-          (BuildContext context, CommunicationsConversation item) {
-            return AppListItemRow(
-              title: item.title,
-              subtitle: item.preview,
-              leadingIcon: item.unread
-                  ? Icons.mark_chat_unread_outlined
-                  : Icons.forum_outlined,
-              details: <Widget>[
-                Wrap(
-                  spacing: Theme.of(context).spacing.xs,
-                  runSpacing: Theme.of(context).spacing.xs,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: _conversationStatus(context, item),
-                    ),
-                    AppInlineMetaText(
-                      icon: Icons.schedule_outlined,
-                      label: _dateTimeLabel(context, item.lastMessageAt),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
     );
   }
 }
@@ -865,130 +744,11 @@ class _CommunicationsDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (state.query.panel) {
-      CommunicationsPanel.inbox => _conversationDetail(context, ref),
+      CommunicationsPanel.inbox => const SizedBox.shrink(),
       CommunicationsPanel.notifications => _notificationDetail(context, ref),
       CommunicationsPanel.deliveries => _deliveryDetail(context),
       CommunicationsPanel.templates => _templateDetail(context),
     };
-  }
-
-  Widget _conversationDetail(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final CommunicationsConversation? conversation = state.selectedConversation;
-    if (conversation == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.communicationsConversationDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.communicationsNoConversationSelectedTitle,
-          body: l10n.communicationsNoConversationSelectedBody,
-          icon: Icons.forum_outlined,
-          minHeight: 220,
-        ),
-      );
-    }
-
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
-    return AppWorkspaceDetailPanel(
-      title: l10n.communicationsConversationDetailTitle,
-      actions: <Widget>[
-        if (canWrite && conversation.unread)
-          AppButton.secondary(
-            label: l10n.communicationsMarkReadAction,
-            leadingIcon: Icons.mark_chat_read_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _confirmAction(
-              context,
-              title: l10n.communicationsMarkReadDialogTitle,
-              body: l10n.communicationsMarkConversationReadDialogBody,
-              submitLabel: l10n.communicationsMarkReadAction,
-              icon: const Icon(Icons.mark_chat_read_outlined),
-              onConfirm: controller.markSelectedConversationRead,
-            ),
-          ),
-        if (canWrite)
-          AppButton.primary(
-            label: l10n.communicationsSendMessageAction,
-            leadingIcon: Icons.send_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _sendMessage(context, controller),
-          ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppWorkspaceStatusBadge(
-            status: _conversationStatus(context, conversation),
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppInfoTileGrid(
-            emptyValue: l10n.profileUnknownValue,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.communicationsSubjectLabel,
-                value: conversation.subject ?? conversation.title,
-                icon: Icons.subject_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsParticipantsLabel,
-                value: _participantsLabel(context, conversation.participants),
-                icon: Icons.group_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsCreatedAtLabel,
-                value: _dateTimeLabel(context, conversation.createdAt),
-                icon: Icons.event_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsUpdatedAtLabel,
-                value: _dateTimeLabel(context, conversation.lastMessageAt),
-                icon: Icons.update_outlined,
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _LinkedRecordAction(targetPath: conversation.targetPath),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _MessageThread(messages: conversation.messages),
-          SizedBox(height: Theme.of(context).spacing.md),
-          Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              if (canWrite && !conversation.archived)
-                AppButton.secondary(
-                  label: l10n.communicationsArchiveAction,
-                  leadingIcon: Icons.archive_outlined,
-                  enabled: !state.isSaving,
-                  onPressed: () => _confirmAction(
-                    context,
-                    title: l10n.communicationsArchiveDialogTitle,
-                    body: l10n.communicationsArchiveConversationDialogBody,
-                    submitLabel: l10n.communicationsArchiveAction,
-                    icon: const Icon(Icons.archive_outlined),
-                    onConfirm: controller.archiveSelectedConversation,
-                  ),
-                ),
-              if (canWrite && conversation.archived)
-                AppButton.secondary(
-                  label: l10n.communicationsUnarchiveAction,
-                  leadingIcon: Icons.unarchive_outlined,
-                  enabled: !state.isSaving,
-                  onPressed: () => _confirmAction(
-                    context,
-                    title: l10n.communicationsUnarchiveDialogTitle,
-                    body: l10n.communicationsUnarchiveConversationDialogBody,
-                    submitLabel: l10n.communicationsUnarchiveAction,
-                    icon: const Icon(Icons.unarchive_outlined),
-                    onConfirm: controller.unarchiveSelectedConversation,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _notificationDetail(BuildContext context, WidgetRef ref) {
@@ -1307,43 +1067,6 @@ class _LinkedRecordAction extends StatelessWidget {
   }
 }
 
-class _MessageThread extends StatelessWidget {
-  const _MessageThread({required this.messages});
-
-  final List<CommunicationMessage> messages;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    if (messages.isEmpty) {
-      return AppMessagePanel(
-        message: l10n.communicationsNoMessagesBody,
-        icon: Icons.forum_outlined,
-      );
-    }
-
-    return AppSectionPanel(
-      title: l10n.communicationsMessageThreadTitle,
-      leadingIcon: Icons.forum_outlined,
-      children: <Widget>[
-        for (final CommunicationMessage message in messages.take(8))
-          AppListItemRow(
-            title: message.sender?.displayName ?? l10n.profileUnknownValue,
-            subtitle: message.preview,
-            leadingIcon: Icons.person_outline,
-            padding: EdgeInsets.zero,
-            details: <Widget>[
-              AppInlineMetaText(
-                icon: Icons.schedule_outlined,
-                label: _dateTimeLabel(context, message.sentAt),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-}
-
 class _DeliveryHistory extends StatelessWidget {
   const _DeliveryHistory({required this.deliveries});
 
@@ -1500,28 +1223,6 @@ Future<void> _confirmAction(
   }
 }
 
-Future<void> _sendMessage(
-  BuildContext context,
-  CommunicationsWorkspaceController controller,
-) async {
-  final bool? sent = await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppTextActionDialog(
-      title: context.l10n.communicationsSendMessageDialogTitle,
-      fieldLabel: context.l10n.communicationsMessageFieldLabel,
-      submitLabel: context.l10n.communicationsSendMessageAction,
-      icon: const Icon(Icons.send_outlined),
-      onSubmit: controller.sendMessage,
-    ),
-  );
-  if (sent == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.communicationsMessageSentMessage)),
-    );
-  }
-}
-
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null) {
     return;
@@ -1559,20 +1260,6 @@ String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   );
 }
 
-String _participantsLabel(
-  BuildContext context,
-  List<CommunicationsParticipant> participants,
-) {
-  final String joined = participants
-      .map((CommunicationsParticipant participant) {
-        return participant.user?.displayName ?? '';
-      })
-      .where((String value) => value.trim().isNotEmpty)
-      .take(3)
-      .join(_listSeparator);
-  return joined.isEmpty ? context.l10n.profileUnknownValue : joined;
-}
-
 String _deliveryRecipient(NotificationDelivery delivery) {
   return _joinDisplay(<String?>[
         delivery.recipient?.displayName,
@@ -1588,38 +1275,6 @@ String _dateTimeLabel(BuildContext context, DateTime? value) {
   return AppFormatters.dateTime(
     value.toLocal(),
     Localizations.localeOf(context),
-  );
-}
-
-AppWorkspaceStatus _conversationStatus(
-  BuildContext context,
-  CommunicationsConversation conversation,
-) {
-  final AppLocalizations l10n = context.l10n;
-  if (conversation.archived) {
-    return AppWorkspaceStatus(
-      label: l10n.communicationsArchivedStatus,
-      icon: Icons.archive_outlined,
-    );
-  }
-  if (conversation.unread) {
-    return AppWorkspaceStatus(
-      label: l10n.communicationsUnreadStatus,
-      tone: AppWorkspaceStatusTone.warning,
-      icon: Icons.mark_chat_unread_outlined,
-    );
-  }
-  if (conversation.isSensitive) {
-    return AppWorkspaceStatus(
-      label: l10n.communicationsSensitiveStatus,
-      tone: AppWorkspaceStatusTone.info,
-      icon: Icons.privacy_tip_outlined,
-    );
-  }
-  return AppWorkspaceStatus(
-    label: _apiLabel(context, conversation.status),
-    tone: AppWorkspaceStatusTone.success,
-    icon: Icons.check_circle_outline,
   );
 }
 

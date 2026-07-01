@@ -75,6 +75,9 @@ const PARTICIPANT_SELECT = {
   archived_at: true,
   muted_at: true,
   last_read_at: true,
+  last_read_message_id: true,
+  is_favorite: true,
+  is_flagged: true,
   last_read_message: {
     select: {
       id: true,
@@ -166,6 +169,28 @@ const buildConversationWhere = ({
         },
       },
     ];
+  }
+
+  if (normalizedFilter === 'FAVORITES') {
+    where.participants = {
+      some: {
+        user_id: userId,
+        deleted_at: null,
+        is_favorite: true,
+        archived_at: null,
+      },
+    };
+  }
+
+  if (normalizedFilter === 'FLAGGED') {
+    where.participants = {
+      some: {
+        user_id: userId,
+        deleted_at: null,
+        is_flagged: true,
+        archived_at: null,
+      },
+    };
   }
 
   if (normalizedFilter === 'ACTIVE') {

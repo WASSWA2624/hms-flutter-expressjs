@@ -12,7 +12,8 @@ String homeDashboardContextLine({
   required AppRole role,
   required HomeDashboardContext context,
 }) {
-  final bool showFacility = role == AppRole.superAdmin || role == AppRole.tenantAdmin;
+  final bool showFacility =
+      role == AppRole.superAdmin || role == AppRole.tenantAdmin;
   final List<String> parts = <String>[
     if (showFacility && _hasText(context.facilityName)) context.facilityName!,
     if (showFacility && _hasText(context.facilityType))

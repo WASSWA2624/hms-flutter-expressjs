@@ -119,11 +119,7 @@ class AppTimeValue {
       return null;
     }
 
-    return AppTimeValue(
-      hour: hour,
-      minute: parsedMinute,
-      second: parsedSecond,
-    );
+    return AppTimeValue(hour: hour, minute: parsedMinute, second: parsedSecond);
   }
 
   @override

@@ -85,18 +85,22 @@ Future<void> showHrStaffOnboardingDialog(
     submitIcon: Icons.save_outlined,
     maxWidth: 980,
     initialMaximized: true,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return HrStaffOnboardingForm(
-        key: fieldsKey,
-        staff: staff,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-        tenantId: tenantId,
-        facilityId: facilityId,
-        serverFailure: failure,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return HrStaffOnboardingForm(
+            key: fieldsKey,
+            staff: staff,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+            tenantId: tenantId,
+            facilityId: facilityId,
+            serverFailure: failure,
+          );
+        },
     onSubmit: () {
       fieldsKey.currentState?.prepareForSubmit();
       final Map<String, Object?> payload =

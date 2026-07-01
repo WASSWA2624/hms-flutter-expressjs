@@ -52,7 +52,8 @@ extension AppFailureLocalizations on AppLocalizations {
 }
 
 extension AppFailureDisplay on AppFailure {
-  String displayMessage(AppLocalizations l10n) => l10n.failureDisplayMessage(this);
+  String displayMessage(AppLocalizations l10n) =>
+      l10n.failureDisplayMessage(this);
 
   String? messageForField(String field) => fieldMessages[field];
 }

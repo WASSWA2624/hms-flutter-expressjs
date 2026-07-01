@@ -88,6 +88,7 @@ const listMessagesQuerySchema = listQuerySchema.extend({
 const createMessageSchema = z.object({
   content: z.string().trim().max(12000).optional().nullable(),
   reply_to_message_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  mentioned_user_ids: z.array(uuidOrFriendlyIdentifierSchema).max(12).optional(),
 });
 
 module.exports = {

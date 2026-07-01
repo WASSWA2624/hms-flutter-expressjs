@@ -101,6 +101,20 @@ router.post(
 );
 
 router.post(
+  '/conversations/:conversationIdentifier/favorite',
+  validateRequest({ params: conversationIdentifierParamsSchema }),
+  authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
+  communicationsWorkspaceController.toggleFavorite
+);
+
+router.post(
+  '/conversations/:conversationIdentifier/flag',
+  validateRequest({ params: conversationIdentifierParamsSchema }),
+  authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
+  communicationsWorkspaceController.toggleFlag
+);
+
+router.post(
   '/conversations/:conversationIdentifier/participants',
   validateRequest({
     params: conversationIdentifierParamsSchema,

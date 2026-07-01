@@ -972,7 +972,7 @@ final class HrWorkspaceState {
       openStaffDetailAfterOnboarding: clearOpenStaffDetailAfterOnboarding
           ? false
           : openStaffDetailAfterOnboarding ??
-              this.openStaffDetailAfterOnboarding,
+                this.openStaffDetailAfterOnboarding,
     );
   }
 }

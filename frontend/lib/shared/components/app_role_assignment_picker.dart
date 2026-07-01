@@ -252,10 +252,7 @@ class _SelectedRoleTile extends StatelessWidget {
           ],
         ),
         subtitle: Text(
-          l10n.hrAccessRoleSummary(
-            resolved?.permissionCount ?? 0,
-            0,
-          ),
+          l10n.hrAccessRoleSummary(resolved?.permissionCount ?? 0, 0),
         ),
         trailing: IconButton(
           tooltip: l10n.hrRoleAssignmentRemoveRoleAction,

@@ -33,7 +33,8 @@ class _HrPayrollWizardDialog extends ConsumerStatefulWidget {
       _HrPayrollWizardDialogState();
 }
 
-class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> {
+class _HrPayrollWizardDialogState
+    extends ConsumerState<_HrPayrollWizardDialog> {
   int _step = 0;
   DateTime? _periodStart = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime? _periodEnd = DateTime.now();
@@ -50,14 +51,13 @@ class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> 
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
     );
-    final Result<String> createResult = await controller.createPayrollRunDraft(
-      <String, Object?>{
-        'tenant_id': widget.staff.tenantId,
-        'period_start': _periodStart?.toIso8601String(),
-        'period_end': _periodEnd?.toIso8601String(),
-        'status': 'DRAFT',
-      },
-    );
+    final Result<String> createResult = await controller
+        .createPayrollRunDraft(<String, Object?>{
+          'tenant_id': widget.staff.tenantId,
+          'period_start': _periodStart?.toIso8601String(),
+          'period_end': _periodEnd?.toIso8601String(),
+          'status': 'DRAFT',
+        });
     if (!mounted) {
       return;
     }
@@ -84,10 +84,8 @@ class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> 
       });
       return;
     }
-    final Result<HrPayrollPreview> result = await controller.previewPayrollRunById(
-      runId,
-      staffProfileId: widget.staff.id,
-    );
+    final Result<HrPayrollPreview> result = await controller
+        .previewPayrollRunById(runId, staffProfileId: widget.staff.id);
     if (!mounted) {
       return;
     }
@@ -238,8 +236,7 @@ class _HrPayrollWizardDialogState extends ConsumerState<_HrPayrollWizardDialog> 
                 ),
               ],
             ),
-          if (_step == 3)
-            Text(l10n.hrPayrollWizardProcessStepBody),
+          if (_step == 3) Text(l10n.hrPayrollWizardProcessStepBody),
         ],
       ),
       actions: <Widget>[

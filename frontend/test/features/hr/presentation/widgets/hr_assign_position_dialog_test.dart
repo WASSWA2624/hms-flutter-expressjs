@@ -20,15 +20,11 @@ const HrReferenceData _referenceData = HrReferenceData(
     HrOption(value: 'Nurse', label: 'Nurse'),
     HrOption(value: 'Doctor', label: 'Doctor'),
   ],
-  departments: <HrOption>[
-    HrOption(value: 'dept-er', label: 'Emergency'),
-  ],
+  departments: <HrOption>[HrOption(value: 'dept-er', label: 'Emergency')],
   practitionerTypes: <HrOption>[
     HrOption(value: 'MO', label: 'Medical Officer (MO)'),
   ],
-  roles: <HrOption>[
-    HrOption(value: 'role-nurse', label: 'Nurse'),
-  ],
+  roles: <HrOption>[HrOption(value: 'role-nurse', label: 'Nurse')],
 );
 
 const HrStaffProfile _selectedStaff = HrStaffProfile(
@@ -101,8 +97,7 @@ class _AssignPositionLauncherState
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () =>
-          showHrAssignPositionDialog(context, ref, _selectedStaff),
+      onPressed: () => showHrAssignPositionDialog(context, ref, _selectedStaff),
       child: const Text('Open assign position'),
     );
   }

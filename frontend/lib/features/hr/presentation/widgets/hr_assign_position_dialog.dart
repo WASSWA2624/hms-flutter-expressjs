@@ -47,15 +47,19 @@ Future<void> showHrAssignPositionDialog(
     submitLabel: l10n.hrAssignPositionAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrAssignPositionFields(
-        key: fieldsKey,
-        staff: staff,
-        referenceData: referenceData,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrAssignPositionFields(
+            key: fieldsKey,
+            staff: staff,
+            referenceData: referenceData,
+          );
+        },
     onSubmit: () => controller.updateSelectedStaffProfile(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),

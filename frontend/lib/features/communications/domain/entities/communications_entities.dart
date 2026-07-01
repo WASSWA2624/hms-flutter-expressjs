@@ -292,6 +292,9 @@ final class CommunicationsParticipant {
     this.joinedAt,
     this.archivedAt,
     this.lastReadAt,
+    this.lastReadMessageId,
+    this.isFavorite = false,
+    this.isFlagged = false,
   });
 
   final String id;
@@ -301,6 +304,9 @@ final class CommunicationsParticipant {
   final DateTime? joinedAt;
   final DateTime? archivedAt;
   final DateTime? lastReadAt;
+  final String? lastReadMessageId;
+  final bool isFavorite;
+  final bool isFlagged;
 }
 
 @immutable
@@ -314,6 +320,8 @@ final class CommunicationsConversation {
     this.isSensitive = false,
     this.archived = false,
     this.unread = false,
+    this.isFavorite = false,
+    this.isFlagged = false,
     this.lastMessageAt,
     this.createdAt,
     this.targetPath,
@@ -331,6 +339,8 @@ final class CommunicationsConversation {
   final bool isSensitive;
   final bool archived;
   final bool unread;
+  final bool isFavorite;
+  final bool isFlagged;
   final DateTime? lastMessageAt;
   final DateTime? createdAt;
   final String? targetPath;
@@ -340,6 +350,50 @@ final class CommunicationsConversation {
   final int attachmentCount;
 
   String get preview => lastMessage?.preview ?? '';
+
+  bool get isGroup =>
+      (conversationType ?? '').trim().toUpperCase() == 'GROUP' ||
+      participants.length > 2;
+}
+
+@immutable
+final class CommunicationStaffOption {
+  const CommunicationStaffOption({
+    required this.id,
+    required this.label,
+    this.email,
+    this.positionTitle,
+    this.roles = const <String>[],
+  });
+
+  final String id;
+  final String label;
+  final String? email;
+  final String? positionTitle;
+  final List<String> roles;
+
+  String get searchableLabel {
+    final List<String> parts = <String>[
+      label,
+      if (email != null && email!.isNotEmpty) email!,
+      if (positionTitle != null && positionTitle!.isNotEmpty) positionTitle!,
+      ...roles,
+    ];
+    return parts.join(' ');
+  }
+}
+
+@immutable
+final class CommunicationAttachmentUpload {
+  const CommunicationAttachmentUpload({
+    required this.fileName,
+    required this.bytes,
+    this.contentType,
+  });
+
+  final String fileName;
+  final List<int> bytes;
+  final String? contentType;
 }
 
 @immutable
@@ -575,10 +629,14 @@ final class CommunicationMessageDraft {
   const CommunicationMessageDraft({
     required this.content,
     this.replyToMessageId,
+    this.mentionedUserIds = const <String>[],
+    this.attachments = const <CommunicationAttachmentUpload>[],
   });
 
   final String content;
   final String? replyToMessageId;
+  final List<String> mentionedUserIds;
+  final List<CommunicationAttachmentUpload> attachments;
 }
 
 @immutable

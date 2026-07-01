@@ -12,12 +12,15 @@ String hrAssignmentTitle(HrStaffAssignment assignment, AppLocalizations l10n) {
       assignment.departmentName ??
       assignment.departmentDisplayId ??
       l10n.hrAssignmentLabel;
-  if ((assignment.roomName ?? assignment.roomDisplayId ?? '').trim().isNotEmpty) {
-    final String room =
-        assignment.roomName ?? assignment.roomDisplayId ?? '';
+  if ((assignment.roomName ?? assignment.roomDisplayId ?? '')
+      .trim()
+      .isNotEmpty) {
+    final String room = assignment.roomName ?? assignment.roomDisplayId ?? '';
     return '$department › $room';
   }
-  if ((assignment.unitName ?? assignment.unitDisplayId ?? '').trim().isNotEmpty) {
+  if ((assignment.unitName ?? assignment.unitDisplayId ?? '')
+      .trim()
+      .isNotEmpty) {
     final String unit = assignment.unitName ?? assignment.unitDisplayId ?? '';
     return '$department › $unit';
   }
@@ -29,22 +32,23 @@ String hrAssignmentSubtitle(
   HrStaffAssignment assignment,
   AppLocalizations l10n,
 ) {
-  final String range = hrDateRange(context, assignment.startDate, assignment.endDate);
+  final String range = hrDateRange(
+    context,
+    assignment.startDate,
+    assignment.endDate,
+  );
   if ((assignment.displayId ?? '').trim().isNotEmpty) {
     return '$range · ${assignment.displayId}';
   }
   return range;
 }
 
-String hrDateRange(
-  BuildContext context,
-  DateTime? start,
-  DateTime? end,
-) {
+String hrDateRange(BuildContext context, DateTime? start, DateTime? end) {
   final AppLocalizations l10n = context.l10n;
   final Locale locale = Localizations.localeOf(context);
-  final String? startLabel =
-      start == null ? null : AppFormatters.shortDate(start, locale);
+  final String? startLabel = start == null
+      ? null
+      : AppFormatters.shortDate(start, locale);
   final String endLabel = end == null
       ? l10n.hrDateRangeOngoingLabel
       : AppFormatters.shortDate(end, locale);
@@ -104,7 +108,9 @@ List<HrAvailabilitySlot> hrDedupedAvailabilitySlots(
 }
 
 String hrAvailabilitySlotSummary(HrStaffAvailability availability) {
-  final List<HrAvailabilitySlot> slots = hrDedupedAvailabilitySlots(availability);
+  final List<HrAvailabilitySlot> slots = hrDedupedAvailabilitySlots(
+    availability,
+  );
   if (slots.isEmpty) {
     return '';
   }

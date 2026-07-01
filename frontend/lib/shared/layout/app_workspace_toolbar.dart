@@ -569,7 +569,7 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
             visibleNotifications,
           )
         : resolveToolbarOverflowEntries(actions, ref).isNotEmpty ||
-            visibleNotifications.isNotEmpty;
+              visibleNotifications.isNotEmpty;
 
     if (!hasOverflowContent) {
       return const SizedBox.shrink();

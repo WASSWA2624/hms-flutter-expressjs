@@ -2446,11 +2446,7 @@ void _invokeHomeAction(
     unawaited(showHrStaffOnboardingDialog(context, ref));
     return;
   }
-  _goToRoute(
-    context,
-    action.route,
-    queryParameters: action.routeQuery,
-  );
+  _goToRoute(context, action.route, queryParameters: action.routeQuery);
 }
 
 String _trendTitle(AppRole role, String fallback) {

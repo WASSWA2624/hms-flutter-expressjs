@@ -441,7 +441,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       shape: const WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(),
       ),
-      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(EdgeInsets.zero),
+      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+        EdgeInsets.zero,
+      ),
       minimumSize: const WidgetStatePropertyAll<Size>(Size.fromHeight(48)),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: theme.visualDensity,

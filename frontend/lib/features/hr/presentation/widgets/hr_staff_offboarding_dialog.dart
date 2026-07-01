@@ -32,15 +32,19 @@ Future<void> showHrStaffOffboardingDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.check_outlined,
     maxWidth: 560,
-    buildFields: (BuildContext context, GlobalKey<FormState> _, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrOffboardingForm(
-        key: formKey,
-        profile: detail.profile,
-        onOpenPayroll: onOpenPayroll,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> _,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrOffboardingForm(
+            key: formKey,
+            profile: detail.profile,
+            onOpenPayroll: onOpenPayroll,
+          );
+        },
     onSubmit: () => controller.offboardStaff(
       formKey.currentState?.toPayload() ?? <String, Object?>{},
     ),

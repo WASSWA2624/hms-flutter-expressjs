@@ -172,8 +172,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<Result<HrWorkspaceState>>>(
       hrWorkspaceControllerProvider,
-      (AsyncValue<Result<HrWorkspaceState>>? previous,
-          AsyncValue<Result<HrWorkspaceState>> next) {
+      (
+        AsyncValue<Result<HrWorkspaceState>>? previous,
+        AsyncValue<Result<HrWorkspaceState>> next,
+      ) {
         final HrWorkspaceState? nextState = _hrStateFromAsync(next);
         if (nextState?.openStaffDetailAfterOnboarding != true) {
           return;
@@ -244,9 +246,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       leadingIcon: Icons.timeline_outlined,
       semanticLabel: l10n.hrActivityTitle,
       tooltip: l10n.hrActivityTitle,
-      onPressed: state.isRefreshing
-          ? null
-          : () => _showActivityDialog(context),
+      onPressed: state.isRefreshing ? null : () => _showActivityDialog(context),
     );
     final Widget refreshAction = AppWorkspaceRefreshAction(
       label: l10n.commonRefreshActionLabel,
@@ -744,30 +744,30 @@ class _HrStaffDetailBody extends ConsumerWidget {
           onSwapShift: _showShiftSwapDialog,
           onRequestLeave: (BuildContext context, WidgetRef ref) =>
               showHrRequestLeaveDialog(context, ref),
-          onCompensation: (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
-              showHrCompensationDialog(
-                context,
-                ref,
-                staff,
-                detail.compensations,
-              ),
-          onRunPayroll: (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
-              showHrPayrollWizardDialog(context, ref, staff),
+          onCompensation:
+              (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
+                  showHrCompensationDialog(
+                    context,
+                    ref,
+                    staff,
+                    detail.compensations,
+                  ),
+          onRunPayroll:
+              (BuildContext context, WidgetRef ref, HrStaffProfile staff) =>
+                  showHrPayrollWizardDialog(context, ref, staff),
           onAssignRole: showHrAssignRoleDialog,
           onModuleAccess: (BuildContext context, HrStaffDetail staffDetail) {
             showHrModuleAccessDialog(context, ref, staffDetail.accessSummary);
           },
-          onOffboardStaff: (BuildContext context, WidgetRef ref, HrStaffDetail d) =>
-              showHrStaffOffboardingDialog(
-                context,
-                ref,
-                d,
-                onOpenPayroll: () => showHrPayrollWizardDialog(
-                  context,
-                  ref,
-                  d.profile,
-                ),
-              ),
+          onOffboardStaff:
+              (BuildContext context, WidgetRef ref, HrStaffDetail d) =>
+                  showHrStaffOffboardingDialog(
+                    context,
+                    ref,
+                    d,
+                    onOpenPayroll: () =>
+                        showHrPayrollWizardDialog(context, ref, d.profile),
+                  ),
         ),
         SizedBox(height: theme.spacing.md),
         _SmallRecordSection(
@@ -787,7 +787,10 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   if (assignment.isPrimary) hrPrimaryAssignmentBadge(l10n),
                   hrAssignmentStatusBadge(assignment, l10n),
                 ],
-                trailing: assignment.isActive && !state.isMutating && !profile.isSeparated
+                trailing:
+                    assignment.isActive &&
+                        !state.isMutating &&
+                        !profile.isSeparated
                     ? l10n.hrEndAssignmentAction
                     : null,
                 showChevron: true,
@@ -798,7 +801,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   assignment,
                   isMutating: state.isMutating,
                 ),
-                onTrailingTap: assignment.isActive &&
+                onTrailingTap:
+                    assignment.isActive &&
                         !state.isMutating &&
                         !profile.isSeparated
                     ? () => showHrEndAssignmentDialog(context, ref, assignment)
@@ -890,14 +894,16 @@ class _HrStaffDetailBody extends ConsumerWidget {
           onEmptyAction: profile.isSeparated || state.isMutating
               ? null
               : () => showHrCompensationDialog(
-                    context,
-                    ref,
-                    profile,
-                    detail.compensations,
-                  ),
+                  context,
+                  ref,
+                  profile,
+                  detail.compensations,
+                ),
           rows: <_RecordLine>[
             for (final HrStaffCompensation compensation
-                in detail.compensations.where((HrStaffCompensation row) => row.isActive))
+                in detail.compensations.where(
+                  (HrStaffCompensation row) => row.isActive,
+                ))
               _RecordLine(
                 title: hrCompensationRowTitle(context, compensation),
                 subtitle: hrDateRange(
@@ -1264,10 +1270,7 @@ class _HrSeparationBanner extends StatelessWidget {
         padding: EdgeInsets.all(theme.spacing.md),
         child: Row(
           children: <Widget>[
-            Icon(
-              Icons.person_off_outlined,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.person_off_outlined, color: theme.colorScheme.error),
             SizedBox(width: theme.spacing.sm),
             Expanded(
               child: Text(
@@ -1390,14 +1393,18 @@ Future<void> _showShiftAssignmentDialog(
     submitLabel: l10n.hrAssignShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _ShiftAssignmentFields(
-        key: fieldsKey,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _ShiftAssignmentFields(
+            key: fieldsKey,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          );
+        },
     onSubmit: () => controller.createShiftAssignment(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),
@@ -1422,14 +1429,18 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
     submitLabel: l10n.hrSwapShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _ShiftSwapFields(
-        key: fieldsKey,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _ShiftSwapFields(
+            key: fieldsKey,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          );
+        },
     onSubmit: () => controller.createShiftSwapRequest(
       fieldsKey.currentState?.toPayload() ?? <String, Object?>{},
     ),
@@ -1648,11 +1659,15 @@ Future<void> _submitReason(
     submitLabel: submitLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _ReasonFields(key: fieldsKey, requiredReason: requiredReason);
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _ReasonFields(key: fieldsKey, requiredReason: requiredReason);
+        },
     onSubmit: () => onSubmit(fieldsKey.currentState?.reason),
   );
   if (saved == true && context.mounted) {
@@ -1675,11 +1690,15 @@ Future<void> _showRosterPublishDialog(
     submitLabel: l10n.hrPublishRosterAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.publish_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _RosterPublishFields(key: fieldsKey);
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _RosterPublishFields(key: fieldsKey);
+        },
     onSubmit: () {
       final Map<String, Object?> payload =
           fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
@@ -1715,14 +1734,18 @@ Future<void> _showOverrideShiftDialog(
     submitLabel: l10n.hrOverrideShiftAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _OverrideShiftFields(
-        key: fieldsKey,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _OverrideShiftFields(
+            key: fieldsKey,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          );
+        },
     onSubmit: () {
       final Map<String, Object?> payload =
           fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
@@ -1753,11 +1776,15 @@ Future<void> _showProcessPayrollDialog(
     submitLabel: l10n.hrProcessPayrollAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.price_check_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _ProcessPayrollFields(key: fieldsKey);
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _ProcessPayrollFields(key: fieldsKey);
+        },
     onSubmit: () {
       final Map<String, Object?> payload =
           fieldsKey.currentState?.toPayload() ?? <String, Object?>{};
@@ -2142,9 +2169,7 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
   final AppLocalizations l10n = context.l10n;
   return switch (item.queue) {
     HrQueue.leaveRequests => hrJoinDisplay(<String?>[
-      item.leaveType == null
-          ? null
-          : _apiLabel(context, item.leaveType),
+      item.leaveType == null ? null : _apiLabel(context, item.leaveType),
       item.staffName,
       item.staffNumber,
     ]).ifEmpty(l10n.hrLeaveRequestTitle),
@@ -2157,10 +2182,12 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.periodLabel,
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
-    HrQueue.unassignedShifts || HrQueue.overdueShifts => hrJoinDisplay(<String?>[
-      item.shiftType == null ? null : _apiLabel(context, item.shiftType),
-      item.shiftId,
-    ]).ifEmpty(l10n.hrShiftQueueTitle),
+    HrQueue.unassignedShifts || HrQueue.overdueShifts => hrJoinDisplay(
+      <String?>[
+        item.shiftType == null ? null : _apiLabel(context, item.shiftType),
+        item.shiftId,
+      ],
+    ).ifEmpty(l10n.hrShiftQueueTitle),
     HrQueue.payrollDrafts => hrJoinDisplay(<String?>[
       item.periodLabel,
       item.payrollRunId ?? item.displayId,
@@ -2268,9 +2295,10 @@ AppWorkspaceStatusTone _statusTone(String? status) {
 
 String _leaveSummaryTitle(BuildContext context, HrStaffLeave leave) {
   final AppLocalizations l10n = context.l10n;
-  final String leaveType = _apiLabel(context, leave.leaveType).ifEmpty(
-    l10n.hrLeaveLabel,
-  );
+  final String leaveType = _apiLabel(
+    context,
+    leave.leaveType,
+  ).ifEmpty(l10n.hrLeaveLabel);
   final String status = _apiLabel(context, leave.status);
   if (status.isEmpty) {
     return leaveType;
@@ -2284,9 +2312,10 @@ String _leaveSummarySubtitle(BuildContext context, HrStaffLeave leave) {
     hrDateRange(context, leave.startDate, leave.endDate),
     if (leave.isHalfDay)
       l10n.hrLeaveHalfDaySummary(
-        _apiLabel(context, leave.halfDayPeriod).ifEmpty(
-          l10n.hrLeaveHalfDayLabel,
-        ),
+        _apiLabel(
+          context,
+          leave.halfDayPeriod,
+        ).ifEmpty(l10n.hrLeaveHalfDayLabel),
       ),
     if ((leave.coveringStaffName ?? '').trim().isNotEmpty)
       l10n.hrCoveringStaffSummary(leave.coveringStaffName!),

@@ -53,7 +53,8 @@ final class HrWorkspaceController
   /// Loads facility-scoped reference data when onboarding dropdowns are empty.
   Future<void> ensureOnboardingReferenceData({String? facilityId}) async {
     final HrWorkspaceState? current = _currentState;
-    if (current != null && hasHrOnboardingReferenceData(current.referenceData)) {
+    if (current != null &&
+        hasHrOnboardingReferenceData(current.referenceData)) {
       return;
     }
     await _refreshReferences(facilityId: facilityId, forOnboarding: true);
@@ -398,12 +399,11 @@ final class HrWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createStaffAvailabilityBatch(
-        <String, Object?>{
-          'staff_profile_id': selected.profile.effectiveId,
-          ...batchPayload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createStaffAvailabilityBatch(<String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            ...batchPayload,
+          }),
     );
   }
 
@@ -1652,8 +1652,9 @@ final class HrWorkspaceController
         if (data is! Map) {
           return null;
         }
-        final Map<Object?, Object?> source =
-            data['data'] is Map ? data['data'] as Map : data;
+        final Map<Object?, Object?> source = data['data'] is Map
+            ? data['data'] as Map
+            : data;
         return source['id']?.toString() ??
             source['user_id']?.toString() ??
             source['display_id']?.toString() ??
@@ -1667,8 +1668,9 @@ final class HrWorkspaceController
     if (data is! Map) {
       return null;
     }
-    final Map<Object?, Object?> source =
-        data['data'] is Map ? data['data'] as Map : data;
+    final Map<Object?, Object?> source = data['data'] is Map
+        ? data['data'] as Map
+        : data;
     return source['display_id']?.toString() ??
         source['human_friendly_id']?.toString() ??
         source['id']?.toString();

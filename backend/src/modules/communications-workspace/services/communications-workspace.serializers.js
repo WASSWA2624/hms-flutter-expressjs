@@ -102,6 +102,8 @@ const serializeConversation = (record = {}, viewerUserId) => {
     is_sensitive: Boolean(record.is_sensitive),
     archived: Boolean(viewerParticipant?.archived_at || record.archived_at),
     unread: isUnreadConversation(record, viewerUserId),
+    is_favorite: Boolean(viewerParticipant?.is_favorite),
+    is_flagged: Boolean(viewerParticipant?.is_flagged),
     last_message_at: record.last_message_at || lastMessage?.sent_at || null,
     created_at: record.created_at || null,
     target_path: buildConversationPath(id),
@@ -112,6 +114,12 @@ const serializeConversation = (record = {}, viewerUserId) => {
       joined_at: entry.joined_at || null,
       archived_at: entry.archived_at || null,
       last_read_at: entry.last_read_at || null,
+      last_read_message_id: resolvePublicIdentifier(
+        entry.last_read_message?.human_friendly_id,
+        entry.last_read_message_id
+      ),
+      is_favorite: Boolean(entry.is_favorite),
+      is_flagged: Boolean(entry.is_flagged),
       user: entry.user ? serializeUser(entry.user) : null,
     })),
     visibility_roles: (record.visibility_roles || []).map((entry) => ({

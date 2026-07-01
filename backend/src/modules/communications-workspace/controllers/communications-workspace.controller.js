@@ -81,6 +81,22 @@ const unarchiveConversation = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'Conversation unarchived.', data);
 });
 
+const toggleFavorite = asyncHandler(async (req, res) => {
+  const data = await communicationsWorkspaceService.toggleConversationFavorite(
+    req.params.conversationIdentifier,
+    req.user
+  );
+  return sendSuccess(res, 200, 'Conversation favorite updated.', data);
+});
+
+const toggleFlag = asyncHandler(async (req, res) => {
+  const data = await communicationsWorkspaceService.toggleConversationFlag(
+    req.params.conversationIdentifier,
+    req.user
+  );
+  return sendSuccess(res, 200, 'Conversation flag updated.', data);
+});
+
 const addParticipant = asyncHandler(async (req, res) => {
   const data = await communicationsWorkspaceService.addConversationParticipant(
     req.params.conversationIdentifier,
@@ -133,6 +149,8 @@ module.exports = {
   markConversationRead,
   archiveConversation,
   unarchiveConversation,
+  toggleFavorite,
+  toggleFlag,
   addParticipant,
   removeParticipant,
   listMessages,

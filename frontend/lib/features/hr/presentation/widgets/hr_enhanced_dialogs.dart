@@ -41,35 +41,39 @@ Future<void> showHrAssignRoleDialog(
     submitLabel: l10n.hrAssignRoleAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return AppFormSection(
-        children: <Widget>[
-          AppSelectField<String>.searchable(
-            value: roleId,
-            labelText: l10n.hrRolePositionColumnLabel,
-            isRequired: true,
-            options: hrLocalizedSelectOptions(
-              l10n,
-              state?.referenceData.roles ?? const [],
-            ),
-            validator: AppValidators.requiredValue(
-              l10n.hrFieldRequiredLabel(l10n.hrRolePositionColumnLabel),
-            ),
-            onChanged: (String? value) => roleId = value,
-          ),
-          AppSelectField<String>.searchable(
-            value: facilityId,
-            labelText: l10n.hrDepartmentLabel,
-            options: hrSelectOptions(
-              state?.referenceData.facilities ?? const [],
-            ),
-            onChanged: (String? value) => facilityId = value,
-          ),
-        ],
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return AppFormSection(
+            children: <Widget>[
+              AppSelectField<String>.searchable(
+                value: roleId,
+                labelText: l10n.hrRolePositionColumnLabel,
+                isRequired: true,
+                options: hrLocalizedSelectOptions(
+                  l10n,
+                  state?.referenceData.roles ?? const [],
+                ),
+                validator: AppValidators.requiredValue(
+                  l10n.hrFieldRequiredLabel(l10n.hrRolePositionColumnLabel),
+                ),
+                onChanged: (String? value) => roleId = value,
+              ),
+              AppSelectField<String>.searchable(
+                value: facilityId,
+                labelText: l10n.hrDepartmentLabel,
+                options: hrSelectOptions(
+                  state?.referenceData.facilities ?? const [],
+                ),
+                onChanged: (String? value) => facilityId = value,
+              ),
+            ],
+          );
+        },
     onSubmit: () =>
         controller.assignUserRole(roleId: roleId ?? '', facilityId: facilityId),
   );
@@ -187,17 +191,15 @@ Future<void> showHrManageScheduleTemplatesDialog(
                 for (final HrOption template in templates)
                   _HrScheduleTemplateListTile(
                     template: template,
-                    referenceData: state?.referenceData ?? const HrReferenceData(),
+                    referenceData:
+                        state?.referenceData ?? const HrReferenceData(),
                     onOpenDetail: () => showHrScheduleTemplateDetailDialog(
                       context,
                       dialogRef,
                       template,
                     ),
-                    onEdit: () => showHrShiftTemplateDialog(
-                      context,
-                      dialogRef,
-                      template,
-                    ),
+                    onEdit: () =>
+                        showHrShiftTemplateDialog(context, dialogRef, template),
                     onDelete: () async {
                       final AppFailure? failure = await controller
                           .deleteShiftTemplate(template.value);
@@ -258,19 +260,23 @@ Future<void> showHrShiftTemplateDialog(
     showCancelButton: false,
     initialMaximized: true,
     maxWidth: 980,
-    buildFields: (BuildContext context, GlobalKey<FormState> formKey, bool _, [
-      AppFailure? failure,
-    ]) {
-      return _HrShiftTemplateFields(
-        nameController: nameController,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-        schedule: schedule,
-        shiftType: shiftType,
-        facilityId: facilityId,
-        onShiftTypeChanged: (String? value) => shiftType = value,
-        onFacilityChanged: (String? value) => facilityId = value,
-      );
-    },
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool _, [
+          AppFailure? failure,
+        ]) {
+          return _HrShiftTemplateFields(
+            nameController: nameController,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+            schedule: schedule,
+            shiftType: shiftType,
+            facilityId: facilityId,
+            onShiftTypeChanged: (String? value) => shiftType = value,
+            onFacilityChanged: (String? value) => facilityId = value,
+          );
+        },
     onSubmit: () {
       final String? validationError = schedule.validate(l10n);
       if (validationError != null) {
@@ -279,8 +285,8 @@ Future<void> showHrShiftTemplateDialog(
         );
       }
 
-      final List<Map<String, Object?>> weeklySchedule =
-          schedule.toTemplateWeeklySchedulePayload();
+      final List<Map<String, Object?>> weeklySchedule = schedule
+          .toTemplateWeeklySchedulePayload();
       final Map<String, Object?> payload = <String, Object?>{
         'name': nameController.text.trim(),
         'shift_type': shiftType,
@@ -402,9 +408,7 @@ class _HrScheduleTemplateListTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.view_week_outlined),
       title: Text(template.label),
-      subtitle: subtitleParts.isEmpty
-          ? null
-          : Text(subtitleParts.join(' · ')),
+      subtitle: subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
       onTap: onOpenDetail,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -644,10 +648,12 @@ Future<void> showHrScheduleTemplateDetailDialog(
             .firstOrNull;
         final String? shiftType = template.extra['shift_type']?.toString();
         final bool isActive = template.extra['is_active'] != false;
-        final DateTime? createdAt =
-            _parseTemplateDateTime(template.extra['created_at']);
-        final DateTime? updatedAt =
-            _parseTemplateDateTime(template.extra['updated_at']);
+        final DateTime? createdAt = _parseTemplateDateTime(
+          template.extra['created_at'],
+        );
+        final DateTime? updatedAt = _parseTemplateDateTime(
+          template.extra['updated_at'],
+        );
 
         return AppDialog(
           title: Text(template.label),
@@ -729,9 +735,8 @@ Future<void> showHrScheduleTemplateDetailDialog(
               semanticLabel: l10n.hrSchedulePatternDeleteAction,
               tooltip: l10n.hrSchedulePatternDeleteAction,
               onPressed: () async {
-                final AppFailure? failure = await controller.deleteShiftTemplate(
-                  template.value,
-                );
+                final AppFailure? failure = await controller
+                    .deleteShiftTemplate(template.value);
                 if (context.mounted) {
                   Navigator.of(dialogContext).pop();
                   showHrMutationSnackBar(context, failure);

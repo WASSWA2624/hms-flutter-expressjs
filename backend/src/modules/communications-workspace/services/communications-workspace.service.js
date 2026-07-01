@@ -214,7 +214,7 @@ const getReferenceData = async (query = {}, user = {}) => {
       roles: (entry.roles || []).map((row) => text(row?.role?.name)).filter(Boolean),
     })),
     channels: ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'],
-    filters: ['UNREAD', 'SENSITIVE', 'ARCHIVED', 'FAILED'],
+    filters: ['UNREAD', 'SENSITIVE', 'ARCHIVED', 'FAVORITES', 'FLAGGED', 'FAILED'],
   };
 };
 
@@ -402,6 +402,32 @@ const removeConversationParticipant = async (conversationIdentifier, participant
   return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
 };
 
+const toggleConversationFavorite = async (identifier, user = {}) => {
+  const tenantId = requireTenant(user);
+  const userId = requireUserId(user);
+  const conversation = await repository.getConversation({ tenantId, identifier });
+  if (!conversation) throw new HttpError('errors.conversation.not_found', 404);
+  const participant = requireConversationAccess(conversation, userId);
+  await repository.prisma.conversation_participant.update({
+    where: { id: participant.id },
+    data: { is_favorite: !participant.is_favorite },
+  });
+  return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
+};
+
+const toggleConversationFlag = async (identifier, user = {}) => {
+  const tenantId = requireTenant(user);
+  const userId = requireUserId(user);
+  const conversation = await repository.getConversation({ tenantId, identifier });
+  if (!conversation) throw new HttpError('errors.conversation.not_found', 404);
+  const participant = requireConversationAccess(conversation, userId);
+  await repository.prisma.conversation_participant.update({
+    where: { id: participant.id },
+    data: { is_flagged: !participant.is_flagged },
+  });
+  return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
+};
+
 const listConversationMessages = async (identifier, filters = {}, page = 1, limit = 100, _sortBy, _order, user = {}) => {
   const tenantId = requireTenant(user);
   const userId = requireUserId(user);
@@ -508,6 +534,53 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
   const serializedConversation = serializeConversation(freshConversation, userId);
   const recipientUserIds = (freshConversation?.participants || []).map((entry) => entry.user_id).filter(Boolean);
 
+  const mentionedIds = await Promise.all(
+    (payload.mentioned_user_ids || []).map((entry) => repository.resolveUserId(entry, tenantId))
+  );
+  const uniqueMentionIds = Array.from(
+    new Set(
+      mentionedIds.filter(
+        (entry) => entry && entry !== userId && !recipientUserIds.includes(entry)
+      )
+    )
+  );
+  for (const mentionedUserId of uniqueMentionIds) {
+    const mentionedUser = await repository.prisma.user.findFirst({
+      where: { id: mentionedUserId, tenant_id: tenantId, deleted_at: null },
+      select: { id: true, email: true, human_friendly_id: true, profile: { select: { first_name: true, last_name: true } } },
+    });
+    if (!mentionedUser) continue;
+    const notification = await repository.prisma.notification.create({
+      data: {
+        human_friendly_id: repository.createPublicId('NTF'),
+        tenant_id: tenantId,
+        user_id: mentionedUserId,
+        notification_type: 'MENTION',
+        priority: conversation.is_sensitive ? 'HIGH' : 'MEDIUM',
+        title: 'You were mentioned',
+        message: content || 'Sent an attachment',
+        target_path: buildConversationPath(publicConversationId),
+        context_type: 'conversation',
+        context_public_id: publicConversationId,
+      },
+    });
+    await repository.prisma.notification_delivery.create({
+      data: {
+        human_friendly_id: repository.createPublicId('NDL'),
+        notification_id: notification.id,
+        channel: 'IN_APP',
+        status: 'DELIVERED',
+        recipient_target: mentionedUser.email || mentionedUserId,
+        provider_name: 'IN_APP',
+        attempt_count: 1,
+        last_attempt_at: new Date(),
+        sent_at: new Date(),
+        delivered_at: new Date(),
+      },
+    });
+    emitToUsers([mentionedUserId], NOTIFICATION_EVENTS.NOTIFICATION_CREATED, { notification_id: notification.id });
+  }
+
   emitToUsers(recipientUserIds, NOTIFICATION_EVENTS.CONVERSATION_THREAD_UPDATED, { conversation: serializedConversation });
   emitToUsers(recipientUserIds, NOTIFICATION_EVENTS.CONVERSATION_MESSAGE_CREATED, { conversation_id: serializedConversation.id });
   await createAuditLog({ tenant_id: tenantId, user_id: userId, action: 'CREATE', entity: 'communications_workspace_message', entity_id: message.id, diff: { after: { attachment_count: uploaded.length } } });
@@ -525,6 +598,8 @@ module.exports = {
   archiveConversation,
   addConversationParticipant,
   removeConversationParticipant,
+  toggleConversationFavorite,
+  toggleConversationFlag,
   listConversationMessages,
   createConversationMessage,
 };

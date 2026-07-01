@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
@@ -169,16 +170,147 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
     String conversationId,
     CommunicationMessageDraft draft,
   ) {
+    final bool hasAttachments = draft.attachments.isNotEmpty;
+    final Object payload = hasAttachments
+        ? _messageFormData(draft)
+        : _withoutEmpty(<String, Object?>{
+            'content': draft.content,
+            'reply_to_message_id': draft.replyToMessageId,
+            'mentioned_user_ids': draft.mentionedUserIds.isEmpty
+                ? null
+                : draft.mentionedUserIds,
+          });
+
     return _apiClient.post<CommunicationsConversation>(
       ApiEndpoints.nested(
         HmsApiResource.communicationsWorkspace,
         'conversations',
         <String>[conversationId, 'messages'],
       ),
-      data: _withoutEmpty(<String, Object?>{
-        'content': draft.content,
-        'reply_to_message_id': draft.replyToMessageId,
-      }),
+      data: payload,
+      decoder: (Object? data) {
+        return CommunicationsConversationDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  FormData _messageFormData(CommunicationMessageDraft draft) {
+    final FormData formData = FormData();
+    final String content = draft.content.trim();
+    if (content.isNotEmpty) {
+      formData.fields.add(MapEntry<String, String>('content', content));
+    }
+    if (draft.replyToMessageId != null &&
+        draft.replyToMessageId!.trim().isNotEmpty) {
+      formData.fields.add(
+        MapEntry<String, String>(
+          'reply_to_message_id',
+          draft.replyToMessageId!.trim(),
+        ),
+      );
+    }
+    for (final String userId in draft.mentionedUserIds) {
+      formData.fields.add(
+        MapEntry<String, String>('mentioned_user_ids', userId),
+      );
+    }
+    for (final CommunicationAttachmentUpload attachment in draft.attachments) {
+      formData.files.add(
+        MapEntry<String, MultipartFile>(
+          'attachments',
+          MultipartFile.fromBytes(
+            attachment.bytes,
+            filename: attachment.fileName,
+            contentType: attachment.contentType == null
+                ? null
+                : DioMediaType.parse(attachment.contentType!),
+          ),
+        ),
+      );
+    }
+    return formData;
+  }
+
+  @override
+  Future<Result<List<CommunicationStaffOption>>> getReferenceStaff({
+    String search = '',
+  }) {
+    return _apiClient.get<List<CommunicationStaffOption>>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'reference-data',
+        const <String>[],
+      ),
+      queryParameters: _withoutEmpty(<String, Object?>{'search': search}),
+      decoder: (Object? data) {
+        final CommunicationsJsonMap map = _responseMap(data);
+        return _list(map['users'])
+            .map((Object? item) => CommunicationStaffOptionDto(item).toEntity())
+            .where((CommunicationStaffOption item) => item.id.isNotEmpty)
+            .toList(growable: false);
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> addParticipant(
+    String conversationId,
+    String userId,
+  ) {
+    return _apiClient.post<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[conversationId, 'participants'],
+      ),
+      data: <String, Object?>{'user_id': userId},
+      decoder: (Object? data) {
+        return CommunicationsConversationDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> removeParticipant(
+    String conversationId,
+    String participantId,
+  ) {
+    return _apiClient.delete<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[conversationId, 'participants', participantId],
+      ),
+      decoder: (Object? data) {
+        return CommunicationsConversationDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> toggleConversationFavorite(
+    String id,
+  ) {
+    return _apiClient.post<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[id, 'favorite'],
+      ),
+      decoder: (Object? data) {
+        return CommunicationsConversationDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<CommunicationsConversation>> toggleConversationFlag(String id) {
+    return _apiClient.post<CommunicationsConversation>(
+      ApiEndpoints.nested(
+        HmsApiResource.communicationsWorkspace,
+        'conversations',
+        <String>[id, 'flag'],
+      ),
       decoder: (Object? data) {
         return CommunicationsConversationDto.fromResponse(data).toEntity();
       },
@@ -205,6 +337,63 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
         return CommunicationsConversationDto.fromResponse(data).toEntity();
       },
     );
+  }
+}
+
+CommunicationsJsonMap _responseMap(Object? responseData) {
+  if (responseData is Map) {
+    final Map<String, Object?> map = responseData.map<String, Object?>(
+      (Object? key, Object? value) =>
+          MapEntry<String, Object?>(key.toString(), value),
+    );
+    final Object? data = map['data'];
+    if (data is Map) {
+      return data.map<String, Object?>(
+        (Object? key, Object? value) =>
+            MapEntry<String, Object?>(key.toString(), value),
+      );
+    }
+    return map;
+  }
+  return <String, Object?>{};
+}
+
+List<Object?> _list(Object? value) {
+  if (value is List) {
+    return value;
+  }
+  return const <Object?>[];
+}
+
+final class CommunicationStaffOptionDto {
+  const CommunicationStaffOptionDto(this.json);
+
+  final Object? json;
+
+  CommunicationStaffOption toEntity() {
+    if (json is! Map) {
+      return const CommunicationStaffOption(id: '', label: '');
+    }
+    final Map<Object?, Object?> rawMap = json! as Map<Object?, Object?>;
+    final CommunicationsJsonMap map = rawMap.map<String, Object?>(
+      (Object? key, Object? value) =>
+          MapEntry<String, Object?>(key.toString(), value),
+    );
+    return CommunicationStaffOption(
+      id: _string(map['id']) ?? '',
+      label: _string(map['label']) ?? _string(map['id']) ?? '',
+      email: _string(map['email']),
+      positionTitle: _string(map['position_title']),
+      roles: _list(map['roles'])
+          .map((Object? item) => item?.toString() ?? '')
+          .where((String item) => item.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
+
+  String? _string(Object? value) {
+    final String? normalized = value?.toString().trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
   }
 }
 

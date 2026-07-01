@@ -14776,6 +14776,139 @@
   "@communicationsInactiveStatus": {
     "description": "Status label for inactive templates."
   },
+  "communicationsJustNowLabel": "Just now",
+  "@communicationsJustNowLabel": {
+    "description": "Relative timestamp for messages sent moments ago."
+  },
+  "communicationsMinutesAgoLabel": "{minutes}m ago",
+  "@communicationsMinutesAgoLabel": {
+    "description": "Relative timestamp for messages sent minutes ago.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "communicationsHoursAgoLabel": "{hours}h ago",
+  "@communicationsHoursAgoLabel": {
+    "description": "Relative timestamp for messages sent hours ago.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "communicationsDaysAgoLabel": "{days}d ago",
+  "@communicationsDaysAgoLabel": {
+    "description": "Relative timestamp for messages sent days ago.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "communicationsAttachFileAction": "Attach file",
+  "@communicationsAttachFileAction": {
+    "description": "Action label for attaching a file to a message."
+  },
+  "communicationsNewMessageAction": "New message",
+  "@communicationsNewMessageAction": {
+    "description": "Action label for starting a direct message."
+  },
+  "communicationsNewGroupAction": "New group",
+  "@communicationsNewGroupAction": {
+    "description": "Action label for creating a group conversation."
+  },
+  "communicationsFavoritesFilterLabel": "Favorites",
+  "@communicationsFavoritesFilterLabel": {
+    "description": "Inbox filter label for favorite conversations."
+  },
+  "communicationsFlaggedFilterLabel": "Flagged",
+  "@communicationsFlaggedFilterLabel": {
+    "description": "Inbox filter label for flagged conversations."
+  },
+  "communicationsArchivedFilterLabel": "Archived",
+  "@communicationsArchivedFilterLabel": {
+    "description": "Inbox filter label for archived conversations."
+  },
+  "communicationsLoadMoreAction": "Load more",
+  "@communicationsLoadMoreAction": {
+    "description": "Action label for loading more conversations."
+  },
+  "communicationsBackToInboxAction": "Back to inbox",
+  "@communicationsBackToInboxAction": {
+    "description": "Action label for returning to the conversation list on narrow layouts."
+  },
+  "communicationsGroupMembersLabel": "{count} members",
+  "@communicationsGroupMembersLabel": {
+    "description": "Subtitle showing how many members are in a group thread.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communicationsThreadMenuAction": "Conversation actions",
+  "@communicationsThreadMenuAction": {
+    "description": "Tooltip for the conversation overflow menu."
+  },
+  "communicationsFavoriteAction": "Favorite",
+  "@communicationsFavoriteAction": {
+    "description": "Action label for favoriting a conversation."
+  },
+  "communicationsUnfavoriteAction": "Remove favorite",
+  "@communicationsUnfavoriteAction": {
+    "description": "Action label for removing a conversation favorite."
+  },
+  "communicationsFlagAction": "Flag",
+  "@communicationsFlagAction": {
+    "description": "Action label for flagging a conversation."
+  },
+  "communicationsUnflagAction": "Remove flag",
+  "@communicationsUnflagAction": {
+    "description": "Action label for removing a conversation flag."
+  },
+  "communicationsManageMembersAction": "Manage members",
+  "@communicationsManageMembersAction": {
+    "description": "Action label for managing group members."
+  },
+  "communicationsManageMembersTitle": "Manage members",
+  "@communicationsManageMembersTitle": {
+    "description": "Dialog title for managing group members."
+  },
+  "communicationsAddMemberLabel": "Add member",
+  "@communicationsAddMemberLabel": {
+    "description": "Field label for adding a group member."
+  },
+  "communicationsAddMemberAction": "Add member",
+  "@communicationsAddMemberAction": {
+    "description": "Action label for confirming a new group member."
+  },
+  "communicationsLastReadLabel": "Last read {timestamp}",
+  "@communicationsLastReadLabel": {
+    "description": "Participant metadata showing last read time.",
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
+  "communicationsStartConversationAction": "Start conversation",
+  "@communicationsStartConversationAction": {
+    "description": "Action label for creating a direct conversation."
+  },
+  "communicationsGroupNameLabel": "Group name",
+  "@communicationsGroupNameLabel": {
+    "description": "Field label for a group conversation name."
+  },
+  "communicationsSensitiveConversationLabel": "Sensitive conversation",
+  "@communicationsSensitiveConversationLabel": {
+    "description": "Toggle label for marking a group as sensitive."
+  },
+  "communicationsCreateGroupAction": "Create group",
+  "@communicationsCreateGroupAction": {
+    "description": "Action label for creating a group conversation."
+  },
   "housekeepingTitle": "Housekeeping",
   "@housekeepingTitle": {
     "description": "Localized text for housekeepingTitle."

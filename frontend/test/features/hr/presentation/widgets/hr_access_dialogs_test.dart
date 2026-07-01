@@ -206,10 +206,7 @@ void main() {
 
     expect(find.text('hr.admin@example.com'), findsWidgets);
     verify(
-      () => repository.listUserRoles(
-        userId: 'USR-1',
-        tenantId: _tenantUuid,
-      ),
+      () => repository.listUserRoles(userId: 'USR-1', tenantId: _tenantUuid),
     ).called(1);
   });
 }
