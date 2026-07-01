@@ -3,7 +3,7 @@ const path = require('path');
 const { SUPPORTED_LOCALES, DEFAULT_LOCALE } = require('@config/constants');
 const { checkLocales } = require('../../../../scripts/check-locales');
 
-const REQUIRED_APP_LOCALES = ['en'];
+const REQUIRED_APP_LOCALES = ['en', 'fr'];
 
 const localesDir = path.join(process.cwd(), 'src', 'locales');
 
@@ -19,14 +19,16 @@ describe('locale coverage', () => {
       .sort();
 
     expect(actualFiles).toContain('en.json');
+    expect(actualFiles).toContain('fr.json');
   });
 
   test('locale check script validates runtime configuration and english coverage', () => {
     const result = checkLocales();
 
     expect(result.ok).toBe(true);
-    expect(result.supported_locales).toEqual(['en']);
+    expect(result.supported_locales).toEqual(['en', 'fr']);
     expect(result.locale_files).toContain('en.json');
+    expect(result.locale_files).toContain('fr.json');
     expect(result.missing_keys).toEqual([]);
   });
 });

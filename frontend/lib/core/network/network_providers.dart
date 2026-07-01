@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
@@ -23,6 +24,10 @@ BaseOptions _dioBaseOptions(AppConfig config) {
   );
 }
 
+String? _readRequestLocale(Ref ref) {
+  return ref.read(appLocaleProvider)?.languageCode;
+}
+
 final publicDioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final csrfDio = Dio(_dioBaseOptions(config));
@@ -31,6 +36,7 @@ final publicDioProvider = Provider<Dio>((ref) {
   final dio = Dio(_dioBaseOptions(config));
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
+    LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
     CsrfInterceptor(tokenDio: csrfDio),
     SafeDiagnosticsInterceptor(
       enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,
@@ -63,6 +69,7 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(_dioBaseOptions(config));
   configureDioAdapter(dio);
   dio.interceptors.addAll(<Interceptor>[
+    LocaleInterceptor(readLocale: () => _readRequestLocale(ref)),
     CsrfInterceptor(tokenDio: csrfDio),
     AuthInterceptor(
       readAccessToken: tokenProvider.readAccessToken,

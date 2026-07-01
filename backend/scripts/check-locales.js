@@ -113,39 +113,41 @@ const checkLocales = () => {
   const errors = [];
   const warnings = [];
 
-  if (DEFAULT_LOCALE !== 'en') {
-    errors.push(`DEFAULT_LOCALE must be "en" but found "${DEFAULT_LOCALE}".`);
-  }
-
-  if (JSON.stringify(SUPPORTED_LOCALES) !== JSON.stringify(['en'])) {
-    errors.push(`SUPPORTED_LOCALES must be ["en"] during development but found ${JSON.stringify(SUPPORTED_LOCALES)}.`);
+  if (!SUPPORTED_LOCALES.includes(DEFAULT_LOCALE)) {
+    errors.push(`DEFAULT_LOCALE "${DEFAULT_LOCALE}" must be included in SUPPORTED_LOCALES.`);
   }
 
   if (resolveLocale('en-GB') !== 'en' || resolveLocale('EN_gb') !== 'en') {
     errors.push('en-GB regional variants must resolve deterministically to "en".');
   }
 
-  if (resolveLocale('sw') !== 'en') {
+  if (resolveLocale('fr-FR') !== 'fr' || resolveLocale('FR_fr') !== 'fr') {
+    errors.push('fr-FR regional variants must resolve deterministically to "fr".');
+  }
+
+  if (resolveLocale('sw') !== DEFAULT_LOCALE) {
     errors.push('Unsupported locales must resolve deterministically to the default locale.');
   }
 
   const localeFiles = fs.existsSync(localesDir)
     ? fs.readdirSync(localesDir).filter((fileName) => fileName.endsWith('.json')).sort()
     : [];
-  const expectedFile = `${DEFAULT_LOCALE}.json`;
+  const expectedFiles = SUPPORTED_LOCALES.map((locale) => `${locale}.json`).sort();
 
-  if (!localeFiles.includes(expectedFile)) {
-    errors.push(`Required locale file ${expectedFile} is missing from src/locales.`);
-  }
+  expectedFiles.forEach((expectedFile) => {
+    if (!localeFiles.includes(expectedFile)) {
+      errors.push(`Required locale file ${expectedFile} is missing from src/locales.`);
+    }
+  });
 
-  const extraLocaleFiles = localeFiles.filter((fileName) => fileName !== expectedFile);
+  const extraLocaleFiles = localeFiles.filter((fileName) => !expectedFiles.includes(fileName));
   if (extraLocaleFiles.length > 0) {
     errors.push(
-      `Only ${expectedFile} is allowed during development. Remove extra locale files: ${extraLocaleFiles.join(', ')}.`
+      `Unexpected locale files found: ${extraLocaleFiles.join(', ')}. Supported locales: ${SUPPORTED_LOCALES.join(', ')}.`
     );
   }
 
-  const defaultLocalePath = path.join(localesDir, expectedFile);
+  const defaultLocalePath = path.join(localesDir, `${DEFAULT_LOCALE}.json`);
   const defaultMessages = fs.existsSync(defaultLocalePath)
     ? JSON.parse(fs.readFileSync(defaultLocalePath, 'utf8'))
     : {};
@@ -156,12 +158,36 @@ const checkLocales = () => {
   const unusedKeys = definedKeys.filter((key) => !usedKeys.includes(key));
 
   if (missingKeys.length > 0) {
-    errors.push(`Missing translation keys in ${expectedFile}: ${missingKeys.slice(0, 20).join(', ')}${missingKeys.length > 20 ? ' ...' : ''}`);
+    errors.push(`Missing translation keys in ${DEFAULT_LOCALE}.json: ${missingKeys.slice(0, 20).join(', ')}${missingKeys.length > 20 ? ' ...' : ''}`);
   }
 
   if (unusedKeys.length > 0) {
-    warnings.push(`Unused translation keys detected in ${expectedFile}: ${unusedKeys.length}`);
+    warnings.push(`Unused translation keys detected in ${DEFAULT_LOCALE}.json: ${unusedKeys.length}`);
   }
+
+  SUPPORTED_LOCALES
+    .filter((locale) => locale !== DEFAULT_LOCALE)
+    .forEach((locale) => {
+      const localePath = path.join(localesDir, `${locale}.json`);
+      if (!fs.existsSync(localePath)) {
+        return;
+      }
+
+      const localeMessages = JSON.parse(fs.readFileSync(localePath, 'utf8'));
+      const localeKeys = Object.keys(localeMessages).sort();
+      const missingInLocale = definedKeys.filter((key) => !localeKeys.includes(key));
+      const extraInLocale = localeKeys.filter((key) => !definedKeys.includes(key));
+
+      if (missingInLocale.length > 0) {
+        errors.push(
+          `Missing translation keys in ${locale}.json: ${missingInLocale.slice(0, 20).join(', ')}${missingInLocale.length > 20 ? ' ...' : ''}`
+        );
+      }
+
+      if (extraInLocale.length > 0) {
+        warnings.push(`Extra translation keys detected in ${locale}.json: ${extraInLocale.length}`);
+      }
+    });
 
   return {
     ok: errors.length === 0,

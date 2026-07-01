@@ -90,7 +90,12 @@ class SettingsPage extends ConsumerWidget {
                         AppSelectOption<Locale>(
                           value: _englishLocale,
                           label: l10n.settingsLanguageEnglish,
-                          leadingIcon: const _LanguageFlag('EN'),
+                          leadingIcon: const _LanguageFlag('🇬🇧'),
+                        ),
+                        AppSelectOption<Locale>(
+                          value: _frenchLocale,
+                          label: l10n.settingsLanguageFrench,
+                          leadingIcon: const _LanguageFlag('🇫🇷'),
                         ),
                       ],
                       onChanged: (Locale? locale) {
@@ -554,4 +559,5 @@ class _SettingsSectionGrid extends StatelessWidget {
 }
 
 const Locale _englishLocale = Locale('en');
+const Locale _frenchLocale = Locale('fr');
 const double _twoColumnMinWidth = 920;

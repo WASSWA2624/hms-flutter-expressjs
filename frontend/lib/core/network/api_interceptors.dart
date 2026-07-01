@@ -9,7 +9,27 @@ typedef DiagnosticsLogSink = void Function(String message);
 
 const authorizationHeaderName = 'Authorization';
 const csrfHeaderName = 'x-csrf-token';
+const localeHeaderName = 'x-locale';
 const authRetryExtraKey = 'auth_retry';
+
+typedef RequestLocaleReader = String? Function();
+
+final class LocaleInterceptor extends Interceptor {
+  LocaleInterceptor({required RequestLocaleReader readLocale})
+    : _readLocale = readLocale;
+
+  final RequestLocaleReader _readLocale;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final String? locale = _readLocale()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      options.headers[localeHeaderName] = locale;
+    }
+
+    handler.next(options);
+  }
+}
 
 final class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({

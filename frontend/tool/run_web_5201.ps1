@@ -95,6 +95,12 @@ if ($ReleaseOnly) {
   exit 0
 }
 
+Write-Host 'Generating localizations...'
+flutter gen-l10n
+if ($LASTEXITCODE -ne 0) {
+  exit $LASTEXITCODE
+}
+
 $flutterArgs = @(
   'run',
   '-d', $Device,
@@ -109,7 +115,9 @@ if (-not $EnableExpressionEvaluation) {
 
 # A persistent Chrome profile avoids DWDS WebkitDebugger.enable timeouts on Windows
 # when Flutter's ephemeral Temp profile cannot be read or locked correctly.
-$flutterArgs += "--web-browser-flag=--user-data-dir=$ChromeProfileDir"
+if ($Device -eq 'chrome' -or $Device -eq 'edge') {
+  $flutterArgs += "--web-browser-flag=--user-data-dir=$ChromeProfileDir"
+}
 
 flutter @flutterArgs
 

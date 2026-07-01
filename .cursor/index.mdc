@@ -12,6 +12,10 @@ Purpose: single entry point for all Cursor rules in this repository.
 - `backend/` — Express.js API (`hms-backend`)
 - Product scope and modules: [`app-write-up.mdc`](./app-write-up.mdc)
 
+## Always-applied locale rule
+
+[`locale-development.mdc`](./locale-development.mdc) — during routine development, edit only English locale files (`app_en.arb`, `en.json`). Update French or other locale files only when the user explicitly requests it.
+
 ## Conflict order
 
 When rules disagree, apply this order:

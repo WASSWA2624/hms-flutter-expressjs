@@ -1,5 +1,5 @@
 {
-  "@@locale": "en",
+  "@@locale": "fr",
   "appTitle": "HOSSPI Hospital Management System",
   "@appTitle": {
     "description": "Application title shown in app bars and platform task lists."

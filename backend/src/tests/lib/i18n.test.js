@@ -24,6 +24,9 @@ describe('i18n utilities', () => {
   test('resolves locale from x-locale header', () => {
     const req = { query: {}, headers: { 'x-locale': 'en-GB' } };
     expect(getLocale(req)).toBe('en');
+
+    const frenchReq = { query: {}, headers: { 'x-locale': 'fr-FR' } };
+    expect(getLocale(frenchReq)).toBe('fr');
   });
 
   test('resolves locale from Accept-Language header using supported locale', () => {
@@ -32,7 +35,7 @@ describe('i18n utilities', () => {
   });
 
   test('falls back to default locale when unsupported regional locales are provided', () => {
-    const req = { query: {}, headers: { 'accept-language': 'fr-ZZ,sw;q=0.8' } };
+    const req = { query: {}, headers: { 'accept-language': 'sw-ZZ,sw;q=0.8' } };
     expect(getLocale(req)).toBe('en');
   });
 
@@ -54,13 +57,22 @@ describe('i18n utilities', () => {
   test('resolveLocale handles base locale fallback', () => {
     expect(resolveLocale('en-ZZ')).toBe('en');
     expect(resolveLocale('en_zz')).toBe('en');
-    expect(resolveLocale('fr-ZZ')).toBe('en');
+    expect(resolveLocale('fr-ZZ')).toBe('fr');
+    expect(resolveLocale('fr_fr')).toBe('fr');
     expect(resolveLocale('ln-ZZ')).toBe('en');
   });
 
-  test('translate falls back to english for unsupported locales', () => {
-    expect(translate('messages.health.check', 'fr')).toBe(translate('messages.health.check', 'en'));
-    expect(translate('messages.health.check', 'sw')).toBe(translate('messages.health.check', 'en'));
+  test('translate returns french copy for supported locale', () => {
+    const english = translate('messages.abac_policy.create_success', 'en');
+    const french = translate('messages.abac_policy.create_success', 'fr');
+    expect(french).not.toBe(english);
+    expect(french.length).toBeGreaterThan(0);
+  });
+
+  test('translate falls back to english when locale file is missing a key', () => {
+    expect(translate('messages.__definitely_missing_key__', 'fr')).toBe(
+      translate('messages.__definitely_missing_key__', 'en'),
+    );
   });
 
   test('getDirection returns ltr for the supported development locale', () => {
@@ -91,5 +103,11 @@ describe('i18n utilities', () => {
 
     applyLocaleHeader(res, 'en-GB');
     expect(headers['Content-Language']).toBeUndefined();
+
+    applyLocaleHeader(res, 'fr');
+    expect(headers['Content-Language']).toBe('fr');
+
+    applyLocaleHeader(res, 'fr-FR');
+    expect(headers['Content-Language']).toBe('fr');
   });
 });
