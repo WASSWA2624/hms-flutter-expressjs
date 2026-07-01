@@ -522,6 +522,7 @@ final class SubscriptionUpgradeContextDto {
           ? TenantSubscriptionSummary.fromJson(_map(summaryRaw))
           : null,
       currentSubscriptionId: _string(currentSubscription['id']),
+      currentPlanId: _string(currentSubscription['plan_id']),
       currentPlanLabel: _string(currentSubscription['plan_label']),
       recommendedPlanId: _string(json['recommended_plan_id']),
       plans: _list(json['plans'])

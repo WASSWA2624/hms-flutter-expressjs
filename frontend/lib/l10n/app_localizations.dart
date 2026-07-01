@@ -2140,11 +2140,35 @@ abstract class AppLocalizations {
   /// **'Upgrade subscription'**
   String get subscriptionUpgradeDialogTitle;
 
+  /// Title when the tenant is renewing the current subscription plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew subscription'**
+  String get subscriptionRenewDialogTitle;
+
   /// Body text for the subscription upgrade and payment dialog.
   ///
   /// In en, this message translates to:
   /// **'Choose a plan and submit payment to keep full access after your trial or renewal date.'**
   String get subscriptionUpgradeDialogBody;
+
+  /// Body text when renewing the current subscription plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your current plan and submit payment to extend your subscription.'**
+  String get subscriptionRenewDialogBody;
+
+  /// Banner shown when the selected plan is an upgrade from the current plan.
+  ///
+  /// In en, this message translates to:
+  /// **'You are upgrading to a higher plan.'**
+  String get subscriptionUpgradeIntentBanner;
+
+  /// Banner shown when the selected plan matches the current plan.
+  ///
+  /// In en, this message translates to:
+  /// **'You are renewing your {plan} plan.'**
+  String subscriptionRenewIntentBanner(String plan);
 
   /// Label for the plan selector in the subscription upgrade dialog.
   ///
@@ -2211,6 +2235,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submit payment'**
   String get subscriptionUpgradeSubmitAction;
+
+  /// Submit action label when renewing the current subscription plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit renewal'**
+  String get subscriptionRenewSubmitAction;
+
+  /// Section title for payment method selection in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to pay?'**
+  String get subscriptionUpgradePaymentMethodSectionTitle;
+
+  /// Section title for payment method-specific fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment details'**
+  String get subscriptionUpgradePaymentDetailsTitle;
+
+  /// Label for mobile money provider selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money provider'**
+  String get subscriptionMobileMoneyProviderLabel;
+
+  /// Label for the payer mobile money phone number.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money number'**
+  String get subscriptionMobileMoneyPhoneLabel;
+
+  /// MTN mobile money provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'MTN Mobile Money'**
+  String get subscriptionMobileMoneyMtn;
+
+  /// Airtel Money provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'Airtel Money'**
+  String get subscriptionMobileMoneyAirtel;
+
+  /// M-Pesa mobile money provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'M-Pesa'**
+  String get subscriptionMobileMoneyMpesa;
+
+  /// Vodacom M-Pesa provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vodacom M-Pesa'**
+  String get subscriptionMobileMoneyVodacom;
+
+  /// Tigo Pesa provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tigo / Mixx by Yas'**
+  String get subscriptionMobileMoneyTigo;
+
+  /// Orange Money provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange Money'**
+  String get subscriptionMobileMoneyOrange;
+
+  /// Zamtel Kwacha provider label.
+  ///
+  /// In en, this message translates to:
+  /// **'Zamtel Kwacha'**
+  String get subscriptionMobileMoneyZamtel;
+
+  /// Government-supported mobile payment initiative label.
+  ///
+  /// In en, this message translates to:
+  /// **'Government payment portal'**
+  String get subscriptionMobileMoneyGovernment;
+
+  /// Label for bank name on bank transfer payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank name'**
+  String get subscriptionBankNameLabel;
+
+  /// Label for cardholder name on card payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Name on card'**
+  String get subscriptionCardHolderNameLabel;
+
+  /// Label for last four digits of the payment card.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 4 digits'**
+  String get subscriptionCardLastFourLabel;
+
+  /// Hint for payment reference field.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction ID or receipt number'**
+  String get subscriptionPaymentReferenceHint;
+
+  /// Validation message when proof upload is required.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach proof of payment for this method.'**
+  String get subscriptionProofRequiredMessage;
 
   /// Success message after submitting a subscription payment request.
   ///

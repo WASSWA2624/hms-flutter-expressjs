@@ -1082,8 +1082,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
 
   @override
+  String get subscriptionRenewDialogTitle => 'Renew subscription';
+
+  @override
   String get subscriptionUpgradeDialogBody =>
       'Choose a plan and submit payment to keep full access after your trial or renewal date.';
+
+  @override
+  String get subscriptionRenewDialogBody =>
+      'Confirm your current plan and submit payment to extend your subscription.';
+
+  @override
+  String get subscriptionUpgradeIntentBanner =>
+      'You are upgrading to a higher plan.';
+
+  @override
+  String subscriptionRenewIntentBanner(String plan) {
+    return 'You are renewing your $plan plan.';
+  }
 
   @override
   String get subscriptionUpgradePlanLabel => 'Plan';
@@ -1118,6 +1134,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionUpgradeSubmitAction => 'Submit payment';
+
+  @override
+  String get subscriptionRenewSubmitAction => 'Submit renewal';
+
+  @override
+  String get subscriptionUpgradePaymentMethodSectionTitle =>
+      'How would you like to pay?';
+
+  @override
+  String get subscriptionUpgradePaymentDetailsTitle => 'Payment details';
+
+  @override
+  String get subscriptionMobileMoneyProviderLabel => 'Mobile money provider';
+
+  @override
+  String get subscriptionMobileMoneyPhoneLabel => 'Mobile money number';
+
+  @override
+  String get subscriptionMobileMoneyMtn => 'MTN Mobile Money';
+
+  @override
+  String get subscriptionMobileMoneyAirtel => 'Airtel Money';
+
+  @override
+  String get subscriptionMobileMoneyMpesa => 'M-Pesa';
+
+  @override
+  String get subscriptionMobileMoneyVodacom => 'Vodacom M-Pesa';
+
+  @override
+  String get subscriptionMobileMoneyTigo => 'Tigo / Mixx by Yas';
+
+  @override
+  String get subscriptionMobileMoneyOrange => 'Orange Money';
+
+  @override
+  String get subscriptionMobileMoneyZamtel => 'Zamtel Kwacha';
+
+  @override
+  String get subscriptionMobileMoneyGovernment => 'Government payment portal';
+
+  @override
+  String get subscriptionBankNameLabel => 'Bank name';
+
+  @override
+  String get subscriptionCardHolderNameLabel => 'Name on card';
+
+  @override
+  String get subscriptionCardLastFourLabel => 'Last 4 digits';
+
+  @override
+  String get subscriptionPaymentReferenceHint =>
+      'Transaction ID or receipt number';
+
+  @override
+  String get subscriptionProofRequiredMessage =>
+      'Attach proof of payment for this method.';
 
   @override
   String get subscriptionUpgradeSubmittedMessage =>

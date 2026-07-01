@@ -294,8 +294,14 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
       'target_plan_id': draft.targetPlanId,
       'payment_method': draft.paymentMethod,
       if (draft.amount != null) 'amount': draft.amount,
+      if (draft.currency != null) 'currency': draft.currency,
       if (draft.reference != null) 'reference': draft.reference,
       if (draft.notes != null) 'notes': draft.notes,
+      if (draft.paymentProvider != null) 'payment_provider': draft.paymentProvider,
+      if (draft.payerPhone != null) 'payer_phone': draft.payerPhone,
+      if (draft.bankName != null) 'bank_name': draft.bankName,
+      if (draft.cardHolderName != null) 'card_holder_name': draft.cardHolderName,
+      if (draft.cardLastFour != null) 'card_last_four': draft.cardLastFour,
     });
 
     if (draft.proofBytes != null && draft.proofFileName != null) {

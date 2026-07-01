@@ -860,6 +860,7 @@ final class SubscriptionUpgradeContext {
   const SubscriptionUpgradeContext({
     this.summary,
     this.currentSubscriptionId,
+    this.currentPlanId,
     this.currentPlanLabel,
     this.recommendedPlanId,
     this.plans = const <SubscriptionUpgradePlanOption>[],
@@ -870,6 +871,7 @@ final class SubscriptionUpgradeContext {
 
   final TenantSubscriptionSummary? summary;
   final String? currentSubscriptionId;
+  final String? currentPlanId;
   final String? currentPlanLabel;
   final String? recommendedPlanId;
   final List<SubscriptionUpgradePlanOption> plans;
@@ -884,8 +886,14 @@ final class SubscriptionPaymentRequestDraft {
     required this.targetPlanId,
     required this.paymentMethod,
     this.amount,
+    this.currency,
     this.reference,
     this.notes,
+    this.paymentProvider,
+    this.payerPhone,
+    this.bankName,
+    this.cardHolderName,
+    this.cardLastFour,
     this.proofBytes,
     this.proofFileName,
     this.proofMimeType,
@@ -894,8 +902,14 @@ final class SubscriptionPaymentRequestDraft {
   final String targetPlanId;
   final String paymentMethod;
   final String? amount;
+  final String? currency;
   final String? reference;
   final String? notes;
+  final String? paymentProvider;
+  final String? payerPhone;
+  final String? bankName;
+  final String? cardHolderName;
+  final String? cardLastFour;
   final List<int>? proofBytes;
   final String? proofFileName;
   final String? proofMimeType;

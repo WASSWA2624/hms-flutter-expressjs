@@ -72,8 +72,14 @@ const paymentRequestBodySchema = z.object({
   plan_id: uuidOrFriendlyIdentifierSchema.optional(),
   payment_method: z.string().trim().max(40).optional(),
   amount: z.string().trim().max(40).optional().nullable(),
+  currency: z.string().trim().max(3).optional().nullable(),
   reference: z.string().trim().max(120).optional().nullable(),
   notes: z.string().trim().max(10000).optional().nullable(),
+  payment_provider: z.string().trim().max(80).optional().nullable(),
+  payer_phone: z.string().trim().max(40).optional().nullable(),
+  bank_name: z.string().trim().max(120).optional().nullable(),
+  card_holder_name: z.string().trim().max(120).optional().nullable(),
+  card_last_four: z.string().trim().max(4).optional().nullable(),
 });
 
 const resolveLegacyParamsSchema = z.object({

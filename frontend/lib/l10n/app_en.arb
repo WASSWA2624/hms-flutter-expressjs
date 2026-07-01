@@ -1408,9 +1408,30 @@
   "@subscriptionUpgradeDialogTitle": {
     "description": "Title for the subscription upgrade and payment dialog."
   },
+  "subscriptionRenewDialogTitle": "Renew subscription",
+  "@subscriptionRenewDialogTitle": {
+    "description": "Title when the tenant is renewing the current subscription plan."
+  },
   "subscriptionUpgradeDialogBody": "Choose a plan and submit payment to keep full access after your trial or renewal date.",
   "@subscriptionUpgradeDialogBody": {
     "description": "Body text for the subscription upgrade and payment dialog."
+  },
+  "subscriptionRenewDialogBody": "Confirm your current plan and submit payment to extend your subscription.",
+  "@subscriptionRenewDialogBody": {
+    "description": "Body text when renewing the current subscription plan."
+  },
+  "subscriptionUpgradeIntentBanner": "You are upgrading to a higher plan.",
+  "@subscriptionUpgradeIntentBanner": {
+    "description": "Banner shown when the selected plan is an upgrade from the current plan."
+  },
+  "subscriptionRenewIntentBanner": "You are renewing your {plan} plan.",
+  "@subscriptionRenewIntentBanner": {
+    "description": "Banner shown when the selected plan matches the current plan.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionUpgradePlanLabel": "Plan",
   "@subscriptionUpgradePlanLabel": {
@@ -1455,6 +1476,78 @@
   "subscriptionUpgradeSubmitAction": "Submit payment",
   "@subscriptionUpgradeSubmitAction": {
     "description": "Submit action label for the subscription upgrade dialog."
+  },
+  "subscriptionRenewSubmitAction": "Submit renewal",
+  "@subscriptionRenewSubmitAction": {
+    "description": "Submit action label when renewing the current subscription plan."
+  },
+  "subscriptionUpgradePaymentMethodSectionTitle": "How would you like to pay?",
+  "@subscriptionUpgradePaymentMethodSectionTitle": {
+    "description": "Section title for payment method selection in the upgrade dialog."
+  },
+  "subscriptionUpgradePaymentDetailsTitle": "Payment details",
+  "@subscriptionUpgradePaymentDetailsTitle": {
+    "description": "Section title for payment method-specific fields."
+  },
+  "subscriptionMobileMoneyProviderLabel": "Mobile money provider",
+  "@subscriptionMobileMoneyProviderLabel": {
+    "description": "Label for mobile money provider selection."
+  },
+  "subscriptionMobileMoneyPhoneLabel": "Mobile money number",
+  "@subscriptionMobileMoneyPhoneLabel": {
+    "description": "Label for the payer mobile money phone number."
+  },
+  "subscriptionMobileMoneyMtn": "MTN Mobile Money",
+  "@subscriptionMobileMoneyMtn": {
+    "description": "MTN mobile money provider label."
+  },
+  "subscriptionMobileMoneyAirtel": "Airtel Money",
+  "@subscriptionMobileMoneyAirtel": {
+    "description": "Airtel Money provider label."
+  },
+  "subscriptionMobileMoneyMpesa": "M-Pesa",
+  "@subscriptionMobileMoneyMpesa": {
+    "description": "M-Pesa mobile money provider label."
+  },
+  "subscriptionMobileMoneyVodacom": "Vodacom M-Pesa",
+  "@subscriptionMobileMoneyVodacom": {
+    "description": "Vodacom M-Pesa provider label."
+  },
+  "subscriptionMobileMoneyTigo": "Tigo / Mixx by Yas",
+  "@subscriptionMobileMoneyTigo": {
+    "description": "Tigo Pesa provider label."
+  },
+  "subscriptionMobileMoneyOrange": "Orange Money",
+  "@subscriptionMobileMoneyOrange": {
+    "description": "Orange Money provider label."
+  },
+  "subscriptionMobileMoneyZamtel": "Zamtel Kwacha",
+  "@subscriptionMobileMoneyZamtel": {
+    "description": "Zamtel Kwacha provider label."
+  },
+  "subscriptionMobileMoneyGovernment": "Government payment portal",
+  "@subscriptionMobileMoneyGovernment": {
+    "description": "Government-supported mobile payment initiative label."
+  },
+  "subscriptionBankNameLabel": "Bank name",
+  "@subscriptionBankNameLabel": {
+    "description": "Label for bank name on bank transfer payments."
+  },
+  "subscriptionCardHolderNameLabel": "Name on card",
+  "@subscriptionCardHolderNameLabel": {
+    "description": "Label for cardholder name on card payments."
+  },
+  "subscriptionCardLastFourLabel": "Last 4 digits",
+  "@subscriptionCardLastFourLabel": {
+    "description": "Label for last four digits of the payment card."
+  },
+  "subscriptionPaymentReferenceHint": "Transaction ID or receipt number",
+  "@subscriptionPaymentReferenceHint": {
+    "description": "Hint for payment reference field."
+  },
+  "subscriptionProofRequiredMessage": "Attach proof of payment for this method.",
+  "@subscriptionProofRequiredMessage": {
+    "description": "Validation message when proof upload is required."
   },
   "subscriptionUpgradeSubmittedMessage": "Payment submitted. The platform team will review and activate your subscription.",
   "@subscriptionUpgradeSubmittedMessage": {
