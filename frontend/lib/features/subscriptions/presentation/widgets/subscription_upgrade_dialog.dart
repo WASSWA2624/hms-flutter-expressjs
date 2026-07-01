@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_e
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/mobile_money_provider_selector.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_method_selector.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_methods.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_plan_selector.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -379,6 +380,14 @@ class _SubscriptionUpgradeDialogState
     final SubscriptionUpgradeContext? contextData = _context;
     final PlatformAdminContact? adminContact =
         contextData?.platformAdminContact ?? widget.initialAdminContact;
+    final bool isMobileMoney =
+        _paymentMethod == SubscriptionPaymentMethodId.mobileMoney;
+    final Widget amountField = _buildAmountField(
+      l10n: l10n,
+      theme: theme,
+      colorScheme: colorScheme,
+      amountDigits: amountDigits,
+    );
 
     return AppDialog(
       title: Text(
@@ -405,33 +414,14 @@ class _SubscriptionUpgradeDialogState
             ),
             SizedBox(height: theme.spacing.sm),
           ],
-          AppSelectField<String>(
-            value: _selectedPlanId,
+          SubscriptionPlanSelector(
+            plans: contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
+            selectedPlanId: _selectedPlanId,
+            currentPlanId: contextData?.currentPlanId,
             labelText: l10n.subscriptionUpgradePlanLabel,
-            isRequired: true,
-            allowClear: false,
-            options:
-                (contextData?.plans ?? const <SubscriptionUpgradePlanOption>[])
-                    .map(
-                      (SubscriptionUpgradePlanOption plan) =>
-                          AppSelectOption<String>(
-                            value: plan.id,
-                            label: _planLabel(l10n, plan),
-                            leadingIcon: Icon(
-                              plan.id == contextData?.currentPlanId
-                                  ? Icons.autorenew
-                                  : Icons.trending_up,
-                              size: theme.appTokens.listIconSize,
-                            ),
-                          ),
-                    )
-                    .toList(growable: false),
-            onChanged: (String? value) {
-              if (value == null) {
-                return;
-              }
-              unawaited(_onPlanChanged(value));
-            },
+            planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
+                _planLabel(l10n, plan),
+            onSelected: (String planId) => unawaited(_onPlanChanged(planId)),
           ),
           SizedBox(height: theme.spacing.md),
           Text(
@@ -459,32 +449,67 @@ class _SubscriptionUpgradeDialogState
             SizedBox(height: theme.spacing.xs),
             ..._paymentDetailFields(l10n, theme, contextData),
           ],
-          SizedBox(height: theme.spacing.md),
-          AppCurrencyAmountField(
-            amountController: _amountController,
-            currency: _currency,
-            amountReadOnly: true,
-            isLoading: _isFxLoading,
-            onCurrencyChanged: (String? value) {
-              if (value != null) {
-                unawaited(_onCurrencyChanged(value));
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool wideLayout = constraints.maxWidth >= 520;
+
+              if (isMobileMoney) {
+                final Widget phoneField = AppTextField(
+                  controller: _phoneController,
+                  labelText: l10n.subscriptionMobileMoneyPhoneLabel,
+                  keyboardType: TextInputType.phone,
+                  isRequired: true,
+                );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    SizedBox(height: theme.spacing.md),
+                    if (wideLayout)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(child: phoneField),
+                          SizedBox(width: theme.spacing.sm),
+                          Expanded(child: amountField),
+                        ],
+                      )
+                    else ...<Widget>[
+                      phoneField,
+                      SizedBox(height: theme.spacing.sm),
+                      amountField,
+                    ],
+                    if (_fxWarning != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs),
+                      Text(
+                        _fxWarning!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.tertiary,
+                        ),
+                      ),
+                    ],
+                  ],
+                );
               }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SizedBox(height: theme.spacing.md),
+                  amountField,
+                  if (_fxWarning != null) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      _fxWarning!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.tertiary,
+                      ),
+                    ),
+                  ],
+                ],
+              );
             },
-            amountLabelText: l10n.subscriptionUpgradeAmountLabel,
-            currencyLabelText: l10n.billingCurrencyLabel,
-            isRequired: true,
-            allowZero: false,
-            decimalDigits: amountDigits,
           ),
-          if (_fxWarning != null) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              _fxWarning!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.tertiary,
-              ),
-            ),
-          ],
           if (_showReferenceField) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             AppTextField(
@@ -526,6 +551,8 @@ class _SubscriptionUpgradeDialogState
               adminContact: adminContact!,
               title: l10n.subscriptionUpgradeAdminContactTitle,
               body: l10n.subscriptionUpgradeAdminContactBody,
+              emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
+              phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
             ),
           ],
         ],
@@ -543,6 +570,30 @@ class _SubscriptionUpgradeDialogState
     );
   }
 
+  Widget _buildAmountField({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    required int amountDigits,
+  }) {
+    return AppCurrencyAmountField(
+      amountController: _amountController,
+      currency: _currency,
+      amountReadOnly: true,
+      isLoading: _isFxLoading,
+      onCurrencyChanged: (String? value) {
+        if (value != null) {
+          unawaited(_onCurrencyChanged(value));
+        }
+      },
+      amountLabelText: l10n.subscriptionUpgradeAmountLabel,
+      currencyLabelText: l10n.billingCurrencyLabel,
+      isRequired: true,
+      allowZero: false,
+      decimalDigits: amountDigits,
+    );
+  }
+
   List<Widget> _paymentDetailFields(
     AppLocalizations l10n,
     ThemeData theme,
@@ -555,12 +606,6 @@ class _SubscriptionUpgradeDialogState
           onSelected: (MobileMoneyProviderId provider) {
             setState(() => _mobileMoneyProvider = provider);
           },
-        ),
-        AppTextField(
-          controller: _phoneController,
-          labelText: l10n.subscriptionMobileMoneyPhoneLabel,
-          keyboardType: TextInputType.phone,
-          isRequired: true,
         ),
       ],
       SubscriptionPaymentMethodId.bankTransfer => <Widget>[
@@ -851,36 +896,73 @@ class _AdminContactSection extends StatelessWidget {
     required this.adminContact,
     required this.title,
     required this.body,
+    required this.emailLabel,
+    required this.phoneLabel,
   });
 
   final PlatformAdminContact adminContact;
   final String title;
   final String body;
+  final String emailLabel;
+  final String phoneLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacing.sm),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(body, style: theme.textTheme.bodySmall),
-        if (adminContact.email != null) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
-          SelectableText(adminContact.email!),
+          Text(body, style: theme.textTheme.bodySmall),
+          if (adminContact.email != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              emailLabel,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SelectableText(
+              adminContact.email!,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
+              ),
+            ),
+          ],
+          if (adminContact.phone != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              phoneLabel,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SelectableText(
+              adminContact.phone!,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
+              ),
+            ),
+          ],
         ],
-        if (adminContact.phone != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          SelectableText(adminContact.phone!),
-        ],
-      ],
+      ),
     );
   }
 }

@@ -1130,7 +1130,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionUpgradeAdminContactBody =>
-      'After paying, you can contact the platform team to confirm activation.';
+      'If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.';
+
+  @override
+  String get subscriptionUpgradeAdminContactEmailLabel => 'Email';
+
+  @override
+  String get subscriptionUpgradeAdminContactPhoneLabel => 'Phone';
 
   @override
   String get subscriptionUpgradeSubmitAction => 'Submit payment';

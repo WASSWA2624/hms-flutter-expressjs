@@ -19,38 +19,31 @@ class SubscriptionPaymentMethodSelector extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = constraints.maxWidth;
-        final int columns = width >= 520 ? 3 : 2;
-        final double itemWidth = (width - theme.spacing.sm * (columns - 1)) / columns;
-
-        return Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final SubscriptionPaymentMethodDefinition definition
-                in subscriptionPaymentMethods)
-              SizedBox(
-                width: itemWidth,
-                child: _PaymentMethodCard(
-                  definition: definition,
-                  label: subscriptionPaymentMethodLabel(l10n, definition.id),
-                  selected: selected == definition.id,
-                  onTap: () => onSelected(definition.id),
-                  colorScheme: colorScheme,
-                  theme: theme,
-                ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: <Widget>[
+          for (final SubscriptionPaymentMethodDefinition definition
+              in subscriptionPaymentMethods)
+            Padding(
+              padding: EdgeInsets.only(right: theme.spacing.md),
+              child: _PaymentMethodChip(
+                definition: definition,
+                label: subscriptionPaymentMethodLabel(l10n, definition.id),
+                selected: selected == definition.id,
+                colorScheme: colorScheme,
+                theme: theme,
+                onTap: () => onSelected(definition.id),
               ),
-          ],
-        );
-      },
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _PaymentMethodCard extends StatelessWidget {
-  const _PaymentMethodCard({
+class _PaymentMethodChip extends StatelessWidget {
+  const _PaymentMethodChip({
     required this.definition,
     required this.label,
     required this.selected,
@@ -69,47 +62,37 @@ class _PaymentMethodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = definition.color;
-    final Color background = selected
-        ? accent.withValues(alpha: 0.12)
-        : colorScheme.surfaceContainerHighest;
-    final Color border = selected ? accent : colorScheme.outlineVariant;
     final Color iconColor = selected ? accent : colorScheme.onSurfaceVariant;
+    final Color labelColor = selected ? accent : colorScheme.onSurface;
 
     return Semantics(
       button: true,
       selected: selected,
       label: label,
-      child: Material(
-        color: background,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          side: BorderSide(color: border, width: selected ? 1.5 : 1),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.md,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(definition.icon, color: iconColor, size: 28),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: selected ? accent : colorScheme.onSurface,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.xs,
+            vertical: theme.spacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(definition.icon, color: iconColor, size: 20),
+              SizedBox(width: theme.spacing.xs),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: labelColor,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  decoration: selected ? TextDecoration.underline : null,
+                  decorationColor: accent,
+                  decorationThickness: 2,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

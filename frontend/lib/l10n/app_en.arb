@@ -1469,9 +1469,17 @@
   "@subscriptionUpgradeAdminContactTitle": {
     "description": "Section title for platform admin contact details in the upgrade dialog."
   },
-  "subscriptionUpgradeAdminContactBody": "After paying, you can contact the platform team to confirm activation.",
+  "subscriptionUpgradeAdminContactBody": "If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.",
   "@subscriptionUpgradeAdminContactBody": {
     "description": "Helper text for platform admin contact details in the upgrade dialog."
+  },
+  "subscriptionUpgradeAdminContactEmailLabel": "Email",
+  "@subscriptionUpgradeAdminContactEmailLabel": {
+    "description": "Label for platform admin email in the upgrade dialog."
+  },
+  "subscriptionUpgradeAdminContactPhoneLabel": "Phone",
+  "@subscriptionUpgradeAdminContactPhoneLabel": {
+    "description": "Label for platform admin phone in the upgrade dialog."
   },
   "subscriptionUpgradeSubmitAction": "Submit payment",
   "@subscriptionUpgradeSubmitAction": {

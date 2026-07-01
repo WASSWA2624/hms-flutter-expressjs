@@ -47,6 +47,7 @@ flutter:
     - assets/logos/logo.png
     - assets/logos/favicon.png
     - assets/logos/splash.png
+    - assets/images/payment_providers/
   fonts:
     - family: HosspiSans
       fonts:

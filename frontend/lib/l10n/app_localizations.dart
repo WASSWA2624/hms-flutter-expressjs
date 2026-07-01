@@ -2227,8 +2227,20 @@ abstract class AppLocalizations {
   /// Helper text for platform admin contact details in the upgrade dialog.
   ///
   /// In en, this message translates to:
-  /// **'After paying, you can contact the platform team to confirm activation.'**
+  /// **'If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.'**
   String get subscriptionUpgradeAdminContactBody;
+
+  /// Label for platform admin email in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get subscriptionUpgradeAdminContactEmailLabel;
+
+  /// Label for platform admin phone in the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get subscriptionUpgradeAdminContactPhoneLabel;
 
   /// Submit action label for the subscription upgrade dialog.
   ///

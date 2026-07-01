@@ -41,5 +41,27 @@ double roundConvertedAmount(double value, String currencyCode) {
 
 String formatConvertedAmount(double value, String currencyCode) {
   final int digits = decimalDigitsForCurrency(currencyCode);
-  return value.toStringAsFixed(digits);
+  final String fixed = value.toStringAsFixed(digits);
+  final List<String> parts = fixed.split('.');
+  final String groupedInteger = _groupIntegerWithCommas(parts.first);
+  if (parts.length == 2 && digits > 0) {
+    return '$groupedInteger.${parts.last}';
+  }
+  return groupedInteger;
+}
+
+String _groupIntegerWithCommas(String value) {
+  if (value.length <= 3) {
+    return value;
+  }
+
+  final StringBuffer buffer = StringBuffer();
+  for (int index = 0; index < value.length; index += 1) {
+    final int remaining = value.length - index;
+    buffer.write(value[index]);
+    if (remaining > 1 && remaining % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
 }

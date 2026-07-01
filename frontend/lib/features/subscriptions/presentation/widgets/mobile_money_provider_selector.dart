@@ -3,6 +3,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_payment_methods.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
+const String _paymentProviderAssetDir = 'assets/images/payment_providers';
+
 class MobileMoneyProviderSelector extends StatelessWidget {
   const MobileMoneyProviderSelector({
     required this.selected,
@@ -25,7 +27,7 @@ class MobileMoneyProviderSelector extends StatelessWidget {
         children: <Widget>[
           for (final MobileMoneyProviderId provider in MobileMoneyProviderId.values)
             Padding(
-              padding: EdgeInsets.only(right: theme.spacing.sm),
+              padding: EdgeInsets.only(right: theme.spacing.md),
               child: _MobileMoneyProviderChip(
                 provider: provider,
                 label: mobileMoneyProviderLabel(l10n, provider),
@@ -61,43 +63,36 @@ class _MobileMoneyProviderChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _MobileMoneyBrand brand = _mobileMoneyBrand(provider);
-    final Color border = selected ? brand.accent : colorScheme.outlineVariant;
-    final Color background = selected
-        ? brand.accent.withValues(alpha: 0.12)
-        : colorScheme.surfaceContainerHighest;
+    final Color labelColor = selected ? brand.accent : colorScheme.onSurface;
 
     return Semantics(
       button: true,
       selected: selected,
       label: label,
-      child: Material(
-        color: background,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          side: BorderSide(color: border, width: selected ? 1.5 : 1),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(theme.radius.md),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.xs,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _MobileMoneyProviderLogo(provider: provider, size: 28),
-                SizedBox(width: theme.spacing.xs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: selected ? brand.accent : colorScheme.onSurface,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.xs,
+            vertical: theme.spacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _MobileMoneyProviderLogo(provider: provider, size: 24),
+              SizedBox(width: theme.spacing.xs),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: labelColor,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  decoration: selected ? TextDecoration.underline : null,
+                  decorationColor: brand.accent,
+                  decorationThickness: 2,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -114,7 +109,33 @@ class _MobileMoneyProviderLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _MobileMoneyBrand brand = _mobileMoneyBrand(provider);
+    final String? assetPath = _mobileMoneyLogoAsset(provider);
 
+    if (assetPath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.18),
+        child: Image.asset(
+          assetPath,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => _InitialsLogo(brand: brand, size: size),
+        ),
+      );
+    }
+
+    return _InitialsLogo(brand: brand, size: size);
+  }
+}
+
+class _InitialsLogo extends StatelessWidget {
+  const _InitialsLogo({required this.brand, required this.size});
+
+  final _MobileMoneyBrand brand;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
@@ -134,6 +155,20 @@ class _MobileMoneyProviderLogo extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _mobileMoneyLogoAsset(MobileMoneyProviderId provider) {
+  return switch (provider) {
+    MobileMoneyProviderId.mtn => '$_paymentProviderAssetDir/mtn.png',
+    MobileMoneyProviderId.airtel => '$_paymentProviderAssetDir/airtel.png',
+    MobileMoneyProviderId.mpesa => '$_paymentProviderAssetDir/mpesa.png',
+    MobileMoneyProviderId.vodacom => '$_paymentProviderAssetDir/vodacom.png',
+    MobileMoneyProviderId.tigo => '$_paymentProviderAssetDir/tigo.png',
+    MobileMoneyProviderId.orange => '$_paymentProviderAssetDir/orange.png',
+    MobileMoneyProviderId.zamtel => '$_paymentProviderAssetDir/zamtel.png',
+    MobileMoneyProviderId.government =>
+      '$_paymentProviderAssetDir/government.png',
+  };
 }
 
 class _MobileMoneyBrand {
