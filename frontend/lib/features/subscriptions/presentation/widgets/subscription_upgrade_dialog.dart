@@ -98,18 +98,19 @@ class _SubscriptionUpgradeDialogState
     super.dispose();
   }
 
-  SubscriptionPaymentFlowIntent get _flowIntent => resolveSubscriptionFlowIntent(
-    currentPlanId: _context?.currentPlanId,
-    selectedPlanId: _selectedPlanId,
-  );
+  SubscriptionPaymentFlowIntent get _flowIntent =>
+      resolveSubscriptionFlowIntent(
+        currentPlanId: _context?.currentPlanId,
+        selectedPlanId: _selectedPlanId,
+      );
 
   SubscriptionUpgradePlanOption? get _selectedPlan {
     final String? planId = _selectedPlanId;
     if (planId == null) {
       return null;
     }
-    for (final SubscriptionUpgradePlanOption plan in _context?.plans ??
-        const <SubscriptionUpgradePlanOption>[]) {
+    for (final SubscriptionUpgradePlanOption plan
+        in _context?.plans ?? const <SubscriptionUpgradePlanOption>[]) {
       if (plan.id == planId) {
         return plan;
       }
@@ -295,8 +296,8 @@ class _SubscriptionUpgradeDialogState
       _failure = null;
     });
 
-    final String? provider = _paymentMethod ==
-            SubscriptionPaymentMethodId.mobileMoney
+    final String? provider =
+        _paymentMethod == SubscriptionPaymentMethodId.mobileMoney
         ? _mobileMoneyProvider.serverValue
         : null;
 
@@ -355,8 +356,7 @@ class _SubscriptionUpgradeDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool isRenewal =
-        _flowIntent == SubscriptionPaymentFlowIntent.renewal;
+    final bool isRenewal = _flowIntent == SubscriptionPaymentFlowIntent.renewal;
     final int amountDigits = decimalDigitsForCurrency(_currency);
 
     if (_isLoading) {
@@ -415,7 +415,8 @@ class _SubscriptionUpgradeDialogState
             SizedBox(height: theme.spacing.sm),
           ],
           SubscriptionPlanSelector(
-            plans: contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
+            plans:
+                contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
             selectedPlanId: _selectedPlanId,
             currentPlanId: contextData?.currentPlanId,
             labelText: l10n.subscriptionUpgradePlanLabel,
@@ -519,7 +520,9 @@ class _SubscriptionUpgradeDialogState
               isRequired: true,
             ),
           ],
-          if (subscriptionPaymentMethodRequiresProof(_paymentMethod)) ...<Widget>[
+          if (subscriptionPaymentMethodRequiresProof(
+            _paymentMethod,
+          )) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             _ProofOfPaymentSection(
               fileName: _proofFileName,
@@ -720,7 +723,10 @@ class _BankTransferDetailsSection extends StatelessWidget {
             ),
           ),
           if (details.accountName != null)
-            _BankDetailRow(label: accountNameLabel, value: details.accountName!),
+            _BankDetailRow(
+              label: accountNameLabel,
+              value: details.accountName!,
+            ),
           if (details.bankName != null)
             _BankDetailRow(label: bankNameLabel, value: details.bankName!),
           if (details.branch != null)
@@ -874,7 +880,9 @@ class _ProofOfPaymentSection extends StatelessWidget {
                     border: Border.all(color: colorScheme.outlineVariant),
                   ),
                   child: Icon(
-                    _isPdf ? Icons.picture_as_pdf_outlined : Icons.insert_drive_file_outlined,
+                    _isPdf
+                        ? Icons.picture_as_pdf_outlined
+                        : Icons.insert_drive_file_outlined,
                     size: 36,
                     color: colorScheme.onSurfaceVariant,
                   ),

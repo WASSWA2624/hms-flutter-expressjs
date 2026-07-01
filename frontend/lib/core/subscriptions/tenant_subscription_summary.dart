@@ -26,7 +26,8 @@ final class PlatformAdminContact {
   final String? phone;
 
   bool get hasContact =>
-      (email?.trim().isNotEmpty ?? false) || (phone?.trim().isNotEmpty ?? false);
+      (email?.trim().isNotEmpty ?? false) ||
+      (phone?.trim().isNotEmpty ?? false);
 
   factory PlatformAdminContact.fromJson(Map<String, Object?>? json) {
     if (json == null) {

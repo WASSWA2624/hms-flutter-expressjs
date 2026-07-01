@@ -116,7 +116,7 @@ void main() {
       expect(snapshot.subscriptionSummary?.planLabel, 'Premium');
       expect(snapshot.subscriptionSummary?.activeModulesCount, 4);
       expect(snapshot.permissions.canManageTenant, isTrue);
-      expect(snapshot.completedChecklistItems, 4);
+      expect(snapshot.completedChecklistItems, 8);
     });
   });
 }

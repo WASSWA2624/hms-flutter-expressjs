@@ -251,6 +251,7 @@ const buildChecklist = ({
   tenant,
   facility,
   contactAddress,
+  branches = [],
   departments = [],
   units = [],
   wards = [],
@@ -260,34 +261,62 @@ const buildChecklist = ({
   const hasTenant = Boolean(tenant);
   const hasFacilityIdentity =
     Boolean(facility?.name?.trim()) && Boolean(contactAddress?.phone?.trim());
-  const hasDepartmentsAndUnits = departments.length > 0 && units.length > 0;
-  const hasCareSpaces = wards.length > 0 || rooms.length > 0 || beds.length > 0;
+  const hasBranchesConfigured = branches.length > 0 || hasFacilityIdentity;
+  const hasDepartments = departments.length > 0;
+  const hasUnitsConfigured = units.length > 0 || departments.length > 0;
+  const hasWardsConfigured = wards.length > 0 || rooms.length > 0 || beds.length > 0;
+  const hasRoomsConfigured = rooms.length > 0 || beds.length > 0 || wards.length > 0;
+  const hasBedsConfigured = beds.length > 0 || wards.length > 0;
 
   const items = [
-  {
-    id: 'tenant',
-    label_key: 'tenant_facility.checklist.tenant',
-    completed: hasTenant,
-    priority: 1,
-  },
-  {
-    id: 'facility_identity',
-    label_key: 'tenant_facility.checklist.identity',
-    completed: hasFacilityIdentity,
-    priority: 2,
-  },
-  {
-    id: 'organization',
-    label_key: 'tenant_facility.checklist.departments',
-    completed: hasDepartmentsAndUnits,
-    priority: 3,
-  },
-  {
-    id: 'care_spaces',
-    label_key: 'tenant_facility.checklist.locations',
-    completed: hasCareSpaces,
-    priority: 4,
-  },
+    {
+      id: 'tenant',
+      label_key: 'tenant_facility.checklist.tenant',
+      completed: hasTenant,
+      priority: 1,
+    },
+    {
+      id: 'branches',
+      label_key: 'tenant_facility.checklist.branches',
+      completed: hasBranchesConfigured,
+      priority: 2,
+    },
+    {
+      id: 'facility_identity',
+      label_key: 'tenant_facility.checklist.identity',
+      completed: hasFacilityIdentity,
+      priority: 3,
+    },
+    {
+      id: 'departments',
+      label_key: 'tenant_facility.checklist.departments',
+      completed: hasDepartments,
+      priority: 4,
+    },
+    {
+      id: 'units',
+      label_key: 'tenant_facility.checklist.units',
+      completed: hasUnitsConfigured,
+      priority: 5,
+    },
+    {
+      id: 'wards',
+      label_key: 'tenant_facility.checklist.wards',
+      completed: hasWardsConfigured,
+      priority: 6,
+    },
+    {
+      id: 'rooms',
+      label_key: 'tenant_facility.checklist.rooms',
+      completed: hasRoomsConfigured,
+      priority: 7,
+    },
+    {
+      id: 'beds',
+      label_key: 'tenant_facility.checklist.beds',
+      completed: hasBedsConfigured,
+      priority: 8,
+    },
   ];
 
   return {
@@ -402,6 +431,7 @@ const getSetup = async (filters = {}, user = {}) => {
       tenant,
       facility: selectedFacility,
       contactAddress,
+      branches: facilityRecords.branches,
       departments: facilityRecords.departments,
       units: facilityRecords.units,
       wards: facilityRecords.wards,

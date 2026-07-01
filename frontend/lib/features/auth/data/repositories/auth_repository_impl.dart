@@ -309,7 +309,9 @@ final class AuthRepositoryImpl implements AuthRepository {
             enriched = enriched.copyWith(permissions: permissions);
           }
           if (subscriptionSummary != null) {
-            enriched = enriched.copyWith(subscriptionSummary: subscriptionSummary);
+            enriched = enriched.copyWith(
+              subscriptionSummary: subscriptionSummary,
+            );
           }
           if (platformAdminContact != null) {
             enriched = enriched.copyWith(

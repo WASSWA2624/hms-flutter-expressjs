@@ -297,10 +297,12 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
       if (draft.currency != null) 'currency': draft.currency,
       if (draft.reference != null) 'reference': draft.reference,
       if (draft.notes != null) 'notes': draft.notes,
-      if (draft.paymentProvider != null) 'payment_provider': draft.paymentProvider,
+      if (draft.paymentProvider != null)
+        'payment_provider': draft.paymentProvider,
       if (draft.payerPhone != null) 'payer_phone': draft.payerPhone,
       if (draft.bankName != null) 'bank_name': draft.bankName,
-      if (draft.cardHolderName != null) 'card_holder_name': draft.cardHolderName,
+      if (draft.cardHolderName != null)
+        'card_holder_name': draft.cardHolderName,
       if (draft.cardLastFour != null) 'card_last_four': draft.cardLastFour,
     });
 

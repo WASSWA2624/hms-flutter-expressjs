@@ -209,7 +209,9 @@ final class TenantFacilitySetupSubmissionController
           removeLogo: removeLogo,
         );
 
-        if (facilityResult case ResultFailure<FacilityProfile>(:final failure)) {
+        if (facilityResult case ResultFailure<FacilityProfile>(
+          :final failure,
+        )) {
           return Result<FacilityProfile>.failure(failure);
         }
 
@@ -245,7 +247,9 @@ final class TenantFacilitySetupSubmissionController
             isActive: isActive,
             logoUrl: uploadedLogoUrl,
           );
-          if (facilityResult case ResultFailure<FacilityProfile>(:final failure)) {
+          if (facilityResult case ResultFailure<FacilityProfile>(
+            :final failure,
+          )) {
             return Result<FacilityProfile>.failure(failure);
           }
           facility = (facilityResult as ResultSuccess<FacilityProfile>).value;
@@ -292,7 +296,7 @@ final class TenantFacilitySetupSubmissionController
   Future<bool> saveBranch({
     String? id,
     required String tenantId,
-    required String facilityId,
+    String? facilityId,
     required String name,
     required bool isActive,
   }) {

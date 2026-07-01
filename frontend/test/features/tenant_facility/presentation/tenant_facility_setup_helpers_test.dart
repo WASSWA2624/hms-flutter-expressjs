@@ -55,17 +55,66 @@ void main() {
             type: WardSetupType.general,
           ),
         ],
+        rooms: <RoomProfile>[
+          RoomProfile(
+            id: 'ROM0001',
+            tenantId: 'TEN0001',
+            facilityId: 'FAC0001',
+            name: 'Consult 1',
+            wardId: 'WRD0001',
+          ),
+        ],
+        beds: <BedProfile>[
+          BedProfile(
+            id: 'BED0001',
+            tenantId: 'TEN0001',
+            facilityId: 'FAC0001',
+            wardId: 'WRD0001',
+            label: 'Bed 1',
+            status: BedSetupStatus.available,
+          ),
+        ],
       );
 
       expect(tenantFacilityNextIncompleteWizardStep(snapshot), isNull);
-      expect(snapshot.completedChecklistItems, 4);
+      expect(snapshot.completedChecklistItems, 8);
       for (final TenantFacilitySetupWizardStep step
           in TenantFacilitySetupWizardStep.values) {
         expect(tenantFacilityWizardStepCompleted(snapshot, step), isTrue);
       }
     });
 
-    test('returns care spaces as next step when organization is complete', () {
+    test(
+      'returns wards as next step when departments exist but no care spaces',
+      () {
+        const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+          tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
+          facility: FacilityProfile(
+            id: 'FAC0001',
+            tenantId: 'TEN0001',
+            name: 'Main Campus',
+            type: FacilitySetupType.hospital,
+          ),
+          contactAddress: FacilityContactAddress(phone: '+256700000000'),
+          departments: <DepartmentProfile>[
+            DepartmentProfile(
+              id: 'DEP0001',
+              tenantId: 'TEN0001',
+              facilityId: 'FAC0001',
+              name: 'Emergency',
+              type: DepartmentSetupType.clinical,
+            ),
+          ],
+        );
+
+        expect(
+          tenantFacilityNextIncompleteWizardStep(snapshot),
+          TenantFacilitySetupWizardStep.wards,
+        );
+      },
+    );
+
+    test('allows optional units when departments exist', () {
       const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
         tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
         facility: FacilityProfile(
@@ -84,20 +133,14 @@ void main() {
             type: DepartmentSetupType.clinical,
           ),
         ],
-        units: <UnitProfile>[
-          UnitProfile(
-            id: 'UNI0001',
-            tenantId: 'TEN0001',
-            facilityId: 'FAC0001',
-            name: 'Triage',
-            departmentId: 'DEP0001',
-          ),
-        ],
       );
 
       expect(
-        tenantFacilityNextIncompleteWizardStep(snapshot),
-        TenantFacilitySetupWizardStep.careSpaces,
+        tenantFacilityWizardStepCompleted(
+          snapshot,
+          TenantFacilitySetupWizardStep.units,
+        ),
+        isTrue,
       );
     });
   });

@@ -27,8 +27,9 @@ final class AuthSessionDto {
 
   factory AuthSessionDto.fromJson(Map<String, Object?> json) {
     final user = json['user'];
-    final Map<String, Object?>? userMap =
-        user is Map<String, Object?> ? user : null;
+    final Map<String, Object?>? userMap = user is Map<String, Object?>
+        ? user
+        : null;
     return AuthSessionDto(
       accessToken: _requiredString(json, 'access_token'),
       refreshToken: _optionalString(json, 'refresh_token'),

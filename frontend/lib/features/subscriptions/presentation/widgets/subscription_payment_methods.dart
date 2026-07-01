@@ -129,8 +129,7 @@ String mobileMoneyProviderLabel(
     MobileMoneyProviderId.tigo => l10n.subscriptionMobileMoneyTigo,
     MobileMoneyProviderId.orange => l10n.subscriptionMobileMoneyOrange,
     MobileMoneyProviderId.zamtel => l10n.subscriptionMobileMoneyZamtel,
-    MobileMoneyProviderId.government =>
-      l10n.subscriptionMobileMoneyGovernment,
+    MobileMoneyProviderId.government => l10n.subscriptionMobileMoneyGovernment,
   };
 }
 

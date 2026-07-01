@@ -5416,9 +5416,29 @@
   "@tenantFacilityChecklistIdentity": {
     "description": "Checklist item for facility identity."
   },
-  "tenantFacilityChecklistDepartments": "Departments and units are configured",
+  "tenantFacilityChecklistDepartments": "Departments are configured",
   "@tenantFacilityChecklistDepartments": {
-    "description": "Checklist item for departments and units."
+    "description": "Checklist item for departments."
+  },
+  "tenantFacilityChecklistBranches": "Branches are configured (optional)",
+  "@tenantFacilityChecklistBranches": {
+    "description": "Checklist item for optional branches."
+  },
+  "tenantFacilityChecklistUnits": "Units are configured (optional)",
+  "@tenantFacilityChecklistUnits": {
+    "description": "Checklist item for optional units."
+  },
+  "tenantFacilityChecklistWards": "Wards are configured",
+  "@tenantFacilityChecklistWards": {
+    "description": "Checklist item for wards."
+  },
+  "tenantFacilityChecklistRooms": "Rooms are configured",
+  "@tenantFacilityChecklistRooms": {
+    "description": "Checklist item for rooms."
+  },
+  "tenantFacilityChecklistBeds": "Beds are configured",
+  "@tenantFacilityChecklistBeds": {
+    "description": "Checklist item for beds."
   },
   "tenantFacilityChecklistLocations": "Rooms, wards, or beds are configured",
   "@tenantFacilityChecklistLocations": {
@@ -5440,6 +5460,30 @@
   "@tenantFacilityWizardStepFacility": {
     "description": "Wizard step label for facility identity."
   },
+  "tenantFacilityWizardStepBranches": "Branches",
+  "@tenantFacilityWizardStepBranches": {
+    "description": "Wizard step label for optional branches."
+  },
+  "tenantFacilityWizardStepDepartments": "Departments",
+  "@tenantFacilityWizardStepDepartments": {
+    "description": "Wizard step label for departments."
+  },
+  "tenantFacilityWizardStepUnits": "Units",
+  "@tenantFacilityWizardStepUnits": {
+    "description": "Wizard step label for optional units."
+  },
+  "tenantFacilityWizardStepWards": "Wards",
+  "@tenantFacilityWizardStepWards": {
+    "description": "Wizard step label for wards."
+  },
+  "tenantFacilityWizardStepRooms": "Rooms",
+  "@tenantFacilityWizardStepRooms": {
+    "description": "Wizard step label for rooms."
+  },
+  "tenantFacilityWizardStepBeds": "Beds",
+  "@tenantFacilityWizardStepBeds": {
+    "description": "Wizard step label for beds."
+  },
   "tenantFacilityWizardStepOrganization": "Departments and units",
   "@tenantFacilityWizardStepOrganization": {
     "description": "Wizard step label for organizational structure."
@@ -5451,6 +5495,38 @@
   "tenantFacilityWizardContinueAction": "Continue setup",
   "@tenantFacilityWizardContinueAction": {
     "description": "Wizard action to open the next incomplete setup step."
+  },
+  "tenantFacilityBranchesOptionalHint": "Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.",
+  "@tenantFacilityBranchesOptionalHint": {
+    "description": "Guidance for the optional branches setup step."
+  },
+  "tenantFacilityGateNeedFacility": "Configure facility identity before adding departments.",
+  "@tenantFacilityGateNeedFacility": {
+    "description": "Prerequisite message when departments require a facility."
+  },
+  "tenantFacilityGateNeedDepartmentForUnits": "Create at least one department before adding units.",
+  "@tenantFacilityGateNeedDepartmentForUnits": {
+    "description": "Prerequisite message when units require departments."
+  },
+  "tenantFacilityGateNeedDepartmentForWards": "Create at least one department before adding wards.",
+  "@tenantFacilityGateNeedDepartmentForWards": {
+    "description": "Prerequisite message when wards require departments."
+  },
+  "tenantFacilityGateNeedWardOrDepartmentForRooms": "Create at least one department or ward before adding rooms.",
+  "@tenantFacilityGateNeedWardOrDepartmentForRooms": {
+    "description": "Prerequisite message when rooms require a parent location."
+  },
+  "tenantFacilityGateNeedWardsForBeds": "Create at least one ward before adding beds.",
+  "@tenantFacilityGateNeedWardsForBeds": {
+    "description": "Prerequisite message when beds require wards."
+  },
+  "tenantFacilityRoomWardOptionalHint": "Leave unassigned for outpatient or department consult rooms.",
+  "@tenantFacilityRoomWardOptionalHint": {
+    "description": "Helper text when ward assignment is optional on a room."
+  },
+  "tenantFacilityRoomOutpatientLabel": "Outpatient / department area",
+  "@tenantFacilityRoomOutpatientLabel": {
+    "description": "Label for rooms not assigned to a ward."
   },
   "tenantFacilityInvalidBranchSelection": "Select a branch that belongs to this facility.",
   "@tenantFacilityInvalidBranchSelection": {

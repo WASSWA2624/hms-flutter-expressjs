@@ -20,7 +20,7 @@ class TenantFacilitySetupChecklist extends StatelessWidget {
       title: l10n.tenantFacilityChecklistTitle,
       body: l10n.tenantFacilityChecklistBody(
         snapshot.completedChecklistItems,
-        4,
+        FacilitySetupSnapshot.setupChecklistTotal,
       ),
       child: Column(
         children: <Widget>[
@@ -29,19 +29,32 @@ class TenantFacilitySetupChecklist extends StatelessWidget {
             label: l10n.tenantFacilityChecklistTenant,
           ),
           _ChecklistItem(
+            completed: snapshot.hasBranchesConfigured,
+            label: l10n.tenantFacilityChecklistBranches,
+          ),
+          _ChecklistItem(
             completed: snapshot.hasFacilityIdentity,
             label: l10n.tenantFacilityChecklistIdentity,
           ),
           _ChecklistItem(
-            completed: snapshot.hasDepartmentsAndUnits,
+            completed: snapshot.hasDepartments,
             label: l10n.tenantFacilityChecklistDepartments,
           ),
           _ChecklistItem(
-            completed:
-                snapshot.roomsCount > 0 ||
-                snapshot.wardsCount > 0 ||
-                snapshot.bedsCount > 0,
-            label: l10n.tenantFacilityChecklistLocations,
+            completed: snapshot.hasUnitsConfigured,
+            label: l10n.tenantFacilityChecklistUnits,
+          ),
+          _ChecklistItem(
+            completed: snapshot.hasWardsConfigured,
+            label: l10n.tenantFacilityChecklistWards,
+          ),
+          _ChecklistItem(
+            completed: snapshot.hasRoomsConfigured,
+            label: l10n.tenantFacilityChecklistRooms,
+          ),
+          _ChecklistItem(
+            completed: snapshot.hasBedsConfigured,
+            label: l10n.tenantFacilityChecklistBeds,
           ),
         ],
       ),

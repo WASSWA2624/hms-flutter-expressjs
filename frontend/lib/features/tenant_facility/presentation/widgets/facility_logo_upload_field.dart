@@ -35,7 +35,8 @@ class FacilityLogoUploadField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool hasPendingLogo = pendingBytes != null && pendingBytes!.isNotEmpty;
+    final bool hasPendingLogo =
+        pendingBytes != null && pendingBytes!.isNotEmpty;
     final String? previewUrl = hasPendingLogo ? null : existingLogoUrl?.trim();
 
     return Column(
@@ -58,10 +59,7 @@ class FacilityLogoUploadField extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _LogoPreview(
-              imageUrl: previewUrl,
-              pendingBytes: pendingBytes,
-            ),
+            _LogoPreview(imageUrl: previewUrl, pendingBytes: pendingBytes),
             SizedBox(width: theme.spacing.md),
             Expanded(
               child: Wrap(
@@ -83,10 +81,7 @@ class FacilityLogoUploadField extends StatelessWidget {
                       onPressed: enabled ? onClear : null,
                     ),
                   if (pendingFileName != null)
-                    Text(
-                      pendingFileName!,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    Text(pendingFileName!, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),
@@ -98,10 +93,7 @@ class FacilityLogoUploadField extends StatelessWidget {
 }
 
 class _LogoPreview extends StatelessWidget {
-  const _LogoPreview({
-    required this.imageUrl,
-    required this.pendingBytes,
-  });
+  const _LogoPreview({required this.imageUrl, required this.pendingBytes});
 
   final String? imageUrl;
   final List<int>? pendingBytes;

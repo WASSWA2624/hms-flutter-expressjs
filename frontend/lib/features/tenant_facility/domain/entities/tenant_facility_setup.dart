@@ -299,8 +299,11 @@ final class FacilitySetupSnapshot {
     );
   }
 
+  static const int setupChecklistTotal = 8;
+
   bool get hasTenant => tenant != null;
   bool get hasFacility => facility != null;
+  bool get hasDepartments => departments.isNotEmpty;
   bool get hasDepartmentsAndUnits => departments.isNotEmpty && units.isNotEmpty;
   int get roomsCount => rooms.length;
   int get wardsCount => wards.length;
@@ -315,12 +318,28 @@ final class FacilitySetupSnapshot {
         contactAddress.phone?.trim().isNotEmpty == true;
   }
 
+  bool get hasBranchesConfigured => branches.isNotEmpty || hasFacilityIdentity;
+
+  bool get hasUnitsConfigured => units.isNotEmpty || departments.isNotEmpty;
+
+  bool get hasWardsConfigured =>
+      wards.isNotEmpty || rooms.isNotEmpty || beds.isNotEmpty;
+
+  bool get hasRoomsConfigured =>
+      rooms.isNotEmpty || beds.isNotEmpty || wards.isNotEmpty;
+
+  bool get hasBedsConfigured => beds.isNotEmpty || wards.isNotEmpty;
+
   int get completedChecklistItems {
     return <bool>[
       hasTenant,
+      hasBranchesConfigured,
       hasFacilityIdentity,
-      hasDepartmentsAndUnits,
-      wards.isNotEmpty || rooms.isNotEmpty || beds.isNotEmpty,
+      hasDepartments,
+      hasUnitsConfigured,
+      hasWardsConfigured,
+      hasRoomsConfigured,
+      hasBedsConfigured,
     ].where((bool completed) => completed).length;
   }
 }

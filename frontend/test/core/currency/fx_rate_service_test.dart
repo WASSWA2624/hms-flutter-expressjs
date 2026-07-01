@@ -39,10 +39,7 @@ void main() {
     when(
       () => dio.get<dynamic>(
         'https://api.frankfurter.dev/v1/latest',
-        queryParameters: <String, String>{
-          'base': 'USD',
-          'symbols': 'UGX',
-        },
+        queryParameters: <String, String>{'base': 'USD', 'symbols': 'UGX'},
       ),
     ).thenAnswer((_) async => response);
 

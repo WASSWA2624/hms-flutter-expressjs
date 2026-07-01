@@ -25,7 +25,8 @@ class MobileMoneyProviderSelector extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: <Widget>[
-          for (final MobileMoneyProviderId provider in MobileMoneyProviderId.values)
+          for (final MobileMoneyProviderId provider
+              in MobileMoneyProviderId.values)
             Padding(
               padding: EdgeInsets.only(right: theme.spacing.md),
               child: _MobileMoneyProviderChip(

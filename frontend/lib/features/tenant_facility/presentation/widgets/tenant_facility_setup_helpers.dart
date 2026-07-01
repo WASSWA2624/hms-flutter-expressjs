@@ -176,27 +176,23 @@ String tenantFacilityRecordPreview<T>({
 
 enum TenantFacilitySetupWizardStep {
   tenant,
+  branches,
   facility,
-  organization,
-  careSpaces,
+  departments,
+  units,
+  wards,
+  rooms,
+  beds,
 }
 
 TenantFacilitySetupWizardStep? tenantFacilityNextIncompleteWizardStep(
   FacilitySetupSnapshot snapshot,
 ) {
-  if (!snapshot.hasTenant) {
-    return TenantFacilitySetupWizardStep.tenant;
-  }
-  if (!snapshot.hasFacilityIdentity) {
-    return TenantFacilitySetupWizardStep.facility;
-  }
-  if (!snapshot.hasDepartmentsAndUnits) {
-    return TenantFacilitySetupWizardStep.organization;
-  }
-  if (snapshot.wardsCount == 0 &&
-      snapshot.roomsCount == 0 &&
-      snapshot.bedsCount == 0) {
-    return TenantFacilitySetupWizardStep.careSpaces;
+  for (final TenantFacilitySetupWizardStep step
+      in TenantFacilitySetupWizardStep.values) {
+    if (!tenantFacilityWizardStepCompleted(snapshot, step)) {
+      return step;
+    }
   }
 
   return null;
@@ -208,12 +204,16 @@ String tenantFacilityWizardStepLabel(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityWizardStepTenant,
+    TenantFacilitySetupWizardStep.branches =>
+      l10n.tenantFacilityWizardStepBranches,
     TenantFacilitySetupWizardStep.facility =>
       l10n.tenantFacilityWizardStepFacility,
-    TenantFacilitySetupWizardStep.organization =>
-      l10n.tenantFacilityWizardStepOrganization,
-    TenantFacilitySetupWizardStep.careSpaces =>
-      l10n.tenantFacilityWizardStepCareSpaces,
+    TenantFacilitySetupWizardStep.departments =>
+      l10n.tenantFacilityWizardStepDepartments,
+    TenantFacilitySetupWizardStep.units => l10n.tenantFacilityWizardStepUnits,
+    TenantFacilitySetupWizardStep.wards => l10n.tenantFacilityWizardStepWards,
+    TenantFacilitySetupWizardStep.rooms => l10n.tenantFacilityWizardStepRooms,
+    TenantFacilitySetupWizardStep.beds => l10n.tenantFacilityWizardStepBeds,
   };
 }
 
@@ -223,12 +223,12 @@ bool tenantFacilityWizardStepCompleted(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
+    TenantFacilitySetupWizardStep.branches => snapshot.hasBranchesConfigured,
     TenantFacilitySetupWizardStep.facility => snapshot.hasFacilityIdentity,
-    TenantFacilitySetupWizardStep.organization =>
-      snapshot.hasDepartmentsAndUnits,
-    TenantFacilitySetupWizardStep.careSpaces =>
-      snapshot.wardsCount > 0 ||
-          snapshot.roomsCount > 0 ||
-          snapshot.bedsCount > 0,
+    TenantFacilitySetupWizardStep.departments => snapshot.hasDepartments,
+    TenantFacilitySetupWizardStep.units => snapshot.hasUnitsConfigured,
+    TenantFacilitySetupWizardStep.wards => snapshot.hasWardsConfigured,
+    TenantFacilitySetupWizardStep.rooms => snapshot.hasRoomsConfigured,
+    TenantFacilitySetupWizardStep.beds => snapshot.hasBedsConfigured,
   };
 }

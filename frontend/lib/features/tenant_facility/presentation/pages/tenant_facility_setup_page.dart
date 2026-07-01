@@ -354,7 +354,7 @@ Future<void> _openBranchesModal(BuildContext context) {
             bool canEditHrStructure,
           ) => _BranchSetupSection(
             snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
+            canSubmit: canManageTenant && snapshot.tenant != null,
             framed: false,
           ),
     ),
@@ -639,12 +639,20 @@ void _openWizardStep(BuildContext context, TenantFacilitySetupWizardStep step) {
   switch (step) {
     case TenantFacilitySetupWizardStep.tenant:
       unawaited(_openTenantProfileModal(context));
+    case TenantFacilitySetupWizardStep.branches:
+      unawaited(_openBranchesModal(context));
     case TenantFacilitySetupWizardStep.facility:
       unawaited(_openFacilityProfileModal(context));
-    case TenantFacilitySetupWizardStep.organization:
+    case TenantFacilitySetupWizardStep.departments:
       unawaited(_openDepartmentsModal(context));
-    case TenantFacilitySetupWizardStep.careSpaces:
+    case TenantFacilitySetupWizardStep.units:
+      unawaited(_openUnitsModal(context));
+    case TenantFacilitySetupWizardStep.wards:
       unawaited(_openWardsModal(context));
+    case TenantFacilitySetupWizardStep.rooms:
+      unawaited(_openRoomsModal(context));
+    case TenantFacilitySetupWizardStep.beds:
+      unawaited(_openBedsModal(context));
   }
 }
 
@@ -1178,7 +1186,7 @@ class _BranchSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = canSubmit && !submission.isSubmitting;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
 
     final Widget content = _SearchableEntityGroup<BranchProfile>(
       title: l10n.tenantFacilityBranchesListTitle,
@@ -1188,7 +1196,8 @@ class _BranchSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityBranchSearchHint,
       addLabel: l10n.tenantFacilityAddBranchAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canManageRecords,
       onAdd: () => _openBranchDialog(context, snapshot),
       titleBuilder: (BranchProfile branch) => branch.name,
       subtitleBuilder: (BranchProfile branch) =>
@@ -1212,7 +1221,7 @@ class _BranchSetupSection extends ConsumerWidget {
     }
 
     return _ModalSectionBody(
-      body: l10n.tenantFacilityBranchesSectionBody,
+      body: l10n.tenantFacilityBranchesOptionalHint,
       child: content,
     );
   }
@@ -1233,7 +1242,12 @@ class _DepartmentSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = canSubmit && !submission.isSubmitting;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool prerequisitesMet = snapshot.facility?.id != null;
+    final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedFacility
+        : null;
 
     final Widget content = _SearchableEntityGroup<DepartmentProfile>(
       title: l10n.tenantFacilityDepartmentsListTitle,
@@ -1243,7 +1257,8 @@ class _DepartmentSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityDepartmentSearchHint,
       addLabel: l10n.tenantFacilityAddDepartmentAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canAdd,
       onAdd: () => _openDepartmentDialog(context, snapshot),
       titleBuilder: (DepartmentProfile department) => department.name,
       subtitleBuilder: (DepartmentProfile department) =>
@@ -1268,6 +1283,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
 
     return _ModalSectionBody(
       body: l10n.tenantFacilityDepartmentsModalBody,
+      blockedMessage: blockedMessage,
       child: content,
     );
   }
@@ -1288,7 +1304,12 @@ class _UnitSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = canSubmit && !submission.isSubmitting;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool prerequisitesMet = snapshot.departments.isNotEmpty;
+    final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedDepartmentForUnits
+        : null;
 
     final Widget content = _SearchableEntityGroup<UnitProfile>(
       title: l10n.tenantFacilityUnitsListTitle,
@@ -1298,7 +1319,8 @@ class _UnitSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityUnitSearchHint,
       addLabel: l10n.tenantFacilityAddUnitAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canAdd,
       onAdd: () => _openUnitDialog(context, snapshot),
       titleBuilder: (UnitProfile unit) => unit.name,
       subtitleBuilder: (UnitProfile unit) =>
@@ -1323,6 +1345,7 @@ class _UnitSetupSection extends ConsumerWidget {
 
     return _ModalSectionBody(
       body: l10n.tenantFacilityUnitsModalBody,
+      blockedMessage: blockedMessage,
       child: content,
     );
   }
@@ -1343,7 +1366,12 @@ class _WardSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = canSubmit && !submission.isSubmitting;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool prerequisitesMet = snapshot.departments.isNotEmpty;
+    final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedDepartmentForWards
+        : null;
 
     final Widget content = _SearchableEntityGroup<WardProfile>(
       title: l10n.tenantFacilityWardsLabel,
@@ -1353,7 +1381,8 @@ class _WardSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityWardSearchHint,
       addLabel: l10n.tenantFacilityAddWardAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canAdd,
       onAdd: () => _openWardDialog(context, snapshot),
       titleBuilder: (WardProfile ward) => ward.name,
       subtitleBuilder: (WardProfile ward) =>
@@ -1378,6 +1407,7 @@ class _WardSetupSection extends ConsumerWidget {
 
     return _ModalSectionBody(
       body: l10n.tenantFacilityWardsModalBody,
+      blockedMessage: blockedMessage,
       child: content,
     );
   }
@@ -1398,8 +1428,13 @@ class _RoomSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit =
-        canSubmit && !submission.isSubmitting && snapshot.wards.isNotEmpty;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool prerequisitesMet =
+        snapshot.departments.isNotEmpty || snapshot.wards.isNotEmpty;
+    final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
+        : null;
 
     final Widget content = _SearchableEntityGroup<RoomProfile>(
       title: l10n.tenantFacilityRoomsLabel,
@@ -1409,7 +1444,8 @@ class _RoomSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityRoomSearchHint,
       addLabel: l10n.tenantFacilityAddRoomAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canAdd,
       onAdd: () => _openRoomDialog(context, snapshot),
       titleBuilder: (RoomProfile room) => room.name,
       subtitleBuilder: (RoomProfile room) =>
@@ -1434,6 +1470,7 @@ class _RoomSetupSection extends ConsumerWidget {
 
     return _ModalSectionBody(
       body: l10n.tenantFacilityRoomsModalBody,
+      blockedMessage: blockedMessage,
       child: content,
     );
   }
@@ -1454,8 +1491,12 @@ class _BedSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit =
-        canSubmit && !submission.isSubmitting && snapshot.wards.isNotEmpty;
+    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool prerequisitesMet = snapshot.wards.isNotEmpty;
+    final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedWardsForBeds
+        : null;
 
     final Widget content = _SearchableEntityGroup<BedProfile>(
       title: l10n.tenantFacilityBedsLabel,
@@ -1465,7 +1506,8 @@ class _BedSetupSection extends ConsumerWidget {
       searchLabel: l10n.tenantFacilitySearchLabel,
       searchHint: l10n.tenantFacilityBedSearchHint,
       addLabel: l10n.tenantFacilityAddBedAction,
-      canEdit: canEdit,
+      canManageRecords: canManageRecords,
+      canAdd: canAdd,
       onAdd: () => _openBedDialog(context, snapshot),
       titleBuilder: (BedProfile bed) => bed.label,
       subtitleBuilder: (BedProfile bed) => _bedSubtitle(l10n, snapshot, bed),
@@ -1488,16 +1530,22 @@ class _BedSetupSection extends ConsumerWidget {
 
     return _ModalSectionBody(
       body: l10n.tenantFacilityBedsModalBody,
+      blockedMessage: blockedMessage,
       child: content,
     );
   }
 }
 
 class _ModalSectionBody extends StatelessWidget {
-  const _ModalSectionBody({required this.body, required this.child});
+  const _ModalSectionBody({
+    required this.body,
+    required this.child,
+    this.blockedMessage,
+  });
 
   final String body;
   final Widget child;
+  final String? blockedMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1512,6 +1560,15 @@ class _ModalSectionBody extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (blockedMessage != null) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          Text(
+            blockedMessage!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         SizedBox(height: theme.spacing.lg),
         child,
       ],
@@ -1528,7 +1585,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     required this.searchLabel,
     required this.searchHint,
     required this.addLabel,
-    required this.canEdit,
+    required this.canManageRecords,
+    required this.canAdd,
     required this.onAdd,
     required this.titleBuilder,
     required this.subtitleBuilder,
@@ -1543,7 +1601,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String searchLabel;
   final String searchHint;
   final String addLabel;
-  final bool canEdit;
+  final bool canManageRecords;
+  final bool canAdd;
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
@@ -1604,7 +1663,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           items: filteredItems,
           emptyLabel: isSearching ? widget.noResultsLabel : widget.emptyLabel,
           addLabel: widget.addLabel,
-          canEdit: widget.canEdit,
+          canManageRecords: widget.canManageRecords,
+          canAdd: widget.canAdd,
           onAdd: widget.onAdd,
           titleBuilder: widget.titleBuilder,
           subtitleBuilder: widget.subtitleBuilder,
@@ -1653,7 +1713,8 @@ class _EntityGroup<T> extends StatelessWidget {
     required this.items,
     required this.emptyLabel,
     required this.addLabel,
-    required this.canEdit,
+    required this.canManageRecords,
+    required this.canAdd,
     required this.onAdd,
     required this.titleBuilder,
     required this.subtitleBuilder,
@@ -1665,7 +1726,8 @@ class _EntityGroup<T> extends StatelessWidget {
   final List<T> items;
   final String emptyLabel;
   final String addLabel;
-  final bool canEdit;
+  final bool canManageRecords;
+  final bool canAdd;
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
@@ -1682,7 +1744,7 @@ class _EntityGroup<T> extends StatelessWidget {
         Row(
           children: <Widget>[
             Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
-            if (canEdit)
+            if (canAdd)
               AppButton.secondary(
                 label: addLabel,
                 leadingIcon: Icons.add,
@@ -1705,7 +1767,7 @@ class _EntityGroup<T> extends StatelessWidget {
                 _EntityRow(
                   title: titleBuilder(item),
                   subtitle: subtitleBuilder(item),
-                  canEdit: canEdit,
+                  canEdit: canManageRecords,
                   onEdit: () => onEdit(item),
                   onDelete: () => onDelete(item),
                 ),
@@ -1879,8 +1941,7 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
     }
 
     final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
+    if (tenant == null) {
       return;
     }
 
@@ -1889,7 +1950,7 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
         .saveBranch(
           id: widget.branch?.id,
           tenantId: tenant.id,
-          facilityId: facility.id,
+          facilityId: widget.snapshot.facility?.id,
           name: _nameController.text,
           isActive: _isActive,
         );
@@ -2095,7 +2156,11 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.unit?.name);
-    _departmentId = widget.unit?.departmentId ?? _noneSelection;
+    _departmentId =
+        widget.unit?.departmentId ??
+        (widget.snapshot.departments.length == 1
+            ? widget.snapshot.departments.first.id
+            : _noneSelection);
     _isActive = widget.unit?.isActive ?? true;
   }
 
@@ -2242,7 +2307,11 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.ward?.name);
     _type = widget.ward?.type ?? WardSetupType.general;
-    _departmentId = widget.ward?.departmentId ?? _noneSelection;
+    _departmentId =
+        widget.ward?.departmentId ??
+        (widget.snapshot.departments.length == 1
+            ? widget.snapshot.departments.first.id
+            : _noneSelection);
     _isActive = widget.ward?.isActive ?? true;
   }
 
@@ -2410,7 +2479,11 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.room?.name);
     _floorController = TextEditingController(text: widget.room?.floor);
-    _wardId = widget.room?.wardId ?? _noneSelection;
+    _wardId =
+        widget.room?.wardId ??
+        (widget.snapshot.wards.length == 1
+            ? widget.snapshot.wards.first.id
+            : _noneSelection);
   }
 
   @override
@@ -2452,30 +2525,21 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               value: _wardId,
               enabled: canEdit,
               labelText: l10n.tenantFacilityRoomWardLabel,
-              isRequired: true,
+              helperText: l10n.tenantFacilityRoomWardOptionalHint,
               options: <AppSelectOption<String>>[
                 AppSelectOption<String>(
                   value: _noneSelection,
-                  label: l10n.tenantFacilityNoSelectionLabel,
+                  label: l10n.tenantFacilityRoomOutpatientLabel,
                 ),
                 for (final WardProfile ward in widget.snapshot.wards)
                   AppSelectOption<String>(value: ward.id, label: ward.name),
               ],
-              validator: (String? value) {
-                final String? requiredError = tenantFacilityRequiredSelection(
-                  l10n,
-                )(value);
-                if (requiredError != null) {
-                  return requiredError;
-                }
-
-                return tenantFacilityValidReferenceSelection(
-                  validIds: widget.snapshot.wards
-                      .map((WardProfile ward) => ward.id)
-                      .toList(growable: false),
-                  invalidMessage: l10n.tenantFacilityInvalidWardSelection,
-                )(value);
-              },
+              validator: tenantFacilityValidReferenceSelection(
+                validIds: widget.snapshot.wards
+                    .map((WardProfile ward) => ward.id)
+                    .toList(growable: false),
+                invalidMessage: l10n.tenantFacilityInvalidWardSelection,
+              ),
               onChanged: (String? value) {
                 setState(() {
                   _wardId = value ?? _noneSelection;
@@ -2930,9 +2994,10 @@ String _roomSubtitle(
   RoomProfile room,
 ) {
   return _joinParts(<String?>[
-    _wardName(snapshot, room.wardId),
+    room.wardId != null
+        ? _wardName(snapshot, room.wardId)
+        : l10n.tenantFacilityRoomOutpatientLabel,
     if (room.floor != null) room.floor!,
-    l10n.tenantFacilityRoomsLabel,
   ]);
 }
 

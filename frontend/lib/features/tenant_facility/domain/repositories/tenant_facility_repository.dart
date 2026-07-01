@@ -41,7 +41,7 @@ abstract interface class TenantFacilityRepository {
   Future<Result<BranchProfile>> saveBranch({
     String? id,
     required String tenantId,
-    required String facilityId,
+    String? facilityId,
     required String name,
     required bool isActive,
   });

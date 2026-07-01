@@ -263,12 +263,16 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           data,
           decoder: (Object? payload) {
             if (payload is! JsonMap) {
-              throw const FormatException('Expected logo upload response object.');
+              throw const FormatException(
+                'Expected logo upload response object.',
+              );
             }
 
             final Object? logoUrlValue = payload['logo_url'];
             if (logoUrlValue is! String || logoUrlValue.trim().isEmpty) {
-              throw const FormatException('Expected logo_url in upload response.');
+              throw const FormatException(
+                'Expected logo_url in upload response.',
+              );
             }
 
             return logoUrlValue.trim();
@@ -322,13 +326,14 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   Future<Result<BranchProfile>> saveBranch({
     String? id,
     required String tenantId,
-    required String facilityId,
+    String? facilityId,
     required String name,
     required bool isActive,
   }) {
+    final String? normalizedFacilityId = _normalizedOptional(facilityId);
     final payload = <String, Object?>{
       if (id == null) 'tenant_id': tenantId,
-      'facility_id': facilityId,
+      'facility_id': ?normalizedFacilityId,
       'name': name.trim(),
       'is_active': isActive,
     };

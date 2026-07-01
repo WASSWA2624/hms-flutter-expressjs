@@ -4187,8 +4187,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Facility identity and contacts are configured';
 
   @override
-  String get tenantFacilityChecklistDepartments =>
-      'Departments and units are configured';
+  String get tenantFacilityChecklistDepartments => 'Departments are configured';
+
+  @override
+  String get tenantFacilityChecklistBranches =>
+      'Branches are configured (optional)';
+
+  @override
+  String get tenantFacilityChecklistUnits => 'Units are configured (optional)';
+
+  @override
+  String get tenantFacilityChecklistWards => 'Wards are configured';
+
+  @override
+  String get tenantFacilityChecklistRooms => 'Rooms are configured';
+
+  @override
+  String get tenantFacilityChecklistBeds => 'Beds are configured';
 
   @override
   String get tenantFacilityChecklistLocations =>
@@ -4208,6 +4223,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityWizardStepFacility => 'Facility identity';
 
   @override
+  String get tenantFacilityWizardStepBranches => 'Branches';
+
+  @override
+  String get tenantFacilityWizardStepDepartments => 'Departments';
+
+  @override
+  String get tenantFacilityWizardStepUnits => 'Units';
+
+  @override
+  String get tenantFacilityWizardStepWards => 'Wards';
+
+  @override
+  String get tenantFacilityWizardStepRooms => 'Rooms';
+
+  @override
+  String get tenantFacilityWizardStepBeds => 'Beds';
+
+  @override
   String get tenantFacilityWizardStepOrganization => 'Departments and units';
 
   @override
@@ -4215,6 +4248,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityWizardContinueAction => 'Continue setup';
+
+  @override
+  String get tenantFacilityBranchesOptionalHint =>
+      'Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.';
+
+  @override
+  String get tenantFacilityGateNeedFacility =>
+      'Configure facility identity before adding departments.';
+
+  @override
+  String get tenantFacilityGateNeedDepartmentForUnits =>
+      'Create at least one department before adding units.';
+
+  @override
+  String get tenantFacilityGateNeedDepartmentForWards =>
+      'Create at least one department before adding wards.';
+
+  @override
+  String get tenantFacilityGateNeedWardOrDepartmentForRooms =>
+      'Create at least one department or ward before adding rooms.';
+
+  @override
+  String get tenantFacilityGateNeedWardsForBeds =>
+      'Create at least one ward before adding beds.';
+
+  @override
+  String get tenantFacilityRoomWardOptionalHint =>
+      'Leave unassigned for outpatient or department consult rooms.';
+
+  @override
+  String get tenantFacilityRoomOutpatientLabel =>
+      'Outpatient / department area';
 
   @override
   String get tenantFacilityInvalidBranchSelection =>

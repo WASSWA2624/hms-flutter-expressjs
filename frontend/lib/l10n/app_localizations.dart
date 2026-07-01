@@ -7888,11 +7888,41 @@ abstract class AppLocalizations {
   /// **'Facility identity and contacts are configured'**
   String get tenantFacilityChecklistIdentity;
 
-  /// Checklist item for departments and units.
+  /// Checklist item for departments.
   ///
   /// In en, this message translates to:
-  /// **'Departments and units are configured'**
+  /// **'Departments are configured'**
   String get tenantFacilityChecklistDepartments;
+
+  /// Checklist item for optional branches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches are configured (optional)'**
+  String get tenantFacilityChecklistBranches;
+
+  /// Checklist item for optional units.
+  ///
+  /// In en, this message translates to:
+  /// **'Units are configured (optional)'**
+  String get tenantFacilityChecklistUnits;
+
+  /// Checklist item for wards.
+  ///
+  /// In en, this message translates to:
+  /// **'Wards are configured'**
+  String get tenantFacilityChecklistWards;
+
+  /// Checklist item for rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms are configured'**
+  String get tenantFacilityChecklistRooms;
+
+  /// Checklist item for beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Beds are configured'**
+  String get tenantFacilityChecklistBeds;
 
   /// Checklist item for physical locations.
   ///
@@ -7924,6 +7954,42 @@ abstract class AppLocalizations {
   /// **'Facility identity'**
   String get tenantFacilityWizardStepFacility;
 
+  /// Wizard step label for optional branches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get tenantFacilityWizardStepBranches;
+
+  /// Wizard step label for departments.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments'**
+  String get tenantFacilityWizardStepDepartments;
+
+  /// Wizard step label for optional units.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get tenantFacilityWizardStepUnits;
+
+  /// Wizard step label for wards.
+  ///
+  /// In en, this message translates to:
+  /// **'Wards'**
+  String get tenantFacilityWizardStepWards;
+
+  /// Wizard step label for rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get tenantFacilityWizardStepRooms;
+
+  /// Wizard step label for beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Beds'**
+  String get tenantFacilityWizardStepBeds;
+
   /// Wizard step label for organizational structure.
   ///
   /// In en, this message translates to:
@@ -7941,6 +8007,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue setup'**
   String get tenantFacilityWizardContinueAction;
+
+  /// Guidance for the optional branches setup step.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.'**
+  String get tenantFacilityBranchesOptionalHint;
+
+  /// Prerequisite message when departments require a facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure facility identity before adding departments.'**
+  String get tenantFacilityGateNeedFacility;
+
+  /// Prerequisite message when units require departments.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one department before adding units.'**
+  String get tenantFacilityGateNeedDepartmentForUnits;
+
+  /// Prerequisite message when wards require departments.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one department before adding wards.'**
+  String get tenantFacilityGateNeedDepartmentForWards;
+
+  /// Prerequisite message when rooms require a parent location.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one department or ward before adding rooms.'**
+  String get tenantFacilityGateNeedWardOrDepartmentForRooms;
+
+  /// Prerequisite message when beds require wards.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one ward before adding beds.'**
+  String get tenantFacilityGateNeedWardsForBeds;
+
+  /// Helper text when ward assignment is optional on a room.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave unassigned for outpatient or department consult rooms.'**
+  String get tenantFacilityRoomWardOptionalHint;
+
+  /// Label for rooms not assigned to a ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Outpatient / department area'**
+  String get tenantFacilityRoomOutpatientLabel;
 
   /// Validation message for invalid branch selection.
   ///
