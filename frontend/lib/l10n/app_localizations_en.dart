@@ -11063,7 +11063,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communicationsMessageSentMessage => 'Message sent.';
 
   @override
-  String get communicationsInboxPanelLabel => 'Inbox';
+  String get communicationsInboxPanelLabel => 'Messages';
+
+  @override
+  String get communicationsMessagesPanelLabel => 'Messages';
 
   @override
   String get communicationsNotificationsPanelLabel => 'Notifications';
@@ -11433,6 +11436,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communicationsArchivedFilterLabel => 'Archived';
+
+  @override
+  String get communicationsSentFilterLabel => 'Sent';
+
+  @override
+  String get communicationsReadFilterLabel => 'Read';
+
+  @override
+  String get communicationsComposeReadOnlyBody =>
+      'You can view this thread but cannot send messages.';
+
+  @override
+  String get communicationsFirstMessageHint =>
+      'Send the first message to start this conversation.';
+
+  @override
+  String get communicationsGroupMembersRequiredHelper =>
+      'Add at least one member to create the group.';
+
+  @override
+  String get communicationsConversationStartedMessage =>
+      'Conversation started — send your first message.';
+
+  @override
+  String get communicationsClientFilterNotice =>
+      'Some filters are applied locally until server support is available.';
 
   @override
   String get communicationsLoadMoreAction => 'Load more';

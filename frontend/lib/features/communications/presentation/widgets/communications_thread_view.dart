@@ -16,6 +16,9 @@ class CommunicationsThreadView extends ConsumerStatefulWidget {
     required this.conversation,
     required this.canWrite,
     required this.isSaving,
+    this.isLoadingThread = false,
+    this.composeAutofocus = false,
+    this.onComposeAutofocusHandled,
     this.showBackButton = false,
     this.onBack,
     super.key,
@@ -24,6 +27,9 @@ class CommunicationsThreadView extends ConsumerStatefulWidget {
   final CommunicationsConversation conversation;
   final bool canWrite;
   final bool isSaving;
+  final bool isLoadingThread;
+  final bool composeAutofocus;
+  final VoidCallback? onComposeAutofocusHandled;
   final bool showBackButton;
   final VoidCallback? onBack;
 
@@ -81,6 +87,8 @@ class _CommunicationsThreadViewState
         .session
         ?.user
         ?.id;
+    final String title = communicationsConversationTitle(conversation);
+    final bool isEmpty = conversation.messages.isEmpty;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -92,16 +100,21 @@ class _CommunicationsThreadViewState
         children: <Widget>[
           _ThreadHeader(
             conversation: conversation,
+            title: title,
             canWrite: widget.canWrite,
             isSaving: widget.isSaving,
             showBackButton: widget.showBackButton,
             onBack: widget.onBack,
           ),
           Expanded(
-            child: conversation.messages.isEmpty
+            child: widget.isLoadingThread
+                ? const Center(child: CircularProgressIndicator())
+                : isEmpty
                 ? Center(
                     child: AppMessagePanel(
-                      message: context.l10n.communicationsNoMessagesBody,
+                      message: widget.canWrite
+                          ? context.l10n.communicationsFirstMessageHint
+                          : context.l10n.communicationsNoMessagesBody,
                       icon: Icons.forum_outlined,
                     ),
                   )
@@ -132,6 +145,9 @@ class _CommunicationsThreadViewState
             canWrite: widget.canWrite,
             isSaving: widget.isSaving,
             replyToMessage: _replyToMessage,
+            autofocus: widget.composeAutofocus,
+            onAutofocusHandled: widget.onComposeAutofocusHandled,
+            readOnlyBanner: context.l10n.communicationsComposeReadOnlyBody,
             onCancelReply: () => setState(() => _replyToMessage = null),
           ),
         ],
@@ -143,6 +159,7 @@ class _CommunicationsThreadViewState
 class _ThreadHeader extends ConsumerWidget {
   const _ThreadHeader({
     required this.conversation,
+    required this.title,
     required this.canWrite,
     required this.isSaving,
     required this.showBackButton,
@@ -150,6 +167,7 @@ class _ThreadHeader extends ConsumerWidget {
   });
 
   final CommunicationsConversation conversation;
+  final String title;
   final bool canWrite;
   final bool isSaving;
   final bool showBackButton;
@@ -175,7 +193,12 @@ class _ThreadHeader extends ConsumerWidget {
               onPressed: onBack,
             ),
           CircleAvatar(
-            child: Text(communicationsConversationAvatarLabel(conversation)),
+            child: Text(
+              communicationsConversationAvatarLabel(
+                conversation,
+                displayTitle: title,
+              ),
+            ),
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
@@ -183,7 +206,7 @@ class _ThreadHeader extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  conversation.title,
+                  title,
                   style: theme.textTheme.titleMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

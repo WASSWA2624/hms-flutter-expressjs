@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/core/utils/person_display_name.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 
@@ -61,18 +62,29 @@ bool communicationsMessageIsReadByOthers({
   );
 }
 
-String communicationsConversationAvatarLabel(CommunicationsConversation item) {
-  final String title = item.title.trim();
-  if (title.isEmpty) {
-    return '?';
+String communicationsConversationTitle(CommunicationsConversation conversation) {
+  final String? subject = conversation.subject?.trim();
+  if (subject != null && subject.isNotEmpty) {
+    return subject;
   }
-  final List<String> words = title
-      .split(RegExp(r'\s+'))
-      .where((String w) => w.isNotEmpty)
-      .toList();
-  if (words.length == 1) {
-    return words.first.characters.take(2).toString().toUpperCase();
+  final String title = conversation.title.trim();
+  if (title.isNotEmpty) {
+    return title;
   }
-  return '${words.first.characters.first}${words.last.characters.first}'
-      .toUpperCase();
+  return conversation.id;
+}
+
+String communicationsConversationAvatarLabel(
+  CommunicationsConversation item, {
+  String? displayTitle,
+}) {
+  return personInitials(displayTitle ?? communicationsConversationTitle(item));
+}
+
+String communicationsParticipantLabel(CommunicationsParticipant participant) {
+  final CommunicationUser? user = participant.user;
+  if (user != null) {
+    return user.displayName;
+  }
+  return participant.userId;
 }

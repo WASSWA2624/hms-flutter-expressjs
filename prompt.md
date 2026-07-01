@@ -1,36 +1,84 @@
-# Communications Module — Staff Messaging & In-App Coordination
+# Communications Workspace — Messaging UX, Shared Patterns & Extensible Architecture
 
 ## Objective
 
-Transform **Communications** from a read-mostly admin workspace (thread tables, notification logs, delivery audit, template preview) into a **first-class in-app messaging experience** for hospital staff — direct messages, groups, @mentions, attachments, read state, and system notifications — while keeping the existing four-panel shell and backend contracts.
+Elevate the **staff messaging** experience in Communications to match the quality of other HMS workspaces—while **maximizing reusability, uniformity, and flexibility** so new panels, filters, and messaging flows can be added without duplicating UI or controller logic.
 
-**Entry point:** `/communications` (sidebar → **Communications**)
+**Entry point:** `/communications` → **Messages** panel (UI label; server key remains `panel=inbox`).
 
-**Screenshot (current UI):** four tabs — **Inbox**, **Notifications**, **Deliveries**, **Templates** — with a searchable `AppListTable` on the left and a static detail panel on the right (e.g. template preview for *Recall Alert*). Messaging today is table-centric, not chat-centric.
-
-**Parent context:** [prompts/29-communications-module-prompt.md](./prompts/29-communications-module-prompt.md) — platform standards, RBAC, deep links, realtime, and quality gate. This prompt **extends** that document with product UX for staff messaging.
-
-**Initial rollout persona:** HR administrator (current test account), but the module must work for **any staff role** with `communications:write` — not HR-only.
+**Screenshots (current UI):**
+- List shows recipient **email** instead of staff name; thread pane empty (*“No messages are available for this thread.”*)
+- **New group**: name entered, **Create group** disabled with no explanation (no members added).
+- Panel tabs cause visible full-workspace refresh on switch.
+- Message filters use bordered `FilterChip`; panel tabs use `AppButton` — **inconsistent**.
+- Notifications / Deliveries / Templates panels otherwise work (failure detail, template preview).
 
 ---
 
-## Problem Statement (from current UI & requirements)
+## Design Principles
+
+### 1. Reusability
+
+Prefer **one shared implementation** consumed by Communications (and future modules) over feature-local copies.
+
+| Concern | Reuse / extract | Do **not** duplicate |
+|---------|-----------------|----------------------|
+| Panel & filter toggles | New shared `AppWorkspaceOptionToggle<T>` | `_PanelSelector` + `_FilterChips` each inventing toggle UI |
+| Master–detail layout | `AppWorkspaceSplitContent` | Custom `Row` + fixed heights in inbox panel |
+| Mutation dialogs | `showAppWorkspaceMutationDialog` | Raw `showAppDialog` for new message / group |
+| Person labels | Shared `resolvePersonDisplayName` | Ad-hoc title logic in list, thread, dialogs |
+| Compose area | Configurable `CommunicationsComposeBar` (or future `AppMessageComposeBar`) | Inline TextField + buttons in thread view |
+| Empty / read-only states | `AppMessagePanel`, `AppWorkspaceStatePanel` | Custom centered text per screen |
+| Staff picker | `AppSelectField.searchable` (already used) | One-off dropdown implementations |
+| Time formatting | `communications_formatters.dart` | Inline `DateFormat` calls |
+
+Extract to `frontend/lib/shared/` when **two or more** workspaces need the same control; keep communications-specific wiring in `features/communications/`.
+
+### 2. Uniformity
+
+Match established HMS workspace conventions so Communications feels native beside HR, Lab, Radiology, etc.
+
+| Pattern | Reference | Apply here |
+|---------|-----------|------------|
+| Granular refresh flags | `HrWorkspaceController` — `isRefreshingStaff`, `isRefreshingDetail` | `isRefreshingConversations`, `isRefreshingThread`, `isRefreshingNotifications`, … |
+| Panel body shell | `AppWorkspaceDetailPanel` + description | All four Communications panels |
+| Toolbar | `appWorkspaceToolbarWithLabels` | Already used — keep |
+| Tables | `AppListTable` + column visibility | Notifications, Deliveries, Templates — unchanged |
+| Buttons | `AppButton` variants (`primary` / `secondary` / `tertiary` / `iconOnly`) | Filters, actions, compose |
+| Dialogs | `AppDialog`, `showAppWorkspaceMutationDialog` | New conversation flows |
+| Permissions | `AppPermissions.communicationsRead` / `communicationsWrite` | Compose + mutations |
+| l10n | `app_en.arb` keys with `@` descriptions | All user-facing copy |
+| Spacing / radius | `theme.spacing`, `theme.radius` | No magic numbers |
+
+**Rule:** If HR or another workspace already solves a layout/interaction problem, adopt that solution—do not introduce a third pattern.
+
+### 3. Flexibility
+
+Design for **extension without refactors**:
+
+- **Stable API contract:** Keep `CommunicationsPanel.inbox` server value `inbox`; change **UI label only** to *Messages*. New filters use `query.filter` string keys the backend can ignore until supported.
+- **Filter registry:** Define filters as a **data-driven list** (`id`, `label`, `serverFilter`, `clientPredicate`, `icon`) so adding *Sent* / *Read* / future queues is a registry entry—not a new widget.
+- **Dual filter execution:** Try server filter first; fall back to `clientPredicate` when API lacks support (non-destructive, with optional info banner).
+- **Compose bar props:** `canWrite`, `readOnlyMessage`, `autofocus`, `maxAttachments`, `onSent` — reusable beyond Communications.
+- **Panel cache:** Keyed by `(panel, filterSignature)`; invalidation rules explicit (search/filter/page vs panel switch).
+- **Route sync:** Query object serializes to/from URI; deep links for `conversationId`, `panel`, `filter` work without controller rewrites.
+
+---
+
+## Problem Statement
 
 | Area | Current behavior | Issue |
 |------|------------------|-------|
-| Inbox layout | `AppListTable` of threads; detail shows metadata tiles + up to 8 `AppListItemRow` messages | Feels like an audit log, not a messenger; no persistent compose bar |
-| New conversation | `createConversation` exists on controller/repository | **No UI** to start a DM or group |
-| Compose / reply | `AppTextActionDialog` — plain text only | No rich input, no inline reply, no draft persistence |
-| @mentions | Not implemented | User expects `@` → staff picker dropdown; mentioned users get notified |
-| Attachments | Backend multipart supported; frontend JSON-only | Cannot attach files, images, or captured screenshots |
-| Groups | `ConversationType.GROUP` in schema | No create-group flow, no member management UI |
-| Read receipts | `last_read_at` on participants | Not surfaced per message or per participant in thread |
-| Notifications tab | System/task alerts (lab, assignments, facility events) | Correct separation from messages, but list UX should mirror inbox polish |
-| Inbox actions | Archive/unarchive, unread/sensitive filters | Missing **favorite/star**, **flag**, and quick filters users expect in messaging apps |
-| Responsive | `AppWorkspace` two-pane on wide; table in list slot | Narrow widths need chat-first single-pane with back navigation |
-| Templates / Deliveries | Read-only admin surfaces | Keep as-is for v1 of this prompt; do not block messaging work |
+| Naming | Tab labeled **Inbox** | Ambiguous; UI should say **Messages** with clear sub-filters |
+| Tab switching | `applyPanel` → `_applyQuery` → full `getWorkspace` + clears selections | Full flash/reload; violates HR-style granular refresh |
+| Thread selection | `selectConversation` local-only | Never calls `getConversation`; list rows lack full `messages[]` |
+| Compose | Hidden when `!canWrite`; missing when thread empty | Users cannot send or attach |
+| Titles | Email fallback when profile empty | Should use shared display-name resolver |
+| Filters | `FilterChip` | Inconsistent with `AppButton` panel tabs |
+| New group | Create disabled silently | Needs `AppTextField.helperText` validation copy |
+| Sent / Read | Not available | Need registry entry + server or client predicate |
 
-Staff coordinating handoffs (e.g. HR ↔ department heads) should experience something closer to **Teams / Slack / WhatsApp** — simple, fast, familiar — not a data grid with a send dialog.
+**Critical gap:** `CommunicationsRepository.getConversation` exists but `selectConversation` never invokes it.
 
 ---
 
@@ -39,224 +87,261 @@ Staff coordinating handoffs (e.g. HR ↔ department heads) should experience som
 | Area | Location |
 |------|----------|
 | Workspace page | `frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart` |
-| Controller | `frontend/lib/features/communications/presentation/controllers/communications_workspace_controller.dart` |
-| Entities / drafts | `frontend/lib/features/communications/domain/entities/communications_entities.dart` — `CommunicationConversationDraft`, `CommunicationMessageDraft` |
-| Repository / API | `frontend/lib/features/communications/data/repositories/communications_repository_impl.dart` |
-| Backend models | `conversation`, `message`, `conversation_participant`, `message_attachment`, `notification`, `template` — `backend/prisma/schema.prisma` |
-| Workspace API | `backend/src/modules/communications-workspace/` |
-| Conversation API | `backend/src/modules/conversation/` |
-| Feature flag | `communications_workspace_v1` |
-| File upload pattern | `frontend/lib/shared/components/app_file_upload_panel.dart` (used in patients, radiology, nursing) |
-| Searchable pickers | `AppSelectField.searchable` (HR onboarding, availability) |
-| Modal mutations | `showAppWorkspaceMutationDialog`, `AppDialog` — per `frontend/.cursor/ui-workspace.mdc` |
+| Inbox layout | `frontend/lib/features/communications/presentation/widgets/communications_inbox_panel.dart` |
+| Conversation list | `frontend/lib/features/communications/presentation/widgets/communications_conversation_list.dart` |
+| Thread / compose | `communications_thread_view.dart`, `communications_compose_bar.dart` |
+| New conversation dialogs | `communications_new_conversation_dialog.dart` |
+| Controller | `communications_workspace_controller.dart` |
+| Repository / DTOs | `communications_repository_impl.dart`, `communications_dtos.dart` |
+| Backend serializers | `backend/.../communications-workspace.serializers.js` — `personName`, `conversationTitle` |
+| **Shared references** | `app_workspace.dart` (`AppWorkspaceSplitContent`, `AppWorkspaceFilterBar`), `app_workspace_mutation_dialog.dart`, `hr_workspace_controller.dart` (granular refresh), `app_workspace_board_toggle.dart` |
 
-**Send message today:** detail panel → **Send message** → `AppTextActionDialog` → `controller.sendMessage(content)`.
+---
 
-**Message thread today:** `_MessageThread` renders max 8 rows with sender name, preview, timestamp — no bubbles, no scroll-to-latest, no read ticks.
+## Shared Components to Introduce or Reuse
+
+### A. `AppWorkspaceOptionToggle<T>` *(new, shared)*
+
+Generic single-select control for **panel tabs** and **message filters**.
+
+```dart
+// frontend/lib/shared/layout/app_workspace_option_toggle.dart
+AppWorkspaceOptionToggle<CommunicationsPanel>(
+  value: selectedPanel,
+  options: panelOptions, // label, icon, value
+  onChanged: controller.applyPanel,
+);
+
+AppWorkspaceOptionToggle<String>(
+  value: activeFilterId,
+  options: messageFilterRegistry,
+  onChanged: controller.applyMessageFilter,
+);
+```
+
+- Implementation: `Wrap` of `AppButton` (`primary` when selected, `secondary` otherwise)—same visual language as today's `_PanelSelector`.
+- Replace both `_PanelSelector` and `_FilterChips` in Communications; export from `shared/layout/layout.dart`.
+- Optional later: compact mode via `AppWorkspaceBoardToggle` (`SegmentedButton`) for ≤4 options on narrow screens.
+
+### B. `AppWorkspaceSplitContent` *(existing)*
+
+Refactor `CommunicationsInboxPanel` to use shared split layout instead of manual `Row` / fixed `640` height:
+
+- **Primary:** conversation list + filters + search.
+- **Detail:** `CommunicationsThreadView` or empty `AppWorkspaceStatePanel`.
+- **Breakpoint:** `AppBreakpoints.lg` (already used); mobile shows thread full-screen with back affordance.
+
+### C. `resolvePersonDisplayName` *(new, shared)*
+
+```dart
+// frontend/lib/core/utils/person_display_name.dart (or shared/formatters/)
+String resolvePersonDisplayName({
+  String? firstName,
+  String? lastName,
+  String? displayName,
+  String? username,
+  String? email,
+  String? fallbackId,
+});
+```
+
+- Use in: conversation list title, thread header, mention overlay, member chips, dialogs.
+- Mirror fallback chain in backend `personName` so client and server stay aligned.
+- Avatar initials: shared helper `personInitials(displayName)`.
+
+### D. `showAppWorkspaceMutationDialog` *(existing)*
+
+Migrate `_NewDirectMessageDialog` and `_NewGroupDialog` to workspace mutation dialog shell:
+
+- Consistent actions footer, loading state, `initialMaximized` when needed.
+- Shared validation: required fields via `AppTextField.isRequired` + `helperText` / `errorText`.
+
+### E. Granular refresh state *(pattern from HR)*
+
+Extend `CommunicationsWorkspaceState`:
+
+| Flag | When true |
+|------|-----------|
+| `isRefreshingConversations` | List/filter/search fetch |
+| `isRefreshingThread` | `getConversation` in flight |
+| `isRefreshingNotifications` | Notifications panel fetch |
+| `isRefreshingDeliveries` | Deliveries panel fetch |
+| `isRefreshingTemplates` | Templates panel fetch |
+
+`AsyncStateScaffold` loads **once** on first entry; subsequent updates use inline indicators only.
+
+### F. Message filter registry *(new, feature-local config)*
+
+```dart
+final class CommunicationsMessageFilter {
+  const CommunicationsMessageFilter({
+    required this.id,
+    required this.labelKey,
+    this.serverFilter,
+    this.unreadOnly = false,
+    this.clientPredicate,
+  });
+  // ...
+}
+
+const List<CommunicationsMessageFilter> kCommunicationsMessageFilters = [ ... ];
+```
+
+Adding a filter = one registry constant + l10n key + (optional) backend `buildConversationWhere` branch.
 
 ---
 
 ## Target UX
 
-### 1. Information architecture (keep four panels)
+### Messages panel (UI) / inbox (API)
 
-| Panel | Purpose | Messaging prompt scope |
-|-------|---------|------------------------|
-| **Inbox** | Staff DMs + groups | **Primary focus** — redesign as chat workspace |
-| **Notifications** | System events (tasks assigned, facility alerts, module deep links) | Polish list + detail; not composeable messages |
-| **Deliveries** | Channel delivery audit (SMS, email, in-app) | Read-only; no change required for messaging v1 |
-| **Templates** | Message templates (SMS, in-app) | Read-only; no change required for messaging v1 |
+**Top-level Communications tabs** (unchanged structure, uniform toggle):
 
-### 2. Inbox — chat-first two-pane layout
+| Tab | Purpose |
+|-----|---------|
+| **Messages** | Staff DM + groups |
+| **Notifications** | Workflow alerts |
+| **Deliveries** | Delivery log |
+| **Templates** | Message templates |
 
-**Wide layout (`AppWorkspace`):**
+**Message sub-filters** (registry-driven, same toggle component):
 
-| Left pane | Right pane |
-|-----------|------------|
-| Conversation list (not `AppListTable` for inbox) | Active thread |
+| Filter | Server | Client fallback |
+|--------|--------|-----------------|
+| All | — | pass-through |
+| Unread | `unreadOnly` / `UNREAD` | `conversation.unread` |
+| Sent | `SENT` *(new)* | `lastMessage.senderUserId == currentUserId` |
+| Read | `READ` *(new)* | `!conversation.unread` |
+| Favorites | `FAVORITES` | `isFavorite` |
+| Flagged | `FLAGGED` | `isFlagged` |
+| Archived | `ARCHIVED` | `archived` |
 
-**Left pane — conversation list**
+### Thread & compose (uniform states)
 
-- Toolbar actions: **New message** (DM), **New group**
-- Search (reuse `AppSearchBar` patterns)
-- Quick filters: All · Unread · Favorites · Flagged · Archived
-- Each row: avatar(s), title (person name or group name), last-message preview, relative timestamp, unread badge, favorite/flag icons
-- Row tap selects thread and loads messages in right pane
-- Sort by `last_message_at` descending
+| State | Shared component |
+|-------|------------------|
+| Loading thread | Inline progress in detail pane (`isRefreshingThread`) |
+| Empty + writable | `AppMessagePanel` + visible compose + first-message hint |
+| Empty + read-only | `AppMessagePanel` + read-only banner (not hidden compose row) |
+| Populated | `CommunicationsThreadView` + compose |
 
-**Right pane — thread view**
+**Selection flow:** optimistic row highlight → set `conversationId` in query/URL → `getConversation` → render messages → auto-mark read.
 
-- Header: participant(s) or group name; member count for groups; overflow menu (view members, mute/archive, mark unread)
-- Scrollable message list (newest at bottom); load older on scroll-up
-- Message bubble layout: own messages aligned end, others start; show sender name in groups
-- Every message: **timestamp** (absolute on hover/long-press, relative in bubble footer)
-- **Read receipts** on own messages: sent ✓ / read ✓✓ derived from participants' `last_read_message_id` or `last_read_at`
-- **Reply** to a specific message (quote snippet above composer)
-- Sticky **composer** at bottom (not a modal):
-  - Multiline text field
-  - `@` mention: typing `@` opens staff search overlay (`AppSelectField.searchable` or dedicated mention overlay); selected user inserted as token; backend notified on send (see §4)
-  - Attach: file picker + image paste/drag (web) + camera/gallery (mobile) via `AppFileUploadPanel`
-  - Send button; disabled when empty and no pending attachments
+### New conversation dialogs (uniform mutation pattern)
 
-**Narrow layout (phone / narrow web):**
-
-- Single pane: conversation list **or** thread (not both)
-- Back chevron from thread to list
-- Composer remains sticky at bottom of thread
-
-### 3. New direct message
-
-Modal (`AppDialog` / `showAppWorkspaceMutationDialog`):
-
-1. **To:** searchable staff picker (tenant/facility scoped; reuse HR staff search API or communications reference-data endpoint)
-2. Optional subject
-3. If a DM already exists with that participant, open existing thread instead of creating duplicate
-4. On create → select thread in right pane with composer focused
-
-### 4. New group
-
-Modal (multi-step or single scrollable form):
-
-1. **Group name** (required)
-2. **Members:** multi-select staff picker with search
-3. Optional: mark as sensitive (maps to `is_sensitive`)
-4. On create → open group thread; creator is participant
-
-**Group management** (overflow menu → **Manage members**):
-
-- Add/remove participants (respect backend permissions)
-- Show join date and last-read per member (admin view)
-
-### 5. @mentions
-
-- Composer detects `@` + query text → dropdown of matching staff (name, role, department)
-- Insert mention as structured token in message body (plain-text fallback: `@Display Name`)
-- On send: parse mentions; create in-app notification for each mentioned user (even if not in thread)
-- Render mentions with distinct style in message bubbles
-- If backend lacks mention table, store in message metadata or extend API in backend pass (document in PR)
-
-### 6. Attachments
-
-- Wire `sendMessage` to multipart upload when attachments present (mirror backend conversation message endpoint)
-- Show attachment chips in composer before send
-- In thread: image thumbnails (tap to preview); file rows with name, size, download/open
-- Support screenshot paste on web/desktop where platform allows
-
-### 7. Notifications panel (secondary)
-
-- Keep separate from Inbox — these are **not** user-composed chats
-- Examples: task assigned, recall due, bed released, lab critical
-- Row: icon by type, title, snippet, timestamp, unread state
-- Detail: full body, deep link to source module (`target_path`), mark read/unread, archive
-- Tapping deep link navigates to OPD/IPD/etc. without mutating clinical state in Communications
-
-### 8. Inbox metadata actions
-
-| Action | Behavior |
-|--------|----------|
-| Favorite | Pin/star thread; filter **Favorites** |
-| Flag | Mark for follow-up; filter **Flagged** |
-| Archive | Existing archive flow; hide from default list |
-| Mark read/unread | Per thread |
-
-Implement via conversation flags on backend if missing (`is_favorite`, `is_flagged` per participant or conversation-level fields); add migration only if needed.
-
-### 9. Visual & accessibility standards
-
-- Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`
-- Light/dark/system themes; all strings in `app_en.arb`
-- Touch targets ≥ 44dp; composer accessible labels; screen-reader friendly thread structure
-- Responsive on Android, iOS, web, Windows, macOS, Linux
-- Peer apps for interaction patterns: inline composer, mention autocomplete, read receipts, group threads — **not** for branding copy
+- **New message:** recipient `AppSelectField.searchable`; on success → select thread, load messages, `autofocus` compose, snackbar.
+- **New group:** name + ≥1 member; `helperText` when name without members; sensitive toggle unchanged; attachments **only** in compose bar post-create.
 
 ---
 
-## Architecture & Conventions
+## Implementation Requirements
 
-| Rule | Requirement |
-|------|-------------|
-| Layering | Extract new UI to `frontend/lib/features/communications/presentation/widgets/` — e.g. `communications_conversation_list.dart`, `communications_thread_view.dart`, `communications_compose_bar.dart`, `communications_new_conversation_dialog.dart` |
-| State | Keep `CommunicationsWorkspaceController`; add methods for favorites/flags/attachments as needed |
-| No API in widgets | Repository → API only |
-| Modal-first | New DM, new group, manage members, attachment preview — dialogs/sheets; **do not** add routes for within-module flows |
-| Realtime | Existing `RealtimeEventGroups.communications` subscription — refresh active thread and conversation list on new messages |
-| Permissions | `AppPermissions.communicationsWrite` for compose; `AccessGate` + backend auth |
-| Clinical boundary | Notifications deep-link only; Communications does not own clinical mutations |
+### 1. Shared layout & toggles
 
----
+- Create `AppWorkspaceOptionToggle<T>` in `shared/layout/`.
+- Replace `_PanelSelector` and `_FilterChips` with it.
+- Refactor `CommunicationsInboxPanel` onto `AppWorkspaceSplitContent`.
 
-## Suggested Implementation Phases
+### 2. Controller architecture
 
-### Phase A — Inbox chat shell (MVP visible improvement)
+- Add granular `isRefreshing*` flags; remove blanket full-scaffold reload on panel switch.
+- Per-panel cache: retain last fetched `AppPage` per `CommunicationsPanel` when switching tabs.
+- `selectConversation` → async `loadConversation(id)` via `getConversation`.
+- `applyPanel`: swap active panel from cache; fetch only if stale.
+- `applyMessageFilter`: read from registry; map to query; server + client predicate as per §Filter registry.
+- Sync query ↔ route on every `_applyQuery` (mirror patterns from other workspaces using `context.go`).
 
-- [ ] Replace inbox `AppListTable` with conversation list component
-- [ ] Thread view with scrollable bubbles + sticky composer (text only)
-- [ ] New DM dialog wired to `createConversation`
-- [ ] Narrow-width single-pane navigation
+### 3. Display names
 
-### Phase B — Rich messaging
+- Add `resolvePersonDisplayName` + `personInitials` in shared/core.
+- Use in `communications_formatters.dart` (`communicationsConversationAvatarLabel`, etc.).
+- Backend: extend `personName` with `display_name` / `username`; ensure list + detail queries `include` profile.
 
-- [ ] @mention autocomplete + notification side effect
-- [ ] Multipart attachments via `AppFileUploadPanel`
-- [ ] Reply-to-message
-- [ ] Read receipt indicators
+### 4. Compose bar flexibility
 
-### Phase C — Groups & organization
+Extend `CommunicationsComposeBar`:
 
-- [ ] New group dialog + member management
-- [ ] Favorite / flag filters and actions
-- [ ] Group header with participant list
+| Prop | Purpose |
+|------|---------|
+| `canWrite` | Enable input + send |
+| `readOnlyBanner` | Shown when `!canWrite` instead of `SizedBox.shrink()` |
+| `autofocus` | After new conversation |
+| `maxAttachments` | Default 5; configurable |
+| `onSent` | Optional callback for snackbar / scroll |
 
-### Phase D — Polish & tests
+### 5. Dialogs
 
-- [ ] Widget tests for composer, mention picker, thread selection
-- [ ] Controller tests for attachment + group flows
-- [ ] Manual QA on web + one mobile target
+- Refactor new message / group to `showAppWorkspaceMutationDialog`.
+- Group validation: `AppTextField.helperText: l10n.communicationsGroupMembersRequiredHelper` when name filled, members empty.
+
+### 6. l10n (`app_en.arb`)
+
+| Key | Copy |
+|-----|------|
+| `communicationsMessagesPanelLabel` | Messages |
+| `communicationsSentFilterLabel` | Sent |
+| `communicationsReadFilterLabel` | Read |
+| `communicationsComposeReadOnlyBody` | You can view this thread but cannot send messages. |
+| `communicationsFirstMessageHint` | Send the first message to start this conversation. |
+| `communicationsGroupMembersRequiredHelper` | Add at least one member to create the group. |
+| `communicationsConversationStartedMessage` | Conversation started — send your first message. |
+| `communicationsClientFilterNotice` | Some filters are applied locally until server support is available. |
+
+Retarget `communicationsInboxPanelLabel` → **Messages** (same string value).
+
+### 7. Backend (optional parallel)
+
+- `personName` enrichment; `SENT` / `READ` in `buildConversationWhere`.
+- Always return `last_message.sender` on conversation list for client fallback.
+
+### 8. Tests
+
+| Test | Asserts |
+|------|---------|
+| `AppWorkspaceOptionToggle` widget | Selected option uses `AppButtonVariant.primary` |
+| Controller | `selectConversation` → `getConversation`; granular flags |
+| Controller | `applyPanel` restores cached panel without empty flash |
+| Filter registry | Client predicate applied when server filter unsupported |
+| Group dialog | `helperText` visible; Create disabled without members |
+| Compose bar | Read-only banner when `!canWrite`; visible on empty writable thread |
+
+### 9. Quality gate
+
+- `flutter analyze` clean on touched files.
+- `flutter test` for new/changed tests.
+- Manual QA: `.\tool\run_web_5201.ps1` → `/communications` (checklist below).
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] HR (or any `communications:write` user) can start a DM from Inbox without developer workarounds
-- [ ] User can create a group, add members, and all members see group messages
-- [ ] Composer supports `@` staff mention with dropdown; mentioned user receives notification
-- [ ] User can attach at least one file/image per message; attachment visible in thread
-- [ ] Thread shows time-tagged messages; user can see read state on sent messages
-- [ ] Tapping a conversation/group on the left shows the full thread on the right (wide) or navigates to thread (narrow)
-- [ ] Notifications remain distinct from Inbox and deep-link to source modules
-- [ ] UI is usable and attractive on desktop and mobile widths
-- [ ] No regression: Deliveries and Templates panels still work read-only
+- [ ] **`AppWorkspaceOptionToggle`** drives both panel tabs and message filters; no `FilterChip` in Communications.
+- [ ] **`AppWorkspaceSplitContent`** powers Messages master–detail layout.
+- [ ] **Granular refresh flags** — no full `AsyncStateScaffold` reload on tab/filter switch.
+- [ ] **Filter registry** — All, Unread, Sent, Read, Favorites, Flagged, Archived; extensible by adding registry entries.
+- [ ] **`resolvePersonDisplayName`** used consistently; list/header show staff names, not emails, when data exists.
+- [ ] **Thread load** on select; compose send + attach works with `communicationsWrite`.
+- [ ] **Read-only** users see banner, not a blank footer.
+- [ ] **New group** shows `helperText` when Create is disabled; succeeds with name + member.
+- [ ] **Mutation dialogs** use `showAppWorkspaceMutationDialog`.
+- [ ] **Server key `inbox` unchanged**; UI label is **Messages**.
+- [ ] Widget + controller tests pass; manual QA checklist passes.
+
+### Manual QA checklist
+
+- [ ] Panel tabs switch instantly (cached data, inline refresh only).
+- [ ] Select thread → messages load → compose visible.
+- [ ] Send text + attach file → appears in thread.
+- [ ] Display name shown instead of email.
+- [ ] Sent / Read filters work (server or client path).
+- [ ] New group helper text + successful create flow.
 
 ---
 
-## Quality Gate
+## Out of Scope
 
-From `frontend/`:
-
-```sh
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test
-```
-
-From `backend/` when touching API or schema:
-
-```sh
-npm test -- --testPathPattern="conversation|communications-workspace|notification"
-```
-
-Apply Prisma migrations per backend workflow before merging schema changes.
-
----
-
-## Key File References
-
-```
-frontend/lib/features/communications/
-frontend/lib/shared/components/app_file_upload_panel.dart
-backend/src/modules/communications-workspace/
-backend/src/modules/conversation/
-backend/prisma/schema.prisma  (conversation, message, message_attachment)
-prompts/29-communications-module-prompt.md
-```
+- SMS carrier / delivery failure remediation (Deliveries is observability).
+- Template authoring changes.
+- Real-time typing indicators.
+- Renaming sidebar **Communications** nav item.
+- Promoting `CommunicationsComposeBar` to global `AppMessageComposeBar` **unless** a second feature needs it in this task (keep interface flexible for later extraction).

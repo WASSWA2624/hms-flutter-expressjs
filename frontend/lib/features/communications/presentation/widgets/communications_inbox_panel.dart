@@ -9,7 +9,7 @@ import 'package:hosspi_hms/features/communications/presentation/widgets/communic
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class CommunicationsInboxPanel extends ConsumerStatefulWidget {
+class CommunicationsInboxPanel extends ConsumerWidget {
   const CommunicationsInboxPanel({
     required this.state,
     required this.searchController,
@@ -22,44 +22,35 @@ class CommunicationsInboxPanel extends ConsumerStatefulWidget {
   final bool canWrite;
 
   @override
-  ConsumerState<CommunicationsInboxPanel> createState() =>
-      _CommunicationsInboxPanelState();
-}
-
-class _CommunicationsInboxPanelState
-    extends ConsumerState<CommunicationsInboxPanel> {
-  CommunicationsInboxFilter _filter = CommunicationsInboxFilter.all;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
     final bool isWide = MediaQuery.sizeOf(context).width >= AppBreakpoints.lg;
-    final CommunicationsConversation? selected =
-        widget.state.selectedConversation;
+    final CommunicationsConversation? selected = state.selectedConversation;
+    final CommunicationsWorkspaceController controller = ref.read(
+      communicationsWorkspaceControllerProvider.notifier,
+    );
 
     if (!isWide && selected != null) {
       return CommunicationsThreadView(
         conversation: selected,
-        canWrite: widget.canWrite,
-        isSaving: widget.state.isSaving,
+        canWrite: canWrite,
+        isSaving: state.isSaving,
+        isLoadingThread: state.isRefreshingThread,
+        composeAutofocus: state.composeAutofocus,
+        onComposeAutofocusHandled: controller.clearComposeAutofocus,
         showBackButton: true,
-        onBack: ref
-            .read(communicationsWorkspaceControllerProvider.notifier)
-            .clearSelectedConversation,
+        onBack: controller.clearSelectedConversation,
       );
     }
 
     final Widget listPanel = AppWorkspaceDetailPanel(
-      title: context.l10n.communicationsInboxPanelLabel,
+      title: context.l10n.communicationsMessagesPanelLabel,
       description: context.l10n.communicationsListDescription,
       child: SizedBox(
         height: isWide ? 640 : 420,
         child: CommunicationsConversationList(
-          state: widget.state,
-          searchController: widget.searchController,
-          canWrite: widget.canWrite,
-          selectedFilter: _filter,
-          onFilterChanged: _applyFilter,
+          state: state,
+          searchController: searchController,
+          canWrite: canWrite,
         ),
       ),
     );
@@ -72,7 +63,7 @@ class _CommunicationsInboxPanelState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Expanded(flex: 5, child: listPanel),
-        SizedBox(width: theme.spacing.lg),
+        SizedBox(width: Theme.of(context).spacing.lg),
         Expanded(
           flex: 7,
           child: selected == null
@@ -81,7 +72,8 @@ class _CommunicationsInboxPanelState
                   child: AppWorkspaceStatePanel.empty(
                     title:
                         context.l10n.communicationsNoConversationSelectedTitle,
-                    body: context.l10n.communicationsNoConversationSelectedBody,
+                    body:
+                        context.l10n.communicationsNoConversationSelectedBody,
                     icon: Icons.forum_outlined,
                     minHeight: 420,
                   ),
@@ -90,31 +82,15 @@ class _CommunicationsInboxPanelState
                   height: 640,
                   child: CommunicationsThreadView(
                     conversation: selected,
-                    canWrite: widget.canWrite,
-                    isSaving: widget.state.isSaving,
+                    canWrite: canWrite,
+                    isSaving: state.isSaving,
+                    isLoadingThread: state.isRefreshingThread,
+                    composeAutofocus: state.composeAutofocus,
+                    onComposeAutofocusHandled: controller.clearComposeAutofocus,
                   ),
                 ),
         ),
       ],
     );
-  }
-
-  Future<void> _applyFilter(CommunicationsInboxFilter filter) async {
-    setState(() => _filter = filter);
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
-    switch (filter) {
-      case CommunicationsInboxFilter.all:
-        await controller.applyFilter();
-      case CommunicationsInboxFilter.unread:
-        await controller.applyFilter(unreadOnly: true);
-      case CommunicationsInboxFilter.favorites:
-        await controller.applyFilter(filter: 'FAVORITES');
-      case CommunicationsInboxFilter.flagged:
-        await controller.applyFilter(filter: 'FLAGGED');
-      case CommunicationsInboxFilter.archived:
-        await controller.applyFilter(filter: 'ARCHIVED');
-    }
   }
 }

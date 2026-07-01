@@ -139,6 +139,15 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
 
   let conversations = conversationRows.map((entry) => serializeConversation(entry, userId));
   if (filters.unreadOnly) conversations = conversations.filter((entry) => entry.unread);
+  const normalizedFilter = text(filters.filter).toUpperCase();
+  if (normalizedFilter === 'SENT') {
+    conversations = conversations.filter(
+      (entry) => text(entry.last_message?.sender_user_id) === userId
+    );
+  }
+  if (normalizedFilter === 'READ') {
+    conversations = conversations.filter((entry) => !entry.unread);
+  }
 
   let activeConversation = null;
   if (filters.conversationId) {
@@ -258,7 +267,18 @@ const listConversations = async (filters = {}, page = 1, limit = 30, _sortBy, _o
   const userId = requireUserId(user);
   const tenantId = requireTenant(user);
   const rows = await repository.listConversations({ tenantId, userId, search: filters.search, sensitive: filters.sensitive, filter: filters.filter, page, limit });
-  return rows.map((entry) => serializeConversation(entry, userId)).filter((entry) => (filters.unreadOnly ? entry.unread : true));
+  let conversations = rows.map((entry) => serializeConversation(entry, userId));
+  if (filters.unreadOnly) conversations = conversations.filter((entry) => entry.unread);
+  const normalizedFilter = text(filters.filter).toUpperCase();
+  if (normalizedFilter === 'SENT') {
+    conversations = conversations.filter(
+      (entry) => text(entry.last_message?.sender_user_id) === userId
+    );
+  }
+  if (normalizedFilter === 'READ') {
+    conversations = conversations.filter((entry) => !entry.unread);
+  }
+  return conversations;
 };
 
 const getConversation = async (identifier, user = {}) => {

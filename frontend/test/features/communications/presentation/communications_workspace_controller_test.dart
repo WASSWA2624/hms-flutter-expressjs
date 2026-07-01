@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/communications/data/repositories/communications_repository_impl.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/domain/repositories/communications_repository.dart';
@@ -27,11 +29,7 @@ void main() {
           _MockCommunicationsRepository();
       _stubWorkspace(repository);
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          communicationsRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
 
       final Result<CommunicationsWorkspaceState> result = await container.read(
@@ -44,7 +42,7 @@ void main() {
       );
       expect(state.notifications.items.single.id, 'notification-1');
       expect(state.selectedNotification?.id, 'notification-1');
-      expect(state.unreadBadgeCount, 3);
+      expect(state.unreadBadgeCount, 1);
       verify(() => repository.getWorkspace(any())).called(1);
     });
 
@@ -63,11 +61,7 @@ void main() {
         ),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          communicationsRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(communicationsWorkspaceControllerProvider.future);
 
@@ -90,7 +84,109 @@ void main() {
       verify(() => repository.getNotificationMetrics()).called(1);
       verify(() => repository.getWorkspace(any())).called(1);
     });
+
+    test('selectConversation loads full thread from repository', () async {
+      final _MockCommunicationsRepository repository =
+          _MockCommunicationsRepository();
+      _stubWorkspace(repository);
+      when(() => repository.getConversation('conversation-1')).thenAnswer(
+        (_) async => const Result<CommunicationsConversation>.success(
+          CommunicationsConversation(
+            id: 'conversation-1',
+            title: 'Critical lab follow-up',
+            messages: <CommunicationMessage>[
+              CommunicationMessage(
+                id: 'message-1',
+                content: 'Hello team',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      when(() => repository.markConversationRead('conversation-1')).thenAnswer(
+        (_) async => const Result<CommunicationsConversation>.success(
+          CommunicationsConversation(
+            id: 'conversation-1',
+            title: 'Critical lab follow-up',
+            messages: <CommunicationMessage>[
+              CommunicationMessage(
+                id: 'message-1',
+                content: 'Hello team',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(communicationsWorkspaceControllerProvider.future);
+
+      final CommunicationsConversation listConversation =
+          container
+              .read(communicationsWorkspaceControllerProvider)
+              .requireValue
+              .when(
+                success: (CommunicationsWorkspaceState value) =>
+                    value.conversations.items.single,
+                failure: (AppFailure failure) => fail(failure.code),
+              );
+
+      await container
+          .read(communicationsWorkspaceControllerProvider.notifier)
+          .selectConversation(listConversation);
+
+      final CommunicationsWorkspaceState state = container
+          .read(communicationsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (CommunicationsWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+
+      expect(state.selectedConversation?.messages.single.content, 'Hello team');
+      expect(state.isRefreshingThread, isFalse);
+      verify(() => repository.getConversation('conversation-1')).called(1);
+    });
+
+    test('applyPanel restores cached data without clearing notifications', () async {
+      final _MockCommunicationsRepository repository =
+          _MockCommunicationsRepository();
+      _stubWorkspace(repository);
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(communicationsWorkspaceControllerProvider.future);
+      final CommunicationsWorkspaceController controller = container.read(
+        communicationsWorkspaceControllerProvider.notifier,
+      );
+
+      await controller.applyPanel(CommunicationsPanel.notifications);
+      await controller.applyPanel(CommunicationsPanel.inbox);
+
+      final CommunicationsWorkspaceState state = container
+          .read(communicationsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (CommunicationsWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+
+      expect(state.query.panel, CommunicationsPanel.inbox);
+      expect(state.notifications.items, isNotEmpty);
+      verify(() => repository.getWorkspace(any())).called(greaterThanOrEqualTo(2));
+    });
   });
+}
+
+ProviderContainer _testContainer(_MockCommunicationsRepository repository) {
+  return ProviderContainer(
+    overrides: [
+      initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+      communicationsRepositoryProvider.overrideWithValue(repository),
+    ],
+  );
 }
 
 void _stubWorkspace(_MockCommunicationsRepository repository) {

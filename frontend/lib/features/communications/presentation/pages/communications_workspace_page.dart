@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -119,6 +120,38 @@ class _CommunicationsWorkspaceContentState
         AppListTableColumnVisibilityController<NotificationDelivery>();
     _templateColumns =
         AppListTableColumnVisibilityController<CommunicationTemplate>();
+
+    ref.listenManual(
+      communicationsWorkspaceControllerProvider,
+      (AsyncValue<Result<CommunicationsWorkspaceState>>? previous,
+          AsyncValue<Result<CommunicationsWorkspaceState>> next) {
+        final CommunicationsWorkspaceState? state = next.asData?.value.when(
+          success: (CommunicationsWorkspaceState value) => value,
+          failure: (_) => null,
+        );
+        if (state == null || !mounted) {
+          return;
+        }
+        _syncRoute(state.query);
+      },
+    );
+  }
+
+  String? _syncedRouteSignature;
+
+  void _syncRoute(CommunicationsWorkspaceQuery query) {
+    final String signature = _querySignature(query);
+    if (_syncedRouteSignature == signature) {
+      return;
+    }
+    _syncedRouteSignature = signature;
+    final String location = AppRoutes.communications.location(
+      queryParameters: query.toQueryParameters(),
+    );
+    final String current = GoRouterState.of(context).uri.toString();
+    if (current != location) {
+      context.go(location);
+    }
   }
 
   @override
@@ -338,22 +371,19 @@ class _PanelSelector extends ConsumerWidget {
       communicationsWorkspaceControllerProvider.notifier,
     );
 
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        for (final CommunicationsPanel panel in CommunicationsPanel.values)
-          AppButton(
-            label: _panelTitle(l10n, panel),
-            leadingIcon: _panelIcon(panel),
-            variant: selected == panel
-                ? AppButtonVariant.primary
-                : AppButtonVariant.secondary,
-            onPressed: selected == panel
-                ? null
-                : () => controller.applyPanel(panel),
-          ),
-      ],
+    return AppWorkspaceOptionToggle<CommunicationsPanel>(
+      value: selected,
+      options: CommunicationsPanel.values
+          .map(
+            (CommunicationsPanel panel) =>
+                AppWorkspaceOptionToggleOption<CommunicationsPanel>(
+                  value: panel,
+                  label: _panelTitle(l10n, panel),
+                  icon: _panelIcon(panel),
+                ),
+          )
+          .toList(growable: false),
+      onChanged: controller.applyPanel,
     );
   }
 }
@@ -379,7 +409,7 @@ class _NotificationsTable extends ConsumerWidget {
 
     return AppListTable<NotificationItem>(
       page: state.notifications,
-      isLoading: state.isRefreshing,
+      isLoading: state.isRefreshingNotifications,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: _tableSearch<NotificationItem>(
@@ -505,7 +535,7 @@ class _DeliveriesTable extends ConsumerWidget {
 
     return AppListTable<NotificationDelivery>(
       page: state.deliveries,
-      isLoading: state.isRefreshing,
+      isLoading: state.isRefreshingDeliveries,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: _tableSearch<NotificationDelivery>(
@@ -636,7 +666,7 @@ class _TemplatesTable extends ConsumerWidget {
 
     return AppListTable<CommunicationTemplate>(
       page: state.templates,
-      isLoading: state.isRefreshing,
+      isLoading: state.isRefreshingTemplates,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: _tableSearch<CommunicationTemplate>(
@@ -1234,7 +1264,7 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 
 String _panelTitle(AppLocalizations l10n, CommunicationsPanel panel) {
   return switch (panel) {
-    CommunicationsPanel.inbox => l10n.communicationsInboxPanelLabel,
+    CommunicationsPanel.inbox => l10n.communicationsMessagesPanelLabel,
     CommunicationsPanel.notifications =>
       l10n.communicationsNotificationsPanelLabel,
     CommunicationsPanel.deliveries => l10n.communicationsDeliveriesPanelLabel,
@@ -1382,7 +1412,9 @@ String? _internalPath(String? value) {
 }
 
 bool _hasRouteQuery(CommunicationsWorkspaceQuery query) {
-  return query.panel != CommunicationsPanel.inbox || query.hasActiveFilters;
+  return query.panel != CommunicationsPanel.inbox ||
+      query.hasActiveFilters ||
+      query.conversationId != null;
 }
 
 String _querySignature(CommunicationsWorkspaceQuery query) {

@@ -14345,9 +14345,13 @@
   "@communicationsMessageSentMessage": {
     "description": "Snackbar message after a conversation message is sent."
   },
-  "communicationsInboxPanelLabel": "Inbox",
+  "communicationsInboxPanelLabel": "Messages",
   "@communicationsInboxPanelLabel": {
-    "description": "Panel label for conversation inbox."
+    "description": "Panel label for staff messaging threads."
+  },
+  "communicationsMessagesPanelLabel": "Messages",
+  "@communicationsMessagesPanelLabel": {
+    "description": "Panel label for staff messaging threads."
   },
   "communicationsNotificationsPanelLabel": "Notifications",
   "@communicationsNotificationsPanelLabel": {
@@ -14830,6 +14834,34 @@
   "communicationsArchivedFilterLabel": "Archived",
   "@communicationsArchivedFilterLabel": {
     "description": "Inbox filter label for archived conversations."
+  },
+  "communicationsSentFilterLabel": "Sent",
+  "@communicationsSentFilterLabel": {
+    "description": "Messages filter label for threads the current user last sent."
+  },
+  "communicationsReadFilterLabel": "Read",
+  "@communicationsReadFilterLabel": {
+    "description": "Messages filter label for read threads."
+  },
+  "communicationsComposeReadOnlyBody": "You can view this thread but cannot send messages.",
+  "@communicationsComposeReadOnlyBody": {
+    "description": "Banner shown when the user can read but not write in a thread."
+  },
+  "communicationsFirstMessageHint": "Send the first message to start this conversation.",
+  "@communicationsFirstMessageHint": {
+    "description": "Empty thread hint encouraging the user to send the first message."
+  },
+  "communicationsGroupMembersRequiredHelper": "Add at least one member to create the group.",
+  "@communicationsGroupMembersRequiredHelper": {
+    "description": "Helper text when a group name is entered without members."
+  },
+  "communicationsConversationStartedMessage": "Conversation started — send your first message.",
+  "@communicationsConversationStartedMessage": {
+    "description": "Snackbar after a new conversation is created."
+  },
+  "communicationsClientFilterNotice": "Some filters are applied locally until server support is available.",
+  "@communicationsClientFilterNotice": {
+    "description": "Notice when message filters run on the client."
   },
   "communicationsLoadMoreAction": "Load more",
   "@communicationsLoadMoreAction": {

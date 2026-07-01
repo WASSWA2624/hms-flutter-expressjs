@@ -9,7 +9,20 @@ const personName = (record = {}) => {
   const first = text(record?.profile?.first_name);
   const last = text(record?.profile?.last_name);
   const combined = [first, last].filter(Boolean).join(' ');
-  return combined || text(record.email) || resolvePublicIdentifier(record.human_friendly_id, record.id) || 'Staff';
+  if (combined) return combined;
+  const email = text(record.email);
+  if (email.includes('@')) {
+    const local = email.split('@')[0];
+    if (local) {
+      return local
+        .replace(/[._-]+/g, ' ')
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+  }
+  return email || resolvePublicIdentifier(record.human_friendly_id, record.id) || 'Staff';
 };
 
 const serializeUser = (record = {}) => {

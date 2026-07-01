@@ -15,6 +15,11 @@ class CommunicationsComposeBar extends ConsumerStatefulWidget {
     required this.isSaving,
     this.replyToMessage,
     this.onCancelReply,
+    this.autofocus = false,
+    this.onAutofocusHandled,
+    this.readOnlyBanner,
+    this.maxAttachments = 5,
+    this.onSent,
     super.key,
   });
 
@@ -22,6 +27,11 @@ class CommunicationsComposeBar extends ConsumerStatefulWidget {
   final bool isSaving;
   final CommunicationMessage? replyToMessage;
   final VoidCallback? onCancelReply;
+  final bool autofocus;
+  final VoidCallback? onAutofocusHandled;
+  final String? readOnlyBanner;
+  final int maxAttachments;
+  final VoidCallback? onSent;
 
   @override
   ConsumerState<CommunicationsComposeBar> createState() =>
@@ -38,6 +48,33 @@ class _CommunicationsComposeBarState
   MentionQuery? _activeMention;
 
   @override
+  void initState() {
+    super.initState();
+    _scheduleAutofocus();
+  }
+
+  @override
+  void didUpdateWidget(covariant CommunicationsComposeBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.autofocus && !oldWidget.autofocus) {
+      _scheduleAutofocus();
+    }
+  }
+
+  void _scheduleAutofocus() {
+    if (!widget.autofocus || !widget.canWrite) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _focusNode.requestFocus();
+      widget.onAutofocusHandled?.call();
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
@@ -48,7 +85,39 @@ class _CommunicationsComposeBarState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     if (!widget.canWrite) {
-      return const SizedBox.shrink();
+      final String? banner = widget.readOnlyBanner;
+      if (banner == null || banner.trim().isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.md),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(
+                  banner,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return DecoratedBox(
@@ -255,9 +324,13 @@ class _CommunicationsComposeBarState
       if (!mounted || files.isEmpty) {
         return;
       }
+      final int remaining = widget.maxAttachments - _attachments.length;
+      if (remaining <= 0) {
+        return;
+      }
       final List<CommunicationAttachmentUpload> uploads =
           <CommunicationAttachmentUpload>[];
-      for (final XFile file in files.take(5 - _attachments.length)) {
+      for (final XFile file in files.take(remaining)) {
         uploads.add(
           CommunicationAttachmentUpload(
             fileName: file.name,
@@ -292,6 +365,7 @@ class _CommunicationsComposeBarState
         _mentionOptions = <CommunicationStaffOption>[];
       });
       widget.onCancelReply?.call();
+      widget.onSent?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.communicationsMessageSentMessage)),
       );

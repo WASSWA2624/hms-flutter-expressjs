@@ -3,10 +3,12 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/communications/data/repositories/communications_repository_impl.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/domain/repositories/communications_repository.dart';
+import 'package:hosspi_hms/features/communications/presentation/config/communications_message_filters.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final communicationsWorkspaceControllerProvider =
@@ -19,6 +21,9 @@ final class CommunicationsWorkspaceController
     extends AsyncNotifier<Result<CommunicationsWorkspaceState>> {
   CommunicationsRepository get _repository =>
       ref.read(communicationsRepositoryProvider);
+
+  final Map<CommunicationsPanel, CommunicationsWorkspaceState> _panelSnapshots =
+      <CommunicationsPanel, CommunicationsWorkspaceState>{};
 
   @override
   Future<Result<CommunicationsWorkspaceState>> build() async {
@@ -43,12 +48,27 @@ final class CommunicationsWorkspaceController
       ref.invalidateSelf();
       return null;
     }
-    _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
-    return _refreshWorkspace();
+    _emit(
+      current.copyWith(
+        isRefreshing: true,
+        isRefreshingConversations: true,
+        isRefreshingNotifications: true,
+        isRefreshingDeliveries: true,
+        isRefreshingTemplates: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkspace(
+      preserveSelection: true,
+      preserveConversation: true,
+    );
   }
 
   Future<AppFailure?> applyRouteQuery(CommunicationsWorkspaceQuery query) {
-    return _applyQuery(query.copyWith(pageRequest: query.pageRequest.first()));
+    return _applyQuery(
+      query.copyWith(pageRequest: query.pageRequest.first()),
+      preservePanelSelections: true,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) {
@@ -61,6 +81,8 @@ final class CommunicationsWorkspaceController
         search: value.trim(),
         pageRequest: current.query.pageRequest.first(),
       ),
+      preservePanelSelections:
+          current.query.panel == CommunicationsPanel.inbox,
     );
   }
 
@@ -69,16 +91,54 @@ final class CommunicationsWorkspaceController
     if (current == null) {
       return refresh();
     }
+    if (current.query.panel == panel) {
+      return Future<AppFailure?>.value();
+    }
+
+    _snapshotPanel(current);
+
+    final CommunicationsWorkspaceState? cached = _panelSnapshots[panel];
+    if (cached != null) {
+      _emit(
+        cached.copyWith(
+          query: cached.query.copyWith(
+            panel: panel,
+            search: current.query.search,
+            pageRequest: current.query.pageRequest.first(),
+          ),
+          isRefreshing: false,
+          clearLastFailure: true,
+        ),
+      );
+    }
+
     return _applyQuery(
       current.query.copyWith(
         panel: panel,
         pageRequest: current.query.pageRequest.first(),
-        clearConversationId: true,
-        clearMessageId: true,
-        clearNotificationId: true,
-        clearTemplateId: true,
+        clearConversationId: panel != CommunicationsPanel.inbox,
+        clearMessageId: panel != CommunicationsPanel.inbox,
+        clearNotificationId: panel != CommunicationsPanel.notifications,
+        clearTemplateId: panel != CommunicationsPanel.templates,
         clearAction: true,
       ),
+      preservePanelSelections: true,
+      backgroundRefresh: cached != null,
+    );
+  }
+
+  Future<AppFailure?> applyMessageFilter(String filterId) {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final CommunicationsMessageFilter filter = communicationsMessageFilterById(
+      filterId,
+    );
+    return _applyQuery(
+      communicationsQueryForMessageFilter(current.query, filter),
+      activeMessageFilter: filter,
+      preservePanelSelections: true,
     );
   }
 
@@ -97,7 +157,7 @@ final class CommunicationsWorkspaceController
         unreadOnly: unreadOnly,
         sensitive: sensitive,
         pageRequest: current.query.pageRequest.first(),
-        clearFilter: filter == null,
+        clearFilter: filter == null && !unreadOnly,
       ),
     );
   }
@@ -107,23 +167,53 @@ final class CommunicationsWorkspaceController
     if (current == null) {
       return refresh();
     }
-    return _applyQuery(current.query.copyWith(pageRequest: request));
+    return _applyQuery(
+      current.query.copyWith(pageRequest: request),
+      preservePanelSelections:
+          current.query.panel == CommunicationsPanel.inbox,
+    );
   }
 
-  void selectConversation(CommunicationsConversation conversation) {
+  Future<AppFailure?> selectConversation(
+    CommunicationsConversation conversation,
+  ) async {
     final CommunicationsWorkspaceState? current = _currentState;
     if (current == null) {
-      return;
+      return null;
     }
     _emit(
       current.copyWith(
         selectedConversation: conversation,
+        query: current.query.copyWith(conversationId: conversation.id),
+        isRefreshingThread: true,
+        composeAutofocus: false,
         clearSelectedNotification: true,
         clearSelectedDelivery: true,
         clearSelectedTemplate: true,
         clearLastFailure: true,
       ),
     );
+    return _loadConversation(conversation.id, markRead: true);
+  }
+
+  Future<AppFailure?> loadConversation(
+    String conversationId, {
+    bool markRead = false,
+    bool composeAutofocus = false,
+  }) {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<AppFailure?>.value();
+    }
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(conversationId: conversationId),
+        isRefreshingThread: true,
+        composeAutofocus: composeAutofocus,
+        clearLastFailure: true,
+      ),
+    );
+    return _loadConversation(conversationId, markRead: markRead);
   }
 
   void selectNotification(NotificationItem notification) {
@@ -134,6 +224,7 @@ final class CommunicationsWorkspaceController
     _emit(
       current.copyWith(
         selectedNotification: notification,
+        query: current.query.copyWith(notificationId: notification.id),
         clearSelectedConversation: true,
         clearSelectedDelivery: true,
         clearSelectedTemplate: true,
@@ -166,6 +257,7 @@ final class CommunicationsWorkspaceController
     _emit(
       current.copyWith(
         selectedTemplate: template,
+        query: current.query.copyWith(templateId: template.id),
         clearSelectedConversation: true,
         clearSelectedNotification: true,
         clearSelectedDelivery: true,
@@ -336,8 +428,21 @@ final class CommunicationsWorkspaceController
       return;
     }
     _emit(
-      current.copyWith(clearSelectedConversation: true, clearLastFailure: true),
+      current.copyWith(
+        clearSelectedConversation: true,
+        query: current.query.copyWith(clearConversationId: true),
+        composeAutofocus: false,
+        clearLastFailure: true,
+      ),
     );
+  }
+
+  void clearComposeAutofocus() {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null || !current.composeAutofocus) {
+      return;
+    }
+    _emit(current.copyWith(composeAutofocus: false));
   }
 
   Future<List<CommunicationStaffOption>> searchStaff(String query) async {
@@ -356,7 +461,7 @@ final class CommunicationsWorkspaceController
       final Result<CommunicationsConversation> result = await _repository
           .createConversation(draft);
       return result.when(
-        success: (CommunicationsConversation conversation) {
+        success: (CommunicationsConversation conversation) async {
           final List<CommunicationsConversation> nextItems =
               <CommunicationsConversation>[
                 conversation,
@@ -375,12 +480,13 @@ final class CommunicationsWorkspaceController
               conversations: _pageWithItems(current.conversations, nextItems),
               selectedConversation: conversation,
               isSaving: false,
+              composeAutofocus: true,
               clearSelectedNotification: true,
               clearSelectedDelivery: true,
               clearSelectedTemplate: true,
             ),
           );
-          return null;
+          return _loadConversation(conversation.id);
         },
         failure: (AppFailure failure) {
           _emit(current.copyWith(isSaving: false, lastFailure: failure));
@@ -390,39 +496,193 @@ final class CommunicationsWorkspaceController
     }, alreadySubmittedByHandler: true);
   }
 
-  Future<AppFailure?> _applyQuery(CommunicationsWorkspaceQuery query) async {
+  Future<AppFailure?> _applyQuery(
+    CommunicationsWorkspaceQuery query, {
+    CommunicationsMessageFilter? activeMessageFilter,
+    bool preservePanelSelections = false,
+    bool backgroundRefresh = false,
+  }) async {
     final CommunicationsWorkspaceState? current = _currentState;
     if (current == null) {
       ref.invalidateSelf();
       return null;
     }
+
+    final CommunicationsPanel panel = query.panel;
     _emit(
       current.copyWith(
         query: query,
-        isRefreshing: true,
+        isRefreshing: !backgroundRefresh,
+        isRefreshingConversations: panel == CommunicationsPanel.inbox,
+        isRefreshingNotifications: panel == CommunicationsPanel.notifications,
+        isRefreshingDeliveries: panel == CommunicationsPanel.deliveries,
+        isRefreshingTemplates: panel == CommunicationsPanel.templates,
         clearLastFailure: true,
-        clearSelectedConversation: true,
-        clearSelectedNotification: true,
-        clearSelectedDelivery: true,
-        clearSelectedTemplate: true,
+        clearSelectedConversation:
+            !preservePanelSelections ||
+            panel != CommunicationsPanel.inbox,
+        clearSelectedNotification:
+            !preservePanelSelections ||
+            panel != CommunicationsPanel.notifications,
+        clearSelectedDelivery:
+            !preservePanelSelections ||
+            panel != CommunicationsPanel.deliveries,
+        clearSelectedTemplate:
+            !preservePanelSelections ||
+            panel != CommunicationsPanel.templates,
       ),
     );
-    return _refreshWorkspace();
+
+    return _refreshWorkspace(
+      activeMessageFilter: activeMessageFilter,
+      preserveSelection: preservePanelSelections,
+      preserveConversation:
+          preservePanelSelections && query.conversationId != null,
+    );
   }
 
-  Future<AppFailure?> _refreshWorkspace() async {
+  Future<AppFailure?> _loadConversation(
+    String conversationId, {
+    bool markRead = false,
+    bool composeAutofocus = false,
+  }) async {
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+
+    final Result<CommunicationsConversation> result = await _repository
+        .getConversation(conversationId);
+    return result.when(
+      success: (CommunicationsConversation conversation) async {
+        final List<CommunicationsConversation> nextItems = _replaceItem(
+          current.conversations.items,
+          conversation,
+          (CommunicationsConversation item) => item.id,
+        );
+        _emit(
+          current.copyWith(
+            conversations: _pageWithItems(current.conversations, nextItems),
+            selectedConversation: conversation,
+            isRefreshingThread: false,
+            composeAutofocus: composeAutofocus,
+          ),
+        );
+        if (markRead && conversation.unread) {
+          return markSelectedConversationRead();
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        _emit(
+          current.copyWith(
+            isRefreshingThread: false,
+            lastFailure: failure,
+          ),
+        );
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _refreshWorkspace({
+    CommunicationsMessageFilter? activeMessageFilter,
+    bool preserveSelection = false,
+    bool preserveConversation = false,
+  }) async {
     final CommunicationsWorkspaceState current = _currentState!;
     final Result<CommunicationsWorkspaceState> result = await _repository
         .getWorkspace(current.query);
+
     return result.when(
       success: (CommunicationsWorkspaceState nextState) {
-        _emit(nextState.copyWith(isRefreshing: false, isSaving: false));
+        final CommunicationsMessageFilter filter =
+            activeMessageFilter ??
+            communicationsMessageFilterById(
+              communicationsMessageFilterIdForQuery(current.query),
+            );
+        final bool usesClientFilter = communicationsMessageFilterUsesClientFallback(
+          filter,
+        );
+        final String? currentUserId = ref
+            .read(sessionStateProvider)
+            .session
+            ?.user
+            ?.id;
+        final List<CommunicationsConversation> filteredConversations =
+            applyCommunicationsMessageFilter(
+              nextState.conversations.items,
+              filter,
+              currentUserId,
+              useClientFallback: usesClientFilter,
+            );
+
+        CommunicationsConversation? selectedConversation =
+            preserveConversation ? current.selectedConversation : null;
+        selectedConversation ??= nextState.selectedConversation;
+        if (selectedConversation == null && current.query.conversationId != null) {
+          selectedConversation = filteredConversations
+              .where(
+                (CommunicationsConversation item) =>
+                    item.id == current.query.conversationId,
+              )
+              .firstOrNull;
+        }
+        if (!preserveSelection) {
+          selectedConversation = nextState.selectedConversation;
+        }
+
+        final NotificationItem? selectedNotification = preserveSelection
+            ? current.selectedNotification ?? nextState.selectedNotification
+            : nextState.selectedNotification;
+        final NotificationDelivery? selectedDelivery = preserveSelection
+            ? current.selectedDelivery ?? nextState.selectedDelivery
+            : nextState.selectedDelivery;
+        final CommunicationTemplate? selectedTemplate = preserveSelection
+            ? current.selectedTemplate ?? nextState.selectedTemplate
+            : nextState.selectedTemplate;
+
+        final CommunicationsWorkspaceState merged = nextState.copyWith(
+          conversations: _pageWithItems(
+            nextState.conversations,
+            filteredConversations,
+          ),
+          selectedConversation: selectedConversation,
+          selectedNotification: selectedNotification,
+          selectedDelivery: selectedDelivery,
+          selectedTemplate: selectedTemplate,
+          usesClientMessageFilter:
+              usesClientFilter && filter.id != kCommunicationsMessageFilterAll,
+          isRefreshing: false,
+          isRefreshingConversations: false,
+          isRefreshingNotifications: false,
+          isRefreshingDeliveries: false,
+          isRefreshingTemplates: false,
+          isSaving: false,
+        );
+        _emit(merged);
+        _snapshotPanel(merged);
+
+        final String? conversationId = merged.query.conversationId;
+        if (conversationId != null &&
+            (merged.selectedConversation == null ||
+                merged.selectedConversation!.messages.isEmpty)) {
+          return _loadConversation(
+            conversationId,
+            markRead: true,
+            composeAutofocus: merged.composeAutofocus,
+          );
+        }
         return null;
       },
       failure: (AppFailure failure) {
         _emit(
           current.copyWith(
             isRefreshing: false,
+            isRefreshingConversations: false,
+            isRefreshingNotifications: false,
+            isRefreshingDeliveries: false,
+            isRefreshingTemplates: false,
             isSaving: false,
             lastFailure: failure,
           ),
@@ -430,6 +690,10 @@ final class CommunicationsWorkspaceController
         return failure;
       },
     );
+  }
+
+  void _snapshotPanel(CommunicationsWorkspaceState state) {
+    _panelSnapshots[state.query.panel] = state;
   }
 
   Future<AppFailure?> _submitNotificationMutation(

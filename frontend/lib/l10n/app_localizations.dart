@@ -20739,11 +20739,17 @@ abstract class AppLocalizations {
   /// **'Message sent.'**
   String get communicationsMessageSentMessage;
 
-  /// Panel label for conversation inbox.
+  /// Panel label for staff messaging threads.
   ///
   /// In en, this message translates to:
-  /// **'Inbox'**
+  /// **'Messages'**
   String get communicationsInboxPanelLabel;
+
+  /// Panel label for staff messaging threads.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get communicationsMessagesPanelLabel;
 
   /// Panel label for notifications.
   ///
@@ -21428,6 +21434,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archived'**
   String get communicationsArchivedFilterLabel;
+
+  /// Messages filter label for threads the current user last sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get communicationsSentFilterLabel;
+
+  /// Messages filter label for read threads.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get communicationsReadFilterLabel;
+
+  /// Banner shown when the user can read but not write in a thread.
+  ///
+  /// In en, this message translates to:
+  /// **'You can view this thread but cannot send messages.'**
+  String get communicationsComposeReadOnlyBody;
+
+  /// Empty thread hint encouraging the user to send the first message.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the first message to start this conversation.'**
+  String get communicationsFirstMessageHint;
+
+  /// Helper text when a group name is entered without members.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one member to create the group.'**
+  String get communicationsGroupMembersRequiredHelper;
+
+  /// Snackbar after a new conversation is created.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation started — send your first message.'**
+  String get communicationsConversationStartedMessage;
+
+  /// Notice when message filters run on the client.
+  ///
+  /// In en, this message translates to:
+  /// **'Some filters are applied locally until server support is available.'**
+  String get communicationsClientFilterNotice;
 
   /// Action label for loading more conversations.
   ///

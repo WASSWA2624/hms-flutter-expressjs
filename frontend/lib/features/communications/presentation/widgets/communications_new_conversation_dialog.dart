@@ -6,42 +6,85 @@ import 'package:hosspi_hms/features/communications/domain/entities/communication
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 Future<void> showCommunicationsNewDirectMessageDialog(
   BuildContext context,
   WidgetRef ref,
-) {
-  return showAppDialog<void>(
+) async {
+  final GlobalKey<_NewDirectMessageFieldsState> fieldsKey =
+      GlobalKey<_NewDirectMessageFieldsState>();
+
+  final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
-    builder: (_) => const _NewDirectMessageDialog(),
+    title: Text(context.l10n.communicationsNewMessageAction),
+    icon: const Icon(Icons.edit_outlined),
+    cancelLabel: context.l10n.commonCancelActionLabel,
+    submitLabel: context.l10n.communicationsStartConversationAction,
+    submitIcon: Icons.edit_outlined,
+    maxWidth: 520,
+    buildFields: (_, __, _, [__]) =>
+        _NewDirectMessageFields(key: fieldsKey, ref: ref),
+    onSubmit: () => fieldsKey.currentState?.submit() ?? _missingRecipient(),
   );
+
+  if (saved == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.communicationsConversationStartedMessage),
+      ),
+    );
+  }
 }
 
 Future<void> showCommunicationsNewGroupDialog(
   BuildContext context,
   WidgetRef ref,
-) {
-  return showAppDialog<void>(
+) async {
+  final GlobalKey<_NewGroupFieldsState> fieldsKey =
+      GlobalKey<_NewGroupFieldsState>();
+
+  await showAppWorkspaceMutationDialog(
     context: context,
-    builder: (_) => const _NewGroupDialog(),
+    title: Text(context.l10n.communicationsNewGroupAction),
+    icon: const Icon(Icons.group_add_outlined),
+    cancelLabel: context.l10n.commonCancelActionLabel,
+    submitLabel: context.l10n.communicationsCreateGroupAction,
+    submitIcon: Icons.group_add_outlined,
+    maxWidth: 560,
+    buildFields: (_, __, _, [__]) => _NewGroupFields(key: fieldsKey, ref: ref),
+    onSubmit: () => fieldsKey.currentState?.submit() ?? _missingGroupFields(),
   );
 }
 
-class _NewDirectMessageDialog extends ConsumerStatefulWidget {
-  const _NewDirectMessageDialog();
-
-  @override
-  ConsumerState<_NewDirectMessageDialog> createState() =>
-      _NewDirectMessageDialogState();
+Future<AppFailure?> _missingRecipient() {
+  return Future<AppFailure?>.value(
+    AppFailure.validation(validationFields: <String>{'recipient'}),
+  );
 }
 
-class _NewDirectMessageDialogState
-    extends ConsumerState<_NewDirectMessageDialog> {
+Future<AppFailure?> _missingGroupFields() {
+  return Future<AppFailure?>.value(
+    AppFailure.validation(validationFields: <String>{'name', 'members'}),
+  );
+}
+
+class _NewDirectMessageFields extends ConsumerStatefulWidget {
+  const _NewDirectMessageFields({required this.ref, super.key});
+
+  final WidgetRef ref;
+
+  @override
+  ConsumerState<_NewDirectMessageFields> createState() =>
+      _NewDirectMessageFieldsState();
+}
+
+class _NewDirectMessageFieldsState
+    extends ConsumerState<_NewDirectMessageFields> {
   final TextEditingController _subjectController = TextEditingController();
   String? _selectedUserId;
   List<CommunicationStaffOption> _staffOptions = <CommunicationStaffOption>[];
   bool _loadingStaff = false;
-  bool _submitting = false;
 
   @override
   void initState() {
@@ -57,7 +100,7 @@ class _NewDirectMessageDialogState
 
   Future<void> _loadStaff(String query) async {
     setState(() => _loadingStaff = true);
-    final List<CommunicationStaffOption> options = await ref
+    final List<CommunicationStaffOption> options = await widget.ref
         .read(communicationsWorkspaceControllerProvider.notifier)
         .searchStaff(query);
     if (mounted) {
@@ -68,62 +111,12 @@ class _NewDirectMessageDialogState
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: Text(context.l10n.communicationsNewMessageAction),
-      icon: const Icon(Icons.edit_outlined),
-      scrollable: true,
-      maxWidth: 520,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppSelectField<String>.searchable(
-            value: _selectedUserId,
-            labelText: context.l10n.communicationsRecipientLabel,
-            isRequired: true,
-            options: _staffOptions
-                .map(
-                  (CommunicationStaffOption item) => AppSelectOption<String>(
-                    value: item.id,
-                    label: item.label,
-                    searchText: item.searchableLabel,
-                  ),
-                )
-                .toList(growable: false),
-            isLoading: _loadingStaff,
-            onSearchTextChanged: _loadStaff,
-            onChanged: (String? value) =>
-                setState(() => _selectedUserId = value),
-          ),
-          AppTextField(
-            controller: _subjectController,
-            labelText: context.l10n.communicationsSubjectLabel,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonCancelActionLabel,
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: context.l10n.communicationsStartConversationAction,
-          isLoading: _submitting,
-          enabled: _selectedUserId != null,
-          onPressed: _selectedUserId == null || _submitting ? null : _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
+  Future<AppFailure?> submit() async {
     final String? userId = _selectedUserId;
     if (userId == null) {
-      return;
+      return AppFailure.validation(validationFields: <String>{'recipient'});
     }
-    setState(() => _submitting = true);
-    final AppFailure? failure = await ref
+    return widget.ref
         .read(communicationsWorkspaceControllerProvider.notifier)
         .createConversation(
           CommunicationConversationDraft(
@@ -134,30 +127,54 @@ class _NewDirectMessageDialogState
             conversationType: 'DIRECT',
           ),
         );
-    if (!mounted) {
-      return;
-    }
-    setState(() => _submitting = false);
-    if (failure == null) {
-      Navigator.of(context).pop();
-    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppSelectField<String>.searchable(
+          value: _selectedUserId,
+          labelText: context.l10n.communicationsRecipientLabel,
+          isRequired: true,
+          options: _staffOptions
+              .map(
+                (CommunicationStaffOption item) => AppSelectOption<String>(
+                  value: item.id,
+                  label: item.label,
+                  searchText: item.searchableLabel,
+                ),
+              )
+              .toList(growable: false),
+          isLoading: _loadingStaff,
+          onSearchTextChanged: _loadStaff,
+          onChanged: (String? value) => setState(() => _selectedUserId = value),
+        ),
+        AppTextField(
+          controller: _subjectController,
+          labelText: context.l10n.communicationsSubjectLabel,
+        ),
+      ],
+    );
   }
 }
 
-class _NewGroupDialog extends ConsumerStatefulWidget {
-  const _NewGroupDialog();
+class _NewGroupFields extends ConsumerStatefulWidget {
+  const _NewGroupFields({required this.ref, super.key});
+
+  final WidgetRef ref;
 
   @override
-  ConsumerState<_NewGroupDialog> createState() => _NewGroupDialogState();
+  ConsumerState<_NewGroupFields> createState() => _NewGroupFieldsState();
 }
 
-class _NewGroupDialogState extends ConsumerState<_NewGroupDialog> {
+class _NewGroupFieldsState extends ConsumerState<_NewGroupFields> {
   final TextEditingController _nameController = TextEditingController();
   final Set<String> _selectedMemberIds = <String>{};
   List<CommunicationStaffOption> _staffOptions = <CommunicationStaffOption>[];
   bool _loadingStaff = false;
   bool _isSensitive = false;
-  bool _submitting = false;
 
   @override
   void initState() {
@@ -172,9 +189,13 @@ class _NewGroupDialogState extends ConsumerState<_NewGroupDialog> {
     super.dispose();
   }
 
+  bool get _hasName => _nameController.text.trim().isNotEmpty;
+
+  bool get _canSubmit => _hasName && _selectedMemberIds.isNotEmpty;
+
   Future<void> _loadStaff(String query) async {
     setState(() => _loadingStaff = true);
-    final List<CommunicationStaffOption> options = await ref
+    final List<CommunicationStaffOption> options = await widget.ref
         .read(communicationsWorkspaceControllerProvider.notifier)
         .searchStaff(query);
     if (mounted) {
@@ -185,76 +206,25 @@ class _NewGroupDialogState extends ConsumerState<_NewGroupDialog> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: Text(context.l10n.communicationsNewGroupAction),
-      icon: const Icon(Icons.group_add_outlined),
-      scrollable: true,
-      maxWidth: 560,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTextField(
-            controller: _nameController,
-            labelText: context.l10n.communicationsGroupNameLabel,
-            isRequired: true,
+  Future<AppFailure?> submit() async {
+    if (!_canSubmit) {
+      return AppFailure.validation(
+        validationFields: <String>{
+          if (!_hasName) 'name',
+          if (_selectedMemberIds.isEmpty) 'members',
+        },
+      );
+    }
+    return widget.ref
+        .read(communicationsWorkspaceControllerProvider.notifier)
+        .createConversation(
+          CommunicationConversationDraft(
+            participantIds: _selectedMemberIds.toList(growable: false),
+            subject: _nameController.text.trim(),
+            isSensitive: _isSensitive,
+            conversationType: 'GROUP',
           ),
-          AppSelectField<String>.searchable(
-            labelText: context.l10n.communicationsAddMemberLabel,
-            options: _staffOptions
-                .map(
-                  (CommunicationStaffOption item) => AppSelectOption<String>(
-                    value: item.id,
-                    label: item.label,
-                    searchText: item.searchableLabel,
-                  ),
-                )
-                .toList(growable: false),
-            isLoading: _loadingStaff,
-            onSearchTextChanged: _loadStaff,
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _selectedMemberIds.add(value));
-              }
-            },
-          ),
-          if (_selectedMemberIds.isNotEmpty)
-            Wrap(
-              spacing: Theme.of(context).spacing.xs,
-              runSpacing: Theme.of(context).spacing.xs,
-              children: <Widget>[
-                for (final String memberId in _selectedMemberIds)
-                  InputChip(
-                    label: Text(_memberLabel(memberId)),
-                    onDeleted: () =>
-                        setState(() => _selectedMemberIds.remove(memberId)),
-                  ),
-              ],
-            ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(context.l10n.communicationsSensitiveConversationLabel),
-            value: _isSensitive,
-            onChanged: (bool value) => setState(() => _isSensitive = value),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonCancelActionLabel,
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: context.l10n.communicationsCreateGroupAction,
-          isLoading: _submitting,
-          enabled:
-              _nameController.text.trim().isNotEmpty &&
-              _selectedMemberIds.isNotEmpty,
-          onPressed: _submitting ? null : _submit,
-        ),
-      ],
-    );
+        );
   }
 
   String _memberLabel(String memberId) {
@@ -265,27 +235,58 @@ class _NewGroupDialogState extends ConsumerState<_NewGroupDialog> {
         memberId;
   }
 
-  Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty || _selectedMemberIds.isEmpty) {
-      return;
-    }
-    setState(() => _submitting = true);
-    final AppFailure? failure = await ref
-        .read(communicationsWorkspaceControllerProvider.notifier)
-        .createConversation(
-          CommunicationConversationDraft(
-            participantIds: _selectedMemberIds.toList(growable: false),
-            subject: _nameController.text.trim(),
-            isSensitive: _isSensitive,
-            conversationType: 'GROUP',
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppTextField(
+          controller: _nameController,
+          labelText: context.l10n.communicationsGroupNameLabel,
+          isRequired: true,
+          helperText: _hasName && _selectedMemberIds.isEmpty
+              ? context.l10n.communicationsGroupMembersRequiredHelper
+              : null,
+        ),
+        AppSelectField<String>.searchable(
+          labelText: context.l10n.communicationsAddMemberLabel,
+          options: _staffOptions
+              .map(
+                (CommunicationStaffOption item) => AppSelectOption<String>(
+                  value: item.id,
+                  label: item.label,
+                  searchText: item.searchableLabel,
+                ),
+              )
+              .toList(growable: false),
+          isLoading: _loadingStaff,
+          onSearchTextChanged: _loadStaff,
+          onChanged: (String? value) {
+            if (value != null) {
+              setState(() => _selectedMemberIds.add(value));
+            }
+          },
+        ),
+        if (_selectedMemberIds.isNotEmpty)
+          Wrap(
+            spacing: Theme.of(context).spacing.xs,
+            runSpacing: Theme.of(context).spacing.xs,
+            children: <Widget>[
+              for (final String memberId in _selectedMemberIds)
+                InputChip(
+                  label: Text(_memberLabel(memberId)),
+                  onDeleted: () =>
+                      setState(() => _selectedMemberIds.remove(memberId)),
+                ),
+            ],
           ),
-        );
-    if (!mounted) {
-      return;
-    }
-    setState(() => _submitting = false);
-    if (failure == null) {
-      Navigator.of(context).pop();
-    }
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(context.l10n.communicationsSensitiveConversationLabel),
+          value: _isSensitive,
+          onChanged: (bool value) => setState(() => _isSensitive = value),
+        ),
+      ],
+    );
   }
 }

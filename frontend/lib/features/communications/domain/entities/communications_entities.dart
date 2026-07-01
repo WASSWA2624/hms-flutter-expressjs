@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/core/utils/person_display_name.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 enum CommunicationsPanel {
@@ -89,6 +90,7 @@ final class CommunicationsWorkspaceQuery {
     bool? sensitive,
     AppPageRequest? pageRequest,
     bool clearFilter = false,
+    bool clearUnreadOnly = false,
     bool clearConversationId = false,
     bool clearMessageId = false,
     bool clearNotificationId = false,
@@ -108,10 +110,44 @@ final class CommunicationsWorkspaceQuery {
           : notificationId ?? this.notificationId,
       templateId: clearTemplateId ? null : templateId ?? this.templateId,
       action: clearAction ? null : action ?? this.action,
-      unreadOnly: unreadOnly ?? this.unreadOnly,
+      unreadOnly: clearUnreadOnly ? false : unreadOnly ?? this.unreadOnly,
       sensitive: sensitive ?? this.sensitive,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+
+  Map<String, String> toQueryParameters() {
+    final Map<String, String> params = <String, String>{
+      'panel': panel.serverValue,
+    };
+    if (search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
+    if (filter != null && filter!.trim().isNotEmpty) {
+      params['filter'] = filter!.trim();
+    }
+    if (conversationId != null && conversationId!.trim().isNotEmpty) {
+      params['conversationId'] = conversationId!.trim();
+    }
+    if (messageId != null && messageId!.trim().isNotEmpty) {
+      params['messageId'] = messageId!.trim();
+    }
+    if (notificationId != null && notificationId!.trim().isNotEmpty) {
+      params['notificationId'] = notificationId!.trim();
+    }
+    if (templateId != null && templateId!.trim().isNotEmpty) {
+      params['templateId'] = templateId!.trim();
+    }
+    if (action != null && action!.trim().isNotEmpty) {
+      params['action'] = action!.trim();
+    }
+    if (unreadOnly) {
+      params['unreadOnly'] = 'true';
+    }
+    if (sensitive) {
+      params['sensitive'] = 'true';
+    }
+    return params;
   }
 }
 
@@ -221,7 +257,11 @@ final class CommunicationUser {
   final String? initials;
   final List<String> roles;
 
-  String get displayName => _nonEmpty(name) ?? _nonEmpty(email) ?? id;
+  String get displayName => resolvePersonDisplayName(
+    email: email,
+    displayName: name,
+    fallbackId: id,
+  );
 }
 
 @immutable
@@ -546,7 +586,14 @@ final class CommunicationsWorkspaceState {
     this.selectedTemplate,
     this.lastFailure,
     this.isRefreshing = false,
+    this.isRefreshingConversations = false,
+    this.isRefreshingThread = false,
+    this.isRefreshingNotifications = false,
+    this.isRefreshingDeliveries = false,
+    this.isRefreshingTemplates = false,
     this.isSaving = false,
+    this.usesClientMessageFilter = false,
+    this.composeAutofocus = false,
   });
 
   final CommunicationsWorkspaceQuery query;
@@ -564,7 +611,14 @@ final class CommunicationsWorkspaceState {
   final CommunicationTemplate? selectedTemplate;
   final Object? lastFailure;
   final bool isRefreshing;
+  final bool isRefreshingConversations;
+  final bool isRefreshingThread;
+  final bool isRefreshingNotifications;
+  final bool isRefreshingDeliveries;
+  final bool isRefreshingTemplates;
   final bool isSaving;
+  final bool usesClientMessageFilter;
+  final bool composeAutofocus;
 
   int get unreadBadgeCount => metrics.unread;
 
@@ -588,7 +642,14 @@ final class CommunicationsWorkspaceState {
     CommunicationTemplate? selectedTemplate,
     Object? lastFailure,
     bool? isRefreshing,
+    bool? isRefreshingConversations,
+    bool? isRefreshingThread,
+    bool? isRefreshingNotifications,
+    bool? isRefreshingDeliveries,
+    bool? isRefreshingTemplates,
     bool? isSaving,
+    bool? usesClientMessageFilter,
+    bool? composeAutofocus,
     bool clearSelectedConversation = false,
     bool clearSelectedNotification = false,
     bool clearSelectedDelivery = false,
@@ -619,7 +680,19 @@ final class CommunicationsWorkspaceState {
           : selectedTemplate ?? this.selectedTemplate,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      isRefreshingConversations:
+          isRefreshingConversations ?? this.isRefreshingConversations,
+      isRefreshingThread: isRefreshingThread ?? this.isRefreshingThread,
+      isRefreshingNotifications:
+          isRefreshingNotifications ?? this.isRefreshingNotifications,
+      isRefreshingDeliveries:
+          isRefreshingDeliveries ?? this.isRefreshingDeliveries,
+      isRefreshingTemplates:
+          isRefreshingTemplates ?? this.isRefreshingTemplates,
       isSaving: isSaving ?? this.isSaving,
+      usesClientMessageFilter:
+          usesClientMessageFilter ?? this.usesClientMessageFilter,
+      composeAutofocus: composeAutofocus ?? this.composeAutofocus,
     );
   }
 }
