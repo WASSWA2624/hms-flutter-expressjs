@@ -71,8 +71,8 @@ const readBraceSegment = (text, startIndex) => {
 
 const isIcuSegment = (segment) => /,\s*(plural|select)\s*,/.test(segment);
 
-const CONCURRENCY = 8;
-const REQUEST_DELAY_MS = 80;
+const CONCURRENCY = 20;
+const REQUEST_DELAY_MS = 40;
 
 const translateWithGtx = (text) => new Promise((resolve, reject) => {
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fr&dt=t&q=${encodeURIComponent(text)}`;
