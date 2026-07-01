@@ -1,33 +1,42 @@
-# HR Staff Detail Dialog — UX & Workforce Lifecycle Improvements
+# HR Staff Access Modal — Table UX, Detail Dialogs & Permission Catalog
 
 ## Objective
 
-Refine the **Staff detail** dialog in the HR workspace (`/hr`) so HR managers can understand, act on, and close out a staff member's employment without guessing what raw IDs mean or which action to take. Replace cryptic list rows with human-readable summaries, drill-down detail modals, calendar-based scheduling views, production-grade compensation and payroll flows, and an integrated **staff separation** (offboarding) workflow.
+Refine the **Staff access** modal in the HR workspace (`/hr`) so it is visually and behaviorally consistent with the HR staff directory and other admin workspaces. Fix broken detail/create flows, make tables fully scrollable with integrated search/filter/settings, wire staff/role/permission detail dialogs end-to-end, and introduce a canonical permission catalog with reusable pickers used consistently across HR and access-admin surfaces.
 
-**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md)
+**Entry point:** HR workspace → More actions (⋮) → **Manage users and roles** → `Staff access` modal.
+
+**Parent context:** [prompts/24-hr-module-prompt.md](./prompts/24-hr-module-prompt.md), [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md)
 
 **Primary touchpoints:**
 
 | Area | File |
 |------|------|
-| Staff detail layout & record sections | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` |
-| Action toolbar (Compensation, Payroll, etc.) | `frontend/lib/features/hr/presentation/widgets/hr_staff_detail_actions.dart` |
-| Assignment / mutation dialogs | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` |
-| Onboarding compensation reference | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
-| Domain entities | `frontend/lib/features/hr/domain/entities/hr_entities.dart` |
-| Backend models | `backend/prisma/schema.prisma` (`staff_profile`, `staff_assignment`, `staff_compensation`, `payroll_item`) |
+| Staff access modal (tabs, tables, actions) | `frontend/lib/features/hr/presentation/widgets/hr_access_dialogs.dart` |
+| More-actions menu entry | `frontend/lib/features/hr/presentation/widgets/hr_enhanced_dialogs.dart` |
+| Staff directory table reference | `frontend/lib/features/hr/presentation/pages/hr_workspace_page.dart` (`AppListTable<HrStaffProfile>`) |
+| Staff onboarding / create flow | `frontend/lib/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart` |
+| HR repository (API `limit` params) | `frontend/lib/features/hr/data/repositories/hr_repository_impl.dart` |
+| Access entities | `frontend/lib/features/hr/domain/entities/hr_entities.dart` |
+| Canonical permission catalog | `frontend/lib/core/permissions/access_policy.dart` (`AppPermissions`) |
+| Reusable role picker | `frontend/lib/shared/components/app_role_assignment_picker.dart` |
+| Strings | `frontend/lib/l10n/app_en.arb` |
 
 ---
 
 ## Problem Statement (from current UI)
 
-The staff detail dialog for **Wilson Wasswa** (`STF0000001`) exposes several usability gaps:
+The Staff access modal is partially migrated to `AppListTable` but remains inconsistent with the HR staff directory and has functional gaps visible in the attached screenshots:
 
-1. **Assignments are unclear** — rows render as `Biomedical | <uuid>` with a date range. The UUID is not meaningful to users; it is unclear whether the row is department, unit, or room assignment; duplicate rows appear with no distinction; and there is no way to open a detail view or edit an assignment beyond "End assignment".
-2. **Availability is a flat, repetitive list** — each weekday shows `08:00–17:00, 08:00–17:00 | Available` with no visual calendar; users cannot quickly see which days someone works or tap a day for slot detail.
-3. **Shifts and compensation are empty or opaque** — shifts show raw `shiftId` when present; compensation section has no records and no inline guidance on how to add them.
-4. **Compensation and Run payroll actions appear inactive** — users do not understand why (permission gating vs missing prerequisites) or when each action applies.
-5. **No staff separation flow** — there is no UI to record resignation, termination, retirement, or end of contract; ending individual assignments is not the same as offboarding the employee.
+1. **Table layout mismatch** — Staff/Roles/Permissions use a standalone `AppTextField` search above the table instead of the integrated `AppListTableSearch` toolbar (search, filter, column settings) used by the HR staff directory. Pagination sits bottom-right but the table body does not fill available height, so only ~5 rows are visible while the label reads **1–12 of 20**.
+2. **Non-uniform tabs** — Panel tabs should use square-edged `AppWorkspaceBoardToggle` styling with no pill radius or selected checkmark icon (match workspace board toggles elsewhere).
+3. **Staff detail dialog broken** — Clicking a staff row opens **User account** with error **"Invalid value for limit"** instead of profile details. Root cause: API calls pass `limit: 200` while backend `MAX_PAGE_LIMIT` is **100** (`hr_repository_impl.dart` → `listUserRoles`, `listRolePermissions`).
+4. **Sparse staff table data** — Staff column shows email only; **Assigned roles** shows "Not available" because role names are not hydrated on list rows. Detail dialog should show name, email, phone, position, status, linked staff profile, assigned roles, and direct permissions.
+5. **Roles tab incomplete** — Role list shows "No permissions" / "No staff" / "Not available" for counts that should reflect backend aggregates. Role detail modal works but should refresh after assign/edit without closing the parent modal.
+6. **Permissions are free-text** — Create/edit permission dialogs use a plain `AppTextField` for the permission name. Users should pick from a **pre-defined, searchable catalog** (`AppPermissions.all`) and only supply an optional description override.
+7. **Permission pickers load one page** — Assign-permissions and edit-user flows call `loadAccessPermissions` with default `pageSize: 12`, so only the first page of ~61 permissions is selectable.
+8. **No shared permission picker** — `AppRoleAssignmentPicker` exists but permission multi-select is duplicated inline. Extract a reusable `AppPermissionAssignmentPicker` (or equivalent) and use it in role assign, user edit, and future access-admin screens.
+9. **Stale UI after mutations** — Changes to roles, permissions, or staff accounts should refresh the active panel (and open detail dialogs when applicable) without requiring a manual full-page refresh.
 
 ---
 
@@ -35,260 +44,270 @@ The staff detail dialog for **Wilson Wasswa** (`STF0000001`) exposes several usa
 
 Follow the same rules as the HR module prompt:
 
-- Hospital workflow language — **never show raw UUIDs** in primary UI; use display IDs, names, and localized labels.
+- Hospital workflow language — show names, staff numbers, role labels, and status badges; never raw UUIDs in primary UI.
 - Modal-first: all create/edit/detail flows use `AppDialog` / `showAppWorkspaceMutationDialog`.
 - Reuse `frontend/lib/shared/*` components; follow `frontend/.cursor/design-system.mdc` and `ui-patterns.mdc`.
-- All new strings in `frontend/lib/l10n/app_en.arb`.
-- Permission-gate actions with clear disabled tooltips (not silent grey buttons).
-- Refresh staff detail via `HrWorkspaceController` after every mutation; respect realtime events.
+- Match the **HR staff directory** table patterns (`AppListTable`, `AppListTableSearch`, `_CopyableIdentifierCell`, `AppStatusText`, pagination labels).
+- All new/changed strings in `frontend/lib/l10n/app_en.arb`.
+- Permission-gate write actions with `canWriteHrAccess(ref)`; respect `hrWrite` permission.
+- Refresh the active panel after every mutation via existing `_reload(resetPage: true)`.
+- Responsive: tables must work on mobile (list layout), web, and desktop with the same component API.
 
 ---
 
-## 1. Assignment List & Detail Modal
+## 1. Modal Shell & Tabs
 
-### 1.1 Fix assignment row display
+### 1.1 Maximized, resizable dialog
 
-**Current (bug):** `_RecordLine.title` joins `departmentName`, `departmentId` (UUID), and primary label.
+Keep / verify `_HrAccessWorkspaceDialog` configuration:
 
-**Required row summary (one line each):**
+| Property | Required value |
+|----------|----------------|
+| `initialMaximized` | `true` |
+| `resizable` | `true` |
+| `showMaximizeButton` | `true` |
+| `scrollable` | `true` |
 
-| Field | Display |
+Content `Column` must use `Expanded` around the table so the table body scrolls inside the dialog viewport (do not use `mainAxisSize: MainAxisSize.min` on the table wrapper).
+
+### 1.2 Square panel tabs
+
+Use `AppWorkspaceBoardToggle<HrAccessPanel>` with `showSelectedIcon: false` and `theme.radius.sm` corner radius — **no pill-shaped segments or checkmark icons**.
+
+Tab labels: **Staff** | **Roles** | **Permissions** (not "Users").
+
+---
+
+## 2. Unified Table Pattern (all three panels)
+
+Replace the standalone search `AppTextField` above each table with the same integrated pattern as `_HrStaffDirectoryPanel` in `hr_workspace_page.dart`:
+
+```dart
+AppListTable<T>(
+  search: AppListTableSearch<T>(
+    controller: _searchController,
+    semanticLabel: l10n.hrAccessSearchLabel,
+    hintText: l10n.hrAccessSearchHint,
+    clearLabel: l10n.hrClearFiltersAction,
+    matcher: (_, _) => true, // server-side search via debounced _reload
+    onSubmitted: (_) => unawaited(_reload(resetPage: true)),
+    onClear: () { _searchController.clear(); unawaited(_reload(resetPage: true)); },
+    // column visibility via table's columnVisibilityController
+  ),
+  columnVisibilityController: _columnVisibilityController,
+  columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+  // DO NOT set shrinkWrap: true or NeverScrollableScrollPhysics here —
+  // let the Expanded parent provide bounded height so all page rows scroll.
+  ...
+)
+```
+
+**Required behavior:**
+
+- Table body is **vertically scrollable** within the modal; all items on the current page (e.g. 12) are reachable by scroll.
+- Pagination footer remains at the **bottom-left** of the table (default `AppListTable` placement) with `hrPageLabel` formatting.
+- Sortable columns, loading/empty/error states match the staff directory.
+- **No inline View/Edit/Assign buttons** on rows; row click opens the appropriate detail or edit dialog.
+- Remove duplicate search field from the modal `Column` once `AppListTableSearch` is wired.
+
+---
+
+## 3. Staff Tab
+
+### 3.1 Table columns
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Staff | `displayLabel` + linked staff identifier | `_HrAccessCopyableIdentifierCell` / `_CopyableIdentifierCell` with staff number when linked |
+| Email | `email` | Single line |
+| Assigned roles | `roleNames` | Localize via `hrReferenceRoleLabel`; show "—" when empty, not "Not available" |
+| Status | `status` | `AppStatusText` with `hrAccessUserStatusTone` |
+| Position | `positionTitle` | Optional; hide column when empty for all rows |
+
+### 3.2 Staff detail dialog
+
+**Fix the `limit` validation bug first** — ensure all HR access repository calls respect `MAX_PAGE_LIMIT` (100). For role/permission lists that may exceed 100, paginate or batch requests.
+
+Row click → `showHrAccessUserDetailDialog`. The dialog must render `_HrAccessUserDetailContent` with:
+
+- Display name / profile name (title of dialog)
+- Email, phone, position, status
+- Linked staff profile (name + staff number, with **Open staff profile** action)
+- Assigned roles (chips)
+- Direct permissions (chips)
+- **Edit staff account** → `showHrEditAccessUserDialog` (reuse `AppRoleAssignmentPicker` + new permission picker)
+
+If detail load fails, show `AppFailureStateView` with retry — not a generic "Check the details" shell with no content.
+
+### 3.3 Footer
+
+- **Create staff** → `showHrStaffOnboardingDialog` (canonical staff + account creation).
+- **Refresh** → `_reload(resetPage: true)`.
+
+---
+
+## 4. Roles Tab
+
+### 4.1 Table columns
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Role name | `name` | Localized via `hrReferenceRoleLabel` |
+| Description | `description` | Ellipsis truncate |
+| Permissions | `permissionCount` | `hrAccessPermissionCountLabel` |
+| Staff | `userCount` | `hrAccessStaffAssignmentCountLabel` |
+| System | `isSystemCritical` | Chip when true; em dash when false |
+
+Ensure list API maps `permission_count` and `user_count` from backend DTOs so rows do not show placeholder "No permissions" / "No staff" when data exists.
+
+### 4.2 Role detail dialog
+
+Row click → `showHrAccessRoleDetailDialog` (existing). Keep **Assign permissions** and **Edit role** in dialog actions. After mutation, call `onChanged` to refresh the roles table without closing Staff access modal.
+
+### 4.3 Assign permissions flow
+
+Refactor `showHrAssignRolePermissionsDialog` to:
+
+1. Load **all** tenant permissions (use `pageSize: 100` and paginate if `totalItemCount > 100`, or a dedicated `listAllAccessPermissions` helper).
+2. Use the new **`AppPermissionAssignmentPicker`** (see §6) instead of inline checkbox list.
+3. Pre-select permissions already on the role via `listRolePermissionOptions` (fix `limit: 200` → `100` or paginate).
+
+---
+
+## 5. Permissions Tab
+
+### 5.1 Table columns
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Permission name | `name` | e.g. `reports:write` |
+| Description | `description` | Fallback to generated label |
+| Roles | `roleCount` | `hrAccessPermissionRoleCount` |
+
+### 5.2 Permission catalog (create & edit)
+
+**Do not allow free-text permission names.** Source of truth for selectable permissions:
+
+```dart
+AppPermissions.all // from access_policy.dart
+```
+
+Refactor `showHrCreatePermissionDialog` and `showHrEditPermissionDialog`:
+
+| Field | Control |
 |-------|---------|
-| Title | `{Department name}` — or `{Department} › {Unit}` / `{Department} › {Room}` when unit/room set |
-| Badge | `Primary` chip when `isPrimary`; `Active` / `Ended` status chip from `isActive` + `endDate` |
-| Subtitle | `{startDate} – {endDate or "Ongoing"}` |
-| Trailing | `End assignment` only when active |
+| Permission name | `AppSelectField.searchable` (or dedicated searchable select) populated from `AppPermissions.all`, displaying `permission.code` and a human-readable description from l10n or a static map |
+| Description | Optional `AppTextField`; pre-fill from catalog default when a permission is selected |
 
-- Resolve unit and room names via existing HR reference data or extend `HrStaffAssignment` DTO/entity if only IDs are returned today.
-- Deduplicate or explain duplicate rows: if backend returns overlapping assignments, show assignment `displayId` in subtitle (not title) and flag overlaps in the detail modal.
+On create, POST only permissions from the catalog that are not yet provisioned for the tenant (or upsert if backend supports it). On edit, lock the permission name (read-only) — only description is editable.
 
-### 1.2 Assignment detail modal (new)
+### 5.3 Row click
 
-**Trigger:** tap anywhere on an assignment row (not only the trailing action).
-
-**Modal content:**
-
-- Assignment ID (display ID, copyable)
-- Staff member name + staff number
-- Department, unit, room (resolved names)
-- Primary flag, active status
-- Start date, end date (editable when active)
-- Created / last updated timestamps if available from API
-- Notes field (add to schema/API if missing — optional stretch)
-
-**Actions:**
-
-- **Edit** — change department/unit/room, dates, primary flag (reuse or extend assign-department / assign-position flows)
-- **End assignment** — existing `showHrEndAssignmentDialog` with confirmation + end-date picker (default today)
-- **Close**
-
-Wire through `HrWorkspaceController` with existing `endAssignment` and any new `updateAssignment` repository method.
+- Read-only users → `showHrAccessPermissionDetailDialog`
+- Writers → `showHrEditPermissionDialog`
 
 ---
 
-## 2. Availability Calendar View
+## 6. Reusable Components
 
-Replace the flat `_SmallRecordSection` list with a **week/month calendar panel** inside staff detail.
+Extract and use consistently (HR modal today; access-admin `/settings` later per [prompts/04-access-admin-module-prompt.md](./prompts/04-access-admin-module-prompt.md)):
 
-### 2.1 Visual design
+| Component | Responsibility | Based on |
+|-----------|----------------|----------|
+| `AppRoleAssignmentPicker` | Searchable multi-select roles with effective-permissions preview | Existing `app_role_assignment_picker.dart` |
+| `AppPermissionAssignmentPicker` (**new**) | Searchable multi-select from `AppPermissions.all` + tenant-provisioned permissions; select-all / clear; optional grouping by module prefix (`hr:`, `roster:`, etc.) | Mirror `AppRoleAssignmentPicker` API |
+| `AppAccessEntityTable<T>` (**optional thin wrapper**) | Standard `AppListTable` + `AppListTableSearch` + pagination wiring for access entities | Staff directory pattern |
 
-- Default: **week view** (Mon–Sun) with color shading:
-  - **Available** — light green fill
-  - **Unavailable / blocked** — grey or hatched
-  - **Leave (approved)** — amber overlay (cross-reference `detail.leaves` for the visible range)
-- Toggle to **month view** for longer-range planning.
-- Legend below the calendar explaining colors.
-
-### 2.2 Day interaction
-
-**On day tap:** open a bottom sheet or nested modal showing:
-
-- Day name and date
-- All time slots (`HrAvailabilitySlot` / `startTime`–`endTime`)
-- Status / preference label (localized)
-- Effective-from / effective-to if set
-- **Edit** → opens existing `showHrRecordAvailabilityDialog` pre-filled for that day
-- **Add slot** when none exist
-
-### 2.3 Data mapping
-
-- Map `HrStaffAvailability.dayOfWeek` (1–7) onto calendar cells for recurring weekly patterns.
-- Fix duplicate slot display: dedupe identical `startTime`/`endTime` pairs before render; if duplicates come from API, log and collapse in UI.
-- Empty state: illustrated placeholder + **Record availability** CTA linking to the existing action.
-
-Reuse or extract a shared `HrAvailabilityCalendar` widget if roster module has similar patterns.
+Replace inline permission checkbox blocks in `showHrEditAccessUserDialog` and `showHrAssignRolePermissionsDialog` with `AppPermissionAssignmentPicker`.
 
 ---
 
-## 3. Shifts Section Improvements
+## 7. API & Sync Fixes
 
-### 3.1 Row display
+### 7.1 Fix invalid `limit` values
 
-Replace raw `shiftId` with:
+In `hr_repository_impl.dart`, replace hard-coded `limit: 200` with `limit: 100` (or `AppPageRequest.maxPageSize` constant aligned to backend `MAX_PAGE_LIMIT`). Affected methods include at minimum:
 
-- Shift name and type (fetch shift definition or include in `HrShiftAssignment` DTO)
-- Assigned date/time
-- Roster period if linked
-- Status chip (scheduled, completed, swapped)
+- `listUserRoles` (line ~687)
+- `listRolePermissions` / `listRolePermissionOptions` (line ~615)
 
-### 3.2 Shift detail modal
+Add pagination loops where result sets can exceed 100.
 
-On row tap: show full shift details, assigned roster, swap history, and actions (**Swap shift**, **Remove assignment**) permission-gated.
+### 7.2 Load full permission sets for pickers
 
-### 3.3 Empty state
+When dialogs need the full permission list, pass explicit `pageRequest: const AppPageRequest(pageSize: 100)` and fetch subsequent pages until `hasNextPage` is false — do not rely on default `pageSize: 12`.
 
-When no shifts: short explanation + **Assign shift** button (existing `_showShiftAssignmentDialog`).
+### 7.3 Realtime refresh
 
----
+After create/edit/assign/revoke mutations:
 
-## 4. Compensation — Comprehensive Modal
-
-### 4.1 Clarify Compensation vs Payroll
-
-| Concept | When to use | Who can act |
-|---------|-------------|-------------|
-| **Compensation** | Define or update pay structure (salary, hourly, per-procedure, allowances, effective dates) | `hrWrite` |
-| **Run payroll** | Calculate and process pay for a **pay period** based on recorded compensation, attendance, and approved leave | `hrWrite` + `financialApprove` |
-
-Update disabled action buttons to show a **tooltip or subtitle** explaining the missing permission or prerequisite (e.g. "Requires Financial Approve permission" or "Add compensation before running payroll").
-
-Relax or split `_payrollRequirement` in `hr_staff_detail_actions.dart` so **Compensation** only requires `hrWrite`; keep **Run payroll** behind `financialApprove`.
-
-### 4.2 Compensation modal (replace minimal `_CompensationFields`)
-
-Model after `hr_staff_onboarding_dialog.dart` compensation section and international HR practice:
-
-**Sections:**
-
-1. **Pay structure**
-   - Pay type: monthly salary, hourly, daily, per-consultation, per-procedure
-   - Base rate + currency (use facility default currency)
-   - Pay frequency: monthly, bi-weekly, weekly
-2. **Allowances & deductions** (repeatable rows)
-   - Type (housing, transport, on-call, tax, pension, etc.)
-   - Amount or percentage
-   - Taxable flag
-3. **Effective period**
-   - Effective from (required)
-   - Effective to (optional — auto-close prior record when new one starts)
-4. **History tab**
-   - List past compensation records from `detail.compensations` with view-only detail
-
-**Submit:** `HrWorkspaceController.updateSelectedStaffProfile` or dedicated compensation endpoint; append to history rather than silently overwriting.
-
-**Empty section in staff detail:** each compensation row shows pay type, rate, currency, date range; row tap opens read-only detail with **Edit** / **Add new rate**.
+1. Call `_reload(resetPage: true)` on the active Staff access panel.
+2. If a detail dialog is open for the mutated entity, re-fetch and update its content (or close and reopen with fresh data).
+3. Subscribe to relevant `RealtimeEventGroups` for users/roles/permissions if not already wired in `HrWorkspaceController` — refresh rows when backend emits changes from another session.
 
 ---
 
-## 5. Payroll — International-Standard Flow
+## 8. Terminology (l10n)
 
-Upgrade `_PayrollRunFields` and `createPayrollRun` into a guided payroll run dialog:
+Update `app_en.arb` (regenerate localizations):
 
-### 5.1 Wizard steps
+| Key / current string | New string |
+|----------------------|------------|
+| `hrAccessPanelUsers` | **Staff** |
+| `hrCreateUserAction` | **Create staff** |
+| `hrAccessEmptyUsersLabel` | Reword to "staff" |
+| `hrAccessSearchHint` | Align with staff directory search hint pattern |
+| New keys for permission catalog labels | Human-readable names for each `AppPermissions` entry used in searchable select |
 
-1. **Period selection** — pay period start/end; default to current month; validate period overlaps.
-2. **Preview** — line items per staff (base pay, allowances, deductions, leave without pay, net pay); support dry-run (`HrPayrollPreview` entity if available).
-3. **Review & approve** — summary totals, staff count, exceptions (missing compensation, unapproved leave).
-4. **Process** — create payroll run in `DRAFT` → `APPROVED` → `PAID` lifecycle.
-
-### 5.2 Staff-scoped entry point
-
-From staff detail, pre-select the current staff member in the payroll preview; from HR toolbar, allow facility-wide runs.
-
-### 5.3 Compliance labels
-
-Use internationally recognized terms in UI copy: *gross pay*, *net pay*, *deductions*, *pay period*, *payslip* — all localized via ARB keys.
+Do **not** rename domain types (`HrAccessUser`, API fields); only user-visible labels.
 
 ---
 
-## 6. Staff Separation (Offboarding)
+## 9. Out of Scope
 
-Add workforce exit handling — distinct from ending a single department assignment.
+Defer to future prompts:
 
-### 6.1 UI placement
-
-- New action in `HrStaffDetailActions`: **End employment** (or **Offboard staff**)
-- Visible when staff profile is active; permission: `hrWrite`
-
-### 6.2 Offboarding modal fields
-
-| Field | Notes |
-|-------|-------|
-| Separation type | Resignation, termination, retirement, contract end, deceased |
-| Last working day | Required |
-| Reason / notes | Optional text |
-| End all active assignments | Checkbox, default on |
-| Revoke system access | Checkbox, default on — triggers user deactivation via Users/Roles integration |
-| Final payroll | Checkbox + link to payroll run for final period |
-
-### 6.3 Backend
-
-- Use `staff_profile.deleted_at` for soft-delete **or** add `employment_status` + `separation_date` fields if product prefers active archive over delete.
-- End all active `staff_assignment` rows with `end_date = last_working_day`.
-- Cancel future shift assignments and pending leave requests (or flag for HR review).
-
-### 6.4 Staff detail status banner
-
-When separated, show a prominent banner: `{Separation type} · Last day {date}` and hide/disable onboarding actions except view-only history.
-
----
-
-## 7. Overall Staff Detail Polish
-
-### 7.1 Information hierarchy
-
-1. Header — name, staff number, edit profile, employment status chip
-2. Overview cards — position, department, hire date, linked user (unchanged)
-3. **Staff actions** grid — with disabled-state explanations
-4. **Timeline sections** — Assignments, Leave, Availability (calendar), Shifts, Compensation
-
-### 7.2 Interaction patterns
-
-- All list rows are tappable with chevron affordance
-- Consistent empty states: icon + message + primary CTA
-- Section collapse/expand for long histories
-- Copy-to-clipboard only on display IDs, not internal UUIDs
-
-### 7.3 Leave section (minor)
-
-- Row tap → leave detail modal (type, status, dates, covering staff, handover notes)
-- Calendar should reflect approved leave dates (see §2.1)
+- Full access-admin workspace at `/settings`
+- Permission matrix bulk editor, demo account management, break-glass access
+- Advanced filters (department, role multi-select) on staff access tables
+- Backend schema changes (unless required to fix count aggregates)
+- Audit log of permission changes
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Assignment rows show department/unit/room **names only** — no UUIDs in title or subtitle.
-- [ ] Tapping an assignment opens a detail modal with edit and end actions.
-- [ ] Availability renders as a shaded calendar; day tap shows time slots and edit entry point.
-- [ ] Duplicate availability slots are not shown twice.
-- [ ] Shift rows show human-readable shift names; tap opens shift detail.
-- [ ] Compensation action is enabled for `hrWrite`; payroll explains `financialApprove` when disabled.
-- [ ] Compensation modal supports pay types, allowances/deductions, effective dates, and history.
-- [ ] Payroll run follows period → preview → approve → process steps.
-- [ ] **End employment** offboarding flow exists and ends assignments + optional access revocation.
-- [ ] Separated staff show a status banner; inactive actions are hidden or disabled with reason.
-- [ ] All new copy is localized; `flutter analyze` passes; HR widget tests updated.
+- [ ] Staff access modal opens **maximized**, is **resizable**, and table body **scrolls** to show all rows on the current page (12 visible via scroll, not 5).
+- [ ] All three panels use **`AppListTable` + `AppListTableSearch`** with column settings — no duplicate standalone search field.
+- [ ] Panel tabs are **square-edged** with no checkmark icon; labels read **Staff / Roles / Permissions**.
+- [ ] Clicking a staff row opens a **populated detail dialog** (name, email, roles, etc.) — no **"Invalid value for limit"** error.
+- [ ] All repository `limit` params respect backend max (**≤ 100**); paginated fetches where needed.
+- [ ] **Create permission** uses searchable select from **`AppPermissions.all`**, not a free-text name field.
+- [ ] **`AppPermissionAssignmentPicker`** is used in role-assign and user-edit flows; loads **all** tenant permissions.
+- [ ] **`AppRoleAssignmentPicker`** is used in user-edit / onboarding role assignment (not ad-hoc checkbox lists).
+- [ ] Staff table shows **assigned role names** when available; aggregates on roles/permissions tabs reflect backend counts.
+- [ ] After any mutation, the active panel refreshes; detail dialogs reflect latest data.
+- [ ] `flutter analyze` passes; new strings in `app_en.arb`.
 
 ---
 
-## Suggested Implementation Order
+## Implementation Notes
 
-1. Fix assignment row labels + assignment detail modal (highest confusion in screenshots).
-2. Permission tooltips + split compensation vs payroll gating.
-3. Compensation modal upgrade + compensation row detail.
-4. Availability calendar component.
-5. Shifts display + detail modal.
-6. Payroll wizard upgrade.
-7. Staff separation / offboarding end-to-end.
+- Reference table layout: `_HrStaffDirectoryPanel` in `hr_workspace_page.dart` (~lines 430–560).
+- Reference maximized dialog: `hr_staff_onboarding_dialog.dart` (`initialMaximized: true`).
+- Reference square tabs: `AppWorkspaceBoardToggle` in `frontend/lib/shared/layout/app_workspace_board_toggle.dart`.
+- Permission catalog: `AppPermissions` in `frontend/lib/core/permissions/access_policy.dart`.
+- Backend limit validation: `backend/src/lib/validation/zod.js` (`MAX_PAGE_LIMIT = 100`).
+- Existing dialogs to extend (do not duplicate): `showHrAccessUserDetailDialog`, `showHrEditAccessUserDialog`, `showHrAccessRoleDetailDialog`, `showHrEditRoleDialog`, `showHrAssignRolePermissionsDialog`, `showHrEditPermissionDialog`, `showHrCreatePermissionDialog`.
 
 ---
 
-## Quality Gate
+## Test Plan
 
-```bash
-cd frontend && flutter analyze && flutter test test/features/hr/
-cd backend && npm test -- --testPathPattern=staff
-```
-
-Manually verify on `/hr` with demo staff `STF0000001`: assignments readable, calendar interactive, compensation and payroll flows completable, and offboarding removes staff from active directory.
+1. Open `/hr` → ⋮ → **Manage users and roles** → verify modal is maximized.
+2. **Staff tab:** scroll table — all 12 rows on page 1 reachable; pagination shows correct range; row click opens detail with name, email, roles.
+3. **Create staff** — onboarding dialog opens without API errors.
+4. **Roles tab:** counts display correctly; open role → assign permissions → save → table refreshes with updated permission count.
+5. **Permissions tab:** create permission — only catalog entries selectable; edit locks name; role count updates after role assignment.
+6. Resize modal to mobile width — list layout renders; search and pagination still work.
+7. Run `flutter test test/features/hr/presentation/widgets/hr_access_dialogs_test.dart` and update/add cases for limit fix and picker refactor.
