@@ -1,37 +1,50 @@
-# Patient details after registration
+# Patient registration form refinements
 
-## Goal
+Improve duplicate-warning behavior and tenant/facility picker UX on the patient registration modal dialog.
 
-After a patient is successfully registered, open the **patient details dialog** for the newly created patient instead of only closing the registration dialog and returning to the list. This lets staff review the record and take follow-up actions immediately.
+## Scope
 
-## Requirements
+Primary: `frontend/lib/shared/patient_actions/register_new_patient_dialog.dart` (`RegisterNewPatientForm`, `RegisterNewPatientDialog`).
 
-### 1. Post-registration flow
+Also align any parallel registration UI (e.g. `patient_registry_page.dart`) if it duplicates the same patterns.
 
-- On successful save in `RegisterNewPatientDialog`, close the registration dialog and open the patient details dialog for the **new patient ID**.
-- Apply this wherever patient registration is used (e.g. patient registry, OPD walk-in intake).
-- Keep the existing success snackbar/feedback where appropriate.
+## 1. Reset duplicate warning when the form changes
 
-### 2. Maximized by default
+**Current behavior:** When a potential duplicate is found, a warning banner appears and the primary action label changes to **Register anyway** / **Save anyway**.
 
-- The patient details dialog must open **maximized by default** (`AppDialog.initialMaximized: true`).
-- Apply this default **everywhere** the patient details dialog is shown, not only after registration.
+**Required behavior:** If the user edits any registration field after that warning is shown:
 
-### 3. Reusable shared component
+1. Dismiss the duplicate warning banner immediately.
+2. Clear duplicate state (`_duplicateCandidates`, `_duplicateWarningAccepted`).
+3. Restore the primary button label to **Register patient** / **Save**.
+4. Require a fresh duplicate check on the next submit attempt.
 
-- Extract or consolidate patient details into a **globally reusable** shared component (build on `AppPatientDetailDialog` / `AppDialog` where possible).
-- Replace inline or duplicated implementations (e.g. `_PatientDetailDialog` in `patient_registry_page.dart`, nursing workspace usage) with the shared component.
-- Expose a single entry point (e.g. `showPatientDetailDialog(context, ref, patientId)`) for all call sites.
+**Rationale:** Edited data may no longer match the flagged duplicate.
 
-## Implementation notes
+**Implementation notes:**
 
-- `createPatient` already returns the created `Patient`; propagate the new patient ID through the registration dialog callback instead of only returning `true`.
-- Reuse existing detail-loading logic (`selectPatient`, skeleton states, actions) from the registry page where practical.
-- Update affected widget tests (registration flow, detail dialog open state, maximized default).
+- Extend `_clearDuplicateWarning` (or equivalent) to all fields that affect duplicate matching or form identity—not only first name, last name, phone, and identifier value. Include at minimum: date of birth, gender, email, tenant, facility, and any other editable registration inputs.
+- Ensure the warning panel hides when duplicate state is cleared.
 
-## Acceptance criteria
 
-- [ ] Successful registration opens the new patient’s details dialog automatically.
-- [ ] Details dialog opens maximized on every entry point.
-- [ ] One shared component/helper is used for all patient detail displays.
-- [ ] Existing tests pass; new or updated tests cover the post-registration and maximized-default behavior.
+
+## 2. Disable facility until a tenant is selected
+
+**When:** Tenant and facility pickers are both visible (`PatientRegistrationScope.showTenantPicker` and `showFacilityPicker`).
+
+**Required behavior:**
+
+1. If no tenant is selected, the facility field is **disabled** (not merely empty).
+2. On hover/focus of the disabled facility field, show helper text such as: **“Please select a tenant first.”** (Add l10n string if needed.)
+3. When the tenant changes:
+  - Clear the facility selection.
+  - Repopulate the facility dropdown with `PatientRegistrationScope.facilitiesForTenant(...)` for the new tenant.
+  - Keep facility disabled until a tenant is selected.
+
+**Acceptance criteria**
+
+- [ ] Editing any field after a duplicate warning clears the banner and resets the submit button label.
+- [ ] Submitting again re-runs duplicate lookup before saving.
+- [ ] Facility picker is disabled with tooltip when tenant is unset.
+- [ ] Changing tenant clears facility and shows only facilities for the selected tenant.
+- [ ] Existing tests pass; add/update widget tests for the new behavior where practical.
