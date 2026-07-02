@@ -261,7 +261,21 @@ class AppButton extends StatelessWidget {
         }
         return base;
       }),
-      backgroundColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return Colors.transparent;
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return colorScheme.surfaceContainerHigh.withValues(alpha: 0.72);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.56);
+        }
+        return Colors.transparent;
+      }),
       overlayColor: const WidgetStatePropertyAll<Color?>(null),
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,

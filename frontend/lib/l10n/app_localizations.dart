@@ -6320,6 +6320,240 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get patientsActiveWorkContinueAction;
 
+  /// Active work row label for a scheduled appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment'**
+  String get patientsActiveWorkKindAppointment;
+
+  /// Active work row label for an outpatient encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD encounter'**
+  String get patientsActiveWorkKindEncounter;
+
+  /// Active work row label for a visit queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit queue'**
+  String get patientsActiveWorkKindQueue;
+
+  /// Active work row label for an active inpatient admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient admission'**
+  String get patientsActiveWorkKindAdmission;
+
+  /// Active work row label for a pending admission request.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission request'**
+  String get patientsActiveWorkKindAdmissionRequest;
+
+  /// Active work row label for a pending laboratory order.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab order'**
+  String get patientsActiveWorkKindLabOrder;
+
+  /// Active work row label for a pending radiology order.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology order'**
+  String get patientsActiveWorkKindRadiologyOrder;
+
+  /// Active work row label for a pending physiotherapy episode.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy'**
+  String get patientsActiveWorkKindTherapy;
+
+  /// Active work row label for a pending theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater case'**
+  String get patientsActiveWorkKindTheater;
+
+  /// Status badge when an OPD encounter is open.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter open'**
+  String get patientsActiveWorkStatusEncounterOpen;
+
+  /// Status badge when an OPD encounter is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter in progress'**
+  String get patientsActiveWorkStatusEncounterInProgress;
+
+  /// Status badge when a patient is waiting in the visit queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting in queue'**
+  String get patientsActiveWorkStatusQueueWaiting;
+
+  /// Status badge when a visit queue entry is actively being served.
+  ///
+  /// In en, this message translates to:
+  /// **'In queue'**
+  String get patientsActiveWorkStatusQueueInProgress;
+
+  /// Status badge for an open scheduled appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get patientsActiveWorkStatusAppointmentScheduled;
+
+  /// Status badge when appointment check-in is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in in progress'**
+  String get patientsActiveWorkStatusAppointmentInProgress;
+
+  /// Status badge for an active inpatient admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Admitted'**
+  String get patientsActiveWorkStatusAdmissionActive;
+
+  /// Status badge when admission is waiting for bed assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed pending'**
+  String get patientsActiveWorkStatusAdmissionPendingBed;
+
+  /// Status badge when an inpatient transfer is underway.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer in progress'**
+  String get patientsActiveWorkStatusAdmissionTransfer;
+
+  /// Status badge when discharge planning is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge planned'**
+  String get patientsActiveWorkStatusAdmissionDischargePlanned;
+
+  /// Tooltip for the patient quick action to schedule an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule a new appointment for this patient.'**
+  String get patientsQuickAppointmentTooltip;
+
+  /// Tooltip for the patient quick action to start an OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new outpatient encounter for this patient.'**
+  String get patientsQuickOpdCheckInTooltip;
+
+  /// Tooltip for the patient quick action to continue an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue the active outpatient encounter workflow.'**
+  String get patientsQuickViewActiveOpdTooltip;
+
+  /// Tooltip for the patient quick action to request admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit an inpatient admission request for this patient.'**
+  String get patientsQuickAdmitPatientTooltip;
+
+  /// Tooltip for the patient quick action to manage discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue discharge planning for the active admission.'**
+  String get patientsQuickDischargeTooltip;
+
+  /// Tooltip for the patient quick action to request a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a new laboratory order for this patient.'**
+  String get patientsQuickLabOrderTooltip;
+
+  /// Tooltip for the patient quick action to request radiology imaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a new radiology imaging order for this patient.'**
+  String get patientsQuickRadiologyOrderTooltip;
+
+  /// Tooltip for the patient quick action to schedule theater.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule a theater procedure for this patient.'**
+  String get patientsQuickTheaterScheduleTooltip;
+
+  /// Tooltip for the patient quick action to request physiotherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Refer this patient to physiotherapy.'**
+  String get patientsQuickPhysiotherapyTooltip;
+
+  /// Tooltip for the patient quick action to open the patient report.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the printable patient summary report.'**
+  String get patientsQuickReportTooltip;
+
+  /// Tooltip shown when a permission-gated action is denied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to perform this action.'**
+  String get accessDeniedPermissionRequired;
+
+  /// Tooltip shown when the current role cannot perform an action.
+  ///
+  /// In en, this message translates to:
+  /// **'Your role cannot perform this action.'**
+  String get accessDeniedRoleRequired;
+
+  /// Tooltip shown when tenant context is required for an action.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant before using this action.'**
+  String get accessDeniedTenantContextRequired;
+
+  /// Tooltip shown when facility context is required for an action.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility before using this action.'**
+  String get accessDeniedFacilityContextRequired;
+
+  /// Tooltip shown when a required subscription module is inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'The {moduleName} module is not enabled for this facility.'**
+  String accessDeniedModuleRequired(String moduleName);
+
+  /// Display name for the inpatient module in access denial tooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient'**
+  String get accessDeniedModuleInpatientLabel;
+
+  /// Display name for the laboratory module in access denial tooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory'**
+  String get accessDeniedModuleLabLabel;
+
+  /// Display name for the radiology module in access denial tooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get accessDeniedModuleRadiologyLabel;
+
+  /// Display name for the theater module in access denial tooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater'**
+  String get accessDeniedModuleTheaterLabel;
+
+  /// Display name for the physiotherapy module in access denial tooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy'**
+  String get accessDeniedModulePhysiotherapyLabel;
+
   /// Patient age in whole years.
   ///
   /// In en, this message translates to:

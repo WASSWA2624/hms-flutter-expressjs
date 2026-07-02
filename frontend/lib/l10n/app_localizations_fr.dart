@@ -3287,6 +3287,142 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsActiveWorkContinueAction => 'Continuer';
 
   @override
+  String get patientsActiveWorkKindAppointment => 'Rendez-vous';
+
+  @override
+  String get patientsActiveWorkKindEncounter => 'Consultation OPD';
+
+  @override
+  String get patientsActiveWorkKindQueue => 'File d\'attente';
+
+  @override
+  String get patientsActiveWorkKindAdmission => 'Admission hospitalière';
+
+  @override
+  String get patientsActiveWorkKindAdmissionRequest => 'Demande d\'admission';
+
+  @override
+  String get patientsActiveWorkKindLabOrder => 'Commande de laboratoire';
+
+  @override
+  String get patientsActiveWorkKindRadiologyOrder => 'Commande de radiologie';
+
+  @override
+  String get patientsActiveWorkKindTherapy => 'Physiothérapie';
+
+  @override
+  String get patientsActiveWorkKindTheater => 'Dossier bloc opératoire';
+
+  @override
+  String get patientsActiveWorkStatusEncounterOpen => 'Consultation ouverte';
+
+  @override
+  String get patientsActiveWorkStatusEncounterInProgress =>
+      'Consultation en cours';
+
+  @override
+  String get patientsActiveWorkStatusQueueWaiting => 'En attente dans la file';
+
+  @override
+  String get patientsActiveWorkStatusQueueInProgress => 'Dans la file';
+
+  @override
+  String get patientsActiveWorkStatusAppointmentScheduled => 'Planifié';
+
+  @override
+  String get patientsActiveWorkStatusAppointmentInProgress =>
+      'Enregistrement en cours';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionActive => 'Admis';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionPendingBed => 'Lit en attente';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionTransfer => 'Transfert en cours';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionDischargePlanned =>
+      'Sortie planifiée';
+
+  @override
+  String get patientsQuickAppointmentTooltip =>
+      'Planifier un nouveau rendez-vous pour ce patient.';
+
+  @override
+  String get patientsQuickOpdCheckInTooltip =>
+      'Démarrer une nouvelle consultation OPD pour ce patient.';
+
+  @override
+  String get patientsQuickViewActiveOpdTooltip =>
+      'Continuer le flux de consultation OPD actif.';
+
+  @override
+  String get patientsQuickAdmitPatientTooltip =>
+      'Soumettre une demande d\'admission hospitalière pour ce patient.';
+
+  @override
+  String get patientsQuickDischargeTooltip =>
+      'Poursuivre la planification de sortie pour l\'admission active.';
+
+  @override
+  String get patientsQuickLabOrderTooltip =>
+      'Demander une nouvelle analyse de laboratoire pour ce patient.';
+
+  @override
+  String get patientsQuickRadiologyOrderTooltip =>
+      'Demander un nouvel examen d\'imagerie pour ce patient.';
+
+  @override
+  String get patientsQuickTheaterScheduleTooltip =>
+      'Planifier une intervention au bloc opératoire pour ce patient.';
+
+  @override
+  String get patientsQuickPhysiotherapyTooltip =>
+      'Orienter ce patient vers la physiothérapie.';
+
+  @override
+  String get patientsQuickReportTooltip =>
+      'Ouvrir le rapport patient imprimable.';
+
+  @override
+  String get accessDeniedPermissionRequired =>
+      'Vous n\'avez pas l\'autorisation d\'effectuer cette action.';
+
+  @override
+  String get accessDeniedRoleRequired =>
+      'Votre rôle ne permet pas d\'effectuer cette action.';
+
+  @override
+  String get accessDeniedTenantContextRequired =>
+      'Sélectionnez un locataire avant d\'utiliser cette action.';
+
+  @override
+  String get accessDeniedFacilityContextRequired =>
+      'Sélectionnez un établissement avant d\'utiliser cette action.';
+
+  @override
+  String accessDeniedModuleRequired(String moduleName) {
+    return 'Le module $moduleName n\'est pas activé pour cet établissement.';
+  }
+
+  @override
+  String get accessDeniedModuleInpatientLabel => 'Hospitalisation';
+
+  @override
+  String get accessDeniedModuleLabLabel => 'Laboratoire';
+
+  @override
+  String get accessDeniedModuleRadiologyLabel => 'Radiologie';
+
+  @override
+  String get accessDeniedModuleTheaterLabel => 'Bloc opératoire';
+
+  @override
+  String get accessDeniedModulePhysiotherapyLabel => 'Physiothérapie';
+
+  @override
   String patientsAgeYears(int years) {
     return '$years ans';
   }

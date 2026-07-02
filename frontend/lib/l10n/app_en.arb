@@ -4259,6 +4259,168 @@
   "@patientsActiveWorkContinueAction": {
     "description": "Action label to continue an active patient workflow item."
   },
+  "patientsActiveWorkKindAppointment": "Appointment",
+  "@patientsActiveWorkKindAppointment": {
+    "description": "Active work row label for a scheduled appointment."
+  },
+  "patientsActiveWorkKindEncounter": "OPD encounter",
+  "@patientsActiveWorkKindEncounter": {
+    "description": "Active work row label for an outpatient encounter."
+  },
+  "patientsActiveWorkKindQueue": "Visit queue",
+  "@patientsActiveWorkKindQueue": {
+    "description": "Active work row label for a visit queue entry."
+  },
+  "patientsActiveWorkKindAdmission": "Inpatient admission",
+  "@patientsActiveWorkKindAdmission": {
+    "description": "Active work row label for an active inpatient admission."
+  },
+  "patientsActiveWorkKindAdmissionRequest": "Admission request",
+  "@patientsActiveWorkKindAdmissionRequest": {
+    "description": "Active work row label for a pending admission request."
+  },
+  "patientsActiveWorkKindLabOrder": "Lab order",
+  "@patientsActiveWorkKindLabOrder": {
+    "description": "Active work row label for a pending laboratory order."
+  },
+  "patientsActiveWorkKindRadiologyOrder": "Radiology order",
+  "@patientsActiveWorkKindRadiologyOrder": {
+    "description": "Active work row label for a pending radiology order."
+  },
+  "patientsActiveWorkKindTherapy": "Physiotherapy",
+  "@patientsActiveWorkKindTherapy": {
+    "description": "Active work row label for a pending physiotherapy episode."
+  },
+  "patientsActiveWorkKindTheater": "Theater case",
+  "@patientsActiveWorkKindTheater": {
+    "description": "Active work row label for a pending theater case."
+  },
+  "patientsActiveWorkStatusEncounterOpen": "Encounter open",
+  "@patientsActiveWorkStatusEncounterOpen": {
+    "description": "Status badge when an OPD encounter is open."
+  },
+  "patientsActiveWorkStatusEncounterInProgress": "Encounter in progress",
+  "@patientsActiveWorkStatusEncounterInProgress": {
+    "description": "Status badge when an OPD encounter is in progress."
+  },
+  "patientsActiveWorkStatusQueueWaiting": "Waiting in queue",
+  "@patientsActiveWorkStatusQueueWaiting": {
+    "description": "Status badge when a patient is waiting in the visit queue."
+  },
+  "patientsActiveWorkStatusQueueInProgress": "In queue",
+  "@patientsActiveWorkStatusQueueInProgress": {
+    "description": "Status badge when a visit queue entry is actively being served."
+  },
+  "patientsActiveWorkStatusAppointmentScheduled": "Scheduled",
+  "@patientsActiveWorkStatusAppointmentScheduled": {
+    "description": "Status badge for an open scheduled appointment."
+  },
+  "patientsActiveWorkStatusAppointmentInProgress": "Check-in in progress",
+  "@patientsActiveWorkStatusAppointmentInProgress": {
+    "description": "Status badge when appointment check-in is in progress."
+  },
+  "patientsActiveWorkStatusAdmissionActive": "Admitted",
+  "@patientsActiveWorkStatusAdmissionActive": {
+    "description": "Status badge for an active inpatient admission."
+  },
+  "patientsActiveWorkStatusAdmissionPendingBed": "Bed pending",
+  "@patientsActiveWorkStatusAdmissionPendingBed": {
+    "description": "Status badge when admission is waiting for bed assignment."
+  },
+  "patientsActiveWorkStatusAdmissionTransfer": "Transfer in progress",
+  "@patientsActiveWorkStatusAdmissionTransfer": {
+    "description": "Status badge when an inpatient transfer is underway."
+  },
+  "patientsActiveWorkStatusAdmissionDischargePlanned": "Discharge planned",
+  "@patientsActiveWorkStatusAdmissionDischargePlanned": {
+    "description": "Status badge when discharge planning is active."
+  },
+  "patientsQuickAppointmentTooltip": "Schedule a new appointment for this patient.",
+  "@patientsQuickAppointmentTooltip": {
+    "description": "Tooltip for the patient quick action to schedule an appointment."
+  },
+  "patientsQuickOpdCheckInTooltip": "Start a new outpatient encounter for this patient.",
+  "@patientsQuickOpdCheckInTooltip": {
+    "description": "Tooltip for the patient quick action to start an OPD encounter."
+  },
+  "patientsQuickViewActiveOpdTooltip": "Continue the active outpatient encounter workflow.",
+  "@patientsQuickViewActiveOpdTooltip": {
+    "description": "Tooltip for the patient quick action to continue an active OPD encounter."
+  },
+  "patientsQuickAdmitPatientTooltip": "Submit an inpatient admission request for this patient.",
+  "@patientsQuickAdmitPatientTooltip": {
+    "description": "Tooltip for the patient quick action to request admission."
+  },
+  "patientsQuickDischargeTooltip": "Continue discharge planning for the active admission.",
+  "@patientsQuickDischargeTooltip": {
+    "description": "Tooltip for the patient quick action to manage discharge."
+  },
+  "patientsQuickLabOrderTooltip": "Request a new laboratory order for this patient.",
+  "@patientsQuickLabOrderTooltip": {
+    "description": "Tooltip for the patient quick action to request a lab order."
+  },
+  "patientsQuickRadiologyOrderTooltip": "Request a new radiology imaging order for this patient.",
+  "@patientsQuickRadiologyOrderTooltip": {
+    "description": "Tooltip for the patient quick action to request radiology imaging."
+  },
+  "patientsQuickTheaterScheduleTooltip": "Schedule a theater procedure for this patient.",
+  "@patientsQuickTheaterScheduleTooltip": {
+    "description": "Tooltip for the patient quick action to schedule theater."
+  },
+  "patientsQuickPhysiotherapyTooltip": "Refer this patient to physiotherapy.",
+  "@patientsQuickPhysiotherapyTooltip": {
+    "description": "Tooltip for the patient quick action to request physiotherapy."
+  },
+  "patientsQuickReportTooltip": "Open the printable patient summary report.",
+  "@patientsQuickReportTooltip": {
+    "description": "Tooltip for the patient quick action to open the patient report."
+  },
+  "accessDeniedPermissionRequired": "You do not have permission to perform this action.",
+  "@accessDeniedPermissionRequired": {
+    "description": "Tooltip shown when a permission-gated action is denied."
+  },
+  "accessDeniedRoleRequired": "Your role cannot perform this action.",
+  "@accessDeniedRoleRequired": {
+    "description": "Tooltip shown when the current role cannot perform an action."
+  },
+  "accessDeniedTenantContextRequired": "Select a tenant before using this action.",
+  "@accessDeniedTenantContextRequired": {
+    "description": "Tooltip shown when tenant context is required for an action."
+  },
+  "accessDeniedFacilityContextRequired": "Select a facility before using this action.",
+  "@accessDeniedFacilityContextRequired": {
+    "description": "Tooltip shown when facility context is required for an action."
+  },
+  "accessDeniedModuleRequired": "The {moduleName} module is not enabled for this facility.",
+  "@accessDeniedModuleRequired": {
+    "description": "Tooltip shown when a required subscription module is inactive.",
+    "placeholders": {
+      "moduleName": {
+        "type": "String",
+        "example": "Laboratory"
+      }
+    }
+  },
+  "accessDeniedModuleInpatientLabel": "Inpatient",
+  "@accessDeniedModuleInpatientLabel": {
+    "description": "Display name for the inpatient module in access denial tooltips."
+  },
+  "accessDeniedModuleLabLabel": "Laboratory",
+  "@accessDeniedModuleLabLabel": {
+    "description": "Display name for the laboratory module in access denial tooltips."
+  },
+  "accessDeniedModuleRadiologyLabel": "Radiology",
+  "@accessDeniedModuleRadiologyLabel": {
+    "description": "Display name for the radiology module in access denial tooltips."
+  },
+  "accessDeniedModuleTheaterLabel": "Theater",
+  "@accessDeniedModuleTheaterLabel": {
+    "description": "Display name for the theater module in access denial tooltips."
+  },
+  "accessDeniedModulePhysiotherapyLabel": "Physiotherapy",
+  "@accessDeniedModulePhysiotherapyLabel": {
+    "description": "Display name for the physiotherapy module in access denial tooltips."
+  },
   "patientsAgeYears": "{years} years",
   "@patientsAgeYears": {
     "description": "Patient age in whole years.",

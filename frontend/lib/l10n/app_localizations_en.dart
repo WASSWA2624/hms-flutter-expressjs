@@ -3259,6 +3259,143 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsActiveWorkContinueAction => 'Continue';
 
   @override
+  String get patientsActiveWorkKindAppointment => 'Appointment';
+
+  @override
+  String get patientsActiveWorkKindEncounter => 'OPD encounter';
+
+  @override
+  String get patientsActiveWorkKindQueue => 'Visit queue';
+
+  @override
+  String get patientsActiveWorkKindAdmission => 'Inpatient admission';
+
+  @override
+  String get patientsActiveWorkKindAdmissionRequest => 'Admission request';
+
+  @override
+  String get patientsActiveWorkKindLabOrder => 'Lab order';
+
+  @override
+  String get patientsActiveWorkKindRadiologyOrder => 'Radiology order';
+
+  @override
+  String get patientsActiveWorkKindTherapy => 'Physiotherapy';
+
+  @override
+  String get patientsActiveWorkKindTheater => 'Theater case';
+
+  @override
+  String get patientsActiveWorkStatusEncounterOpen => 'Encounter open';
+
+  @override
+  String get patientsActiveWorkStatusEncounterInProgress =>
+      'Encounter in progress';
+
+  @override
+  String get patientsActiveWorkStatusQueueWaiting => 'Waiting in queue';
+
+  @override
+  String get patientsActiveWorkStatusQueueInProgress => 'In queue';
+
+  @override
+  String get patientsActiveWorkStatusAppointmentScheduled => 'Scheduled';
+
+  @override
+  String get patientsActiveWorkStatusAppointmentInProgress =>
+      'Check-in in progress';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionActive => 'Admitted';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionPendingBed => 'Bed pending';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionTransfer =>
+      'Transfer in progress';
+
+  @override
+  String get patientsActiveWorkStatusAdmissionDischargePlanned =>
+      'Discharge planned';
+
+  @override
+  String get patientsQuickAppointmentTooltip =>
+      'Schedule a new appointment for this patient.';
+
+  @override
+  String get patientsQuickOpdCheckInTooltip =>
+      'Start a new outpatient encounter for this patient.';
+
+  @override
+  String get patientsQuickViewActiveOpdTooltip =>
+      'Continue the active outpatient encounter workflow.';
+
+  @override
+  String get patientsQuickAdmitPatientTooltip =>
+      'Submit an inpatient admission request for this patient.';
+
+  @override
+  String get patientsQuickDischargeTooltip =>
+      'Continue discharge planning for the active admission.';
+
+  @override
+  String get patientsQuickLabOrderTooltip =>
+      'Request a new laboratory order for this patient.';
+
+  @override
+  String get patientsQuickRadiologyOrderTooltip =>
+      'Request a new radiology imaging order for this patient.';
+
+  @override
+  String get patientsQuickTheaterScheduleTooltip =>
+      'Schedule a theater procedure for this patient.';
+
+  @override
+  String get patientsQuickPhysiotherapyTooltip =>
+      'Refer this patient to physiotherapy.';
+
+  @override
+  String get patientsQuickReportTooltip =>
+      'Open the printable patient summary report.';
+
+  @override
+  String get accessDeniedPermissionRequired =>
+      'You do not have permission to perform this action.';
+
+  @override
+  String get accessDeniedRoleRequired =>
+      'Your role cannot perform this action.';
+
+  @override
+  String get accessDeniedTenantContextRequired =>
+      'Select a tenant before using this action.';
+
+  @override
+  String get accessDeniedFacilityContextRequired =>
+      'Select a facility before using this action.';
+
+  @override
+  String accessDeniedModuleRequired(String moduleName) {
+    return 'The $moduleName module is not enabled for this facility.';
+  }
+
+  @override
+  String get accessDeniedModuleInpatientLabel => 'Inpatient';
+
+  @override
+  String get accessDeniedModuleLabLabel => 'Laboratory';
+
+  @override
+  String get accessDeniedModuleRadiologyLabel => 'Radiology';
+
+  @override
+  String get accessDeniedModuleTheaterLabel => 'Theater';
+
+  @override
+  String get accessDeniedModulePhysiotherapyLabel => 'Physiotherapy';
+
+  @override
   String patientsAgeYears(int years) {
     return '$years years';
   }

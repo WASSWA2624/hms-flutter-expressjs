@@ -1,5 +1,8 @@
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum PatientActiveWorkKind {
   appointment,
@@ -273,4 +276,120 @@ bool patientHasPendingTheaterCase(PatientDetail detail) {
   return collectPatientActiveWorkItems(detail).any(
     (PatientActiveWorkItem item) => item.kind == PatientActiveWorkKind.theater,
   );
+}
+
+bool isGenericPatientActiveWorkTitle(String title) {
+  final String normalized = title.trim().toLowerCase();
+  return normalized.isEmpty ||
+      normalized == 'appointment' ||
+      normalized == 'encounter' ||
+      normalized == 'visit queue' ||
+      normalized == 'admission' ||
+      normalized == 'lab_order' ||
+      normalized == 'radiology_order' ||
+      normalized == 'therapy' ||
+      normalized == 'therapy_episode' ||
+      normalized == 'physiotherapy' ||
+      normalized == 'theater' ||
+      normalized == 'theater_case';
+}
+
+String patientActiveWorkKindLabel(
+  AppLocalizations l10n,
+  PatientActiveWorkItem item,
+) {
+  if (item.kind == PatientActiveWorkKind.admission &&
+      isPendingPatientAdmissionRequest(item.status)) {
+    return l10n.patientsActiveWorkKindAdmissionRequest;
+  }
+
+  return switch (item.kind) {
+    PatientActiveWorkKind.appointment => l10n.patientsActiveWorkKindAppointment,
+    PatientActiveWorkKind.encounter => l10n.patientsActiveWorkKindEncounter,
+    PatientActiveWorkKind.queue => l10n.patientsActiveWorkKindQueue,
+    PatientActiveWorkKind.admission => l10n.patientsActiveWorkKindAdmission,
+    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkKindLabOrder,
+    PatientActiveWorkKind.radiologyOrder =>
+      l10n.patientsActiveWorkKindRadiologyOrder,
+    PatientActiveWorkKind.therapy => l10n.patientsActiveWorkKindTherapy,
+    PatientActiveWorkKind.theater => l10n.patientsActiveWorkKindTheater,
+  };
+}
+
+String patientActiveWorkContextLabel(PatientActiveWorkItem item) {
+  final String subtitle = item.subtitle?.trim() ?? '';
+  final String title = item.title.trim();
+
+  if (subtitle.isNotEmpty && subtitle.toLowerCase() != title.toLowerCase()) {
+    return subtitle;
+  }
+  if (title.isNotEmpty && !isGenericPatientActiveWorkTitle(title)) {
+    return title;
+  }
+
+  final String? sourceId = item.sourceRecord?.id.trim();
+  if (sourceId != null && sourceId.isNotEmpty) {
+    return sourceId;
+  }
+
+  final String? timelineId = item.timelineItem?.id.trim();
+  if (timelineId != null && timelineId.isNotEmpty) {
+    return timelineId;
+  }
+
+  return subtitle;
+}
+
+String patientActiveWorkStatusLabel(
+  AppLocalizations l10n,
+  PatientActiveWorkItem item,
+) {
+  if (item.kind == PatientActiveWorkKind.admission &&
+      isPendingPatientAdmissionRequest(item.status)) {
+    return l10n.opdStatusAdmissionPendingLabel;
+  }
+
+  final String status = item.status.trim().toUpperCase();
+  if (status.isEmpty) {
+    return '';
+  }
+
+  return switch (item.kind) {
+    PatientActiveWorkKind.encounter => switch (status) {
+      'OPEN' => l10n.patientsActiveWorkStatusEncounterOpen,
+      'IN_PROGRESS' => l10n.patientsActiveWorkStatusEncounterInProgress,
+      _ => AppDisplay.apiLabel(item.status),
+    },
+    PatientActiveWorkKind.queue => switch (status) {
+      'OPEN' => l10n.patientsActiveWorkStatusQueueWaiting,
+      'IN_PROGRESS' => l10n.patientsActiveWorkStatusQueueInProgress,
+      _ => AppDisplay.apiLabel(item.status),
+    },
+    PatientActiveWorkKind.appointment => switch (status) {
+      'OPEN' => l10n.patientsActiveWorkStatusAppointmentScheduled,
+      'IN_PROGRESS' => l10n.patientsActiveWorkStatusAppointmentInProgress,
+      _ => AppDisplay.apiLabel(item.status),
+    },
+    PatientActiveWorkKind.admission => switch (status) {
+      'ACTIVE' ||
+      'ADMITTED' ||
+      'ADMITTED_IN_BED' => l10n.patientsActiveWorkStatusAdmissionActive,
+      'ADMITTED_PENDING_BED' =>
+        l10n.patientsActiveWorkStatusAdmissionPendingBed,
+      'TRANSFER_REQUESTED' ||
+      'TRANSFER_IN_PROGRESS' =>
+        l10n.patientsActiveWorkStatusAdmissionTransfer,
+      'DISCHARGE_PLANNED' => l10n.patientsActiveWorkStatusAdmissionDischargePlanned,
+      _ => AppDisplay.apiLabel(item.status),
+    },
+    _ => AppDisplay.apiLabel(item.status),
+  };
+}
+
+AppWorkspaceStatusTone patientActiveWorkStatusTone(PatientActiveWorkItem item) {
+  if (item.kind == PatientActiveWorkKind.admission &&
+      isPendingPatientAdmissionRequest(item.status)) {
+    return AppWorkspaceStatusTone.warning;
+  }
+  return AppWorkspaceStatusTone.info;
 }

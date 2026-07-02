@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement_l10n.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 
-class AppPermissionActionButton extends StatelessWidget {
+class AppPermissionActionButton extends ConsumerWidget {
   const AppPermissionActionButton({
     required this.requirement,
     required this.label,
@@ -32,26 +36,32 @@ class AppPermissionActionButton extends StatelessWidget {
   final String? tooltip;
 
   @override
-  Widget build(BuildContext context) {
-    return AppAccessActionGate(
-      requirement: requirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed && hideWhenDenied) {
-          return const SizedBox.shrink();
-        }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final policy = ref.watch(appAccessPolicyProvider);
+    final bool isAllowed = requirement.isAllowed(policy);
 
-        return AppButton(
-          label: label,
-          leadingIcon: icon,
-          variant: variant,
-          enabled: enabled && isAllowed,
-          isLoading: isLoading,
-          fullWidth: fullWidth,
-          semanticLabel: semanticLabel,
-          tooltip: tooltip,
-          onPressed: enabled && isAllowed ? onPressed : null,
-        );
-      },
+    if (!isAllowed && hideWhenDenied) {
+      return const SizedBox.shrink();
+    }
+
+    final bool canPress = enabled && isAllowed && onPressed != null;
+    final String resolvedTooltip = canPress
+        ? (tooltip ?? label)
+        : (!isAllowed
+              ? accessRequirementDenialMessage(l10n, requirement, policy)
+              : (tooltip ?? label));
+
+    return AppButton(
+      label: label,
+      leadingIcon: icon,
+      variant: variant,
+      enabled: canPress,
+      isLoading: isLoading,
+      fullWidth: fullWidth,
+      semanticLabel: semanticLabel,
+      tooltip: resolvedTooltip,
+      onPressed: canPress ? onPressed : null,
     );
   }
 }

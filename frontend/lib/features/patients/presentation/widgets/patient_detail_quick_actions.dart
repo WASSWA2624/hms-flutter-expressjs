@@ -67,6 +67,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickAppointmentAction,
           icon: Icons.event_available_outlined,
+          tooltip: l10n.patientsQuickAppointmentTooltip,
           onPressed: () => onAction(PatientQuickAction.appointment),
           requirement: const AccessRequirement(
             allPermissions: <AppPermission>[AppPermissions.patientWrite],
@@ -76,6 +77,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickViewActiveOpdAction,
           icon: Icons.open_in_new_outlined,
+          tooltip: l10n.patientsQuickViewActiveOpdTooltip,
           onPressed: () => onAction(PatientQuickAction.opdActions),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[
@@ -90,6 +92,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickOpdCheckInAction,
           icon: opdEncounterIcon,
+          tooltip: l10n.patientsQuickOpdCheckInTooltip,
           onPressed: () => onAction(PatientQuickAction.opdCheckIn),
           requirement: opdEncounterPermissionRequirement,
         ),
@@ -97,6 +100,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickAdmitPatientAction,
           icon: Icons.local_hospital_outlined,
+          tooltip: l10n.patientsQuickAdmitPatientTooltip,
           onPressed: () => onAction(PatientQuickAction.admission),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -107,6 +111,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: dischargeActionLabel,
           icon: Icons.logout_outlined,
+          tooltip: l10n.patientsQuickDischargeTooltip,
           onPressed: () => onAction(PatientQuickAction.discharge),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -117,6 +122,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickLabOrderAction,
           icon: Icons.science_outlined,
+          tooltip: l10n.patientsQuickLabOrderTooltip,
           onPressed: () => onAction(PatientQuickAction.labOrder),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -127,6 +133,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickRadiologyOrderAction,
           icon: Icons.monitor_heart_outlined,
+          tooltip: l10n.patientsQuickRadiologyOrderTooltip,
           onPressed: () => onAction(PatientQuickAction.radiologyOrder),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -137,6 +144,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickTheaterScheduleAction,
           icon: Icons.medical_services_outlined,
+          tooltip: l10n.patientsQuickTheaterScheduleTooltip,
           onPressed: () => onAction(PatientQuickAction.theaterSchedule),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -147,6 +155,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         AppPermissionActionItem(
           label: l10n.patientsQuickPhysiotherapyAction,
           icon: Icons.self_improvement_outlined,
+          tooltip: l10n.patientsQuickPhysiotherapyTooltip,
           onPressed: () => onAction(PatientQuickAction.physiotherapy),
           requirement: const AccessRequirement(
             anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
@@ -156,6 +165,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
       AppPermissionActionItem(
         label: l10n.patientsQuickReportAction,
         icon: Icons.summarize_outlined,
+        tooltip: l10n.patientsQuickReportTooltip,
         onPressed: () => onAction(PatientQuickAction.report),
         requirement: const AccessRequirement(
           allPermissions: <AppPermission>[AppPermissions.reportsRead],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_active_work_helpers.dart';
@@ -63,8 +62,10 @@ class _PatientActiveWorkRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final String statusLabel = _patientActiveWorkStatusLabel(l10n, item);
-    final AppWorkspaceStatusTone statusTone = _patientActiveWorkStatusTone(item);
+    final String kindLabel = patientActiveWorkKindLabel(l10n, item);
+    final String statusLabel = patientActiveWorkStatusLabel(l10n, item);
+    final String contextLabel = patientActiveWorkContextLabel(item);
+    final AppWorkspaceStatusTone statusTone = patientActiveWorkStatusTone(item);
     final String when = item.occurredAt == null
         ? ''
         : AppFormatters.dateTime(
@@ -92,24 +93,23 @@ class _PatientActiveWorkRow extends StatelessWidget {
                     spacing: theme.spacing.xs,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
+                      Text(
+                        kindLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       if (statusLabel.isNotEmpty)
                         AppStatusText(
                           label: statusLabel,
                           tone: statusTone,
                         ),
-                      Text(
-                        item.title,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ],
                   ),
-                  if (item.subtitle != null &&
-                      item.subtitle!.trim().isNotEmpty) ...<Widget>[
+                  if (contextLabel.isNotEmpty) ...<Widget>[
                     SizedBox(height: theme.spacing.xs),
                     Text(
-                      item.subtitle!,
+                      contextLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -130,6 +130,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
             AppButton.secondary(
               label: l10n.patientsActiveWorkContinueAction,
               leadingIcon: Icons.play_arrow_outlined,
+              tooltip: l10n.patientsActiveWorkContinueAction,
               onPressed: onContinue,
             ),
           ],
@@ -137,25 +138,4 @@ class _PatientActiveWorkRow extends StatelessWidget {
       ),
     );
   }
-}
-
-String _patientActiveWorkStatusLabel(
-  AppLocalizations l10n,
-  PatientActiveWorkItem item,
-) {
-  if (item.kind == PatientActiveWorkKind.admission &&
-      isPendingPatientAdmissionRequest(item.status)) {
-    return l10n.opdStatusAdmissionPendingLabel;
-  }
-  return AppDisplay.apiLabel(item.status);
-}
-
-AppWorkspaceStatusTone _patientActiveWorkStatusTone(
-  PatientActiveWorkItem item,
-) {
-  if (item.kind == PatientActiveWorkKind.admission &&
-      isPendingPatientAdmissionRequest(item.status)) {
-    return AppWorkspaceStatusTone.warning;
-  }
-  return AppWorkspaceStatusTone.info;
 }
