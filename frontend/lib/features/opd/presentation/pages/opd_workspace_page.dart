@@ -17,12 +17,14 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/components/components.dart'
+    hide showPatientDetailDialog;
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({this.initialQuery, super.key});
@@ -373,14 +375,19 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
 
-    final String? registeredPatientId = result.registeredPatientId;
-    if (registeredPatientId != null && registeredPatientId.isNotEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      }
-      await showPatientDetailDialog(context, ref, registeredPatientId);
+    if (!context.mounted) {
+      return;
+    }
+
+    if (await _openRegisteredPatientDetailAfterEncounter(
+      context,
+      ref,
+      result,
+    )) {
+      return;
+    }
+
+    if (!context.mounted) {
       return;
     }
 
@@ -2704,9 +2711,25 @@ class _OpdPatientActionsDialogState
     if (!mounted || dialogResult == null) {
       return;
     }
+    if (await _openRegisteredPatientDetailAfterEncounter(
+      context,
+      ref,
+      dialogResult,
+    )) {
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
     final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
     if (activeEncounter == null) {
       Navigator.of(context).pop(true);
+      return;
+    }
+    if (!mounted) {
       return;
     }
     final bool? activeChanged = await showAppDialog<bool>(
@@ -2888,7 +2911,20 @@ class _AppointmentActionsDialogState
             },
           ),
         );
-    if (dialogResult != null && mounted) {
+    if (!mounted || dialogResult == null) {
+      return;
+    }
+    if (await _openRegisteredPatientDetailAfterEncounter(
+      context,
+      ref,
+      dialogResult,
+    )) {
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+      return;
+    }
+    if (mounted) {
       Navigator.of(context).pop(true);
     }
   }
@@ -3586,3 +3622,24 @@ const List<String> _queueStatuses = <String>[
   'CANCELLED',
   'NO_SHOW',
 ];
+
+Future<bool> _openRegisteredPatientDetailAfterEncounter(
+  BuildContext context,
+  WidgetRef ref,
+  OpdEncounterDialogResult result,
+) async {
+  final String? registeredPatientId = result.registeredPatientId;
+  if (registeredPatientId == null || registeredPatientId.isEmpty) {
+    return false;
+  }
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.opdSavedMessage)),
+    );
+  }
+  if (!context.mounted) {
+    return false;
+  }
+  await showPatientDetailDialog(context, ref, registeredPatientId);
+  return true;
+}
