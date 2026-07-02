@@ -1197,6 +1197,14 @@ void _stubProviderLookup(_MockOpdRepository opdRepository) {
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
   );
+  when(
+    () => opdRepository.getBillingDefaults(
+      facilityId: any(named: 'facilityId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+  );
   when(() => opdRepository.listProviderSchedules()).thenAnswer(
     (_) async => const Result<List<OpdProviderSchedule>>.success(
       <OpdProviderSchedule>[],

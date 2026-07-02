@@ -113,6 +113,21 @@ abstract interface class OpdRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<OpdFlowDetail>> cancelEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> closeEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdBillingDefaults>> getBillingDefaults({
+    String? facilityId,
+    String? tenantId,
+  });
+
   Future<Result<void>> createReferral(Map<String, Object?> payload);
 
   Future<Result<void>> createFollowUp(Map<String, Object?> payload);

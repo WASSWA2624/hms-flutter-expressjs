@@ -427,6 +427,70 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<OpdFlowDetail>> cancelEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
+        'cancel',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> closeEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
+        'close',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdBillingDefaults>> getBillingDefaults({
+    String? facilityId,
+    String? tenantId,
+  }) {
+    return _apiClient.get<OpdBillingDefaults>(
+      ApiEndpoints.nested(
+        HmsApiResource.opdFlows,
+        'billing-defaults',
+        const <String>[],
+      ),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'facility_id': facilityId,
+        'tenant_id': tenantId,
+      }),
+      decoder: _decodeBillingDefaults,
+    );
+  }
+
+  static OpdBillingDefaults _decodeBillingDefaults(Object? data) {
+    final Map<String, Object?> json = decodeDataMap(data);
+    num? fee;
+    final Object? rawFee = json['standard_consultation_fee'];
+    if (rawFee is num) {
+      fee = rawFee;
+    } else if (rawFee is String) {
+      fee = num.tryParse(rawFee.trim());
+    }
+    return OpdBillingDefaults(
+      standardConsultationFee: fee,
+      standardConsultationCurrency:
+          json['standard_consultation_currency']?.toString(),
+      defaultCurrency: json['default_currency']?.toString(),
+    );
+  }
+
+  @override
   Future<Result<void>> createReferral(Map<String, Object?> payload) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.referrals),

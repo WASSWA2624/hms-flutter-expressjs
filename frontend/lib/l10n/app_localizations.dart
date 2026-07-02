@@ -4622,6 +4622,96 @@ abstract class AppLocalizations {
   /// **'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.'**
   String get opdActiveEncounterFoundBody;
 
+  /// Action that opens the active OPD workflow from the encounter dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue encounter'**
+  String get opdContinueEncounterAction;
+
+  /// Action that administratively closes an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Close encounter'**
+  String get opdCloseEncounterAction;
+
+  /// Action that cancels an active OPD encounter with a reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel encounter'**
+  String get opdCancelEncounterAction;
+
+  /// Primary action for creating a patient before starting OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Create patient'**
+  String get opdCreatePatientAction;
+
+  /// Predefined OPD encounter cancellation reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient left before consultation'**
+  String get opdEncounterCancelReasonPatientLeft;
+
+  /// Predefined OPD encounter cancellation reason for duplicate encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate encounter'**
+  String get opdEncounterCancelReasonDuplicate;
+
+  /// Predefined OPD encounter cancellation reason for data entry mistakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Entered in error'**
+  String get opdEncounterCancelReasonEnteredInError;
+
+  /// Predefined OPD encounter cancellation reason when the patient was already seen.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient already seen'**
+  String get opdEncounterCancelReasonAlreadySeen;
+
+  /// Predefined OPD encounter cancellation reason requiring free text.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get opdEncounterCancelReasonOther;
+
+  /// Optional reason field when closing an OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Close reason (optional)'**
+  String get opdEncounterCloseReasonLabel;
+
+  /// Label for selecting a predefined OPD encounter cancellation reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get opdEncounterCancelReasonCodeLabel;
+
+  /// Additional notes field for OPD encounter cancellation.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional details'**
+  String get opdEncounterCancelReasonNotesLabel;
+
+  /// Validation message when Other cancellation reason requires notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter details when selecting Other.'**
+  String get opdEncounterCancelReasonNotesRequiredMessage;
+
+  /// Banner shown when updating an encounter that is already paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation payment is already recorded for this encounter.'**
+  String get opdEncounterBillingPaidBanner;
+
+  /// Helper text when arrival mode is locked during active encounter update.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival mode is fixed while updating an active encounter.'**
+  String get opdEncounterArrivalModeLockedHelper;
+
   /// Tooltip shown when OPD actions need an active encounter before they can run.
   ///
   /// In en, this message translates to:

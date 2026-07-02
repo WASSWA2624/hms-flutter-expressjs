@@ -40,6 +40,12 @@ void main() {
     final _MockPatientRepository patientRepository = _MockPatientRepository();
     final _MockOpdRepository opdRepository = _MockOpdRepository();
     Map<String, Object?>? submittedPayload;
+    const Patient createdPatient = Patient(
+      id: 'patient-new',
+      publicId: 'PAT000099',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    );
 
     when(() => patientRepository.listPatients(any())).thenAnswer(
       (_) async => const Result<AppPage<Patient>>.success(
@@ -69,6 +75,23 @@ void main() {
       (_) async =>
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
     );
+    when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+      (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: <OpdFlowSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(
+      () => opdRepository.getBillingDefaults(
+        facilityId: any(named: 'facilityId'),
+        tenantId: any(named: 'tenantId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+    );
     when(() => patientRepository.loadReferenceData()).thenAnswer(
       (_) async =>
           const Result<PatientReferenceData>.success(PatientReferenceData()),
@@ -81,6 +104,9 @@ void main() {
           totalItemCount: 0,
         ),
       ),
+    );
+    when(() => patientRepository.createPatient(any())).thenAnswer(
+      (_) async => const Result<Patient>.success(createdPatient),
     );
 
     await tester.pumpWidget(
@@ -100,7 +126,7 @@ void main() {
               appointments: const <OpdAppointment>[],
               onSubmit: (Map<String, Object?> payload) async {
                 submittedPayload = payload;
-                return _successfulOpdSubmit();
+                return _successfulOpdSubmit(patientId: createdPatient.id);
               },
             ),
           ),
@@ -118,17 +144,19 @@ void main() {
 
     await tester.enterText(find.byType(EditableText).at(0), 'Jane');
     await tester.enterText(find.byType(EditableText).at(1), 'Doe');
+    await tester.tap(find.text('Create patient').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Existing patient'), findsOneWidget);
+    expect(find.text('Start encounter').last, findsOneWidget);
+    expect(submittedPayload, isNull);
+
     await tester.tap(find.text('Start encounter').last);
     await tester.pumpAndSettle();
 
-    final Map<String, Object?>? registration =
-        submittedPayload?['patient_registration'] as Map<String, Object?>?;
-    expect(registration?['first_name'], 'Jane');
-    expect(registration?['last_name'], 'Doe');
-    expect(registration?['gender'], isNull);
+    expect(submittedPayload?['patient_id'], 'PAT000099');
+    expect(submittedPayload?['patient_registration'], isNull);
     expect(submittedPayload?['arrival_mode'], 'WALK_IN');
-    expect(submittedPayload?['require_consultation_payment'], isTrue);
-    expect(submittedPayload?['create_consultation_invoice'], isTrue);
   });
 
   testWidgets('OpdEncounterDialog submits pay-now payload during OPD start', (
@@ -350,6 +378,8 @@ void main() {
         patientDisplayName: 'Jane Doe',
         status: 'OPEN',
         stage: 'WAITING_VITALS',
+        nextStep: 'RECORD_VITALS',
+        displayNextStep: 'RECORD_VITALS',
         arrivalMode: 'WALK_IN',
         startedAt: DateTime(2026, 5, 21, 8),
       );
@@ -378,12 +408,9 @@ void main() {
       );
 
       expect(find.text('Active OPD encounter found'), findsOneWidget);
-      expect(
-        find.text(
-          'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Next step'), findsOneWidget);
+      expect(find.text('Continue encounter'), findsOneWidget);
+      expect(find.byType(AppCopyableIdentifier), findsWidgets);
 
       await tester.tap(find.text('Update encounter').last);
       await tester.pumpAndSettle();
@@ -861,6 +888,14 @@ void _stubStartDialogLookups({
   when(() => opdRepository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(
+    () => opdRepository.getBillingDefaults(
+      facilityId: any(named: 'facilityId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
   );
   when(() => patientRepository.loadReferenceData()).thenAnswer(
     (_) async =>

@@ -367,6 +367,28 @@ const correctStageSchema = z.object({
   reason: z.string().trim().max(2000).optional().nullable()
 });
 
+const OPD_CANCEL_REASON_CODES = [
+  'PATIENT_LEFT',
+  'DUPLICATE_ENCOUNTER',
+  'ENTERED_IN_ERROR',
+  'PATIENT_ALREADY_SEEN',
+  'OTHER'
+];
+
+const cancelEncounterSchema = z.object({
+  reason_code: z.enum(OPD_CANCEL_REASON_CODES),
+  reason_notes: z.string().trim().max(2000).optional().nullable()
+});
+
+const closeEncounterSchema = z.object({
+  reason_notes: z.string().trim().max(2000).optional().nullable()
+});
+
+const billingDefaultsQuerySchema = z.object({
+  tenant_id: scopeIdentifierSchema.optional(),
+  facility_id: facilityIdentifierSchema.optional()
+});
+
 const listOpdFlowsQuerySchema = listQuerySchema.extend({
   tenant_id: scopeIdentifierSchema.optional(),
   facility_id: facilityIdentifierSchema.optional(),
@@ -390,6 +412,10 @@ module.exports = {
   doctorReviewSchema,
   dispositionSchema,
   correctStageSchema,
+  cancelEncounterSchema,
+  closeEncounterSchema,
+  billingDefaultsQuerySchema,
   listOpdFlowsQuerySchema,
+  OPD_CANCEL_REASON_CODES,
   QUEUE_SCOPE_VALUES
 };

@@ -875,6 +875,19 @@ final class OpdProviderOption {
 }
 
 @immutable
+final class OpdBillingDefaults {
+  const OpdBillingDefaults({
+    this.standardConsultationFee,
+    this.standardConsultationCurrency,
+    this.defaultCurrency,
+  });
+
+  final num? standardConsultationFee;
+  final String? standardConsultationCurrency;
+  final String? defaultCurrency;
+}
+
+@immutable
 final class OpdAvailabilitySlot {
   const OpdAvailabilitySlot({
     required this.id,

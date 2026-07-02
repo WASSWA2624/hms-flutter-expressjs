@@ -23,6 +23,7 @@ const {
   throwActiveOpdEncounterExists,
   throwIfActiveOpdLockError
 } = require('@lib/opd-active-encounter');
+const { CONSULTATION_FEE_PRACTITIONER_TYPES } = require('@lib/hr/reference-data');
 
 const STAGES = {
   WAITING_CONSULTATION_PAYMENT: 'WAITING_CONSULTATION_PAYMENT',
@@ -1083,6 +1084,94 @@ const resolveDefaultCurrency = async (tx, tenantId, facilityId = null) => {
   return 'USD';
 };
 
+const resolveStandardConsultationFeeFromExtension = (extensionJson) => {
+  if (!extensionJson || typeof extensionJson !== 'object' || Array.isArray(extensionJson)) {
+    return {
+      consultationFee: null,
+      consultationCurrency: null
+    };
+  }
+
+  const billing = extensionJson.billing || {};
+  const feeCandidates = [
+    billing.standard_consultation_fee,
+    billing.standardConsultationFee,
+    billing.default_consultation_fee,
+    billing.defaultConsultationFee
+  ];
+  const currencyCandidates = [
+    billing.standard_consultation_currency,
+    billing.standardConsultationCurrency,
+    billing.default_consultation_currency,
+    billing.defaultConsultationCurrency
+  ];
+  const matchedFee = feeCandidates.find(
+    (candidate) => candidate !== null && candidate !== undefined && String(candidate).trim()
+  );
+  const matchedCurrency = currencyCandidates.find(
+    (candidate) => typeof candidate === 'string' && candidate.trim()
+  );
+
+  return {
+    consultationFee: normalizeDecimalString(matchedFee, null),
+    consultationCurrency: normalizeCurrencyCode(matchedCurrency, null)
+  };
+};
+
+const resolveStandardConsultationFee = async (tx, tenantId, facilityId = null) => {
+  if (facilityId && tx?.facility?.findFirst) {
+    const facility = await tx.facility.findFirst({
+      where: { id: facilityId, deleted_at: null },
+      select: { extension_json: true }
+    });
+    const facilityDefaults = resolveStandardConsultationFeeFromExtension(facility?.extension_json);
+    if (facilityDefaults.consultationFee) {
+      return facilityDefaults;
+    }
+  }
+
+  if (tenantId && tx?.tenant?.findFirst) {
+    const tenant = await tx.tenant.findFirst({
+      where: { id: tenantId, deleted_at: null },
+      select: { extension_json: true }
+    });
+    return resolveStandardConsultationFeeFromExtension(tenant?.extension_json);
+  }
+
+  return {
+    consultationFee: null,
+    consultationCurrency: null
+  };
+};
+
+const resolveConsultationFeeDefaults = async (
+  tx,
+  { provider = null, tenantId = null, facilityId = null } = {}
+) => {
+  const providerDefaults = resolveProviderConsultationDefaults(provider);
+  const defaultCurrency = await resolveDefaultCurrency(tx, tenantId, facilityId);
+
+  if (providerDefaults.consultationFee) {
+    return {
+      consultationFee: providerDefaults.consultationFee,
+      consultationCurrency: providerDefaults.consultationCurrency || defaultCurrency
+    };
+  }
+
+  const standardDefaults = await resolveStandardConsultationFee(tx, tenantId, facilityId);
+  if (standardDefaults.consultationFee) {
+    return {
+      consultationFee: standardDefaults.consultationFee,
+      consultationCurrency: standardDefaults.consultationCurrency || defaultCurrency
+    };
+  }
+
+  return {
+    consultationFee: null,
+    consultationCurrency: defaultCurrency
+  };
+};
+
 const resolveProviderConsultationDefaults = (provider) => {
   const profile = provider?.staff_profile || null;
   if (!profile || profile.deleted_at) {
@@ -1093,7 +1182,7 @@ const resolveProviderConsultationDefaults = (provider) => {
   }
 
   const practitionerType = normalizeIdentifier(profile.practitioner_type).toUpperCase();
-  if (practitionerType !== 'SPECIALIST') {
+  if (!CONSULTATION_FEE_PRACTITIONER_TYPES.has(practitionerType)) {
     return {
       consultationFee: null,
       consultationCurrency: null
@@ -2691,13 +2780,16 @@ const startOpdFlow = async (data, context = {}) => {
         resolvedProvider?.id ||
         (normalizeIdentifier(requestedVisitQueue?.provider_user_id) ? requestedVisitQueue.provider_user_id : null) ||
         (normalizeIdentifier(appointment?.provider_user_id) ? appointment.provider_user_id : null);
-      const providerDefaults = resolveProviderConsultationDefaults(resolvedProvider);
-      const defaultCurrency = await resolveDefaultCurrency(tx, tenantId, facilityId);
-      const consultationFee = normalizeDecimalString(data.consultation_fee, providerDefaults.consultationFee || '0.00');
-      const currency = normalizeCurrencyCode(
-        data.currency,
-        providerDefaults.consultationCurrency || defaultCurrency || 'USD'
+      const feeDefaults = await resolveConsultationFeeDefaults(tx, {
+        provider: resolvedProvider,
+        tenantId,
+        facilityId
+      });
+      const consultationFee = normalizeDecimalString(
+        data.consultation_fee,
+        feeDefaults.consultationFee || '0.00'
       );
+      const currency = normalizeCurrencyCode(data.currency, feeDefaults.consultationCurrency || 'USD');
       const requireConsultationPayment =
         data.require_consultation_payment !== undefined
           ? data.require_consultation_payment
@@ -3100,19 +3192,22 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
       }
 
       const consultation = { ...(flow.consultation || {}) };
-      const providerDefaults = resolveProviderConsultationDefaults(provider);
-      const defaultCurrency = await resolveDefaultCurrency(tx, encounter.tenant_id, facilityId);
+      const feeDefaults = await resolveConsultationFeeDefaults(tx, {
+        provider,
+        tenantId: encounter.tenant_id,
+        facilityId
+      });
       const currency = normalizeCurrencyCode(
         data.currency || consultation.currency,
-        providerDefaults.consultationCurrency || defaultCurrency || 'USD'
+        feeDefaults.consultationCurrency || 'USD'
       );
       if (data.consultation_fee !== undefined) {
         consultation.consultation_fee = normalizeDecimalString(
           data.consultation_fee,
-          providerDefaults.consultationFee || consultation.consultation_fee || '0.00'
+          feeDefaults.consultationFee || consultation.consultation_fee || '0.00'
         );
-      } else if (!consultation.consultation_fee && providerDefaults.consultationFee) {
-        consultation.consultation_fee = providerDefaults.consultationFee;
+      } else if (!consultation.consultation_fee && feeDefaults.consultationFee) {
+        consultation.consultation_fee = feeDefaults.consultationFee;
       }
       consultation.currency = currency;
       if (data.require_consultation_payment !== undefined) {
@@ -4248,6 +4343,207 @@ const disposition = async (id, data, context = {}) => {
   return snapshot;
 };
 
+const finalizeEncounterClosure = async (tx, encounter, flow, closedAt, encounterStatus) => {
+  if (flow.visit_queue_id) {
+    await tx.visit_queue.update({
+      where: { id: flow.visit_queue_id },
+      data: {
+        status: encounterStatus === 'CANCELLED' ? 'CANCELLED' : 'COMPLETED'
+      }
+    });
+  }
+
+  if (flow.appointment_id) {
+    const appointment = await tx.appointment.findFirst({
+      where: { id: flow.appointment_id, deleted_at: null }
+    });
+    if (appointment && appointment.status !== 'CANCELLED' && appointment.status !== 'NO_SHOW') {
+      await tx.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: encounterStatus === 'CANCELLED' ? 'NO_SHOW' : 'COMPLETED'
+        }
+      });
+    }
+  }
+
+  if (flow.emergency_case_id) {
+    await tx.emergency_case.update({
+      where: { id: flow.emergency_case_id },
+      data: {
+        status: encounterStatus === 'CANCELLED' ? 'CANCELLED' : 'CLOSED'
+      }
+    });
+  }
+
+  return tx.encounter.update({
+    where: { id: encounter.id },
+    data: {
+      status: encounterStatus,
+      active_opd_lock_key: null,
+      ended_at: closedAt,
+      extension_json: {
+        ...(encounter.extension_json || {}),
+        opd_flow: flow
+      }
+    }
+  });
+};
+
+const cancelEncounter = async (id, data, context = {}) => {
+  const cancelledAt = new Date();
+  const reasonCode = normalizeIdentifier(data.reason_code).toUpperCase();
+  const reasonNotes = normalizeNotes(data.reason_notes);
+  if (reasonCode === 'OTHER' && !reasonNotes) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'reason_notes' }]);
+  }
+
+  const updatedResult = await prisma.$transaction(async (tx) => {
+    const encounter = await resolveEncounterByIdentifier(tx, id);
+    if (!encounter) {
+      throw new HttpError('errors.opd_flow.not_found', 404);
+    }
+
+    const encounterStatus = normalizeStatus(encounter.status);
+    if (encounterStatus === 'CANCELLED' || encounterStatus === 'CLOSED') {
+      throw new HttpError('errors.opd_flow.already_terminal', 400);
+    }
+
+    const flow = getOpdFlowState(encounter);
+    ensureNonTerminalStage(flow);
+    const stageBefore = flow.stage;
+
+    flow.cancellation_reason_code = reasonCode;
+    flow.cancellation_reason_notes = reasonNotes;
+    flow.cancelled_at = cancelledAt.toISOString();
+
+    appendTimelineEvent(flow, 'ENCOUNTER_CANCELLED', context, {
+      reason_code: reasonCode,
+      reason_notes: reasonNotes
+    });
+
+    const finalizedEncounter = await finalizeEncounterClosure(
+      tx,
+      encounter,
+      flow,
+      cancelledAt,
+      'CANCELLED'
+    );
+
+    return {
+      encounter: finalizedEncounter,
+      transition: {
+        action: 'ENCOUNTER_CANCELLED',
+        stage_from: stageBefore,
+        stage_to: flow.stage,
+        provider_user_id: encounter.provider_user_id || null,
+        occurred_at: cancelledAt.toISOString()
+      }
+    };
+  });
+
+  createAuditLog({
+    tenant_id: updatedResult.encounter.tenant_id,
+    user_id: context.user_id,
+    action: 'UPDATE',
+    entity: 'opd_flow',
+    entity_id: updatedResult.encounter.id,
+    diff: { after: updatedResult.encounter },
+    ip_address: context.ip_address
+  }).catch(() => {});
+
+  const snapshot = await getOpdFlowById(updatedResult.encounter.id);
+  await publishOpdRealtimeUpdates({
+    snapshot,
+    transition: updatedResult.transition,
+    context
+  });
+  return snapshot;
+};
+
+const closeEncounter = async (id, data, context = {}) => {
+  const closedAt = new Date();
+  const reasonNotes = normalizeNotes(data.reason_notes);
+
+  const updatedResult = await prisma.$transaction(async (tx) => {
+    const encounter = await resolveEncounterByIdentifier(tx, id);
+    if (!encounter) {
+      throw new HttpError('errors.opd_flow.not_found', 404);
+    }
+
+    const encounterStatus = normalizeStatus(encounter.status);
+    if (encounterStatus === 'CANCELLED' || encounterStatus === 'CLOSED') {
+      throw new HttpError('errors.opd_flow.already_terminal', 400);
+    }
+
+    const flow = getOpdFlowState(encounter);
+    ensureNonTerminalStage(flow);
+    const stageBefore = flow.stage;
+
+    setFlowStage(flow, STAGES.DISCHARGED);
+    flow.closed_early = true;
+    flow.close_reason_notes = reasonNotes;
+    flow.closed_at = closedAt.toISOString();
+
+    appendTimelineEvent(flow, 'ENCOUNTER_CLOSED', context, {
+      reason_notes: reasonNotes
+    });
+
+    const finalizedEncounter = await finalizeEncounterClosure(
+      tx,
+      encounter,
+      flow,
+      closedAt,
+      'CLOSED'
+    );
+
+    return {
+      encounter: finalizedEncounter,
+      transition: {
+        action: 'ENCOUNTER_CLOSED',
+        stage_from: stageBefore,
+        stage_to: flow.stage,
+        provider_user_id: encounter.provider_user_id || null,
+        occurred_at: closedAt.toISOString()
+      }
+    };
+  });
+
+  createAuditLog({
+    tenant_id: updatedResult.encounter.tenant_id,
+    user_id: context.user_id,
+    action: 'UPDATE',
+    entity: 'opd_flow',
+    entity_id: updatedResult.encounter.id,
+    diff: { after: updatedResult.encounter },
+    ip_address: context.ip_address
+  }).catch(() => {});
+
+  const snapshot = await getOpdFlowById(updatedResult.encounter.id);
+  await publishOpdRealtimeUpdates({
+    snapshot,
+    transition: updatedResult.transition,
+    context
+  });
+  return snapshot;
+};
+
+const getBillingDefaults = async (filters = {}, context = {}) => {
+  const tenantId = filters.tenant_id || context.tenant_id || null;
+  const facilityId = filters.facility_id || context.facility_id || null;
+
+  return prisma.$transaction(async (tx) => {
+    const standardDefaults = await resolveStandardConsultationFee(tx, tenantId, facilityId);
+    const defaultCurrency = await resolveDefaultCurrency(tx, tenantId, facilityId);
+    return {
+      standard_consultation_fee: standardDefaults.consultationFee,
+      standard_consultation_currency:
+        standardDefaults.consultationCurrency || defaultCurrency,
+      default_currency: defaultCurrency
+    };
+  });
+};
+
 const correctStage = async (id, data, context = {}) => {
   const reason = String(data?.reason || '').trim();
 
@@ -4520,6 +4816,9 @@ module.exports = {
   assignDoctor,
   doctorReview,
   disposition,
+  cancelEncounter,
+  closeEncounter,
+  getBillingDefaults,
   correctStage,
   syncDiagnosticsStage
 };

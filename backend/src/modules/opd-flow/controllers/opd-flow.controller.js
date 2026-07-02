@@ -129,6 +129,27 @@ const disposition = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.opd_flow.disposition.success', flow);
 });
 
+const cancelEncounter = asyncHandler(async (req, res) => {
+  const flow = await opdFlowService.cancelEncounter(req.params.id, req.body, buildAuditContext(req));
+  return sendSuccess(res, 200, 'messages.opd_flow.cancel.success', flow);
+});
+
+const closeEncounter = asyncHandler(async (req, res) => {
+  const flow = await opdFlowService.closeEncounter(req.params.id, req.body, buildAuditContext(req));
+  return sendSuccess(res, 200, 'messages.opd_flow.close.success', flow);
+});
+
+const getBillingDefaults = asyncHandler(async (req, res) => {
+  const defaults = await opdFlowService.getBillingDefaults(
+    {
+      tenant_id: req.query?.tenant_id || req.user?.tenant_id,
+      facility_id: req.query?.facility_id || req.user?.facility_id
+    },
+    buildAuditContext(req)
+  );
+  return sendSuccess(res, 200, 'messages.opd_flow.billing_defaults.success', defaults);
+});
+
 const correctStage = asyncHandler(async (req, res) => {
   const flow = await opdFlowService.correctStage(req.params.id, req.body, buildAuditContext(req));
   return sendSuccess(res, 200, 'messages.opd_flow.correct_stage.success', flow);
@@ -147,5 +168,8 @@ module.exports = {
   assignDoctor,
   doctorReview,
   disposition,
+  cancelEncounter,
+  closeEncounter,
+  getBillingDefaults,
   correctStage
 };

@@ -2403,6 +2403,55 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce patient a déjà une rencontre active avec un OPD. Mettez à jour la rencontre active au lieu de créer un doublon.';
 
   @override
+  String get opdContinueEncounterAction => 'Continue encounter';
+
+  @override
+  String get opdCloseEncounterAction => 'Close encounter';
+
+  @override
+  String get opdCancelEncounterAction => 'Cancel encounter';
+
+  @override
+  String get opdCreatePatientAction => 'Create patient';
+
+  @override
+  String get opdEncounterCancelReasonPatientLeft =>
+      'Patient left before consultation';
+
+  @override
+  String get opdEncounterCancelReasonDuplicate => 'Duplicate encounter';
+
+  @override
+  String get opdEncounterCancelReasonEnteredInError => 'Entered in error';
+
+  @override
+  String get opdEncounterCancelReasonAlreadySeen => 'Patient already seen';
+
+  @override
+  String get opdEncounterCancelReasonOther => 'Other';
+
+  @override
+  String get opdEncounterCloseReasonLabel => 'Close reason (optional)';
+
+  @override
+  String get opdEncounterCancelReasonCodeLabel => 'Cancellation reason';
+
+  @override
+  String get opdEncounterCancelReasonNotesLabel => 'Additional details';
+
+  @override
+  String get opdEncounterCancelReasonNotesRequiredMessage =>
+      'Enter details when selecting Other.';
+
+  @override
+  String get opdEncounterBillingPaidBanner =>
+      'Consultation payment is already recorded for this encounter.';
+
+  @override
+  String get opdEncounterArrivalModeLockedHelper =>
+      'Arrival mode is fixed while updating an active encounter.';
+
+  @override
   String get opdInactiveEncounterActionReason =>
       'Start ou mettre à jour un OPD consultation first.';
 

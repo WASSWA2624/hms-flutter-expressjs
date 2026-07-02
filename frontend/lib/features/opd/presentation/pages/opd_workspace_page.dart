@@ -365,6 +365,12 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         onExistingActiveEncounter: (OpdFlowSummary flow) {
           activeEncounterToOpen = flow;
         },
+        onCancelEncounter: (String flowId, Map<String, Object?> payload) {
+          return ref.read(opdRepositoryProvider).cancelEncounter(flowId, payload);
+        },
+        onCloseEncounter: (String flowId, Map<String, Object?> payload) {
+          return ref.read(opdRepositoryProvider).closeEncounter(flowId, payload);
+        },
       ),
     );
 
@@ -372,7 +378,32 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
 
-    final OpdFlowSummary? existingFlow = activeEncounterToOpen;
+    if (result.action == OpdEncounterDialogAction.continueWorkflow &&
+        result.flow != null) {
+      final bool? changed = await showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => FlowActionsDialog(flow: result.flow!),
+      );
+      if (changed == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      }
+      return;
+    }
+
+    if (result.action == OpdEncounterDialogAction.cancelled ||
+        result.action == OpdEncounterDialogAction.closed) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      }
+      return;
+    }
+
+    final OpdFlowSummary? existingFlow = result.flow ?? activeEncounterToOpen;
     if (existingFlow != null) {
       final bool? changed = await showAppDialog<bool>(
         context: context,

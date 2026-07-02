@@ -19,6 +19,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
@@ -27,11 +28,13 @@ import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
@@ -132,9 +135,25 @@ class _WalkInTabLabel extends StatelessWidget {
 typedef OpdEncounterPayloadSubmit =
     Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload);
 
+const List<String> _opdEncounterCancelReasonCodes = <String>[
+  'PATIENT_LEFT',
+  'DUPLICATE_ENCOUNTER',
+  'ENTERED_IN_ERROR',
+  'PATIENT_ALREADY_SEEN',
+  'OTHER',
+];
+
+enum OpdEncounterDialogAction { submit, continueWorkflow, closed, cancelled }
+
 @immutable
 final class OpdEncounterDialogResult {
-  const OpdEncounterDialogResult();
+  const OpdEncounterDialogResult({
+    this.action = OpdEncounterDialogAction.submit,
+    this.flow,
+  });
+
+  final OpdEncounterDialogAction action;
+  final OpdFlowSummary? flow;
 }
 
 class OpdEncounterDialog extends ConsumerStatefulWidget {
@@ -151,6 +170,8 @@ class OpdEncounterDialog extends ConsumerStatefulWidget {
     this.defaultProviderId,
     this.onSuccess,
     this.onExistingActiveEncounter,
+    this.onCancelEncounter,
+    this.onCloseEncounter,
     required this.onSubmit,
     super.key,
   });
@@ -167,6 +188,16 @@ class OpdEncounterDialog extends ConsumerStatefulWidget {
   final String? defaultProviderId;
   final VoidCallback? onSuccess;
   final ValueChanged<OpdFlowSummary>? onExistingActiveEncounter;
+  final Future<Result<OpdFlowDetail>> Function(
+    String flowId,
+    Map<String, Object?> payload,
+  )?
+  onCancelEncounter;
+  final Future<Result<OpdFlowDetail>> Function(
+    String flowId,
+    Map<String, Object?> payload,
+  )?
+  onCloseEncounter;
   final OpdEncounterPayloadSubmit onSubmit;
 
   @override
@@ -204,6 +235,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   AppFailure? _failure;
   int _activeEncounterLookupToken = 0;
   bool _appliedInitialContext = false;
+  OpdBillingDefaults? _billingDefaults;
+  bool _lockArrivalMode = false;
 
   bool get _pinPatientContext =>
       widget.initialPatient != null || _isNonEmpty(widget.initialPatientId);
@@ -246,6 +279,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     unawaited(_loadAppointmentOptions());
     unawaited(_loadProviderOptions());
     unawaited(_loadPatientReferenceData());
+    unawaited(_loadBillingDefaults());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _applyInitialContext();
@@ -415,6 +449,17 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final bool hasActiveEncounter = _activeEncounter != null;
+    final bool isNewPatientMode = _patientMode == _WalkInPatientMode.newPatient;
+    final String primaryActionLabel = isNewPatientMode
+        ? l10n.opdCreatePatientAction
+        : hasActiveEncounter
+        ? l10n.opdOpenActiveEncounterAction
+        : l10n.opdStartEncounterAction;
+    final IconData primaryActionIcon = isNewPatientMode
+        ? Icons.person_add_alt_1_outlined
+        : hasActiveEncounter
+        ? Icons.save_outlined
+        : Icons.play_arrow_outlined;
 
     return AppDialog(
       title: Text(l10n.opdWalkInDialogTitle),
@@ -436,7 +481,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               children: <Widget>[
                 _WalkInModeSelector(
                   value: _patientMode,
-                  enabled: !_isSaving,
+                  enabled: !_isSaving && !hasActiveEncounter,
                   existingLabel: l10n.opdExistingPatientModeLabel,
                   appointmentLabel: l10n.opdAppointmentPatientModeLabel,
                   newPatientLabel: l10n.opdNewPatientModeLabel,
@@ -456,13 +501,31 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ],
       ),
       actions: <Widget>[
+        if (hasActiveEncounter) ...<Widget>[
+          AppButton.secondary(
+            label: l10n.opdContinueEncounterAction,
+            leadingIcon: Icons.play_arrow_outlined,
+            enabled: !_isSaving,
+            onPressed: _continueWorkflow,
+          ),
+          if (widget.onCloseEncounter != null)
+            AppButton.secondary(
+              label: l10n.opdCloseEncounterAction,
+              leadingIcon: Icons.check_circle_outline,
+              enabled: !_isSaving,
+              onPressed: _promptCloseEncounter,
+            ),
+          if (widget.onCancelEncounter != null)
+            AppButton.secondary(
+              label: l10n.opdCancelEncounterAction,
+              leadingIcon: Icons.cancel_outlined,
+              enabled: !_isSaving,
+              onPressed: _promptCancelEncounter,
+            ),
+        ],
         AppButton.primary(
-          label: hasActiveEncounter
-              ? l10n.opdOpenActiveEncounterAction
-              : l10n.opdStartEncounterAction,
-          leadingIcon: hasActiveEncounter
-              ? Icons.save_outlined
-              : Icons.play_arrow_outlined,
+          label: primaryActionLabel,
+          leadingIcon: primaryActionIcon,
           enabled:
               !_isSaving &&
               (!_isResolvingActiveEncounter || _activeEncounter != null),
@@ -486,7 +549,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               l10n,
               l10n.opdArrivalModeLabel,
             ),
-            enabled: !_isSaving,
+            helperText: _lockArrivalMode
+                ? l10n.opdEncounterArrivalModeLockedHelper
+                : null,
+            enabled: !_isSaving && !_lockArrivalMode,
             onChanged: (String? value) {
               setState(() {
                 _arrivalMode = value ?? 'WALK_IN';
@@ -562,10 +628,20 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Widget _billingSection(AppLocalizations l10n) {
+    final OpdFlowSummary? activeEncounter = _activeEncounter;
+    final bool billingAlreadyPaid =
+        activeEncounter != null &&
+        opdFlowBillingState(activeEncounter) == OpdBillingState.paid;
+
     return AppSectionPanel(
       title: l10n.opdBillingSectionTitle,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
+        if (billingAlreadyPaid)
+          AppFormInformationBanner.message(
+            title: l10n.opdPaymentStatusLabel,
+            message: l10n.opdEncounterBillingPaidBanner,
+          ),
         AppCurrencyAmountField(
           amountController: _feeController,
           currency: _currency,
@@ -595,7 +671,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         AppSwitchField(
           title: l10n.opdPaymentRequiredLabel,
           value: _requireConsultationPayment,
-          enabled: !_isSaving,
+          enabled: !_isSaving && !billingAlreadyPaid,
           secondary: const Icon(Icons.payments_outlined),
           onChanged: (bool value) {
             setState(() {
@@ -609,7 +685,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         AppCheckboxField(
           title: l10n.patientsMarkPaymentReceivedLabel,
           value: _payNow,
-          enabled: !_isSaving,
+          enabled: !_isSaving && !billingAlreadyPaid,
           secondary: const Icon(Icons.point_of_sale_outlined),
           onChanged: (bool value) {
             setState(() {
@@ -717,6 +793,17 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       return const SizedBox.shrink();
     }
 
+    final Patient? patient =
+        widget.initialPatient ?? _patientByApiId(_patientId);
+    final String stageLabel = opdStageDisplayLabel(
+      l10n,
+      flow.displayCode ?? flow.stage ?? flow.status,
+    );
+    final String nextStepLabel = opdNextStepDisplayLabel(
+      l10n,
+      flow.displayNextStep ?? flow.nextStep,
+    );
+
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
       child: SizedBox(
@@ -749,7 +836,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                     ),
                     AppWorkspaceStatusBadge(
                       status: AppWorkspaceStatus(
-                        label: _apiLabel(flow.stage ?? flow.status ?? ''),
+                        label: stageLabel,
                         tone: AppWorkspaceStatusTone.warning,
                       ),
                     ),
@@ -776,22 +863,34 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                         : (maxWidth - theme.spacing.lg * (columns - 1)) /
                               columns;
                     final List<Widget> details = <Widget>[
-                      _ActiveEncounterDetail(
+                      _ActiveEncounterCopyableDetail(
                         label: l10n.clinicalEncounterNumberLabel,
                         value: flow.apiId,
                       ),
+                      if (patient != null)
+                        _ActiveEncounterCopyableDetail(
+                          label: l10n.opdPatientIdLabel,
+                          value: patient.effectiveIdentifier ??
+                              _firstNonEmptyText(<String?>[
+                                patient.publicId,
+                                patient.id,
+                              ]) ??
+                              l10n.profileUnknownValue,
+                        ),
                       _ActiveEncounterDetail(
-                        label: l10n.opdStageLabel,
-                        value: _apiLabel(flow.stage ?? flow.status ?? ''),
+                        label: l10n.opdNextStepColumnLabel,
+                        value: nextStepLabel.isEmpty
+                            ? l10n.profileUnknownValue
+                            : nextStepLabel,
                       ),
                       _ActiveEncounterDetail(
                         label: l10n.opdVisitTypeColumnLabel,
-                        value: _apiLabel(
+                        value: opdArrivalModeDisplayLabel(
+                          l10n,
                           _firstNonEmptyText(<String?>[
                                 flow.arrivalMode,
                                 flow.encounterType,
-                              ]) ??
-                              '',
+                              ]),
                         ),
                       ),
                       _ActiveEncounterDetail(
@@ -828,20 +927,113 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     );
   }
 
+  Future<void> _loadBillingDefaults() async {
+    final Patient? patient =
+        widget.initialPatient ?? _patientByApiId(_patientId);
+    final Result<OpdBillingDefaults> result = await ref
+        .read(opdRepositoryProvider)
+        .getBillingDefaults(
+          facilityId: patient?.facilityId,
+          tenantId: patient?.tenantId,
+        );
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (OpdBillingDefaults defaults) {
+        setState(() {
+          _billingDefaults = defaults;
+          _applyProviderDefaultsToState(_providerId);
+        });
+      },
+      failure: (_) {},
+    );
+  }
+
+  void _continueWorkflow() {
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (flow == null) {
+      return;
+    }
+    Navigator.of(context).pop(
+      OpdEncounterDialogResult(
+        action: OpdEncounterDialogAction.continueWorkflow,
+        flow: flow,
+      ),
+    );
+  }
+
+  Future<void> _promptCloseEncounter() async {
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (flow == null || widget.onCloseEncounter == null) {
+      return;
+    }
+    final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
+      context: context,
+      builder: (_) => _CloseEncounterDialog(flow: flow),
+    );
+    if (payload == null || !mounted) {
+      return;
+    }
+    await _runEncounterMutation(
+      action: OpdEncounterDialogAction.closed,
+      request: () => widget.onCloseEncounter!(flow.apiId, payload),
+    );
+  }
+
+  Future<void> _promptCancelEncounter() async {
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (flow == null || widget.onCancelEncounter == null) {
+      return;
+    }
+    final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
+      context: context,
+      builder: (_) => _CancelEncounterDialog(l10n: context.l10n),
+    );
+    if (payload == null || !mounted) {
+      return;
+    }
+    await _runEncounterMutation(
+      action: OpdEncounterDialogAction.cancelled,
+      request: () => widget.onCancelEncounter!(flow.apiId, payload),
+    );
+  }
+
+  Future<void> _runEncounterMutation({
+    required OpdEncounterDialogAction action,
+    required Future<Result<OpdFlowDetail>> Function() request,
+  }) async {
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Result<OpdFlowDetail> result = await request();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (OpdFlowDetail detail) {
+        widget.onSuccess?.call();
+        Navigator.of(context).pop(
+          OpdEncounterDialogResult(action: action, flow: detail.summary),
+        );
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
+        });
+      },
+    );
+  }
+
   Future<void> _submit() async {
     if (_isSaving) {
       return;
     }
     if (_patientMode == _WalkInPatientMode.newPatient) {
-      final RegisterNewPatientFormState? formState =
-          _newPatientFormKey.currentState;
-      if (formState != null) {
-        final bool canContinue = await formState.prepareSubmit();
-        if (!canContinue) {
-          setState(() {});
-          return;
-        }
-      }
+      await _createPatientAndContinue();
+      return;
     }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
@@ -862,7 +1054,56 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           widget.onExistingActiveEncounter?.call(activeEncounter);
         }
         widget.onSuccess?.call();
-        Navigator.of(context).pop(const OpdEncounterDialogResult());
+        Navigator.of(context).pop(
+          OpdEncounterDialogResult(flow: activeEncounter),
+        );
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _createPatientAndContinue() async {
+    final RegisterNewPatientFormState? formState =
+        _newPatientFormKey.currentState;
+    if (formState != null) {
+      final bool canContinue = await formState.prepareSubmit();
+      if (!canContinue) {
+        setState(() {});
+        return;
+      }
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Result<Patient> result = await ref
+        .read(patientRepositoryProvider)
+        .createPatient(_newPatientRegistrationPayload());
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (Patient patient) {
+        setState(() {
+          _isSaving = false;
+          _patientMode = _WalkInPatientMode.existing;
+          _patientId = _firstNonEmptyText(<String?>[patient.publicId, patient.id]);
+          _patientOptions = _mergePatients(<Patient>[
+            ..._patientOptions,
+            patient,
+          ]);
+          _lockArrivalMode = false;
+        });
+        _refreshActiveEncounterForSelection();
+        _loadBillingDefaults();
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1100,6 +1341,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   void _applyActiveEncounterToState(OpdFlowSummary? flow) {
     _activeEncounter = flow;
     if (flow == null) {
+      _lockArrivalMode = false;
       return;
     }
 
@@ -1108,9 +1350,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (_patientMode != _WalkInPatientMode.appointment) {
       if (encounterType == 'EMERGENCY' || arrivalMode == 'EMERGENCY') {
         _arrivalMode = 'EMERGENCY';
-      } else if (_isNonEmpty(flow.arrivalMode) &&
-          arrivalMode != 'ONLINE_APPOINTMENT') {
+        _lockArrivalMode = true;
+      } else if (_isNonEmpty(flow.arrivalMode)) {
         _arrivalMode = flow.arrivalMode!;
+        _lockArrivalMode = true;
       }
     }
     if (_isNonEmpty(flow.providerUserId)) {
@@ -1125,6 +1368,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _currency = flow.consultationCurrency!.trim().toUpperCase();
     }
     _requireConsultationPayment = flow.consultationPaymentRequired;
+    if (opdFlowBillingState(flow) == OpdBillingState.paid) {
+      _payNow = false;
+    }
     if (_isNonEmpty(flow.triageLevel)) {
       _triageLevel = flow.triageLevel;
     }
@@ -1196,16 +1442,27 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     bool overwrite = false,
   }) {
     final OpdProviderOption? provider = _providerOptionById(providerId);
-    if (provider == null) {
-      return;
-    }
-    if (provider.consultationFee != null &&
+    final OpdBillingDefaults? billingDefaults = _billingDefaults;
+    final num? providerFee = provider?.consultationFee;
+    final num? fallbackFee = billingDefaults?.standardConsultationFee;
+    final String? providerCurrency = provider?.consultationCurrency;
+    final String? fallbackCurrency =
+        billingDefaults?.standardConsultationCurrency ??
+        billingDefaults?.defaultCurrency;
+
+    if (providerFee != null && (overwrite || _feeController.text.trim().isEmpty)) {
+      _feeController.text = _currencyAmountInput(providerFee);
+    } else if (fallbackFee != null &&
         (overwrite || _feeController.text.trim().isEmpty)) {
-      _feeController.text = _currencyAmountInput(provider.consultationFee);
+      _feeController.text = _currencyAmountInput(fallbackFee);
     }
-    if (_isNonEmpty(provider.consultationCurrency) &&
+
+    if (_isNonEmpty(providerCurrency) &&
         (overwrite || _currency == appDefaultCurrencyCode)) {
-      _currency = provider.consultationCurrency!.trim().toUpperCase();
+      _currency = providerCurrency!.trim().toUpperCase();
+    } else if (_isNonEmpty(fallbackCurrency) &&
+        (overwrite || _currency == appDefaultCurrencyCode)) {
+      _currency = fallbackCurrency!.trim().toUpperCase();
     }
   }
 
@@ -1481,6 +1738,197 @@ class _ActiveEncounterDetail extends StatelessWidget {
             color: colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActiveEncounterCopyableDetail extends StatelessWidget {
+  const _ActiveEncounterCopyableDetail({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        AppCopyableIdentifier(
+          value: value,
+          copiedMessage: context.l10n.identifierCopiedMessage,
+          textStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CloseEncounterDialog extends StatefulWidget {
+  const _CloseEncounterDialog({required this.flow});
+
+  final OpdFlowSummary flow;
+
+  @override
+  State<_CloseEncounterDialog> createState() => _CloseEncounterDialogState();
+}
+
+class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
+  late final TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.opdCloseEncounterAction),
+      icon: const Icon(Icons.check_circle_outline),
+      content: AppFormSection(
+        children: <Widget>[
+          AppFormInformationBanner.message(
+            title: l10n.clinicalEncounterNumberLabel,
+            message: widget.flow.apiId,
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: l10n.opdEncounterCloseReasonLabel,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.primary(
+          label: l10n.opdCloseEncounterAction,
+          leadingIcon: Icons.check_circle_outline,
+          onPressed: () {
+            Navigator.of(context).pop(<String, Object?>{
+              'reason_notes': _reasonController.text.trim(),
+            });
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CancelEncounterDialog extends StatefulWidget {
+  const _CancelEncounterDialog({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_CancelEncounterDialog> createState() => _CancelEncounterDialogState();
+}
+
+class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
+  late final TextEditingController _notesController;
+  String _reasonCode = _opdEncounterCancelReasonCodes.first;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  String _reasonLabel(String code) {
+    return switch (code) {
+      'PATIENT_LEFT' => widget.l10n.opdEncounterCancelReasonPatientLeft,
+      'DUPLICATE_ENCOUNTER' => widget.l10n.opdEncounterCancelReasonDuplicate,
+      'ENTERED_IN_ERROR' => widget.l10n.opdEncounterCancelReasonEnteredInError,
+      'PATIENT_ALREADY_SEEN' => widget.l10n.opdEncounterCancelReasonAlreadySeen,
+      _ => widget.l10n.opdEncounterCancelReasonOther,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = widget.l10n;
+    return AppDialog(
+      title: Text(l10n.opdCancelEncounterAction),
+      icon: const Icon(Icons.cancel_outlined),
+      content: AppFormSection(
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _reasonCode,
+            labelText: l10n.opdEncounterCancelReasonCodeLabel,
+            options: _opdEncounterCancelReasonCodes
+                .map(
+                  (String code) => AppSelectOption<String>(
+                    value: code,
+                    label: _reasonLabel(code),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (String? value) {
+              setState(() {
+                _reasonCode = value ?? _reasonCode;
+              });
+            },
+          ),
+          if (_reasonCode == 'OTHER')
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.opdEncounterCancelReasonNotesLabel,
+              maxLines: 3,
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.primary(
+          label: l10n.opdCancelEncounterAction,
+          leadingIcon: Icons.cancel_outlined,
+          onPressed: () {
+            final String notes = _notesController.text.trim();
+            if (_reasonCode == 'OTHER' && notes.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.opdEncounterCancelReasonNotesRequiredMessage),
+                ),
+              );
+              return;
+            }
+            Navigator.of(context).pop(<String, Object?>{
+              'reason_code': _reasonCode,
+              'reason_notes': notes.isEmpty ? null : notes,
+            });
+          },
         ),
       ],
     );

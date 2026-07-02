@@ -1463,9 +1463,33 @@ Future<void> _openPatientOpdEncounterDialog(
     return;
   }
 
+  if (result.action == OpdEncounterDialogAction.continueWorkflow &&
+      result.flow != null) {
+    if (!context.mounted) {
+      return;
+    }
+    await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => FlowActionsDialog(flow: result.flow!),
+    );
+    if (!context.mounted) {
+      return;
+    }
+    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    return;
+  }
+
+  if (result.action == OpdEncounterDialogAction.cancelled ||
+      result.action == OpdEncounterDialogAction.closed) {
+    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    return;
+  }
+
   await _refreshPatientAfterQuickAction(context, ref, patient.id);
 
-  final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
+  final OpdFlowSummary? activeEncounter =
+      result.flow ?? activeEncounterToOpen;
   if (activeEncounter == null || !context.mounted) {
     return;
   }
@@ -1883,6 +1907,12 @@ class _PatientOpdEncounterDialogState
       initialPatientId: _patientApiId(widget.patient),
       source: 'patient_registry',
       onExistingActiveEncounter: widget.onExistingActiveEncounter,
+      onCancelEncounter: (String flowId, Map<String, Object?> payload) {
+        return ref.read(opdRepositoryProvider).cancelEncounter(flowId, payload);
+      },
+      onCloseEncounter: (String flowId, Map<String, Object?> payload) {
+        return ref.read(opdRepositoryProvider).closeEncounter(flowId, payload);
+      },
       onSubmit: widget.onSubmit,
     );
   }

@@ -26,6 +26,9 @@ const {
   doctorReviewSchema,
   dispositionSchema,
   correctStageSchema,
+  cancelEncounterSchema,
+  closeEncounterSchema,
+  billingDefaultsQuerySchema,
   listOpdFlowsQuerySchema
 } = require('@validations/opd-flow/opd-flow.schema');
 
@@ -72,6 +75,7 @@ router.get(
 
 router.get(
   '/summary',
+  validateRequest({ query: billingDefaultsQuerySchema }),
   authenticate(),
   authorize(
     [
@@ -115,6 +119,22 @@ router.get(
  * @throws 401 Unauthorized
  * @throws 404 OPD flow not found
  */
+router.get(
+  '/billing-defaults',
+  validateRequest({ query: billingDefaultsQuerySchema }),
+  authenticate(),
+  authorize(
+    [
+      PERMISSIONS.PATIENT_READ,
+      PERMISSIONS.CLINICAL_READ,
+      PERMISSIONS.BILLING_READ,
+      PERMISSIONS.OPERATIONS_READ
+    ],
+    'permission'
+  ),
+  opdFlowController.getBillingDefaults
+);
+
 router.get(
   '/:id',
   validateRequest({ params: encounterIdParamsSchema }),
@@ -357,6 +377,38 @@ router.post(
   authenticate(),
   authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.disposition
+);
+
+router.post(
+  '/:id/cancel',
+  validateRequest({ params: encounterIdParamsSchema, body: cancelEncounterSchema }),
+  authenticate(),
+  authorize(
+    [
+      PERMISSIONS.PATIENT_WRITE,
+      PERMISSIONS.CLINICAL_WRITE,
+      PERMISSIONS.OPERATIONS_WRITE,
+      PERMISSIONS.EMERGENCY_WRITE
+    ],
+    'permission'
+  ),
+  opdFlowController.cancelEncounter
+);
+
+router.post(
+  '/:id/close',
+  validateRequest({ params: encounterIdParamsSchema, body: closeEncounterSchema }),
+  authenticate(),
+  authorize(
+    [
+      PERMISSIONS.PATIENT_WRITE,
+      PERMISSIONS.CLINICAL_WRITE,
+      PERMISSIONS.OPERATIONS_WRITE,
+      PERMISSIONS.EMERGENCY_WRITE
+    ],
+    'permission'
+  ),
+  opdFlowController.closeEncounter
 );
 
 /**
