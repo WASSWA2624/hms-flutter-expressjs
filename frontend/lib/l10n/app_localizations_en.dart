@@ -3250,7 +3250,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickPhysiotherapyAction => 'Request physiotherapy';
 
   @override
-  String get patientsQuickAdmitPatientAction => 'Admit patient';
+  String get patientsQuickAdmitPatientAction => 'Request admission';
 
   @override
   String get patientsActiveWorkTitle => 'Active work';
@@ -3354,7 +3354,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsBillingDialogTitle => 'Consultation billing';
 
   @override
-  String get patientsAdmissionDialogTitle => 'Admit patient';
+  String get patientsAdmissionDialogTitle => 'Request admission';
 
   @override
   String get patientsArrivalModeLabel => 'Arrival mode';

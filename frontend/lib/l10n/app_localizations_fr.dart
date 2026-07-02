@@ -3278,7 +3278,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsQuickPhysiotherapyAction => 'Demander une physiothérapie';
 
   @override
-  String get patientsQuickAdmitPatientAction => 'Admettre le patient';
+  String get patientsQuickAdmitPatientAction => 'Demander l\'admission';
 
   @override
   String get patientsActiveWorkTitle => 'Travaux en cours';
@@ -3384,7 +3384,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsBillingDialogTitle => 'Facturation des consultations';
 
   @override
-  String get patientsAdmissionDialogTitle => 'Admettre le patient';
+  String get patientsAdmissionDialogTitle => 'Demander l\'admission';
 
   @override
   String get patientsArrivalModeLabel => 'Mode d\'arrivée';

@@ -19,6 +19,9 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
     this.reasonRequired = false,
     this.notesLabel,
     this.maxWidth = 900,
+    this.initialMaximized = false,
+    this.showCancelButton = true,
+    this.submitLeadingIcon,
     this.leadingSectionsBuilder,
     super.key,
   });
@@ -33,6 +36,9 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
   final bool reasonRequired;
   final String? notesLabel;
   final double maxWidth;
+  final bool initialMaximized;
+  final bool showCancelButton;
+  final IconData? submitLeadingIcon;
   final List<Widget> Function(BuildContext context, bool enabled)?
   leadingSectionsBuilder;
 
@@ -104,6 +110,7 @@ class _ClinicalAdmissionActionDialogState
       title: Text(widget.title ?? l10n.clinicalRequestAdmissionAction),
       icon: widget.icon,
       closeEnabled: !_isSaving,
+      initialMaximized: widget.initialMaximized,
       maxWidth: widget.maxWidth,
       scrollable: true,
       content: Form(
@@ -191,7 +198,9 @@ class _ClinicalAdmissionActionDialogState
                     items: _admissionDetailTiles(
                       context,
                       widget.referenceData,
-                      selectedBed,
+                      wardId: _wardId,
+                      roomId: _roomId,
+                      selectedBed: selectedBed,
                     ),
                     minItemWidth: 180,
                   ),
@@ -224,6 +233,8 @@ class _ClinicalAdmissionActionDialogState
         widget.submitLabel ?? l10n.clinicalRequestAdmissionAction,
         _isSaving,
         availableBeds.isEmpty ? null : _submit,
+        showCancel: widget.showCancelButton,
+        submitLeadingIcon: widget.submitLeadingIcon,
       ),
     );
   }
@@ -412,34 +423,38 @@ ClinicalActionCatalogOption? _selectedAdmissionBed(
 
 List<AppInfoTileData> _admissionDetailTiles(
   BuildContext context,
-  ClinicalActionReferenceData referenceData,
-  ClinicalActionCatalogOption? bed,
-) {
+  ClinicalActionReferenceData referenceData, {
+  required String? wardId,
+  required String? roomId,
+  required ClinicalActionCatalogOption? selectedBed,
+}) {
   final AppLocalizations l10n = context.l10n;
+  final String? resolvedWardId = wardId ?? selectedBed?.parentId;
+  final String? resolvedRoomId = roomId ?? selectedBed?.secondaryId;
   return <AppInfoTileData>[
     AppInfoTileData(
       label: l10n.clinicalAdmissionWardLabel,
-      value: bed == null
+      value: resolvedWardId == null
           ? null
           : _admissionCatalogDisplayLabelById(
               referenceData.wards,
-              bed.parentId,
+              resolvedWardId,
             ),
       icon: Icons.apartment_outlined,
     ),
     AppInfoTileData(
       label: l10n.clinicalAdmissionRoomLabel,
-      value: bed == null
+      value: resolvedRoomId == null
           ? null
           : _admissionCatalogDisplayLabelById(
               referenceData.rooms,
-              bed.secondaryId,
+              resolvedRoomId,
             ),
       icon: Icons.meeting_room_outlined,
     ),
     AppInfoTileData(
       label: l10n.clinicalAdmissionBedLabel,
-      value: bed?.displayTitle,
+      value: selectedBed?.displayTitle,
       icon: Icons.bed_outlined,
     ),
   ];

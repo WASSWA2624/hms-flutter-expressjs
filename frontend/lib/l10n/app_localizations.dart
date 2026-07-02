@@ -6302,10 +6302,10 @@ abstract class AppLocalizations {
   /// **'Request physiotherapy'**
   String get patientsQuickPhysiotherapyAction;
 
-  /// Patient quick action to start an inpatient admission.
+  /// Patient quick action to request an inpatient admission.
   ///
   /// In en, this message translates to:
-  /// **'Admit patient'**
+  /// **'Request admission'**
   String get patientsQuickAdmitPatientAction;
 
   /// Section title for in-progress patient workflows.
@@ -6488,10 +6488,10 @@ abstract class AppLocalizations {
   /// **'Consultation billing'**
   String get patientsBillingDialogTitle;
 
-  /// Patient admission dialog title.
+  /// Title for the patient admission request dialog.
   ///
   /// In en, this message translates to:
-  /// **'Admit patient'**
+  /// **'Request admission'**
   String get patientsAdmissionDialogTitle;
 
   /// Patient OPD arrival mode field label.

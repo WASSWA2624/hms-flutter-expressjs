@@ -859,6 +859,108 @@ void main() {
     expect(find.text('Manage consultation billing'), findsNothing);
   });
 
+  testWidgets('request admission quick action opens maximized dialog', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    final ipdRepository = _MockIpdRepository();
+    const patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT-1001',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      gender: 'FEMALE',
+      primaryPhone: '+256700000000',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+    );
+
+    _stubPatientRegistry(patientRepository, patient);
+    when(() => patientRepository.loadReferenceData()).thenAnswer(
+      (_) async => const Result<PatientReferenceData>.success(
+        PatientReferenceData(
+          facilities: <PatientReferenceOption>[
+            PatientReferenceOption(id: 'facility-1', label: 'Main hospital'),
+          ],
+          wards: <PatientReferenceOption>[
+            PatientReferenceOption(
+              id: 'ward-1',
+              label: 'Medical ward',
+              facilityId: 'facility-1',
+            ),
+          ],
+          rooms: <PatientReferenceOption>[
+            PatientReferenceOption(
+              id: 'room-1',
+              label: 'Room 101',
+              wardId: 'ward-1',
+              facilityId: 'facility-1',
+            ),
+          ],
+          beds: <PatientReferenceOption>[
+            PatientReferenceOption(
+              id: 'bed-1',
+              label: 'Bed A',
+              wardId: 'ward-1',
+              roomId: 'room-1',
+              facilityId: 'facility-1',
+              status: 'AVAILABLE',
+            ),
+          ],
+        ),
+      ),
+    );
+    _stubProviderLookup(opdRepository);
+    when(() => ipdRepository.startAdmission(any())).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'admission-1',
+            stage: 'ADMITTED_IN_BED',
+            admissionStatus: 'ADMITTED',
+          ),
+        ),
+      ),
+    );
+    when(() => ipdRepository.addNursingNote(any(), any())).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'admission-1',
+            stage: 'ADMITTED_IN_BED',
+            admissionStatus: 'ADMITTED',
+          ),
+        ),
+      ),
+    );
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      ipdRepository: ipdRepository,
+      size: const Size(1100, 960),
+      roles: const <String>['SUPER_ADMIN'],
+    );
+
+    await tester.tap(find.text('Amina Kato').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Request admission'), findsOneWidget);
+    expect(find.text('Admit patient'), findsNothing);
+
+    await tester.tap(find.text('Request admission'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Request admission'), findsWidgets);
+    expect(find.text('Cancel'), findsNothing);
+    expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
+    expect(find.byType(PatientFacilitySelectField), findsNothing);
+  });
+
   testWidgets('active admission quick action opens discharge dialog', (
     WidgetTester tester,
   ) async {

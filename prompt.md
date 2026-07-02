@@ -1,1 +1,69 @@
-Please take it. Now let us let us implement the admit patient modal dialog if it doesn't exist, but if it exists let's implement the following. Actually, it exists. So We, when, when you click, when you click admit, admit patient, actually I think that this button should be changed to request patient admission, so you are actually requesting, if you are under patients, you are actually requesting an admission for this patient. So If the under this, this dialog, the admission request dialog should the admission request dialog should open, should be maximized by default and Depending on your account, whether this account has access to multiple facilities or tenants, so those fields should appear. If, for example, fifteen entities selected, then The facility option gets, gets activated. Then after the facility, then you can, the wards then after the wards, then you can have the rooms, and when after the rooms, then you can have the bed. So if one specific option is changed, then the, all the sub-options need to get reset. We have the admission re-reason that is also required. so let's see, make this Let's also improve. So for example users that have accessed only one that have accessed only one facility should see, should, should, should not have the option of selecting a facility. So the facility should be selected behind a scene. I can see the request admission button at the bottom that button should have an icon, and the cancel button should be removed because the modal already has the close button, which in this case will act as It will act as the cancel button. Then here on the words there is an option for wardrobe and bed. I think there. When you select options, we should have a summary of what has been selected, and when you're requesting for an admission when you're requesting for an admission, then that admission should be, it should be, it, it should be sent to the respective voice such, or if there is a staff who is responsible for receiving admissions, or then that, that staff should be, should be notified, should be notified appropriately. But I want this patient to be It's supposed to go to the respective department where they are going. So They, they could, this this patient could be going to ICU, could be going to wards, could be going to in there, so let's make a request, the admission request seamless.
+# Refine patient admission request flow
+
+## Context
+
+From **Patient Registry → patient detail → Quick actions**, staff initiate an inpatient admission **request** for the selected patient. The dialog already exists (`ClinicalAdmissionActionDialog`, opened via `_PatientAdmissionQuickDialog` in `patient_registry_page.dart`). Refine it — do not rebuild from scratch.
+
+**Primary files**
+- `frontend/lib/features/patients/presentation/widgets/patient_detail_quick_actions.dart`
+- `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart` (`_PatientAdmissionQuickDialog`)
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart`
+- `frontend/lib/l10n/app_en.arb` / `app_fr.arb`
+
+## Requirements
+
+### 1. Copy & intent
+
+- Rename the quick-action label from **“Admit patient”** to **“Request admission”** (or equivalent l10n). The action requests admission; it does not complete admission.
+- Dialog title and submit label should align: **“Request admission”** (reuse `clinicalRequestAdmissionAction` where appropriate).
+
+### 2. Dialog chrome
+
+- Open the admission request dialog **maximized by default** (`AppDialog.initialMaximized: true`).
+- **Remove the Cancel footer button.** The header close (×) is the only dismiss action.
+- Add a **leading icon** to the primary **Request admission** submit button (e.g. bed/hospital icon, consistent with dialog header).
+
+### 3. Facility-aware workflow
+
+- **Single-facility users:** hide the Facility field; pre-select the user’s facility behind the scenes and pass it on submit.
+- **Multi-facility users:** show **Facility (optional)** in a **Workflow** section (as in screenshots).
+- **Cascading location fields:** Facility → Ward → Room → Bed.
+- When any parent selection changes, **reset all dependent child fields** (changing facility must also clear ward, room, and bed).
+
+### 4. Location selection UX
+
+- Ward, Room, and Bed are **required**.
+- Show a **live selection summary** (Ward / Room / Bed info tiles) that updates as each dropdown is filled — not only after the final bed is chosen.
+- Preserve existing empty-state messaging when no rooms/beds are available for the current selection.
+
+### 5. Clinical fields
+
+- **Admission reason** — required.
+- **Notes** — optional.
+
+### 6. Submit behaviour & routing
+
+On successful submit, the admission request must:
+
+1. Create/route the request to the **target ward/department** implied by the selected location (ICU, general ward, etc.).
+2. **Notify the responsible admission staff** for that ward/department (or the configured admission receiver), using existing notification/realtime patterns in the codebase.
+3. Keep the current end-to-end flow intact (OPD disposition → IPD admission → bed assignment) unless a dedicated admission-request API is clearly the better fit — prefer minimal, correct changes.
+
+Show success/error feedback via existing `AppFailure` / snackbar patterns. Close the dialog on success and refresh patient detail.
+
+## Acceptance criteria
+
+- [ ] Quick action reads “Request admission”; dialog title matches.
+- [ ] Dialog opens maximized; no Cancel button; submit has an icon.
+- [ ] Single-facility users never see Facility; multi-facility users do.
+- [ ] Changing facility, ward, or room resets downstream selections.
+- [ ] Summary tiles reflect ward → room → bed progressively.
+- [ ] Submit blocked without reason; notes optional.
+- [ ] Request reaches the correct ward/department queue and triggers staff notification.
+- [ ] Existing/widget tests updated; `flutter test` passes for touched areas.
+
+## Out of scope
+
+- Redesigning unrelated patient-detail sections (encounters, identifiers, other quick actions).
+- New backend endpoints unless the current submit path cannot satisfy routing/notification.

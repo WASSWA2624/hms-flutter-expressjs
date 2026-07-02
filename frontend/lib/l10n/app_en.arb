@@ -4247,9 +4247,9 @@
   "@patientsQuickPhysiotherapyAction": {
     "description": "Patient quick action to request physiotherapy."
   },
-  "patientsQuickAdmitPatientAction": "Admit patient",
+  "patientsQuickAdmitPatientAction": "Request admission",
   "@patientsQuickAdmitPatientAction": {
-    "description": "Patient quick action to start an inpatient admission."
+    "description": "Patient quick action to request an inpatient admission."
   },
   "patientsActiveWorkTitle": "Active work",
   "@patientsActiveWorkTitle": {
@@ -4405,9 +4405,9 @@
   "@patientsBillingDialogTitle": {
     "description": "Patient billing dialog title."
   },
-  "patientsAdmissionDialogTitle": "Admit patient",
+  "patientsAdmissionDialogTitle": "Request admission",
   "@patientsAdmissionDialogTitle": {
-    "description": "Patient admission dialog title."
+    "description": "Title for the patient admission request dialog."
   },
   "patientsArrivalModeLabel": "Arrival mode",
   "@patientsArrivalModeLabel": {

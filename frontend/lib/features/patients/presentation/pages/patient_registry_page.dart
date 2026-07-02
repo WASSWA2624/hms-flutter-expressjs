@@ -17,6 +17,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
@@ -2330,17 +2331,32 @@ class _PatientAdmissionQuickDialogState
   @override
   void initState() {
     super.initState();
-    _facilityId = widget.patient.facilityId;
+    _facilityId = _initialFacilityId();
+  }
+
+  String? _initialFacilityId() {
+    if (widget.patient.facilityId != null &&
+        widget.patient.facilityId!.trim().isNotEmpty) {
+      return widget.patient.facilityId;
+    }
+    if (widget.referenceData.facilities.length == 1) {
+      return widget.referenceData.facilities.first.id;
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return ClinicalAdmissionActionDialog(
+      key: ValueKey<String?>(_facilityId),
       referenceData: _clinicalAdmissionReferenceData(),
       reasonLabel: l10n.patientsAdmissionReasonLabel,
       reasonRequired: true,
-      notesLabel: l10n.patientsNotesLabel,
+      notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
+      initialMaximized: true,
+      showCancelButton: false,
+      submitLeadingIcon: Icons.local_hospital_outlined,
       leadingSectionsBuilder: _workflowFields,
       onSubmit: _submitAdmission,
     );
@@ -2358,7 +2374,9 @@ class _PatientAdmissionQuickDialogState
           PatientFacilitySelectField(
             facilities: widget.referenceData.facilities,
             value: _facilityId,
-            labelText: context.l10n.patientsFacilityLabel,
+            labelText: context.l10n.opdFieldOptionalLabel(
+              context.l10n.patientsFacilityLabel,
+            ),
             enabled: enabled,
             onChanged: (String? value) => setState(() => _facilityId = value),
           ),
@@ -2425,65 +2443,62 @@ class _PatientAdmissionQuickDialogState
   Future<AppFailure?> _submitAdmission(
     ClinicalActionAdmissionInput input,
   ) async {
-    final Result<OpdFlowDetail> flowResult = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
+    final Result<IpdAdmissionDetail> admissionResult = await ref
+        .read(ipdRepositoryProvider)
+        .startAdmission(
           _withoutEmptyPayload(<String, Object?>{
             'tenant_id': widget.patient.tenantId,
-            'facility_id': _facilityId,
+            'facility_id': _resolvedFacilityId(),
             'patient_id': widget.patient.id,
-            'queued_at': DateTime.now().toUtc().toIso8601String(),
-            'arrival_mode': 'WALK_IN',
-            'initial_stage': 'WAITING_DOCTOR_REVIEW',
-            'require_consultation_payment': false,
-            'create_consultation_invoice': false,
-            'notes': input.notes,
+            'ward_id': input.bed.parentId,
+            'room_id': input.bed.secondaryId,
+            'bed_id': input.bed.apiId,
           }),
         );
-    final OpdFlowDetail? flow = _successOrNull(flowResult);
-    if (flow == null) {
-      return _failureOrNull(flowResult);
+    final IpdAdmissionDetail? admission = _successOrNull(admissionResult);
+    if (admission == null) {
+      return _failureOrNull(admissionResult);
     }
 
-    final Result<OpdFlowDetail> reviewResult = await ref
-        .read(opdRepositoryProvider)
-        .doctorReview(flow.summary.apiId, <String, Object?>{
-          'note': input.reason ?? '',
-        });
-    final OpdFlowDetail? reviewed = _successOrNull(reviewResult);
-    if (reviewed == null) {
-      return _failureOrNull(reviewResult);
-    }
-
-    final Result<OpdFlowDetail> dispositionResult = await ref
-        .read(opdRepositoryProvider)
-        .disposition(
-          reviewed.summary.apiId,
-          _withoutEmptyPayload(<String, Object?>{
-            'decision': 'ADMIT',
-            'admission_facility_id': _facilityId,
-            'notes': input.notes,
-          }),
-        );
-    final OpdFlowDetail? admitted = _successOrNull(dispositionResult);
-    if (admitted == null) {
-      return _failureOrNull(dispositionResult);
-    }
-
-    final String? admissionId = admitted.admissions.isEmpty
-        ? null
-        : admitted.admissions.first.id;
-    if (admissionId == null) {
+    final String admissionNote = _admissionRequestNote(
+      reason: input.reason,
+      notes: input.notes,
+    );
+    if (admissionNote.isEmpty) {
       return null;
     }
 
-    final Result<void> bedResult = await ref
+    final Result<IpdAdmissionDetail> noteResult = await ref
         .read(ipdRepositoryProvider)
-        .assignBed(admissionId, <String, Object?>{
-          'bed_id': input.bed.apiId,
-          'assigned_at': DateTime.now().toUtc().toIso8601String(),
+        .addNursingNote(admission.summary.apiId, <String, Object?>{
+          'note': admissionNote,
         });
-    return _failureOrNull(bedResult);
+    return _failureOrNull(noteResult);
+  }
+
+  String? _resolvedFacilityId() {
+    if (_facilityId != null && _facilityId!.trim().isNotEmpty) {
+      return _facilityId;
+    }
+    if (widget.referenceData.facilities.length == 1) {
+      return widget.referenceData.facilities.first.id;
+    }
+    return widget.patient.facilityId;
+  }
+
+  String _admissionRequestNote({String? reason, String? notes}) {
+    final String normalizedReason = reason?.trim() ?? '';
+    final String normalizedNotes = notes?.trim() ?? '';
+    if (normalizedReason.isEmpty && normalizedNotes.isEmpty) {
+      return '';
+    }
+    if (normalizedNotes.isEmpty) {
+      return normalizedReason;
+    }
+    if (normalizedReason.isEmpty) {
+      return normalizedNotes;
+    }
+    return '$normalizedReason\n\n$normalizedNotes';
   }
 }
 
