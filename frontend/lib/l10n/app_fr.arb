@@ -3886,6 +3886,10 @@
   "@patientsVisitColumnLabel": {
     "description": "Patient list current or latest visit column label."
   },
+  "patientsVisitIdLabel": "ID de visite",
+  "@patientsVisitIdLabel": {
+    "description": "Patient detail visit identifier field label."
+  },
   "patientsNextActionColumnLabel": "Prochaine action",
   "@patientsNextActionColumnLabel": {
     "description": "Patient list next permitted action column label."
@@ -4135,11 +4139,11 @@
   "@patientsQuickActionsTitle": {
     "description": "Patient quick actions section title."
   },
-  "patientsQuickAppointmentAction": "Rendez-vous",
+  "patientsQuickAppointmentAction": "Planifier un rendez-vous",
   "@patientsQuickAppointmentAction": {
     "description": "Patient quick appointment action label."
   },
-  "patientsQuickOpdCheckInAction": "Démarrer / Vérifier dans OPD",
+  "patientsQuickOpdCheckInAction": "Démarrer une consultation OPD",
   "@patientsQuickOpdCheckInAction": {
     "description": "Patient quick action label for creating or continuing an OPD encounter."
   },
@@ -4166,6 +4170,78 @@
   "patientsQuickReportAction": "Patient rapport",
   "@patientsQuickReportAction": {
     "description": "Patient quick report action label."
+  },
+  "patientsQuickLabOrderAction": "Demander un laboratoire",
+  "@patientsQuickLabOrderAction": {
+    "description": "Patient quick action to request a lab order."
+  },
+  "patientsQuickRadiologyOrderAction": "Demander une radiologie",
+  "@patientsQuickRadiologyOrderAction": {
+    "description": "Patient quick action to request radiology imaging."
+  },
+  "patientsQuickTheaterScheduleAction": "Planifier une intervention",
+  "@patientsQuickTheaterScheduleAction": {
+    "description": "Patient quick action to schedule a theater case."
+  },
+  "patientsQuickPhysiotherapyAction": "Demander une physiothérapie",
+  "@patientsQuickPhysiotherapyAction": {
+    "description": "Patient quick action to request physiotherapy."
+  },
+  "patientsQuickAdmitPatientAction": "Admettre le patient",
+  "@patientsQuickAdmitPatientAction": {
+    "description": "Patient quick action to start an inpatient admission."
+  },
+  "patientsActiveWorkTitle": "Travaux en cours",
+  "@patientsActiveWorkTitle": {
+    "description": "Section title for in-progress patient workflows."
+  },
+  "patientsActiveWorkContinueAction": "Continuer",
+  "@patientsActiveWorkContinueAction": {
+    "description": "Action label to continue an active patient workflow item."
+  },
+  "patientsAgeYears": "{years} ans",
+  "@patientsAgeYears": {
+    "description": "Patient age in whole years.",
+    "placeholders": {
+      "years": {
+        "type": "int",
+        "example": "32"
+      }
+    }
+  },
+  "patientsAgeYearsMonths": "{years} ans, {months} mois",
+  "@patientsAgeYearsMonths": {
+    "description": "Patient age in years and months.",
+    "placeholders": {
+      "years": {
+        "type": "int",
+        "example": "32"
+      },
+      "months": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "patientsAgeMonths": "{months} mois",
+  "@patientsAgeMonths": {
+    "description": "Patient age in months for patients under one year.",
+    "placeholders": {
+      "months": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "patientsAgeDays": "{days} jours",
+  "@patientsAgeDays": {
+    "description": "Patient age in days for very young patients.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "14"
+      }
+    }
   },
   "patientsQuickActionQueuedMessage": "Le contexte patient est prêt pour le flux de travail sélectionné.",
   "@patientsQuickActionQueuedMessage": {

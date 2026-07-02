@@ -38,13 +38,13 @@ void main() {
             AuthSession(
               tokens: SessionTokens(accessToken: 'token'),
               subject: 'nurse@example.com',
-            user: const AuthUserProfile(
-              id: 'user-1',
-              email: 'nurse@example.com',
-              roles: <String>['NURSE'],
-              tenantId: 'tenant-a',
-              facilityId: 'facility-a',
-            ),
+              user: const AuthUserProfile(
+                id: 'user-1',
+                email: 'nurse@example.com',
+                roles: <String>['NURSE'],
+                tenantId: 'tenant-a',
+                facilityId: 'facility-a',
+              ),
             ),
           ),
         );

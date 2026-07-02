@@ -519,6 +519,8 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.copyPatientNumberSemanticLabel,
     this.showPatientNumberCopyIcon = true,
     this.showPatientName = true,
+    this.showAvatar = true,
+    this.demographicsWidget,
     this.semanticLabel,
     super.key,
   });
@@ -538,6 +540,8 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final String? copyPatientNumberSemanticLabel;
   final bool showPatientNumberCopyIcon;
   final bool showPatientName;
+  final bool showAvatar;
+  final Widget? demographicsWidget;
   final String? semanticLabel;
 
   @override
@@ -560,9 +564,11 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             final Widget identity = _PatientContextIdentity(
               patientName: patientName,
               showPatientName: showPatientName,
+              showAvatar: showAvatar,
               patientNumber: patientNumber,
               patientNumberLabel: patientNumberLabel,
               demographics: demographics,
+              demographicsWidget: demographicsWidget,
               status: status,
               alerts: alerts,
               onCopyPatientNumber: onCopyPatientNumber,
@@ -1005,9 +1011,11 @@ class _PatientContextIdentity extends StatelessWidget {
   const _PatientContextIdentity({
     required this.patientName,
     required this.showPatientName,
+    required this.showAvatar,
     required this.patientNumber,
     required this.patientNumberLabel,
     required this.demographics,
+    required this.demographicsWidget,
     required this.status,
     required this.alerts,
     required this.onCopyPatientNumber,
@@ -1019,9 +1027,11 @@ class _PatientContextIdentity extends StatelessWidget {
 
   final String patientName;
   final bool showPatientName;
+  final bool showAvatar;
   final String patientNumber;
   final String? patientNumberLabel;
   final String? demographics;
+  final Widget? demographicsWidget;
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final VoidCallback? onCopyPatientNumber;
@@ -1038,21 +1048,23 @@ class _PatientContextIdentity extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
-            border: Border.all(color: colorScheme.primary),
-          ),
-          child: SizedBox.square(
-            dimension: 44,
-            child: Icon(
-              Icons.person_outline,
-              color: colorScheme.onPrimaryContainer,
-              size: theme.appTokens.listIconSize,
+        if (showAvatar) ...<Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              border: Border.all(color: colorScheme.primary),
+            ),
+            child: SizedBox.square(
+              dimension: 44,
+              child: Icon(
+                Icons.person_outline,
+                color: colorScheme.onPrimaryContainer,
+                size: theme.appTokens.listIconSize,
+              ),
             ),
           ),
-        ),
-        SizedBox(width: theme.spacing.md),
+          SizedBox(width: theme.spacing.md),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1073,6 +1085,7 @@ class _PatientContextIdentity extends StatelessWidget {
                 patientNumber: patientNumber,
                 patientNumberLabel: patientNumberLabel,
                 demographics: demographics,
+                demographicsWidget: demographicsWidget,
                 status: status,
                 onCopyPatientNumber: onCopyPatientNumber,
                 copyPatientNumberTooltip: copyPatientNumberTooltip,
@@ -1097,6 +1110,7 @@ class _PatientContextMetaLine extends StatelessWidget {
     required this.patientNumber,
     required this.patientNumberLabel,
     required this.demographics,
+    required this.demographicsWidget,
     required this.status,
     required this.onCopyPatientNumber,
     required this.copyPatientNumberTooltip,
@@ -1108,6 +1122,7 @@ class _PatientContextMetaLine extends StatelessWidget {
   final String patientNumber;
   final String? patientNumberLabel;
   final String? demographics;
+  final Widget? demographicsWidget;
   final AppWorkspaceStatus? status;
   final VoidCallback? onCopyPatientNumber;
   final String? copyPatientNumberTooltip;
@@ -1130,7 +1145,9 @@ class _PatientContextMetaLine extends StatelessWidget {
           semanticLabel: copyPatientNumberSemanticLabel,
           showCopyIcon: showPatientNumberCopyIcon,
         ),
-      if (demographics != null && demographics!.trim().isNotEmpty)
+      if (demographicsWidget != null)
+        demographicsWidget!
+      else if (demographics != null && demographics!.trim().isNotEmpty)
         Text(
           demographics!,
           maxLines: 1,
@@ -1192,7 +1209,7 @@ class _PatientContextNumberToken extends StatelessWidget {
           if (resolvedLabel != null && resolvedLabel.isNotEmpty) ...<Widget>[
             Flexible(
               child: Text(
-                resolvedLabel,
+                '$resolvedLabel:',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: labelStyle,

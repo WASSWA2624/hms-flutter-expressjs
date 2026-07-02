@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -25,7 +24,6 @@ import 'package:hosspi_hms/features/patients/presentation/controllers/patient_re
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -260,9 +258,9 @@ class _PatientRegistryContentState
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.patientsSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.patientsSavedMessage)));
     await showPatientDetailDialog(context, ref, createdPatient.id);
   }
 
@@ -1443,16 +1441,33 @@ class PatientDetailDialog extends ConsumerWidget {
           children: <Widget>[
             if (state?.isRefreshingDetail ?? false)
               const LinearProgressIndicator(),
-            _PatientContextHeader(detail: detail),
+            PatientDetailHeader(
+              detail: detail,
+              referenceData:
+                  state?.referenceData ?? const PatientReferenceData(),
+            ),
             const Divider(),
-            _QuickActions(detail: detail),
+            PatientDetailActiveWorkPanel(
+              detail: detail,
+              onContinue: (PatientActiveWorkItem item) =>
+                  _continuePatientActiveWork(context, ref, detail, item),
+            ),
+            if (collectPatientActiveWorkItems(detail).isNotEmpty)
+              const Divider(),
+            PatientDetailQuickActions(
+              detail: detail,
+              onAction: (PatientQuickAction action) =>
+                  _openPatientQuickAction(context, ref, detail.patient, action),
+            ),
             const Divider(),
             AppExpandableRecordSection<PatientIdentifier>(
               title: l10n.patientsIdentifiersSectionTitle,
               emptyLabel: l10n.patientsNoIdentifiers,
               items: detail.identifiers,
-              itemTitle: (PatientIdentifier item) => item.value,
-              itemSubtitle: (PatientIdentifier item) => item.type,
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientIdentifier item) =>
+                  '${_apiLabel(item.type)}: ${item.value}',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1470,8 +1485,10 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsContactsSectionTitle,
               emptyLabel: l10n.patientsNoContacts,
               items: detail.contacts,
-              itemTitle: (PatientContact item) => item.value,
-              itemSubtitle: (PatientContact item) => _apiLabel(item.type),
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientContact item) =>
+                  '${_apiLabel(item.type)}: ${item.value}',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1489,9 +1506,10 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsGuardiansSectionTitle,
               emptyLabel: l10n.patientsNoGuardians,
               items: detail.guardians,
-              itemTitle: (PatientGuardian item) => item.name,
-              itemSubtitle: (PatientGuardian item) =>
-                  item.relationship ?? l10n.profileUnknownValue,
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientGuardian item) =>
+                  '${item.relationship == null ? l10n.patientsGuardiansSectionTitle : _apiLabel(item.relationship!)}: ${item.name}',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1509,8 +1527,10 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsAllergiesSectionTitle,
               emptyLabel: l10n.patientsNoAllergies,
               items: detail.allergies,
-              itemTitle: (PatientAllergy item) => item.allergen,
-              itemSubtitle: (PatientAllergy item) => _apiLabel(item.severity),
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientAllergy item) =>
+                  '${l10n.patientsAllergiesSectionTitle}: ${item.allergen} (${_apiLabel(item.severity)})',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1528,9 +1548,16 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsMedicalHistorySectionTitle,
               emptyLabel: l10n.patientsNoMedicalHistory,
               items: detail.medicalHistories,
-              itemTitle: (PatientMedicalHistory item) => item.condition,
-              itemSubtitle: (PatientMedicalHistory item) =>
-                  _formatOptionalDate(context, item.diagnosisDate),
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientMedicalHistory item) {
+                final String? date = item.diagnosisDate == null
+                    ? null
+                    : _formatOptionalDate(context, item.diagnosisDate);
+                return date == null
+                    ? item.condition
+                    : '${item.condition}: $date';
+              },
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1548,10 +1575,10 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsDocumentsSectionTitle,
               emptyLabel: l10n.patientsNoDocuments,
               items: detail.documents,
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
               itemTitle: (PatientDocument item) =>
-                  item.fileName ?? item.documentType,
-              itemSubtitle: (PatientDocument item) =>
-                  _apiLabel(item.documentType),
+                  '${_apiLabel(item.documentType)}: ${item.fileName ?? item.documentType}',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1569,8 +1596,10 @@ class PatientDetailDialog extends ConsumerWidget {
               title: l10n.patientsConsentsSectionTitle,
               emptyLabel: l10n.patientsNoConsents,
               items: detail.consents,
-              itemTitle: (PatientConsent item) => _apiLabel(item.consentType),
-              itemSubtitle: (PatientConsent item) => _apiLabel(item.status),
+              initiallyExpanded: true,
+              responsiveActionButtons: true,
+              itemTitle: (PatientConsent item) =>
+                  '${_apiLabel(item.consentType)}: ${_apiLabel(item.status)}',
               addLabel: l10n.patientsAddRelatedAction,
               editLabel: l10n.patientsEditAction,
               deleteLabel: l10n.patientsDeleteAction,
@@ -1728,87 +1757,6 @@ class PatientDetailDialog extends ConsumerWidget {
   }
 }
 
-class _PatientContextHeader extends StatelessWidget {
-  const _PatientContextHeader({required this.detail});
-
-  final PatientDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final Patient patient = detail.patient;
-    final l10n = context.l10n;
-    final String gender = patient.gender == null
-        ? l10n.profileUnknownValue
-        : _genderLabel(l10n, patient.gender!);
-    final String demographics = _joinDisplay(<String?>[
-      _patientAgeLabel(context, patient.dateOfBirth),
-      gender,
-    ]);
-    final PatientVisitContext? visit = patient.currentVisit;
-
-    return AppWorkspacePatientContextHeader(
-      patientName: patient.effectiveDisplayName,
-      showPatientName: false,
-      patientNumber: patient.effectiveIdentifier ?? '',
-      demographics: demographics,
-      semanticLabel: l10n.patientsDetailTitle,
-      status: AppWorkspaceStatus(
-        label: patient.isActive
-            ? l10n.patientsActiveFilter
-            : l10n.patientsInactiveFilter,
-        tone: patient.isActive
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.neutral,
-        icon: patient.isActive
-            ? Icons.check_circle_outline
-            : Icons.block_outlined,
-      ),
-      alerts: <AppWorkspaceStatus>[
-        if (patient.hasAllergyAlert)
-          AppWorkspaceStatus(
-            label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.warning_amber_outlined,
-          ),
-        if (patient.requiresCompletion)
-          AppWorkspaceStatus(
-            label: l10n.patientsRegistrationIncompleteValue,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.error_outline,
-          ),
-      ],
-      fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-      fields: <AppWorkspacePatientContextField>[
-        AppWorkspacePatientContextField(
-          label: l10n.patientsDobLabel,
-          value: _formatOptionalDate(context, patient.dateOfBirth),
-          icon: Icons.cake_outlined,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.patientsPhoneLabel,
-          value: patient.primaryPhone ?? '',
-          icon: Icons.phone_outlined,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.patientsFacilityLabel,
-          value: patient.facilityLabel ?? '',
-          icon: Icons.business_outlined,
-        ),
-        if (visit != null)
-          AppWorkspacePatientContextField(
-            label: l10n.patientsVisitColumnLabel,
-            value: visit.publicId ?? '',
-            icon: Icons.assignment_turned_in_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            copyable: true,
-            copyTooltip: l10n.copyIdentifierAction,
-            copiedMessage: l10n.identifierCopiedMessage,
-          ),
-      ],
-    );
-  }
-}
-
 class _PatientListPreviewHeader extends StatelessWidget {
   const _PatientListPreviewHeader({required this.patient});
 
@@ -1889,172 +1837,13 @@ class _PatientListPreviewHeader extends StatelessWidget {
   }
 }
 
-class _QuickActions extends ConsumerWidget {
-  const _QuickActions({required this.detail});
+enum _PatientLegacyQuickAction { triage, billing }
 
-  final PatientDetail detail;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final Patient patient = detail.patient;
-    final PatientVisitContext? visit = patient.currentVisit;
-    final bool hasActiveOpdEncounter = _isActiveOpdVisit(visit);
-    final PatientSummaryRecord? activeAdmission = _activeAdmissionRecord(
-      detail.workspace.admissions,
-    );
-    final PatientVisitContext? activeAdmissionVisit = _activeAdmissionVisit(
-      visit,
-    );
-    final bool hasActiveAdmission =
-        activeAdmission != null || activeAdmissionVisit != null;
-    final String dischargeActionLabel = clinicalDispositionActionLabel(
-      l10n,
-      sourceQueue: 'IPD',
-      status: activeAdmission?.status ?? activeAdmissionVisit?.status,
-      stage: activeAdmission?.status ?? activeAdmissionVisit?.status,
-      location: activeAdmission?.subtitle ?? activeAdmissionVisit?.title,
-      hasAdmission: hasActiveAdmission,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(l10n.patientsQuickActionsTitle, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.sm),
-        AppPermissionActionList(
-          actions: <AppPermissionActionItem>[
-            AppPermissionActionItem(
-              label: l10n.patientsQuickAppointmentAction,
-              icon: Icons.event_available_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.appointment,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.patientWrite],
-              ),
-            ),
-            if (hasActiveOpdEncounter)
-              AppPermissionActionItem(
-                label: l10n.patientsQuickViewActiveOpdAction,
-                icon: Icons.open_in_new_outlined,
-                onPressed: () => _openQuickAction(
-                  context,
-                  ref,
-                  patient,
-                  _PatientQuickAction.opdActions,
-                ),
-                requirement: const AccessRequirement(
-                  anyPermissions: <AppPermission>[
-                    AppPermissions.clinicalRead,
-                    AppPermissions.clinicalWrite,
-                    AppPermissions.billingRead,
-                    AppPermissions.billingWrite,
-                  ],
-                ),
-              )
-            else
-              AppPermissionActionItem(
-                label: l10n.patientsQuickOpdCheckInAction,
-                icon: opdEncounterIcon,
-                onPressed: () => _openQuickAction(
-                  context,
-                  ref,
-                  patient,
-                  _PatientQuickAction.opdCheckIn,
-                ),
-                requirement: opdEncounterPermissionRequirement,
-              ),
-            if (hasActiveAdmission)
-              AppPermissionActionItem(
-                label: dischargeActionLabel,
-                icon: Icons.logout_outlined,
-                onPressed: () => _openQuickAction(
-                  context,
-                  ref,
-                  patient,
-                  _PatientQuickAction.discharge,
-                ),
-                requirement: const AccessRequirement(
-                  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-                  activeModules: <String>['inpatient-bed-management'],
-                ),
-              ),
-            AppPermissionActionItem(
-              label: l10n.patientsQuickReportAction,
-              icon: Icons.summarize_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.report,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.reportsRead],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.opdCopyPatientIdAction,
-              icon: Icons.copy_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.copyPatientId,
-              ),
-              requirement: const AccessRequirement(
-                anyPermissions: <AppPermission>[
-                  AppPermissions.patientRead,
-                  AppPermissions.patientWrite,
-                ],
-              ),
-            ),
-            if (hasActiveOpdEncounter)
-              AppPermissionActionItem(
-                label: l10n.opdCopyEncounterIdAction,
-                icon: Icons.copy_outlined,
-                onPressed: () => _openQuickAction(
-                  context,
-                  ref,
-                  patient,
-                  _PatientQuickAction.copyEncounterId,
-                ),
-                requirement: const AccessRequirement(
-                  anyPermissions: <AppPermission>[
-                    AppPermissions.clinicalRead,
-                    AppPermissions.clinicalWrite,
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-enum _PatientQuickAction {
-  appointment,
-  opdCheckIn,
-  opdActions,
-  triage,
-  billing,
-  admission,
-  discharge,
-  report,
-  copyPatientId,
-  copyEncounterId,
-}
-
-Future<void> _openQuickAction(
+Future<void> _openPatientQuickAction(
   BuildContext context,
   WidgetRef ref,
   Patient patient,
-  _PatientQuickAction action,
+  PatientQuickAction action,
 ) async {
   final PatientRegistryState? state = _readCurrentState(ref);
   final PatientReferenceData referenceData =
@@ -2062,32 +1851,74 @@ Future<void> _openQuickAction(
   final PatientDetail? detail = state?.selectedDetail?.patient.id == patient.id
       ? state?.selectedDetail
       : null;
-  if (action == _PatientQuickAction.copyPatientId) {
-    await Clipboard.setData(ClipboardData(text: _patientApiId(patient)));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.clinicalPatientIdCopiedMessage)),
-      );
-    }
-    return;
-  }
-  if (action == _PatientQuickAction.copyEncounterId) {
-    final String? encounterId = patient.currentVisit?.publicId;
-    if (encounterId != null && encounterId.trim().isNotEmpty) {
-      await Clipboard.setData(ClipboardData(text: encounterId));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.opdEncounterIdCopiedMessage)),
-        );
-      }
-    }
-    return;
-  }
-  if (action == _PatientQuickAction.opdActions) {
+
+  if (action == PatientQuickAction.opdActions) {
     await _openActiveOpdActions(context, ref, patient);
     return;
   }
-  if (action == _PatientQuickAction.discharge && detail == null) {
+  if (action == PatientQuickAction.labOrder) {
+    final bool? changed = await openPatientLabOrderDialog(
+      context,
+      ref,
+      patient,
+      encounterId: patient.currentVisit?.publicId,
+    );
+    if (changed == true && context.mounted) {
+      await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    }
+    return;
+  }
+  if (action == PatientQuickAction.radiologyOrder) {
+    final bool? changed = await openPatientRadiologyOrderDialog(
+      context,
+      ref,
+      patient,
+      encounterId: patient.currentVisit?.publicId,
+    );
+    if (changed == true && context.mounted) {
+      await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    }
+    return;
+  }
+  if (action == PatientQuickAction.theaterSchedule) {
+    final bool? changed = await openPatientTheaterScheduleDialog(
+      context,
+      ref,
+      patient,
+      encounterId: patient.currentVisit?.publicId,
+    );
+    if (changed == true && context.mounted) {
+      await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    }
+    return;
+  }
+  if (action == PatientQuickAction.physiotherapy) {
+    if (detail == null) {
+      return;
+    }
+    final bool hasAdmission =
+        activePatientAdmissionRecord(detail.workspace.admissions) != null ||
+        isActiveAdmissionPatientVisit(patient.currentVisit);
+    if (!hasAdmission) {
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.opdCheckIn,
+      );
+      return;
+    }
+    final bool? changed = await openPatientPhysiotherapyRequestDialog(
+      context,
+      ref,
+      detail,
+    );
+    if (changed == true && context.mounted) {
+      await _refreshPatientAfterQuickAction(context, ref, patient.id);
+    }
+    return;
+  }
+  if (action == PatientQuickAction.discharge && detail == null) {
     return;
   }
 
@@ -2096,27 +1927,23 @@ Future<void> _openQuickAction(
     barrierDismissible: false,
     builder: (_) {
       return switch (action) {
-        _PatientQuickAction.appointment => PatientAppointmentQuickDialog(
+        PatientQuickAction.appointment => PatientAppointmentQuickDialog(
           patient: patient,
           referenceData: referenceData,
         ),
-        _PatientQuickAction.triage => _PatientTriageQuickDialog(
+        PatientQuickAction.admission => _PatientAdmissionQuickDialog(
           patient: patient,
           referenceData: referenceData,
         ),
-        _PatientQuickAction.admission => _PatientAdmissionQuickDialog(
-          patient: patient,
-          referenceData: referenceData,
-        ),
-        _PatientQuickAction.discharge => _PatientDischargeQuickDialog(
+        PatientQuickAction.discharge => _PatientDischargeQuickDialog(
           detail: detail!,
           actionLabel: _patientDischargeActionLabel(context.l10n, detail),
         ),
-        _PatientQuickAction.report => _PatientReportPrintPreviewDialog(
+        PatientQuickAction.report => _PatientReportPrintPreviewDialog(
           detail: detail,
           patient: patient,
         ),
-        _PatientQuickAction.opdCheckIn => _PatientOpdEncounterDialog(
+        PatientQuickAction.opdCheckIn => _PatientOpdEncounterDialog(
           patient: patient,
           onSubmit: (Map<String, Object?> payload) async {
             final Object? existingEncounterId =
@@ -2149,36 +1976,99 @@ Future<void> _openQuickAction(
                 );
           },
         ),
-        _ => _PatientFlowQuickDialog(
-          patient: patient,
-          referenceData: referenceData,
-          action: action,
-        ),
+        PatientQuickAction.opdActions ||
+        PatientQuickAction.labOrder ||
+        PatientQuickAction.radiologyOrder ||
+        PatientQuickAction.theaterSchedule ||
+        PatientQuickAction.physiotherapy =>
+          throw StateError('Action handled before dialog: $action'),
       };
     },
   );
 
   if (changed == true && context.mounted) {
-    await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .selectPatient(patient.id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsQuickActionSavedMessage)),
-      );
-    }
+    await _refreshPatientAfterQuickAction(context, ref, patient.id);
   }
 }
 
-bool _isActiveOpdVisit(PatientVisitContext? visit) {
-  if (visit == null) {
-    return false;
+Future<void> _refreshPatientAfterQuickAction(
+  BuildContext context,
+  WidgetRef ref,
+  String patientId,
+) async {
+  await ref
+      .read(patientRegistryControllerProvider.notifier)
+      .selectPatient(patientId);
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.patientsQuickActionSavedMessage)),
+    );
   }
-  final String title = (visit.title ?? '').toUpperCase();
-  final String status = (visit.status ?? '').toUpperCase();
-  return visit.kind == 'encounter' &&
-      (title.contains('OPD') || title.contains('EMERGENCY')) &&
-      !isOpdTerminalStatus(status);
+}
+
+Future<void> _continuePatientActiveWork(
+  BuildContext context,
+  WidgetRef ref,
+  PatientDetail detail,
+  PatientActiveWorkItem item,
+) async {
+  final Patient patient = detail.patient;
+  switch (item.kind) {
+    case PatientActiveWorkKind.appointment:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.appointment,
+      );
+    case PatientActiveWorkKind.encounter:
+    case PatientActiveWorkKind.queue:
+      if (isActiveOpdPatientVisit(patient.currentVisit)) {
+        await _openActiveOpdActions(context, ref, patient);
+      } else {
+        await _openPatientQuickAction(
+          context,
+          ref,
+          patient,
+          PatientQuickAction.opdCheckIn,
+        );
+      }
+    case PatientActiveWorkKind.admission:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.discharge,
+      );
+    case PatientActiveWorkKind.labOrder:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.labOrder,
+      );
+    case PatientActiveWorkKind.radiologyOrder:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.radiologyOrder,
+      );
+    case PatientActiveWorkKind.theater:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.theaterSchedule,
+      );
+    case PatientActiveWorkKind.therapy:
+      await _openPatientQuickAction(
+        context,
+        ref,
+        patient,
+        PatientQuickAction.physiotherapy,
+      );
+  }
 }
 
 String? _activeAdmissionId(PatientDetail detail) {
@@ -2485,7 +2375,11 @@ class _PatientOpdEncounterDialogState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             const LinearProgressIndicator(),
             SizedBox(height: Theme.of(context).spacing.md),
             const AppPatientDetailSkeleton(),
@@ -3270,7 +3164,7 @@ class _PatientFlowQuickDialog extends ConsumerStatefulWidget {
 
   final Patient patient;
   final PatientReferenceData referenceData;
-  final _PatientQuickAction action;
+  final _PatientLegacyQuickAction action;
 
   @override
   ConsumerState<_PatientFlowQuickDialog> createState() =>
@@ -3369,39 +3263,33 @@ class _PatientFlowQuickDialogState
     );
   }
 
-  bool get _usesProvider => widget.action != _PatientQuickAction.billing;
+  bool get _usesProvider => widget.action != _PatientLegacyQuickAction.billing;
 
   IconData get _dialogIcon {
     return switch (widget.action) {
-      _PatientQuickAction.triage => Icons.monitor_heart_outlined,
-      _PatientQuickAction.billing => Icons.receipt_long_outlined,
-      _PatientQuickAction.admission => Icons.local_hospital_outlined,
-      _ => Icons.play_arrow_outlined,
+      _PatientLegacyQuickAction.triage => Icons.monitor_heart_outlined,
+      _PatientLegacyQuickAction.billing => Icons.receipt_long_outlined,
     };
   }
 
   String _dialogTitle(AppLocalizations l10n) {
     return switch (widget.action) {
-      _PatientQuickAction.triage => l10n.patientsTriageDialogTitle,
-      _PatientQuickAction.billing => l10n.patientsBillingDialogTitle,
-      _PatientQuickAction.admission => l10n.patientsAdmissionDialogTitle,
-      _ => l10n.patientsQuickActionsTitle,
+      _PatientLegacyQuickAction.triage => l10n.patientsTriageDialogTitle,
+      _PatientLegacyQuickAction.billing => l10n.patientsBillingDialogTitle,
     };
   }
 
   String _primaryActionLabel(AppLocalizations l10n) {
     return switch (widget.action) {
-      _PatientQuickAction.triage => l10n.patientsQuickTriageAction,
-      _PatientQuickAction.billing => l10n.patientsQuickBillingAction,
-      _PatientQuickAction.admission => l10n.patientsQuickAdmissionAction,
-      _ => l10n.patientsSaveAction,
+      _PatientLegacyQuickAction.triage => l10n.patientsQuickTriageAction,
+      _PatientLegacyQuickAction.billing => l10n.patientsQuickBillingAction,
     };
   }
 
   List<Widget> _modeFields(BuildContext context) {
     final l10n = context.l10n;
     return switch (widget.action) {
-      _PatientQuickAction.billing => <Widget>[
+      _PatientLegacyQuickAction.billing => <Widget>[
         AppFormSection(
           title: l10n.patientsBillingSectionTitle,
           density: AppFormSectionDensity.compact,
@@ -3514,7 +3402,7 @@ class _PatientFlowQuickDialogState
     });
 
     final AppFailure? failure = await (switch (widget.action) {
-      _PatientQuickAction.billing => _submitBilling(),
+      _PatientLegacyQuickAction.billing => _submitBilling(),
       _ => Future<AppFailure?>.value(
         AppFailure.validation(validationFields: const <String>{'action'}),
       ),
@@ -5161,7 +5049,10 @@ class _PatientDuplicateReviewDialogState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (_failure != null) ...<Widget>[
-            AppFormInformationBanner.failure(context: context, failure: _failure!),
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
             SizedBox(height: theme.spacing.md),
           ],
           if (_duplicates.isEmpty)

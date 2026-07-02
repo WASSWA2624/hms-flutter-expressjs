@@ -424,7 +424,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_failure != null) ...<Widget>[
-          AppFormInformationBanner.failure(context: context, failure: _failure!),
+          AppFormInformationBanner.failure(
+            context: context,
+            failure: _failure!,
+          ),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         _LabResultContextHeader(workflows: workflows),
@@ -3589,7 +3592,11 @@ class _ReopenVerifiedResultDialogState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             Text(
               l10n.labReopenVerifiedResultDialogBody,
               style: theme.textTheme.bodyMedium,
@@ -3871,7 +3878,11 @@ class _RejectOrderItemDialogState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppSelectField<String>.searchable(
               value: _reason,
               labelText: l10n.labRejectReasonLabel,

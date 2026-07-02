@@ -640,9 +640,9 @@ void main() {
     },
   );
 
-  testWidgets(
-    'OpdWorkspacePage exposes the required OPD worklist columns',
-    (WidgetTester tester) async {
+  testWidgets('OpdWorkspacePage exposes the required OPD worklist columns', (
+    WidgetTester tester,
+  ) async {
     final _MockOpdRepository opdRepository = _MockOpdRepository();
     final DateTime queuedAt = DateTime.now().subtract(
       const Duration(minutes: 18),
@@ -806,9 +806,7 @@ void main() {
     expect(find.text('All next actions'), findsOneWidget);
     expect(find.text('Triage scope'), findsOneWidget);
     expect(find.text('All triage scopes'), findsOneWidget);
-    },
-    skip: true,
-  );
+  }, skip: true);
 }
 
 Future<void> _pumpUntilFound(

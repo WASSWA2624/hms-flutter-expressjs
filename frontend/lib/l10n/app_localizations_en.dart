@@ -2976,6 +2976,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsVisitColumnLabel => 'Visit';
 
   @override
+  String get patientsVisitIdLabel => 'Visit ID';
+
+  @override
   String get patientsNextActionColumnLabel => 'Next action';
 
   @override
@@ -3162,10 +3165,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickActionsTitle => 'Quick actions';
 
   @override
-  String get patientsQuickAppointmentAction => 'Appointment';
+  String get patientsQuickAppointmentAction => 'Schedule appointment';
 
   @override
-  String get patientsQuickOpdCheckInAction => 'Start / Check in OPD';
+  String get patientsQuickOpdCheckInAction => 'Start OPD encounter';
 
   @override
   String get patientsQuickViewActiveOpdAction => 'Continue OPD flow';
@@ -3184,6 +3187,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsQuickReportAction => 'Patient report';
+
+  @override
+  String get patientsQuickLabOrderAction => 'Request lab';
+
+  @override
+  String get patientsQuickRadiologyOrderAction => 'Request radiology';
+
+  @override
+  String get patientsQuickTheaterScheduleAction => 'Schedule theater procedure';
+
+  @override
+  String get patientsQuickPhysiotherapyAction => 'Request physiotherapy';
+
+  @override
+  String get patientsQuickAdmitPatientAction => 'Admit patient';
+
+  @override
+  String get patientsActiveWorkTitle => 'Active work';
+
+  @override
+  String get patientsActiveWorkContinueAction => 'Continue';
+
+  @override
+  String patientsAgeYears(int years) {
+    return '$years years';
+  }
+
+  @override
+  String patientsAgeYearsMonths(int years, int months) {
+    return '$years years, $months months';
+  }
+
+  @override
+  String patientsAgeMonths(int months) {
+    return '$months months';
+  }
+
+  @override
+  String patientsAgeDays(int days) {
+    return '$days days';
+  }
 
   @override
   String get patientsQuickActionQueuedMessage =>

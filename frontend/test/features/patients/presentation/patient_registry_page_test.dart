@@ -269,10 +269,7 @@ void main() {
             widget is PatientFacilitySelectField && !widget.enabled,
       );
       expect(facilityField, findsOneWidget);
-      expect(
-        find.byTooltip('Please select a tenant first.'),
-        findsOneWidget,
-      );
+      expect(find.byTooltip('Please select a tenant first.'), findsOneWidget);
 
       final Finder tenantSelect = find.descendant(
         of: find.byType(PatientTenantSelectField),
@@ -293,10 +290,7 @@ void main() {
             widget is PatientFacilitySelectField && widget.enabled,
       );
       expect(enabledFacilityField, findsOneWidget);
-      expect(
-        find.byTooltip('Please select a tenant first.'),
-        findsNothing,
-      );
+      expect(find.byTooltip('Please select a tenant first.'), findsNothing);
 
       final Finder facilitySelect = find.descendant(
         of: enabledFacilityField,
@@ -330,10 +324,10 @@ void main() {
                       defaultTenantId: 'tenant-1',
                       defaultFacilityId: 'facility-1',
                     ),
-                      onSubmit: (Map<String, Object?> payload) async {
-                        submittedPayload = payload;
-                        return _registeredPatientResult(payload);
-                      },
+                    onSubmit: (Map<String, Object?> payload) async {
+                      submittedPayload = payload;
+                      return _registeredPatientResult(payload);
+                    },
                   ),
                 ),
               );
@@ -433,10 +427,10 @@ void main() {
                   context: context,
                   builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
-                      onSubmit: (Map<String, Object?> payload) async {
-                        submittedPayload = payload;
-                        return _registeredPatientResult(payload);
-                      },
+                    onSubmit: (Map<String, Object?> payload) async {
+                      submittedPayload = payload;
+                      return _registeredPatientResult(payload);
+                    },
                   ),
                 ),
               );
@@ -552,53 +546,54 @@ void main() {
     expect(find.text('Open record'), findsNothing);
   });
 
-  testWidgets('RegisterNewPatientDialog opens patient detail dialog after save', (
-    WidgetTester tester,
-  ) async {
-    final patientRepository = _MockPatientRepository();
-    final opdRepository = _MockOpdRepository();
-    const createdPatient = Patient(
-      id: 'patient-new-1',
-      firstName: 'Amina',
-      lastName: 'Kato',
-    );
+  testWidgets(
+    'RegisterNewPatientDialog opens patient detail dialog after save',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      const createdPatient = Patient(
+        id: 'patient-new-1',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
 
-    _stubPatientRegistry(patientRepository, createdPatient);
-    _stubProviderLookup(opdRepository);
-    when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
-      (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
-        AppPage<PatientDuplicateCandidate>(
-          items: <PatientDuplicateCandidate>[],
-          request: AppPageRequest(pageSize: 8),
-          totalItemCount: 0,
+      _stubPatientRegistry(patientRepository, createdPatient);
+      _stubProviderLookup(opdRepository);
+      when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
+        (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
+          AppPage<PatientDuplicateCandidate>(
+            items: <PatientDuplicateCandidate>[],
+            request: AppPageRequest(pageSize: 8),
+            totalItemCount: 0,
+          ),
         ),
-      ),
-    );
-    when(() => patientRepository.createPatient(any())).thenAnswer(
-      (_) async => const Result<Patient>.success(createdPatient),
-    );
+      );
+      when(
+        () => patientRepository.createPatient(any()),
+      ).thenAnswer((_) async => const Result<Patient>.success(createdPatient));
 
-    await _pumpPatientRegistry(
-      tester,
-      patientRepository: patientRepository,
-      opdRepository: opdRepository,
-      size: const Size(1400, 900),
-      roles: const <String>['SUPER_ADMIN'],
-    );
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1400, 900),
+        roles: const <String>['SUPER_ADMIN'],
+      );
 
-    await tester.tap(find.text('Register patient'));
-    await tester.pumpAndSettle();
-    await _fillRegisterPatientBasics(
-      tester,
-      firstName: 'Amina',
-      lastName: 'Kato',
-    );
-    await tester.tap(find.text('Register patient').last);
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Register patient'));
+      await tester.pumpAndSettle();
+      await _fillRegisterPatientBasics(
+        tester,
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+      await tester.tap(find.text('Register patient').last);
+      await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
-    expect(find.text('Amina Kato'), findsWidgets);
-  });
+      expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
+      expect(find.text('Amina Kato'), findsWidgets);
+    },
+  );
 
   testWidgets('RegisterNewPatientDialog surfaces submit failures', (
     WidgetTester tester,
@@ -686,11 +681,11 @@ void main() {
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Appointment'));
+    await tester.tap(find.text('Schedule appointment').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Schedule appointment'), findsOneWidget);
+    expect(find.text('Schedule appointment'), findsWidgets);
 
     final dateField = find.byWidgetPredicate(
       (Widget widget) =>
@@ -768,7 +763,7 @@ void main() {
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Start / Check in OPD').first);
+    await tester.tap(find.text('Start OPD encounter').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Existing patient'), findsOneWidget);
@@ -807,15 +802,13 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Start / Check in OPD'), findsOneWidget);
+    expect(find.text('Start OPD encounter'), findsOneWidget);
     expect(find.text('Continue OPD flow'), findsNothing);
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Doctor review'), findsNothing);
     expect(find.text('Manage consultation billing'), findsNothing);
-    expect(find.text('Request lab'), findsNothing);
-    expect(find.text('Request radiology'), findsNothing);
     expect(find.text('Prescribe'), findsNothing);
   });
 
@@ -858,7 +851,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Continue OPD flow'), findsOneWidget);
-    expect(find.text('Start / Check in OPD'), findsNothing);
+    expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);

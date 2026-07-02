@@ -58,7 +58,11 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             Text(
               l10n.clinicalRequestMainPanelHelp,
               style: theme.textTheme.bodySmall?.copyWith(

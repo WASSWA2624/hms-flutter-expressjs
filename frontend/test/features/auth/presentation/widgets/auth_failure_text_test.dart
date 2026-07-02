@@ -15,7 +15,9 @@ void main() {
         builder: (BuildContext context) {
           return AppFormInformationBanner.failure(
             context: context,
-            failure: const AppFailure.unauthorized(code: 'auth.account_not_found'),
+            failure: const AppFailure.unauthorized(
+              code: 'auth.account_not_found',
+            ),
           );
         },
       ),

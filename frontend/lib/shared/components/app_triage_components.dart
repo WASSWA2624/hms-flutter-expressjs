@@ -288,7 +288,7 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
         messageBuilder: widget.failureBodyBuilder == null
             ? null
             : (AppFailure failure) =>
-                widget.failureBodyBuilder!.call(context, failure),
+                  widget.failureBodyBuilder!.call(context, failure),
       ),
     ]);
   }

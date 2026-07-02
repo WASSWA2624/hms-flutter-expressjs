@@ -2819,10 +2819,7 @@ class _SubmissionFailureBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return AppFormInformationBanner.failure(
-      context: context,
-      failure: failure,
-    );
+    return AppFormInformationBanner.failure(context: context, failure: failure);
   }
 }
 

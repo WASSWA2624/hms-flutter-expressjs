@@ -133,7 +133,11 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             Text(
               l10n.labOrderContextDialogBody,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -709,7 +713,11 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             LabSearchableTextField(
               controller: _nameController,
               labelText: l10n.labTestNameLabel,
@@ -1363,7 +1371,11 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: LabSearchableTextField(
@@ -1640,7 +1652,11 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             Text(
               widget.body,
               style: theme.textTheme.bodyMedium?.copyWith(

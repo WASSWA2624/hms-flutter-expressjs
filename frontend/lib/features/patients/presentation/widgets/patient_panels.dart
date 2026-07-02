@@ -19,13 +19,17 @@ class PatientTimelineList extends StatelessWidget {
       emptyLabel: l10n.patientsNoTimeline,
       items: items,
       maxItems: 8,
+      initiallyExpanded: true,
       itemLeadingIcon: Icons.history_outlined,
-      itemTitle: (PatientTimelineItem item) =>
-          item.title ?? AppDisplay.apiLabel(item.resource),
-      itemSubtitle: (PatientTimelineItem item) => _joinDisplay(<String?>[
-        AppDisplay.apiLabel(item.resource),
-        _formatOptionalDateTime(context, item.occurredAt),
-      ]),
+      itemTitle: (PatientTimelineItem item) {
+        final String label =
+            item.title ?? AppDisplay.apiLabel(item.resource);
+        final String when = _formatOptionalDateTime(context, item.occurredAt);
+        if (item.subtitle != null && item.subtitle!.trim().isNotEmpty) {
+          return '${AppDisplay.apiLabel(item.subtitle!)}: $label';
+        }
+        return when.isEmpty ? label : '$label: $when';
+      },
     );
   }
 }
@@ -34,8 +38,4 @@ String _formatOptionalDateTime(BuildContext context, DateTime? value) {
   return value == null
       ? ''
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
-}
-
-String _joinDisplay(Iterable<String?> values) {
-  return AppDisplay.joinNonEmpty(values);
 }

@@ -1122,7 +1122,11 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppMedicationAdministrationForm(
               medicationLabel: l10n.nursingMedicationLabel,
               doseLabel: l10n.nursingDoseLabel,
@@ -1613,7 +1617,11 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppSelectField<String>(
               value: _action,
               labelText: l10n.nursingTransferActionLabel,
@@ -1727,7 +1735,11 @@ class _DischargeClearanceDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             Text(
               l10n.nursingDischargeClearanceDescription,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(

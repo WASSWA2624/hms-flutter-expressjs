@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 
 typedef AppRecordTextBuilder<T> = String Function(T item);
 typedef AppRecordWidgetBuilder<T> =
     Widget Function(BuildContext context, T item);
+
+enum AppRecordActionVariant { add, edit, delete }
 
 class AppExpandableRecordSection<T> extends StatelessWidget {
   const AppExpandableRecordSection({
@@ -20,6 +23,7 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
     this.itemLeadingBuilder,
     this.maxItems,
     this.initiallyExpanded = false,
+    this.responsiveActionButtons = false,
     this.onAdd,
     this.onEdit,
     this.onDelete,
@@ -41,6 +45,7 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
   final AppRecordWidgetBuilder<T>? itemLeadingBuilder;
   final int? maxItems;
   final bool initiallyExpanded;
+  final bool responsiveActionButtons;
   final VoidCallback? onAdd;
   final ValueChanged<T>? onEdit;
   final ValueChanged<T>? onDelete;
@@ -83,14 +88,26 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: _itemLeading(context, item),
-              title: AppListItemText(
-                title: itemTitle(item),
-                subtitle: itemSubtitle?.call(item),
-              ),
+              title: _itemTitle(context, item),
               trailing: _itemActions(context, item),
             ),
       ],
     );
+  }
+
+  Widget _itemTitle(BuildContext context, T item) {
+    final String? subtitle = itemSubtitle?.call(item);
+    if (subtitle == null || subtitle.trim().isEmpty) {
+      return Text(
+        itemTitle(item),
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium,
+      );
+    }
+
+    return AppListItemText(title: itemTitle(item), subtitle: subtitle);
   }
 
   Widget? _addButton(BuildContext context) {
@@ -99,9 +116,11 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
       return null;
     }
 
-    return _GuardedIconAction(
+    return _GuardedRecordAction(
       icon: Icons.add,
       label: addLabel ?? 'Add',
+      variant: AppRecordActionVariant.add,
+      responsive: responsiveActionButtons,
       requirement: addRequirement,
       onPressed: handler,
     );
@@ -129,16 +148,20 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
   Widget? _itemActions(BuildContext context, T item) {
     final List<Widget> actions = <Widget>[
       if (onEdit != null)
-        _GuardedIconAction(
+        _GuardedRecordAction(
           icon: Icons.edit_outlined,
           label: editLabel ?? 'Edit',
+          variant: AppRecordActionVariant.edit,
+          responsive: responsiveActionButtons,
           requirement: editRequirement,
           onPressed: () => onEdit!(item),
         ),
       if (onDelete != null)
-        _GuardedIconAction(
+        _GuardedRecordAction(
           icon: Icons.delete_outline,
           label: deleteLabel ?? 'Delete',
+          variant: AppRecordActionVariant.delete,
+          responsive: responsiveActionButtons,
           requirement: deleteRequirement,
           onPressed: () => onDelete!(item),
         ),
@@ -148,47 +171,81 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
       return null;
     }
 
-    return Wrap(children: actions);
+    return Wrap(spacing: Theme.of(context).spacing.xs, children: actions);
   }
 }
 
-class _GuardedIconAction extends StatelessWidget {
-  const _GuardedIconAction({
+class _GuardedRecordAction extends StatelessWidget {
+  const _GuardedRecordAction({
     required this.icon,
     required this.label,
+    required this.variant,
     required this.onPressed,
+    this.responsive = false,
     this.requirement,
   });
 
   final IconData icon;
   final String label;
+  final AppRecordActionVariant variant;
   final VoidCallback onPressed;
+  final bool responsive;
   final AccessRequirement? requirement;
 
   @override
   Widget build(BuildContext context) {
+    final bool compact =
+        !responsive || MediaQuery.sizeOf(context).width < AppBreakpoints.md;
     final AccessRequirement? resolvedRequirement = requirement;
     if (resolvedRequirement == null) {
-      return AppButton(
-        iconOnly: true,
-        leadingIcon: icon,
-        label: label,
-        semanticLabel: label,
-        tooltip: label,
-        onPressed: onPressed,
-      );
+      return _buildButton(context, iconOnly: compact);
     }
 
     return AppAccessActionGate(
       requirement: resolvedRequirement,
-      builder: (_, bool isAllowed) => AppButton(
-        iconOnly: true,
-        leadingIcon: icon,
-        label: label,
-        semanticLabel: label,
-        tooltip: label,
-        onPressed: isAllowed ? onPressed : null,
-      ),
+      builder: (_, bool isAllowed) =>
+          _buildButton(context, iconOnly: compact, enabled: isAllowed),
     );
+  }
+
+  Widget _buildButton(
+    BuildContext context, {
+    required bool iconOnly,
+    bool enabled = true,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final VoidCallback? handler = enabled ? onPressed : null;
+
+    switch (variant) {
+      case AppRecordActionVariant.add:
+        return AppButton.primary(
+          iconOnly: iconOnly,
+          leadingIcon: icon,
+          label: label,
+          semanticLabel: label,
+          tooltip: label,
+          onPressed: handler,
+        );
+      case AppRecordActionVariant.edit:
+        return AppButton.secondary(
+          iconOnly: iconOnly,
+          leadingIcon: icon,
+          label: label,
+          semanticLabel: label,
+          tooltip: label,
+          onPressed: handler,
+        );
+      case AppRecordActionVariant.delete:
+        return AppButton.tertiary(
+          iconOnly: iconOnly,
+          leadingIcon: icon,
+          label: label,
+          semanticLabel: label,
+          tooltip: label,
+          color: colorScheme.error,
+          onPressed: handler,
+        );
+    }
   }
 }

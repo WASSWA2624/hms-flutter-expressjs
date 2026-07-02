@@ -349,25 +349,25 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     OpdFlowSummary? activeEncounterToOpen;
     final OpdEncounterDialogResult? result =
         await showAppDialog<OpdEncounterDialogResult>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
-        onExistingActiveEncounter: (OpdFlowSummary flow) {
-          activeEncounterToOpen = flow;
-        },
-      ),
-    );
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OpdEncounterDialog(
+            providerSchedules: widget.state.providerSchedules,
+            appointments: widget.state.appointments.items,
+            activeFlows: <OpdFlowSummary>[
+              ...widget.state.flows.items,
+              ...widget.state.triageQueue.items,
+            ],
+            onSubmit: (Map<String, Object?> payload) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .submitOpdEncounter(payload);
+            },
+            onExistingActiveEncounter: (OpdFlowSummary flow) {
+              activeEncounterToOpen = flow;
+            },
+          ),
+        );
 
     if (result == null || !context.mounted) {
       return;
@@ -376,9 +376,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final String? registeredPatientId = result.registeredPatientId;
     if (registeredPatientId != null && registeredPatientId.isNotEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.opdSavedMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
       }
       await showPatientDetailDialog(context, ref, registeredPatientId);
       return;
@@ -2516,7 +2516,11 @@ class _OpdPatientActionsDialogState
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
               AppInfoTileData(
@@ -2674,29 +2678,29 @@ class _OpdPatientActionsDialogState
     OpdFlowSummary? activeEncounterToOpen;
     final OpdEncounterDialogResult? dialogResult =
         await showAppDialog<OpdEncounterDialogResult>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
-        initialAppointment: appointment,
-        initialAppointmentId: appointment.apiId,
-        defaultArrivalMode: 'ONLINE_APPOINTMENT',
-        defaultProviderId: appointment.providerUserId,
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
-        onExistingActiveEncounter: (OpdFlowSummary flow) {
-          activeEncounterToOpen = flow;
-        },
-      ),
-    );
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OpdEncounterDialog(
+            providerSchedules: widget.state.providerSchedules,
+            appointments: widget.state.appointments.items,
+            activeFlows: <OpdFlowSummary>[
+              ...widget.state.flows.items,
+              ...widget.state.triageQueue.items,
+            ],
+            initialAppointment: appointment,
+            initialAppointmentId: appointment.apiId,
+            defaultArrivalMode: 'ONLINE_APPOINTMENT',
+            defaultProviderId: appointment.providerUserId,
+            onSubmit: (Map<String, Object?> payload) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .submitOpdEncounter(payload);
+            },
+            onExistingActiveEncounter: (OpdFlowSummary flow) {
+              activeEncounterToOpen = flow;
+            },
+          ),
+        );
     if (!mounted || dialogResult == null) {
       return;
     }
@@ -2791,7 +2795,11 @@ class _AppointmentActionsDialogState
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
               AppInfoTileData(
@@ -2860,26 +2868,26 @@ class _AppointmentActionsDialogState
   Future<void> _openCheckIn() async {
     final OpdEncounterDialogResult? dialogResult =
         await showAppDialog<OpdEncounterDialogResult>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
-        initialAppointment: widget.appointment,
-        initialAppointmentId: widget.appointment.apiId,
-        defaultArrivalMode: 'ONLINE_APPOINTMENT',
-        defaultProviderId: widget.appointment.providerUserId,
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
-      ),
-    );
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OpdEncounterDialog(
+            providerSchedules: widget.state.providerSchedules,
+            appointments: widget.state.appointments.items,
+            activeFlows: <OpdFlowSummary>[
+              ...widget.state.flows.items,
+              ...widget.state.triageQueue.items,
+            ],
+            initialAppointment: widget.appointment,
+            initialAppointmentId: widget.appointment.apiId,
+            defaultArrivalMode: 'ONLINE_APPOINTMENT',
+            defaultProviderId: widget.appointment.providerUserId,
+            onSubmit: (Map<String, Object?> payload) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .submitOpdEncounter(payload);
+            },
+          ),
+        );
     if (dialogResult != null && mounted) {
       Navigator.of(context).pop(true);
     }
@@ -2972,7 +2980,11 @@ class _RescheduleAppointmentDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppDateField(
               value: _date,
               firstDate: DateTime.now().subtract(const Duration(days: 1)),
@@ -3152,7 +3164,11 @@ class _CancelAppointmentDialogState
       icon: const Icon(Icons.cancel_outlined),
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           AppTextField(
             controller: _reasonController,
             labelText: _opdOptionalFieldLabel(
@@ -3247,7 +3263,11 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             if (_successMessage != null)
               AppFormInformationBanner.message(
                 message: _successMessage!,

@@ -114,7 +114,11 @@ class _ClinicalAdmissionActionDialogState
             AppFormSection(
               title: l10n.clinicalAdmissionDetailsTitle,
               children: <Widget>[
-                if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+                if (_failure != null)
+                  AppFormInformationBanner.failure(
+                    context: context,
+                    failure: _failure!,
+                  ),
                 if (availableBeds.isEmpty)
                   AppStateView(
                     title: l10n.clinicalAdmissionNoBedsTitle,

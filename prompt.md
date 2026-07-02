@@ -1,1 +1,128 @@
-Now let's improve the patient detail. Patient detail modo diálogo Currently it displays the patient's name on top Which is okay. Then in the next section, it displays things like patient ID, and then patient patient avatar. I don't think this patient avatar is needed there, we don't need it. instead, we can show something like patient ID, then full colon, then we show the patient ID. And here on the gender, which also indicates gender then female so if it's a female, then we dis we add the female icon, if it's a male, then we add the male icon, then H. You can also display the age nicely for example, age maybe thirty-two years and maybe ten months, so it should be should be displayed nicely. And these other sections, these other fields, where we have date of birth, that's okay, where we have Phone number, okay, facility. If the patient, because this is the patient if the user has logged in as if the user has logged in as As someone who doesn't have access to multiple facilities then we, we shouldn't show the facility because the facility is gone. But for super admin tenant admins, for tenants that have multiple facilities within the same tenant, then we can show the facility. And then the visit this visit can be changed to visit ID? Now here under quick actions, the quick actions are like appointment, I think we can change, we can rene we can rename that to schedule appointment Then this one which has the start or check-in OPD I think this we can, we can. We can show as stats or PD encounter. Then also patient report I think this one for patient report. Yeah. That one is okay, we can leave it. Then copy patient ID I think This copy patient ID, because we already have patient ID app, and then there is a copy function for patient ID, then we don't need to show that. Also, there are some other actions that can be, other action that can be done on this patient for example things like request for radiology, because the patient can come in and they don't want maybe to go to, they don't, what they came for is just for radiology test, so we can just add request radiology. Then also we can have things like Lab request because this patient can come in when they are come to request for a lab without going through OPD, then also they can come in when they are requesting for a theater procedure, they are requesting for a physiotherapy session maybe they are requesting for, they are coming straight as inpatient, we can also have admit patient, so this patient can be admitted. As we display these things we need to know the current status of the patient. is does this patient already have an appointment? So if the patient already has an appointment, then we don't need to create appointments, we don't need to show, we just need to have a section which shows active like active actions or encounters, if I can find a way to call it. For example, if this patient has any appointment, so this patient, we have to show it. Or if this patient has an OPD encounter which is happening, so we, we can't put it as secondary OPD encounter. So instead, in that case, we need to show that as A section for actions or encounters, whatever you can call it, that are, that are already happening or maybe there is a re-request which is already requested that need to go through OPD, maybe a lab request which is didn't go through OPD, we need to also show those things to avoid duplicate actions, and we need to show that act that section nicely, that section nicely. And each one of these actions should use the, the reusable modal dialogs that are already defined within the shared components so that we have uniformity. These are used globally, globally. I see here there are these sections these sections which have have identifier, contacts, guardians, medical history, documents, consents, timelines, and so on and so forth. I don't think they are being displayed nicely. I don't know why all these things are displaying on, on Two lines. For example, here under identifier you have the MRN, but it's not displaying on the same line. It should display on the same line. So you have the MRN and, and full colon and then the value. Also for each, for each entity, for each entity here we must have We must have an edit and a delete button, and then also on the top we have the add, so this can be collapsible. But instead of showing instead of showing, so they should, they should be collapsible, but by default they should be not collapsed. on big screens these buttons should have i-an icon and a label, and they should be color-coded accordingly. But on small screens, we can only show the icons.
+# Patient Detail Dialog — UI/UX Refinement Prompt
+
+## Objective
+
+Refine the **Patient Detail** modal (`PatientDetailDialog`) so the summary header, contextual actions, and related-record sections are clearer, more compact, and workflow-aware. Prevent duplicate downstream actions by surfacing what is already in progress.
+
+**Primary file:** `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart` (`PatientDetailDialog`, `_PatientContextHeader`, `_QuickActions`)
+
+**Shared building blocks:** `AppWorkspacePatientContextHeader`, `AppExpandableRecordSection`, `AppPatientDetailDialog`, dialogs under `frontend/lib/shared/components/` and `frontend/lib/shared/clinical_actions/`
+
+**Reference:** [08-patients-module-prompt.md](prompts/08-patients-module-prompt.md) — modal-first, reuse shared components, RBAC + facility scope.
+
+---
+
+## Current Issues (from screenshots)
+
+1. Summary card shows a generic avatar icon that adds no value.
+2. MRN, type label, and value wrap onto separate lines instead of a single `Label: value` row.
+3. Age shows as a bare number (`32`) without units; gender has no icon.
+4. Facility is always shown even when the user has a single-facility scope.
+5. Quick actions are incomplete, mislabeled, and include redundant **Copy patient ID**.
+6. No section for **active** appointments, encounters, or pending requests — users can start duplicate workflows.
+7. Record sections (Identifiers, Contacts, Guardians, etc.) stack label and value on two lines; add/edit/delete affordances are icon-only and not responsive.
+
+---
+
+## 1. Summary Header (`_PatientContextHeader`)
+
+| Change | Requirement |
+| ------ | ----------- |
+| Remove avatar | Drop the person icon box from `AppWorkspacePatientContextHeader` identity row (or add a `showAvatar` flag defaulting to `false` for patient detail). |
+| Patient ID | Display as **`{label}: {value}`** on one line (e.g. `MRN: DMO-PAT-001`). Keep the existing copy-to-clipboard control on the value. |
+| Age | Format human-readably with localized units — e.g. `32 years, 10 months` (or `10 months` / `14 days` when under 1 year). Extract a shared formatter if needed. |
+| Gender | Show a gender icon (`male` / `female` / neutral fallback) beside the localized gender label. |
+| Facility | Show **only** when `PatientRegistrationScope.resolve(...).showFacilityPicker == true` (super admin, tenant admin, or tenant with multiple facilities). Hide for single-facility users. |
+| Visit | Rename label from **Visit** to **Visit ID**; keep copyable `publicId`. |
+| Status & alerts | Keep active/inactive badge and allergy/incomplete-registration alerts as today. |
+
+Keep patient name in the dialog title bar only (`showPatientName: false` in the header — already set).
+
+---
+
+## 2. Active Work Section (new)
+
+Add a section **above Quick actions** that lists in-progress or open items for this patient, sourced from `PatientDetail.workspace` and `patient.currentVisit`:
+
+- Upcoming / in-progress **appointments**
+- Open **OPD** or **Emergency** encounters
+- Active **IPD admissions**
+- Pending **lab**, **radiology**, **physiotherapy**, or **theater** requests (including walk-in requests not routed through OPD)
+
+**Behavior:**
+
+- Each row: status chip, human title, date/time, and a **View / Continue** action that opens the correct shared workspace dialog or deep-link — do not navigate to a new route.
+- When an item exists, **suppress** the matching quick action (e.g. hide **Schedule appointment** if an open appointment exists; show **View active OPD encounter** instead of **Start OPD encounter** — partial logic exists in `_QuickActions`; extend consistently).
+- Empty state: omit the section entirely (do not show “No active items”).
+
+---
+
+## 3. Quick Actions (`_QuickActions`)
+
+### Rename / remove
+
+| Current | Target |
+| ------- | ------ |
+| Appointment | **Schedule appointment** |
+| Start / Check in OPD | **Start OPD encounter** |
+| Copy patient ID | **Remove** (header already copies MRN / patient ID) |
+| Patient report | Keep |
+
+### Add (permission- and module-gated)
+
+| Action | Shared dialog / entry point |
+| ------ | --------------------------- |
+| Request radiology | `clinical_radiology_order_action_dialog.dart` |
+| Lab request | `clinical_lab_order_action_dialog.dart` |
+| Theater procedure | Theater schedule-case form / dialog |
+| Physiotherapy session | Physiotherapy referral / session dialog |
+| Admit patient | `ipd_start_admission_dialog.dart` |
+
+Wire every action through existing shared modals in `frontend/lib/shared/` — **no one-off forms** in the patients module.
+
+Respect `AccessGate` / module entitlements; hide actions the user cannot perform.
+
+---
+
+## 4. Related-Record Sections
+
+Applies to: Identifiers, Contacts, Guardians, Allergies, Medical history, Documents, Consents (and Timeline unchanged).
+
+| Requirement | Detail |
+| ----------- | ------ |
+| Inline rows | Each item on **one line**: `{type label}: {value}` (e.g. `MRN: DMO-PAT-001`, `Phone: +15550000001`). Use `itemTitle` + `itemSubtitle` composition or a new `AppRecordInlineRow` helper in `app_record_section.dart`. |
+| Collapsible | Sections use `ExpansionTile`; **`initiallyExpanded: true`** by default on patient detail. |
+| CRUD affordances | Section header: **Add** (+). Each row: **Edit** and **Delete**. All three must remain permission-gated. |
+| Responsive buttons | **≥ md breakpoint:** icon + text label, color-coded (add = primary, edit = secondary, delete = destructive). **< md:** icon-only with tooltip/semantic label. Update `AppExpandableRecordSection` / `_GuardedIconAction` accordingly. |
+
+---
+
+## 5. Localization & Theming
+
+- Add or update keys in `app_en.arb` (and propagate to other locales) for new labels: visit ID, schedule appointment, start OPD encounter, active-work section title, new quick actions, formatted age strings.
+- No hardcoded English in widgets.
+- Full light/dark theme support; follow `frontend/.cursor/design-system.mdc`.
+
+---
+
+## 6. Architecture & Quality
+
+| Rule | Requirement |
+| ---- | ----------- |
+| Layering | Keep API calls in `patientRegistryControllerProvider`; widgets dispatch actions only. |
+| Reuse | Prefer extending `AppWorkspacePatientContextHeader`, `AppExpandableRecordSection`, and shared clinical/OPD/IPD dialogs over new bespoke widgets. |
+| Extract | If `patient_registry_page.dart` grows further, move header, active-work panel, and quick actions into `frontend/lib/features/patients/presentation/widgets/`. |
+| Tests | Update `patient_registry_page_test.dart` for: facility visibility, age formatting, inline record rows, active-work suppression of quick actions, responsive action buttons. |
+| Quality gate | `dart format`, `flutter analyze`, `flutter test` from `frontend/`. |
+
+---
+
+## Acceptance Criteria
+
+- [ ] No avatar in patient detail summary; MRN and demographics read clearly on one line.
+- [ ] Age shows localized years/months; gender shows an icon.
+- [ ] Facility hidden for single-facility users; visit field labeled **Visit ID**.
+- [ ] Active appointments/encounters/requests appear in a dedicated section; duplicate quick actions are suppressed.
+- [ ] Quick actions renamed, copy-patient-ID removed, and new clinical/IPD actions open shared modals.
+- [ ] Record sections show `Label: value` on one line; expanded by default; responsive labeled/color-coded CRUD buttons.
+- [ ] All strings localized; tests and analyzer pass.

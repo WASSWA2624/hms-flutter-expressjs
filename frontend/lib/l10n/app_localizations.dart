@@ -5786,6 +5786,12 @@ abstract class AppLocalizations {
   /// **'Visit'**
   String get patientsVisitColumnLabel;
 
+  /// Patient detail visit identifier field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit ID'**
+  String get patientsVisitIdLabel;
+
   /// Patient list next permitted action column label.
   ///
   /// In en, this message translates to:
@@ -6137,13 +6143,13 @@ abstract class AppLocalizations {
   /// Patient quick appointment action label.
   ///
   /// In en, this message translates to:
-  /// **'Appointment'**
+  /// **'Schedule appointment'**
   String get patientsQuickAppointmentAction;
 
   /// Patient quick action label for creating or continuing an OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Start / Check in OPD'**
+  /// **'Start OPD encounter'**
   String get patientsQuickOpdCheckInAction;
 
   /// Patient quick action label for opening the active OPD encounter actions.
@@ -6181,6 +6187,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Patient report'**
   String get patientsQuickReportAction;
+
+  /// Patient quick action to request a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Request lab'**
+  String get patientsQuickLabOrderAction;
+
+  /// Patient quick action to request radiology imaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Request radiology'**
+  String get patientsQuickRadiologyOrderAction;
+
+  /// Patient quick action to schedule a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule theater procedure'**
+  String get patientsQuickTheaterScheduleAction;
+
+  /// Patient quick action to request physiotherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Request physiotherapy'**
+  String get patientsQuickPhysiotherapyAction;
+
+  /// Patient quick action to start an inpatient admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit patient'**
+  String get patientsQuickAdmitPatientAction;
+
+  /// Section title for in-progress patient workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active work'**
+  String get patientsActiveWorkTitle;
+
+  /// Action label to continue an active patient workflow item.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get patientsActiveWorkContinueAction;
+
+  /// Patient age in whole years.
+  ///
+  /// In en, this message translates to:
+  /// **'{years} years'**
+  String patientsAgeYears(int years);
+
+  /// Patient age in years and months.
+  ///
+  /// In en, this message translates to:
+  /// **'{years} years, {months} months'**
+  String patientsAgeYearsMonths(int years, int months);
+
+  /// Patient age in months for patients under one year.
+  ///
+  /// In en, this message translates to:
+  /// **'{months} months'**
+  String patientsAgeMonths(int months);
+
+  /// Patient age in days for very young patients.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String patientsAgeDays(int days);
 
   /// Snackbar shown when a patient quick action is selected.
   ///

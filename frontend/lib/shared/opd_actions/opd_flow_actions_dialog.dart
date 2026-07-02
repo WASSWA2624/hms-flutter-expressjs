@@ -1085,7 +1085,11 @@ class _ConsultationPaymentDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             OpdActionContextPanel(flow: flow, detail: detail, showTitle: false),
             OpdConsultationBillingBreakdownPanel(flow: flow, detail: detail),
             AppCurrencyAmountField(
@@ -1267,7 +1271,11 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             OpdActionContextPanel(flow: widget.flow, showTitle: false),
             AppInfoTileGrid(
               minItemWidth: 150,
@@ -1390,7 +1398,11 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             OpdActionContextPanel(flow: widget.flow, showTitle: false),
             _ProviderSelectField(
               value: _providerId,
@@ -1518,7 +1530,11 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
       closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           OpdActionContextPanel(flow: widget.flow, showTitle: false),
           AppTriageDecisionField(
             value: _decision,
@@ -1965,7 +1981,11 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
         formKey: _formKey,
         enabled: !_isSaving,
         density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(context, _failure, message: _formErrorText),
+        formStatus: appFormFailureStatus(
+          context,
+          _failure,
+          message: _formErrorText,
+        ),
         children: <Widget>[
           OpdActionContextPanel(flow: widget.flow, showTitle: false),
           if (!editingVitals) _triagePrioritySection(context),

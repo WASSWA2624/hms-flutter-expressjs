@@ -73,7 +73,11 @@ class _FacilityCatalogConfigPanelState
           style: theme.textTheme.bodyMedium,
         ),
         SizedBox(height: theme.spacing.md),
-        if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+        if (_failure != null)
+          AppFormInformationBanner.failure(
+            context: context,
+            failure: _failure!,
+          ),
         AppSelectField<ClinicalCatalogTermType>(
           value: _termType,
           labelText: l10n.clinicalCatalogConfigurationTitle,

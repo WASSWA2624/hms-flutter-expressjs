@@ -3003,6 +3003,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsVisitColumnLabel => 'Visite';
 
   @override
+  String get patientsVisitIdLabel => 'ID de visite';
+
+  @override
   String get patientsNextActionColumnLabel => 'Prochaine action';
 
   @override
@@ -3190,10 +3193,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsQuickActionsTitle => 'Actions rapides';
 
   @override
-  String get patientsQuickAppointmentAction => 'Rendez-vous';
+  String get patientsQuickAppointmentAction => 'Planifier un rendez-vous';
 
   @override
-  String get patientsQuickOpdCheckInAction => 'Démarrer / Vérifier dans OPD';
+  String get patientsQuickOpdCheckInAction => 'Démarrer une consultation OPD';
 
   @override
   String get patientsQuickViewActiveOpdAction => 'Continuer le flux OPD';
@@ -3212,6 +3215,47 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsQuickReportAction => 'Patient rapport';
+
+  @override
+  String get patientsQuickLabOrderAction => 'Demander un laboratoire';
+
+  @override
+  String get patientsQuickRadiologyOrderAction => 'Demander une radiologie';
+
+  @override
+  String get patientsQuickTheaterScheduleAction => 'Planifier une intervention';
+
+  @override
+  String get patientsQuickPhysiotherapyAction => 'Demander une physiothérapie';
+
+  @override
+  String get patientsQuickAdmitPatientAction => 'Admettre le patient';
+
+  @override
+  String get patientsActiveWorkTitle => 'Travaux en cours';
+
+  @override
+  String get patientsActiveWorkContinueAction => 'Continuer';
+
+  @override
+  String patientsAgeYears(int years) {
+    return '$years ans';
+  }
+
+  @override
+  String patientsAgeYearsMonths(int years, int months) {
+    return '$years ans, $months mois';
+  }
+
+  @override
+  String patientsAgeMonths(int months) {
+    return '$months mois';
+  }
+
+  @override
+  String patientsAgeDays(int days) {
+    return '$days jours';
+  }
 
   @override
   String get patientsQuickActionQueuedMessage =>

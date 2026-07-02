@@ -42,7 +42,11 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           Text(widget.body),
         ],
       ),
@@ -366,7 +370,11 @@ class _AppTextActionDialogState extends State<AppTextActionDialog> {
           description: widget.description,
           density: AppFormSectionDensity.spacious,
           children: <Widget>[
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
             AppTextField(
               controller: _controller,
               labelText: widget.fieldLabel,
