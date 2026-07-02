@@ -199,8 +199,11 @@ class AppWorkspaceToolbar extends ConsumerWidget {
         overflowGlobal.insert(0, inlineGlobal.removeLast());
         continue;
       }
-      if (inlineScreen.isNotEmpty) {
-        overflowScreen.insert(0, inlineScreen.removeLast());
+      if (_evictLastInlineScreenAction(
+        inlineScreen,
+        overflowScreen,
+        pinnedInlinePrimary,
+      )) {
         continue;
       }
       break;
@@ -216,11 +219,17 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     )) {
       overflowScreen
         ..clear()
-        ..addAll(screenActions);
+        ..addAll(
+          screenActions.where(
+            (Widget action) => !_isPinnedPrimary(action, pinnedInlinePrimary),
+          ),
+        );
       overflowGlobal
         ..clear()
         ..addAll(globalActions);
-      inlineScreen = <Widget>[];
+      inlineScreen = pinnedInlinePrimary == null
+          ? <Widget>[]
+          : <Widget>[pinnedInlinePrimary];
       inlineGlobal = <Widget>[];
     }
 
@@ -270,6 +279,39 @@ class AppWorkspaceToolbar extends ConsumerWidget {
       total += _estimateActionWidth(actions[index], showLabels: showLabels);
     }
     return total;
+  }
+
+  static bool _isPinnedPrimary(Widget action, Widget? pinnedInlinePrimary) {
+    return pinnedInlinePrimary != null &&
+        identical(action, pinnedInlinePrimary);
+  }
+
+  static bool _evictLastInlineScreenAction(
+    List<Widget> inlineScreen,
+    List<Widget> overflowScreen,
+    Widget? pinnedInlinePrimary,
+  ) {
+    for (var index = inlineScreen.length - 1; index >= 0; index -= 1) {
+      if (_isPinnedPrimary(inlineScreen[index], pinnedInlinePrimary)) {
+        continue;
+      }
+      overflowScreen.insert(0, inlineScreen.removeAt(index));
+      return true;
+    }
+    return false;
+  }
+
+  static int _indexOfLastEvictableInlineAction(
+    List<Widget> inlineActions,
+    Widget? pinnedInlinePrimary,
+  ) {
+    for (var index = inlineActions.length - 1; index >= 0; index -= 1) {
+      if (_isPinnedPrimary(inlineActions[index], pinnedInlinePrimary)) {
+        continue;
+      }
+      return index;
+    }
+    return -1;
   }
 
   static double _estimateActionWidth(
@@ -431,6 +473,15 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       return;
     }
 
+    final int evictIndex =
+        AppWorkspaceToolbar._indexOfLastEvictableInlineAction(
+          _layout.inlineActions,
+          widget.pinnedInlinePrimary,
+        );
+    if (evictIndex < 0) {
+      return;
+    }
+
     setState(() {
       final List<Widget> inlineActions = List<Widget>.from(
         _layout.inlineActions,
@@ -438,7 +489,7 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       final List<Widget> overflowActions = List<Widget>.from(
         _layout.overflowActions,
       );
-      overflowActions.insert(0, inlineActions.removeLast());
+      overflowActions.insert(0, inlineActions.removeAt(evictIndex));
       _layout = _ToolbarLayout(
         inlineActions: inlineActions,
         overflowActions: overflowActions,

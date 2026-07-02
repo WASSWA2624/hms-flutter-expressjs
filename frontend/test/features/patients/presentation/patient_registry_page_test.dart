@@ -639,10 +639,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // For an admitted IPD patient the disposition action resolves to the
-    // shared "Discharge" label; before the dialog opens it is the only match.
-    expect(find.text('Discharge'), findsOneWidget);
+    // shared discharge label; before the dialog opens it is the only match.
+    expect(find.text('Discharge planning'), findsOneWidget);
 
-    await tester.tap(find.text('Discharge'));
+    await tester.tap(find.text('Discharge planning'));
     await tester.pumpAndSettle();
 
     expect(
@@ -675,8 +675,8 @@ void main() {
         'I confirm the patient has exited and documents were handed over.',
       ),
     );
-    // The discharge dialog's primary submit button is the last "Discharge".
-    await tester.tap(find.text('Discharge').last);
+    // The discharge dialog's primary submit button reuses the action label.
+    await tester.tap(find.text('Discharge planning').last);
     await tester.pumpAndSettle();
 
     final captured =

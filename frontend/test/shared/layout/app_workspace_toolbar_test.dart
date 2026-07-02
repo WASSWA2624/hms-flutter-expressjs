@@ -518,6 +518,59 @@ void main() {
     expect(find.text('Register patient'), findsOneWidget);
     expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
   });
+
+  testWidgets(
+    'mobile toolbar keeps pinned primary inline with summary notifications',
+    (WidgetTester tester) async {
+      var primaryTapped = false;
+
+      await pumpComponent(
+        tester,
+        ProviderScope(
+          child: AppWorkspace(
+            title: 'Patients',
+            leadingIcon: Icons.people_outline,
+            toolbar: AppWorkspaceToolbarConfig(
+              primary: AppButton.primary(
+                leadingIcon: Icons.person_add_alt_1_outlined,
+                label: 'Register patient',
+                onPressed: () {
+                  primaryTapped = true;
+                },
+              ),
+              summaryNotifications: <AppWorkspaceSummaryNotification>[
+                const AppWorkspaceSummaryNotification(
+                  label: 'All patients',
+                  count: 12,
+                  icon: Icons.groups_outlined,
+                  onSelected: _noop,
+                ),
+                const AppWorkspaceSummaryNotification(
+                  label: 'Active patients',
+                  count: 8,
+                  icon: Icons.how_to_reg_outlined,
+                  onSelected: _noop,
+                ),
+              ],
+              onRefresh: () async {},
+              overflowLabel: 'More actions',
+            ),
+            body: const Text('Worklist'),
+          ),
+        ),
+        size: const Size(330, 600),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Register patient'), findsNothing);
+      expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.person_add_alt_1_outlined));
+      await tester.pump();
+
+      expect(primaryTapped, isTrue);
+    },
+  );
 }
 
 void _noop() {}
