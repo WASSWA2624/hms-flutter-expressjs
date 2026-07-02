@@ -406,10 +406,6 @@ final class OpdWorkspaceController
     );
   }
 
-  Future<AppFailure?> startWalkIn(Map<String, Object?> payload) {
-    return startOpdEncounter(payload);
-  }
-
   Future<AppFailure?> checkInAppointment(OpdAppointment appointment) {
     return _mutateFlow(
       () => _repository.startOpdFlow(<String, Object?>{

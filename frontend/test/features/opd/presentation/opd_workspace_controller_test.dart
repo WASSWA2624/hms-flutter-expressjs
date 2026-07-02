@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -57,9 +59,7 @@ void main() {
         () => repository.getOpdFlow(any()),
       ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
 
@@ -110,9 +110,7 @@ void main() {
         () => repository.getOpdFlow(any()),
       ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
       clearInteractions(repository);
@@ -168,9 +166,7 @@ void main() {
         return const Result<OpdFlowDetail>.success(detail);
       });
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
       clearInteractions(repository);
@@ -211,9 +207,7 @@ void main() {
         return const Result<OpdFlowDetail>.success(detail);
       });
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
       clearInteractions(repository);
@@ -258,9 +252,7 @@ void main() {
         return const Result<OpdFlowDetail>.success(corrected);
       });
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
       clearInteractions(repository);
@@ -288,9 +280,7 @@ void main() {
 
         _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-        );
+        final ProviderContainer container = _testContainer(repository);
         addTearDown(container.dispose);
         await container.read(opdWorkspaceControllerProvider.future);
         clearInteractions(repository);
@@ -321,9 +311,7 @@ void main() {
           () => repository.getOpdFlow(any()),
         ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-        );
+        final ProviderContainer container = _testContainer(repository);
         addTearDown(container.dispose);
         await container.read(opdWorkspaceControllerProvider.future);
         clearInteractions(repository);
@@ -348,9 +336,7 @@ void main() {
               const Result<OpdFlowDetail>.failure(AppFailure.notFound()),
         );
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-        );
+        final ProviderContainer container = _testContainer(repository);
         addTearDown(container.dispose);
         await container.read(opdWorkspaceControllerProvider.future);
 
@@ -399,9 +385,7 @@ void main() {
         () => repository.getOpdFlow(any()),
       ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(admitted));
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-      );
+      final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
       clearInteractions(repository);
@@ -448,9 +432,7 @@ void main() {
           () => repository.getOpdFlow(any()),
         ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [opdRepositoryProvider.overrideWithValue(repository)],
-        );
+        final ProviderContainer container = _testContainer(repository);
         addTearDown(container.dispose);
         await container.read(opdWorkspaceControllerProvider.future);
         clearInteractions(repository);
@@ -482,6 +464,15 @@ void main() {
       },
     );
   });
+}
+
+ProviderContainer _testContainer(_MockOpdRepository repository) {
+  return ProviderContainer(
+    overrides: [
+      initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+      opdRepositoryProvider.overrideWithValue(repository),
+    ],
+  );
 }
 
 void _stubInitialLoad(

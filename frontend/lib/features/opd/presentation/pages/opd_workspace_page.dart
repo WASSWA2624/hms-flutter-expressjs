@@ -130,7 +130,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
               tooltip: l10n.opdStartEncounterTooltip,
               enabled: isAllowed,
               onPressed: () {
-                _openOpdEncounterDialog(context, ref);
+                unawaited(
+                  openOpdWorkspaceEncounterFlow(context, ref, widget.state),
+                );
               },
             );
           },
@@ -339,89 +341,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final AppPageRequest firstPage = _tablePageNotifier.value.first();
     if (_tablePageNotifier.value != firstPage) {
       _tablePageNotifier.value = firstPage;
-    }
-  }
-
-  Future<void> _openOpdEncounterDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    OpdFlowSummary? activeEncounterToOpen;
-    final OpdEncounterDialogResult? result = await showOpdEncounterDialog(
-      context: context,
-      dialog: OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
-        source: 'opd_workspace',
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
-        onExistingActiveEncounter: (OpdFlowSummary flow) {
-          activeEncounterToOpen = flow;
-        },
-        onCancelEncounter: (String flowId, Map<String, Object?> payload) {
-          return ref.read(opdRepositoryProvider).cancelEncounter(flowId, payload);
-        },
-        onCloseEncounter: (String flowId, Map<String, Object?> payload) {
-          return ref.read(opdRepositoryProvider).closeEncounter(flowId, payload);
-        },
-      ),
-    );
-
-    if (result == null || !context.mounted) {
-      return;
-    }
-
-    if (result.action == OpdEncounterDialogAction.continueWorkflow &&
-        result.flow != null) {
-      final bool? changed = await showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => FlowActionsDialog(flow: result.flow!),
-      );
-      if (changed == true && context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      }
-      return;
-    }
-
-    if (result.action == OpdEncounterDialogAction.cancelled ||
-        result.action == OpdEncounterDialogAction.closed) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      }
-      return;
-    }
-
-    final OpdFlowSummary? existingFlow = result.flow ?? activeEncounterToOpen;
-    if (existingFlow != null) {
-      final bool? changed = await showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => FlowActionsDialog(flow: existingFlow),
-      );
-      if (changed == true && context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      }
-      return;
-    }
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
   }
 
@@ -2697,23 +2616,14 @@ class _OpdPatientActionsDialogState
     OpdFlowSummary? activeEncounterToOpen;
     final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
       context: context,
-      dialog: OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
+      dialog: buildOpdWorkspaceEncounterDialog(
+        ref: ref,
+        state: widget.state,
         initialAppointment: appointment,
         initialAppointmentId: appointment.apiId,
         defaultArrivalMode: 'ONLINE_APPOINTMENT',
         defaultProviderId: appointment.providerUserId,
-        source: 'opd_workspace',
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
+        includeEncounterLifecycleCallbacks: false,
         onExistingActiveEncounter: (OpdFlowSummary flow) {
           activeEncounterToOpen = flow;
         },
@@ -2889,23 +2799,14 @@ class _AppointmentActionsDialogState
   Future<void> _openCheckIn() async {
     final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
       context: context,
-      dialog: OpdEncounterDialog(
-        providerSchedules: widget.state.providerSchedules,
-        appointments: widget.state.appointments.items,
-        activeFlows: <OpdFlowSummary>[
-          ...widget.state.flows.items,
-          ...widget.state.triageQueue.items,
-        ],
+      dialog: buildOpdWorkspaceEncounterDialog(
+        ref: ref,
+        state: widget.state,
         initialAppointment: widget.appointment,
         initialAppointmentId: widget.appointment.apiId,
         defaultArrivalMode: 'ONLINE_APPOINTMENT',
         defaultProviderId: widget.appointment.providerUserId,
-        source: 'opd_workspace',
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .submitOpdEncounter(payload);
-        },
+        includeEncounterLifecycleCallbacks: false,
       ),
     );
     if (!mounted || dialogResult == null) {

@@ -1366,7 +1366,12 @@ Future<void> _openPatientQuickAction(
     return;
   }
   if (action == PatientQuickAction.opdCheckIn) {
-    await _openPatientOpdEncounterDialog(context, ref, patient);
+    await openPatientOpdEncounterFlow(
+      context,
+      ref,
+      patient,
+      onSaved: () => _refreshPatientAfterQuickAction(context, ref, patient.id),
+    );
     return;
   }
   if (action == PatientQuickAction.discharge && detail == null) {
@@ -1409,96 +1414,6 @@ Future<void> _openPatientQuickAction(
   if (changed == true && context.mounted) {
     await _refreshPatientAfterQuickAction(context, ref, patient.id);
   }
-}
-
-Future<void> _openPatientOpdEncounterDialog(
-  BuildContext context,
-  WidgetRef ref,
-  Patient patient,
-) async {
-  OpdFlowSummary? activeEncounterToOpen;
-  final OpdEncounterDialogResult? result =
-      await showAppDialog<OpdEncounterDialogResult>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => _PatientOpdEncounterDialog(
-          patient: patient,
-          onExistingActiveEncounter: (OpdFlowSummary flow) {
-            activeEncounterToOpen = flow;
-          },
-          onSubmit: (Map<String, Object?> payload) async {
-            final Object? existingEncounterId =
-                payload['existing_encounter_id'];
-            if (existingEncounterId is String &&
-                existingEncounterId.trim().isNotEmpty) {
-              final Result<OpdFlowDetail> updateResult = await ref
-                  .read(opdRepositoryProvider)
-                  .updateActiveEncounter(
-                    existingEncounterId.trim(),
-                    _withoutEmptyPayload(
-                      <String, Object?>{
-                        'tenant_id': patient.tenantId,
-                        'facility_id': patient.facilityId,
-                        ...payload,
-                      }..remove('existing_encounter_id'),
-                    ),
-                  );
-              return updateResult;
-            }
-
-            return ref
-                .read(opdRepositoryProvider)
-                .startOpdFlow(
-                  _withoutEmptyPayload(<String, Object?>{
-                    'tenant_id': patient.tenantId,
-                    'facility_id': patient.facilityId,
-                    ...payload,
-                  }),
-                );
-          },
-        ),
-      );
-
-  if (result == null || !context.mounted) {
-    return;
-  }
-
-  if (result.action == OpdEncounterDialogAction.continueWorkflow &&
-      result.flow != null) {
-    if (!context.mounted) {
-      return;
-    }
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: result.flow!),
-    );
-    if (!context.mounted) {
-      return;
-    }
-    await _refreshPatientAfterQuickAction(context, ref, patient.id);
-    return;
-  }
-
-  if (result.action == OpdEncounterDialogAction.cancelled ||
-      result.action == OpdEncounterDialogAction.closed) {
-    await _refreshPatientAfterQuickAction(context, ref, patient.id);
-    return;
-  }
-
-  await _refreshPatientAfterQuickAction(context, ref, patient.id);
-
-  final OpdFlowSummary? activeEncounter =
-      result.flow ?? activeEncounterToOpen;
-  if (activeEncounter == null || !context.mounted) {
-    return;
-  }
-
-  await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => FlowActionsDialog(flow: activeEncounter),
-  );
 }
 
 Future<void> _refreshPatientAfterQuickAction(
@@ -1813,108 +1728,6 @@ class _PatientDischargeQuickDialogState
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _PatientOpdEncounterDialog extends ConsumerStatefulWidget {
-  const _PatientOpdEncounterDialog({
-    required this.patient,
-    required this.onSubmit,
-    this.onExistingActiveEncounter,
-  });
-
-  final Patient patient;
-  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?>) onSubmit;
-  final ValueChanged<OpdFlowSummary>? onExistingActiveEncounter;
-
-  @override
-  ConsumerState<_PatientOpdEncounterDialog> createState() =>
-      _PatientOpdEncounterDialogState();
-}
-
-class _PatientOpdEncounterDialogState
-    extends ConsumerState<_PatientOpdEncounterDialog> {
-  bool _isLoading = true;
-  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
-  List<OpdAppointment> _appointments = const <OpdAppointment>[];
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadEncounterData());
-  }
-
-  Future<void> _loadEncounterData() async {
-    final String search =
-        widget.patient.effectiveIdentifier ?? widget.patient.id;
-    final Result<List<OpdProviderSchedule>> scheduleResult = await ref
-        .read(opdRepositoryProvider)
-        .listProviderSchedules();
-    final Result<AppPage<OpdAppointment>> appointmentResult = await ref
-        .read(opdRepositoryProvider)
-        .listAppointments(OpdAppointmentQuery(search: search));
-    if (!mounted) {
-      return;
-    }
-    AppFailure? failure;
-    var schedules = const <OpdProviderSchedule>[];
-    var appointments = const <OpdAppointment>[];
-    scheduleResult.when(
-      success: (List<OpdProviderSchedule> value) => schedules = value,
-      failure: (AppFailure value) => failure = value,
-    );
-    appointmentResult.when(
-      success: (AppPage<OpdAppointment> value) => appointments = value.items,
-      failure: (AppFailure value) => failure ??= value,
-    );
-    setState(() {
-      _providerSchedules = schedules;
-      _appointments = appointments;
-      _failure = failure;
-      _isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (_isLoading) {
-      return AppDialog(
-        title: Text(l10n.opdCheckInAction),
-        icon: const Icon(Icons.login_outlined),
-        scrollable: true,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            const LinearProgressIndicator(),
-            SizedBox(height: Theme.of(context).spacing.md),
-            const AppPatientDetailSkeleton(),
-          ],
-        ),
-      );
-    }
-
-    return OpdEncounterDialog(
-      providerSchedules: _providerSchedules,
-      appointments: _appointments,
-      initialPatient: widget.patient,
-      initialPatientId: _patientApiId(widget.patient),
-      source: 'patient_registry',
-      onExistingActiveEncounter: widget.onExistingActiveEncounter,
-      onCancelEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref.read(opdRepositoryProvider).cancelEncounter(flowId, payload);
-      },
-      onCloseEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref.read(opdRepositoryProvider).closeEncounter(flowId, payload);
-      },
-      onSubmit: widget.onSubmit,
-    );
   }
 }
 
@@ -6313,16 +6126,6 @@ IconData _paymentMethodIcon(String value) {
 
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values);
-}
-
-String _patientApiId(Patient patient) {
-  for (final String? value in <String?>[patient.publicId, patient.id]) {
-    final String normalized = value?.trim() ?? '';
-    if (normalized.isNotEmpty) {
-      return normalized;
-    }
-  }
-  return patient.id;
 }
 
 const List<String> _identifierTypes = <String>[
