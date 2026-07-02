@@ -56,6 +56,43 @@ void main() {
     expect(actionCount, 1);
   });
 
+  testWidgets('AppWorkspace hides title text on compact mobile widths', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Patient registry',
+          leadingIcon: Icons.people_outline,
+          body: Text('Workspace body'),
+        ),
+      ),
+      size: const Size(330, 600),
+    );
+
+    expect(find.text('Patient registry'), findsNothing);
+    expect(find.byIcon(Icons.people_outline), findsOneWidget);
+  });
+
+  testWidgets('AppWorkspace keeps title text on tablet widths', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const ProviderScope(
+        child: AppWorkspace(
+          title: 'Patient registry',
+          leadingIcon: Icons.people_outline,
+          body: Text('Workspace body'),
+        ),
+      ),
+      size: const Size(720, 600),
+    );
+
+    expect(find.text('Patient registry'), findsOneWidget);
+  });
+
   testWidgets('AppWorkspaceSplitContent switches from side panel to stack', (
     WidgetTester tester,
   ) async {

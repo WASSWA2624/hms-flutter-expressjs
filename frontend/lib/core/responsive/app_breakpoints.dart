@@ -16,6 +16,12 @@ extension AppBreakpointProperties on AppBreakpoint {
     AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => true,
     _ => false,
   };
+
+  /// Compact workspace headers hide the title text and keep only the module icon.
+  bool get hidesWorkspaceTitle => switch (this) {
+    AppBreakpoint.xs || AppBreakpoint.sm => true,
+    _ => false,
+  };
 }
 
 abstract final class AppBreakpoints {

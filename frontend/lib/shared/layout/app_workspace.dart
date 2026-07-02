@@ -1586,8 +1586,17 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final TextTheme textTheme = theme.textTheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    if (breakpoint.hidesWorkspaceTitle) {
+      return Semantics(
+        header: true,
+        label: title,
+        excludeSemantics: true,
+        child: const SizedBox.shrink(),
+      );
+    }
+
+    final TextTheme textTheme = theme.textTheme;
     final TextStyle? titleStyle = compact
         ? switch (breakpoint) {
             AppBreakpoint.xs || AppBreakpoint.sm => textTheme.titleMedium,

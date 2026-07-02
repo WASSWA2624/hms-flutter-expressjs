@@ -173,6 +173,7 @@ class _PatientRegistryContentState
           requirement: _PatientRegistryContent._writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.primary(
+              iconOnly: true,
               leadingIcon: Icons.person_add_alt_1_outlined,
               label: l10n.patientsRegisterPatientAction,
               semanticLabel: l10n.patientsRegisterPatientAction,

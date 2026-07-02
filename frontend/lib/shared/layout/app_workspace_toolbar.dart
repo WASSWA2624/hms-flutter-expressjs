@@ -129,6 +129,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
             maxWidth: constraints.maxWidth,
             screenActions: screenActions,
             globalActions: globalActions,
+            pinnedInlinePrimary: config.primary,
             maxVisibleScreenActions: config.maxVisibleScreenActions,
             showLabels: showLabels,
             spacing: theme.spacing.xs,
@@ -161,14 +162,20 @@ class AppWorkspaceToolbar extends ConsumerWidget {
     required double maxWidth,
     required List<Widget> screenActions,
     required List<Widget> globalActions,
+    required Widget? pinnedInlinePrimary,
     required int maxVisibleScreenActions,
     required bool showLabels,
     required double spacing,
   }) {
     if (!showLabels) {
+      final List<Widget> overflowScreen = screenActions
+          .where((Widget action) => !identical(action, pinnedInlinePrimary))
+          .toList(growable: false);
       return _ToolbarLayout(
-        inlineActions: const <Widget>[],
-        overflowActions: <Widget>[...screenActions, ...globalActions],
+        inlineActions: pinnedInlinePrimary == null
+            ? const <Widget>[]
+            : <Widget>[pinnedInlinePrimary],
+        overflowActions: <Widget>[...overflowScreen, ...globalActions],
       );
     }
 
@@ -336,6 +343,7 @@ class _AdaptiveToolbarLayout extends StatefulWidget {
     required this.maxWidth,
     required this.screenActions,
     required this.globalActions,
+    required this.pinnedInlinePrimary,
     required this.maxVisibleScreenActions,
     required this.showLabels,
     required this.spacing,
@@ -350,6 +358,7 @@ class _AdaptiveToolbarLayout extends StatefulWidget {
   final double maxWidth;
   final List<Widget> screenActions;
   final List<Widget> globalActions;
+  final Widget? pinnedInlinePrimary;
   final int maxVisibleScreenActions;
   final bool showLabels;
   final double spacing;
@@ -382,6 +391,7 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
         oldWidget.showLabels != widget.showLabels ||
         oldWidget.spacing != widget.spacing ||
         oldWidget.maxVisibleScreenActions != widget.maxVisibleScreenActions ||
+        oldWidget.pinnedInlinePrimary != widget.pinnedInlinePrimary ||
         !_listEquals(oldWidget.screenActions, widget.screenActions) ||
         !_listEquals(oldWidget.globalActions, widget.globalActions)) {
       _resetLayout();
@@ -394,6 +404,7 @@ class _AdaptiveToolbarLayoutState extends State<_AdaptiveToolbarLayout> {
       maxWidth: widget.maxWidth,
       screenActions: widget.screenActions,
       globalActions: widget.globalActions,
+      pinnedInlinePrimary: widget.pinnedInlinePrimary,
       maxVisibleScreenActions: widget.maxVisibleScreenActions,
       showLabels: widget.showLabels,
       spacing: widget.spacing,

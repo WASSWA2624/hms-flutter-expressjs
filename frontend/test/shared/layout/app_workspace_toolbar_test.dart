@@ -421,6 +421,46 @@ void main() {
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
   });
+
+  testWidgets('mobile toolbar keeps primary action inline as icon only', (
+    WidgetTester tester,
+  ) async {
+    var primaryTapped = false;
+
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Patients',
+          leadingIcon: Icons.people_outline,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(
+              iconOnly: true,
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: 'Register patient',
+              onPressed: () {
+                primaryTapped = true;
+              },
+            ),
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+          ),
+          body: const Text('Worklist'),
+        ),
+      ),
+      size: const Size(330, 600),
+    );
+
+    expect(find.text('Patients'), findsNothing);
+    expect(find.text('Register patient'), findsNothing);
+    expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.person_add_alt_1_outlined));
+    await tester.pump();
+
+    expect(primaryTapped, isTrue);
+  });
 }
 
 void _noop() {}
