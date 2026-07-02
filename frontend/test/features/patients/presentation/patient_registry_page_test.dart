@@ -766,8 +766,8 @@ void main() {
     await tester.tap(find.text('Start OPD encounter').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Existing patient'), findsOneWidget);
-    expect(find.text('Search patient *'), findsOneWidget);
+    expect(find.text('Existing patient'), findsNothing);
+    expect(find.text('Search patient *'), findsNothing);
     expect(find.text('Start encounter'), findsOneWidget);
   });
 

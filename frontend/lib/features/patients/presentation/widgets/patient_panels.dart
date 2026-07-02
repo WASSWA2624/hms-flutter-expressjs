@@ -22,8 +22,7 @@ class PatientTimelineList extends StatelessWidget {
       initiallyExpanded: true,
       itemLeadingIcon: Icons.history_outlined,
       itemTitle: (PatientTimelineItem item) {
-        final String label =
-            item.title ?? AppDisplay.apiLabel(item.resource);
+        final String label = item.title ?? AppDisplay.apiLabel(item.resource);
         final String when = _formatOptionalDateTime(context, item.occurredAt);
         if (item.subtitle != null && item.subtitle!.trim().isNotEmpty) {
           return '${AppDisplay.apiLabel(item.subtitle!)}: $label';

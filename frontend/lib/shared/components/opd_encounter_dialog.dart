@@ -134,9 +134,7 @@ typedef OpdEncounterPayloadSubmit =
 
 @immutable
 final class OpdEncounterDialogResult {
-  const OpdEncounterDialogResult({this.registeredPatientId});
-
-  final String? registeredPatientId;
+  const OpdEncounterDialogResult();
 }
 
 class OpdEncounterDialog extends ConsumerStatefulWidget {
@@ -207,6 +205,16 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   int _activeEncounterLookupToken = 0;
   bool _appliedInitialContext = false;
 
+  bool get _pinPatientContext =>
+      widget.initialPatient != null || _isNonEmpty(widget.initialPatientId);
+
+  bool get _pinAppointmentContext =>
+      widget.initialAppointment != null ||
+      _isNonEmpty(widget.initialAppointmentId);
+
+  bool get _showPatientSection =>
+      !_pinPatientContext && !_pinAppointmentContext;
+
   @override
   void initState() {
     super.initState();
@@ -272,6 +280,29 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
   void _applyInitialContext({bool force = false}) {
     if (_appliedInitialContext && !force) {
+      return;
+    }
+    if (_pinAppointmentContext) {
+      final OpdAppointment? appointment = _appointmentByApiId(_appointmentId);
+      setState(() {
+        _appliedInitialContext = true;
+        _patientMode = _WalkInPatientMode.appointment;
+        if (appointment != null) {
+          _appointmentId = appointment.apiId;
+          _providerId = appointment.providerUserId ?? _providerId;
+        }
+        _arrivalMode = 'ONLINE_APPOINTMENT';
+        _requireConsultationPayment = true;
+        _applyProviderDefaultsToState(_providerId);
+      });
+      return;
+    }
+    if (_pinPatientContext) {
+      setState(() {
+        _appliedInitialContext = true;
+        _patientMode = _WalkInPatientMode.existing;
+        _patientId = _initialPatientApiId();
+      });
       return;
     }
     if (widget.initialPatient == null &&
@@ -390,28 +421,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       icon: const Icon(opdEncounterIcon),
       scrollable: true,
       closeEnabled: !_isSaving,
+      initialMaximized: true,
       maxWidth: 880,
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          AppSectionPanel(
-            title: l10n.opdPatientSectionTitle,
-            density: AppContentPanelDensity.compact,
-            children: <Widget>[
-              _WalkInModeSelector(
-                value: _patientMode,
-                enabled: !_isSaving,
-                existingLabel: l10n.opdExistingPatientModeLabel,
-                appointmentLabel: l10n.opdAppointmentPatientModeLabel,
-                newPatientLabel: l10n.opdNewPatientModeLabel,
-                onChanged: _setPatientMode,
-              ),
-              _patientModeContent(l10n),
-              _activeEncounterNotice(l10n),
-            ],
-          ),
+          if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
+          if (_showPatientSection)
+            AppSectionPanel(
+              title: l10n.opdPatientSectionTitle,
+              density: AppContentPanelDensity.compact,
+              children: <Widget>[
+                _WalkInModeSelector(
+                  value: _patientMode,
+                  enabled: !_isSaving,
+                  existingLabel: l10n.opdExistingPatientModeLabel,
+                  appointmentLabel: l10n.opdAppointmentPatientModeLabel,
+                  newPatientLabel: l10n.opdNewPatientModeLabel,
+                  onChanged: _setPatientMode,
+                ),
+                _patientModeContent(l10n),
+              ],
+            )
+          else if (_pinPatientContext)
+            _knownPatientSummary(l10n),
           AppResponsiveFieldRow.two(
             left: _routingSection(l10n),
             right: _billingSection(l10n),
@@ -623,17 +658,38 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     );
   }
 
-  Widget _activeEncounterNotice(AppLocalizations l10n) {
-    if (_patientMode == _WalkInPatientMode.newPatient) {
+  bool _shouldShowActiveEncounterNotice() {
+    return _patientMode != _WalkInPatientMode.newPatient;
+  }
+
+  Widget _knownPatientSummary(AppLocalizations l10n) {
+    final Patient? patient =
+        widget.initialPatient ?? _patientByApiId(_patientId);
+    if (patient == null) {
       return const SizedBox.shrink();
     }
 
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.md),
+      child: AppFormInformationBanner.message(
+        title: l10n.opdPatientSectionTitle,
+        message: _joinDisplay(<String?>[
+          patient.effectiveDisplayName,
+          patient.effectiveIdentifier,
+          patient.primaryPhone,
+        ]),
+      ),
+    );
+  }
+
+  Widget _activeEncounterNotice(AppLocalizations l10n) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final OpdFlowSummary? flow = _activeEncounter;
     if (_isResolvingActiveEncounter && flow == null) {
       return Padding(
-        padding: EdgeInsets.only(top: theme.spacing.md),
+        padding: EdgeInsets.only(bottom: theme.spacing.md),
         child: Row(
           children: <Widget>[
             SizedBox.square(
@@ -662,86 +718,110 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     }
 
     return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.md),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.secondaryContainer.withValues(alpha: 0.28),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  Icon(
-                    Icons.info_outline,
-                    size: 18,
-                    color: colorScheme.onSecondaryContainer,
-                  ),
-                  Text(
-                    l10n.opdActiveEncounterFoundTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
+      padding: EdgeInsets.only(bottom: theme.spacing.md),
+      child: SizedBox(
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.secondaryContainer.withValues(alpha: 0.28),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
                       color: colorScheme.onSecondaryContainer,
                     ),
-                  ),
-                  AppWorkspaceStatusBadge(
-                    status: AppWorkspaceStatus(
-                      label: _apiLabel(flow.stage ?? flow.status ?? ''),
-                      tone: AppWorkspaceStatusTone.warning,
+                    Text(
+                      l10n.opdActiveEncounterFoundTitle,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: colorScheme.onSecondaryContainer,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                l10n.opdActiveEncounterFoundBody,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
+                    AppWorkspaceStatusBadge(
+                      status: AppWorkspaceStatus(
+                        label: _apiLabel(flow.stage ?? flow.status ?? ''),
+                        tone: AppWorkspaceStatusTone.warning,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: theme.spacing.md),
-              Wrap(
-                spacing: theme.spacing.lg,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  _ActiveEncounterDetail(
-                    label: l10n.clinicalEncounterNumberLabel,
-                    value: flow.apiId,
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  l10n.opdActiveEncounterFoundBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
                   ),
-                  _ActiveEncounterDetail(
-                    label: l10n.opdStageLabel,
-                    value: _apiLabel(flow.stage ?? flow.status ?? ''),
-                  ),
-                  _ActiveEncounterDetail(
-                    label: l10n.opdVisitTypeColumnLabel,
-                    value: _apiLabel(
-                      _firstNonEmptyText(<String?>[
-                            flow.arrivalMode,
-                            flow.encounterType,
-                          ]) ??
-                          '',
-                    ),
-                  ),
-                  _ActiveEncounterDetail(
-                    label: l10n.opdProviderColumnLabel,
-                    value: flow.providerDisplayName ?? l10n.profileUnknownValue,
-                  ),
-                  _ActiveEncounterDetail(
-                    label: l10n.opdPayerBillingColumnLabel,
-                    value: _flowBillingLabel(context, flow),
-                  ),
-                  _ActiveEncounterDetail(
-                    label: l10n.opdTimeColumnLabel,
-                    value: _formatDateTime(context, flow.startedAt),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                SizedBox(height: theme.spacing.md),
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final double maxWidth = constraints.maxWidth;
+                    final int columns = maxWidth >= 900
+                        ? 3
+                        : maxWidth >= 560
+                        ? 2
+                        : 1;
+                    final double itemWidth = columns == 1
+                        ? maxWidth
+                        : (maxWidth - theme.spacing.lg * (columns - 1)) /
+                              columns;
+                    final List<Widget> details = <Widget>[
+                      _ActiveEncounterDetail(
+                        label: l10n.clinicalEncounterNumberLabel,
+                        value: flow.apiId,
+                      ),
+                      _ActiveEncounterDetail(
+                        label: l10n.opdStageLabel,
+                        value: _apiLabel(flow.stage ?? flow.status ?? ''),
+                      ),
+                      _ActiveEncounterDetail(
+                        label: l10n.opdVisitTypeColumnLabel,
+                        value: _apiLabel(
+                          _firstNonEmptyText(<String?>[
+                                flow.arrivalMode,
+                                flow.encounterType,
+                              ]) ??
+                              '',
+                        ),
+                      ),
+                      _ActiveEncounterDetail(
+                        label: l10n.opdProviderColumnLabel,
+                        value:
+                            flow.providerDisplayName ??
+                            l10n.profileUnknownValue,
+                      ),
+                      _ActiveEncounterDetail(
+                        label: l10n.opdPayerBillingColumnLabel,
+                        value: _flowBillingLabel(context, flow),
+                      ),
+                      _ActiveEncounterDetail(
+                        label: l10n.opdTimeColumnLabel,
+                        value: _formatDateTime(context, flow.startedAt),
+                      ),
+                    ];
+
+                    return Wrap(
+                      spacing: theme.spacing.lg,
+                      runSpacing: theme.spacing.sm,
+                      children: <Widget>[
+                        for (final Widget detail in details)
+                          SizedBox(width: itemWidth, child: detail),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -776,19 +856,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       return;
     }
     return result.when(
-      success: (OpdFlowDetail detail) {
+      success: (OpdFlowDetail _) {
         final OpdFlowSummary? activeEncounter = _activeEncounter;
         if (activeEncounter != null) {
           widget.onExistingActiveEncounter?.call(activeEncounter);
         }
         widget.onSuccess?.call();
-        final String? registeredPatientId =
-            _patientMode == _WalkInPatientMode.newPatient
-            ? detail.summary.patientId
-            : null;
-        Navigator.of(context).pop(
-          OpdEncounterDialogResult(registeredPatientId: registeredPatientId),
-        );
+        Navigator.of(context).pop(const OpdEncounterDialogResult());
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1300,6 +1374,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         _patientMode != _WalkInPatientMode.newPatient;
 
     return <String, Object?>{
+      if (_isNonEmpty(widget.source)) 'source': widget.source,
       if (activeEncounter != null)
         'existing_encounter_id': activeEncounter.apiId,
       if (_patientMode == _WalkInPatientMode.appointment)
@@ -1385,34 +1460,43 @@ class _ActiveEncounterDetail extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 132, maxWidth: 220),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
-          SizedBox(height: theme.spacing.xs / 2),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        Text(
+          value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+Future<OpdEncounterDialogResult?> showOpdEncounterDialog({
+  required BuildContext context,
+  required OpdEncounterDialog dialog,
+  bool barrierDismissible = false,
+}) {
+  return showAppDialog<OpdEncounterDialogResult>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => dialog,
+  );
 }
 
 class _ProviderSelectField extends StatelessWidget {

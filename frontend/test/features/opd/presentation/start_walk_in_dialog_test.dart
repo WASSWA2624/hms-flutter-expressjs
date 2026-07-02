@@ -196,7 +196,7 @@ void main() {
   });
 
   testWidgets(
-    'OpdEncounterDialog preselects existing patient when no appointment exists',
+    'OpdEncounterDialog hides patient picker for pinned existing patient',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -221,26 +221,24 @@ void main() {
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
+          source: 'patient_registry',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
+        size: const Size(1000, 820),
       );
 
-      expect(find.text('Search patient *'), findsOneWidget);
-      expect(find.text('Search appointment *'), findsNothing);
+      expect(find.text('Existing patient'), findsNothing);
+      expect(find.text('Search patient *'), findsNothing);
+      expect(find.text('Arrival mode *'), findsOneWidget);
+      expect(find.text('Start encounter'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'OpdEncounterDialog preselects appointment mode for one eligible patient appointment',
+    'OpdEncounterDialog hides appointment picker for pinned appointment',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
-      const Patient patient = Patient(
-        id: 'patient-1',
-        publicId: 'PAT000001',
-        firstName: 'Jane',
-        lastName: 'Doe',
-      );
       const OpdAppointment appointment = OpdAppointment(
         id: 'appointment-1',
         publicId: 'APT000001',
@@ -253,7 +251,6 @@ void main() {
       _stubStartDialogLookups(
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        patients: const <Patient>[patient],
         appointments: const <OpdAppointment>[appointment],
       );
 
@@ -264,56 +261,29 @@ void main() {
         dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
-          initialPatient: patient,
+          initialAppointment: appointment,
+          initialAppointmentId: appointment.publicId,
+          source: 'opd_workspace',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
+        size: const Size(1000, 820),
       );
 
-      expect(find.text('Search appointment *'), findsOneWidget);
-      expect(
-        find.text(
-          'Select a scheduled appointment to check the patient into OPD.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Search appointment *'), findsNothing);
+      expect(find.text('Arrival mode *'), findsNothing);
+      expect(find.text('Search doctor (optional)'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'OpdEncounterDialog requires selection when patient has multiple eligible appointments',
+    'OpdEncounterDialog shows patient mode selector in generic workspace context',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
-      const Patient patient = Patient(
-        id: 'patient-1',
-        publicId: 'PAT000001',
-        firstName: 'Jane',
-        lastName: 'Doe',
-      );
-      const List<OpdAppointment> appointments = <OpdAppointment>[
-        OpdAppointment(
-          id: 'appointment-1',
-          publicId: 'APT000001',
-          patientId: 'patient-1',
-          patientDisplayName: 'Jane Doe',
-          patientIdentifier: 'PAT000001',
-          status: 'SCHEDULED',
-        ),
-        OpdAppointment(
-          id: 'appointment-2',
-          publicId: 'APT000002',
-          patientId: 'patient-1',
-          patientDisplayName: 'Jane Doe',
-          patientIdentifier: 'PAT000001',
-          status: 'CONFIRMED',
-        ),
-      ];
 
       _stubStartDialogLookups(
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        patients: const <Patient>[patient],
-        appointments: appointments,
       );
 
       await _pumpStartDialog(
@@ -323,18 +293,43 @@ void main() {
         dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
-          initialPatient: patient,
+          source: 'opd_workspace',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
       );
 
-      await tester.tap(find.text('Start encounter').last);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Search appointment *'), findsOneWidget);
-      expect(find.text('This field is required.'), findsWidgets);
+      expect(find.text('Existing patient'), findsOneWidget);
+      expect(find.text('Appointment patient'), findsOneWidget);
+      expect(find.text('New patient'), findsOneWidget);
+      expect(find.text('Search patient *'), findsOneWidget);
     },
   );
+
+  testWidgets('OpdEncounterDialog opens maximized by default on desktop', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+
+    _stubStartDialogLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+    );
+
+    await _pumpStartDialog(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      dialog: OpdEncounterDialog(
+        providerSchedules: const <OpdProviderSchedule>[],
+        appointments: const <OpdAppointment>[],
+        onSubmit: (_) async => _successfulOpdSubmit(),
+      ),
+      size: const Size(1000, 820),
+    );
+
+    expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
+  });
 
   testWidgets(
     'OpdEncounterDialog opens active encounter instead of submitting duplicate creation',
@@ -887,7 +882,10 @@ Future<void> _pumpStartDialog(
   required _MockPatientRepository patientRepository,
   required _MockOpdRepository opdRepository,
   required OpdEncounterDialog dialog,
+  Size size = const Size(800, 720),
 }) async {
+  await tester.binding.setSurfaceSize(size);
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

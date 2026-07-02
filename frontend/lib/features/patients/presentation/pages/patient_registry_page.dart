@@ -952,7 +952,6 @@ class _PatientList extends ConsumerWidget {
   }
 }
 
-
 class _PatientNameCell extends StatelessWidget {
   const _PatientNameCell({required this.patient});
 
@@ -1285,7 +1284,6 @@ String _patientAgeLabel(BuildContext context, DateTime? dateOfBirth) {
   return today.difference(dateOfBirth).inDays.clamp(0, 30).toString();
 }
 
-
 enum _PatientLegacyQuickAction { triage, billing }
 
 Future<void> _openPatientQuickAction(
@@ -1367,6 +1365,10 @@ Future<void> _openPatientQuickAction(
     }
     return;
   }
+  if (action == PatientQuickAction.opdCheckIn) {
+    await _openPatientOpdEncounterDialog(context, ref, patient);
+    return;
+  }
   if (action == PatientQuickAction.discharge && detail == null) {
     return;
   }
@@ -1392,14 +1394,44 @@ Future<void> _openPatientQuickAction(
           detail: detail,
           patient: patient,
         ),
-        PatientQuickAction.opdCheckIn => _PatientOpdEncounterDialog(
+        PatientQuickAction.opdCheckIn ||
+        PatientQuickAction.opdActions ||
+        PatientQuickAction.labOrder ||
+        PatientQuickAction.radiologyOrder ||
+        PatientQuickAction.theaterSchedule ||
+        PatientQuickAction.physiotherapy => throw StateError(
+          'Action handled before dialog: $action',
+        ),
+      };
+    },
+  );
+
+  if (changed == true && context.mounted) {
+    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+  }
+}
+
+Future<void> _openPatientOpdEncounterDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Patient patient,
+) async {
+  OpdFlowSummary? activeEncounterToOpen;
+  final OpdEncounterDialogResult? result =
+      await showAppDialog<OpdEncounterDialogResult>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _PatientOpdEncounterDialog(
           patient: patient,
+          onExistingActiveEncounter: (OpdFlowSummary flow) {
+            activeEncounterToOpen = flow;
+          },
           onSubmit: (Map<String, Object?> payload) async {
             final Object? existingEncounterId =
                 payload['existing_encounter_id'];
             if (existingEncounterId is String &&
                 existingEncounterId.trim().isNotEmpty) {
-              final Result<OpdFlowDetail> result = await ref
+              final Result<OpdFlowDetail> updateResult = await ref
                   .read(opdRepositoryProvider)
                   .updateActiveEncounter(
                     existingEncounterId.trim(),
@@ -1411,10 +1443,10 @@ Future<void> _openPatientQuickAction(
                       }..remove('existing_encounter_id'),
                     ),
                   );
-              return result;
+              return updateResult;
             }
 
-            return await ref
+            return ref
                 .read(opdRepositoryProvider)
                 .startOpdFlow(
                   _withoutEmptyPayload(<String, Object?>{
@@ -1425,19 +1457,24 @@ Future<void> _openPatientQuickAction(
                 );
           },
         ),
-        PatientQuickAction.opdActions ||
-        PatientQuickAction.labOrder ||
-        PatientQuickAction.radiologyOrder ||
-        PatientQuickAction.theaterSchedule ||
-        PatientQuickAction.physiotherapy =>
-          throw StateError('Action handled before dialog: $action'),
-      };
-    },
-  );
+      );
 
-  if (changed == true && context.mounted) {
-    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+  if (result == null || !context.mounted) {
+    return;
   }
+
+  await _refreshPatientAfterQuickAction(context, ref, patient.id);
+
+  final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
+  if (activeEncounter == null || !context.mounted) {
+    return;
+  }
+
+  await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => FlowActionsDialog(flow: activeEncounter),
+  );
 }
 
 Future<void> _refreshPatientAfterQuickAction(
@@ -1759,10 +1796,12 @@ class _PatientOpdEncounterDialog extends ConsumerStatefulWidget {
   const _PatientOpdEncounterDialog({
     required this.patient,
     required this.onSubmit,
+    this.onExistingActiveEncounter,
   });
 
   final Patient patient;
   final Future<Result<OpdFlowDetail>> Function(Map<String, Object?>) onSubmit;
+  final ValueChanged<OpdFlowSummary>? onExistingActiveEncounter;
 
   @override
   ConsumerState<_PatientOpdEncounterDialog> createState() =>
@@ -1843,6 +1882,7 @@ class _PatientOpdEncounterDialogState
       initialPatient: widget.patient,
       initialPatientId: _patientApiId(widget.patient),
       source: 'patient_registry',
+      onExistingActiveEncounter: widget.onExistingActiveEncounter,
       onSubmit: widget.onSubmit,
     );
   }
