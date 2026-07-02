@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -144,6 +145,10 @@ void main() {
                   context: context,
                   builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
+                    registrationScope: const PatientRegistrationScope(
+                      defaultTenantId: 'tenant-1',
+                      defaultFacilityId: 'facility-1',
+                    ),
                     onSubmit: (Map<String, Object?> payload) async {
                       submittedPayload = payload;
                       return null;
@@ -171,9 +176,64 @@ void main() {
     expect(submittedPayload?['first_name'], 'Amina');
     expect(submittedPayload?['last_name'], 'Kato');
     expect(submittedPayload?['gender'], 'FEMALE');
+    expect(submittedPayload?['tenant_id'], 'tenant-1');
+    expect(submittedPayload?['facility_id'], 'facility-1');
     expect(submittedPayload?['is_active'], isTrue);
     expect(submittedPayload?.containsKey('patient_registration'), isFalse);
   });
+
+  testWidgets(
+    'RegisterNewPatientDialog shows tenant and facility pickers for multi-tenant scope',
+    (WidgetTester tester) async {
+      await pumpLocalizedWidget(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<bool>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(
+                        tenants: <PatientReferenceOption>[
+                          PatientReferenceOption(
+                            id: 'tenant-1',
+                            label: 'DemoCare Tenant',
+                          ),
+                        ],
+                        facilities: <PatientReferenceOption>[
+                          PatientReferenceOption(
+                            id: 'facility-1',
+                            label: 'DemoCare General Hospital',
+                            tenantId: 'tenant-1',
+                          ),
+                        ],
+                      ),
+                      registrationScope: const PatientRegistrationScope(
+                        showTenantPicker: true,
+                        showFacilityPicker: true,
+                      ),
+                      onSubmit: (_) async => null,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        size: const Size(1000, 800),
+      );
+
+      await tester.tap(find.text('Open register dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PatientTenantSelectField), findsOneWidget);
+      expect(find.byType(PatientFacilitySelectField), findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
+    },
+  );
 
   testWidgets('RegisterNewPatientDialog saves without optional last name', (
     WidgetTester tester,

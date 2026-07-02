@@ -843,7 +843,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _WalkInPatientMode.newPatient => RegisterNewPatientForm(
         key: _newPatientFormKey,
         referenceData: _patientReferenceData,
-        facilityScope: PatientRegistrationFacilityScope.resolve(
+        registrationScope: PatientRegistrationScope.resolve(
           referenceData: _patientReferenceData,
           accessPolicy: ref.watch(appAccessPolicyProvider),
         ),

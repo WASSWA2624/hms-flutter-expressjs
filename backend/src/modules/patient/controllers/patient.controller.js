@@ -50,6 +50,7 @@ const buildPatientScope = (req = {}) => {
 const buildUserContext = (req = {}) => ({
   user_id: req.user?.id || null,
   ip_address: req.ip,
+  user: req.user || {},
 });
 
 /**

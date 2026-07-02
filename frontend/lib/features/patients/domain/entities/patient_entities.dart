@@ -732,6 +732,7 @@ final class PatientRegistryOverview {
 @immutable
 final class PatientReferenceData {
   const PatientReferenceData({
+    this.tenants = const <PatientReferenceOption>[],
     this.facilities = const <PatientReferenceOption>[],
     this.wards = const <PatientReferenceOption>[],
     this.rooms = const <PatientReferenceOption>[],
@@ -742,6 +743,7 @@ final class PatientReferenceData {
     this.appointmentStatuses = const <String>[],
   });
 
+  final List<PatientReferenceOption> tenants;
   final List<PatientReferenceOption> facilities;
   final List<PatientReferenceOption> wards;
   final List<PatientReferenceOption> rooms;
@@ -757,6 +759,7 @@ final class PatientReferenceOption {
   const PatientReferenceOption({
     required this.id,
     required this.label,
+    this.tenantId,
     this.facilityId,
     this.wardId,
     this.roomId,
@@ -766,6 +769,7 @@ final class PatientReferenceOption {
 
   final String id;
   final String label;
+  final String? tenantId;
   final String? facilityId;
   final String? wardId;
   final String? roomId;

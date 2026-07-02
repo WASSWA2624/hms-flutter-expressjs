@@ -11,6 +11,19 @@ const {
 } = require('@lib/billing/identifiers');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
+const GLOBAL_SCOPE_ROLES = new Set(['SUPER_ADMIN', 'APP_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ADMIN']);
+
+const hasGlobalScopeAccess = (user = {}) => {
+  const roles = [
+    ...(Array.isArray(user.roles) ? user.roles : []),
+    user.role,
+  ]
+    .map((role) => String(role || '').trim().toUpperCase())
+    .filter(Boolean);
+
+  return roles.some((role) => GLOBAL_SCOPE_ROLES.has(role));
+};
+
 const WORKSPACE_PAGE_LIMIT = 25;
 const DUPLICATE_PATIENT_SCAN_LIMIT = 250;
 const DUPLICATE_MIN_SCORE = 45;
@@ -1008,20 +1021,39 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
   };
 };
 
-const getPatientWorkspaceReferenceData = async (scope = {}) => {
-  const { where } = await resolveScopeWhere(scope);
-  const facilities = await prisma.facility.findMany({
-    where: {
-      ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
-      deleted_at: null,
-    },
-    select: {
-      id: true,
-      human_friendly_id: true,
-      name: true,
-    },
-    orderBy: { name: 'asc' },
-  });
+const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) => {
+  const { where, tenantId } = await resolveScopeWhere(scope);
+  const user = userContext?.user || {};
+  const includeTenants = !tenantId && hasGlobalScopeAccess(user);
+
+  const [tenants, facilities] = await Promise.all([
+    includeTenants
+      ? prisma.tenant.findMany({
+          where: { deleted_at: null },
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+          orderBy: { name: 'asc' },
+          take: 200,
+        })
+      : Promise.resolve([]),
+    prisma.facility.findMany({
+      where: {
+        ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
+        deleted_at: null,
+      },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        tenant_id: true,
+      },
+      orderBy: { name: 'asc' },
+      take: 500,
+    }),
+  ]);
   const wards = await prisma.ward.findMany({
     where: {
       ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
@@ -1073,9 +1105,14 @@ const getPatientWorkspaceReferenceData = async (scope = {}) => {
   });
 
   return {
+    tenants: tenants.map((entry) => ({
+      human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+    })),
     facilities: facilities.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      tenant_id: resolvePublicIdentifier(null, entry?.tenant_id),
     })),
     wards: wards.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),

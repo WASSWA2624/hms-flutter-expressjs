@@ -239,7 +239,7 @@ class _PatientRegistryContentState
       barrierDismissible: false,
       builder: (_) => RegisterNewPatientDialog(
         referenceData: widget.state.referenceData,
-        facilityScope: PatientRegistrationFacilityScope.resolve(
+        registrationScope: PatientRegistrationScope.resolve(
           referenceData: widget.state.referenceData,
           accessPolicy: ref.read(appAccessPolicyProvider),
         ),

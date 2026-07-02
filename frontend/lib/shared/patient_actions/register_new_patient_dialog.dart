@@ -11,21 +11,19 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_gender_field.dart';
 import 'package:hosspi_hms/shared/components/app_phone_field.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
-import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_identifier_type_labels.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_registration_facility_scope.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_registration_scope.dart';
 
 typedef RegisterNewPatientSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
@@ -40,7 +38,7 @@ typedef RegisterNewPatientDuplicateLookup =
 class RegisterNewPatientForm extends StatefulWidget {
   const RegisterNewPatientForm({
     required this.referenceData,
-    this.facilityScope = const PatientRegistrationFacilityScope(),
+    this.registrationScope = const PatientRegistrationScope(),
     this.onLookupDuplicates,
     this.enabled = true,
     this.includeNotes = true,
@@ -49,7 +47,7 @@ class RegisterNewPatientForm extends StatefulWidget {
   });
 
   final PatientReferenceData referenceData;
-  final PatientRegistrationFacilityScope facilityScope;
+  final PatientRegistrationScope registrationScope;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
   final bool enabled;
   final bool includeNotes;
@@ -71,6 +69,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
       GlobalKey<State<AppPhoneField>>();
   DateTime? _dateOfBirth;
   String? _gender;
+  String? _tenantId;
   String? _facilityId;
   bool _isActive = true;
   bool _isCheckingDuplicates = false;
@@ -93,7 +92,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     _identifierTypeController = TextEditingController();
     _identifierValueController = TextEditingController();
     _notesController = TextEditingController();
-    _facilityId = widget.facilityScope.defaultFacilityId;
+    _tenantId = widget.registrationScope.defaultTenantId;
+    _facilityId = widget.registrationScope.defaultFacilityId;
     _firstNameController.addListener(_clearDuplicateWarning);
     _lastNameController.addListener(_clearDuplicateWarning);
     _phoneController.addListener(_clearDuplicateWarning);
@@ -103,9 +103,13 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   @override
   void didUpdateWidget(RegisterNewPatientForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.facilityScope != widget.facilityScope &&
-        !widget.facilityScope.showFacilityPicker) {
-      _facilityId = widget.facilityScope.defaultFacilityId;
+    if (oldWidget.registrationScope != widget.registrationScope) {
+      if (!widget.registrationScope.showTenantPicker) {
+        _tenantId = widget.registrationScope.defaultTenantId;
+      }
+      if (!widget.registrationScope.showFacilityPicker) {
+        _facilityId = widget.registrationScope.defaultFacilityId;
+      }
     }
   }
 
@@ -140,7 +144,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
       'last_name': _nullableTrim(_lastNameController.text),
       'date_of_birth': _dateOnly(_dateOfBirth),
       'gender': _gender,
-      'facility_id': _facilityId,
+      'tenant_id': _resolvedTenantId(),
+      'facility_id': _resolvedFacilityId(),
       'primary_phone': _nullableTrim(_phoneController.text),
       'primary_email': _nullableTrim(_emailController.text),
       'primary_identifier_type': identifierType.isEmpty ? null : identifierType,
@@ -198,10 +203,20 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
         enabled && selectedIdentifierType == null;
     final bool identifierValueEnabled =
         enabled && selectedIdentifierType != null;
+    final PatientRegistrationScope scope = widget.registrationScope;
+    final List<PatientReferenceOption> visibleFacilities =
+        PatientRegistrationScope.facilitiesForTenant(
+          widget.referenceData.facilities,
+          _tenantId ?? scope.defaultTenantId,
+        );
 
     return AppFormSection(
       children: <Widget>[
-        if (_failure != null) AppFailureStateView(failure: _failure!),
+        if (_failure != null)
+          AppFormInformationBanner.failure(
+            context: context,
+            failure: _failure!,
+          ),
         if (_duplicateCandidates.isNotEmpty)
           PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
         AppResponsiveFieldRow.two(
@@ -252,12 +267,32 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             },
           ),
         ),
-        if (widget.facilityScope.showFacilityPicker)
+        if (scope.showTenantPicker)
+          PatientTenantSelectField(
+            tenants: widget.referenceData.tenants,
+            value: _tenantId,
+            enabled: enabled,
+            isRequired: true,
+            validator: AppValidators.requiredValue<String>(
+              l10n.validationRequired,
+            ),
+            onChanged: (String? value) {
+              setState(() {
+                _tenantId = value;
+                _facilityId = null;
+              });
+            },
+          ),
+        if (scope.showFacilityPicker)
           PatientFacilitySelectField(
-            facilities: widget.referenceData.facilities,
+            facilities: visibleFacilities,
             value: _facilityId,
             labelText: l10n.patientsFacilityLabel,
             enabled: enabled,
+            isRequired: true,
+            validator: AppValidators.requiredValue<String>(
+              l10n.validationRequired,
+            ),
             onChanged: (String? value) {
               setState(() {
                 _facilityId = value;
@@ -383,6 +418,14 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
       _duplicateWarningAccepted = false;
     });
   }
+
+  String? _resolvedTenantId() {
+    return _tenantId ?? widget.registrationScope.defaultTenantId;
+  }
+
+  String? _resolvedFacilityId() {
+    return _facilityId ?? widget.registrationScope.defaultFacilityId;
+  }
 }
 
 /// Create-only patient master-record registration dialog.
@@ -390,13 +433,13 @@ class RegisterNewPatientDialog extends StatefulWidget {
   const RegisterNewPatientDialog({
     required this.referenceData,
     required this.onSubmit,
-    this.facilityScope = const PatientRegistrationFacilityScope(),
+    this.registrationScope = const PatientRegistrationScope(),
     this.onLookupDuplicates,
     super.key,
   });
 
   final PatientReferenceData referenceData;
-  final PatientRegistrationFacilityScope facilityScope;
+  final PatientRegistrationScope registrationScope;
   final RegisterNewPatientSubmit onSubmit;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
 
@@ -433,7 +476,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
             RegisterNewPatientForm(
               key: _registrationFormKey,
               referenceData: widget.referenceData,
-              facilityScope: widget.facilityScope,
+              registrationScope: widget.registrationScope,
               onLookupDuplicates: widget.onLookupDuplicates,
               enabled: !_isSaving,
             ),
@@ -441,14 +484,9 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: _isSaving || isCheckingDuplicates
-              ? null
-              : () => Navigator.of(context).maybePop(),
-        ),
         AppButton.primary(
           label: _duplicateSaveAnywayLabel(l10n),
+          leadingIcon: Icons.person_add_alt_1_outlined,
           isLoading: _isSaving || isCheckingDuplicates,
           onPressed: _submit,
         ),
@@ -520,11 +558,11 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final Iterable<PatientDuplicateCandidate> visible = duplicates.take(3);
 
-    return AppMessagePanel(
+    return AppFormInformationBanner(
       title: l10n.patientsDuplicateWarningTitle,
       message: l10n.patientsDuplicateWarningBody,
+      variant: AppFormInformationVariant.warning,
       icon: Icons.content_copy_outlined,
-      tone: AppWorkspaceStatusTone.warning,
       children: <Widget>[
         for (final PatientDuplicateCandidate duplicate in visible)
           _DuplicateCandidateLine(duplicate: duplicate),

@@ -307,6 +307,68 @@ class PatientFacilitySelectField extends StatelessWidget {
   }
 }
 
+class PatientTenantSelectField extends StatelessWidget {
+  const PatientTenantSelectField({
+    required this.tenants,
+    this.value,
+    this.onChanged,
+    this.labelText,
+    this.helperText,
+    this.errorText,
+    this.semanticLabel,
+    this.validator,
+    this.onSaved,
+    this.autovalidateMode = AutovalidateMode.disabled,
+    this.enabled = true,
+    this.isRequired = false,
+    this.isLoading = false,
+    this.focusNode,
+    this.restorationId,
+    this.menuHeight,
+    super.key,
+  });
+
+  final List<PatientReferenceOption> tenants;
+  final String? value;
+  final ValueChanged<String?>? onChanged;
+  final String? labelText;
+  final String? helperText;
+  final String? errorText;
+  final String? semanticLabel;
+  final FormFieldValidator<String>? validator;
+  final FormFieldSetter<String>? onSaved;
+  final AutovalidateMode autovalidateMode;
+  final bool enabled;
+  final bool isRequired;
+  final bool isLoading;
+  final FocusNode? focusNode;
+  final String? restorationId;
+  final double? menuHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return PatientReferenceSelectField(
+      options: tenants,
+      value: value,
+      onChanged: onChanged,
+      labelText: labelText ?? context.l10n.profileTenantLabel,
+      helperText: helperText,
+      errorText: errorText,
+      semanticLabel: semanticLabel,
+      validator: validator,
+      onSaved: onSaved,
+      autovalidateMode: autovalidateMode,
+      enabled: enabled,
+      isRequired: isRequired,
+      isLoading: isLoading,
+      focusNode: focusNode,
+      restorationId: restorationId,
+      menuHeight: menuHeight,
+      leadingIconBuilder: (_) => const Icon(Icons.apartment_outlined),
+    );
+  }
+}
+
 class PatientReferenceSelectField extends StatelessWidget {
   const PatientReferenceSelectField({
     required this.options,

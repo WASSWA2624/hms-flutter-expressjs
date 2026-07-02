@@ -12,6 +12,7 @@ export 'app_email_field.dart';
 export 'app_field_error_text.dart';
 export 'app_field_label.dart';
 export 'app_file_upload_panel.dart';
+export 'app_form_information_banner.dart';
 export 'app_gender_field.dart';
 export 'app_info_sheet.dart';
 export 'app_info_tile.dart';

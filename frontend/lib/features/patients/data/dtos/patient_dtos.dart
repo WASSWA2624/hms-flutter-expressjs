@@ -434,6 +434,10 @@ final class PatientReferenceDataDto {
 
   PatientReferenceData toEntity() {
     return PatientReferenceData(
+      tenants: _list(json['tenants'])
+          .map(_referenceOption)
+          .where((PatientReferenceOption option) => option.id.isNotEmpty)
+          .toList(growable: false),
       facilities: _list(json['facilities'])
           .map(_referenceOption)
           .where((PatientReferenceOption option) => option.id.isNotEmpty)
@@ -462,6 +466,7 @@ PatientReferenceOption _referenceOption(PatientJsonMap entry) {
   return PatientReferenceOption(
     id: _string(entry['human_friendly_id']) ?? _string(entry['id']) ?? '',
     label: _string(entry['label']) ?? '',
+    tenantId: _string(entry['tenant_id']),
     facilityId: _string(entry['facility_id']),
     wardId: _string(entry['ward_id']),
     roomId: _string(entry['room_id']),
