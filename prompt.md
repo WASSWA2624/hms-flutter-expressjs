@@ -1,153 +1,110 @@
-# Start OPD Encounter Dialog — Implementation Prompt
+# OPD Encounter Dialog — Gap Closure & UX Improvements
 
-## Objective
+## Goal
 
-Refine `OpdEncounterDialog` into the single, reusable entry point for creating or continuing an OPD encounter across the app (patient registry quick actions, OPD workspace, appointments, and any future caller). The dialog must be **context-aware**, **duplicate-safe**, and **reception-grade** on every screen size and platform.
+Review and improve the shared **Start OPD encounter** dialog (`OpdEncounterDialog` in `frontend/lib/shared/components/opd_encounter_dialog.dart`) so staff can reliably start, follow up on, and close OPD encounters from every entry point, with clear workflow guidance and consistent billing defaults.
 
-**Source of truth (read first):**
+## Entry points (must behave consistently)
 
-1. `[.cursor/flows/opd-flow.mdc](.cursor/flows/opd-flow.mdc)` — §2 entry paths, §6 UI rules (one active encounter per patient)
-2. `[prompts/12-opd-module-prompt.md](prompts/12-opd-module-prompt.md)` — OPD module standards
-3. `[prompts/08-patients-module-prompt.md](prompts/08-patients-module-prompt.md)` — registry quick-action launch pattern
+| Entry point | Current behavior | Expected behavior |
+|---|---|---|
+| **Patient profile → Quick action: Start OPD encounter** | Opens dialog for a known patient. Detects active encounter and shows summary banner; primary action becomes **Update encounter**. | Same, plus full follow-up affordances below. |
+| **OPD workspace → Start OPD encounter** | Three tabs: **Existing patient**, **Appointment patient**, **New patient**. | Same tabs; **New patient** flow must create the patient first, then continue as an existing-patient encounter (see §5). |
+| **Patient profile → Active work → Continue** | Opens the relevant downstream dialog (e.g. `FlowActionsDialog`). | Unchanged; ensure encounter dialog improvements align with this path. |
 
-**Central rule:** never create a second active OPD encounter for the same patient. When one exists, surface it clearly and let staff **update or open** that encounter instead of starting a duplicate.
+## 1. Active encounter summary — show what to do next
 
----
+When an active OPD encounter is detected (`OpdFlowSummary` resolved via `_activeEncounterNotice`):
 
+### Add
+- **Next step** — display `flow.displayNextStep ?? flow.nextStep` using existing helpers (`opdNextStepDisplayLabel`). This is already shown in `OpdFlowActionsDialog` / OPD workspace table but **missing** from the encounter dialog banner.
+- **Primary workflow action** — a clear CTA to proceed (e.g. **Continue encounter** / **Open workflow**) that opens `OpdFlowActionsDialog` for the active flow, matching the OPD queue “Next step” semantics.
+- **Copyable identifiers** — use `AppCopyableIdentifier` for:
+  - Encounter ID (`flow.apiId`)
+  - Patient identifier (MRN / patient no. from the selected or initial patient)
 
+### Fix
+- **Stage duplication** — stage currently appears in both the status badge and the details grid. Keep one prominent stage display; use the freed slot for **Next step** (or remove redundant badge).
+- **Visit type vs arrival mode** — when updating an active encounter, arrival mode in the form may disagree with the encounter’s visit type (e.g. encounter = Online Appointment, form = Walk In). Prefill arrival mode from the active encounter and disable or clearly label overrides.
 
-## Current implementation (review before changing)
+## 2. Close / cancel active encounters
 
+For any **non-terminal** active encounter shown in this dialog, provide:
 
-| Area                     | Location                                                                 |
-| ------------------------ | ------------------------------------------------------------------------ |
-| Shared dialog            | `frontend/lib/shared/components/opd_encounter_dialog.dart`               |
-| Patient registry wrapper | `patient_registry_page.dart` → `_PatientOpdEncounterDialog`              |
-| OPD workspace entry      | `opd_workspace_page.dart` → `_openOpdEncounterDialog`                    |
-| New-patient form reuse   | `RegisterNewPatientForm` via `patient_actions`                           |
-| Tests                    | `frontend/test/features/opd/presentation/start_walk_in_dialog_test.dart` |
+- **Close encounter** — mark the encounter complete/closed through the appropriate OPD API (reuse existing repository/controller patterns).
+- **Cancel encounter** — with a **reason**:
+  - Prefer a **selectable list of predefined reasons** (e.g. *Patient left before consultation*, *Duplicate encounter*, *Entered in error*, *Patient already seen*, *Other*).
+  - When *Other* is selected, show a free-text field.
+  - Reuse existing l10n keys where possible (`opdCancelAction`, `opdCancellationReasonLabel`).
 
+Place these as secondary/destructive actions in the dialog footer or active-encounter panel — visible when `_activeEncounter != null`, hidden for new starts.
 
----
+> If backend endpoints for close/cancel do not exist yet, add them (or document the required API contract) before wiring the UI.
 
+## 3. Form layout & clarity
 
+Polish the encounter form so follow-up is scannable:
 
-## UX requirements (from design)
+- **Routing** section — keep current layout (arrival mode, doctor search); ensure labels/helper text remain visible when an active encounter is present.
+- **Billing** section — improve visual hierarchy:
+  - Group consultation fee + currency, notes, **Payment required**, and **Payment received** clearly.
+  - When updating an active encounter, reflect current billing state (paid / required / amount) from the flow; avoid implying a new payment is needed when already paid.
+- Use existing form primitives (`AppFormSection`, `AppResponsiveFieldRow`, `AppFormInformationBanner`) — no new design system.
 
+## 4. Consultation fee defaults (doctor → global fallback)
 
+When a doctor is selected in **Search doctor (optional)**:
 
-### Dialog shell
+1. **Pre-fill consultation fee** from the provider’s HR profile (`OpdProviderOption.consultationFee`) — partially implemented in `_applyProviderDefaultsToState`.
+2. **Fallback** — if the selected doctor has no fee, use the **facility/tenant standard consultation fee** configured by admin/HR.
+3. **Currency** — follow the same precedence: doctor currency → global default → `appDefaultCurrencyCode`.
+4. Only auto-fill when the fee field is empty or the user changes doctor (preserve manual edits).
 
-- Open **maximized by default** (`AppDialog.initialMaximized: true` or equivalent via `showAppDialog` caller).
-- Title: **Start OPD encounter**; keep maximize/close controls.
-- Responsive layout: mobile (stacked), tablet, and desktop (two-column routing + billing). Support Android, iOS, web, Windows, macOS, Linux.
+### Admin configuration (if missing)
+- Allow admin/HR to set a **standard consultation fee** (and currency) at facility or tenant level.
+- Wire this into provider loading so `OpdEncounterDialog` receives the default without extra round-trips where possible.
 
+## 5. New patient tab — two-step flow
 
+**Current:** New patient tab embeds `RegisterNewPatientForm` and submits patient + encounter in one payload (`patient_registration`).
 
-### Context-aware patient section
+**Expected:**
+1. User completes new patient registration and submits **Create patient** (or equivalent).
+2. On success, dialog **switches to Existing patient** tab with the newly created patient pre-selected.
+3. User completes routing/billing and clicks **Start encounter** as for any existing patient.
 
-The dialog supports three modes — **Existing patient**, **Appointment patient**, **New patient** — but **only show controls for information the caller has not already supplied**.
+Do **not** require the user to manually search for the patient they just created.
 
+## 6. Reuse existing implementations
 
-| Launch context                                                                                  | What to show                                                                                   | What to hide                  |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
-| **Generic** (e.g. OPD workspace toolbar)                                                        | Full mode selector + search fields for all three modes                                         | —                             |
-| **Known existing patient** (registry quick action, patient detail, deep link with `patient_id`) | Routing + billing only; optional read-only patient chip if helpful                             | Mode tabs, patient search     |
-| **Known appointment** (appointment check-in with `appointment_id`)                              | Routing + billing only; pre-fill provider, arrival mode `ONLINE_APPOINTMENT`, billing defaults | Mode tabs, appointment search |
-| **New patient only**                                                                            | New-patient fields (`RegisterNewPatientForm`) + routing + billing                              | Existing/appointment search   |
+Before adding new code, audit and reuse:
 
-
-**Principle:** do not ask staff to re-enter data that is already known.
-
-### New-patient flow
-
-- Reuse the existing `RegisterNewPatientForm` (duplicate detection, tenant/facility scope, etc.).
-- On successful registration **inside this dialog**, stay in the encounter flow: switch internally to **existing patient** mode with the new `patient_id` and continue to start/update the encounter.
-- **Do not** navigate to patient details or registry after registration unless the caller explicitly opts in.
-
-
-
-### Active encounter handling (duplicate prevention)
-
-When the selected patient (existing or appointment) has an **open OPD encounter**:
-
-1. Show a full-width **Active OPD encounter found** banner (stretch edge-to-edge within the dialog content — not a narrow inset box).
-2. Display encounter context staff need to act without opening another screen:
-  - Encounter ID, stage (badge), visit type, assigned staff, payer/billing, arrival time.
-3. Change primary action from **Start encounter** → **Open active encounter** — align label with `app_en.arb`.
-4. Submit must **update/reuse** the active encounter (`existing_encounter_id` in payload) — never create a duplicate.
-5. On success, invoke `onExistingActiveEncounter` so the caller can open the encounter at its **current stage** (OPD workspace row/detail, not a blank form).
-6. While resolving active encounter, show a loading state; disable submit until resolution completes or an active encounter is confirmed absent.
-
-For **new patient** mode, skip active-encounter lookup until a patient record exists.
-
-### Form sections (when visible)
-
-**Routing**
-
-- Arrival mode (required for walk-in; hidden or fixed for appointment check-in).
-- Search doctor (optional) with helper: *This doctor will handle the patient.*
-- Emergency-only fields when arrival mode is `EMERGENCY`.
-
-**Billing**
-
-- Consultation fee + currency (default from provider/facility policy where available).
-- Notes (optional).
-- Payment required (toggle) and Payment received (checkbox); show payment method + transaction ref when payment received is checked.
-
----
-
-
-
-## API & data contract
-
-- Submit via existing `onSubmit` → `POST /opd-flows/start` or bootstrap payload used today.
-- Pass `source` (`patient_registry`, `opd_workspace`, etc.) for analytics/audit.
-- Pre-fill from `initialPatient`, `initialPatientId`, `initialAppointment`, `initialAppointmentId`, `defaultArrivalMode`, `defaultProviderId`.
-- Active encounter resolution: use `activeFlows` prop when supplied; otherwise query repository for patient's open flows.
-
----
-
-
-
-## Integration checklist
-
-Wire the shared dialog (maximized) from every OPD start entry point:
-
-- [ ] Patient registry — **Start OPD encounter** quick action (`PatientQuickAction.opdCheckIn`)
-- [ ] OPD workspace — start encounter action
-- [ ] Appointment check-in paths (pre-select appointment mode)
-- [ ] Any other `startOpdFlow` / bootstrap callers — replace one-off dialogs with `OpdEncounterDialog`
-
-Each caller implements `onExistingActiveEncounter` to navigate/open the encounter at its current stage.
-
----
-
-
+| Concern | Existing reference |
+|---|---|
+| Next step labels | `opdNextStepDisplayLabel`, `opd_status_display.dart` |
+| Workflow actions | `OpdFlowActionsDialog` (`frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`) |
+| Copy to clipboard | `AppCopyableIdentifier` |
+| Active encounter update | `opdRepository.updateActiveEncounter` (patient registry path) |
+| Post-update workflow open | `_openPatientOpdEncounterDialog` → `FlowActionsDialog` pattern in `patient_registry_page.dart` |
+| Provider fee on staff | HR staff onboarding (`consultation_fee` field) |
 
 ## Acceptance criteria
 
-1. **No duplicate encounters** — selecting a patient with an active encounter never creates a second one; staff see the banner and update/open path.
-2. **Context-aware UI** — launching from registry with a known patient shows only routing + billing (+ active banner); no redundant patient picker.
-3. **New patient in-flow** — register → continue encounter in the same dialog without redirect to patient details.
-4. **Maximized by default** — dialog opens full-screen on desktop/tablet; mobile uses full viewport appropriately.
-5. **Full-width active banner** — encounter notice spans the content width; responsive detail grid/wrap on small screens.
-6. **Post-submit navigation** — caller opens encounter at current stage so staff are not “blinded” to workflow state.
-7. **i18n & theming** — all strings in `app_en.arb`; light/dark/system themes.
-8. **Tests** — extend `start_walk_in_dialog_test.dart` for: known-patient hidden picker, active-encounter update path, new-patient register-and-continue, maximized default.
+- [ ] Active encounter banner shows **Next step** and copyable encounter + patient IDs.
+- [ ] User can **continue** the workflow (open `OpdFlowActionsDialog`) directly from the encounter dialog when an active encounter exists.
+- [ ] User can **close** or **cancel** an active encounter with a predefined reason (and optional free text).
+- [ ] Stage is not duplicated; visit type and arrival mode stay consistent when updating.
+- [ ] Selecting a doctor pre-fills fee from doctor profile, else from global standard fee.
+- [ ] New patient tab: create patient → auto-switch to existing patient → start encounter.
+- [ ] All three entry points behave consistently.
+- [ ] Widget tests updated in `start_walk_in_dialog_test.dart` and `patient_registry_page_test.dart`.
 
----
+## Testing
 
+- Extend existing dialog tests for: active encounter with `nextStep`, copy actions, cancel/close flows, doctor fee prefill (with and without provider fee), new-patient two-step flow.
+- Manually verify scenarios from screenshots: Amina Demo-Alpha (active encounter), Wilson Wampamba (no encounter), OPD workspace (all three tabs).
 
+## Out of scope (unless required by API gaps)
 
-## Quality gate
-
-From `frontend/`:
-
-```bash
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/features/opd/presentation/start_walk_in_dialog_test.dart
-```
-
+- Changes to OPD workspace table columns or queue prioritization.
+- Broader patient profile / active-work list redesign.
