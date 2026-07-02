@@ -481,7 +481,7 @@ void main() {
 
     expect(
       find.widgetWithText(
-        AppFailureStateView,
+        AppFormInformationBanner,
         'Enter at least one vital sign.',
       ),
       findsNothing,
@@ -492,7 +492,7 @@ void main() {
 
     expect(
       find.widgetWithText(
-        AppFailureStateView,
+        AppFormInformationBanner,
         'Enter at least one vital sign.',
       ),
       findsOneWidget,
@@ -630,7 +630,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.widgetWithText(AppFailureStateView, 'Check the details'),
+        find.widgetWithText(AppFormInformationBanner, 'Check the details'),
         findsNothing,
       );
       expect(find.text('This field is required.'), findsOneWidget);

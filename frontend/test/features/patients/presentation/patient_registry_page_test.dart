@@ -21,7 +21,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
-import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';

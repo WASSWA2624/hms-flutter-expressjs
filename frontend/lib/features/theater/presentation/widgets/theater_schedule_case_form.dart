@@ -253,7 +253,8 @@ class TheaterScheduleCaseFormState
             title: l10n.theaterSchedulePatientContextSection,
             children: <Widget>[
               if (_patientFailure != null)
-                AppFailureStateView(
+                AppFormInformationBanner.failure(
+                  context: context,
                   failure: _patientFailure!,
                   onRetry: () => unawaited(_searchPatients('')),
                 ),
@@ -286,7 +287,8 @@ class TheaterScheduleCaseFormState
                 onChanged: _selectEncounter,
               ),
               if (_encounterFailure != null)
-                AppFailureStateView(
+                AppFormInformationBanner.failure(
+                  context: context,
                   failure: _encounterFailure!,
                   onRetry: () {
                     final String? patientId = _selectedPatientId;
@@ -315,11 +317,11 @@ class TheaterScheduleCaseFormState
                   onChanged: _selectEmergencyCase,
                 ),
               if (_isEmergencyScheduling)
-                AppMessagePanel(
-                  tone: AppWorkspaceStatusTone.warning,
-                  icon: Icons.emergency_outlined,
+                AppFormInformationBanner(
                   title: l10n.theaterScheduleEmergencyPanelTitle,
                   message: l10n.theaterScheduleEmergencyHint,
+                  variant: AppFormInformationVariant.warning,
+                  icon: Icons.emergency_outlined,
                 ),
               if (_effectiveSourceKind != null)
                 AppWorkspaceStatusBadge(

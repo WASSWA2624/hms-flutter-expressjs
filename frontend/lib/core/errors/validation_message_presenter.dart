@@ -26,6 +26,11 @@ abstract final class ValidationMessagePresenter {
           .join('\n');
     }
 
+    final String? authMessage = _authMessage(l10n, failure);
+    if (authMessage != null) {
+      return authMessage;
+    }
+
     final String? detailMessage = failure.detailMessage?.trim();
     if (detailMessage != null && detailMessage.isNotEmpty) {
       final String humanized = humanizeDetailMessage(
@@ -96,6 +101,19 @@ abstract final class ValidationMessagePresenter {
     }
 
     return trimmed;
+  }
+
+  static String? _authMessage(AppLocalizations l10n, AppFailure failure) {
+    return switch (failure.code) {
+      'auth.account_pending' => l10n.authAccountPendingMessage,
+      'auth.account_pending_approval' => l10n.authAccountPendingApprovalMessage,
+      'auth.account_not_found' => l10n.authAccountNotFoundMessage,
+      'auth.wrong_password' => l10n.authWrongPasswordMessage,
+      'network.rate_limited' => l10n.authRateLimitedMessage,
+      'auth.reset_password.invalid_token' ||
+      'auth.token_invalid' => l10n.authResetPasswordInvalidTokenMessage,
+      _ => null,
+    };
   }
 
   static String fieldLabel(AppLocalizations l10n, String field) {

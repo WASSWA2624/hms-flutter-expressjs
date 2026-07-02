@@ -3,8 +3,31 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+
+/// Inline [AppFormInformationBanner] for [AppFormShell.formStatus].
+Widget? appFormFailureStatus(
+  BuildContext context,
+  AppFailure? failure, {
+  String? title,
+  String? message,
+  String? Function(AppFailure failure)? messageBuilder,
+  VoidCallback? onRetry,
+}) {
+  if (failure == null) {
+    return null;
+  }
+
+  return AppFormInformationBanner.failure(
+    context: context,
+    failure: failure,
+    title: title,
+    message: message ?? messageBuilder?.call(failure),
+    onRetry: onRetry,
+  );
+}
 
 enum AppFormInformationVariant { error, warning, success, info }
 
@@ -22,13 +45,44 @@ class AppFormInformationBanner extends StatelessWidget {
   factory AppFormInformationBanner.failure({
     required BuildContext context,
     required AppFailure failure,
+    String? title,
+    String? message,
+    VoidCallback? onRetry,
     List<Widget> children = const <Widget>[],
   }) {
     final AppLocalizations l10n = context.l10n;
+    final List<Widget> bannerChildren = List<Widget>.from(children);
+    if (failure.isRetryable && onRetry != null) {
+      bannerChildren.add(
+        AppButton(
+          label: l10n.commonRetryActionLabel,
+          leadingIcon: Icons.refresh,
+          variant: AppButtonVariant.secondary,
+          onPressed: onRetry,
+        ),
+      );
+    }
+
     return AppFormInformationBanner(
-      title: l10n.failureTitle(failure),
-      message: failure.displayMessage(l10n),
+      title: title ?? l10n.failureTitle(failure),
+      message: message ?? failure.displayMessage(l10n),
       variant: _variantForFailure(failure),
+      children: bannerChildren,
+    );
+  }
+
+  factory AppFormInformationBanner.message({
+    required String message,
+    String title = '',
+    AppFormInformationVariant variant = AppFormInformationVariant.info,
+    IconData? icon,
+    List<Widget> children = const <Widget>[],
+  }) {
+    return AppFormInformationBanner(
+      title: title,
+      message: message,
+      variant: variant,
+      icon: icon,
       children: children,
     );
   }
@@ -65,14 +119,17 @@ class AppFormInformationBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: colors.title,
-                      fontWeight: FontWeight.w800,
+                  if (title.trim().isNotEmpty)
+                    Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: colors.title,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
                   if (message.trim().isNotEmpty) ...<Widget>[
+                    if (title.trim().isNotEmpty)
+                      SizedBox(height: theme.spacing.xs),
                     SizedBox(height: theme.spacing.xs),
                     ..._messageLines(message, colors.message, theme),
                   ],

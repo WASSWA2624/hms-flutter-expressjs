@@ -6,7 +6,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -90,7 +89,10 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               SizedBox(height: theme.spacing.md),
             ],
             if (_failure != null) ...<Widget>[
-              AuthFailureText(failure: _failure!),
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
               SizedBox(height: theme.spacing.md),
             ],
             if (_isVerified) ...<Widget>[

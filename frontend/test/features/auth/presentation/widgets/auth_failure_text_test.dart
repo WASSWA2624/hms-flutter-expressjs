@@ -1,6 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 
 import '../../../../helpers/test_harness.dart';
 
@@ -10,8 +11,13 @@ void main() {
   ) async {
     await pumpLocalizedWidget(
       tester,
-      const AuthFailureText(
-        failure: AppFailure.unauthorized(code: 'auth.account_not_found'),
+      Builder(
+        builder: (BuildContext context) {
+          return AppFormInformationBanner.failure(
+            context: context,
+            failure: const AppFailure.unauthorized(code: 'auth.account_not_found'),
+          );
+        },
       ),
     );
 
@@ -28,8 +34,13 @@ void main() {
   ) async {
     await pumpLocalizedWidget(
       tester,
-      const AuthFailureText(
-        failure: AppFailure.unauthorized(code: 'auth.wrong_password'),
+      Builder(
+        builder: (BuildContext context) {
+          return AppFormInformationBanner.failure(
+            context: context,
+            failure: const AppFailure.unauthorized(code: 'auth.wrong_password'),
+          );
+        },
       ),
     );
 
@@ -42,8 +53,13 @@ void main() {
   testWidgets('shows a rate limited auth message', (WidgetTester tester) async {
     await pumpLocalizedWidget(
       tester,
-      const AuthFailureText(
-        failure: AppFailure.network(code: 'network.rate_limited'),
+      Builder(
+        builder: (BuildContext context) {
+          return AppFormInformationBanner.failure(
+            context: context,
+            failure: const AppFailure.network(code: 'network.rate_limited'),
+          );
+        },
       ),
     );
 

@@ -934,9 +934,7 @@ class _AdmissionActionFormState extends State<_AdmissionActionForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         if (widget.body != null) Text(widget.body!),
         AppTextField(
@@ -1041,9 +1039,7 @@ class _TransferFormState extends State<_TransferForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         Text(l10n.roomsBedsTransferDialogBody),
         AppTextField(
@@ -1154,9 +1150,7 @@ class _TransferUpdateFormState extends State<_TransferUpdateForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>(
           labelText: l10n.ipdTransferActionFieldLabel,

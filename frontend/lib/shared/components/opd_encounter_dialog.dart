@@ -21,8 +21,8 @@ import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
-import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
@@ -387,9 +387,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppSectionPanel(
             title: l10n.opdPatientSectionTitle,

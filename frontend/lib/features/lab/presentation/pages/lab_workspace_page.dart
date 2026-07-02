@@ -1286,7 +1286,7 @@ class _ReverseWorkflowDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppTextField(
               controller: _reasonController,
               labelText: l10n.labReverseReasonLabel,
@@ -1383,7 +1383,7 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>.searchable(
               value: _labTestId,
               labelText: l10n.labQcTestFieldLabel,

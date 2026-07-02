@@ -1476,9 +1476,7 @@ class _RequestDetailsEditDialogState extends State<_RequestDetailsEditDialog> {
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSubmitting,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppSelectField<String>(
             value: _priority,
@@ -3098,9 +3096,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSubmitting,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppTextField(
             controller: _findingsController,
@@ -3270,9 +3266,7 @@ class _FinalizeReportDialogState extends State<_FinalizeReportDialog> {
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSubmitting,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppTextField(
             controller: _reportController,

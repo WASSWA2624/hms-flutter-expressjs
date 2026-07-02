@@ -1133,9 +1133,7 @@ class _IntegrationConfigDialogState extends State<_IntegrationConfigDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppTextField(
           controller: _nameController,
@@ -1257,9 +1255,7 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppTextField(
           controller: _nameController,
@@ -1369,9 +1365,7 @@ class _WebhookDialogState extends State<_WebhookDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>.searchable(
           labelText: l10n.integrationsIntegrationFieldLabel,
@@ -1500,9 +1494,7 @@ class _PermissionDialogState extends State<_PermissionDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>.searchable(
           labelText: l10n.integrationsApiKeyFieldLabel,

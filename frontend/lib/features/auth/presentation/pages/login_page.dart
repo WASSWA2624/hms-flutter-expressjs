@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -57,7 +56,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (state.failure != null) ...<Widget>[
-                AuthFailureText(failure: state.failure!),
+                AppFormInformationBanner.failure(
+                  context: context,
+                  failure: state.failure!,
+                ),
                 SizedBox(height: theme.spacing.md),
               ],
               AppTextField(

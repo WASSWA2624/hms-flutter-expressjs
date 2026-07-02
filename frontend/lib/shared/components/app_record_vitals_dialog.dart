@@ -4,7 +4,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_state_view.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_time_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
@@ -154,7 +154,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppVitalsForm(
               temperatureController: _temperatureController,
               systolicController: _systolicController,

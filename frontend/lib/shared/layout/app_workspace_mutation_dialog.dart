@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_state_view.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 
 @immutable
@@ -202,9 +202,7 @@ class _AppWorkspaceMutationDialogState
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSubmitting,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           widget.buildFields(context, _formKey, _isSubmitting, _failure),
         ],

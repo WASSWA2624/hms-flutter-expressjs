@@ -146,9 +146,7 @@ class _AppGlobalFaultReportDialogState
     return AppFormShell(
       formKey: _formKey,
       enabled: !_isSubmitting,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>.searchable(
           value: _facilityId,

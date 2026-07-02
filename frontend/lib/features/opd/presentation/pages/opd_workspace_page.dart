@@ -2504,7 +2504,7 @@ class _OpdPatientActionsDialogState
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
               AppInfoTileData(
@@ -2778,7 +2778,7 @@ class _AppointmentActionsDialogState
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
               AppInfoTileData(
@@ -2958,7 +2958,7 @@ class _RescheduleAppointmentDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppDateField(
               value: _date,
               firstDate: DateTime.now().subtract(const Duration(days: 1)),
@@ -3138,7 +3138,7 @@ class _CancelAppointmentDialogState
       icon: const Icon(Icons.cancel_outlined),
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           AppTextField(
             controller: _reasonController,
             labelText: _opdOptionalFieldLabel(
@@ -3233,11 +3233,11 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             if (_successMessage != null)
-              AppMessagePanel(
+              AppFormInformationBanner.message(
                 message: _successMessage!,
-                tone: AppWorkspaceStatusTone.success,
+                variant: AppFormInformationVariant.success,
               ),
             AppTriageSummaryPanel(
               items: <AppInfoTileData>[

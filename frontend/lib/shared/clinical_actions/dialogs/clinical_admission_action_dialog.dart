@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -115,7 +114,7 @@ class _ClinicalAdmissionActionDialogState
             AppFormSection(
               title: l10n.clinicalAdmissionDetailsTitle,
               children: <Widget>[
-                if (_failure != null) AppFailureStateView(failure: _failure!),
+                if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
                 if (availableBeds.isEmpty)
                   AppStateView(
                     title: l10n.clinicalAdmissionNoBedsTitle,
@@ -155,7 +154,7 @@ class _ClinicalAdmissionActionDialogState
                     ),
                   ),
                   if (_wardId != null && roomOptions.isEmpty)
-                    _AdmissionInlineMessage(
+                    AppFormInformationBanner.message(
                       message: l10n.clinicalAdmissionNoRoomsMessage,
                       icon: Icons.meeting_room_outlined,
                     ),
@@ -174,13 +173,14 @@ class _ClinicalAdmissionActionDialogState
                         _handleBedChanged(value, availableBeds),
                   ),
                   if (_roomId != null && bedOptions.isEmpty)
-                    _AdmissionInlineMessage(
+                    AppFormInformationBanner.message(
                       message: l10n.clinicalAdmissionNoBedsForRoomMessage,
                       icon: Icons.bed_outlined,
                     ),
                   if (_bedWarning != null)
-                    _AdmissionInlineMessage(
+                    AppFormInformationBanner.message(
                       message: _bedWarning!,
+                      variant: AppFormInformationVariant.warning,
                       icon: Icons.warning_amber_outlined,
                     ),
                   AppInfoTileGrid(
@@ -301,43 +301,6 @@ class _ClinicalAdmissionActionDialogState
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _AdmissionInlineMessage extends StatelessWidget {
-  const _AdmissionInlineMessage({required this.message, required this.icon});
-
-  final String message;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, color: colorScheme.onSurfaceVariant),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Text(
-                message,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

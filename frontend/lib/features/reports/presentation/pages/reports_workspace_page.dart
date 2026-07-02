@@ -1005,7 +1005,7 @@ class _RunReportDialogState extends ConsumerState<_RunReportDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>(
               value: _format,
               labelText: l10n.reportsFormatFieldLabel,
@@ -1122,7 +1122,7 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppTextField(
               controller: _nameController,
               labelText: l10n.reportsScheduleNameFieldLabel,

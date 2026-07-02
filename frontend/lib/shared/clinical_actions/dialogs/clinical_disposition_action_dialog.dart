@@ -80,7 +80,7 @@ class _ClinicalDispositionActionDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             ...widget.leadingContent,
             AppSelectField<String>.searchable(
               value: _reason,

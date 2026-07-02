@@ -66,7 +66,7 @@ void main() {
       await tester.tap(find.text('Save note').last);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.byType(AppFormInformationBanner), findsOneWidget);
       expect(find.byType(ClinicalFreeTextActionDialog), findsOneWidget);
     },
   );

@@ -67,7 +67,7 @@ class _ClinicalReferralActionDialogState
         child: AppFormSection(
           density: AppFormSectionDensity.spacious,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             ...widget.leadingContent,
             AppFormSection(
               title: l10n.clinicalReferralDetailsTitle,

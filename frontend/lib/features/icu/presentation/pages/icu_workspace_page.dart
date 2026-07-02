@@ -1290,7 +1290,7 @@ class _ObservationDialogState extends ConsumerState<_ObservationDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppTextField(
               controller: _observationController,
               labelText: l10n.icuObservationFieldLabel,
@@ -1391,7 +1391,7 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           AppFormSection(
             title: l10n.patientsVitalsSectionTitle,
             density: AppFormSectionDensity.compact,
@@ -1502,7 +1502,7 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>(
               value: _severity,
               labelText: l10n.icuAlertSeverityLabel,
@@ -1610,7 +1610,7 @@ class _TransferRequestDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             if (wards.isEmpty)
               AppTextField(
                 controller: _wardController,
@@ -1752,7 +1752,7 @@ class _ManageTransferDialogState extends ConsumerState<_ManageTransferDialog> {
       scrollable: true,
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           Text(
             joinDisplay(<String?>[
               apiLabel(open.status ?? ''),
@@ -1898,7 +1898,7 @@ class _ReadinessDialogState extends ConsumerState<_ReadinessDialog> {
         child: AppFormSection(
           description: l10n.icuReadinessDescription,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppTextField(
               controller: _summaryController,
               labelText: l10n.icuReadinessNoteLabel,
@@ -1997,7 +1997,7 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
       scrollable: true,
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           if (beds.isEmpty)
             AppTextField(
               controller: _bedController,

@@ -1855,7 +1855,7 @@ class _ReleaseBedDialogState extends ConsumerState<ReleaseBedDialog> {
       icon: const Icon(Icons.cleaning_services_outlined),
       content: AppFormSection(
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
+          if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           Text(l10n.ipdReleaseBedConfirmationBody),
         ],
       ),
@@ -1931,7 +1931,7 @@ class _RequestTherapyDialogState extends ConsumerState<RequestTherapyDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppTextField(
               controller: _indicationController,
               labelText: l10n.physiotherapyReasonFieldLabel,
@@ -2026,7 +2026,7 @@ class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>.searchable(
               value: _wardId,
               labelText: l10n.ipdTargetWardFieldLabel,
@@ -2145,7 +2145,7 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>(
               value: _action,
               labelText: l10n.ipdTransferActionFieldLabel,
@@ -2303,7 +2303,7 @@ class _MedicationAdministrationDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>.searchable(
               value: _prescriptionId,
               labelText: l10n.ipdMedicationOrderFieldLabel,

@@ -225,4 +225,53 @@ describe('patient-workspace service', () => {
       })
     );
   });
+
+  it('returns tenant and facility reference data for global users without tenant scope', async () => {
+    prisma.tenant = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'tenant-1',
+          human_friendly_id: 'TEN0001',
+          name: 'DemoCare',
+        },
+      ]),
+    };
+    prisma.facility = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'facility-1',
+          human_friendly_id: 'FAC0001',
+          name: 'DemoCare General Hospital',
+          tenant_id: 'tenant-1',
+        },
+      ]),
+    };
+    prisma.ward = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.bed = { findMany: jest.fn().mockResolvedValue([]) };
+
+    const result = await subject.getPatientWorkspaceReferenceData(
+      {},
+      {
+        user: {
+          roles: ['SUPER_ADMIN'],
+        },
+      }
+    );
+
+    expect(prisma.tenant.findMany).toHaveBeenCalled();
+    expect(result.tenants).toEqual([
+      expect.objectContaining({
+        human_friendly_id: 'TEN0001',
+        label: 'DemoCare',
+      }),
+    ]);
+    expect(result.facilities).toEqual([
+      expect.objectContaining({
+        human_friendly_id: 'FAC0001',
+        label: 'DemoCare General Hospital',
+        tenant_id: 'tenant-1',
+      }),
+    ]);
+  });
 });

@@ -2326,9 +2326,7 @@ class _PatientDischargeQuickDialogState
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppFormSection(
             title: l10n.ipdDischargeSectionTitle,
@@ -2482,7 +2480,7 @@ class _PatientOpdEncounterDialogState
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             const LinearProgressIndicator(),
             SizedBox(height: Theme.of(context).spacing.md),
             const AppPatientDetailSkeleton(),
@@ -2562,12 +2560,12 @@ class _PatientAppointmentQuickDialogState
         formKey: _formKey,
         enabled: !_isSaving,
         density: AppFormSectionDensity.compact,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(
-                failure: _failure!,
-                body: _workflowFailureMessage(context, _failure!),
-              ),
+        formStatus: appFormFailureStatus(
+          context,
+          _failure,
+          messageBuilder: (AppFailure failure) =>
+              _workflowFailureMessage(context, failure),
+        ),
         children: <Widget>[
           if (widget.referenceData.facilities.length > 1)
             _facilitySelect(context),
@@ -2843,9 +2841,10 @@ class _PatientTriageQuickDialogState
     final l10n = context.l10n;
     return <Widget>[
       if (_providerFailure != null)
-        AppFailureStateView(
+        AppFormInformationBanner.failure(
+          context: context,
           failure: _providerFailure!,
-          body: _workflowFailureMessage(context, _providerFailure!),
+          message: _workflowFailureMessage(context, _providerFailure!),
         ),
       AppFormSection(
         title: l10n.patientsWorkflowSectionTitle,
@@ -3309,12 +3308,12 @@ class _PatientFlowQuickDialogState
         formKey: _formKey,
         enabled: !_isSaving,
         density: AppFormSectionDensity.compact,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(
-                failure: _failure!,
-                body: _workflowFailureMessage(context, _failure!),
-              ),
+        formStatus: appFormFailureStatus(
+          context,
+          _failure,
+          messageBuilder: (AppFailure failure) =>
+              _workflowFailureMessage(context, failure),
+        ),
         children: <Widget>[
           AppFormSection(
             title: l10n.patientsWorkflowSectionTitle,
@@ -5148,7 +5147,7 @@ class _PatientDuplicateReviewDialogState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (_failure != null) ...<Widget>[
-            AppFailureStateView(failure: _failure!),
+            AppFormInformationBanner.failure(context: context, failure: _failure!),
             SizedBox(height: theme.spacing.md),
           ],
           if (_duplicates.isEmpty)
@@ -5600,9 +5599,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
           enabled: !_isSaving && !_isCheckingDuplicates,
           scrollable: true,
           density: AppFormSectionDensity.compact,
-          formStatus: _failure == null
-              ? null
-              : AppFailureStateView(failure: _failure!),
+          formStatus: appFormFailureStatus(context, _failure),
           children: <Widget>[
             if (_duplicateCandidates.isNotEmpty)
               PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
@@ -5917,9 +5914,7 @@ class _PatientRelatedRecordDialogState<T>
         formKey: _formKey,
         enabled: !_isSaving,
         density: AppFormSectionDensity.compact,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
+        formStatus: appFormFailureStatus(context, _failure),
         children: _fieldsForResource(context),
       ),
       actions: <Widget>[

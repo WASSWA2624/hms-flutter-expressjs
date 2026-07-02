@@ -5,9 +5,9 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_info_tile.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
-import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -285,18 +285,17 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
         formKey: _formKey,
         enabled: enabled,
         density: AppFormSectionDensity.compact,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(
-                failure: _failure!,
-                body: widget.failureBodyBuilder?.call(context, _failure!),
-              ),
+        formStatus: appFormFailureStatus(
+          context,
+          _failure,
+          messageBuilder: (AppFailure failure) =>
+              widget.failureBodyBuilder?.call(context, failure),
+        ),
         children: <Widget>[
           if (_formErrorText != null)
-            AppMessagePanel(
+            AppFormInformationBanner.message(
               message: _formErrorText!,
-              tone: AppWorkspaceStatusTone.error,
-              density: AppContentPanelDensity.compact,
+              variant: AppFormInformationVariant.error,
             ),
           ...?widget.leadingSectionsBuilder?.call(context, enabled),
           AppFormSection(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -55,7 +54,10 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (state.failure != null) ...<Widget>[
-                AuthFailureText(failure: state.failure!),
+                AppFormInformationBanner.failure(
+                  context: context,
+                  failure: state.failure!,
+                ),
                 SizedBox(height: theme.spacing.md),
               ],
               AppTextField(

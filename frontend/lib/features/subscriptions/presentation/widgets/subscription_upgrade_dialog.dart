@@ -406,11 +406,9 @@ class _SubscriptionUpgradeDialogState
         autovalidateMode: _autovalidateMode,
         children: <Widget>[
           if (_failure != null) ...<Widget>[
-            Text(
-              context.l10n.failureMessage(_failure!),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.error,
-              ),
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
             ),
             SizedBox(height: theme.spacing.sm),
           ],

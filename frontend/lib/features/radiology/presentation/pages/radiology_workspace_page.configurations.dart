@@ -459,7 +459,7 @@ class _RadiologyTestConfigurationDialogState
                   color: Theme.of(context).colorScheme.error,
                 ),
               ),
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
           ],
         ),
         children: <Widget>[

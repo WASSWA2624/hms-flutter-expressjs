@@ -130,7 +130,7 @@ class _DischargeClearanceDialogState
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             if (!_isPlanned)
               AppWorkspaceStatePanel.state(
                 variant: AppStateViewVariant.info,

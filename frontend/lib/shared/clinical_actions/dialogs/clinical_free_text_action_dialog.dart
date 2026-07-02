@@ -82,7 +82,7 @@ class _ClinicalFreeTextActionDialogState
           description: widget.description,
           density: AppFormSectionDensity.spacious,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             ...widget.leadingContent,
             AppTextField(
               controller: _controller,

@@ -895,9 +895,7 @@ class _CoveragePlanDialogState extends State<_CoveragePlanDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>.searchable(
           labelText: l10n.claimsCoveragePlanFieldLabel,
@@ -993,9 +991,7 @@ class _PrepareClaimDialogState extends State<_PrepareClaimDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>.searchable(
           labelText: l10n.claimsCoveragePlanFieldLabel,
@@ -1110,9 +1106,7 @@ class _AuthorizationStatusDialogState
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>(
           labelText: l10n.claimsAuthorizationStatusFieldLabel,
@@ -1191,9 +1185,7 @@ class _ClaimSubmitDialogState extends State<_ClaimSubmitDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppTextField(
           controller: _notesController,
@@ -1282,9 +1274,7 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         AppSelectField<String>(
           labelText: l10n.claimsClaimResponseFieldLabel,

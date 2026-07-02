@@ -1318,12 +1318,15 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
       content: AppFormShell(
         formKey: _formKey,
         formStatus: _failure == null
-            ? _FormInfo(
-                text: widget.workflow.order.requiresPaymentBeforeDispense
+            ? AppFormInformationBanner.message(
+                message: widget.workflow.order.requiresPaymentBeforeDispense
                     ? l10n.pharmacyDispenseBlockedPaymentBody
                     : l10n.pharmacyDispenseDialogBody,
               )
-            : AppFailureStateView(failure: _failure!),
+            : AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1446,8 +1449,13 @@ class _AttestDialogState extends ConsumerState<_AttestDialog> {
       content: AppFormShell(
         formKey: _formKey,
         formStatus: _failure == null
-            ? _FormInfo(text: l10n.pharmacyAttestDialogBody)
-            : AppFailureStateView(failure: _failure!),
+            ? AppFormInformationBanner.message(
+                message: l10n.pharmacyAttestDialogBody,
+              )
+            : AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1560,8 +1568,13 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
       content: AppFormShell(
         formKey: _formKey,
         formStatus: _failure == null
-            ? _FormInfo(text: l10n.pharmacyReturnDialogBody)
-            : AppFailureStateView(failure: _failure!),
+            ? AppFormInformationBanner.message(
+                message: l10n.pharmacyReturnDialogBody,
+              )
+            : AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1670,8 +1683,13 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
       content: AppFormShell(
         formKey: _formKey,
         formStatus: _failure == null
-            ? _FormInfo(text: l10n.pharmacyCancelDialogBody)
-            : AppFailureStateView(failure: _failure!),
+            ? AppFormInformationBanner.message(
+                message: l10n.pharmacyCancelDialogBody,
+              )
+            : AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1727,27 +1745,6 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _FormInfo extends StatelessWidget {
-  const _FormInfo({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Text(text, style: theme.textTheme.bodyMedium),
-      ),
-    );
   }
 }
 

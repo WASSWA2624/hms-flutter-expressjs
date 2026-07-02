@@ -407,15 +407,24 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (_batchValidationIssueCount != null) ...<Widget>[
-          _LabBatchValidationBanner(issueCount: _batchValidationIssueCount!),
+          AppFormInformationBanner(
+            title: l10n.labBatchValidationSummaryMessage(
+              _batchValidationIssueCount!,
+            ),
+            message: l10n.labBatchValidationSummaryHint,
+            variant: AppFormInformationVariant.error,
+          ),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_labActionFailureMessage != null) ...<Widget>[
-          _LabActionFailureBanner(message: _labActionFailureMessage!),
+          AppFormInformationBanner.message(
+            message: _labActionFailureMessage!,
+            variant: AppFormInformationVariant.error,
+          ),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_failure != null) ...<Widget>[
-          AppFailureStateView(failure: _failure!),
+          AppFormInformationBanner.failure(context: context, failure: _failure!),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         _LabResultContextHeader(workflows: workflows),
@@ -1248,91 +1257,6 @@ class _LabApplyingChangesBanner extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LabBatchValidationBanner extends StatelessWidget {
-  const _LabBatchValidationBanner({required this.issueCount});
-
-  final int issueCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer.withValues(alpha: 0.45),
-        border: Border.all(color: theme.colorScheme.error),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.error_outline, color: theme.colorScheme.error),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    l10n.labBatchValidationSummaryMessage(issueCount),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onErrorContainer,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs / 2),
-                  Text(
-                    l10n.labBatchValidationSummaryHint,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onErrorContainer,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LabActionFailureBanner extends StatelessWidget {
-  const _LabActionFailureBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer.withValues(alpha: 0.45),
-        border: Border.all(color: theme.colorScheme.error),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.error_outline, color: theme.colorScheme.error),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Text(
-                message,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onErrorContainer,
                 ),
               ),
             ),
@@ -3665,7 +3589,7 @@ class _ReopenVerifiedResultDialogState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             Text(
               l10n.labReopenVerifiedResultDialogBody,
               style: theme.textTheme.bodyMedium,
@@ -3947,7 +3871,7 @@ class _RejectOrderItemDialogState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
             AppSelectField<String>.searchable(
               value: _reason,
               labelText: l10n.labRejectReasonLabel,

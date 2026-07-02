@@ -163,11 +163,9 @@ class _HrPayrollWizardDialogState
           LinearProgressIndicator(value: (_step + 1) / 4),
           SizedBox(height: theme.spacing.md),
           if (_failure != null)
-            Text(
-              l10n.failureMessage(_failure!),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
             ),
           if (_step == 0)
             AppFormSection(

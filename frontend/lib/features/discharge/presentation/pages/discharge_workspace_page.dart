@@ -1045,9 +1045,7 @@ class _PlanDischargeDialogState extends State<_PlanDischargeDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         Text(l10n.dischargePlanDialogBody),
         AppTextField(
@@ -1144,9 +1142,7 @@ class _BillingDialogState extends State<_BillingDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         Text(l10n.dischargeBillingDialogBody),
         AppTextField(
@@ -1248,9 +1244,7 @@ class _PharmacyDialogState extends State<_PharmacyDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         Text(l10n.dischargePharmacyDialogBody),
         AppSelectField<String>(
@@ -1404,9 +1398,7 @@ class _CompleteDialogState extends State<_CompleteDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null
-          ? null
-          : AppFailureStateView(failure: _failure!),
+      formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
         Text(l10n.dischargeCompleteDialogBody),
         if (widget.detail.blockingItems.isNotEmpty)
