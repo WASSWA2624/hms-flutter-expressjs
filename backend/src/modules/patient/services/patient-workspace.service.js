@@ -1104,6 +1104,37 @@ const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) =>
     orderBy: [{ status: 'asc' }, { label: 'asc' }],
   });
 
+  const tenantPublicIdByUuid = new Map(
+    tenants.map((entry) => [
+      entry.id,
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+    ]),
+  );
+  const facilityPublicIdByUuid = new Map(
+    facilities.map((entry) => [
+      entry.id,
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+    ]),
+  );
+  const wardPublicIdByUuid = new Map(
+    wards.map((entry) => [
+      entry.id,
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+    ]),
+  );
+  const roomPublicIdByUuid = new Map(
+    rooms.map((entry) => [
+      entry.id,
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
+    ]),
+  );
+  const resolveLinkedPublicId = (lookup, uuid) => {
+    if (!uuid) return null;
+    const mapped = lookup.get(uuid);
+    if (mapped) return mapped;
+    return resolvePublicIdentifier(null, uuid);
+  };
+
   return {
     tenants: tenants.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
@@ -1112,27 +1143,27 @@ const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) =>
     facilities: facilities.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      tenant_id: resolvePublicIdentifier(null, entry?.tenant_id),
+      tenant_id: resolveLinkedPublicId(tenantPublicIdByUuid, entry?.tenant_id),
     })),
     wards: wards.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
+      facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
       ward_type: entry?.ward_type || null,
     })),
     rooms: rooms.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
-      ward_id: resolvePublicIdentifier(null, entry?.ward_id),
+      facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
+      ward_id: resolveLinkedPublicId(wardPublicIdByUuid, entry?.ward_id),
       floor: normalizeText(entry?.floor) || null,
     })),
     beds: beds.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.label) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
-      ward_id: resolvePublicIdentifier(null, entry?.ward_id),
-      room_id: resolvePublicIdentifier(null, entry?.room_id),
+      facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
+      ward_id: resolveLinkedPublicId(wardPublicIdByUuid, entry?.ward_id),
+      room_id: resolveLinkedPublicId(roomPublicIdByUuid, entry?.room_id),
       status: entry?.status || null,
     })),
     document_types: DOCUMENT_TYPE_OPTIONS.map((value) => ({ value })),

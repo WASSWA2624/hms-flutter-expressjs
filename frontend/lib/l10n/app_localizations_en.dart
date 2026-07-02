@@ -5816,6 +5816,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No available beds match this room.';
 
   @override
+  String get clinicalAdmissionNoWardsHelper =>
+      'No wards with available beds match the selected facility.';
+
+  @override
+  String get clinicalAdmissionSelectWardFirstHint => 'Select a ward first.';
+
+  @override
+  String get clinicalAdmissionSelectRoomFirstHint => 'Select a room first.';
+
+  @override
   String get clinicalAdmissionBedUnavailableMessage =>
       'This bed is no longer available. Please choose another bed.';
 

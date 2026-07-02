@@ -10826,6 +10826,24 @@ abstract class AppLocalizations {
   /// **'No available beds match this room.'**
   String get clinicalAdmissionNoBedsForRoomMessage;
 
+  /// Helper shown when the ward field is inactive because no wards have available beds.
+  ///
+  /// In en, this message translates to:
+  /// **'No wards with available beds match the selected facility.'**
+  String get clinicalAdmissionNoWardsHelper;
+
+  /// Helper shown when the room field is inactive until a ward is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a ward first.'**
+  String get clinicalAdmissionSelectWardFirstHint;
+
+  /// Helper shown when the bed field is inactive until a room is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a room first.'**
+  String get clinicalAdmissionSelectRoomFirstHint;
+
   /// Clinical admission validation message when selected bed is unavailable.
   ///
   /// In en, this message translates to:
@@ -32131,7 +32149,4 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
-}
+    

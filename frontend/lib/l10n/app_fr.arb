@@ -7513,6 +7513,18 @@
   "@clinicalAdmissionNoBedsForRoomMessage": {
     "description": "Clinical admission empty-state message when no beds are available for the selected room."
   },
+  "clinicalAdmissionNoWardsHelper": "Aucun service avec des lits disponibles ne correspond à l'établissement sélectionné.",
+  "@clinicalAdmissionNoWardsHelper": {
+    "description": "Helper shown when the ward field is inactive because no wards have available beds."
+  },
+  "clinicalAdmissionSelectWardFirstHint": "Sélectionnez d'abord un service.",
+  "@clinicalAdmissionSelectWardFirstHint": {
+    "description": "Helper shown when the room field is inactive until a ward is selected."
+  },
+  "clinicalAdmissionSelectRoomFirstHint": "Sélectionnez d'abord une chambre.",
+  "@clinicalAdmissionSelectRoomFirstHint": {
+    "description": "Helper shown when the bed field is inactive until a room is selected."
+  },
   "clinicalAdmissionBedUnavailableMessage": "Ce lit n'est plus disponible. Veuillez choisir un autre lit.",
   "@clinicalAdmissionBedUnavailableMessage": {
     "description": "Clinical admission validation message when selected bed is unavailable."

@@ -2386,56 +2386,93 @@ class _PatientAdmissionQuickDialogState
   }
 
   ClinicalActionReferenceData _clinicalAdmissionReferenceData() {
+    final List<PatientReferenceOption> filteredBeds = _facilityFiltered(
+      widget.referenceData.beds,
+    );
+    final Map<String, PatientReferenceOption> wardCatalog =
+        <String, PatientReferenceOption>{
+          for (final PatientReferenceOption ward in _facilityFiltered(
+            widget.referenceData.wards,
+          ))
+            ward.id: ward,
+        };
+    final Map<String, PatientReferenceOption> roomCatalog =
+        <String, PatientReferenceOption>{
+          for (final PatientReferenceOption room in _facilityFiltered(
+            widget.referenceData.rooms,
+          ))
+            room.id: room,
+        };
+
+    final Map<String, ClinicalActionCatalogOption> wards =
+        <String, ClinicalActionCatalogOption>{};
+    final Map<String, ClinicalActionCatalogOption> rooms =
+        <String, ClinicalActionCatalogOption>{};
+    final List<ClinicalActionCatalogOption> beds =
+        <ClinicalActionCatalogOption>[];
+
+    for (final PatientReferenceOption bedOption in filteredBeds) {
+      final String? wardId = bedOption.wardId;
+      final String? roomId = bedOption.roomId;
+      if (wardId == null ||
+          wardId.isEmpty ||
+          roomId == null ||
+          roomId.isEmpty) {
+        continue;
+      }
+
+      final PatientReferenceOption? ward = wardCatalog[wardId];
+      final PatientReferenceOption? room = roomCatalog[roomId];
+      wards.putIfAbsent(
+        wardId,
+        () => ClinicalActionCatalogOption(
+          id: wardId,
+          name: ward?.label ?? wardId,
+          status: ward?.status,
+          parentId: ward?.facilityId,
+        ),
+      );
+      rooms.putIfAbsent(
+        roomId,
+        () => ClinicalActionCatalogOption(
+          id: roomId,
+          name: room?.label ?? roomId,
+          status: room?.status,
+          parentId: wardId,
+          secondaryId: room?.facilityId,
+        ),
+      );
+      beds.add(
+        ClinicalActionCatalogOption(
+          id: bedOption.id,
+          name: bedOption.label,
+          category: bedOption.type,
+          status: bedOption.status,
+          parentId: wardId,
+          secondaryId: roomId,
+        ),
+      );
+    }
+
     return ClinicalActionReferenceData(
-      wards: <ClinicalActionCatalogOption>[
-        for (final PatientReferenceOption option in _facilityFiltered(
-          widget.referenceData.wards,
-        ))
-          ClinicalActionCatalogOption(
-            id: option.id,
-            name: option.label,
-            status: option.status,
-            parentId: option.facilityId,
-          ),
-      ],
-      rooms: <ClinicalActionCatalogOption>[
-        for (final PatientReferenceOption option in _facilityFiltered(
-          widget.referenceData.rooms,
-        ))
-          ClinicalActionCatalogOption(
-            id: option.id,
-            name: option.label,
-            status: option.status,
-            parentId: option.wardId,
-            secondaryId: option.facilityId,
-          ),
-      ],
-      availableBeds: <ClinicalActionCatalogOption>[
-        for (final PatientReferenceOption option in _facilityFiltered(
-          widget.referenceData.beds,
-        ))
-          ClinicalActionCatalogOption(
-            id: option.id,
-            name: option.label,
-            category: option.type,
-            status: option.status,
-            parentId: option.wardId,
-            secondaryId: option.roomId,
-          ),
-      ],
+      wards: wards.values.toList(growable: false),
+      rooms: rooms.values.toList(growable: false),
+      availableBeds: beds,
     );
   }
 
   List<PatientReferenceOption> _facilityFiltered(
     List<PatientReferenceOption> options,
   ) {
-    if (_facilityId == null) {
+    if (_facilityId == null || _facilityId!.trim().isEmpty) {
       return options;
     }
     return options
         .where(
           (PatientReferenceOption option) =>
-              option.facilityId == null || option.facilityId == _facilityId,
+              option.facilityId == null ||
+              option.facilityId!.isEmpty ||
+              option.facilityId == _facilityId,
         )
         .toList(growable: false);
   }

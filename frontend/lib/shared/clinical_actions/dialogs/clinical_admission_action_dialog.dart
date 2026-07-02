@@ -105,6 +105,11 @@ class _ClinicalAdmissionActionDialogState
       availableBeds,
       _bedId,
     );
+    final bool wardEnabled = !_isSaving && wardOptions.isNotEmpty;
+    final bool roomEnabled =
+        !_isSaving && _wardId != null && roomOptions.isNotEmpty;
+    final bool bedEnabled =
+        !_isSaving && _roomId != null && bedOptions.isNotEmpty;
 
     return AppDialog(
       title: Text(widget.title ?? l10n.clinicalRequestAdmissionAction),
@@ -139,7 +144,10 @@ class _ClinicalAdmissionActionDialogState
                     left: AppSelectField<String>.searchable(
                       value: _wardId,
                       labelText: l10n.clinicalAdmissionWardLabel,
-                      enabled: !_isSaving && wardOptions.isNotEmpty,
+                      enabled: wardEnabled,
+                      helperText: wardEnabled
+                          ? null
+                          : l10n.clinicalAdmissionNoWardsHelper,
                       isRequired: true,
                       menuHeight: 280,
                       options: wardOptions,
@@ -151,10 +159,12 @@ class _ClinicalAdmissionActionDialogState
                     right: AppSelectField<String>.searchable(
                       value: _roomId,
                       labelText: l10n.clinicalAdmissionRoomLabel,
-                      enabled:
-                          !_isSaving &&
-                          _wardId != null &&
-                          roomOptions.isNotEmpty,
+                      enabled: roomEnabled,
+                      helperText: roomEnabled
+                          ? null
+                          : (_wardId == null
+                                ? l10n.clinicalAdmissionSelectWardFirstHint
+                                : l10n.clinicalAdmissionNoRoomsMessage),
                       isRequired: true,
                       menuHeight: 280,
                       options: roomOptions,
@@ -164,16 +174,15 @@ class _ClinicalAdmissionActionDialogState
                       onChanged: _handleRoomChanged,
                     ),
                   ),
-                  if (_wardId != null && roomOptions.isEmpty)
-                    AppFormInformationBanner.message(
-                      message: l10n.clinicalAdmissionNoRoomsMessage,
-                      icon: Icons.meeting_room_outlined,
-                    ),
                   AppSelectField<String>.searchable(
                     value: _bedId,
                     labelText: l10n.clinicalAdmissionBedLabel,
-                    enabled:
-                        !_isSaving && _roomId != null && bedOptions.isNotEmpty,
+                    enabled: bedEnabled,
+                    helperText: bedEnabled
+                        ? null
+                        : (_roomId == null
+                              ? l10n.clinicalAdmissionSelectRoomFirstHint
+                              : l10n.clinicalAdmissionNoBedsForRoomMessage),
                     isRequired: true,
                     menuHeight: 320,
                     options: bedOptions,
@@ -183,11 +192,6 @@ class _ClinicalAdmissionActionDialogState
                     onChanged: (String? value) =>
                         _handleBedChanged(value, availableBeds),
                   ),
-                  if (_roomId != null && bedOptions.isEmpty)
-                    AppFormInformationBanner.message(
-                      message: l10n.clinicalAdmissionNoBedsForRoomMessage,
-                      icon: Icons.bed_outlined,
-                    ),
                   if (_bedWarning != null)
                     AppFormInformationBanner.message(
                       message: _bedWarning!,

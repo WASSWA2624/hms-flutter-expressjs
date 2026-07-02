@@ -142,6 +142,15 @@ void main() {
     expect(find.text('This field is required.'), findsWidgets);
   });
 
+  testWidgets('shows helper text when location fields are inactive', (
+    WidgetTester tester,
+  ) async {
+    await openDialog(tester, onSubmit: (_) async => null);
+
+    expect(find.text('Select a ward first.'), findsOneWidget);
+    expect(find.text('Select a room first.'), findsOneWidget);
+  });
+
   testWidgets('submits when location and reason are provided', (
     WidgetTester tester,
   ) async {

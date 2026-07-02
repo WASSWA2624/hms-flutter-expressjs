@@ -270,8 +270,88 @@ describe('patient-workspace service', () => {
       expect.objectContaining({
         human_friendly_id: 'FAC0001',
         label: 'DemoCare General Hospital',
-        tenant_id: 'tenant-1',
+        tenant_id: 'TEN0001',
       }),
     ]);
+  });
+
+  it('resolves bed ward and room links to public identifiers', async () => {
+    prisma.tenant = { findMany: jest.fn().mockResolvedValue([]) };
+    prisma.facility = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'facility-uuid-1',
+          human_friendly_id: 'FAC0001',
+          name: 'DemoCare General Hospital',
+          tenant_id: 'tenant-uuid-1',
+        },
+      ]),
+    };
+    prisma.ward = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'ward-uuid-1',
+          human_friendly_id: 'WRD0001',
+          facility_id: 'facility-uuid-1',
+          name: 'Medical ward',
+          ward_type: 'GENERAL',
+        },
+      ]),
+    };
+    prisma.room = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'room-uuid-1',
+          human_friendly_id: 'ROM0001',
+          facility_id: 'facility-uuid-1',
+          ward_id: 'ward-uuid-1',
+          name: 'Room 101',
+          floor: '1',
+        },
+      ]),
+    };
+    prisma.bed = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'bed-uuid-1',
+          human_friendly_id: 'BED0001',
+          facility_id: 'facility-uuid-1',
+          ward_id: 'ward-uuid-1',
+          room_id: 'room-uuid-1',
+          label: 'Bed A',
+          status: 'AVAILABLE',
+        },
+      ]),
+    };
+
+    const result = await subject.getPatientWorkspaceReferenceData(
+      {},
+      {
+        user: {
+          roles: ['DOCTOR'],
+          facility_id: 'facility-uuid-1',
+        },
+      },
+    );
+
+    expect(result.beds).toEqual([
+      expect.objectContaining({
+        human_friendly_id: 'BED0001',
+        facility_id: 'FAC0001',
+        ward_id: 'WRD0001',
+        room_id: 'ROM0001',
+      }),
+    ]);
+    expect(result.rooms[0]).toEqual(
+      expect.objectContaining({
+        ward_id: 'WRD0001',
+        facility_id: 'FAC0001',
+      }),
+    );
+    expect(result.wards[0]).toEqual(
+      expect.objectContaining({
+        facility_id: 'FAC0001',
+      }),
+    );
   });
 });

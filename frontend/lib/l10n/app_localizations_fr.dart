@@ -5879,6 +5879,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'No disponible lits match ce chambre.';
 
   @override
+  String get clinicalAdmissionNoWardsHelper =>
+      'Aucun service avec des lits disponibles ne correspond à l\'établissement sélectionné.';
+
+  @override
+  String get clinicalAdmissionSelectWardFirstHint =>
+      'Sélectionnez d\'abord un service.';
+
+  @override
+  String get clinicalAdmissionSelectRoomFirstHint =>
+      'Sélectionnez d\'abord une chambre.';
+
+  @override
   String get clinicalAdmissionBedUnavailableMessage =>
       'Ce lit n\'est plus disponible. Veuillez choisir un autre lit.';
 
