@@ -2809,6 +2809,13 @@
   "opdDecisionLabel": "Décision",
   "opdRouteDecisionLabel": "Décision d'itinéraire",
   "opdArrivalModeLabel": "Mode d'arrivée",
+  "opdArrivalModeColumnLabel": "Mode d'arrivée",
+  "opdArrivalModeWalkInLabel": "Sans rendez-vous",
+  "opdArrivalModeAppointmentLabel": "Rendez-vous",
+  "opdArrivalModeEmergencyLabel": "Urgence",
+  "opdArrivalModeFollowUpLabel": "Suivi",
+  "opdEncounterColumnLabel": "Rencontre OPD",
+  "opdEncounterIdLabel": "Identifiant de la rencontre",
   "opdEmergencySeverityLabel": "Gravité de l'urgence",
   "opdTriageLevelLabel": "Niveau de tri",
   "opdTriageLevel1Label": "Niveau 1 · Immédiat",
@@ -3451,6 +3458,27 @@
   "@opdArrivalModeLabel": {
     "description": "Arrival mode field label."
   },
+  "@opdArrivalModeColumnLabel": {
+    "description": "Arrival mode column label for the OPD worklist."
+  },
+  "@opdArrivalModeWalkInLabel": {
+    "description": "Hospital-language label for walk-in OPD arrivals."
+  },
+  "@opdArrivalModeAppointmentLabel": {
+    "description": "Hospital-language label for appointment OPD arrivals."
+  },
+  "@opdArrivalModeEmergencyLabel": {
+    "description": "Hospital-language label for emergency OPD arrivals."
+  },
+  "@opdArrivalModeFollowUpLabel": {
+    "description": "Hospital-language label for follow-up OPD arrivals."
+  },
+  "@opdEncounterColumnLabel": {
+    "description": "OPD encounter column label for the worklist."
+  },
+  "@opdEncounterIdLabel": {
+    "description": "Encounter ID search field label for the OPD worklist."
+  },
   "@opdEmergencySeverityLabel": {
     "description": "Emergency severity field label."
   },
@@ -3629,6 +3657,18 @@
   "patientsAddAction": "Ajouter un patient",
   "@patientsAddAction": {
     "description": "Create patient action label."
+  },
+  "patientsRegisterPatientAction": "Enregistrer un patient",
+  "@patientsRegisterPatientAction": {
+    "description": "Toolbar action to open the register-new-patient dialog."
+  },
+  "patientsRegisterNewPatientTitle": "Enregistrer un nouveau patient",
+  "@patientsRegisterNewPatientTitle": {
+    "description": "Title for the global register-new-patient dialog."
+  },
+  "patientsRegisterNewPatientAction": "Enregistrer le patient",
+  "@patientsRegisterNewPatientAction": {
+    "description": "Submit action for the register-new-patient dialog."
   },
   "patientsEmergencyRegisterAction": "Emergency inscription",
   "@patientsEmergencyRegisterAction": {
@@ -3992,6 +4032,38 @@
   "patientsIdentifierValueLabel": "Identifier valeur",
   "@patientsIdentifierValueLabel": {
     "description": "Patient identifier value field label."
+  },
+  "patientsIdentifierValueSelectTypeFirstTooltip": "Sélectionnez d'abord un type d'identifiant.",
+  "@patientsIdentifierValueSelectTypeFirstTooltip": {
+    "description": "Tooltip shown when identifier value is disabled until identifier type is chosen."
+  },
+  "patientsIdentifierTypeMrnLabel": "Numéro de dossier médical (MRN)",
+  "@patientsIdentifierTypeMrnLabel": {
+    "description": "Patient identifier type option label for MRN."
+  },
+  "patientsIdentifierTypeNationalIdLabel": "Carte d'identité nationale (NATIONAL_ID)",
+  "@patientsIdentifierTypeNationalIdLabel": {
+    "description": "Patient identifier type option label for national ID."
+  },
+  "patientsIdentifierTypePassportLabel": "Passeport (PASSPORT)",
+  "@patientsIdentifierTypePassportLabel": {
+    "description": "Patient identifier type option label for passport."
+  },
+  "patientsIdentifierTypeInsuranceLabel": "Assurance (INSURANCE)",
+  "@patientsIdentifierTypeInsuranceLabel": {
+    "description": "Patient identifier type option label for insurance."
+  },
+  "patientsIdentifierTypeDriverLicenseLabel": "Permis de conduire (DRIVER_LICENSE)",
+  "@patientsIdentifierTypeDriverLicenseLabel": {
+    "description": "Patient identifier type option label for driver license."
+  },
+  "patientsIdentifierTypeBirthCertificateLabel": "Acte de naissance (BIRTH_CERTIFICATE)",
+  "@patientsIdentifierTypeBirthCertificateLabel": {
+    "description": "Patient identifier type option label for birth certificate."
+  },
+  "patientsIdentifierTypeOtherLabel": "Autre (OTHER)",
+  "@patientsIdentifierTypeOtherLabel": {
+    "description": "Patient identifier type option label for other identifiers."
   },
   "patientsActiveCheckboxLabel": "Le patient est actif",
   "@patientsActiveCheckboxLabel": {
@@ -6420,6 +6492,42 @@
   "validationRequired": "Ce champ est requis.",
   "@validationRequired": {
     "description": "Generic required-field validation message for forms."
+  },
+  "validationFieldRequiredMessage": "{field} est requis.",
+  "@validationFieldRequiredMessage": {
+    "description": "Validation message when a named field is required.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldInvalidMessage": "Saisissez un(e) {field} valide.",
+  "@validationFieldInvalidMessage": {
+    "description": "Validation message when a named field has an invalid value.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldInvalidFormatMessage": "Utilisez un format {field} valide.",
+  "@validationFieldInvalidFormatMessage": {
+    "description": "Validation message when a named field has an invalid format.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldAlreadyInUseMessage": "{field} est déjà utilisé.",
+  "@validationFieldAlreadyInUseMessage": {
+    "description": "Validation message when a named field value is duplicated.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
   },
   "errorNetworkTitle": "Problème de connexion",
   "@errorNetworkTitle": {

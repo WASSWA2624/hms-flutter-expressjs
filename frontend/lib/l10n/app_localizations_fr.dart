@@ -2555,25 +2555,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdArrivalModeLabel => 'Mode d\'arrivée';
 
   @override
-  String get opdArrivalModeColumnLabel => 'Arrival mode';
+  String get opdArrivalModeColumnLabel => 'Mode d\'arrivée';
 
   @override
-  String get opdArrivalModeWalkInLabel => 'Walk-in';
+  String get opdArrivalModeWalkInLabel => 'Sans rendez-vous';
 
   @override
-  String get opdArrivalModeAppointmentLabel => 'Appointment';
+  String get opdArrivalModeAppointmentLabel => 'Rendez-vous';
 
   @override
-  String get opdArrivalModeEmergencyLabel => 'Emergency';
+  String get opdArrivalModeEmergencyLabel => 'Urgence';
 
   @override
-  String get opdArrivalModeFollowUpLabel => 'Follow-up';
+  String get opdArrivalModeFollowUpLabel => 'Suivi';
 
   @override
-  String get opdEncounterColumnLabel => 'OPD encounter';
+  String get opdEncounterColumnLabel => 'Rencontre OPD';
 
   @override
-  String get opdEncounterIdLabel => 'Encounter ID';
+  String get opdEncounterIdLabel => 'Identifiant de la rencontre';
 
   @override
   String get opdEmergencySeverityLabel => 'Gravité de l\'urgence';
@@ -2824,13 +2824,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAddAction => 'Ajouter un patient';
 
   @override
-  String get patientsRegisterPatientAction => 'Register patient';
+  String get patientsRegisterPatientAction => 'Enregistrer un patient';
 
   @override
-  String get patientsRegisterNewPatientTitle => 'Register new patient';
+  String get patientsRegisterNewPatientTitle =>
+      'Enregistrer un nouveau patient';
 
   @override
-  String get patientsRegisterNewPatientAction => 'Register patient';
+  String get patientsRegisterNewPatientAction => 'Enregistrer le patient';
 
   @override
   String get patientsEmergencyRegisterAction => 'Emergency inscription';
@@ -3110,31 +3111,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsIdentifierValueSelectTypeFirstTooltip =>
-      'Select an identifier type first.';
+      'Sélectionnez d\'abord un type d\'identifiant.';
 
   @override
-  String get patientsIdentifierTypeMrnLabel => 'Medical Record Number (MRN)';
+  String get patientsIdentifierTypeMrnLabel =>
+      'Numéro de dossier médical (MRN)';
 
   @override
   String get patientsIdentifierTypeNationalIdLabel =>
-      'National ID (NATIONAL_ID)';
+      'Carte d\'identité nationale (NATIONAL_ID)';
 
   @override
-  String get patientsIdentifierTypePassportLabel => 'Passport (PASSPORT)';
+  String get patientsIdentifierTypePassportLabel => 'Passeport (PASSPORT)';
 
   @override
-  String get patientsIdentifierTypeInsuranceLabel => 'Insurance (INSURANCE)';
+  String get patientsIdentifierTypeInsuranceLabel => 'Assurance (INSURANCE)';
 
   @override
   String get patientsIdentifierTypeDriverLicenseLabel =>
-      'Driver License (DRIVER_LICENSE)';
+      'Permis de conduire (DRIVER_LICENSE)';
 
   @override
   String get patientsIdentifierTypeBirthCertificateLabel =>
-      'Birth Certificate (BIRTH_CERTIFICATE)';
+      'Acte de naissance (BIRTH_CERTIFICATE)';
 
   @override
-  String get patientsIdentifierTypeOtherLabel => 'Other (OTHER)';
+  String get patientsIdentifierTypeOtherLabel => 'Autre (OTHER)';
 
   @override
   String get patientsActiveCheckboxLabel => 'Le patient est actif';
@@ -5106,22 +5108,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String validationFieldRequiredMessage(String field) {
-    return '$field is required.';
+    return '$field est requis.';
   }
 
   @override
   String validationFieldInvalidMessage(String field) {
-    return 'Enter a valid $field.';
+    return 'Saisissez un(e) $field valide.';
   }
 
   @override
   String validationFieldInvalidFormatMessage(String field) {
-    return 'Use a valid $field format.';
+    return 'Utilisez un format $field valide.';
   }
 
   @override
   String validationFieldAlreadyInUseMessage(String field) {
-    return '$field is already in use.';
+    return '$field est déjà utilisé.';
   }
 
   @override
