@@ -167,10 +167,14 @@ final class PatientRegistryController
     }
   }
 
-  Future<AppFailure?> createPatient(Map<String, Object?> payload) async {
+  Future<Result<Patient>> createPatient(Map<String, Object?> payload) async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return Result<Patient>.failure(failure);
+      }
+      return createPatient(payload);
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
@@ -191,12 +195,12 @@ final class PatientRegistryController
         await _refreshOverviewOnly();
         _emit(_currentState!.copyWith(isSaving: false));
         await _flushPendingRefresh();
-        return null;
+        return Result<Patient>.success(patient);
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
         await _flushPendingRefresh();
-        return failure;
+        return Result<Patient>.failure(failure);
       },
     );
   }

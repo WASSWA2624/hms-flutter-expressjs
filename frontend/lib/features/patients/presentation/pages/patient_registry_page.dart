@@ -234,7 +234,7 @@ class _PatientRegistryContentState
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final bool? saved = await showAppDialog<bool>(
+    final Patient? createdPatient = await showAppDialog<Patient>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RegisterNewPatientDialog(
@@ -256,11 +256,14 @@ class _PatientRegistryContentState
       ),
     );
 
-    if (saved == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsSavedMessage)),
-      );
+    if (createdPatient == null || !context.mounted) {
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+    );
+    await showPatientDetailDialog(context, ref, createdPatient.id);
   }
 
   Future<void> _applySummaryQuery(PatientListQuery query) async {
@@ -911,7 +914,7 @@ class _PatientList extends ConsumerWidget {
           cellBuilder: (_, Patient patient) => _NextActionCell(
             patient: patient,
             onPressed: () {
-              unawaited(_openPatientDetail(context, ref, patient.id));
+              unawaited(showPatientDetailDialog(context, ref, patient.id));
             },
           ),
         ),
@@ -920,7 +923,7 @@ class _PatientList extends ConsumerWidget {
           _PatientMobileRow(patient: patient),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
-        await _openPatientDetail(context, ref, patient.id);
+        await showPatientDetailDialog(context, ref, patient.id);
       },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.patientsEmptyTitle,
@@ -949,7 +952,7 @@ class _PatientList extends ConsumerWidget {
   }
 }
 
-Future<void> _openPatientDetail(
+Future<void> showPatientDetailDialog(
   BuildContext context,
   WidgetRef ref,
   String patientId,
@@ -967,7 +970,7 @@ Future<void> _openPatientDetail(
 
   await showAppDialog<void>(
     context: context,
-    builder: (_) => _PatientDetailDialog(patientId: patientId),
+    builder: (_) => PatientDetailDialog(patientId: patientId),
   );
 
   if (context.mounted) {
@@ -1307,8 +1310,8 @@ String _patientAgeLabel(BuildContext context, DateTime? dateOfBirth) {
   return today.difference(dateOfBirth).inDays.clamp(0, 30).toString();
 }
 
-class _PatientDetailDialog extends ConsumerWidget {
-  const _PatientDetailDialog({required this.patientId});
+class PatientDetailDialog extends ConsumerWidget {
+  const PatientDetailDialog({required this.patientId, super.key});
 
   final String patientId;
 
@@ -1346,6 +1349,7 @@ class _PatientDetailDialog extends ConsumerWidget {
         icon: const Icon(Icons.assignment_ind_outlined),
         maxWidth: 980,
         scrollable: true,
+        initialMaximized: true,
         content: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOut,
@@ -1388,6 +1392,7 @@ class _PatientDetailDialog extends ConsumerWidget {
         icon: const Icon(Icons.assignment_ind_outlined),
         maxWidth: 960,
         scrollable: true,
+        initialMaximized: true,
         content: failure is AppFailure
             ? AppFailureStateView(failure: failure)
             : AppWorkspaceStatePanel.empty(
@@ -1405,6 +1410,7 @@ class _PatientDetailDialog extends ConsumerWidget {
       icon: const Icon(Icons.assignment_ind_outlined),
       maxWidth: 980,
       scrollable: true,
+      initialMaximized: true,
       actions: <Widget>[
         AppAccessActionGate(
           requirement: _writeRequirement,
@@ -2129,10 +2135,10 @@ Future<void> _openQuickAction(
                       }..remove('existing_encounter_id'),
                     ),
                   );
-              return _failureOrNull(result);
+              return result;
             }
 
-            final Result<OpdFlowDetail> result = await ref
+            return await ref
                 .read(opdRepositoryProvider)
                 .startOpdFlow(
                   _withoutEmptyPayload(<String, Object?>{
@@ -2141,7 +2147,6 @@ Future<void> _openQuickAction(
                     ...payload,
                   }),
                 );
-            return _failureOrNull(result);
           },
         ),
         _ => _PatientFlowQuickDialog(
@@ -2418,7 +2423,7 @@ class _PatientOpdEncounterDialog extends ConsumerStatefulWidget {
   });
 
   final Patient patient;
-  final Future<AppFailure?> Function(Map<String, Object?>) onSubmit;
+  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?>) onSubmit;
 
   @override
   ConsumerState<_PatientOpdEncounterDialog> createState() =>

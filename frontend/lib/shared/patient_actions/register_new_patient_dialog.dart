@@ -26,7 +26,7 @@ import 'package:hosspi_hms/shared/patient_actions/patient_identifier_type_labels
 import 'package:hosspi_hms/shared/patient_actions/patient_registration_scope.dart';
 
 typedef RegisterNewPatientSubmit =
-    Future<AppFailure?> Function(Map<String, Object?> payload);
+    Future<Result<Patient>> Function(Map<String, Object?> payload);
 
 typedef RegisterNewPatientDuplicateLookup =
     Future<Result<AppPage<PatientDuplicateCandidate>>> Function(
@@ -535,20 +535,24 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     });
     formState.clearFailure();
 
-    final AppFailure? failure = await widget.onSubmit(formState.buildPayload());
+    final Result<Patient> result = await widget.onSubmit(
+      formState.buildPayload(),
+    );
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-
-    setState(() {
-      _isSaving = false;
-    });
-    formState.setFailure(failure);
-    setState(() {});
+    return result.when(
+      success: (Patient patient) {
+        Navigator.of(context).pop(patient);
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _isSaving = false;
+        });
+        formState.setFailure(failure);
+        setState(() {});
+      },
+    );
   }
 }
 

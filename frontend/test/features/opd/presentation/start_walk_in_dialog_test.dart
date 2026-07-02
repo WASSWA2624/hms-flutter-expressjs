@@ -100,7 +100,7 @@ void main() {
               appointments: const <OpdAppointment>[],
               onSubmit: (Map<String, Object?> payload) async {
                 submittedPayload = payload;
-                return null;
+                return _successfulOpdSubmit();
               },
             ),
           ),
@@ -160,7 +160,7 @@ void main() {
         initialPatient: patient,
         onSubmit: (Map<String, Object?> payload) async {
           submittedPayload = payload;
-          return null;
+          return _successfulOpdSubmit(patientId: patient.id);
         },
       ),
     );
@@ -221,7 +221,7 @@ void main() {
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
-          onSubmit: (_) async => null,
+          onSubmit: (_) async => _successfulOpdSubmit(),
         ),
       );
 
@@ -265,7 +265,7 @@ void main() {
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
-          onSubmit: (_) async => null,
+          onSubmit: (_) async => _successfulOpdSubmit(),
         ),
       );
 
@@ -324,7 +324,7 @@ void main() {
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
-          onSubmit: (_) async => null,
+          onSubmit: (_) async => _successfulOpdSubmit(),
         ),
       );
 
@@ -377,7 +377,7 @@ void main() {
           initialPatient: patient,
           onSubmit: (Map<String, Object?> payload) async {
             submittedPayload = payload;
-            return null;
+            return _successfulOpdSubmit(patientId: patient.id);
           },
         ),
       );
@@ -906,4 +906,15 @@ Future<void> _pumpStartDialog(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Result<OpdFlowDetail> _successfulOpdSubmit({String? patientId}) {
+  return Result<OpdFlowDetail>.success(
+    OpdFlowDetail(
+      summary: OpdFlowSummary(
+        id: 'flow-1',
+        patientId: patientId ?? 'patient-new-1',
+      ),
+    ),
+  );
 }

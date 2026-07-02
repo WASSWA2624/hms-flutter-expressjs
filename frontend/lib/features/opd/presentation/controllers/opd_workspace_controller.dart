@@ -398,28 +398,11 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> startOpdEncounter(Map<String, Object?> payload) {
-    final Object? existingEncounterId = payload['existing_encounter_id'];
-    if (existingEncounterId is String &&
-        existingEncounterId.trim().isNotEmpty) {
-      return _mutateFlow(
-        () => _repository.updateActiveEncounter(
-          existingEncounterId.trim(),
-          Map<String, Object?>.from(payload)
-            ..remove('existing_encounter_id')
-            ..remove('reuse_open_encounter'),
-        ),
-        refreshAfter: true,
-      );
-    }
-
-    return _mutateFlow(
-      () => _repository.startOpdFlow(<String, Object?>{
-        'arrival_mode': 'WALK_IN',
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-        ...payload,
-        'reuse_open_encounter': true,
-      }),
-      refreshAfter: true,
+    return submitOpdEncounter(payload).then(
+      (Result<OpdFlowDetail> result) => result.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      ),
     );
   }
 
@@ -1087,9 +1070,55 @@ final class OpdWorkspaceController
     Future<Result<OpdFlowDetail>> Function() action, {
     required bool refreshAfter,
   }) async {
+    final Result<OpdFlowDetail> result = await _mutateFlowDetail(
+      action,
+      refreshAfter: refreshAfter,
+    );
+    return result.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<Result<OpdFlowDetail>> submitOpdEncounter(
+    Map<String, Object?> payload,
+  ) async {
+    final Object? existingEncounterId = payload['existing_encounter_id'];
+    if (existingEncounterId is String &&
+        existingEncounterId.trim().isNotEmpty) {
+      return _mutateFlowDetail(
+        () => _repository.updateActiveEncounter(
+          existingEncounterId.trim(),
+          Map<String, Object?>.from(payload)
+            ..remove('existing_encounter_id')
+            ..remove('reuse_open_encounter'),
+        ),
+        refreshAfter: true,
+      );
+    }
+
+    return _mutateFlowDetail(
+      () => _repository.startOpdFlow(<String, Object?>{
+        'arrival_mode': 'WALK_IN',
+        'queued_at': DateTime.now().toUtc().toIso8601String(),
+        ...payload,
+        'reuse_open_encounter': true,
+      }),
+      refreshAfter: true,
+    );
+  }
+
+  Future<Result<OpdFlowDetail>> _mutateFlowDetail(
+    Future<Result<OpdFlowDetail>> Function() action, {
+    required bool refreshAfter,
+  }) async {
     final OpdWorkspaceState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return Result<OpdFlowDetail>.failure(failure);
+      }
+      return _mutateFlowDetail(action, refreshAfter: refreshAfter);
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
@@ -1114,9 +1143,12 @@ final class OpdWorkspaceController
           }
           await _flushPendingRefresh();
           if (refreshAfter) {
-            return _syncVisibleData();
+            final AppFailure? syncFailure = await _syncVisibleData();
+            if (syncFailure != null) {
+              return Result<OpdFlowDetail>.failure(syncFailure);
+            }
           }
-          return null;
+          return Result<OpdFlowDetail>.success(detail);
         },
         failure: (AppFailure failure) async {
           _emitMutationFailure(failure);
@@ -1124,14 +1156,14 @@ final class OpdWorkspaceController
           if (failure.category == AppFailureCategory.notFound) {
             unawaited(_syncVisibleData(showLoading: true));
           }
-          return failure;
+          return Result<OpdFlowDetail>.failure(failure);
         },
       );
     } catch (error, stackTrace) {
       final AppFailure failure = mapToFailure(error, stackTrace);
       _emitMutationFailure(failure);
       await _flushPendingRefresh();
-      return failure;
+      return Result<OpdFlowDetail>.failure(failure);
     }
   }
 

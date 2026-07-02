@@ -10,6 +10,7 @@ class AppPatientDetailDialog extends StatelessWidget {
     required this.closeLabel,
     this.icon = const Icon(Icons.badge_outlined),
     this.maxWidth = 1040,
+    this.initialMaximized = true,
     this.actions = const <Widget>[],
     super.key,
   });
@@ -20,6 +21,7 @@ class AppPatientDetailDialog extends StatelessWidget {
   final String closeLabel;
   final Widget icon;
   final double maxWidth;
+  final bool initialMaximized;
   final List<Widget> actions;
 
   @override
@@ -30,6 +32,7 @@ class AppPatientDetailDialog extends StatelessWidget {
       semanticLabel: semanticLabel,
       scrollable: true,
       maxWidth: maxWidth,
+      initialMaximized: initialMaximized,
       content: content,
       actions: <Widget>[
         ...actions,

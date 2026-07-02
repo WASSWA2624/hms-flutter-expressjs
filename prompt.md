@@ -1,47 +1,37 @@
-# Standardize inline form feedback with `AppFormInformationBanner`
+# Patient details after registration
 
-## Objective
+## Goal
 
-Refactor the Flutter app so every form uses a single, consistent pattern for inline feedback (errors, warnings, and informational messages): `AppFormInformationBanner` in `frontend/lib/shared/components/app_form_information_banner.dart`.
+After a patient is successfully registered, open the **patient details dialog** for the newly created patient instead of only closing the registration dialog and returning to the list. This lets staff review the record and take follow-up actions immediately.
 
-## Standard patterns
+## Requirements
 
-**Forms wrapped in `AppFormShell`** — pass feedback through `formStatus`:
+### 1. Post-registration flow
 
-```dart
-AppFormShell(
-  formKey: _formKey,
-  formStatus: appFormFailureStatus(context, _failure),
-  children: [...],
-)
-```
+- On successful save in `RegisterNewPatientDialog`, close the registration dialog and open the patient details dialog for the **new patient ID**.
+- Apply this wherever patient registration is used (e.g. patient registry, OPD walk-in intake).
+- Keep the existing success snackbar/feedback where appropriate.
 
-Use `appFormFailureStatus` (same file) for `AppFailure`-driven feedback. Pass `message`, `title`, `messageBuilder`, or `onRetry` only when the default presentation is insufficient.
+### 2. Maximized by default
 
-**Forms without `AppFormShell`** — render the banner directly:
+- The patient details dialog must open **maximized by default** (`AppDialog.initialMaximized: true`).
+- Apply this default **everywhere** the patient details dialog is shown, not only after registration.
 
-- `AppFormInformationBanner.failure(context: context, failure: _failure)` for API/submit failures
-- `AppFormInformationBanner.message(...)` for non-failure guidance (validation hints, prerequisites, etc.)
+### 3. Reusable shared component
 
-Do **not** duplicate feedback: if `formStatus` is set, do not also embed a banner in `children`.
+- Extract or consolidate patient details into a **globally reusable** shared component (build on `AppPatientDetailDialog` / `AppDialog` where possible).
+- Replace inline or duplicated implementations (e.g. `_PatientDetailDialog` in `patient_registry_page.dart`, nursing workspace usage) with the shared component.
+- Expose a single entry point (e.g. `showPatientDetailDialog(context, ref, patientId)`) for all call sites.
 
-## Refactor scope
+## Implementation notes
 
-1. Replace ad-hoc inline error UI (`Text`, custom widgets, removed `AuthFailureText`, raw `failure.displayMessage` blocks, etc.) with the patterns above.
-2. Migrate forms still using inline banners in `children` to `formStatus` where `AppFormShell` is present.
-3. Align remaining inconsistent call sites (e.g. pharmacy workspace ternaries, radiology custom `Column` form status) with the standard helpers.
-4. Remove dead code, unused imports, and redundant failure-display logic left over from the migration.
-5. Keep field-level validation on inputs; use the banner for form-level / submit-level feedback only.
+- `createPatient` already returns the created `Patient`; propagate the new patient ID through the registration dialog callback instead of only returning `true`.
+- Reuse existing detail-loading logic (`selectPatient`, skeleton states, actions) from the registry page where practical.
+- Update affected widget tests (registration flow, detail dialog open state, maximized default).
 
 ## Acceptance criteria
 
-- [ ] All form submit/API failures surface through `AppFormInformationBanner` (directly or via `appFormFailureStatus`).
-- [ ] No remaining references to deleted or legacy failure widgets.
-- [ ] `formStatus` is the sole feedback slot on `AppFormShell` forms—no duplicate banners in `children`.
-- [ ] Existing tests updated; affected widget tests assert `AppFormInformationBanner` where appropriate.
-- [ ] `flutter test` passes for touched files; no new analyzer warnings.
-
-## Out of scope
-
-- Changing backend validation payloads or `ValidationMessagePresenter` behavior unless required to fix a broken display.
-- Replacing snackbars/toasts used for post-submit navigation feedback (not inline form status).
+- [ ] Successful registration opens the new patient’s details dialog automatically.
+- [ ] Details dialog opens maximized on every entry point.
+- [ ] One shared component/helper is used for all patient detail displays.
+- [ ] Existing tests pass; new or updated tests cover the post-registration and maximized-default behavior.

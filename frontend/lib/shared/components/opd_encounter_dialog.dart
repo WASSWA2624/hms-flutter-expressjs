@@ -130,7 +130,14 @@ class _WalkInTabLabel extends StatelessWidget {
 }
 
 typedef OpdEncounterPayloadSubmit =
-    Future<AppFailure?> Function(Map<String, Object?> payload);
+    Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload);
+
+@immutable
+final class OpdEncounterDialogResult {
+  const OpdEncounterDialogResult({this.registeredPatientId});
+
+  final String? registeredPatientId;
+}
 
 class OpdEncounterDialog extends ConsumerStatefulWidget {
   const OpdEncounterDialog({
@@ -764,23 +771,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _failure = null;
     });
 
-    final AppFailure? failure = await widget.onSubmit(_payload());
+    final Result<OpdFlowDetail> result = await widget.onSubmit(_payload());
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      final OpdFlowSummary? activeEncounter = _activeEncounter;
-      if (activeEncounter != null) {
-        widget.onExistingActiveEncounter?.call(activeEncounter);
-      }
-      widget.onSuccess?.call();
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+    return result.when(
+      success: (OpdFlowDetail detail) {
+        final OpdFlowSummary? activeEncounter = _activeEncounter;
+        if (activeEncounter != null) {
+          widget.onExistingActiveEncounter?.call(activeEncounter);
+        }
+        widget.onSuccess?.call();
+        final String? registeredPatientId =
+            _patientMode == _WalkInPatientMode.newPatient
+            ? detail.summary.patientId
+            : null;
+        Navigator.of(context).pop(
+          OpdEncounterDialogResult(registeredPatientId: registeredPatientId),
+        );
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
+        });
+      },
+    );
   }
 
   void _setPatientMode(_WalkInPatientMode mode) {

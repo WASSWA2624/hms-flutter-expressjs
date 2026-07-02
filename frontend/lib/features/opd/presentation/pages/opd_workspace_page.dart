@@ -347,7 +347,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     WidgetRef ref,
   ) async {
     OpdFlowSummary? activeEncounterToOpen;
-    final bool? saved = await showAppDialog<bool>(
+    final OpdEncounterDialogResult? result =
+        await showAppDialog<OpdEncounterDialogResult>(
       context: context,
       barrierDismissible: false,
       builder: (_) => OpdEncounterDialog(
@@ -360,7 +361,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
-              .startOpdEncounter(payload);
+              .submitOpdEncounter(payload);
         },
         onExistingActiveEncounter: (OpdFlowSummary flow) {
           activeEncounterToOpen = flow;
@@ -368,7 +369,18 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       ),
     );
 
-    if (saved != true || !context.mounted) {
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    final String? registeredPatientId = result.registeredPatientId;
+    if (registeredPatientId != null && registeredPatientId.isNotEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.opdSavedMessage)),
+        );
+      }
+      await showPatientDetailDialog(context, ref, registeredPatientId);
       return;
     }
 
@@ -2660,7 +2672,8 @@ class _OpdPatientActionsDialogState
       return;
     }
     OpdFlowSummary? activeEncounterToOpen;
-    final bool? changed = await showAppDialog<bool>(
+    final OpdEncounterDialogResult? dialogResult =
+        await showAppDialog<OpdEncounterDialogResult>(
       context: context,
       barrierDismissible: false,
       builder: (_) => OpdEncounterDialog(
@@ -2677,14 +2690,14 @@ class _OpdPatientActionsDialogState
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
-              .startOpdEncounter(payload);
+              .submitOpdEncounter(payload);
         },
         onExistingActiveEncounter: (OpdFlowSummary flow) {
           activeEncounterToOpen = flow;
         },
       ),
     );
-    if (!mounted || changed != true) {
+    if (!mounted || dialogResult == null) {
       return;
     }
     final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
@@ -2845,7 +2858,8 @@ class _AppointmentActionsDialogState
   }
 
   Future<void> _openCheckIn() async {
-    final bool? changed = await showAppDialog<bool>(
+    final OpdEncounterDialogResult? dialogResult =
+        await showAppDialog<OpdEncounterDialogResult>(
       context: context,
       barrierDismissible: false,
       builder: (_) => OpdEncounterDialog(
@@ -2862,11 +2876,11 @@ class _AppointmentActionsDialogState
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
-              .startOpdEncounter(payload);
+              .submitOpdEncounter(payload);
         },
       ),
     );
-    if (changed == true && mounted) {
+    if (dialogResult != null && mounted) {
       Navigator.of(context).pop(true);
     }
   }

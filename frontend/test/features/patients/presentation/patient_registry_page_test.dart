@@ -32,6 +32,7 @@ import '../../../helpers/test_harness.dart';
 void main() {
   setUpAll(() {
     registerFallbackValue(const PatientListQuery());
+    registerFallbackValue(const PatientDuplicateQuery());
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(<String, Object?>{});
@@ -65,7 +66,7 @@ void main() {
               label: 'Open register dialog',
               onPressed: () {
                 unawaited(
-                  showAppDialog<bool>(
+                  showAppDialog<Patient>(
                     context: context,
                     builder: (_) => RegisterNewPatientDialog(
                       referenceData: const PatientReferenceData(),
@@ -97,7 +98,7 @@ void main() {
                       },
                       onSubmit: (Map<String, Object?> payload) async {
                         submitCount += 1;
-                        return null;
+                        return _registeredPatientResult(payload);
                       },
                     ),
                   ),
@@ -141,7 +142,7 @@ void main() {
             label: 'Open register dialog',
             onPressed: () {
               unawaited(
-                showAppDialog<bool>(
+                showAppDialog<Patient>(
                   context: context,
                   builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
@@ -149,10 +150,10 @@ void main() {
                       defaultTenantId: 'tenant-1',
                       defaultFacilityId: 'facility-1',
                     ),
-                    onSubmit: (Map<String, Object?> payload) async {
-                      submittedPayload = payload;
-                      return null;
-                    },
+                      onSubmit: (Map<String, Object?> payload) async {
+                        submittedPayload = payload;
+                        return _registeredPatientResult(payload);
+                      },
                   ),
                 ),
               );
@@ -193,7 +194,7 @@ void main() {
               label: 'Open register dialog',
               onPressed: () {
                 unawaited(
-                  showAppDialog<bool>(
+                  showAppDialog<Patient>(
                     context: context,
                     builder: (_) => RegisterNewPatientDialog(
                       referenceData: const PatientReferenceData(
@@ -215,7 +216,7 @@ void main() {
                         showTenantPicker: true,
                         showFacilityPicker: true,
                       ),
-                      onSubmit: (_) async => null,
+                      onSubmit: (_) async => _registeredPatientResult(const {}),
                     ),
                   ),
                 );
@@ -248,14 +249,14 @@ void main() {
             label: 'Open register dialog',
             onPressed: () {
               unawaited(
-                showAppDialog<bool>(
+                showAppDialog<Patient>(
                   context: context,
                   builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
-                    onSubmit: (Map<String, Object?> payload) async {
-                      submittedPayload = payload;
-                      return null;
-                    },
+                      onSubmit: (Map<String, Object?> payload) async {
+                        submittedPayload = payload;
+                        return _registeredPatientResult(payload);
+                      },
                   ),
                 ),
               );
@@ -288,11 +289,11 @@ void main() {
               label: 'Open register dialog',
               onPressed: () {
                 unawaited(
-                  showAppDialog<bool>(
+                  showAppDialog<Patient>(
                     context: context,
                     builder: (_) => RegisterNewPatientDialog(
                       referenceData: const PatientReferenceData(),
-                      onSubmit: (_) async => null,
+                      onSubmit: (_) async => _registeredPatientResult(const {}),
                     ),
                   ),
                 );
@@ -371,6 +372,54 @@ void main() {
     expect(find.text('Open record'), findsNothing);
   });
 
+  testWidgets('RegisterNewPatientDialog opens patient detail dialog after save', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    const createdPatient = Patient(
+      id: 'patient-new-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+    );
+
+    _stubPatientRegistry(patientRepository, createdPatient);
+    _stubProviderLookup(opdRepository);
+    when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
+      (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
+        AppPage<PatientDuplicateCandidate>(
+          items: <PatientDuplicateCandidate>[],
+          request: AppPageRequest(pageSize: 8),
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => patientRepository.createPatient(any())).thenAnswer(
+      (_) async => const Result<Patient>.success(createdPatient),
+    );
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1400, 900),
+      roles: const <String>['SUPER_ADMIN'],
+    );
+
+    await tester.tap(find.text('Register patient'));
+    await tester.pumpAndSettle();
+    await _fillRegisterPatientBasics(
+      tester,
+      firstName: 'Amina',
+      lastName: 'Kato',
+    );
+    await tester.tap(find.text('Register patient').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
+    expect(find.text('Amina Kato'), findsWidgets);
+  });
+
   testWidgets('RegisterNewPatientDialog surfaces submit failures', (
     WidgetTester tester,
   ) async {
@@ -382,11 +431,12 @@ void main() {
             label: 'Open failing form',
             onPressed: () {
               unawaited(
-                showAppDialog<bool>(
+                showAppDialog<Patient>(
                   context: context,
                   builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
-                    onSubmit: (_) async => const AppFailure.forbidden(),
+                    onSubmit: (_) async =>
+                        const Result<Patient>.failure(AppFailure.forbidden()),
                   ),
                 ),
               );
@@ -1021,4 +1071,14 @@ Future<void> _pumpPatientRegistry(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Result<Patient> _registeredPatientResult(Map<String, Object?> payload) {
+  return Result<Patient>.success(
+    Patient(
+      id: 'patient-new-1',
+      firstName: payload['first_name'] as String? ?? 'Patient',
+      lastName: payload['last_name'] as String?,
+    ),
+  );
 }
