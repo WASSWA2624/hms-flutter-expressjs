@@ -4319,7 +4319,7 @@ abstract class AppLocalizations {
   /// Patient column label.
   ///
   /// In en, this message translates to:
-  /// **'Patient'**
+  /// **'Patient name'**
   String get opdPatientColumnLabel;
 
   /// Category column label for the main OPD table.
@@ -4343,7 +4343,7 @@ abstract class AppLocalizations {
   /// Queue and status column label for the main OPD table.
   ///
   /// In en, this message translates to:
-  /// **'Queue / status'**
+  /// **'Queue status'**
   String get opdQueueStatusColumnLabel;
 
   /// Arrival time column label.
@@ -4916,6 +4916,48 @@ abstract class AppLocalizations {
   /// **'Arrival mode'**
   String get opdArrivalModeLabel;
 
+  /// Arrival mode column label for the OPD worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival mode'**
+  String get opdArrivalModeColumnLabel;
+
+  /// Hospital-language label for walk-in OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in'**
+  String get opdArrivalModeWalkInLabel;
+
+  /// Hospital-language label for appointment OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment'**
+  String get opdArrivalModeAppointmentLabel;
+
+  /// Hospital-language label for emergency OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get opdArrivalModeEmergencyLabel;
+
+  /// Hospital-language label for follow-up OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up'**
+  String get opdArrivalModeFollowUpLabel;
+
+  /// OPD encounter column label for the worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD encounter'**
+  String get opdEncounterColumnLabel;
+
+  /// Encounter ID search field label for the OPD worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get opdEncounterIdLabel;
+
   /// Emergency severity field label.
   ///
   /// In en, this message translates to:
@@ -5401,6 +5443,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add patient'**
   String get patientsAddAction;
+
+  /// Toolbar action to open the register-new-patient dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Register patient'**
+  String get patientsRegisterPatientAction;
+
+  /// Title for the global register-new-patient dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Register new patient'**
+  String get patientsRegisterNewPatientTitle;
+
+  /// Submit action for the register-new-patient dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Register patient'**
+  String get patientsRegisterNewPatientAction;
 
   /// Emergency patient registration action label.
   ///

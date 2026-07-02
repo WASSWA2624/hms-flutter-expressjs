@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_column_visibility_memory.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -121,6 +122,23 @@ int appListTableCompareNumber(num? left, num? right) {
   return left.compareTo(right);
 }
 
+String appListTableColumnVisibilityStorageKey<T>(
+  List<AppListTableColumn<T>> columns,
+  List<AppListTableColumn<T>>? columnChoices,
+) {
+  final Set<String> schemaKeys = <String>{};
+  for (final AppListTableColumn<T> column in columns) {
+    schemaKeys.add(column.key);
+  }
+  for (final AppListTableColumn<T> column in columnChoices ??
+      <AppListTableColumn<T>>[]) {
+    schemaKeys.add(column.key);
+  }
+
+  final List<String> sortedKeys = schemaKeys.toList(growable: false)..sort();
+  return sortedKeys.join('\u0001');
+}
+
 /// Whether [AppListTable.isLoading] should replace the table body with a skeleton.
 ///
 /// Keeps already-fetched rows visible during background refresh; only the initial
@@ -133,12 +151,17 @@ bool appListTableShowsInitialLoading({
 }
 
 class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
+  AppListTableColumnVisibilityController({this.storageKey});
+
+  final String? storageKey;
+
   List<AppListTableColumn<T>> _availableColumns = <AppListTableColumn<T>>[];
   Set<String> _visibleColumnKeys = <String>{};
 
   void syncColumns({
     required List<AppListTableColumn<T>> columns,
     List<AppListTableColumn<T>>? columnChoices,
+    String? storageKey,
   }) {
     final List<AppListTableColumn<T>> nextColumns = _availableColumnsFor(
       columns,
@@ -156,10 +179,11 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     }
 
     _availableColumns = nextColumns;
-    _visibleColumnKeys = appListTableDefaultVisibleColumns(
-      nextColumns,
-      defaultColumns: columns,
-    ).map((AppListTableColumn<T> column) => column.key).toSet();
+    _visibleColumnKeys = _resolveVisibleColumnKeys(
+      columns: columns,
+      availableColumns: nextColumns,
+      storageKey: storageKey,
+    );
     notifyListeners();
   }
 
@@ -219,6 +243,7 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     String? title,
     String? applyLabel,
     String? resetLabel,
+    String? storageKey,
   }) async {
     if (!canConfigure) {
       return;
@@ -240,6 +265,7 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     }
 
     _visibleColumnKeys = _withAlwaysVisibleColumnKeys(value);
+    _persistVisibleColumnKeys(storageKey);
     notifyListeners();
   }
 
@@ -264,6 +290,48 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
       for (final AppListTableColumn<T> column in _availableColumns)
         if (column.alwaysVisible) column.key,
     };
+  }
+
+  Set<String> _resolveVisibleColumnKeys({
+    required List<AppListTableColumn<T>> columns,
+    required List<AppListTableColumn<T>> availableColumns,
+    String? storageKey,
+  }) {
+    final Set<String> availableKeys = availableColumns
+        .map((AppListTableColumn<T> column) => column.key)
+        .toSet();
+    final String? resolvedStorageKey = _resolvedStorageKey(storageKey);
+    final Set<String>? savedKeys = resolvedStorageKey == null
+        ? null
+        : AppListTableColumnVisibilityMemory.instance.read(resolvedStorageKey);
+    if (savedKeys != null) {
+      final Set<String> restoredKeys = savedKeys
+          .where(availableKeys.contains)
+          .toSet();
+      if (restoredKeys.isNotEmpty) {
+        return _withAlwaysVisibleColumnKeys(restoredKeys);
+      }
+    }
+
+    return appListTableDefaultVisibleColumns(
+      availableColumns,
+      defaultColumns: columns,
+    ).map((AppListTableColumn<T> column) => column.key).toSet();
+  }
+
+  String? _resolvedStorageKey(String? override) {
+    return override ?? storageKey;
+  }
+
+  void _persistVisibleColumnKeys(String? storageKey) {
+    final String? resolvedStorageKey = _resolvedStorageKey(storageKey);
+    if (resolvedStorageKey == null) {
+      return;
+    }
+    AppListTableColumnVisibilityMemory.instance.write(
+      resolvedStorageKey,
+      _visibleColumnKeys,
+    );
   }
 }
 
@@ -459,6 +527,7 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityApplyLabel,
     this.columnVisibilityResetLabel,
     this.columnVisibilityController,
+    this.columnVisibilityStorageKey,
     super.key,
   }) : assert(
          items != null || page != null,
@@ -501,6 +570,7 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnVisibilityApplyLabel;
   final String? columnVisibilityResetLabel;
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
+  final String? columnVisibilityStorageKey;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -942,10 +1012,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   void _syncVisibleColumns() {
     final AppListTableColumnVisibilityController<T>? controller =
         widget.columnVisibilityController;
+    final String? storageKey = _resolvedColumnVisibilityStorageKey();
     if (controller != null) {
       controller.syncColumns(
         columns: widget.columns,
         columnChoices: widget.columnChoices,
+        storageKey: storageKey,
       );
       return;
     }
@@ -959,7 +1031,21 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         .toSet();
 
     if (next.isEmpty) {
-      next.addAll(_defaultColumnKeys);
+      final Set<String>? savedKeys = storageKey == null
+          ? null
+          : AppListTableColumnVisibilityMemory.instance.read(storageKey);
+      if (savedKeys != null) {
+        final Set<String> restoredKeys = savedKeys
+            .where(availableKeys.contains)
+            .toSet();
+        if (restoredKeys.isNotEmpty) {
+          next.addAll(_withAlwaysVisibleColumnKeys(restoredKeys));
+        } else {
+          next.addAll(_defaultColumnKeys);
+        }
+      } else {
+        next.addAll(_defaultColumnKeys);
+      }
     }
 
     _visibleColumnKeys = next;
@@ -1015,12 +1101,14 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   Future<void> _openColumnVisibilityDialog() async {
     final AppListTableColumnVisibilityController<T>? controller =
         widget.columnVisibilityController;
+    final String? storageKey = _resolvedColumnVisibilityStorageKey();
     if (controller != null) {
       await controller.openColumnVisibilityDialog(
         context,
         title: widget.columnVisibilityTitle,
         applyLabel: widget.columnVisibilityApplyLabel,
         resetLabel: widget.columnVisibilityResetLabel,
+        storageKey: storageKey,
       );
       return;
     }
@@ -1049,6 +1137,31 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         _sortAscending = true;
       }
     });
+    _persistVisibleColumnKeys(storageKey);
+  }
+
+  String? _resolvedColumnVisibilityStorageKey() {
+    final String? explicitKey = widget.columnVisibilityStorageKey;
+    if (explicitKey != null) {
+      return explicitKey;
+    }
+    if (widget.columnVisibilityController?.storageKey != null) {
+      return widget.columnVisibilityController!.storageKey;
+    }
+    return appListTableColumnVisibilityStorageKey(
+      widget.columns,
+      widget.columnChoices,
+    );
+  }
+
+  void _persistVisibleColumnKeys(String? storageKey) {
+    if (storageKey == null) {
+      return;
+    }
+    AppListTableColumnVisibilityMemory.instance.write(
+      storageKey,
+      _visibleColumnKeys,
+    );
   }
 
   String get _columnVisibilityLabel {

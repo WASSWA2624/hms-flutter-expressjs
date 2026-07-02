@@ -24,6 +24,22 @@ String opdNextStepDisplayLabel(AppLocalizations l10n, String? value) {
       AppDisplay.apiLabel(code);
 }
 
+/// Maps backend `arrival_mode` values to hospital-language labels.
+String opdArrivalModeDisplayLabel(AppLocalizations l10n, String? value) {
+  final String code = (value ?? '').trim().toUpperCase();
+  if (code.isEmpty) {
+    return '';
+  }
+  return switch (code) {
+    'WALK_IN' => l10n.opdArrivalModeWalkInLabel,
+    'ONLINE_APPOINTMENT' ||
+    'APPOINTMENT' => l10n.opdArrivalModeAppointmentLabel,
+    'EMERGENCY' => l10n.opdArrivalModeEmergencyLabel,
+    'FOLLOW_UP' || 'REVIEW' => l10n.opdArrivalModeFollowUpLabel,
+    _ => AppDisplay.apiLabel(code),
+  };
+}
+
 /// Maps triage priority levels (and their hospital-language aliases) to a
 /// localized, hospital-friendly label so raw enum values never reach the UI.
 String triageLevelDisplayLabel(

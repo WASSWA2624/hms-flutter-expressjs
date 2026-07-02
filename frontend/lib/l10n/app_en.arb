@@ -2666,11 +2666,11 @@
   "opdNoActivityBody": "OPD activity appears once encounters start moving.",
   "opdNoSummaryPatientsTitle": "No patients",
   "opdNoSummaryPatientsBody": "Matching OPD patients will appear here.",
-  "opdPatientColumnLabel": "Patient",
+  "opdPatientColumnLabel": "Patient name",
   "opdCategoryColumnLabel": "Category",
   "opdStatusColumnLabel": "Status",
   "opdVisitTypeColumnLabel": "Visit type",
-  "opdQueueStatusColumnLabel": "Queue / status",
+  "opdQueueStatusColumnLabel": "Queue status",
   "opdTimeColumnLabel": "Arrival time",
   "opdWaitingTimeColumnLabel": "Wait time",
   "opdProviderColumnLabel": "Assigned staff",
@@ -2809,6 +2809,13 @@
   "opdDecisionLabel": "Decision",
   "opdRouteDecisionLabel": "Route decision",
   "opdArrivalModeLabel": "Arrival mode",
+  "opdArrivalModeColumnLabel": "Arrival mode",
+  "opdArrivalModeWalkInLabel": "Walk-in",
+  "opdArrivalModeAppointmentLabel": "Appointment",
+  "opdArrivalModeEmergencyLabel": "Emergency",
+  "opdArrivalModeFollowUpLabel": "Follow-up",
+  "opdEncounterColumnLabel": "OPD encounter",
+  "opdEncounterIdLabel": "Encounter ID",
   "opdEmergencySeverityLabel": "Emergency severity",
   "opdTriageLevelLabel": "Triage level",
   "opdTriageLevel1Label": "Level 1 · Immediate",
@@ -3451,6 +3458,27 @@
   "@opdArrivalModeLabel": {
     "description": "Arrival mode field label."
   },
+  "@opdArrivalModeColumnLabel": {
+    "description": "Arrival mode column label for the OPD worklist."
+  },
+  "@opdArrivalModeWalkInLabel": {
+    "description": "Hospital-language label for walk-in OPD arrivals."
+  },
+  "@opdArrivalModeAppointmentLabel": {
+    "description": "Hospital-language label for appointment OPD arrivals."
+  },
+  "@opdArrivalModeEmergencyLabel": {
+    "description": "Hospital-language label for emergency OPD arrivals."
+  },
+  "@opdArrivalModeFollowUpLabel": {
+    "description": "Hospital-language label for follow-up OPD arrivals."
+  },
+  "@opdEncounterColumnLabel": {
+    "description": "OPD encounter column label for the worklist."
+  },
+  "@opdEncounterIdLabel": {
+    "description": "Encounter ID search field label for the OPD worklist."
+  },
   "@opdEmergencySeverityLabel": {
     "description": "Emergency severity field label."
   },
@@ -3629,6 +3657,18 @@
   "patientsAddAction": "Add patient",
   "@patientsAddAction": {
     "description": "Create patient action label."
+  },
+  "patientsRegisterPatientAction": "Register patient",
+  "@patientsRegisterPatientAction": {
+    "description": "Toolbar action to open the register-new-patient dialog."
+  },
+  "patientsRegisterNewPatientTitle": "Register new patient",
+  "@patientsRegisterNewPatientTitle": {
+    "description": "Title for the global register-new-patient dialog."
+  },
+  "patientsRegisterNewPatientAction": "Register patient",
+  "@patientsRegisterNewPatientAction": {
+    "description": "Submit action for the register-new-patient dialog."
   },
   "patientsEmergencyRegisterAction": "Emergency registration",
   "@patientsEmergencyRegisterAction": {

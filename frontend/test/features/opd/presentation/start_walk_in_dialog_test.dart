@@ -31,6 +31,7 @@ void main() {
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const PatientDuplicateQuery());
   });
 
   testWidgets('OpdEncounterDialog loads and submits the new patient flow', (
@@ -68,6 +69,20 @@ void main() {
       (_) async =>
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
     );
+    when(() => patientRepository.loadReferenceData()).thenAnswer(
+      (_) async => const Result<PatientReferenceData>.success(
+        PatientReferenceData(),
+      ),
+    );
+    when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
+      (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
+        AppPage<PatientDuplicateCandidate>(
+          items: <PatientDuplicateCandidate>[],
+          request: AppPageRequest(pageSize: 8),
+          totalItemCount: 0,
+        ),
+      ),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -100,19 +115,18 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('First name *'), findsOneWidget);
-    expect(find.text('Last name *'), findsOneWidget);
-    expect(find.text('Gender (optional)'), findsOneWidget);
+    expect(find.textContaining('Last name'), findsOneWidget);
 
     await tester.enterText(find.byType(EditableText).at(0), 'Jane');
     await tester.enterText(find.byType(EditableText).at(1), 'Doe');
     await tester.tap(find.text('Start encounter').last);
     await tester.pumpAndSettle();
 
-    expect(submittedPayload?['patient_registration'], <String, Object?>{
-      'first_name': 'Jane',
-      'last_name': 'Doe',
-      'gender': null,
-    });
+    final Map<String, Object?>? registration =
+        submittedPayload?['patient_registration'] as Map<String, Object?>?;
+    expect(registration?['first_name'], 'Jane');
+    expect(registration?['last_name'], 'Doe');
+    expect(registration?['gender'], isNull);
     expect(submittedPayload?['arrival_mode'], 'WALK_IN');
     expect(submittedPayload?['require_consultation_payment'], isTrue);
     expect(submittedPayload?['create_consultation_invoice'], isTrue);
@@ -822,6 +836,20 @@ void _stubStartDialogLookups({
   when(() => opdRepository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(() => patientRepository.loadReferenceData()).thenAnswer(
+    (_) async => const Result<PatientReferenceData>.success(
+      PatientReferenceData(),
+    ),
+  );
+  when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
+    (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
+      AppPage<PatientDuplicateCandidate>(
+        items: <PatientDuplicateCandidate>[],
+        request: AppPageRequest(pageSize: 8),
+        totalItemCount: 0,
+      ),
+    ),
   );
 }
 

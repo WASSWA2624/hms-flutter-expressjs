@@ -1,80 +1,126 @@
-# Subscription Upgrade CTA & Payment Dialog — Implementation Prompt
+# Register New Patient — Global Dialog Prompt
 
 ## Objective
 
-Add a **persistent, state-aware subscription button** to the authenticated app header and a **modal upgrade/activation flow** so tenants can discover plans, submit payment, and notify platform admins without leaving their current workspace.
+Introduce a single, reusable **Register new patient** dialog for first-time patient master-record creation across HOSSPI HMS. On the **Patient registry** screen, replace the **Emergency registration** toolbar action with **Register patient** and open this dialog. Registration must create the patient record only — no OPD encounter, IPD admission, emergency queue, or other downstream workflow.
 
-**Parent prompts:** [prompts/02-subscriptions-module-prompt.md](./prompts/02-subscriptions-module-prompt.md), [prompt.md](./prompt.md)
+**Source of truth:**
 
----
-
-## Header Subscription Button
-
-Place a prominent **Upgrade / Subscription** control in the **app shell header** (visible on all authenticated routes), with both an **icon** and a **text label**.
-
-| Subscription state | Visual treatment | Label (i18n) |
-|------------------|------------------|--------------|
-| **Active** (paid or trial, healthy) | Theme success color (green/blue per theme); optional check/tick affordance | e.g. “Subscribed” / “Active” |
-| **Expiring soon** (within configurable threshold, e.g. 14 days) | Warning color (orange) | e.g. “Renew soon” / “Expires in {n} days” |
-| **Expired / past due** | Error color (red) | e.g. “Subscription expired” / “Upgrade required” |
-
-- Derive state from tenant subscription (`status`, `ends_at` / trial end) in session or workspace data — do not hardcode thresholds in UI widgets.
-- **Tap** opens the subscription upgrade/activation dialog (modal; no route navigation).
-- Compact breakpoints may collapse to icon + tooltip; full label remains on larger layouts.
+1. [`.cursor/app-write-up.mdc`](.cursor/app-write-up.mdc) — one patient master record per person; registry owns demographics, not clinical queues
+2. [`.cursor/flows/opd-flow.mdc`](.cursor/flows/opd-flow.mdc) §2 — search existing patient first; register only when no match
+3. [prompts/08-patients-module-prompt.md](prompts/08-patients-module-prompt.md) — modal-first registry patterns
 
 ---
 
-## Upgrade / Activation Dialog
+## Current state
 
-Single in-page dialog (or bottom sheet on narrow viewports) opened from the header button or subscription workspace.
+| Area | Location | Notes |
+| ---- | -------- | ----- |
+| Registry primary action | `patient_registry_page.dart` | **Add patient** → `PatientFormDialog` (full form, duplicate check) |
+| Registry secondary action | `patient_registry_page.dart` | **Emergency registration** → `EmergencyPatientFormDialog` (minimal fields) |
+| Dialog implementations | `patient_registry_page.dart` (~7k lines) | `PatientFormDialog`, `EmergencyPatientFormDialog` are page-local, not shared |
+| OPD intake | `shared/components/opd_encounter_dialog.dart` | Embeds its own inline new-patient fields inside **Start OPD encounter** |
+| Dialog shell | `shared/components/app_dialog.dart` | Supports `initialMaximized`, resize, maximize/minimize |
 
-### Plan selection
-
-- List available plans (Basic, Pro, Advanced, Custom, trial → paid) with clear tier comparison.
-- Default selection should reflect current plan or recommended upgrade.
-- Initiation and plan discovery must be **one or two steps** — no buried navigation.
-
-### Payment methods
-
-Support multiple paths in the same dialog:
-
-| Method | Behavior |
-|--------|----------|
-| **Manual / bank transfer** | Tenant uploads **proof of payment** (image/PDF); optional reference number and amount fields. |
-| **Mobile money** | Provider selection + payment instructions or deep link where integrated. |
-| **Card (Visa, etc.)** | Checkout or collect flow when payment provider is configured. |
-| **Other** | Extensible list driven by backend-supported methods. |
-
-### Platform admin contact & notification
-
-- Show **platform admin contact details** in the dialog (email, phone with `mailto:` / `tel:` links) so tenants can call or email after paying.
-- On proof-of-payment submit (and other payment initiation where applicable):
-  - **Send email** to platform admin(s) with tenant name, plan, amount, and payment reference.
-  - Create or update a **pending payment / subscription request** record visible in platform admin workspace.
-- Platform admin reviews the request and **activates** or approves the subscription (existing admin activation flow).
+**Problem:** three overlapping registration UIs; emergency registration is a separate minimal path; no global component for “register patient only.”
 
 ---
 
-## Acceptance Criteria
+## Scoped work
 
-- [ ] Header button is visible on authenticated shell; icon + label; state-driven color and copy.
-- [ ] Active, expiring-soon, and expired states render correctly from live subscription data.
-- [ ] Dialog opens from header button; plan selection and payment method choice are straightforward.
-- [ ] Manual payment supports proof upload; submission notifies platform admin (email + admin queue).
-- [ ] Admin contact info (email, phone) is shown in the payment section.
-- [ ] All strings in `app_en.arb`; follows design system and modal-first patterns.
-- [ ] Quality gate: `flutter analyze`, `flutter test`, targeted backend tests for payment-notification endpoints.
+### 1. Patient registry toolbar
+
+| Change | Detail |
+| ------ | ------ |
+| Remove | Secondary **Emergency registration** button (`patientsEmergencyRegisterAction`) |
+| Add / consolidate | One **Register patient** entry point with an appropriate icon (e.g. `Icons.person_add_alt_1_outlined`) |
+| Avoid duplication | Do not leave both **Add patient** and **Register patient** if they open the same flow — keep a single registration action on the registry toolbar |
+
+### 2. Global shared component
+
+Extract and define **`RegisterNewPatientDialog`** (name may vary) under `frontend/lib/shared/` (e.g. `shared/components/` or `shared/patient_actions/`), exported from the shared barrel.
+
+| Requirement | Detail |
+| ----------- | ------ |
+| Title | **Register new patient** (new i18n key, e.g. `patientsRegisterNewPatientTitle`) |
+| Shell | `AppDialog` with `initialMaximized: true`, `resizable: true`, `showMaximizeButton: true` — same interaction model as large workspace dialogs (e.g. **Start OPD encounter**) |
+| Form | Reuse existing shared form primitives: `AppFormShell`, `AppTextField`, `PatientPhoneField`, `AppGenderField`, `AppDateField`, `AppResponsiveFieldRow`, etc. |
+| Behaviour | Create-only (`POST /patients`); duplicate lookup before save (reuse `PatientFormDialog` logic); no edit mode in this component |
+| API wiring | Caller supplies `onSubmit` / `onLookupDuplicates` / `referenceData` via constructor callbacks — dialog stays presentation-only |
+| Scope | **Registration only** — on success, return the created `Patient` (or `true`); do not start OPD, emergency, or IPD flows from inside the dialog |
+
+**Suggested fields (minimum viable registration):**
+
+- First name, last name (required)
+- Phone, email (optional where backend allows)
+- Date of birth, gender (optional but supported)
+- Primary identifier type/value (optional)
+- Facility (when reference data requires it)
+- Notes (optional)
+
+Do **not** include emergency-only copy (“complete after urgent care”) or OPD routing/billing sections.
+
+### 3. Adoption (reuse everywhere)
+
+Replace page-local and inline first-time registration UIs with the shared dialog:
+
+| Call site | Action |
+| --------- | ------ |
+| `patient_registry_page.dart` | Open `RegisterNewPatientDialog` from toolbar; remove `EmergencyPatientFormDialog` usage |
+| `opd_encounter_dialog.dart` | When mode = new patient, open or embed the same shared form — do not maintain a second field set |
+| Other modules | Grep for `createPatient`, `EmergencyPatientFormDialog`, `PatientFormDialog` (create path), and inline registration forms; migrate to the shared dialog |
+
+Keep **`PatientFormDialog`** (or equivalent) for **editing** existing patients only, or refactor edit into a separate shared component if needed — out of scope for create-only registration.
+
+### 4. i18n
+
+- Add/update keys in `frontend/lib/l10n/app_en.arb` only (per locale-development rule)
+- New labels: toolbar action, dialog title, body/helper (if any), submit action (e.g. `patientsRegisterNewPatientAction`)
+- Retire or repurpose unused emergency-registration toolbar strings only if no other screen uses them
 
 ---
 
-## Key References
+## Out of scope
 
-```
-frontend/lib/app/router/app_router.dart          — _AppShell / ResponsiveAppShell
-frontend/lib/shared/layout/responsive_shell_scaffold.dart
-frontend/lib/features/subscriptions/
-frontend/lib/core/security/auth_session.dart     — entitlements / subscription in session
-backend/src/modules/subscription/
-backend/src/modules/subscriptions-workspace/
-backend/src/config/env.js                        — admin contact / notification config
+- Starting OPD, emergency, or IPD workflows after registration
+- Full patient chart / documents / consent / merge workflows
+- Backend schema changes (use existing patient create API)
+- Removing **Edit patient** flows
+
+---
+
+## Acceptance criteria
+
+- [ ] Patient registry shows **Register patient** (not **Emergency registration**); one clear registration entry point
+- [ ] Clicking opens **Register new patient** in a maximized-by-default, resizable `AppDialog`
+- [ ] Submitting creates a patient master record only; no automatic encounter or queue handoff
+- [ ] `RegisterNewPatientDialog` lives in `frontend/lib/shared/` and is imported by registry and OPD (at minimum)
+- [ ] Duplicate-candidate warning still blocks unsafe duplicate saves
+- [ ] All user-visible strings use i18n keys in `app_en.arb`
+- [ ] `flutter analyze` and patient registry / shared dialog tests pass
+
+---
+
+## Implementation pointers
+
+| Area | Location |
+| ---- | -------- |
+| Registry toolbar & wiring | `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart` |
+| Existing full create form (extract from) | `PatientFormDialog` in same file |
+| Existing minimal emergency form (remove) | `EmergencyPatientFormDialog` in same file |
+| OPD inline registration | `frontend/lib/shared/components/opd_encounter_dialog.dart` |
+| Dialog shell | `frontend/lib/shared/components/app_dialog.dart` |
+| Patient create API | `patient_registry_controller.dart` → `createPatient` |
+| Tests | `frontend/test/features/patients/presentation/patient_registry_page_test.dart` |
+
+---
+
+## Quality gate
+
+From `frontend/`:
+
+```bash
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test test/features/patients/
 ```

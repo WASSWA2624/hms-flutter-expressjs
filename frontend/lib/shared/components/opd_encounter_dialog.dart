@@ -20,20 +20,18 @@ import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
-import 'package:hosspi_hms/shared/components/app_gender_field.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
-import 'package:hosspi_hms/shared/forms/app_validators.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
 
@@ -171,14 +169,15 @@ class OpdEncounterDialog extends ConsumerStatefulWidget {
 
 class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _newPatientFirstNameController;
-  late final TextEditingController _newPatientLastNameController;
+  final GlobalKey<RegisterNewPatientFormState> _newPatientFormKey =
+      GlobalKey<RegisterNewPatientFormState>();
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
   late final TextEditingController _transactionRefController;
   List<Patient> _patientOptions = const <Patient>[];
   List<OpdAppointment> _appointmentOptions = const <OpdAppointment>[];
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
+  PatientReferenceData _patientReferenceData = const PatientReferenceData();
   _WalkInPatientMode _patientMode = _WalkInPatientMode.existing;
   bool _isLoadingPatients = false;
   bool _isLoadingAppointments = false;
@@ -188,7 +187,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   String? _appointmentId;
   String? _providerId;
   OpdFlowSummary? _activeEncounter;
-  String? _newPatientGender;
   String _currency = appDefaultCurrencyCode;
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
@@ -204,8 +202,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   @override
   void initState() {
     super.initState();
-    _newPatientFirstNameController = TextEditingController();
-    _newPatientLastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
     _transactionRefController = TextEditingController();
@@ -233,6 +229,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     unawaited(_loadPatientOptions());
     unawaited(_loadAppointmentOptions());
     unawaited(_loadProviderOptions());
+    unawaited(_loadPatientReferenceData());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _applyInitialContext();
@@ -243,8 +240,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
   @override
   void dispose() {
-    _newPatientFirstNameController.dispose();
-    _newPatientLastNameController.dispose();
     _feeController.dispose();
     _notesController.dispose();
     _transactionRefController.dispose();
@@ -751,6 +746,17 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (_isSaving) {
       return;
     }
+    if (_patientMode == _WalkInPatientMode.newPatient) {
+      final RegisterNewPatientFormState? formState =
+          _newPatientFormKey.currentState;
+      if (formState != null) {
+        final bool canContinue = await formState.prepareSubmit();
+        if (!canContinue) {
+          setState(() {});
+          return;
+        }
+      }
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -833,54 +839,17 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             ? null
             : l10n.validationRequired,
       ),
-      _WalkInPatientMode.newPatient => AppFormSection(
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          AppResponsiveFieldRow.two(
-            left: AppTextField(
-              controller: _newPatientFirstNameController,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdFirstNameLabel),
-              semanticLabel: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdFirstNameLabel,
-              ),
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            right: AppTextField(
-              controller: _newPatientLastNameController,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdLastNameLabel),
-              semanticLabel: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdLastNameLabel,
-              ),
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-          ),
-          AppGenderField(
-            value: _newPatientGender,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
-            semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
-            maleLabel: l10n.patientsGenderMale,
-            femaleLabel: l10n.patientsGenderFemale,
-            otherLabel: l10n.patientsGenderOther,
-            unknownLabel: l10n.patientsGenderUnknown,
-            includeUnknown: false,
-            enabled: !_isSaving,
-            onChanged: (String? value) {
-              setState(() {
-                _newPatientGender = value;
-              });
-            },
-          ),
-        ],
+      _WalkInPatientMode.newPatient => RegisterNewPatientForm(
+        key: _newPatientFormKey,
+        referenceData: _patientReferenceData,
+        enabled: !_isSaving,
+        includeNotes: false,
+        includeActiveToggle: false,
+        onLookupDuplicates: (PatientDuplicateQuery query) {
+          return ref
+              .read(patientRepositoryProvider)
+              .listDuplicateCandidates(query);
+        },
       ),
     };
   }
@@ -1147,11 +1116,26 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Map<String, Object?> _newPatientRegistrationPayload() {
-    return <String, Object?>{
-      'first_name': _newPatientFirstNameController.text.trim(),
-      'last_name': _newPatientLastNameController.text.trim(),
-      'gender': _newPatientGender,
-    };
+    return _newPatientFormKey.currentState?.buildPayload() ??
+        const <String, Object?>{};
+  }
+
+  Future<void> _loadPatientReferenceData() async {
+    final Result<PatientReferenceData> result = await ref
+        .read(patientRepositoryProvider)
+        .loadReferenceData();
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (PatientReferenceData data) {
+        setState(() {
+          _patientReferenceData = data;
+        });
+      },
+      failure: (_) {},
+    );
   }
 
   Future<void> _loadPatientOptions() async {

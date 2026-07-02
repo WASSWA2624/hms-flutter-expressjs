@@ -2213,7 +2213,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Matching OPD patients will appear here.';
 
   @override
-  String get opdPatientColumnLabel => 'Patient';
+  String get opdPatientColumnLabel => 'Patient name';
 
   @override
   String get opdCategoryColumnLabel => 'Category';
@@ -2225,7 +2225,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdVisitTypeColumnLabel => 'Visit type';
 
   @override
-  String get opdQueueStatusColumnLabel => 'Queue / status';
+  String get opdQueueStatusColumnLabel => 'Queue status';
 
   @override
   String get opdTimeColumnLabel => 'Arrival time';
@@ -2532,6 +2532,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdArrivalModeLabel => 'Arrival mode';
 
   @override
+  String get opdArrivalModeColumnLabel => 'Arrival mode';
+
+  @override
+  String get opdArrivalModeWalkInLabel => 'Walk-in';
+
+  @override
+  String get opdArrivalModeAppointmentLabel => 'Appointment';
+
+  @override
+  String get opdArrivalModeEmergencyLabel => 'Emergency';
+
+  @override
+  String get opdArrivalModeFollowUpLabel => 'Follow-up';
+
+  @override
+  String get opdEncounterColumnLabel => 'OPD encounter';
+
+  @override
+  String get opdEncounterIdLabel => 'Encounter ID';
+
+  @override
   String get opdEmergencySeverityLabel => 'Emergency severity';
 
   @override
@@ -2777,6 +2798,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsAddAction => 'Add patient';
+
+  @override
+  String get patientsRegisterPatientAction => 'Register patient';
+
+  @override
+  String get patientsRegisterNewPatientTitle => 'Register new patient';
+
+  @override
+  String get patientsRegisterNewPatientAction => 'Register patient';
 
   @override
   String get patientsEmergencyRegisterAction => 'Emergency registration';

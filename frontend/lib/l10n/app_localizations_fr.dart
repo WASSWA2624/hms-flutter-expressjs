@@ -2555,6 +2555,27 @@ class AppLocalizationsFr extends AppLocalizations {
   String get opdArrivalModeLabel => 'Mode d\'arrivée';
 
   @override
+  String get opdArrivalModeColumnLabel => 'Arrival mode';
+
+  @override
+  String get opdArrivalModeWalkInLabel => 'Walk-in';
+
+  @override
+  String get opdArrivalModeAppointmentLabel => 'Appointment';
+
+  @override
+  String get opdArrivalModeEmergencyLabel => 'Emergency';
+
+  @override
+  String get opdArrivalModeFollowUpLabel => 'Follow-up';
+
+  @override
+  String get opdEncounterColumnLabel => 'OPD encounter';
+
+  @override
+  String get opdEncounterIdLabel => 'Encounter ID';
+
+  @override
   String get opdEmergencySeverityLabel => 'Gravité de l\'urgence';
 
   @override
@@ -2801,6 +2822,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get patientsAddAction => 'Ajouter un patient';
+
+  @override
+  String get patientsRegisterPatientAction => 'Register patient';
+
+  @override
+  String get patientsRegisterNewPatientTitle => 'Register new patient';
+
+  @override
+  String get patientsRegisterNewPatientAction => 'Register patient';
 
   @override
   String get patientsEmergencyRegisterAction => 'Emergency inscription';

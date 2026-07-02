@@ -173,32 +173,16 @@ class _PatientRegistryContentState
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.primary(
               leadingIcon: Icons.person_add_alt_1_outlined,
-              label: l10n.patientsAddAction,
-              semanticLabel: l10n.patientsAddAction,
-              tooltip: l10n.patientsAddAction,
+              label: l10n.patientsRegisterPatientAction,
+              semanticLabel: l10n.patientsRegisterPatientAction,
+              tooltip: l10n.patientsRegisterPatientAction,
               enabled: isAllowed,
               onPressed: () {
-                _openPatientForm(context, ref);
+                _openRegisterPatientDialog(context, ref);
               },
             );
           },
         ),
-        secondary: <Widget>[
-          AppAccessActionGate(
-            requirement: _PatientRegistryContent._writeRequirement,
-            builder: (BuildContext context, bool isAllowed) =>
-                AppButton.secondary(
-                  leadingIcon: Icons.emergency_outlined,
-                  label: l10n.patientsEmergencyRegisterAction,
-                  semanticLabel: l10n.patientsEmergencyRegisterAction,
-                  tooltip: l10n.patientsEmergencyRegisterAction,
-                  enabled: isAllowed,
-                  onPressed: () {
-                    _openEmergencyRegistration(context, ref);
-                  },
-                ),
-          ),
-        ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
           if (context.mounted) {
@@ -245,11 +229,14 @@ class _PatientRegistryContentState
     }
   }
 
-  Future<void> _openPatientForm(BuildContext context, WidgetRef ref) async {
+  Future<void> _openRegisterPatientDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PatientFormDialog(
+      builder: (_) => RegisterNewPatientDialog(
         referenceData: widget.state.referenceData,
         onLookupDuplicates: (PatientDuplicateQuery query) {
           return ref
@@ -267,29 +254,6 @@ class _PatientRegistryContentState
     if (saved == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.patientsSavedMessage)),
-      );
-    }
-  }
-
-  Future<void> _openEmergencyRegistration(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final bool? saved = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => EmergencyPatientFormDialog(
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .createPatient(payload);
-        },
-      ),
-    );
-
-    if (saved == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsEmergencySavedMessage)),
       );
     }
   }
@@ -5861,197 +5825,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
     setState(() {
       _duplicateCandidates = const <PatientDuplicateCandidate>[];
       _duplicateWarningAccepted = false;
-    });
-  }
-}
-
-class PatientDuplicateWarningPanel extends StatelessWidget {
-  const PatientDuplicateWarningPanel({required this.duplicates, super.key});
-
-  final List<PatientDuplicateCandidate> duplicates;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final Iterable<PatientDuplicateCandidate> visible = duplicates.take(3);
-
-    return AppMessagePanel(
-      title: l10n.patientsDuplicateWarningTitle,
-      message: l10n.patientsDuplicateWarningBody,
-      icon: Icons.content_copy_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      children: <Widget>[
-        for (final PatientDuplicateCandidate duplicate in visible)
-          _DuplicateCandidateLine(duplicate: duplicate),
-      ],
-    );
-  }
-}
-
-class _DuplicateCandidateLine extends StatelessWidget {
-  const _DuplicateCandidateLine({required this.duplicate});
-
-  final PatientDuplicateCandidate duplicate;
-
-  @override
-  Widget build(BuildContext context) {
-    final Patient? patient =
-        duplicate.secondaryPatient ??
-        duplicate.candidatePatient ??
-        duplicate.primaryPatient;
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            context.l10n.patientsDuplicateScoreLabel(duplicate.confidenceScore),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Text(
-              _joinDisplay(<String?>[
-                patient?.effectiveDisplayName,
-                patient?.effectiveIdentifier,
-                duplicate.matchReasons.map(_apiLabel).join(', '),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class EmergencyPatientFormDialog extends StatefulWidget {
-  const EmergencyPatientFormDialog({required this.onSubmit, super.key});
-
-  final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
-
-  @override
-  State<EmergencyPatientFormDialog> createState() =>
-      _EmergencyPatientFormDialogState();
-}
-
-class _EmergencyPatientFormDialogState
-    extends State<EmergencyPatientFormDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(l10n.patientsEmergencyRegisterTitle),
-      icon: const Icon(Icons.emergency_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        density: AppFormSectionDensity.compact,
-        formStatus: _failure == null
-            ? null
-            : AppFailureStateView(failure: _failure!),
-        children: <Widget>[
-          Text(l10n.patientsEmergencyRegisterBody),
-          AppResponsiveFieldRow.two(
-            left: AppTextField(
-              controller: _firstNameController,
-              labelText: l10n.patientsEmergencyFirstNameLabel,
-              enabled: !_isSaving,
-              textCapitalization: TextCapitalization.words,
-            ),
-            right: AppTextField(
-              controller: _lastNameController,
-              labelText: l10n.patientsEmergencyLastNameLabel,
-              enabled: !_isSaving,
-              textCapitalization: TextCapitalization.words,
-            ),
-          ),
-          PatientPhoneField(
-            controller: _phoneController,
-            labelText: l10n.patientsPhoneLabel,
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.patientsNotesLabel,
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
-        ),
-        AppButton.primary(
-          label: l10n.patientsEmergencySaveAction,
-          leadingIcon: Icons.emergency_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-
-    final DateTime registeredAt = DateTime.now().toUtc();
-    final String firstName = _firstNameController.text.trim();
-    final AppFailure? failure = await widget.onSubmit(<String, Object?>{
-      'first_name': firstName.isEmpty ? 'Emergency' : firstName,
-      'last_name': _lastNameController.text.trim(),
-      'gender': 'UNKNOWN',
-      'primary_phone': _phoneController.text.trim(),
-      'is_active': true,
-      'extension_json': <String, Object?>{
-        'registration': <String, Object?>{
-          'source': 'EMERGENCY',
-          'status': 'INCOMPLETE',
-          'requires_completion': true,
-          'registered_at': registeredAt.toIso8601String(),
-          'notes': _notesController.text.trim(),
-        },
-      },
-    });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-
-    setState(() {
-      _isSaving = false;
-      _failure = failure;
     });
   }
 }

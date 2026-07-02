@@ -7,6 +7,10 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'component_test_app.dart';
 
 void main() {
+  setUp(() {
+    AppListTableColumnVisibilityMemory.instance.clear();
+  });
+
   const items = <_RowItem>[
     _RowItem(id: '1', title: 'Alpha', status: 'Active'),
     _RowItem(id: '2', title: 'Beta', status: 'Draft'),
@@ -418,6 +422,54 @@ void main() {
     expect(find.text('Table columns'), findsOneWidget);
   });
 
+  testWidgets('AppListTable restores column visibility from memory', (
+    WidgetTester tester,
+  ) async {
+    const String storageKey = 'test-table-memory';
+    AppListTableColumnVisibilityMemory.instance.write(
+      storageKey,
+      <String>{'status'},
+    );
+    addTearDown(() {
+      AppListTableColumnVisibilityMemory.instance.remove(storageKey);
+    });
+
+    final TextEditingController searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    Future<void> pumpTable({required Key tableKey}) {
+      return pumpComponent(
+        tester,
+        SizedBox(
+          key: tableKey,
+          height: 420,
+          child: AppListTable<_RowItem>(
+            items: items,
+            columns: _columnsWithStableKeys,
+            columnVisibilityStorageKey: storageKey,
+            search: AppListTableSearch<_RowItem>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+            ),
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(900, 600),
+      );
+    }
+
+    await pumpTable(tableKey: const ValueKey<String>('first'));
+    expect(find.text('Title'), findsNothing);
+    expect(find.text('Status'), findsOneWidget);
+
+    await pumpTable(tableKey: const ValueKey<String>('second'));
+    expect(find.text('Title'), findsNothing);
+    expect(find.text('Status'), findsOneWidget);
+  });
+
   testWidgets('AppListTable keeps always-visible columns selected', (
     WidgetTester tester,
   ) async {
@@ -676,6 +728,22 @@ const List<AppListTableColumn<_RowItem>> _columns =
         sortComparator: _compareTitle,
       ),
       AppListTableColumn<_RowItem>(
+        label: 'Status',
+        cellBuilder: _statusCell,
+        sortComparator: _compareStatus,
+      ),
+    ];
+
+const List<AppListTableColumn<_RowItem>> _columnsWithStableKeys =
+    <AppListTableColumn<_RowItem>>[
+      AppListTableColumn<_RowItem>(
+        id: 'title',
+        label: 'Title',
+        cellBuilder: _titleCell,
+        sortComparator: _compareTitle,
+      ),
+      AppListTableColumn<_RowItem>(
+        id: 'status',
         label: 'Status',
         cellBuilder: _statusCell,
         sortComparator: _compareStatus,

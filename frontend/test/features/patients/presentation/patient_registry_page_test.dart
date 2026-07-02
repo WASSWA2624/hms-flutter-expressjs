@@ -50,7 +50,7 @@ void main() {
     );
   });
 
-  testWidgets('PatientFormDialog warns before saving duplicate candidates', (
+  testWidgets('RegisterNewPatientDialog warns before saving duplicate candidates', (
     WidgetTester tester,
   ) async {
     var lookupCount = 0;
@@ -61,12 +61,12 @@ void main() {
       Builder(
         builder: (BuildContext context) {
           return AppButton.primary(
-            label: 'Open patient form',
+            label: 'Open register dialog',
             onPressed: () {
               unawaited(
                 showAppDialog<bool>(
                   context: context,
-                  builder: (_) => PatientFormDialog(
+                  builder: (_) => RegisterNewPatientDialog(
                     referenceData: const PatientReferenceData(),
                     onLookupDuplicates: (PatientDuplicateQuery query) async {
                       lookupCount += 1;
@@ -108,12 +108,12 @@ void main() {
       size: const Size(1000, 800),
     );
 
-    await tester.tap(find.text('Open patient form'));
+    await tester.tap(find.text('Open register dialog'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(EditableText).at(0), 'Jane');
     await tester.enterText(find.byType(EditableText).at(1), 'Doe');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Register patient'));
     await tester.pumpAndSettle();
 
     expect(lookupCount, 1);
@@ -128,7 +128,7 @@ void main() {
   });
 
   testWidgets(
-    'EmergencyPatientFormDialog submits an incomplete patient record',
+    'RegisterNewPatientDialog creates a patient master record only',
     (WidgetTester tester) async {
       Map<String, Object?>? submittedPayload;
 
@@ -137,12 +137,13 @@ void main() {
         Builder(
           builder: (BuildContext context) {
             return AppButton.primary(
-              label: 'Open emergency form',
+              label: 'Open register dialog',
               onPressed: () {
                 unawaited(
                   showAppDialog<bool>(
                     context: context,
-                    builder: (_) => EmergencyPatientFormDialog(
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
                       onSubmit: (Map<String, Object?> payload) async {
                         submittedPayload = payload;
                         return null;
@@ -154,25 +155,20 @@ void main() {
             );
           },
         ),
-        size: const Size(900, 700),
+        size: const Size(1000, 800),
       );
 
-      await tester.tap(find.text('Open emergency form'));
+      await tester.tap(find.text('Open register dialog'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Register emergency patient'));
+      await tester.enterText(find.byType(EditableText).at(0), 'Amina');
+      await tester.enterText(find.byType(EditableText).at(1), 'Kato');
+      await tester.tap(find.text('Register patient'));
       await tester.pumpAndSettle();
 
-      expect(submittedPayload?['first_name'], 'Emergency');
-      expect(submittedPayload?['gender'], 'UNKNOWN');
+      expect(submittedPayload?['first_name'], 'Amina');
+      expect(submittedPayload?['last_name'], 'Kato');
       expect(submittedPayload?['is_active'], isTrue);
-
-      final extensionJson =
-          submittedPayload?['extension_json'] as Map<String, Object?>?;
-      final registration =
-          extensionJson?['registration'] as Map<String, Object?>?;
-      expect(registration?['source'], 'EMERGENCY');
-      expect(registration?['status'], 'INCOMPLETE');
-      expect(registration?['requires_completion'], isTrue);
+      expect(submittedPayload?.containsKey('patient_registration'), isFalse);
     },
   );
 
@@ -229,7 +225,7 @@ void main() {
     expect(find.text('Open record'), findsNothing);
   });
 
-  testWidgets('EmergencyPatientFormDialog surfaces submit failures', (
+  testWidgets('RegisterNewPatientDialog surfaces submit failures', (
     WidgetTester tester,
   ) async {
     await pumpLocalizedWidget(
@@ -242,7 +238,8 @@ void main() {
               unawaited(
                 showAppDialog<bool>(
                   context: context,
-                  builder: (_) => EmergencyPatientFormDialog(
+                  builder: (_) => RegisterNewPatientDialog(
+                    referenceData: const PatientReferenceData(),
                     onSubmit: (_) async => const AppFailure.forbidden(),
                   ),
                 ),
@@ -251,12 +248,13 @@ void main() {
           );
         },
       ),
-      size: const Size(900, 700),
+      size: const Size(1000, 800),
     );
 
     await tester.tap(find.text('Open failing form'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Register emergency patient'));
+    await tester.enterText(find.byType(EditableText).at(0), 'Amina');
+    await tester.tap(find.text('Register patient'));
     await tester.pumpAndSettle();
 
     expect(find.text('Access denied'), findsOneWidget);
