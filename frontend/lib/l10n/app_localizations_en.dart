@@ -3079,6 +3079,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsIdentifierValueLabel => 'Identifier value';
 
   @override
+  String get patientsIdentifierValueSelectTypeFirstTooltip =>
+      'Select an identifier type first.';
+
+  @override
   String get patientsIdentifierTypeMrnLabel => 'Medical Record Number (MRN)';
 
   @override

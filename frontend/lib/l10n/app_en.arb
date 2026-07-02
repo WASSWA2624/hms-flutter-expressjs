@@ -4029,6 +4029,10 @@
   "@patientsIdentifierValueLabel": {
     "description": "Patient identifier value field label."
   },
+  "patientsIdentifierValueSelectTypeFirstTooltip": "Select an identifier type first.",
+  "@patientsIdentifierValueSelectTypeFirstTooltip": {
+    "description": "Tooltip shown when identifier value is disabled until identifier type is chosen."
+  },
   "patientsIdentifierTypeMrnLabel": "Medical Record Number (MRN)",
   "@patientsIdentifierTypeMrnLabel": {
     "description": "Patient identifier type option label for MRN."

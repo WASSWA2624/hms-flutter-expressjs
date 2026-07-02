@@ -5984,6 +5984,12 @@ abstract class AppLocalizations {
   /// **'Identifier value'**
   String get patientsIdentifierValueLabel;
 
+  /// Tooltip shown when identifier value is disabled until identifier type is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an identifier type first.'**
+  String get patientsIdentifierValueSelectTypeFirstTooltip;
+
   /// Patient identifier type option label for MRN.
   ///
   /// In en, this message translates to:

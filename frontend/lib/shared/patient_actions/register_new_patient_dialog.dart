@@ -18,6 +18,7 @@ import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
@@ -184,11 +185,12 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     final String? selectedIdentifierType = _selectedIdentifierType(
       _identifierTypeController.text,
     );
+    final bool identifierValueDisabledAwaitingType =
+        enabled && selectedIdentifierType == null;
     final bool identifierValueEnabled =
         enabled && selectedIdentifierType != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppFormSection(
       children: <Widget>[
         if (_failure != null) AppFailureStateView(failure: _failure!),
         if (_duplicateCandidates.isNotEmpty)
@@ -287,6 +289,9 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             controller: _identifierValueController,
             labelText: l10n.patientsIdentifierValueLabel,
             enabled: identifierValueEnabled,
+            tooltip: identifierValueDisabledAwaitingType
+                ? l10n.patientsIdentifierValueSelectTypeFirstTooltip
+                : null,
           ),
         ),
         if (widget.includeNotes)

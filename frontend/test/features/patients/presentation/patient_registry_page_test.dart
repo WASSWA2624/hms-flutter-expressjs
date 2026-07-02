@@ -250,6 +250,8 @@ void main() {
         _identifierValueField(),
       );
       expect(identifierValueField.enabled, isFalse);
+      expect(identifierValueField.tooltip, 'Select an identifier type first.');
+      expect(find.byTooltip('Select an identifier type first.'), findsOneWidget);
     },
   );
 

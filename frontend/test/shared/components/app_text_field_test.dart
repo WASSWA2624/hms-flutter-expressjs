@@ -63,4 +63,19 @@ void main() {
     expect(editableText.obscureText, isFalse);
     expect(find.byTooltip('Hide password'), findsOneWidget);
   });
+
+  testWidgets('AppTextField shows tooltip when provided', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppTextField(
+        labelText: 'Code',
+        enabled: false,
+        tooltip: 'Select a type first.',
+      ),
+    );
+
+    expect(find.byTooltip('Select a type first.'), findsOneWidget);
+  });
 }

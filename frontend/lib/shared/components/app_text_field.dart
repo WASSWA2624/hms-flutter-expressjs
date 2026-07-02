@@ -42,6 +42,7 @@ class AppTextField extends StatefulWidget {
     this.autocorrect = true,
     this.enableSuggestions = true,
     this.useFloatingLabel = true,
+    this.tooltip,
     super.key,
   }) : assert(
          controller == null || initialValue == null,
@@ -93,6 +94,7 @@ class AppTextField extends StatefulWidget {
   final bool autocorrect;
   final bool enableSuggestions;
   final bool useFloatingLabel;
+  final String? tooltip;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -253,19 +255,24 @@ class _AppTextFieldState extends State<AppTextField> {
             ),
           );
 
-    if (externalLabel == null) {
-      return result;
+    final Widget content = externalLabel == null
+        ? result
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              externalLabel,
+              SizedBox(height: theme.spacing.xs),
+              result,
+            ],
+          );
+
+    final String? resolvedTooltip = widget.tooltip;
+    if (resolvedTooltip == null) {
+      return content;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        externalLabel,
-        SizedBox(height: theme.spacing.xs),
-        result,
-      ],
-    );
+    return Tooltip(message: resolvedTooltip, child: content);
   }
 
   Widget? _buildSuffixIcon(BuildContext context, bool canEdit) {
