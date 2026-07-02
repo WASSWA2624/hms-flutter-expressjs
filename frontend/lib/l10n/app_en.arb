@@ -6489,6 +6489,42 @@
   "@validationRequired": {
     "description": "Generic required-field validation message for forms."
   },
+  "validationFieldRequiredMessage": "{field} is required.",
+  "@validationFieldRequiredMessage": {
+    "description": "Validation message when a named field is required.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldInvalidMessage": "Enter a valid {field}.",
+  "@validationFieldInvalidMessage": {
+    "description": "Validation message when a named field has an invalid value.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldInvalidFormatMessage": "Use a valid {field} format.",
+  "@validationFieldInvalidFormatMessage": {
+    "description": "Validation message when a named field has an invalid format.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "validationFieldAlreadyInUseMessage": "{field} is already in use.",
+  "@validationFieldAlreadyInUseMessage": {
+    "description": "Validation message when a named field value is duplicated.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "errorNetworkTitle": "Connection problem",
   "@errorNetworkTitle": {
     "description": "Title for a generic network failure."

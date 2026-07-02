@@ -6680,12 +6680,7 @@ AppFailure? _failureOrNull<T>(Result<T> result) {
 }
 
 String _workflowFailureMessage(BuildContext context, AppFailure failure) {
-  final l10n = context.l10n;
-  if (failure.validationFields.isEmpty) {
-    return l10n.failureMessage(failure);
-  }
-  final String fields = failure.validationFields.map(_apiLabel).join(', ');
-  return l10n.patientsWorkflowValidationMessage(fields);
+  return failure.displayMessage(context.l10n);
 }
 
 String _apiLabel(String value) {

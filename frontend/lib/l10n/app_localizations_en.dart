@@ -5050,6 +5050,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validationRequired => 'This field is required.';
 
   @override
+  String validationFieldRequiredMessage(String field) {
+    return '$field is required.';
+  }
+
+  @override
+  String validationFieldInvalidMessage(String field) {
+    return 'Enter a valid $field.';
+  }
+
+  @override
+  String validationFieldInvalidFormatMessage(String field) {
+    return 'Use a valid $field format.';
+  }
+
+  @override
+  String validationFieldAlreadyInUseMessage(String field) {
+    return '$field is already in use.';
+  }
+
+  @override
   String get errorNetworkTitle => 'Connection problem';
 
   @override

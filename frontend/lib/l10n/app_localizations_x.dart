@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/utils/app_display.dart';
+import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 extension AppLocalizationsBuildContext on BuildContext {
@@ -29,34 +29,11 @@ extension AppFailureLocalizations on AppLocalizations {
   }
 
   String failureDisplayMessage(AppFailure failure) {
-    if (failure.fieldMessages.isNotEmpty) {
-      return failure.fieldMessages.values.join('\n');
-    }
-    final String? detailMessage = failure.detailMessage;
-    if (detailMessage != null && detailMessage.isNotEmpty) {
-      if (detailMessage.contains('{{') && failure.validationFields.isNotEmpty) {
-        return failure.validationFields
-            .map(
-              (String field) =>
-                  roomsBedsRequiredMessage(AppDisplay.apiLabel(field)),
-            )
-            .join('\n');
-      }
-      return detailMessage;
-    }
-    return switch (failure.category) {
-      AppFailureCategory.network => errorNetworkMessage,
-      AppFailureCategory.timeout => errorTimeoutMessage,
-      AppFailureCategory.offline => errorOfflineMessage,
-      AppFailureCategory.cancelled => errorCancelledMessage,
-      AppFailureCategory.unauthorized => errorUnauthorizedMessage,
-      AppFailureCategory.forbidden => errorForbiddenMessage,
-      AppFailureCategory.notFound => errorNotFoundMessage,
-      AppFailureCategory.validation => errorValidationMessage,
-      AppFailureCategory.unexpectedResponse => errorUnexpectedResponseMessage,
-      AppFailureCategory.storage => errorStorageMessage,
-      AppFailureCategory.unexpected => errorUnexpectedMessage,
-    };
+    return ValidationMessagePresenter.displayMessage(failure, this);
+  }
+
+  String validationFieldLabel(String field) {
+    return ValidationMessagePresenter.fieldLabel(this, field);
   }
 }
 

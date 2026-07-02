@@ -9458,6 +9458,30 @@ abstract class AppLocalizations {
   /// **'This field is required.'**
   String get validationRequired;
 
+  /// Validation message when a named field is required.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} is required.'**
+  String validationFieldRequiredMessage(String field);
+
+  /// Validation message when a named field has an invalid value.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid {field}.'**
+  String validationFieldInvalidMessage(String field);
+
+  /// Validation message when a named field has an invalid format.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a valid {field} format.'**
+  String validationFieldInvalidFormatMessage(String field);
+
+  /// Validation message when a named field value is duplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} is already in use.'**
+  String validationFieldAlreadyInUseMessage(String field);
+
   /// Title for a generic network failure.
   ///
   /// In en, this message translates to:
