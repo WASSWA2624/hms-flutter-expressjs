@@ -3105,6 +3105,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsIdentifierValueLabel => 'Identifier valeur';
 
   @override
+  String get patientsIdentifierTypeMrnLabel => 'Medical Record Number (MRN)';
+
+  @override
+  String get patientsIdentifierTypeNationalIdLabel =>
+      'National ID (NATIONAL_ID)';
+
+  @override
+  String get patientsIdentifierTypePassportLabel => 'Passport (PASSPORT)';
+
+  @override
+  String get patientsIdentifierTypeInsuranceLabel => 'Insurance (INSURANCE)';
+
+  @override
+  String get patientsIdentifierTypeDriverLicenseLabel =>
+      'Driver License (DRIVER_LICENSE)';
+
+  @override
+  String get patientsIdentifierTypeBirthCertificateLabel =>
+      'Birth Certificate (BIRTH_CERTIFICATE)';
+
+  @override
+  String get patientsIdentifierTypeOtherLabel => 'Other (OTHER)';
+
+  @override
   String get patientsActiveCheckboxLabel => 'Le patient est actif';
 
   @override

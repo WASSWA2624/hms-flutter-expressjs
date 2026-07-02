@@ -50,92 +50,93 @@ void main() {
     );
   });
 
-  testWidgets('RegisterNewPatientDialog warns before saving duplicate candidates', (
-    WidgetTester tester,
-  ) async {
-    var lookupCount = 0;
-    var submitCount = 0;
-
-    await pumpLocalizedWidget(
-      tester,
-      Builder(
-        builder: (BuildContext context) {
-          return AppButton.primary(
-            label: 'Open register dialog',
-            onPressed: () {
-              unawaited(
-                showAppDialog<bool>(
-                  context: context,
-                  builder: (_) => RegisterNewPatientDialog(
-                    referenceData: const PatientReferenceData(),
-                    onLookupDuplicates: (PatientDuplicateQuery query) async {
-                      lookupCount += 1;
-                      expect(query.firstName, 'Jane');
-                      expect(query.lastName, 'Doe');
-                      return const Result<
-                        AppPage<PatientDuplicateCandidate>
-                      >.success(
-                        AppPage<PatientDuplicateCandidate>(
-                          items: <PatientDuplicateCandidate>[
-                            PatientDuplicateCandidate(
-                              reviewId: 'review-1',
-                              confidenceScore: 92,
-                              classification: 'STRONG_MATCH',
-                              matchReasons: <String>['name', 'phone'],
-                              candidatePatient: Patient(
-                                id: 'patient-1',
-                                displayName: 'Jane Doe',
-                                primaryPhone: '+256700000000',
-                              ),
-                            ),
-                          ],
-                          request: AppPageRequest(pageSize: 8),
-                          totalItemCount: 1,
-                        ),
-                      );
-                    },
-                    onSubmit: (Map<String, Object?> payload) async {
-                      submitCount += 1;
-                      return null;
-                    },
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      size: const Size(1000, 800),
-    );
-
-    await tester.tap(find.text('Open register dialog'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(EditableText).at(0), 'Jane');
-    await tester.enterText(find.byType(EditableText).at(1), 'Doe');
-    await tester.tap(find.text('Register patient'));
-    await tester.pumpAndSettle();
-
-    expect(lookupCount, 1);
-    expect(submitCount, 0);
-    expect(find.text('Potential duplicate found'), findsOneWidget);
-    expect(find.text('Save anyway'), findsOneWidget);
-
-    await tester.tap(find.text('Save anyway'));
-    await tester.pumpAndSettle();
-
-    expect(submitCount, 1);
-  });
-
   testWidgets(
-    'RegisterNewPatientDialog creates a patient master record only',
+    'RegisterNewPatientDialog warns before saving duplicate candidates',
     (WidgetTester tester) async {
-      Map<String, Object?>? submittedPayload;
+      var lookupCount = 0;
+      var submitCount = 0;
 
       await pumpLocalizedWidget(
         tester,
         Builder(
           builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<bool>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
+                      onLookupDuplicates:
+                          (PatientDuplicateQuery query) async {
+                              lookupCount += 1;
+                              expect(query.firstName, 'Jane');
+                              expect(query.lastName, 'Doe');
+                              return const Result<
+                                AppPage<PatientDuplicateCandidate>
+                              >.success(
+                                AppPage<PatientDuplicateCandidate>(
+                                  items: <PatientDuplicateCandidate>[
+                                    PatientDuplicateCandidate(
+                                      reviewId: 'review-1',
+                                      confidenceScore: 92,
+                                      classification: 'STRONG_MATCH',
+                                      matchReasons: <String>['name', 'phone'],
+                                      candidatePatient: Patient(
+                                        id: 'patient-1',
+                                        displayName: 'Jane Doe',
+                                        primaryPhone: '+256700000000',
+                                      ),
+                                    ),
+                                  ],
+                                  request: AppPageRequest(pageSize: 8),
+                                  totalItemCount: 1,
+                                ),
+                              );
+                            },
+                        onSubmit: (Map<String, Object?> payload) async {
+                          submitCount += 1;
+                          return null;
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        size: const Size(1000, 800),
+      );
+
+      await tester.tap(find.text('Open register dialog'));
+      await tester.pumpAndSettle();
+
+      await _fillRegisterPatientBasics(tester);
+      await tester.tap(find.text('Register patient'));
+      await tester.pumpAndSettle();
+
+      expect(lookupCount, 1);
+      expect(submitCount, 0);
+      expect(find.text('Potential duplicate found'), findsOneWidget);
+      expect(find.text('Save anyway'), findsOneWidget);
+
+      await tester.tap(find.text('Save anyway'));
+      await tester.pumpAndSettle();
+
+      expect(submitCount, 1);
+    },
+  );
+
+  testWidgets('RegisterNewPatientDialog creates a patient master record only', (
+    WidgetTester tester,
+  ) async {
+    Map<String, Object?>? submittedPayload;
+
+    await pumpLocalizedWidget(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
             return AppButton.primary(
               label: 'Open register dialog',
               onPressed: () {
@@ -153,6 +154,91 @@ void main() {
                 );
               },
             );
+        },
+      ),
+      size: const Size(1000, 800),
+    );
+
+    await tester.tap(find.text('Open register dialog'));
+    await tester.pumpAndSettle();
+    await _fillRegisterPatientBasics(
+      tester,
+      firstName: 'Amina',
+      lastName: 'Kato',
+    );
+    await tester.tap(find.text('Register patient'));
+    await tester.pumpAndSettle();
+
+    expect(submittedPayload?['first_name'], 'Amina');
+    expect(submittedPayload?['last_name'], 'Kato');
+    expect(submittedPayload?['gender'], 'FEMALE');
+    expect(submittedPayload?['is_active'], isTrue);
+    expect(submittedPayload?.containsKey('patient_registration'), isFalse);
+  });
+
+  testWidgets('RegisterNewPatientDialog saves without optional last name', (
+    WidgetTester tester,
+  ) async {
+    Map<String, Object?>? submittedPayload;
+
+    await pumpLocalizedWidget(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<bool>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
+                      onSubmit: (Map<String, Object?> payload) async {
+                        submittedPayload = payload;
+                        return null;
+                      },
+                    ),
+                  ),
+                );
+              },
+            );
+        },
+      ),
+      size: const Size(1000, 800),
+    );
+
+    await tester.tap(find.text('Open register dialog'));
+    await tester.pumpAndSettle();
+    await _fillRegisterPatientBasics(tester, firstName: 'Amina', lastName: '');
+    await tester.tap(find.text('Register patient'));
+    await tester.pumpAndSettle();
+
+    expect(submittedPayload?['first_name'], 'Amina');
+    expect(submittedPayload?['last_name'], isNull);
+    expect(submittedPayload?['gender'], 'FEMALE');
+  });
+
+  testWidgets(
+    'RegisterNewPatientDialog disables identifier value until type is selected',
+    (WidgetTester tester) async {
+      await pumpLocalizedWidget(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<bool>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
+                      onSubmit: (_) async => null,
+                    ),
+                  ),
+                );
+              },
+            );
           },
         ),
         size: const Size(1000, 800),
@@ -160,15 +246,11 @@ void main() {
 
       await tester.tap(find.text('Open register dialog'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(EditableText).at(0), 'Amina');
-      await tester.enterText(find.byType(EditableText).at(1), 'Kato');
-      await tester.tap(find.text('Register patient'));
-      await tester.pumpAndSettle();
 
-      expect(submittedPayload?['first_name'], 'Amina');
-      expect(submittedPayload?['last_name'], 'Kato');
-      expect(submittedPayload?['is_active'], isTrue);
-      expect(submittedPayload?.containsKey('patient_registration'), isFalse);
+      final AppTextField identifierValueField = tester.widget<AppTextField>(
+        _identifierValueField(),
+      );
+      expect(identifierValueField.enabled, isFalse);
     },
   );
 
@@ -232,20 +314,20 @@ void main() {
       tester,
       Builder(
         builder: (BuildContext context) {
-          return AppButton.primary(
-            label: 'Open failing form',
-            onPressed: () {
-              unawaited(
-                showAppDialog<bool>(
-                  context: context,
-                  builder: (_) => RegisterNewPatientDialog(
-                    referenceData: const PatientReferenceData(),
-                    onSubmit: (_) async => const AppFailure.forbidden(),
+            return AppButton.primary(
+              label: 'Open failing form',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<bool>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
+                      onSubmit: (_) async => const AppFailure.forbidden(),
+                    ),
                   ),
-                ),
-              );
-            },
-          );
+                );
+              },
+            );
         },
       ),
       size: const Size(1000, 800),
@@ -253,7 +335,7 @@ void main() {
 
     await tester.tap(find.text('Open failing form'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText).at(0), 'Amina');
+    await _fillRegisterPatientBasics(tester, firstName: 'Amina', lastName: '');
     await tester.tap(find.text('Register patient'));
     await tester.pumpAndSettle();
 
@@ -757,6 +839,30 @@ void main() {
     expect(find.textContaining(RegExp(r'1 of [2-9]')), findsOneWidget);
     expect(find.textContaining(RegExp(r'2 of [2-9]')), findsWidgets);
   });
+}
+
+Future<void> _fillRegisterPatientBasics(
+  WidgetTester tester, {
+  String firstName = 'Jane',
+  String lastName = 'Doe',
+  String genderLabel = 'Female',
+}) async {
+  await tester.enterText(find.byType(EditableText).at(0), firstName);
+  if (lastName.isNotEmpty) {
+    await tester.enterText(find.byType(EditableText).at(1), lastName);
+  }
+  await tester.tap(find.byType(AppGenderField));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(genderLabel).last);
+  await tester.pumpAndSettle();
+}
+
+Finder _identifierValueField() {
+  return find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is AppTextField &&
+        (widget.labelText?.contains('Identifier value') ?? false),
+  );
 }
 
 final class _MockPatientRepository extends Mock implements PatientRepository {}

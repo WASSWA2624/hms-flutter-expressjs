@@ -18,11 +18,12 @@ import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_identifier_type_labels.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_registration_facility_scope.dart';
 
 typedef RegisterNewPatientSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
@@ -37,6 +38,7 @@ typedef RegisterNewPatientDuplicateLookup =
 class RegisterNewPatientForm extends StatefulWidget {
   const RegisterNewPatientForm({
     required this.referenceData,
+    this.facilityScope = const PatientRegistrationFacilityScope(),
     this.onLookupDuplicates,
     this.enabled = true,
     this.includeNotes = true,
@@ -45,6 +47,7 @@ class RegisterNewPatientForm extends StatefulWidget {
   });
 
   final PatientReferenceData referenceData;
+  final PatientRegistrationFacilityScope facilityScope;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
   final bool enabled;
   final bool includeNotes;
@@ -86,10 +89,20 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     _identifierTypeController = TextEditingController();
     _identifierValueController = TextEditingController();
     _notesController = TextEditingController();
+    _facilityId = widget.facilityScope.defaultFacilityId;
     _firstNameController.addListener(_clearDuplicateWarning);
     _lastNameController.addListener(_clearDuplicateWarning);
     _phoneController.addListener(_clearDuplicateWarning);
     _identifierValueController.addListener(_clearDuplicateWarning);
+  }
+
+  @override
+  void didUpdateWidget(RegisterNewPatientForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.facilityScope != widget.facilityScope &&
+        !widget.facilityScope.showFacilityPicker) {
+      _facilityId = widget.facilityScope.defaultFacilityId;
+    }
   }
 
   @override
@@ -114,18 +127,21 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
 
   Map<String, Object?> buildPayload() {
     final String notes = _notesController.text.trim();
+    final String identifierType = _identifierTypeController.text
+        .trim()
+        .toUpperCase();
     return <String, Object?>{
       'first_name': _firstNameController.text.trim(),
-      'last_name': _lastNameController.text.trim(),
+      'last_name': _nullableTrim(_lastNameController.text),
       'date_of_birth': _dateOfBirth?.toIso8601String(),
       'gender': _gender,
       'facility_id': _facilityId,
-      'primary_phone': _phoneController.text.trim(),
-      'primary_email': _emailController.text.trim(),
-      'primary_identifier_type': _identifierTypeController.text
-          .trim()
-          .toUpperCase(),
-      'primary_identifier_value': _identifierValueController.text.trim(),
+      'primary_phone': _nullableTrim(_phoneController.text),
+      'primary_email': _nullableTrim(_emailController.text),
+      'primary_identifier_type': identifierType.isEmpty ? null : identifierType,
+      'primary_identifier_value': identifierType.isEmpty
+          ? null
+          : _nullableTrim(_identifierValueController.text),
       'is_active': _isActive,
       if (widget.includeNotes && notes.isNotEmpty)
         'extension_json': <String, Object?>{
@@ -165,6 +181,11 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final bool enabled = widget.enabled && !_isCheckingDuplicates;
+    final String? selectedIdentifierType = _selectedIdentifierType(
+      _identifierTypeController.text,
+    );
+    final bool identifierValueEnabled =
+        enabled && selectedIdentifierType != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,6 +194,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
         if (_duplicateCandidates.isNotEmpty)
           PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
         AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
           left: AppTextField(
             controller: _firstNameController,
             labelText: l10n.patientsFirstNameLabel,
@@ -189,6 +211,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
           ),
         ),
         AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
           left: PatientDateField(
             value: _dateOfBirth,
             firstDate: DateTime(1900),
@@ -209,6 +232,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             otherLabel: l10n.patientsGenderOther,
             unknownLabel: l10n.patientsGenderUnknown,
             enabled: enabled,
+            isRequired: true,
+            requiredMessage: l10n.validationRequired,
             onChanged: (String? value) {
               setState(() {
                 _gender = value;
@@ -216,7 +241,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             },
           ),
         ),
-        if (widget.referenceData.facilities.length > 1)
+        if (widget.facilityScope.showFacilityPicker)
           PatientFacilitySelectField(
             facilities: widget.referenceData.facilities,
             value: _facilityId,
@@ -239,24 +264,29 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
           enabled: enabled,
         ),
         AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
           left: AppSelectField<String>.searchable(
-            value: _selectedIdentifierType(_identifierTypeController.text),
+            value: selectedIdentifierType,
             labelText: l10n.patientsIdentifierTypeLabel,
             enabled: enabled,
             menuHeight: 320,
             onChanged: (String? value) {
               setState(() {
                 _identifierTypeController.text = value ?? '';
+                if (value == null || value.isEmpty) {
+                  _identifierValueController.clear();
+                }
               });
             },
             options: _identifierTypeSelectOptions(
+              l10n,
               _identifierTypeController.text,
             ),
           ),
           right: AppTextField(
             controller: _identifierValueController,
             labelText: l10n.patientsIdentifierValueLabel,
-            enabled: enabled,
+            enabled: identifierValueEnabled,
           ),
         ),
         if (widget.includeNotes)
@@ -345,11 +375,13 @@ class RegisterNewPatientDialog extends StatefulWidget {
   const RegisterNewPatientDialog({
     required this.referenceData,
     required this.onSubmit,
+    this.facilityScope = const PatientRegistrationFacilityScope(),
     this.onLookupDuplicates,
     super.key,
   });
 
   final PatientReferenceData referenceData;
+  final PatientRegistrationFacilityScope facilityScope;
   final RegisterNewPatientSubmit onSubmit;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
 
@@ -382,11 +414,11 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
           formKey: _formKey,
           enabled: !_isSaving && !isCheckingDuplicates,
           scrollable: true,
-          density: AppFormSectionDensity.compact,
           children: <Widget>[
             RegisterNewPatientForm(
               key: _registrationFormKey,
               referenceData: widget.referenceData,
+              facilityScope: widget.facilityScope,
               onLookupDuplicates: widget.onLookupDuplicates,
               enabled: !_isSaving,
             ),
@@ -523,6 +555,11 @@ class _DuplicateCandidateLine extends StatelessWidget {
   }
 }
 
+String? _nullableTrim(String value) {
+  final String trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 String _joinDisplay(Iterable<String?> values) {
   return values
       .whereType<String>()
@@ -531,23 +568,15 @@ String _joinDisplay(Iterable<String?> values) {
       .join(' | ');
 }
 
-List<String> _identifierTypeOptions(String currentValue) {
-  final String normalized = currentValue.trim().toUpperCase();
-  if (normalized.isEmpty || _identifierTypes.contains(normalized)) {
-    return _identifierTypes;
-  }
-
-  return <String>[normalized, ..._identifierTypes];
-}
-
 List<AppSelectOption<String>> _identifierTypeSelectOptions(
+  AppLocalizations l10n,
   String currentValue,
 ) {
   return <AppSelectOption<String>>[
-    for (final String value in _identifierTypeOptions(currentValue))
+    for (final String value in patientIdentifierTypeOptions(currentValue))
       AppSelectOption<String>(
         value: value,
-        label: AppDisplay.apiLabel(value),
+        label: patientIdentifierTypeLabel(l10n, value),
         leadingIcon: Icon(_identifierTypeIcon(value)),
       ),
   ];
@@ -569,13 +598,3 @@ IconData _identifierTypeIcon(String value) {
     _ => Icons.tag_outlined,
   };
 }
-
-const List<String> _identifierTypes = <String>[
-  'MRN',
-  'NATIONAL_ID',
-  'PASSPORT',
-  'INSURANCE',
-  'DRIVER_LICENSE',
-  'BIRTH_CERTIFICATE',
-  'OTHER',
-];

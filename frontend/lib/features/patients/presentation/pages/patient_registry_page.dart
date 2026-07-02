@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
@@ -238,6 +239,10 @@ class _PatientRegistryContentState
       barrierDismissible: false,
       builder: (_) => RegisterNewPatientDialog(
         referenceData: widget.state.referenceData,
+        facilityScope: PatientRegistrationFacilityScope.resolve(
+          referenceData: widget.state.referenceData,
+          accessPolicy: ref.read(appAccessPolicyProvider),
+        ),
         onLookupDuplicates: (PatientDuplicateQuery query) {
           return ref
               .read(patientRegistryControllerProvider.notifier)

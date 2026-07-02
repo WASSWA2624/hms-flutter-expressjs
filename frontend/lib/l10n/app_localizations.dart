@@ -5984,6 +5984,48 @@ abstract class AppLocalizations {
   /// **'Identifier value'**
   String get patientsIdentifierValueLabel;
 
+  /// Patient identifier type option label for MRN.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Record Number (MRN)'**
+  String get patientsIdentifierTypeMrnLabel;
+
+  /// Patient identifier type option label for national ID.
+  ///
+  /// In en, this message translates to:
+  /// **'National ID (NATIONAL_ID)'**
+  String get patientsIdentifierTypeNationalIdLabel;
+
+  /// Patient identifier type option label for passport.
+  ///
+  /// In en, this message translates to:
+  /// **'Passport (PASSPORT)'**
+  String get patientsIdentifierTypePassportLabel;
+
+  /// Patient identifier type option label for insurance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance (INSURANCE)'**
+  String get patientsIdentifierTypeInsuranceLabel;
+
+  /// Patient identifier type option label for driver license.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver License (DRIVER_LICENSE)'**
+  String get patientsIdentifierTypeDriverLicenseLabel;
+
+  /// Patient identifier type option label for birth certificate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birth Certificate (BIRTH_CERTIFICATE)'**
+  String get patientsIdentifierTypeBirthCertificateLabel;
+
+  /// Patient identifier type option label for other identifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Other (OTHER)'**
+  String get patientsIdentifierTypeOtherLabel;
+
   /// Patient active checkbox label.
   ///
   /// In en, this message translates to:

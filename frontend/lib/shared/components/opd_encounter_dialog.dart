@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -842,6 +843,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _WalkInPatientMode.newPatient => RegisterNewPatientForm(
         key: _newPatientFormKey,
         referenceData: _patientReferenceData,
+        facilityScope: PatientRegistrationFacilityScope.resolve(
+          referenceData: _patientReferenceData,
+          accessPolicy: ref.watch(appAccessPolicyProvider),
+        ),
         enabled: !_isSaving,
         includeNotes: false,
         includeActiveToggle: false,

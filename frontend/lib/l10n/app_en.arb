@@ -4029,6 +4029,34 @@
   "@patientsIdentifierValueLabel": {
     "description": "Patient identifier value field label."
   },
+  "patientsIdentifierTypeMrnLabel": "Medical Record Number (MRN)",
+  "@patientsIdentifierTypeMrnLabel": {
+    "description": "Patient identifier type option label for MRN."
+  },
+  "patientsIdentifierTypeNationalIdLabel": "National ID (NATIONAL_ID)",
+  "@patientsIdentifierTypeNationalIdLabel": {
+    "description": "Patient identifier type option label for national ID."
+  },
+  "patientsIdentifierTypePassportLabel": "Passport (PASSPORT)",
+  "@patientsIdentifierTypePassportLabel": {
+    "description": "Patient identifier type option label for passport."
+  },
+  "patientsIdentifierTypeInsuranceLabel": "Insurance (INSURANCE)",
+  "@patientsIdentifierTypeInsuranceLabel": {
+    "description": "Patient identifier type option label for insurance."
+  },
+  "patientsIdentifierTypeDriverLicenseLabel": "Driver License (DRIVER_LICENSE)",
+  "@patientsIdentifierTypeDriverLicenseLabel": {
+    "description": "Patient identifier type option label for driver license."
+  },
+  "patientsIdentifierTypeBirthCertificateLabel": "Birth Certificate (BIRTH_CERTIFICATE)",
+  "@patientsIdentifierTypeBirthCertificateLabel": {
+    "description": "Patient identifier type option label for birth certificate."
+  },
+  "patientsIdentifierTypeOtherLabel": "Other (OTHER)",
+  "@patientsIdentifierTypeOtherLabel": {
+    "description": "Patient identifier type option label for other identifiers."
+  },
   "patientsActiveCheckboxLabel": "Patient is active",
   "@patientsActiveCheckboxLabel": {
     "description": "Patient active checkbox label."

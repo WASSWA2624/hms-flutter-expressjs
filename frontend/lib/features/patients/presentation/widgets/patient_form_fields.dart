@@ -102,6 +102,7 @@ class PatientPhoneField extends StatelessWidget {
     this.isLoading = false,
     this.isRequired = false,
     this.initialCountryCode = '+256',
+    this.useFloatingLabel = false,
     super.key,
   });
 
@@ -125,6 +126,7 @@ class PatientPhoneField extends StatelessWidget {
   final bool isLoading;
   final bool isRequired;
   final String initialCountryCode;
+  final bool useFloatingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +158,7 @@ class PatientPhoneField extends StatelessWidget {
       isLoading: isLoading,
       isRequired: isRequired,
       initialCountryCode: initialCountryCode,
+      useFloatingLabel: useFloatingLabel,
     );
   }
 }
