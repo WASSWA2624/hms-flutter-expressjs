@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 extension AppLocalizationsBuildContext on BuildContext {
@@ -33,6 +34,14 @@ extension AppFailureLocalizations on AppLocalizations {
     }
     final String? detailMessage = failure.detailMessage;
     if (detailMessage != null && detailMessage.isNotEmpty) {
+      if (detailMessage.contains('{{') && failure.validationFields.isNotEmpty) {
+        return failure.validationFields
+            .map(
+              (String field) =>
+                  roomsBedsRequiredMessage(AppDisplay.apiLabel(field)),
+            )
+            .join('\n');
+      }
       return detailMessage;
     }
     return switch (failure.category) {

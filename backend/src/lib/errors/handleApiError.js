@@ -201,9 +201,13 @@ const toErrorCode = (message, statusCode) => {
   return 'UNKNOWN_ERROR';
 };
 
-const resolveMessage = (message, locale, statusCode) => {
+const resolveMessage = (message, locale, statusCode, errors = []) => {
   if (isTranslationKey(message)) {
-    return translate(message, locale);
+    const firstFieldError = Array.isArray(errors)
+      ? errors.find((entry) => entry && typeof entry === 'object' && entry.field)
+      : null;
+    const params = firstFieldError?.field ? { field: firstFieldError.field } : {};
+    return translate(message, locale, params);
   }
   const fallbackKey = defaultErrorKeyByStatus[statusCode];
   if (fallbackKey) {
@@ -212,7 +216,7 @@ const resolveMessage = (message, locale, statusCode) => {
   return message;
 };
 
-const resolveErrors = (errors, locale) => {
+const resolveErrors = (errors, locale, fallbackMessageKey) => {
   if (!Array.isArray(errors)) {
     return [];
   }
@@ -220,9 +224,16 @@ const resolveErrors = (errors, locale) => {
     if (!error || typeof error !== 'object') {
       return error;
     }
-    const resolvedMessage = isTranslationKey(error.message)
-      ? translate(error.message, locale, error)
-      : error.message;
+    const messageKey = isTranslationKey(error.message)
+      ? error.message
+      : error.field && isTranslationKey(fallbackMessageKey)
+        ? fallbackMessageKey
+        : error.field
+          ? 'errors.validation.field.required'
+          : null;
+    const resolvedMessage = isTranslationKey(messageKey)
+      ? translate(messageKey, locale, error)
+      : (error.message ?? messageKey);
     return { ...error, message: resolvedMessage };
   });
   return sanitizeFriendlyIds(resolved);
@@ -279,8 +290,8 @@ const handleApiError = (err, req, res, next) => {
   
   const meta = getResponseMeta(res);
   const sanitizedMeta = sanitizeFriendlyIds(meta);
-  const resolvedMessage = resolveMessage(message, meta.locale, statusCode);
-  const resolvedErrors = resolveErrors(errors, meta.locale);
+  const resolvedMessage = resolveMessage(message, meta.locale, statusCode, errors);
+  const resolvedErrors = resolveErrors(errors, meta.locale, message);
   applyLocaleHeader(res, meta.locale);
 
   const code = toErrorCode(message, statusCode);

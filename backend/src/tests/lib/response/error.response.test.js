@@ -143,4 +143,27 @@ describe('response error helpers', () => {
       ])
     );
   });
+
+  it('handleApiError interpolates field names for HttpError validation details', () => {
+    const HttpError = require('@lib/errors/HttpError');
+    const res = createResponse('/api/v1/patients');
+    const req = { path: '/api/v1/patients', method: 'POST', ip: '127.0.0.1' };
+    const next = jest.fn();
+
+    handleApiError(
+      new HttpError('errors.validation.field.required', 400, [{ field: 'tenant_id' }]),
+      req,
+      res,
+      next
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.detail).toBe('tenant_id is required');
+    expect(res.payload.errors).toEqual([
+      expect.objectContaining({
+        field: 'tenant_id',
+        message: 'tenant_id is required',
+      }),
+    ]);
+  });
 });

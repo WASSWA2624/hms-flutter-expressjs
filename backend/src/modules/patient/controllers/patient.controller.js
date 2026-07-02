@@ -166,11 +166,13 @@ const createPatient = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
   const scope = buildPatientScope(req);
-  const payload = {
-    ...req.body,
-    tenant_id: scope.tenant_id ?? req.body?.tenant_id ?? null,
-    facility_id: scope.facility_id ?? req.body?.facility_id ?? null,
-  };
+  const payload = { ...req.body };
+  if (scope.tenant_id) {
+    payload.tenant_id = scope.tenant_id;
+  }
+  if (scope.facility_id) {
+    payload.facility_id = scope.facility_id;
+  }
   const patient = await patientService.createPatient(payload, userId, ipAddress, scope);
 
   sendSuccess(res, 201, 'messages.patient.create.success', patient);

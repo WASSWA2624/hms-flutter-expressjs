@@ -311,6 +311,16 @@ const parseDateValue = (value) => {
 const hasOwn = (value, property) =>
   Boolean(value) && Object.prototype.hasOwnProperty.call(value, property);
 
+const pickScopedIdentifier = (data, scope, field) => {
+  if (hasOwn(data, field)) {
+    const explicit = data[field];
+    if (explicit !== undefined && explicit !== null && String(explicit).trim() !== '') {
+      return explicit;
+    }
+  }
+  return scope[field];
+};
+
 const findPrimaryContactRecord = async (patientId, tenantId, contactType, dbClient = prisma) => {
   const records = await patientContactRepository.findMany(
     {
@@ -1066,15 +1076,13 @@ const getPatientById = async (id, userId, ipAddress, scope = {}) => {
 const createPatient = async (data, userId, ipAddress, scope = {}) => {
   try {
     const resolvedScope = await resolvePatientScope(scope);
-    const tenantInput = hasOwn(data, 'tenant_id') ? data.tenant_id : resolvedScope.tenant_id;
+    const tenantInput = pickScopedIdentifier(data, resolvedScope, 'tenant_id');
     const tenantId = await resolveIdentifierForPayload({
       value: tenantInput === undefined ? null : tenantInput,
       field: 'tenant_id',
       model: 'tenant'
     });
-    const facilityInput = hasOwn(data, 'facility_id')
-      ? data.facility_id
-      : resolvedScope.facility_id;
+    const facilityInput = pickScopedIdentifier(data, resolvedScope, 'facility_id');
     const facilityId = await resolveIdentifierForPayload({
       value: facilityInput,
       field: 'facility_id',

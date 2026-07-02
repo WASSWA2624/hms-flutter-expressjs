@@ -14,6 +14,7 @@ import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_gender_field.dart';
+import 'package:hosspi_hms/shared/components/app_phone_field.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
@@ -66,6 +67,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   late final TextEditingController _identifierTypeController;
   late final TextEditingController _identifierValueController;
   late final TextEditingController _notesController;
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   DateTime? _dateOfBirth;
   String? _gender;
   String? _facilityId;
@@ -127,6 +130,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   }
 
   Map<String, Object?> buildPayload() {
+    commitPendingFieldValues();
     final String notes = _notesController.text.trim();
     final String identifierType = _identifierTypeController.text
         .trim()
@@ -134,7 +138,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     return <String, Object?>{
       'first_name': _firstNameController.text.trim(),
       'last_name': _nullableTrim(_lastNameController.text),
-      'date_of_birth': _dateOfBirth?.toIso8601String(),
+      'date_of_birth': _dateOnly(_dateOfBirth),
       'gender': _gender,
       'facility_id': _facilityId,
       'primary_phone': _nullableTrim(_phoneController.text),
@@ -154,10 +158,15 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   /// Runs duplicate lookup when configured. Returns false when the caller should
   /// wait for user confirmation after a duplicate warning.
   Future<bool> prepareSubmit() async {
+    commitPendingFieldValues();
     if (_duplicateWarningAccepted || widget.onLookupDuplicates == null) {
       return true;
     }
     return _checkDuplicatesBeforeSave();
+  }
+
+  void commitPendingFieldValues() {
+    AppPhoneField.commitPhone(_phoneFieldKey);
   }
 
   void setFailure(AppFailure? failure) {
@@ -256,6 +265,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             },
           ),
         PatientPhoneField(
+          phoneFieldKey: _phoneFieldKey,
           controller: _phoneController,
           labelText: l10n.patientsPhoneLabel,
           enabled: enabled,
@@ -563,6 +573,13 @@ class _DuplicateCandidateLine extends StatelessWidget {
 String? _nullableTrim(String value) {
   final String trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+String? _dateOnly(DateTime? value) {
+  if (value == null) {
+    return null;
+  }
+  return value.toIso8601String().split('T').first;
 }
 
 String _joinDisplay(Iterable<String?> values) {
