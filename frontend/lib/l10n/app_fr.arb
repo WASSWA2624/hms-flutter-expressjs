@@ -3965,6 +3965,10 @@
   "@patientsFacilityLabel": {
     "description": "Patient facility label."
   },
+  "patientsFacilitySelectTenantFirstTooltip": "Veuillez d'abord sélectionner un locataire.",
+  "@patientsFacilitySelectTenantFirstTooltip": {
+    "description": "Tooltip shown when facility picker is disabled until tenant is chosen."
+  },
   "patientsRegistrationStatusLabel": "Inscription",
   "@patientsRegistrationStatusLabel": {
     "description": "Patient registration completion status label."

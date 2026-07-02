@@ -40,6 +40,7 @@ class RegisterNewPatientForm extends StatefulWidget {
     required this.referenceData,
     this.registrationScope = const PatientRegistrationScope(),
     this.onLookupDuplicates,
+    this.onDuplicateStateChanged,
     this.enabled = true,
     this.includeNotes = true,
     this.includeActiveToggle = true,
@@ -50,6 +51,7 @@ class RegisterNewPatientForm extends StatefulWidget {
   final PatientReferenceData referenceData;
   final PatientRegistrationScope registrationScope;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
+  final VoidCallback? onDuplicateStateChanged;
   final bool enabled;
   final bool includeNotes;
   final bool includeActiveToggle;
@@ -101,7 +103,10 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     _firstNameController.addListener(_clearDuplicateWarning);
     _lastNameController.addListener(_clearDuplicateWarning);
     _phoneController.addListener(_clearDuplicateWarning);
+    _emailController.addListener(_clearDuplicateWarning);
+    _identifierTypeController.addListener(_clearDuplicateWarning);
     _identifierValueController.addListener(_clearDuplicateWarning);
+    _notesController.addListener(_clearDuplicateWarning);
   }
 
   @override
@@ -128,12 +133,18 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     _phoneController
       ..removeListener(_clearDuplicateWarning)
       ..dispose();
-    _emailController.dispose();
+    _emailController
+      ..removeListener(_clearDuplicateWarning)
+      ..dispose();
     _identifierTypeController
       ..removeListener(_clearDuplicateWarning)
       ..dispose();
-    _identifierValueController.dispose();
-    _notesController.dispose();
+    _identifierValueController
+      ..removeListener(_clearDuplicateWarning)
+      ..dispose();
+    _notesController
+      ..removeListener(_clearDuplicateWarning)
+      ..dispose();
     super.dispose();
   }
 
@@ -208,11 +219,20 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     final bool identifierValueEnabled =
         enabled && selectedIdentifierType != null;
     final PatientRegistrationScope scope = widget.registrationScope;
+    final String? selectedTenantId = scope.showTenantPicker
+        ? _tenantId
+        : (_tenantId ?? scope.defaultTenantId);
+    final bool facilityDisabledAwaitingTenant =
+        scope.showTenantPicker &&
+        scope.showFacilityPicker &&
+        (selectedTenantId == null || selectedTenantId.isEmpty);
     final List<PatientReferenceOption> visibleFacilities =
-        PatientRegistrationScope.facilitiesForTenant(
-          widget.referenceData.facilities,
-          _tenantId ?? scope.defaultTenantId,
-        );
+        facilityDisabledAwaitingTenant
+        ? const <PatientReferenceOption>[]
+        : PatientRegistrationScope.facilitiesForTenant(
+            widget.referenceData.facilities,
+            selectedTenantId,
+          );
 
     return AppFormSection(
       children: <Widget>[
@@ -247,6 +267,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
               setState(() {
                 _dateOfBirth = value;
               });
+              _clearDuplicateWarning();
             },
           ),
           right: AppGenderField(
@@ -263,6 +284,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
               setState(() {
                 _gender = value;
               });
+              _clearDuplicateWarning();
             },
           ),
         ),
@@ -280,23 +302,29 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
                 _tenantId = value;
                 _facilityId = null;
               });
+              _clearDuplicateWarning();
             },
           ),
         if (scope.showFacilityPicker)
-          PatientFacilitySelectField(
-            facilities: visibleFacilities,
-            value: _facilityId,
-            labelText: l10n.patientsFacilityLabel,
-            enabled: enabled,
-            isRequired: true,
-            validator: AppValidators.requiredValue<String>(
-              l10n.validationRequired,
+          _wrapFacilityTooltip(
+            disabledAwaitingTenant: facilityDisabledAwaitingTenant,
+            message: l10n.patientsFacilitySelectTenantFirstTooltip,
+            child: PatientFacilitySelectField(
+              facilities: visibleFacilities,
+              value: _facilityId,
+              labelText: l10n.patientsFacilityLabel,
+              enabled: enabled && !facilityDisabledAwaitingTenant,
+              isRequired: true,
+              validator: AppValidators.requiredValue<String>(
+                l10n.validationRequired,
+              ),
+              onChanged: (String? value) {
+                setState(() {
+                  _facilityId = value;
+                });
+                _clearDuplicateWarning();
+              },
             ),
-            onChanged: (String? value) {
-              setState(() {
-                _facilityId = value;
-              });
-            },
           ),
         PatientPhoneField(
           phoneFieldKey: _phoneFieldKey,
@@ -323,6 +351,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
                   _identifierValueController.clear();
                 }
               });
+              _clearDuplicateWarning();
             },
             options: _identifierTypeSelectOptions(
               l10n,
@@ -354,6 +383,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
               setState(() {
                 _isActive = value;
               });
+              _clearDuplicateWarning();
             },
           ),
       ],
@@ -395,6 +425,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
           _duplicateCandidates = page.items;
           _duplicateWarningAccepted = true;
         });
+        widget.onDuplicateStateChanged?.call();
         return false;
       },
       failure: (AppFailure failure) {
@@ -416,6 +447,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
       _duplicateCandidates = const <PatientDuplicateCandidate>[];
       _duplicateWarningAccepted = false;
     });
+    widget.onDuplicateStateChanged?.call();
   }
 
   String? _resolvedTenantId() {
@@ -481,6 +513,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
               referenceData: widget.referenceData,
               registrationScope: widget.registrationScope,
               onLookupDuplicates: widget.onLookupDuplicates,
+              onDuplicateStateChanged: () => setState(() {}),
               enabled: !_isSaving,
             ),
           ],
@@ -614,6 +647,18 @@ class _DuplicateCandidateLine extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _wrapFacilityTooltip({
+  required bool disabledAwaitingTenant,
+  required String message,
+  required Widget child,
+}) {
+  if (!disabledAwaitingTenant) {
+    return child;
+  }
+
+  return Tooltip(message: message, child: child);
 }
 
 String? _nullableTrim(String value) {

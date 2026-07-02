@@ -4005,6 +4005,10 @@
   "@patientsFacilityLabel": {
     "description": "Patient facility label."
   },
+  "patientsFacilitySelectTenantFirstTooltip": "Please select a tenant first.",
+  "@patientsFacilitySelectTenantFirstTooltip": {
+    "description": "Tooltip shown when facility picker is disabled until tenant is chosen."
+  },
   "patientsRegistrationStatusLabel": "Registration",
   "@patientsRegistrationStatusLabel": {
     "description": "Patient registration completion status label."

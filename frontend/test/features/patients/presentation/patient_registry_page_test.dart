@@ -129,6 +129,186 @@ void main() {
     },
   );
 
+  testWidgets(
+    'RegisterNewPatientDialog clears duplicate warning when a field is edited',
+    (WidgetTester tester) async {
+      var lookupCount = 0;
+
+      await pumpLocalizedWidget(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<Patient>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(),
+                      onLookupDuplicates: (PatientDuplicateQuery query) async {
+                        lookupCount += 1;
+                        return const Result<
+                          AppPage<PatientDuplicateCandidate>
+                        >.success(
+                          AppPage<PatientDuplicateCandidate>(
+                            items: <PatientDuplicateCandidate>[
+                              PatientDuplicateCandidate(
+                                reviewId: 'review-1',
+                                confidenceScore: 92,
+                                classification: 'STRONG_MATCH',
+                                matchReasons: <String>['name', 'phone'],
+                                candidatePatient: Patient(
+                                  id: 'patient-1',
+                                  displayName: 'Jane Doe',
+                                  primaryPhone: '+256700000000',
+                                ),
+                              ),
+                            ],
+                            request: AppPageRequest(pageSize: 8),
+                            totalItemCount: 1,
+                          ),
+                        );
+                      },
+                      onSubmit: (Map<String, Object?> payload) async {
+                        return _registeredPatientResult(payload);
+                      },
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        size: const Size(1000, 800),
+      );
+
+      await tester.tap(find.text('Open register dialog'));
+      await tester.pumpAndSettle();
+
+      await _fillRegisterPatientBasics(tester);
+      await tester.tap(find.text('Register patient'));
+      await tester.pumpAndSettle();
+
+      expect(lookupCount, 1);
+      expect(find.text('Potential duplicate found'), findsOneWidget);
+      expect(find.text('Save anyway'), findsOneWidget);
+
+      await tester.enterText(find.byType(EditableText).at(0), 'Janet');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Potential duplicate found'), findsNothing);
+      expect(find.text('Register patient'), findsOneWidget);
+      expect(find.text('Save anyway'), findsNothing);
+
+      await tester.tap(find.text('Register patient'));
+      await tester.pumpAndSettle();
+
+      expect(lookupCount, 2);
+    },
+  );
+
+  testWidgets(
+    'RegisterNewPatientDialog disables facility until tenant is selected',
+    (WidgetTester tester) async {
+      await pumpLocalizedWidget(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Open register dialog',
+              onPressed: () {
+                unawaited(
+                  showAppDialog<Patient>(
+                    context: context,
+                    builder: (_) => RegisterNewPatientDialog(
+                      referenceData: const PatientReferenceData(
+                        tenants: <PatientReferenceOption>[
+                          PatientReferenceOption(
+                            id: 'tenant-1',
+                            label: 'DemoCare Tenant',
+                          ),
+                          PatientReferenceOption(
+                            id: 'tenant-2',
+                            label: 'Other Tenant',
+                          ),
+                        ],
+                        facilities: <PatientReferenceOption>[
+                          PatientReferenceOption(
+                            id: 'facility-1',
+                            label: 'DemoCare General Hospital',
+                            tenantId: 'tenant-1',
+                          ),
+                          PatientReferenceOption(
+                            id: 'facility-2',
+                            label: 'Other Clinic',
+                            tenantId: 'tenant-2',
+                          ),
+                        ],
+                      ),
+                      registrationScope: const PatientRegistrationScope(
+                        showTenantPicker: true,
+                        showFacilityPicker: true,
+                      ),
+                      onSubmit: (_) async => _registeredPatientResult(const {}),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        size: const Size(1000, 800),
+      );
+
+      await tester.tap(find.text('Open register dialog'));
+      await tester.pumpAndSettle();
+
+      final Finder facilityField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is PatientFacilitySelectField && !widget.enabled,
+      );
+      expect(facilityField, findsOneWidget);
+      expect(
+        find.byTooltip('Please select a tenant first.'),
+        findsOneWidget,
+      );
+
+      final Finder tenantSelect = find.descendant(
+        of: find.byType(PatientTenantSelectField),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(tenantSelect);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(MenuItemButton),
+          matching: find.text('DemoCare Tenant'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder enabledFacilityField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is PatientFacilitySelectField && widget.enabled,
+      );
+      expect(enabledFacilityField, findsOneWidget);
+      expect(
+        find.byTooltip('Please select a tenant first.'),
+        findsNothing,
+      );
+
+      final Finder facilitySelect = find.descendant(
+        of: enabledFacilityField,
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(facilitySelect);
+      await tester.pumpAndSettle();
+      expect(find.text('DemoCare General Hospital'), findsWidgets);
+      expect(find.text('Other Clinic'), findsNothing);
+    },
+  );
+
   testWidgets('RegisterNewPatientDialog creates a patient master record only', (
     WidgetTester tester,
   ) async {

@@ -5948,6 +5948,12 @@ abstract class AppLocalizations {
   /// **'Facility'**
   String get patientsFacilityLabel;
 
+  /// Tooltip shown when facility picker is disabled until tenant is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a tenant first.'**
+  String get patientsFacilitySelectTenantFirstTooltip;
+
   /// Patient registration completion status label.
   ///
   /// In en, this message translates to:

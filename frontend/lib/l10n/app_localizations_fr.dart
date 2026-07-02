@@ -3087,6 +3087,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsFacilityLabel => 'Établissement';
 
   @override
+  String get patientsFacilitySelectTenantFirstTooltip =>
+      'Veuillez d\'abord sélectionner un locataire.';
+
+  @override
   String get patientsRegistrationStatusLabel => 'Inscription';
 
   @override

@@ -5576,6 +5576,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       _firstNameController.addListener(_clearDuplicateWarning);
       _lastNameController.addListener(_clearDuplicateWarning);
       _phoneController.addListener(_clearDuplicateWarning);
+      _emailController.addListener(_clearDuplicateWarning);
+      _identifierTypeController.addListener(_clearDuplicateWarning);
       _identifierValueController.addListener(_clearDuplicateWarning);
     }
   }
@@ -5586,6 +5588,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       _firstNameController.removeListener(_clearDuplicateWarning);
       _lastNameController.removeListener(_clearDuplicateWarning);
       _phoneController.removeListener(_clearDuplicateWarning);
+      _emailController.removeListener(_clearDuplicateWarning);
+      _identifierTypeController.removeListener(_clearDuplicateWarning);
       _identifierValueController.removeListener(_clearDuplicateWarning);
     }
     _firstNameController.dispose();
@@ -5641,7 +5645,10 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                 labelText: l10n.patientsDobLabel,
                 enabled: !_isSaving,
                 onChanged: (DateTime? value) {
-                  _dateOfBirth = value;
+                  setState(() {
+                    _dateOfBirth = value;
+                  });
+                  _clearDuplicateWarning();
                 },
               ),
               right: AppGenderField(
@@ -5656,6 +5663,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _gender = value;
                   });
+                  _clearDuplicateWarning();
                 },
               ),
             ),
@@ -5669,6 +5677,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _facilityId = value;
                   });
+                  _clearDuplicateWarning();
                 },
               ),
             PatientPhoneField(
@@ -5691,6 +5700,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _identifierTypeController.text = value ?? '';
                   });
+                  _clearDuplicateWarning();
                 },
                 options: _identifierTypeSelectOptions(
                   _identifierTypeController.text,
@@ -5710,6 +5720,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                 setState(() {
                   _isActive = value;
                 });
+                _clearDuplicateWarning();
               },
             ),
           ],
