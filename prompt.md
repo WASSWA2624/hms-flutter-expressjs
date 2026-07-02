@@ -1,86 +1,86 @@
-# Workspace Toolbar — Responsive Label Rules
+# Patient Registry — Responsive Toolbar Fix
 
 ## Objective
 
-Standardize **workspace header and toolbar** responsive behavior across all HOSSPI HMS modules. Screen titles and primary actions must adapt by breakpoint so mobile stays compact, tablet shows readable titles, and desktop shows full labeled actions — without per-page overrides.
+Fix responsive layout for the **Patient registry** workspace toolbar so the **Register patient** primary action and workspace header behave correctly across breakpoints.
 
-**Reference UI:** Patient registry at `/patients` (screenshots: ~302px, ~390px, ~649px, desktop).
-
----
-
-## Responsive rules
-
-Use existing breakpoints from `frontend/lib/core/responsive/app_breakpoints.dart`:
-
-
-| Breakpoint              | Width     | Screen title (icon + label) | Primary action (icon + label) | Secondary / overflow actions                    |
-| ----------------------- | --------- | --------------------------- | ----------------------------- | ----------------------------------------------- |
-| **Mobile** (`xs`, `sm`) | < 600px   | Icon only — hide title text | Icon only                     | Icon + label; overflow via ⋮ menu               |
-| **Tablet** (`md`)       | 600–839px | Icon + label                | Icon only                     | Icon + label; overflow via ⋮ menu               |
-| **Large** (`lg`+)       | ≥ 840px   | Icon + label                | Icon + label                  | Labels where space allows; overflow when needed |
-
-
-
-
-### Visual target (Patient registry)
-
-- **Mobile:** Leading module icon visible; no “Patient registry” text; **Add patient** shown as icon-only (or pinned inline icon when space allows).
-- **Tablet (~649px):** “Patient registry” title visible; **Add patient** remains icon-only.
-- **Desktop:** “Patient registry” title visible; **Add patient** shows icon **and** label.
-
-Accessibility: when text is hidden, preserve `Semantics` / tooltips so icon-only controls remain discoverable.
+**Screen:** `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
 
 ---
 
+## Problem
 
+Two regressions on the patient registry toolbar:
 
-## Scope
+1. **Large screens (lg+):** The primary **Register patient** button shows **icon only**; it should show **icon + label**.
+2. **Mobile (xs–sm):** The primary button **disappears entirely**; it should remain **visible as icon-only** and stay tappable inline (not buried in overflow).
 
-Apply **globally** in shared layout components — not in individual feature pages.
-
-
-| Area                  | File                                                         | Change                                                                                        |
-| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Toolbar action labels | `frontend/lib/shared/layout/app_workspace_toolbar.dart`      | Drive `AppActionLabelScope.showLabels` from breakpoint: icon-only below `lg`; labels at `lg+` |
-| Workspace title text  | `frontend/lib/shared/layout/app_workspace.dart`              | Keep title text hidden at `xs`/`sm` via `hidesWorkspaceTitle`; show from `md` upward          |
-| Breakpoint helpers    | `frontend/lib/core/responsive/app_breakpoints.dart`          | Add a named helper (e.g. `showsToolbarActionLabels`) if it clarifies intent                   |
-| Label scope           | `frontend/lib/shared/components/app_action_label_scope.dart` | No API change expected — consume updated scope values                                         |
-
-
-**Out of scope:** App shell header (HOSSPI logo bar), filter bar, list/table layout, page-specific toolbar action definitions.
+Workspace header title behavior may also be wrong on small viewports — verify against the matrix below.
 
 ---
 
+## Expected behavior
 
+Use `AppBreakpoints` as the source of truth (`frontend/lib/core/responsive/app_breakpoints.dart`).
 
-## Current vs desired
+| Breakpoint | Width | Workspace title | Primary **Register patient** |
+| ---------- | ----- | ----------------- | ---------------------------- |
+| **xs, sm** (mobile) | &lt; 600 | Hidden (module icon only) | Icon only, **always inline** |
+| **md** (tablet) | 600–839 | Visible | Icon only |
+| **lg+** (desktop) | ≥ 840 | Visible | Icon + label |
 
+Global toolbar actions (refresh, fault report, housekeeping, etc.) may move to the overflow menu on narrow widths; the primary action must **never** be dropped from the inline toolbar on mobile.
 
-| Behavior                        | Current                                 | Desired              |
-| ------------------------------- | --------------------------------------- | -------------------- |
-| Title text on mobile            | Hidden at `xs`/`sm` ✓                   | Unchanged            |
-| Title text on tablet            | Shown at `md` ✓                         | Unchanged            |
-| Toolbar labels on tablet        | Shown from `md` ✗                       | Icon-only until `lg` |
-| Toolbar labels on desktop       | Shown from `md`                         | Shown from `lg`      |
-| Primary pinned inline on mobile | Primary stays inline, others overflow ✓ | Unchanged            |
+Reference tests (already define the contract):
 
+- `frontend/test/shared/layout/app_workspace_toolbar_test.dart` — `mobile toolbar keeps primary action inline as icon only`, `tablet toolbar shows title but keeps primary action icon only`, `desktop toolbar shows primary action label`
 
 ---
 
+## Likely root cause
 
+In `patient_registry_page.dart`, the primary button is declared with `iconOnly: true`, which overrides `AppActionLabelScope` and forces icon-only mode on **all** breakpoints:
+
+```dart
+AppButton.primary(
+  iconOnly: true,  // ← remove; let toolbar scope control label visibility
+  leadingIcon: Icons.person_add_alt_1_outlined,
+  label: l10n.patientsRegisterPatientAction,
+  ...
+)
+```
+
+`AppButton` already respects `AppActionLabelScope.forceIconOnly` from `AppWorkspaceToolbar` — do **not** hardcode `iconOnly: true` on workspace primary actions.
+
+For the mobile disappearance, audit `AppWorkspaceToolbar._AdaptiveToolbarLayout` / `_measureOverflow` to ensure `pinnedInlinePrimary` is never moved into the overflow menu.
+
+---
+
+## Scoped work
+
+1. **Patient registry** — Remove `iconOnly: true` from the Register patient toolbar button; keep `label`, `semanticLabel`, and `tooltip` set for accessibility.
+2. **Toolbar layout** (if needed) — Ensure `pinnedInlinePrimary` stays inline on xs–md even when global actions and summary notifications are present.
+3. **Tests** — Add or extend patient registry toolbar responsive tests mirroring `app_workspace_toolbar_test.dart` (mobile icon visible + tappable, tablet icon only, desktop label visible).
+
+---
+
+## Out of scope
+
+- Register patient dialog / form changes
+- Other workspace screens (unless the toolbar pin fix is shared infrastructure)
+- i18n changes
+
+---
 
 ## Acceptance criteria
 
-- [ ] At widths < 600px, workspace shows module icon only (no title text) and toolbar primary action is icon-only.
-- [ ] At 600–839px, workspace title text is visible; toolbar primary (and secondary) actions remain icon-only.
-- [ ] At ≥ 840px, toolbar primary action shows icon + label (e.g. “Add patient”).
-- [ ] Behavior is consistent on Patient registry, OPD, and at least one other workspace using `appWorkspaceToolbarWithLabels`.
-- [ ] Icon-only controls retain accessible names (semantics and/or tooltips).
-- [ ] `flutter analyze` and `frontend/test/shared/layout/app_workspace_toolbar_test.dart` pass; add/update breakpoint coverage if needed.
+- [ ] **lg+ (≥ 840px):** Register patient shows icon **and** label in the toolbar
+- [ ] **md (600–839px):** Register patient shows icon only; workspace title visible
+- [ ] **xs–sm (&lt; 600px):** Workspace title hidden; Register patient icon remains **inline and tappable** (not only in overflow)
+- [ ] `flutter analyze` passes
+- [ ] Toolbar responsive tests pass (`app_workspace_toolbar_test.dart` + patient registry coverage)
 
 ---
-
-
 
 ## Quality gate
 
@@ -90,5 +90,5 @@ From `frontend/`:
 dart format --set-exit-if-changed .
 flutter analyze
 flutter test test/shared/layout/app_workspace_toolbar_test.dart
+flutter test test/features/patients/presentation/patient_registry_page_test.dart
 ```
-
