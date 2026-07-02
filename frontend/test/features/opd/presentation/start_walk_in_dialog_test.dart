@@ -70,9 +70,8 @@ void main() {
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
     );
     when(() => patientRepository.loadReferenceData()).thenAnswer(
-      (_) async => const Result<PatientReferenceData>.success(
-        PatientReferenceData(),
-      ),
+      (_) async =>
+          const Result<PatientReferenceData>.success(PatientReferenceData()),
     );
     when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
       (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
@@ -838,9 +837,8 @@ void _stubStartDialogLookups({
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
   );
   when(() => patientRepository.loadReferenceData()).thenAnswer(
-    (_) async => const Result<PatientReferenceData>.success(
-      PatientReferenceData(),
-    ),
+    (_) async =>
+        const Result<PatientReferenceData>.success(PatientReferenceData()),
   );
   when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
     (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(

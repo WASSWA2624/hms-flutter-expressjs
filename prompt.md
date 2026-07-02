@@ -1,112 +1,86 @@
-# Register New Patient — Form UX Refinement
+# Workspace Toolbar — Responsive Label Rules
 
 ## Objective
 
-Polish the **Register new patient** dialog so the form is clean, well-spaced, and consistent across Android, iOS, web, and desktop. Fix layout issues (especially the phone field), tighten field requirements, and improve identifier and facility behaviour — without changing registration scope (create patient master record only).
+Standardize **workspace header and toolbar** responsive behavior across all HOSSPI HMS modules. Screen titles and primary actions must adapt by breakpoint so mobile stays compact, tablet shows readable titles, and desktop shows full labeled actions — without per-page overrides.
 
-**Primary target:** `frontend/lib/shared/patient_actions/register_new_patient_dialog.dart` (`RegisterNewPatientForm` + `RegisterNewPatientDialog`)
-
-**Also used by:** `patient_registry_page.dart`, `opd_encounter_dialog.dart` — keep behaviour aligned.
+**Reference UI:** Patient registry at `/patients` (screenshots: ~302px, ~390px, ~649px, desktop).
 
 ---
 
-## Problems (from current UI)
+## Responsive rules
 
-- Phone field shows error/overlap; inputs feel cramped with inconsistent vertical spacing.
-- Gender is optional in the UI but should be required for registration.
-- Identifier value stays editable when no identifier type is selected.
-- Identifier type labels use raw API codes (e.g. `Mrn`) instead of full name + capitalized abbreviation.
-- Facility field is shown even when the user has no meaningful choice.
+Use existing breakpoints from `frontend/lib/core/responsive/app_breakpoints.dart`:
 
----
 
-## Field rules
+| Breakpoint              | Width     | Screen title (icon + label) | Primary action (icon + label) | Secondary / overflow actions                    |
+| ----------------------- | --------- | --------------------------- | ----------------------------- | ----------------------------------------------- |
+| **Mobile** (`xs`, `sm`) | < 600px   | Icon only — hide title text | Icon only                     | Icon + label; overflow via ⋮ menu               |
+| **Tablet** (`md`)       | 600–839px | Icon + label                | Icon only                     | Icon + label; overflow via ⋮ menu               |
+| **Large** (`lg`+)       | ≥ 840px   | Icon + label                | Icon + label                  | Labels where space allows; overflow when needed |
 
-| Field | Requirement | Notes |
-| ----- | ----------- | ----- |
-| First name | **Required** | Keep current validation. |
-| Last name | Optional | Confirm backend accepts empty/null (`optionalNameBodySchema` in `patient.schema.js`). |
-| Date of birth | Optional | Keep optional. |
-| Gender | **Required** | Options: Male, Female, Other, Unknown. Use `AppGenderField` with `isRequired: true`. |
-| Facility | Contextual | See **Facility behaviour** below. |
-| Phone | Optional | Fix layout/spacing; resolve error-state overlap. |
-| Email | Optional | No change. |
-| Identifier type | Optional | If unset, **disable** identifier value and clear its value. |
-| Identifier value | Conditional | Enabled only when identifier type is selected. |
-| Notes | Optional | No change. |
-| Patient is active | Default checked | No change. |
 
-Captured fields are sufficient — focus on presentation and validation, not new data points.
+
+
+### Visual target (Patient registry)
+
+- **Mobile:** Leading module icon visible; no “Patient registry” text; **Add patient** shown as icon-only (or pinned inline icon when space allows).
+- **Tablet (~649px):** “Patient registry” title visible; **Add patient** remains icon-only.
+- **Desktop:** “Patient registry” title visible; **Add patient** shows icon **and** label.
+
+Accessibility: when text is hidden, preserve `Semantics` / tooltips so icon-only controls remain discoverable.
 
 ---
 
-## Layout and responsiveness
 
-- Use existing form primitives (`AppFormShell`, `AppResponsiveFieldRow`, `PatientPhoneField`, etc.) and design-system spacing tokens.
-- Ensure consistent gaps between rows; no overlapping borders, labels, or error text (phone field is the main offender).
-- Form must read well on narrow mobile, tablet, and wide desktop breakpoints inside the maximized `AppDialog`.
-- Prefer full-width rows for compound fields (phone) when side-by-side layout causes crowding.
 
----
+## Scope
 
-## Identifier type labels
+Apply **globally** in shared layout components — not in individual feature pages.
 
-Replace `AppDisplay.apiLabel(value)` for dropdown options with localized labels in **full name + abbreviation** format, abbreviation in capitals, e.g.:
 
-- Medical Record Number (MRN)
-- National ID (NATIONAL_ID)
-- Passport (PASSPORT)
-- Insurance (INSURANCE)
-- Driver License (DRIVER_LICENSE)
-- Birth Certificate (BIRTH_CERTIFICATE)
-- Other (OTHER)
+| Area                  | File                                                         | Change                                                                                        |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Toolbar action labels | `frontend/lib/shared/layout/app_workspace_toolbar.dart`      | Drive `AppActionLabelScope.showLabels` from breakpoint: icon-only below `lg`; labels at `lg+` |
+| Workspace title text  | `frontend/lib/shared/layout/app_workspace.dart`              | Keep title text hidden at `xs`/`sm` via `hidesWorkspaceTitle`; show from `md` upward          |
+| Breakpoint helpers    | `frontend/lib/core/responsive/app_breakpoints.dart`          | Add a named helper (e.g. `showsToolbarActionLabels`) if it clarifies intent                   |
+| Label scope           | `frontend/lib/shared/components/app_action_label_scope.dart` | No API change expected — consume updated scope values                                         |
 
-Store/send the existing API enum value on submit; only change display labels (add i18n keys in `app_en.arb`).
+
+**Out of scope:** App shell header (HOSSPI logo bar), filter bar, list/table layout, page-specific toolbar action definitions.
 
 ---
 
-## Facility behaviour
 
-| User context | UI |
-| ------------ | -- |
-| Super admin or tenant admin with **multiple** facilities | Show facility dropdown; user must choose. |
-| Any other role, or only **one** facility in reference data | Pre-select the user's current/logged-in facility; **hide** the facility field. |
-| Single facility available | Set `facility_id` in payload internally; do not render the field. |
 
-Wire pre-selection via `PatientReferenceData` / caller context (registry page, OPD dialog) — do not hardcode facility logic only in the widget if session context lives higher up.
+## Current vs desired
 
----
 
-## Backend alignment
+| Behavior                        | Current                                 | Desired              |
+| ------------------------------- | --------------------------------------- | -------------------- |
+| Title text on mobile            | Hidden at `xs`/`sm` ✓                   | Unchanged            |
+| Title text on tablet            | Shown at `md` ✓                         | Unchanged            |
+| Toolbar labels on tablet        | Shown from `md` ✗                       | Icon-only until `lg` |
+| Toolbar labels on desktop       | Shown from `md`                         | Shown from `lg`      |
+| Primary pinned inline on mobile | Primary stays inline, others overflow ✓ | Unchanged            |
 
-- **Last name:** already optional — no schema change expected; verify create path accepts omission.
-- **Gender:** currently optional in `createPatientSchema`. Either:
-  1. Add frontend required validation only (recommended minimum), or
-  2. Make `gender` required in `createPatientSchema` if product policy demands server-side enforcement.
-
-Document which approach is taken in the PR.
 
 ---
 
-## Out of scope
 
-- New registration fields or downstream workflows (OPD, emergency, IPD).
-- Edit-patient flows (`PatientFormDialog`).
-- Non-English locales beyond new `app_en.arb` keys.
-
----
 
 ## Acceptance criteria
 
-- [ ] Phone field and all rows have clear spacing; no overlapping inputs or error states at common breakpoints.
-- [ ] Gender is required with Male / Female / Other / Unknown options.
-- [ ] Identifier value is disabled until identifier type is selected; clearing type clears value.
-- [ ] Identifier dropdown shows full name + capitalized abbreviation labels.
-- [ ] Facility hidden and auto-set when user has no real choice; shown only when admin-level multi-facility selection applies.
-- [ ] Last name remains optional and saves successfully without a value.
-- [ ] `flutter analyze` and `flutter test test/features/patients/` pass.
+- [ ] At widths < 600px, workspace shows module icon only (no title text) and toolbar primary action is icon-only.
+- [ ] At 600–839px, workspace title text is visible; toolbar primary (and secondary) actions remain icon-only.
+- [ ] At ≥ 840px, toolbar primary action shows icon + label (e.g. “Add patient”).
+- [ ] Behavior is consistent on Patient registry, OPD, and at least one other workspace using `appWorkspaceToolbarWithLabels`.
+- [ ] Icon-only controls retain accessible names (semantics and/or tooltips).
+- [ ] `flutter analyze` and `frontend/test/shared/layout/app_workspace_toolbar_test.dart` pass; add/update breakpoint coverage if needed.
 
 ---
+
+
 
 ## Quality gate
 
@@ -115,5 +89,6 @@ From `frontend/`:
 ```bash
 dart format --set-exit-if-changed .
 flutter analyze
-flutter test test/features/patients/
+flutter test test/shared/layout/app_workspace_toolbar_test.dart
 ```
+

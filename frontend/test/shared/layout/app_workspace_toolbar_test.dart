@@ -435,7 +435,6 @@ void main() {
           leadingIcon: Icons.people_outline,
           toolbar: AppWorkspaceToolbarConfig(
             primary: AppButton.primary(
-              iconOnly: true,
               leadingIcon: Icons.person_add_alt_1_outlined,
               label: 'Register patient',
               onPressed: () {
@@ -460,6 +459,64 @@ void main() {
     await tester.pump();
 
     expect(primaryTapped, isTrue);
+  });
+
+  testWidgets('tablet toolbar shows title but keeps primary action icon only', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Patients',
+          leadingIcon: Icons.people_outline,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: 'Register patient',
+              onPressed: () {},
+            ),
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+          ),
+          body: const Text('Worklist'),
+        ),
+      ),
+      size: const Size(649, 600),
+    );
+
+    expect(find.text('Patients'), findsOneWidget);
+    expect(find.text('Register patient'), findsNothing);
+    expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
+  });
+
+  testWidgets('desktop toolbar shows primary action label', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      ProviderScope(
+        child: AppWorkspace(
+          title: 'Patients',
+          leadingIcon: Icons.people_outline,
+          toolbar: AppWorkspaceToolbarConfig(
+            primary: AppButton.primary(
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              label: 'Register patient',
+              onPressed: () {},
+            ),
+            onRefresh: () async {},
+            overflowLabel: 'More actions',
+          ),
+          body: const Text('Worklist'),
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.text('Patients'), findsOneWidget);
+    expect(find.text('Register patient'), findsOneWidget);
+    expect(find.byIcon(Icons.person_add_alt_1_outlined), findsOneWidget);
   });
 }
 

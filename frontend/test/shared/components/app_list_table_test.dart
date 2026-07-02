@@ -426,10 +426,9 @@ void main() {
     WidgetTester tester,
   ) async {
     const String storageKey = 'test-table-memory';
-    AppListTableColumnVisibilityMemory.instance.write(
-      storageKey,
-      <String>{'status'},
-    );
+    AppListTableColumnVisibilityMemory.instance.write(storageKey, <String>{
+      'status',
+    });
     addTearDown(() {
       AppListTableColumnVisibilityMemory.instance.remove(storageKey);
     });

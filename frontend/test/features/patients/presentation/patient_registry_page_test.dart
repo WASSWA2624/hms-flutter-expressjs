@@ -68,44 +68,43 @@ void main() {
                     context: context,
                     builder: (_) => RegisterNewPatientDialog(
                       referenceData: const PatientReferenceData(),
-                      onLookupDuplicates:
-                          (PatientDuplicateQuery query) async {
-                              lookupCount += 1;
-                              expect(query.firstName, 'Jane');
-                              expect(query.lastName, 'Doe');
-                              return const Result<
-                                AppPage<PatientDuplicateCandidate>
-                              >.success(
-                                AppPage<PatientDuplicateCandidate>(
-                                  items: <PatientDuplicateCandidate>[
-                                    PatientDuplicateCandidate(
-                                      reviewId: 'review-1',
-                                      confidenceScore: 92,
-                                      classification: 'STRONG_MATCH',
-                                      matchReasons: <String>['name', 'phone'],
-                                      candidatePatient: Patient(
-                                        id: 'patient-1',
-                                        displayName: 'Jane Doe',
-                                        primaryPhone: '+256700000000',
-                                      ),
-                                    ),
-                                  ],
-                                  request: AppPageRequest(pageSize: 8),
-                                  totalItemCount: 1,
+                      onLookupDuplicates: (PatientDuplicateQuery query) async {
+                        lookupCount += 1;
+                        expect(query.firstName, 'Jane');
+                        expect(query.lastName, 'Doe');
+                        return const Result<
+                          AppPage<PatientDuplicateCandidate>
+                        >.success(
+                          AppPage<PatientDuplicateCandidate>(
+                            items: <PatientDuplicateCandidate>[
+                              PatientDuplicateCandidate(
+                                reviewId: 'review-1',
+                                confidenceScore: 92,
+                                classification: 'STRONG_MATCH',
+                                matchReasons: <String>['name', 'phone'],
+                                candidatePatient: Patient(
+                                  id: 'patient-1',
+                                  displayName: 'Jane Doe',
+                                  primaryPhone: '+256700000000',
                                 ),
-                              );
-                            },
-                        onSubmit: (Map<String, Object?> payload) async {
-                          submitCount += 1;
-                          return null;
-                        },
-                      ),
+                              ),
+                            ],
+                            request: AppPageRequest(pageSize: 8),
+                            totalItemCount: 1,
+                          ),
+                        );
+                      },
+                      onSubmit: (Map<String, Object?> payload) async {
+                        submitCount += 1;
+                        return null;
+                      },
                     ),
-                  );
-                },
-              );
-            },
-          ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
         size: const Size(1000, 800),
       );
 
@@ -137,23 +136,23 @@ void main() {
       tester,
       Builder(
         builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open register dialog',
-              onPressed: () {
-                unawaited(
-                  showAppDialog<bool>(
-                    context: context,
-                    builder: (_) => RegisterNewPatientDialog(
-                      referenceData: const PatientReferenceData(),
-                      onSubmit: (Map<String, Object?> payload) async {
-                        submittedPayload = payload;
-                        return null;
-                      },
-                    ),
+          return AppButton.primary(
+            label: 'Open register dialog',
+            onPressed: () {
+              unawaited(
+                showAppDialog<bool>(
+                  context: context,
+                  builder: (_) => RegisterNewPatientDialog(
+                    referenceData: const PatientReferenceData(),
+                    onSubmit: (Map<String, Object?> payload) async {
+                      submittedPayload = payload;
+                      return null;
+                    },
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
         },
       ),
       size: const Size(1000, 800),
@@ -185,23 +184,23 @@ void main() {
       tester,
       Builder(
         builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open register dialog',
-              onPressed: () {
-                unawaited(
-                  showAppDialog<bool>(
-                    context: context,
-                    builder: (_) => RegisterNewPatientDialog(
-                      referenceData: const PatientReferenceData(),
-                      onSubmit: (Map<String, Object?> payload) async {
-                        submittedPayload = payload;
-                        return null;
-                      },
-                    ),
+          return AppButton.primary(
+            label: 'Open register dialog',
+            onPressed: () {
+              unawaited(
+                showAppDialog<bool>(
+                  context: context,
+                  builder: (_) => RegisterNewPatientDialog(
+                    referenceData: const PatientReferenceData(),
+                    onSubmit: (Map<String, Object?> payload) async {
+                      submittedPayload = payload;
+                      return null;
+                    },
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
         },
       ),
       size: const Size(1000, 800),
@@ -314,20 +313,20 @@ void main() {
       tester,
       Builder(
         builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open failing form',
-              onPressed: () {
-                unawaited(
-                  showAppDialog<bool>(
-                    context: context,
-                    builder: (_) => RegisterNewPatientDialog(
-                      referenceData: const PatientReferenceData(),
-                      onSubmit: (_) async => const AppFailure.forbidden(),
-                    ),
+          return AppButton.primary(
+            label: 'Open failing form',
+            onPressed: () {
+              unawaited(
+                showAppDialog<bool>(
+                  context: context,
+                  builder: (_) => RegisterNewPatientDialog(
+                    referenceData: const PatientReferenceData(),
+                    onSubmit: (_) async => const AppFailure.forbidden(),
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
         },
       ),
       size: const Size(1000, 800),

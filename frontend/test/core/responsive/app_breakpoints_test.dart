@@ -27,5 +27,18 @@ void main() {
       expect(AppBreakpoint.xl.supportsExtendedNavigationRail, isTrue);
       expect(AppBreakpoint.xxl.supportsExtendedNavigationRail, isTrue);
     });
+
+    test('exposes workspace header and toolbar label decisions', () {
+      expect(AppBreakpoint.xs.hidesWorkspaceTitle, isTrue);
+      expect(AppBreakpoint.sm.hidesWorkspaceTitle, isTrue);
+      expect(AppBreakpoint.md.hidesWorkspaceTitle, isFalse);
+      expect(AppBreakpoint.lg.hidesWorkspaceTitle, isFalse);
+
+      expect(AppBreakpoint.xs.showsToolbarActionLabels, isFalse);
+      expect(AppBreakpoint.sm.showsToolbarActionLabels, isFalse);
+      expect(AppBreakpoint.md.showsToolbarActionLabels, isFalse);
+      expect(AppBreakpoint.lg.showsToolbarActionLabels, isTrue);
+      expect(AppBreakpoint.xl.showsToolbarActionLabels, isTrue);
+    });
   });
 }

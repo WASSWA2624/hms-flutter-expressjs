@@ -104,8 +104,7 @@ class AppWorkspaceToolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool showLabels =
-        breakpoint != AppBreakpoint.xs && breakpoint != AppBreakpoint.sm;
+    final bool showLabels = breakpoint.showsToolbarActionLabels;
 
     final List<Widget> screenActions = _screenActions(config);
     final List<Widget> globalActions = config.overflowSections != null

@@ -22,6 +22,12 @@ extension AppBreakpointProperties on AppBreakpoint {
     AppBreakpoint.xs || AppBreakpoint.sm => true,
     _ => false,
   };
+
+  /// Toolbar inline actions show text labels only on large screens and above.
+  bool get showsToolbarActionLabels => switch (this) {
+    AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => false,
+    _ => true,
+  };
 }
 
 abstract final class AppBreakpoints {

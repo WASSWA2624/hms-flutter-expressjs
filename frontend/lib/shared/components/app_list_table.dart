@@ -130,8 +130,8 @@ String appListTableColumnVisibilityStorageKey<T>(
   for (final AppListTableColumn<T> column in columns) {
     schemaKeys.add(column.key);
   }
-  for (final AppListTableColumn<T> column in columnChoices ??
-      <AppListTableColumn<T>>[]) {
+  for (final AppListTableColumn<T> column
+      in columnChoices ?? <AppListTableColumn<T>>[]) {
     schemaKeys.add(column.key);
   }
 
