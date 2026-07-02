@@ -3822,9 +3822,9 @@
   "@patientsInactiveFilter": {
     "description": "Inactive patient status label."
   },
-  "patientsPatientColumnLabel": "Patient",
+  "patientsPatientColumnLabel": "Nom du patient",
   "@patientsPatientColumnLabel": {
-    "description": "Patient list patient column label."
+    "description": "Patient list patient name column label."
   },
   "patientsPatientNumberColumnLabel": "Patient non.",
   "@patientsPatientNumberColumnLabel": {
@@ -3834,9 +3834,9 @@
   "@patientsAgeSexColumnLabel": {
     "description": "Patient list age and sex column label."
   },
-  "patientsPhoneIdentifierColumnLabel": "Téléphone/pièce d'identité",
+  "patientsPhoneIdentifierColumnLabel": "Téléphone",
   "@patientsPhoneIdentifierColumnLabel": {
-    "description": "Patient list phone and identifier column label."
+    "description": "Patient list phone column label."
   },
   "patientsAlertColumnLabel": "Alertes",
   "@patientsAlertColumnLabel": {

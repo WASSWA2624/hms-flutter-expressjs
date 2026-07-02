@@ -215,12 +215,14 @@ void main() {
     );
 
     expect(find.text('Patient no.'), findsOneWidget);
+    expect(find.text('Patient name'), findsOneWidget);
     expect(find.text('Age / sex'), findsOneWidget);
-    expect(find.text('Phone / ID'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
     expect(find.text('Alerts'), findsOneWidget);
     expect(find.text('Visit'), findsNothing);
     expect(find.text('Next action'), findsNothing);
-    expect(find.text('MRN MRN-10024'), findsWidgets);
+    expect(find.text('MRN MRN-10024'), findsOneWidget);
+    expect(find.text('+256700000000'), findsOneWidget);
     expect(find.textContaining('Female'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
     expect(find.text('OPD - In Progress'), findsNothing);

@@ -2954,7 +2954,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsInactiveFilter => 'Inactif';
 
   @override
-  String get patientsPatientColumnLabel => 'Patient';
+  String get patientsPatientColumnLabel => 'Nom du patient';
 
   @override
   String get patientsPatientNumberColumnLabel => 'Patient non.';
@@ -2963,8 +2963,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get patientsAgeSexColumnLabel => 'Âge / sexe';
 
   @override
-  String get patientsPhoneIdentifierColumnLabel =>
-      'Téléphone/pièce d\'identité';
+  String get patientsPhoneIdentifierColumnLabel => 'Téléphone';
 
   @override
   String get patientsAlertColumnLabel => 'Alertes';

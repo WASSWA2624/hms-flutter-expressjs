@@ -3822,9 +3822,9 @@
   "@patientsInactiveFilter": {
     "description": "Inactive patient status label."
   },
-  "patientsPatientColumnLabel": "Patient",
+  "patientsPatientColumnLabel": "Patient name",
   "@patientsPatientColumnLabel": {
-    "description": "Patient list patient column label."
+    "description": "Patient list patient name column label."
   },
   "patientsPatientNumberColumnLabel": "Patient no.",
   "@patientsPatientNumberColumnLabel": {
@@ -3834,9 +3834,9 @@
   "@patientsAgeSexColumnLabel": {
     "description": "Patient list age and sex column label."
   },
-  "patientsPhoneIdentifierColumnLabel": "Phone / ID",
+  "patientsPhoneIdentifierColumnLabel": "Phone",
   "@patientsPhoneIdentifierColumnLabel": {
-    "description": "Patient list phone and identifier column label."
+    "description": "Patient list phone column label."
   },
   "patientsAlertColumnLabel": "Alerts",
   "@patientsAlertColumnLabel": {
@@ -21065,22 +21065,6 @@
   "accessAdminPanelDemo": "Demo accounts",
   "@accessAdminPanelDemo": {
     "description": "Access admin demo accounts panel label."
-  },
-  "accessAdminPanelRegistrations": "Pending registrations",
-  "@accessAdminPanelRegistrations": {
-    "description": "Access admin pending tenant registrations panel label."
-  },
-  "accessAdminPhoneLabel": "Phone",
-  "@accessAdminPhoneLabel": {
-    "description": "Access admin phone field label."
-  },
-  "accessAdminActivateRegistrationAction": "Activate account",
-  "@accessAdminActivateRegistrationAction": {
-    "description": "Activate a pending tenant registration."
-  },
-  "accessAdminRejectRegistrationAction": "Reject",
-  "@accessAdminRejectRegistrationAction": {
-    "description": "Reject a pending tenant registration."
   },
   "accessAdminPanelRegistrations": "Pending registrations",
   "@accessAdminPanelRegistrations": {

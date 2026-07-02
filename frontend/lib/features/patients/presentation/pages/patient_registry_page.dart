@@ -14,7 +14,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
@@ -836,8 +835,6 @@ class _PatientList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final bool showFacilityLabel = _showPatientFacilityInList(ref);
-
     return AppListTable<Patient>(
       page: state.page,
       columnVisibilityController: columnVisibilityController,
@@ -891,10 +888,8 @@ class _PatientList extends ConsumerWidget {
                 left.effectiveDisplayName,
                 right.effectiveDisplayName,
               ),
-          cellBuilder: (_, Patient patient) => _PatientNameCell(
-            patient: patient,
-            showFacilityLabel: showFacilityLabel,
-          ),
+          cellBuilder: (_, Patient patient) =>
+              _PatientNameCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsAgeSexColumnLabel,
@@ -906,12 +901,8 @@ class _PatientList extends ConsumerWidget {
           label: l10n.patientsPhoneIdentifierColumnLabel,
           sortComparator: (Patient left, Patient right) =>
               appListTableCompareText(
-                left.primaryPhone ??
-                    left.primaryEmail ??
-                    left.effectiveIdentifier,
-                right.primaryPhone ??
-                    right.primaryEmail ??
-                    right.effectiveIdentifier,
+                left.primaryPhone ?? left.primaryEmail,
+                right.primaryPhone ?? right.primaryEmail,
               ),
           cellBuilder: (_, Patient patient) =>
               _PatientContactIdentifierCell(patient: patient),
@@ -1016,37 +1007,17 @@ Future<void> _openPatientDetail(
 }
 
 class _PatientNameCell extends StatelessWidget {
-  const _PatientNameCell({
-    required this.patient,
-    required this.showFacilityLabel,
-  });
+  const _PatientNameCell({required this.patient});
 
   final Patient patient;
-  final bool showFacilityLabel;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String? facilitySubtitle = showFacilityLabel
-        ? patient.facilityLabel
-        : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        AppListItemText(
-          title: patient.effectiveDisplayName,
-          subtitle: facilitySubtitle,
-          titleStyle: theme.textTheme.titleSmall,
-        ),
-        if (patient.requiresCompletion)
-          AppStatusText(
-            label: context.l10n.patientsRegistrationIncompleteValue,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.error_outline,
-          ),
-      ],
+    return Text(
+      patient.effectiveDisplayName,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.titleSmall,
     );
   }
 }
@@ -1059,10 +1030,12 @@ class _PatientNumberCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppCopyableIdentifier(
-      value: patient.effectiveIdentifier ?? patient.publicId,
-      tooltip: l10n.opdCopyPatientIdAction,
-      copiedMessage: l10n.clinicalPatientIdCopiedMessage,
+    return Text(
+      patient.effectiveIdentifier ??
+          patient.publicId ??
+          l10n.profileUnknownValue,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -1112,33 +1085,13 @@ class _PatientContactIdentifierCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final String primary =
+    final AppLocalizations l10n = context.l10n;
+    final String contact =
         patient.primaryPhone ??
         patient.primaryEmail ??
-        patient.effectiveIdentifier ??
         l10n.profileUnknownValue;
-    final String? secondary = primary == patient.effectiveIdentifier
-        ? null
-        : patient.effectiveIdentifier;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(primary, maxLines: 1, overflow: TextOverflow.ellipsis),
-        if (secondary != null)
-          Text(
-            secondary,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
+    return Text(contact, maxLines: 1, overflow: TextOverflow.ellipsis);
   }
 }
 
@@ -6718,10 +6671,6 @@ Future<bool?> _showDeleteDialog(
       ],
     ),
   );
-}
-
-bool _showPatientFacilityInList(WidgetRef ref) {
-  return ref.watch(appAccessPolicyProvider).hasRole(AppRole.superAdmin);
 }
 
 PatientRegistryState? _readCurrentState(WidgetRef ref) {

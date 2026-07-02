@@ -5690,10 +5690,10 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get patientsInactiveFilter;
 
-  /// Patient list patient column label.
+  /// Patient list patient name column label.
   ///
   /// In en, this message translates to:
-  /// **'Patient'**
+  /// **'Patient name'**
   String get patientsPatientColumnLabel;
 
   /// Patient list patient number column label.
@@ -5708,10 +5708,10 @@ abstract class AppLocalizations {
   /// **'Age / sex'**
   String get patientsAgeSexColumnLabel;
 
-  /// Patient list phone and identifier column label.
+  /// Patient list phone column label.
   ///
   /// In en, this message translates to:
-  /// **'Phone / ID'**
+  /// **'Phone'**
   String get patientsPhoneIdentifierColumnLabel;
 
   /// Patient list alert and allergy column label.
