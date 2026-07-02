@@ -231,6 +231,37 @@ class TheaterScheduleCaseFormState
     super.dispose();
   }
 
+  Widget? _buildFormStatus(BuildContext context, AppLocalizations l10n) {
+    if (widget.rescheduleOnly) {
+      return null;
+    }
+
+    return appFormCombinedStatus(<Widget?>[
+      appFormFailureStatus(
+        context,
+        _patientFailure,
+        onRetry: () => unawaited(_searchPatients('')),
+      ),
+      appFormFailureStatus(
+        context,
+        _encounterFailure,
+        onRetry: () {
+          final String? patientId = _selectedPatientId;
+          if (patientId != null) {
+            unawaited(_loadPatientContext(patientId));
+          }
+        },
+      ),
+      if (_isEmergencyScheduling)
+        AppFormInformationBanner(
+          title: l10n.theaterScheduleEmergencyPanelTitle,
+          message: l10n.theaterScheduleEmergencyHint,
+          variant: AppFormInformationVariant.warning,
+          icon: Icons.emergency_outlined,
+        ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -240,6 +271,7 @@ class TheaterScheduleCaseFormState
     return AppFormShell(
       formKey: _formKey,
       density: AppFormSectionDensity.compact,
+      formStatus: _buildFormStatus(context, l10n),
       children: <Widget>[
         Text(
           l10n.theaterScheduleCaseDialogBody,
@@ -252,12 +284,6 @@ class TheaterScheduleCaseFormState
             density: AppFormSectionDensity.compact,
             title: l10n.theaterSchedulePatientContextSection,
             children: <Widget>[
-              if (_patientFailure != null)
-                AppFormInformationBanner.failure(
-                  context: context,
-                  failure: _patientFailure!,
-                  onRetry: () => unawaited(_searchPatients('')),
-                ),
               AppSelectField<String>.searchable(
                 value: _selectedPatientId,
                 labelText: l10n.theaterPatientLabel,
@@ -286,17 +312,6 @@ class TheaterScheduleCaseFormState
                 ),
                 onChanged: _selectEncounter,
               ),
-              if (_encounterFailure != null)
-                AppFormInformationBanner.failure(
-                  context: context,
-                  failure: _encounterFailure!,
-                  onRetry: () {
-                    final String? patientId = _selectedPatientId;
-                    if (patientId != null) {
-                      unawaited(_loadPatientContext(patientId));
-                    }
-                  },
-                ),
               if (_showEmergencyCaseField)
                 AppSelectField<String>(
                   value: _selectedEmergencyCaseId,
@@ -315,13 +330,6 @@ class TheaterScheduleCaseFormState
                         )
                       : null,
                   onChanged: _selectEmergencyCase,
-                ),
-              if (_isEmergencyScheduling)
-                AppFormInformationBanner(
-                  title: l10n.theaterScheduleEmergencyPanelTitle,
-                  message: l10n.theaterScheduleEmergencyHint,
-                  variant: AppFormInformationVariant.warning,
-                  icon: Icons.emergency_outlined,
                 ),
               if (_effectiveSourceKind != null)
                 AppWorkspaceStatusBadge(

@@ -165,6 +165,7 @@ class AppTriageActionDialog extends StatefulWidget {
     this.heightLabel,
     this.unitLabel,
     this.leadingSectionsBuilder,
+    this.formStatusSectionsBuilder,
     this.failureBodyBuilder,
     this.maxWidth = 780,
     super.key,
@@ -205,6 +206,7 @@ class AppTriageActionDialog extends StatefulWidget {
   final String? unitLabel;
   final List<Widget> Function(BuildContext context, bool enabled)?
   leadingSectionsBuilder;
+  final List<Widget> Function(BuildContext context)? formStatusSectionsBuilder;
   final String? Function(BuildContext context, AppFailure failure)?
   failureBodyBuilder;
   final AppTriageSubmitCallback onSubmit;
@@ -272,6 +274,25 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
     super.dispose();
   }
 
+  Widget? _buildFormStatus(BuildContext context) {
+    return appFormCombinedStatus(<Widget?>[
+      ...?widget.formStatusSectionsBuilder?.call(context),
+      if (_formErrorText != null)
+        AppFormInformationBanner.message(
+          message: _formErrorText!,
+          variant: AppFormInformationVariant.error,
+        ),
+      appFormFailureStatus(
+        context,
+        _failure,
+        messageBuilder: widget.failureBodyBuilder == null
+            ? null
+            : (AppFailure failure) =>
+                widget.failureBodyBuilder!.call(context, failure),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool enabled = !_isSaving;
@@ -285,18 +306,8 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
         formKey: _formKey,
         enabled: enabled,
         density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(
-          context,
-          _failure,
-          messageBuilder: (AppFailure failure) =>
-              widget.failureBodyBuilder?.call(context, failure),
-        ),
+        formStatus: _buildFormStatus(context),
         children: <Widget>[
-          if (_formErrorText != null)
-            AppFormInformationBanner.message(
-              message: _formErrorText!,
-              variant: AppFormInformationVariant.error,
-            ),
           ...?widget.leadingSectionsBuilder?.call(context, enabled),
           AppFormSection(
             title: widget.prioritySectionTitle,

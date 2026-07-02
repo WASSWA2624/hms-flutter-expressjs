@@ -29,6 +29,35 @@ Widget? appFormFailureStatus(
   );
 }
 
+/// Stacks multiple [AppFormShell.formStatus] sections into one widget.
+Widget? appFormCombinedStatus(Iterable<Widget?> sections) {
+  final List<Widget> children = sections.whereType<Widget>().toList();
+  if (children.isEmpty) {
+    return null;
+  }
+  if (children.length == 1) {
+    return children.first;
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: children,
+  );
+}
+
+/// Guidance message with optional submit/API failure below it.
+Widget appFormGuidanceAndFailureStatus(
+  BuildContext context, {
+  required String guidanceMessage,
+  AppFailure? failure,
+}) {
+  return appFormCombinedStatus(<Widget?>[
+        AppFormInformationBanner.message(message: guidanceMessage),
+        appFormFailureStatus(context, failure),
+      ]) ??
+      AppFormInformationBanner.message(message: guidanceMessage);
+}
+
 enum AppFormInformationVariant { error, warning, success, info }
 
 /// Inline form feedback with icon-left layout and color-coded variants.

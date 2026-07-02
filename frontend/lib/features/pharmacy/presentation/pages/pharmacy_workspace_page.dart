@@ -1317,16 +1317,13 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
-        formStatus: _failure == null
-            ? AppFormInformationBanner.message(
-                message: widget.workflow.order.requiresPaymentBeforeDispense
-                    ? l10n.pharmacyDispenseBlockedPaymentBody
-                    : l10n.pharmacyDispenseDialogBody,
-              )
-            : AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
+        formStatus: appFormGuidanceAndFailureStatus(
+          context,
+          guidanceMessage: widget.workflow.order.requiresPaymentBeforeDispense
+              ? l10n.pharmacyDispenseBlockedPaymentBody
+              : l10n.pharmacyDispenseDialogBody,
+          failure: _failure,
+        ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1448,14 +1445,11 @@ class _AttestDialogState extends ConsumerState<_AttestDialog> {
       icon: const Icon(Icons.verified_outlined),
       content: AppFormShell(
         formKey: _formKey,
-        formStatus: _failure == null
-            ? AppFormInformationBanner.message(
-                message: l10n.pharmacyAttestDialogBody,
-              )
-            : AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
+        formStatus: appFormGuidanceAndFailureStatus(
+          context,
+          guidanceMessage: l10n.pharmacyAttestDialogBody,
+          failure: _failure,
+        ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1567,14 +1561,11 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
-        formStatus: _failure == null
-            ? AppFormInformationBanner.message(
-                message: l10n.pharmacyReturnDialogBody,
-              )
-            : AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
+        formStatus: appFormGuidanceAndFailureStatus(
+          context,
+          guidanceMessage: l10n.pharmacyReturnDialogBody,
+          failure: _failure,
+        ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(
@@ -1682,14 +1673,11 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
       icon: const Icon(Icons.cancel_outlined),
       content: AppFormShell(
         formKey: _formKey,
-        formStatus: _failure == null
-            ? AppFormInformationBanner.message(
-                message: l10n.pharmacyCancelDialogBody,
-              )
-            : AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
+        formStatus: appFormGuidanceAndFailureStatus(
+          context,
+          guidanceMessage: l10n.pharmacyCancelDialogBody,
+          failure: _failure,
+        ),
         enabled: !_isSaving,
         children: <Widget>[
           AppTextField(

@@ -442,26 +442,21 @@ class _RadiologyTestConfigurationDialogState
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
-        formStatus: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (widget.initial?.isStandard == true && widget.copyStandard)
-              AppWorkspaceStatePanel.empty(
-                title: l10n.radiologyReadOnlyStandardTestTitle,
-                body: l10n.radiologyReadOnlyStandardTestMessage,
-                icon: Icons.lock_outline,
-                minHeight: 96,
-              ),
-            if (_isCreate && widget.tenantId == null)
-              Text(
-                l10n.radiologyTenantRequiredForConfigMessage,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-            if (_failure != null) AppFormInformationBanner.failure(context: context, failure: _failure!),
-          ],
-        ),
+        formStatus: appFormCombinedStatus(<Widget?>[
+          if (widget.initial?.isStandard == true && widget.copyStandard)
+            AppWorkspaceStatePanel.empty(
+              title: l10n.radiologyReadOnlyStandardTestTitle,
+              body: l10n.radiologyReadOnlyStandardTestMessage,
+              icon: Icons.lock_outline,
+              minHeight: 96,
+            ),
+          if (_isCreate && widget.tenantId == null)
+            AppFormInformationBanner.message(
+              message: l10n.radiologyTenantRequiredForConfigMessage,
+              variant: AppFormInformationVariant.error,
+            ),
+          appFormFailureStatus(context, _failure),
+        ]),
         children: <Widget>[
           AppTextField(
             controller: _nameController,

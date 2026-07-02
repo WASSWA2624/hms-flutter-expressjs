@@ -2832,20 +2832,29 @@ class _PatientTriageQuickDialogState
       heightLabel: l10n.patientsHeightLabel,
       unitLabel: l10n.patientsVitalUnitLabel,
       failureBodyBuilder: _workflowFailureMessage,
+      formStatusSectionsBuilder: _workflowFailureSections,
       leadingSectionsBuilder: _workflowFields,
       onSubmit: _submitTriage,
     );
   }
 
+  List<Widget> _workflowFailureSections(BuildContext context) {
+    if (_providerFailure == null) {
+      return const <Widget>[];
+    }
+
+    return <Widget>[
+      AppFormInformationBanner.failure(
+        context: context,
+        failure: _providerFailure!,
+        message: _workflowFailureMessage(context, _providerFailure!),
+      ),
+    ];
+  }
+
   List<Widget> _workflowFields(BuildContext context, bool enabled) {
     final l10n = context.l10n;
     return <Widget>[
-      if (_providerFailure != null)
-        AppFormInformationBanner.failure(
-          context: context,
-          failure: _providerFailure!,
-          message: _workflowFailureMessage(context, _providerFailure!),
-        ),
       AppFormSection(
         title: l10n.patientsWorkflowSectionTitle,
         density: AppFormSectionDensity.compact,

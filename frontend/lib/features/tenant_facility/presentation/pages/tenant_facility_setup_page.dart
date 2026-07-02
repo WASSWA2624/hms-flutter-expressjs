@@ -1913,7 +1913,7 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
                 });
               },
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2085,7 +2085,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                 });
               },
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2236,7 +2236,7 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
                 });
               },
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2408,7 +2408,7 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
                 });
               },
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2551,7 +2551,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               enabled: canEdit,
               labelText: l10n.tenantFacilityRoomFloorLabel,
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2758,7 +2758,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
                 });
               },
             ),
-            _SubmissionFailureText(),
+            _SubmissionFailureBanner(),
           ],
         ),
       ),
@@ -2809,21 +2809,19 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
   }
 }
 
-class _SubmissionFailureText extends ConsumerWidget {
+class _SubmissionFailureBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final failure = ref.watch(
+    final AppFailure? failure = ref.watch(
       tenantFacilitySetupSubmissionProvider.select((state) => state.failure),
     );
     if (failure == null) {
       return const SizedBox.shrink();
     }
 
-    return Text(
-      context.l10n.failureMessage(failure),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).statusColors.error,
-      ),
+    return AppFormInformationBanner.failure(
+      context: context,
+      failure: failure,
     );
   }
 }

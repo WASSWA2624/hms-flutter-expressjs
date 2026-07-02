@@ -2581,11 +2581,9 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
               ),
               if (_selectionTouched && _requests.isEmpty) ...<Widget>[
                 SizedBox(height: theme.spacing.sm),
-                Text(
-                  l10n.radiologySelectAtLeastOneTestMessage,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+                AppFormInformationBanner.message(
+                  message: l10n.radiologySelectAtLeastOneTestMessage,
+                  variant: AppFormInformationVariant.error,
                 ),
               ],
               if (_requests.isNotEmpty) ...<Widget>[

@@ -404,14 +404,8 @@ class _SubscriptionUpgradeDialogState
       content: AppFormShell(
         formKey: _formKey,
         autovalidateMode: _autovalidateMode,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_failure != null) ...<Widget>[
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-            SizedBox(height: theme.spacing.sm),
-          ],
           SubscriptionPlanSelector(
             plans:
                 contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],

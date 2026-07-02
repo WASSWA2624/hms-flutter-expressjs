@@ -848,6 +848,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         enabled: !_isSaving,
         includeNotes: false,
         includeActiveToggle: false,
+        requireGender: false,
         onLookupDuplicates: (PatientDuplicateQuery query) {
           return ref
               .read(patientRepositoryProvider)

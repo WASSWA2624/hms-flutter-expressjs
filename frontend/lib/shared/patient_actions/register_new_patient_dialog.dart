@@ -43,6 +43,7 @@ class RegisterNewPatientForm extends StatefulWidget {
     this.enabled = true,
     this.includeNotes = true,
     this.includeActiveToggle = true,
+    this.requireGender = true,
     super.key,
   });
 
@@ -52,6 +53,7 @@ class RegisterNewPatientForm extends StatefulWidget {
   final bool enabled;
   final bool includeNotes;
   final bool includeActiveToggle;
+  final bool requireGender;
 
   @override
   RegisterNewPatientFormState createState() => RegisterNewPatientFormState();
@@ -81,6 +83,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   bool get isCheckingDuplicates => _isCheckingDuplicates;
 
   bool get duplicateWarningAccepted => _duplicateWarningAccepted;
+
+  AppFailure? get failure => _failure;
 
   @override
   void initState() {
@@ -212,11 +216,6 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
 
     return AppFormSection(
       children: <Widget>[
-        if (_failure != null)
-          AppFormInformationBanner.failure(
-            context: context,
-            failure: _failure!,
-          ),
         if (_duplicateCandidates.isNotEmpty)
           PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
         AppResponsiveFieldRow.two(
@@ -258,7 +257,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             otherLabel: l10n.patientsGenderOther,
             unknownLabel: l10n.patientsGenderUnknown,
             enabled: enabled,
-            isRequired: true,
+            isRequired: widget.requireGender,
             requiredMessage: l10n.validationRequired,
             onChanged: (String? value) {
               setState(() {
@@ -472,6 +471,10 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
           formKey: _formKey,
           enabled: !_isSaving && !isCheckingDuplicates,
           scrollable: true,
+          formStatus: appFormFailureStatus(
+            context,
+            _registrationFormKey.currentState?.failure,
+          ),
           children: <Widget>[
             RegisterNewPatientForm(
               key: _registrationFormKey,
@@ -545,6 +548,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
       _isSaving = false;
     });
     formState.setFailure(failure);
+    setState(() {});
   }
 }
 
