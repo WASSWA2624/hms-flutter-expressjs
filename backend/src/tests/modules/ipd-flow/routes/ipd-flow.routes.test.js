@@ -26,6 +26,7 @@ describe('ipd-flow.routes contract', () => {
       'POST /:id/add-medication-administration',
       'POST /:id/add-nursing-note',
       'POST /:id/add-ward-round',
+      'POST /:id/approve-admission',
       'POST /:id/assign-bed',
       'POST /:id/end-icu-stay',
       'POST /:id/finalize-discharge',
@@ -38,6 +39,7 @@ describe('ipd-flow.routes contract', () => {
       'POST /:id/start-icu-stay',
       'POST /:id/update-discharge-clearance',
       'POST /:id/update-transfer',
+      'POST /request',
       'POST /start',
     ]);
   });

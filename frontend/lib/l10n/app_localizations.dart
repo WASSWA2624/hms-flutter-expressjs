@@ -10916,10 +10916,10 @@ abstract class AppLocalizations {
   /// **'Inpatient changes saved.'**
   String get ipdSavedMessage;
 
-  /// IPD summary label for admitted patients waiting for a bed.
+  /// IPD summary label for admission requests and patients waiting for a bed.
   ///
   /// In en, this message translates to:
-  /// **'Waiting bed'**
+  /// **'Pending admissions'**
   String get ipdAdmissionQueueSummaryLabel;
 
   /// IPD summary label for active patients assigned to beds.
@@ -11089,6 +11089,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assign bed'**
   String get ipdAssignBedAction;
+
+  /// IPD action label to approve a pending admission request.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve admission'**
+  String get ipdApproveAdmissionAction;
+
+  /// Confirmation body for approving a pending admission request.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this admission request? The patient will move to inpatient care and you can assign a bed next.'**
+  String get ipdApproveAdmissionBody;
 
   /// IPD action label to release a bed.
   ///
@@ -11390,10 +11402,10 @@ abstract class AppLocalizations {
   /// **'Discharged'**
   String get ipdDischargedAtLabel;
 
-  /// IPD scope label for admissions waiting for a bed.
+  /// IPD scope label for admission requests and patients waiting for a bed.
   ///
   /// In en, this message translates to:
-  /// **'Waiting bed'**
+  /// **'Pending admissions'**
   String get ipdScopeAdmissionQueue;
 
   /// IPD scope label for active bedded patients.
@@ -11437,6 +11449,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting bed'**
   String get ipdStatusAdmittedPendingBed;
+
+  /// IPD stage label for admission requests awaiting approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission requested'**
+  String get ipdStatusAdmissionRequested;
 
   /// IPD stage label for admitted in bed.
   ///

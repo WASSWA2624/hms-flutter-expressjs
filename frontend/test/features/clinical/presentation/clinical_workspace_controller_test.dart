@@ -271,7 +271,7 @@ void main() {
     },
   );
 
-  test('requestAdmission routes through ipd-flows start endpoint', () async {
+  test('requestAdmission routes through ipd-flows request endpoint', () async {
     final _MockClinicalRepository clinical = _MockClinicalRepository();
     final _MockOpdRepository opd = _MockOpdRepository();
     final _MockIpdRepository ipd = _MockIpdRepository();
@@ -280,7 +280,7 @@ void main() {
       opd: opd,
       ipd: ipd,
     );
-    when(() => ipd.startAdmission(any())).thenAnswer(
+    when(() => ipd.requestAdmission(any())).thenAnswer(
       (_) async => Result<IpdAdmissionDetail>.success(_detail(_ipdSummary())),
     );
 
@@ -303,27 +303,23 @@ void main() {
     );
     await controller.selectEntry(entry);
 
-    const ClinicalCatalogOption bed = ClinicalCatalogOption(
-      id: 'bed-uuid-1',
-      publicId: 'BED000001',
-      parentId: 'WRD000001',
-      secondaryId: 'ROM000001',
-      status: 'AVAILABLE',
+    final AppFailure? failure = await controller.requestAdmission(
+      reason: 'Needs inpatient monitoring',
+      notes: 'From clinical workspace',
     );
-
-    final AppFailure? failure = await controller.requestAdmission(bed);
     expect(failure, isNull);
 
     final List<Object?> captured = verify(
-      () => ipd.startAdmission(captureAny()),
+      () => ipd.requestAdmission(captureAny()),
     ).captured;
     final Map<String, Object?> payload =
         captured.single as Map<String, Object?>;
     expect(payload['patient_id'], 'PAT000001');
     expect(payload['encounter_id'], 'ENC000001');
-    expect(payload['bed_id'], 'BED000001');
-    expect(payload['ward_id'], 'WRD000001');
-    expect(payload['room_id'], 'ROM000001');
+    expect(payload['reason'], 'Needs inpatient monitoring');
+    expect(payload['notes'], 'From clinical workspace');
+    expect(payload.containsKey('bed_id'), isFalse);
+    verifyNever(() => ipd.startAdmission(any()));
     verifyNever(() => clinical.createAdmission(any()));
   });
 }

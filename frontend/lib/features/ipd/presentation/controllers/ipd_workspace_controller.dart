@@ -428,6 +428,14 @@ final class IpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> approveAdmission(IpdAdmissionSummary admission) {
+    return _mutateAdmission(
+      admission,
+      () => _repository.approveAdmission(admission.apiId, const <String, Object?>{}),
+      refreshReferenceData: true,
+    );
+  }
+
   Future<AppFailure?> requestTransfer({
     required IpdAdmissionSummary admission,
     String? fromWardId,

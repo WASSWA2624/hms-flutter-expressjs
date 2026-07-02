@@ -914,24 +914,13 @@ void main() {
       ),
     );
     _stubProviderLookup(opdRepository);
-    when(() => ipdRepository.startAdmission(any())).thenAnswer(
+    when(() => ipdRepository.requestAdmission(any())).thenAnswer(
       (_) async => const Result<IpdAdmissionDetail>.success(
         IpdAdmissionDetail(
           summary: IpdAdmissionSummary(
             id: 'admission-1',
-            stage: 'ADMITTED_IN_BED',
-            admissionStatus: 'ADMITTED',
-          ),
-        ),
-      ),
-    );
-    when(() => ipdRepository.addNursingNote(any(), any())).thenAnswer(
-      (_) async => const Result<IpdAdmissionDetail>.success(
-        IpdAdmissionDetail(
-          summary: IpdAdmissionSummary(
-            id: 'admission-1',
-            stage: 'ADMITTED_IN_BED',
-            admissionStatus: 'ADMITTED',
+            stage: 'ADMISSION_REQUESTED',
+            admissionStatus: 'REQUESTED',
           ),
         ),
       ),

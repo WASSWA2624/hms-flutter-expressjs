@@ -56,23 +56,23 @@ describe('ipd-flow.routes RBAC wiring', () => {
     const { subject, authorize } = loadSubject();
 
     expect(subject).toBeDefined();
-    // 3 read routes + 6 operational-write routes + 12 clinical-write routes.
-    expect(authorize).toHaveBeenCalledTimes(21);
+    // 3 read routes + 8 operational-write routes + 12 clinical-write routes.
+    expect(authorize).toHaveBeenCalledTimes(23);
 
     const readCalls = authorize.mock.calls.slice(0, 3);
     readCalls.forEach((call) => {
       expect(call).toEqual([READ_SCOPES, 'permission']);
     });
 
-    // Operational write routes: start, assign-bed, release-bed,
-    // reject-admission, request-transfer, update-transfer.
-    const operationalCalls = authorize.mock.calls.slice(3, 9);
+    // Operational write routes: start, request, approve-admission, assign-bed,
+    // release-bed, reject-admission, request-transfer, update-transfer.
+    const operationalCalls = authorize.mock.calls.slice(3, 11);
     operationalCalls.forEach((call) => {
       expect(call).toEqual([OPERATIONAL_WRITE_SCOPES, 'permission']);
     });
 
     // Remaining clinical write routes.
-    const clinicalCalls = authorize.mock.calls.slice(9);
+    const clinicalCalls = authorize.mock.calls.slice(11);
     clinicalCalls.forEach((call) => {
       expect(call).toEqual([CLINICAL_WRITE_SCOPES, 'permission']);
     });

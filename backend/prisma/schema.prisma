@@ -179,6 +179,7 @@ enum EncounterStatus {
 }
 
 enum AdmissionStatus {
+  REQUESTED
   ADMITTED
   DISCHARGED
   TRANSFERRED

@@ -5930,7 +5930,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modifications pour les patients hospitalisés enregistrées.';
 
   @override
-  String get ipdAdmissionQueueSummaryLabel => 'Waiting lit';
+  String get ipdAdmissionQueueSummaryLabel => 'Admissions en attente';
 
   @override
   String get ipdActivePatientsSummaryLabel => 'In lits';
@@ -6020,6 +6020,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdAssignBedAction => 'Assign lit';
+
+  @override
+  String get ipdApproveAdmissionAction => 'Approuver l\'admission';
+
+  @override
+  String get ipdApproveAdmissionBody =>
+      'Approuver cette demande d\'admission ? Le patient passera en soins hospitaliers et vous pourrez ensuite assigner un lit.';
 
   @override
   String get ipdReleaseBedAction => 'Release lit';
@@ -6186,7 +6193,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ipdDischargedAtLabel => 'Sortie d&apos;hôpital du malade';
 
   @override
-  String get ipdScopeAdmissionQueue => 'Waiting lit';
+  String get ipdScopeAdmissionQueue => 'Admissions en attente';
 
   @override
   String get ipdScopeActivePatients => 'In lits';
@@ -6208,6 +6215,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ipdStatusAdmittedPendingBed => 'Waiting lit';
+
+  @override
+  String get ipdStatusAdmissionRequested => 'Admission demandée';
 
   @override
   String get ipdStatusAdmittedInBed => 'In lit';

@@ -13,6 +13,7 @@ class _MockIpdRepository extends Mock implements IpdRepository {}
 IpdAdmissionSummary _summary({
   String id = 'adm-1',
   String stage = 'ADMITTED_PENDING_BED',
+  String admissionStatus = 'ADMITTED',
 }) {
   return IpdAdmissionSummary(
     id: id,
@@ -20,7 +21,7 @@ IpdAdmissionSummary _summary({
     patientId: 'pat-1',
     patientDisplayName: 'Jane Doe',
     stage: stage,
-    admissionStatus: 'ADMITTED',
+    admissionStatus: admissionStatus,
   );
 }
 
@@ -192,5 +193,50 @@ void main() {
     expect(state!.selectedAdmission, isNotNull);
     expect(state.selectedAdmission!.summary.id, 'adm-1');
     verify(() => repo.startAdmission(any())).called(1);
+  });
+
+  test('approveAdmission refreshes admission detail', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[
+        _summary(stage: 'ADMISSION_REQUESTED'),
+      ],
+    );
+    when(() => repo.approveAdmission(any(), any())).thenAnswer(
+      (_) async => Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: _summary(),
+        ),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.approveAdmission(
+      _summary(stage: 'ADMISSION_REQUESTED'),
+    );
+    expect(failure, isNull);
+    verify(() => repo.approveAdmission('adm-1', any())).called(1);
+  });
+
+  test('admissionQueueCount includes requested and pending bed stages', () {
+    final IpdWorkspaceState state = IpdWorkspaceState(
+      query: const IpdAdmissionQuery(),
+      admissions: AppPage<IpdAdmissionSummary>(
+        items: <IpdAdmissionSummary>[
+          _summary(stage: 'ADMISSION_REQUESTED'),
+          _summary(),
+          _summary(stage: 'ADMITTED_IN_BED', id: 'adm-3'),
+        ],
+        request: const AppPageRequest(),
+        totalItemCount: 3,
+      ),
+    );
+
+    expect(state.admissionQueueCount, 2);
   });
 }

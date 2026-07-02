@@ -150,12 +150,12 @@ final class ClinicalActionLabOrderItem {
 @immutable
 final class ClinicalActionAdmissionInput {
   const ClinicalActionAdmissionInput({
-    required this.bed,
+    this.bed,
     this.reason,
     this.notes,
   });
 
-  final ClinicalActionCatalogOption bed;
+  final ClinicalActionCatalogOption? bed;
   final String? reason;
   final String? notes;
 }

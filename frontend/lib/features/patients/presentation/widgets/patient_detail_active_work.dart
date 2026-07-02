@@ -63,7 +63,8 @@ class _PatientActiveWorkRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final String statusLabel = AppDisplay.apiLabel(item.status);
+    final String statusLabel = _patientActiveWorkStatusLabel(l10n, item);
+    final AppWorkspaceStatusTone statusTone = _patientActiveWorkStatusTone(item);
     final String when = item.occurredAt == null
         ? ''
         : AppFormatters.dateTime(
@@ -94,7 +95,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
                       if (statusLabel.isNotEmpty)
                         AppStatusText(
                           label: statusLabel,
-                          tone: AppWorkspaceStatusTone.info,
+                          tone: statusTone,
                         ),
                       Text(
                         item.title,
@@ -136,4 +137,25 @@ class _PatientActiveWorkRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _patientActiveWorkStatusLabel(
+  AppLocalizations l10n,
+  PatientActiveWorkItem item,
+) {
+  if (item.kind == PatientActiveWorkKind.admission &&
+      isPendingPatientAdmissionRequest(item.status)) {
+    return l10n.opdStatusAdmissionPendingLabel;
+  }
+  return AppDisplay.apiLabel(item.status);
+}
+
+AppWorkspaceStatusTone _patientActiveWorkStatusTone(
+  PatientActiveWorkItem item,
+) {
+  if (item.kind == PatientActiveWorkKind.admission &&
+      isPendingPatientAdmissionRequest(item.status)) {
+    return AppWorkspaceStatusTone.warning;
+  }
+  return AppWorkspaceStatusTone.info;
 }

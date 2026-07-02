@@ -2691,10 +2691,19 @@ Future<void> _openAdmissionDialog(
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ClinicalAdmissionActionDialog(
+      builder: (BuildContext dialogContext) => ClinicalAdmissionActionDialog(
         referenceData: referenceData,
+        requiresBed: false,
+        reasonLabel: dialogContext.l10n.patientsAdmissionReasonLabel,
+        reasonRequired: true,
+        notesLabel: dialogContext.l10n.opdFieldOptionalLabel(
+          dialogContext.l10n.patientsNotesLabel,
+        ),
         onSubmit: (ClinicalActionAdmissionInput input) =>
-            controller.requestAdmission(input.bed),
+            controller.requestAdmission(
+              reason: input.reason,
+              notes: input.notes,
+            ),
       ),
     ),
   );

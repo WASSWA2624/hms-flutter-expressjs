@@ -759,7 +759,7 @@ const createAdmissionForRoute = async (tx, encounter, facility, data) =>
       facility_id: facility?.id || encounter.facility_id || null,
       patient_id: encounter.patient_id,
       encounter_id: encounter.id,
-      status: 'ADMITTED',
+      status: 'REQUESTED',
       admitted_at: data?.admitted_at ? new Date(data.admitted_at) : new Date()
     }
   });

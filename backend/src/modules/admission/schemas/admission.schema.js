@@ -40,7 +40,7 @@ const createAdmissionSchema = z.object({
 const updateAdmissionSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  status: z.enum(['ADMITTED', 'DISCHARGED', 'TRANSFERRED', 'CANCELLED']).optional(),
+  status: z.enum(['REQUESTED', 'ADMITTED', 'DISCHARGED', 'TRANSFERRED', 'CANCELLED']).optional(),
   admitted_at: isoDateSchema.optional(),
   discharged_at: isoDateSchema.optional().nullable(),
 });
@@ -84,7 +84,7 @@ const listAdmissionsQuerySchema = listQuerySchema.extend({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['ADMITTED', 'DISCHARGED', 'TRANSFERRED', 'CANCELLED']).optional(),
+  status: z.enum(['REQUESTED', 'ADMITTED', 'DISCHARGED', 'TRANSFERRED', 'CANCELLED']).optional(),
 });
 
 module.exports = {

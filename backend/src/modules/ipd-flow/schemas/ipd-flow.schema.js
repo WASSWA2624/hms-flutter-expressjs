@@ -40,6 +40,7 @@ const identifierSchema = z
 const optionalIdentifierSchema = identifierSchema.optional().nullable();
 
 const workflowStageSchema = z.enum([
+  "ADMISSION_REQUESTED",
   "ADMITTED_PENDING_BED",
   "ADMITTED_IN_BED",
   "TRANSFER_REQUESTED",
@@ -160,6 +161,20 @@ const startIpdFlowSchema = z.object({
   ward_id: optionalIdentifierSchema,
   room_id: optionalIdentifierSchema,
   bed_id: optionalIdentifierSchema,
+});
+
+const requestIpdAdmissionSchema = z.object({
+  tenant_id: identifierSchema.optional(),
+  facility_id: optionalIdentifierSchema,
+  patient_id: identifierSchema,
+  encounter_id: optionalIdentifierSchema,
+  reason: z.string().trim().min(2).max(5000).optional().nullable(),
+  notes: z.string().trim().max(65535).optional().nullable(),
+});
+
+const approveAdmissionSchema = z.object({
+  bed_id: optionalIdentifierSchema,
+  assigned_at: z.string().datetime().optional(),
 });
 
 const assignBedSchema = z.object({
@@ -294,6 +309,8 @@ module.exports = {
   getIpdFlowQuerySchema,
   admissionIdParamsSchema,
   startIpdFlowSchema,
+  requestIpdAdmissionSchema,
+  approveAdmissionSchema,
   assignBedSchema,
   releaseBedSchema,
   rejectAdmissionSchema,

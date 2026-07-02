@@ -7573,9 +7573,9 @@
   "@ipdSavedMessage": {
     "description": "Inpatient workspace successful save message."
   },
-  "ipdAdmissionQueueSummaryLabel": "Waiting bed",
+  "ipdAdmissionQueueSummaryLabel": "Pending admissions",
   "@ipdAdmissionQueueSummaryLabel": {
-    "description": "IPD summary label for admitted patients waiting for a bed."
+    "description": "IPD summary label for admission requests and patients waiting for a bed."
   },
   "ipdActivePatientsSummaryLabel": "In beds",
   "@ipdActivePatientsSummaryLabel": {
@@ -7688,6 +7688,14 @@
   "ipdAssignBedAction": "Assign bed",
   "@ipdAssignBedAction": {
     "description": "IPD action label to assign a bed."
+  },
+  "ipdApproveAdmissionAction": "Approve admission",
+  "@ipdApproveAdmissionAction": {
+    "description": "IPD action label to approve a pending admission request."
+  },
+  "ipdApproveAdmissionBody": "Approve this admission request? The patient will move to inpatient care and you can assign a bed next.",
+  "@ipdApproveAdmissionBody": {
+    "description": "Confirmation body for approving a pending admission request."
   },
   "ipdReleaseBedAction": "Release bed",
   "@ipdReleaseBedAction": {
@@ -7894,9 +7902,9 @@
   "@ipdDischargedAtLabel": {
     "description": "IPD discharged date label."
   },
-  "ipdScopeAdmissionQueue": "Waiting bed",
+  "ipdScopeAdmissionQueue": "Pending admissions",
   "@ipdScopeAdmissionQueue": {
-    "description": "IPD scope label for admissions waiting for a bed."
+    "description": "IPD scope label for admission requests and patients waiting for a bed."
   },
   "ipdScopeActivePatients": "In beds",
   "@ipdScopeActivePatients": {
@@ -7925,6 +7933,10 @@
   "ipdStatusAdmittedPendingBed": "Waiting bed",
   "@ipdStatusAdmittedPendingBed": {
     "description": "IPD stage label for admitted pending bed."
+  },
+  "ipdStatusAdmissionRequested": "Admission requested",
+  "@ipdStatusAdmissionRequested": {
+    "description": "IPD stage label for admission requests awaiting approval."
   },
   "ipdStatusAdmittedInBed": "In bed",
   "@ipdStatusAdmittedInBed": {

@@ -33,6 +33,15 @@ abstract interface class IpdRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<IpdAdmissionDetail>> requestAdmission(
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<IpdAdmissionDetail>> approveAdmission(
+    String admissionId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<IpdAdmissionDetail>> assignBed(
     String admissionId,
     Map<String, Object?> payload,

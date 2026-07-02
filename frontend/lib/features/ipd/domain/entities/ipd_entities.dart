@@ -761,7 +761,11 @@ final class IpdWorkspaceState {
   final bool bedBoardLoaded;
 
   int get admissionQueueCount => admissions.items
-      .where((IpdAdmissionSummary item) => item.stage == 'ADMITTED_PENDING_BED')
+      .where(
+        (IpdAdmissionSummary item) =>
+            item.stage == 'ADMISSION_REQUESTED' ||
+            item.stage == 'ADMITTED_PENDING_BED',
+      )
       .length;
 
   int get activePatientCount => admissions.items

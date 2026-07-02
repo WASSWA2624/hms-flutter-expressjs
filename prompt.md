@@ -1,69 +1,79 @@
-# Refine patient admission request flow
+# Patient detail modal — Active work & Quick actions UX
 
 ## Context
 
-From **Patient Registry → patient detail → Quick actions**, staff initiate an inpatient admission **request** for the selected patient. The dialog already exists (`ClinicalAdmissionActionDialog`, opened via `_PatientAdmissionQuickDialog` in `patient_registry_page.dart`). Refine it — do not rebuild from scratch.
+On the **patient detail dialog** (`PatientDetailDialog` in `patient_registry_page.dart`), two sections need clearer affordances:
 
-**Primary files**
-- `frontend/lib/features/patients/presentation/widgets/patient_detail_quick_actions.dart`
-- `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart` (`_PatientAdmissionQuickDialog`)
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart`
-- `frontend/lib/l10n/app_en.arb` / `app_fr.arb`
+1. **Active work** — lists in-flight items (encounters, queue entries, admissions, orders, etc.) with a **Continue** action.
+2. **Quick actions** — permission-gated shortcuts (schedule appointment, start OPD, request admission, lab, radiology, theater, physiotherapy, report).
 
-## Requirements
+Reference screenshot: patient **Wilson Wasswa** shows two active-work rows both titled **Jordan Demo**, one badge **Open** and one **In Progress**, with no indication of *what* is open or in progress.
 
-### 1. Copy & intent
+## Problem 1 — Active work labels are ambiguous
 
-- Rename the quick-action label from **“Admit patient”** to **“Request admission”** (or equivalent l10n). The action requests admission; it does not complete admission.
-- Dialog title and submit label should align: **“Request admission”** (reuse `clinicalRequestAdmissionAction` where appropriate).
+**Current behavior** (`patient_detail_active_work.dart`, `patient_active_work_helpers.dart`):
 
-### 2. Dialog chrome
+- Status badges use raw API values via `AppDisplay.apiLabel(item.status)` → e.g. "Open", "In Progress".
+- Row title is `item.title` (often a facility/clinic name like "Jordan Demo"), not the work type.
+- Subtitle and timestamp repeat context without clarifying whether the row is an **encounter**, **queue entry**, **admission request**, **lab order**, etc.
 
-- Open the admission request dialog **maximized by default** (`AppDialog.initialMaximized: true`).
-- **Remove the Cancel footer button.** The header close (×) is the only dismiss action.
-- Add a **leading icon** to the primary **Request admission** submit button (e.g. bed/hospital icon, consistent with dialog header).
+**Expected behavior:**
 
-### 3. Facility-aware workflow
+Each active-work row must answer three questions at a glance:
 
-- **Single-facility users:** hide the Facility field; pre-select the user’s facility behind the scenes and pass it on submit.
-- **Multi-facility users:** show **Facility (optional)** in a **Workflow** section (as in screenshots).
-- **Cascading location fields:** Facility → Ward → Room → Bed.
-- When any parent selection changes, **reset all dependent child fields** (changing facility must also clear ward, room, and bed).
+| Question | Example |
+|---|---|
+| **What** is this? | "OPD encounter", "Visit queue", "Admission request", "Lab order" |
+| **Where / which**? | Facility, department, or public ID (e.g. Jordan Demo, ENC0000123) |
+| **Status** | Contextual badge, not a bare API token |
 
-### 4. Location selection UX
+### Implementation guidance
 
-- Ward, Room, and Bed are **required**.
-- Show a **live selection summary** (Ward / Room / Bed info tiles) that updates as each dropdown is filled — not only after the final bed is chosen.
-- Preserve existing empty-state messaging when no rooms/beds are available for the current selection.
+- Add a localized **work-type label** derived from `PatientActiveWorkKind` (and admission-specific handling for `REQUESTED` via `isPendingPatientAdmissionRequest`).
+- Restructure the row layout:
+  - **Primary line:** work type (semibold) + status badge.
+  - **Secondary line:** facility / location / public ID (`subtitle` or `title` as appropriate).
+  - **Tertiary line:** timestamp (unchanged).
+- Replace generic `AppDisplay.apiLabel(item.status)` with **kind-aware status labels** where raw values are misleading (e.g. encounter `OPEN` → "Encounter open", queue `IN_PROGRESS` → "In queue").
+- Add l10n keys in `app_en.arb` / `app_fr.arb`; run codegen.
+- Update `patient_active_work_helpers_test.dart` and add widget/unit coverage for label mapping.
 
-### 5. Clinical fields
+**Key files:** `patient_active_work_helpers.dart`, `patient_detail_active_work.dart`, `app_en.arb`, `app_fr.arb`.
 
-- **Admission reason** — required.
-- **Notes** — optional.
+## Problem 2 — Quick actions lack hover feedback and tooltips
 
-### 6. Submit behaviour & routing
+**Current behavior** (`patient_detail_quick_actions.dart`, `AppPermissionActionList`, `AppButton`):
 
-On successful submit, the admission request must:
+- Buttons render but **hover state is barely visible** on the light dialog surface.
+- `AppPermissionActionItem` supports `tooltip`, but patient quick actions **never set it**.
+- When an action is disabled (missing permission, inactive module, or contextual guard like `hasActiveAdmission`), the user gets a greyed-out button with **no explanation**.
 
-1. Create/route the request to the **target ward/department** implied by the selected location (ICU, general ward, etc.).
-2. **Notify the responsible admission staff** for that ward/department (or the configured admission receiver), using existing notification/realtime patterns in the codebase.
-3. Keep the current end-to-end flow intact (OPD disposition → IPD admission → bed assignment) unless a dedicated admission-request API is clearly the better fit — prefer minimal, correct changes.
+**Expected behavior:**
 
-Show success/error feedback via existing `AppFailure` / snackbar patterns. Close the dialog on success and refresh patient detail.
+- Every quick-action button shows a **Material tooltip on hover** (with the standard arrow) describing what the action does.
+- When disabled, the tooltip explains **why** (e.g. "Requires clinical write permission", "Inpatient module not enabled", "Patient already has an active admission", "A lab order is already in progress").
+- Hover/focus states are visually distinct (foreground emphasis and/or subtle background) even for `AppButtonVariant.secondary` on white surfaces.
+
+### Implementation guidance
+
+- Pass `tooltip` on each `AppPermissionActionItem` in `patient_detail_quick_actions.dart`.
+- Extend `AppPermissionActionButton` (or a small helper) to resolve a **denial reason** from `AccessRequirement` + contextual `enabled` flags, and surface it as the tooltip when `enabled && isAllowed` is false.
+- Verify hover styling in `AppButton._buttonStyle` for secondary variant on `surfaceContainerLowest` / white backgrounds; adjust `backgroundColor` or `overlayColor` on `WidgetState.hovered` if needed.
+- Add l10n keys for tooltip messages (action description + denial reasons).
+- Manually verify on web (Chrome): hover shows tooltip with arrow; disabled actions explain the blocker.
+
+**Key files:** `patient_detail_quick_actions.dart`, `app_permission_action.dart`, `app_button.dart`, `access_requirement.dart`.
 
 ## Acceptance criteria
 
-- [ ] Quick action reads “Request admission”; dialog title matches.
-- [ ] Dialog opens maximized; no Cancel button; submit has an icon.
-- [ ] Single-facility users never see Facility; multi-facility users do.
-- [ ] Changing facility, ward, or room resets downstream selections.
-- [ ] Summary tiles reflect ward → room → bed progressively.
-- [ ] Submit blocked without reason; notes optional.
-- [ ] Request reaches the correct ward/department queue and triggers staff notification.
-- [ ] Existing/widget tests updated; `flutter test` passes for touched areas.
+- [ ] Active-work rows display a clear **work type**; status badges are contextual, not bare API labels.
+- [ ] Two rows for the same facility (e.g. encounter + queue) are distinguishable without opening **Continue**.
+- [ ] All quick-action buttons have tooltips; disabled buttons explain why they are unavailable.
+- [ ] Hover/focus on quick actions is visibly distinct on the patient detail dialog.
+- [ ] EN + FR strings added; existing tests updated; new label-mapping tests pass.
+- [ ] No unrelated refactors; follow existing patterns (`AppPermissionActionList`, `AppStatusText`, l10n conventions).
 
 ## Out of scope
 
-- Redesigning unrelated patient-detail sections (encounters, identifiers, other quick actions).
-- New backend endpoints unless the current submit path cannot satisfy routing/notification.
+- Changing backend status enums or active-work collection logic (unless required for correct labels).
+- Redesigning the full patient detail dialog layout.

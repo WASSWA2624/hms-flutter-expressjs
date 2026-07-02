@@ -1556,6 +1556,7 @@ bool _isActiveAdmissionVisit(PatientVisitContext? visit) {
 
 bool _isActiveAdmissionStatus(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
+    'REQUESTED' ||
     'ACTIVE' ||
     'ADMITTED' ||
     'ADMITTED_PENDING_BED' ||
@@ -2351,6 +2352,7 @@ class _PatientAdmissionQuickDialogState
     return ClinicalAdmissionActionDialog(
       key: ValueKey<String?>(_facilityId),
       referenceData: _clinicalAdmissionReferenceData(),
+      requiresBed: false,
       reasonLabel: l10n.patientsAdmissionReasonLabel,
       reasonRequired: true,
       notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
@@ -2482,35 +2484,20 @@ class _PatientAdmissionQuickDialogState
   ) async {
     final Result<IpdAdmissionDetail> admissionResult = await ref
         .read(ipdRepositoryProvider)
-        .startAdmission(
+        .requestAdmission(
           _withoutEmptyPayload(<String, Object?>{
             'tenant_id': widget.patient.tenantId,
             'facility_id': _resolvedFacilityId(),
             'patient_id': widget.patient.id,
-            'ward_id': input.bed.parentId,
-            'room_id': input.bed.secondaryId,
-            'bed_id': input.bed.apiId,
+            'reason': input.reason,
+            'notes': input.notes,
           }),
         );
     final IpdAdmissionDetail? admission = _successOrNull(admissionResult);
     if (admission == null) {
       return _failureOrNull(admissionResult);
     }
-
-    final String admissionNote = _admissionRequestNote(
-      reason: input.reason,
-      notes: input.notes,
-    );
-    if (admissionNote.isEmpty) {
-      return null;
-    }
-
-    final Result<IpdAdmissionDetail> noteResult = await ref
-        .read(ipdRepositoryProvider)
-        .addNursingNote(admission.summary.apiId, <String, Object?>{
-          'note': admissionNote,
-        });
-    return _failureOrNull(noteResult);
+    return null;
   }
 
   String? _resolvedFacilityId() {
@@ -2521,21 +2508,6 @@ class _PatientAdmissionQuickDialogState
       return widget.referenceData.facilities.first.id;
     }
     return widget.patient.facilityId;
-  }
-
-  String _admissionRequestNote({String? reason, String? notes}) {
-    final String normalizedReason = reason?.trim() ?? '';
-    final String normalizedNotes = notes?.trim() ?? '';
-    if (normalizedReason.isEmpty && normalizedNotes.isEmpty) {
-      return '';
-    }
-    if (normalizedNotes.isEmpty) {
-      return normalizedReason;
-    }
-    if (normalizedReason.isEmpty) {
-      return normalizedNotes;
-    }
-    return '$normalizedReason\n\n$normalizedNotes';
   }
 }
 

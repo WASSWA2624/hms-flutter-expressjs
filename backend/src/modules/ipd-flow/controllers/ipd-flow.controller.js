@@ -87,6 +87,28 @@ const startIpdFlow = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.ipd_flow.start.success', flow);
 });
 
+const requestIpdAdmission = asyncHandler(async (req, res) => {
+  const payload = {
+    ...req.body,
+    tenant_id: req.body?.tenant_id || req.user?.tenant_id,
+  };
+
+  const flow = await ipdFlowService.requestIpdAdmission(
+    payload,
+    buildAuditContext(req),
+  );
+  return sendSuccess(res, 201, 'messages.ipd_flow.request_admission.success', flow);
+});
+
+const approveAdmission = asyncHandler(async (req, res) => {
+  const flow = await ipdFlowService.approveAdmission(
+    req.params.id,
+    req.body,
+    buildAuditContext(req),
+  );
+  return sendSuccess(res, 200, 'messages.ipd_flow.approve_admission.success', flow);
+});
+
 const assignBed = asyncHandler(async (req, res) => {
   const flow = await ipdFlowService.assignBed(req.params.id, req.body, buildAuditContext(req));
   return sendSuccess(res, 200, 'messages.ipd_flow.assign_bed.success', flow);
@@ -190,6 +212,8 @@ module.exports = {
   resolveLegacyRoute,
   getIpdFlowById,
   startIpdFlow,
+  requestIpdAdmission,
+  approveAdmission,
   assignBed,
   releaseBed,
   rejectAdmissionRequest,

@@ -4200,7 +4200,7 @@ const disposition = async (id, data, context = {}) => {
           facility_id: admissionFacilityId,
           patient_id: encounter.patient_id,
           encounter_id: encounter.id,
-          status: 'ADMITTED',
+          status: 'REQUESTED',
           admitted_at: dispositionAt
         }
       });

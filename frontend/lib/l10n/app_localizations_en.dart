@@ -5864,7 +5864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdSavedMessage => 'Inpatient changes saved.';
 
   @override
-  String get ipdAdmissionQueueSummaryLabel => 'Waiting bed';
+  String get ipdAdmissionQueueSummaryLabel => 'Pending admissions';
 
   @override
   String get ipdActivePatientsSummaryLabel => 'In beds';
@@ -5953,6 +5953,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdAssignBedAction => 'Assign bed';
+
+  @override
+  String get ipdApproveAdmissionAction => 'Approve admission';
+
+  @override
+  String get ipdApproveAdmissionBody =>
+      'Approve this admission request? The patient will move to inpatient care and you can assign a bed next.';
 
   @override
   String get ipdReleaseBedAction => 'Release bed';
@@ -6117,7 +6124,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdDischargedAtLabel => 'Discharged';
 
   @override
-  String get ipdScopeAdmissionQueue => 'Waiting bed';
+  String get ipdScopeAdmissionQueue => 'Pending admissions';
 
   @override
   String get ipdScopeActivePatients => 'In beds';
@@ -6139,6 +6146,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdStatusAdmittedPendingBed => 'Waiting bed';
+
+  @override
+  String get ipdStatusAdmissionRequested => 'Admission requested';
 
   @override
   String get ipdStatusAdmittedInBed => 'In bed';

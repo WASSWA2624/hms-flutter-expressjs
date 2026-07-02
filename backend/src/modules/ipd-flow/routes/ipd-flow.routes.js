@@ -19,6 +19,8 @@ const {
   resolveLegacyRouteParamsSchema,
   admissionIdParamsSchema,
   startIpdFlowSchema,
+  requestIpdAdmissionSchema,
+  approveAdmissionSchema,
   assignBedSchema,
   releaseBedSchema,
   rejectAdmissionSchema,
@@ -84,6 +86,25 @@ router.post(
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.startIpdFlow
+);
+
+router.post(
+  '/request',
+  validateRequest({ body: requestIpdAdmissionSchema }),
+  authenticate(),
+  authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
+  ipdFlowController.requestIpdAdmission
+);
+
+router.post(
+  '/:id/approve-admission',
+  validateRequest({
+    params: admissionIdParamsSchema,
+    body: approveAdmissionSchema,
+  }),
+  authenticate(),
+  authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
+  ipdFlowController.approveAdmission
 );
 
 router.post(

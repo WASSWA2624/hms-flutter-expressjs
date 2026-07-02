@@ -686,27 +686,34 @@ final class ClinicalWorkspaceController
     );
   }
 
-  Future<AppFailure?> requestAdmission(ClinicalCatalogOption bed) {
+  Future<AppFailure?> requestAdmission({
+    ClinicalCatalogOption? bed,
+    String? reason,
+    String? notes,
+  }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
-    final String bedStatus = (bed.status ?? 'AVAILABLE').trim().toUpperCase();
-    if (entry == null ||
-        entry.apiPatientId == null ||
-        bed.parentId == null ||
-        bed.secondaryId == null ||
-        (bedStatus.isNotEmpty && bedStatus != 'AVAILABLE')) {
+    if (entry == null || entry.apiPatientId == null) {
       return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    if (bed != null) {
+      final String bedStatus = (bed.status ?? 'AVAILABLE').trim().toUpperCase();
+      if (bed.parentId == null ||
+          bed.secondaryId == null ||
+          (bedStatus.isNotEmpty && bedStatus != 'AVAILABLE')) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
     }
 
     return _mutateSelectedEncounter(
       () => _ipdRepository
-          .startAdmission(<String, Object?>{
+          .requestAdmission(<String, Object?>{
             'tenant_id': entry.tenantId,
             'facility_id': entry.facilityId,
             'patient_id': entry.apiPatientId,
             'encounter_id': entry.apiEncounterId,
-            'ward_id': bed.parentId,
-            'room_id': bed.secondaryId,
-            'bed_id': bed.apiId,
+            if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+            if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
           })
           .then(
             (Result<IpdAdmissionDetail> result) => result.map<void>((_) {}),

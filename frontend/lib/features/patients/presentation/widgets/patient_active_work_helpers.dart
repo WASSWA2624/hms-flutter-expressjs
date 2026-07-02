@@ -52,6 +52,7 @@ bool isActivePatientQueueEntry(PatientSummaryRecord record) {
 
 bool isActivePatientAdmissionStatus(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
+    'REQUESTED' ||
     'ACTIVE' ||
     'ADMITTED' ||
     'ADMITTED_PENDING_BED' ||
@@ -61,6 +62,10 @@ bool isActivePatientAdmissionStatus(String? status) {
     'DISCHARGE_PLANNED' => true,
     _ => false,
   };
+}
+
+bool isPendingPatientAdmissionRequest(String? status) {
+  return (status ?? '').trim().toUpperCase() == 'REQUESTED';
 }
 
 bool isActivePatientAdmission(PatientSummaryRecord record) {

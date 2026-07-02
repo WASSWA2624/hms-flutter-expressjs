@@ -29,6 +29,7 @@ const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const STAGES = Object.freeze({
+  ADMISSION_REQUESTED: "ADMISSION_REQUESTED",
   ADMITTED_PENDING_BED: "ADMITTED_PENDING_BED",
   ADMITTED_IN_BED: "ADMITTED_IN_BED",
   IN_PROCEDURE_OT: "IN_PROCEDURE_OT",
@@ -879,12 +880,15 @@ const deriveIpdStage = ({
   if (transferStatus === "REQUESTED" || transferStatus === "APPROVED")
     return STAGES.TRANSFER_REQUESTED;
 
+  if (admissionStatus === "REQUESTED") return STAGES.ADMISSION_REQUESTED;
+
   return activeBedAssignment
     ? STAGES.ADMITTED_IN_BED
     : STAGES.ADMITTED_PENDING_BED;
 };
 
 const deriveNextStep = (stage, openTransferRequest = null) => {
+  if (stage === STAGES.ADMISSION_REQUESTED) return "APPROVE_ADMISSION";
   if (stage === STAGES.ADMITTED_PENDING_BED) return "ASSIGN_BED";
   if (stage === STAGES.ADMITTED_IN_BED) return "RECORD_NURSING_NOTE";
   if (stage === STAGES.IN_PROCEDURE_OT) return "COMPLETE_THEATRE_HANDOVER";
@@ -2899,6 +2903,251 @@ const startIpdFlow = async (data, context = {}) => {
   return finalizeAction({ result, context, metadata: { operation: "start" } });
 };
 
+const requestIpdAdmission = async (data, context = {}) => {
+  const requestedAt = new Date();
+
+  const result = await prisma.$transaction(async (tx) => {
+    const tenantFromPayload = data?.tenant_id
+      ? await resolveTenantByIdentifier(tx, data.tenant_id)
+      : null;
+    if (data?.tenant_id && !tenantFromPayload) {
+      throw new HttpError("errors.tenant.not_found", 404, [
+        { field: "tenant_id" },
+      ]);
+    }
+
+    const tenantId = tenantFromPayload?.id || context?.tenant_id || null;
+    if (!tenantId) {
+      throw new HttpError("errors.validation.field.required", 400, [
+        { field: "tenant_id" },
+      ]);
+    }
+
+    let facilityId = context?.facility_id || null;
+    if (data?.facility_id !== undefined) {
+      if (data.facility_id === null) {
+        facilityId = null;
+      } else {
+        const facility = await resolveFacilityByIdentifier(
+          tx,
+          data.facility_id,
+          tenantId,
+        );
+        if (!facility) {
+          throw new HttpError("errors.facility.not_found", 404, [
+            { field: "facility_id" },
+          ]);
+        }
+        facilityId = facility.id;
+      }
+    }
+
+    const patient = await resolvePatientByIdentifier(
+      tx,
+      data.patient_id,
+      tenantId,
+      facilityId,
+    );
+    if (!patient) {
+      throw new HttpError("errors.ipd_flow.patient_not_found", 404, [
+        { field: "patient_id" },
+      ]);
+    }
+
+    if (!facilityId && patient.facility_id) {
+      facilityId = patient.facility_id;
+    }
+
+    if (patient.facility_id && facilityId && patient.facility_id !== facilityId) {
+      throw new HttpError("errors.validation.invalid", 400, [
+        { field: "patient_id" },
+      ]);
+    }
+
+    let encounterId = null;
+    if (data?.encounter_id) {
+      const encounter = await resolveEncounterByIdentifier(
+        tx,
+        data.encounter_id,
+        tenantId,
+        facilityId,
+      );
+      if (!encounter) {
+        throw new HttpError("errors.encounter.not_found", 404, [
+          { field: "encounter_id" },
+        ]);
+      }
+      if (encounter.patient_id !== patient.id) {
+        throw new HttpError("errors.validation.invalid", 400, [
+          { field: "encounter_id" },
+        ]);
+      }
+      encounterId = encounter.id;
+    }
+
+    const existingAdmission = await tx.admission.findFirst({
+      where: {
+        tenant_id: tenantId,
+        patient_id: patient.id,
+        deleted_at: null,
+        status: { notIn: Array.from(TERMINAL_ADMISSION_STATUSES) },
+        ...(facilityId
+          ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
+          : {}),
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    if (
+      existingAdmission &&
+      String(existingAdmission.status || "").toUpperCase() !== "REQUESTED"
+    ) {
+      throw new HttpError("errors.ipd_flow.active_admission_exists", 400);
+    }
+
+    const admission = existingAdmission
+      ? await tx.admission.update({
+          where: { id: existingAdmission.id },
+          data: {
+            facility_id: facilityId || existingAdmission.facility_id,
+            encounter_id: encounterId || existingAdmission.encounter_id,
+            status: "REQUESTED",
+            discharged_at: null,
+            updated_at: requestedAt,
+          },
+        })
+      : await tx.admission.create({
+          data: {
+            tenant_id: tenantId,
+            facility_id: facilityId,
+            patient_id: patient.id,
+            encounter_id: encounterId,
+            status: "REQUESTED",
+            admitted_at: requestedAt,
+          },
+        });
+
+    const requestNote = [data?.reason, data?.notes]
+      .map((value) => sanitizeIdentifier(value))
+      .filter(Boolean)
+      .join("\n\n");
+
+    return {
+      admission_id: admission.id,
+      tenant_id: tenantId,
+      transition: {
+        action: existingAdmission ? "REQUEST_UPDATE" : "REQUEST",
+        stage_from: null,
+        stage_to: STAGES.ADMISSION_REQUESTED,
+        occurred_at: requestedAt.toISOString(),
+      },
+      compatibilitySignals: ["ADMISSION_REQUESTED"],
+      request_note: requestNote || null,
+    };
+  });
+
+  return finalizeAction({
+    result,
+    context,
+    metadata: {
+      operation: "request_admission",
+      reason: sanitizeIdentifier(data?.reason) || null,
+      notes: sanitizeIdentifier(data?.notes) || null,
+    },
+  });
+};
+
+const approveAdmission = async (id, data, context = {}) => {
+  const approvedAt = toDate(data?.assigned_at, new Date());
+
+  const result = await prisma.$transaction(async (tx) => {
+    const resolved = await resolveAdmissionByIdentifier(tx, id);
+    if (!resolved) throw new HttpError("errors.ipd_flow.not_found", 404);
+
+    const admission = await fetchAdmissionForMutation(tx, resolved.id);
+    ensureAdmissionIsMutable(admission);
+
+    const admissionStatus = String(admission.status || "").toUpperCase();
+    if (admissionStatus !== "REQUESTED") {
+      throw new HttpError("errors.ipd_flow.approve_not_allowed", 400);
+    }
+
+    if (getActiveBedAssignment(admission)) {
+      throw new HttpError("errors.ipd_flow.active_bed_exists", 400);
+    }
+
+    const stageBefore = deriveIpdStage({
+      admission,
+      activeBedAssignment: null,
+      openTransferRequest: getOpenTransferRequest(admission),
+      latestDischargeSummary: getLatestDischargeSummary(admission),
+    });
+
+    await tx.admission.update({
+      where: { id: admission.id },
+      data: {
+        status: "ADMITTED",
+        admitted_at: approvedAt,
+        updated_at: approvedAt,
+      },
+    });
+
+    const compatibilitySignals = ["PATIENT_ADMITTED"];
+    let requestedBed = null;
+    if (data?.bed_id) {
+      requestedBed = await resolveBedByIdentifier(
+        tx,
+        data.bed_id,
+        admission.tenant_id,
+        admission.facility_id || null,
+      );
+      if (!requestedBed) {
+        throw new HttpError("errors.bed.not_found", 404, [{ field: "bed_id" }]);
+      }
+      if (String(requestedBed.status || "").toUpperCase() !== "AVAILABLE") {
+        throw new HttpError("errors.ipd_flow.bed_not_available", 400, [
+          { field: "bed_id" },
+        ]);
+      }
+
+      await tx.bed_assignment.create({
+        data: {
+          admission_id: admission.id,
+          bed_id: requestedBed.id,
+          assigned_at: approvedAt,
+        },
+      });
+
+      await tx.bed.update({
+        where: { id: requestedBed.id },
+        data: { status: "OCCUPIED" },
+      });
+
+      compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
+    }
+
+    return {
+      admission_id: admission.id,
+      tenant_id: admission.tenant_id,
+      transition: {
+        action: "APPROVE_ADMISSION",
+        stage_from: stageBefore,
+        stage_to: requestedBed
+          ? STAGES.ADMITTED_IN_BED
+          : STAGES.ADMITTED_PENDING_BED,
+        occurred_at: approvedAt.toISOString(),
+      },
+      compatibilitySignals,
+    };
+  });
+
+  return finalizeAction({
+    result,
+    context,
+    metadata: { operation: "approve_admission" },
+  });
+};
+
 const assignBed = async (id, data, context = {}) => {
   const assignedAt = toDate(data?.assigned_at, new Date());
 
@@ -2908,6 +3157,11 @@ const assignBed = async (id, data, context = {}) => {
 
     const admission = await fetchAdmissionForMutation(tx, resolved.id);
     ensureAdmissionIsMutable(admission);
+
+    const admissionStatus = String(admission.status || "").toUpperCase();
+    if (admissionStatus === "REQUESTED") {
+      throw new HttpError("errors.ipd_flow.approve_required", 400);
+    }
 
     if (getActiveBedAssignment(admission)) {
       throw new HttpError("errors.ipd_flow.active_bed_exists", 400);
@@ -4323,6 +4577,8 @@ module.exports = {
   resolveLegacyRoute,
   getIpdFlowById,
   startIpdFlow,
+  requestIpdAdmission,
+  approveAdmission,
   assignBed,
   releaseBed,
   rejectAdmissionRequest,

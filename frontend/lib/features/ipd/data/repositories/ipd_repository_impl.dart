@@ -141,6 +141,27 @@ final class IpdRepositoryImpl implements IpdRepository {
   }
 
   @override
+  Future<Result<IpdAdmissionDetail>> requestAdmission(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<IpdAdmissionDetail>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.ipdFlows.path, 'request']),
+      data: _withoutEmpty(payload),
+      queryParameters: const <String, Object?>{'include_icu': 'true'},
+      decoder: (Object? data) =>
+          IpdAdmissionDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<IpdAdmissionDetail>> approveAdmission(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _postAction(admissionId, <String>['approve-admission'], payload);
+  }
+
+  @override
   Future<Result<IpdAdmissionDetail>> assignBed(
     String admissionId,
     Map<String, Object?> payload,
@@ -272,7 +293,7 @@ String _queueScopeFor(IpdQueueScope scope) {
 
 String? _stageFor(IpdQueueScope scope) {
   return switch (scope) {
-    IpdQueueScope.admissionQueue => 'ADMITTED_PENDING_BED',
+    IpdQueueScope.admissionQueue => null,
     IpdQueueScope.activePatients => 'ADMITTED_IN_BED',
     IpdQueueScope.dischargePlanned ||
     IpdQueueScope.awaitingClearance => 'DISCHARGE_PLANNED',
@@ -283,6 +304,8 @@ String? _stageFor(IpdQueueScope scope) {
 
 String? _stageAnyFor(IpdQueueScope scope) {
   return switch (scope) {
+    IpdQueueScope.admissionQueue =>
+      'ADMISSION_REQUESTED,ADMITTED_PENDING_BED',
     IpdQueueScope.transferPending => 'TRANSFER_REQUESTED,TRANSFER_IN_PROGRESS',
     _ => null,
   };

@@ -873,6 +873,7 @@ class _IpdDetailActions extends ConsumerWidget {
     final bool terminal = summary.isTerminal;
     final bool activeBed = summary.hasActiveBed;
     final bool dischargePlanned = summary.stage == _stageDischargePlanned;
+    final bool admissionRequested = summary.stage == _stageAdmissionRequested;
     final bool hasOpenTransfer = admission.openTransferRequest != null;
     final String icuStatus = (admission.icu.status ?? '').toUpperCase();
     final bool icuActive = icuStatus == 'ACTIVE';
@@ -899,7 +900,15 @@ class _IpdDetailActions extends ConsumerWidget {
             enabled: canClinical && actionsEnabled,
             onPressed: () => _confirmStartIcuStay(context, ref, summary),
           ),
-        if (canOperate && !activeBed && !terminal)
+        if (canOperate && admissionRequested && !terminal)
+          AppActionItem(
+            label: l10n.ipdApproveAdmissionAction,
+            leadingIcon: Icons.check_circle_outline,
+            enabled: canOperate && actionsEnabled,
+            variant: AppActionVariant.primary,
+            onPressed: () => _confirmApproveAdmission(context, ref, summary),
+          ),
+        if (canOperate && !activeBed && !terminal && !admissionRequested)
           AppActionItem(
             label: l10n.ipdAssignBedAction,
             leadingIcon: Icons.bed_outlined,
@@ -1123,6 +1132,30 @@ class _IpdDetailActions extends ConsumerWidget {
     }
   }
 
+  Future<void> _confirmApproveAdmission(
+    BuildContext context,
+    WidgetRef ref,
+    IpdAdmissionSummary summary,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.ipdApproveAdmissionAction,
+        body: l10n.ipdApproveAdmissionBody,
+        submitLabel: l10n.ipdApproveAdmissionAction,
+        icon: const Icon(Icons.check_circle_outline),
+        onConfirm: () => ref
+            .read(ipdWorkspaceControllerProvider.notifier)
+            .approveAdmission(summary),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+
   Future<void> _confirmStartIcuStay(
     BuildContext context,
     WidgetRef ref,
@@ -1157,9 +1190,13 @@ class _IpdDetailActions extends ConsumerWidget {
         submitLabel: l10n.ipdAssignBedAction,
         referenceData: _ipdAdmissionReferenceData(context, state.referenceData),
         onSubmit: (ClinicalActionAdmissionInput input) {
+          final ClinicalActionCatalogOption? bed = input.bed;
+          if (bed == null) {
+            return Future<AppFailure?>.value(AppFailure.validation());
+          }
           return ref
               .read(ipdWorkspaceControllerProvider.notifier)
-              .assignBed(admission.summary, input.bed.apiId);
+              .assignBed(admission.summary, bed.apiId);
         },
       ),
     );
@@ -2660,6 +2697,7 @@ AppWorkspaceStatus _stageStatus(BuildContext context, String? stage) {
     _stageAdmittedInBed => AppWorkspaceStatusTone.info,
     _stageInProcedureOt => AppWorkspaceStatusTone.warning,
     _stageAdmittedPendingBed => AppWorkspaceStatusTone.warning,
+    _stageAdmissionRequested => AppWorkspaceStatusTone.warning,
     _stageTransferRequested ||
     _stageTransferInProgress => AppWorkspaceStatusTone.warning,
     _stageDischargePlanned => AppWorkspaceStatusTone.success,
@@ -2971,6 +3009,7 @@ void _showSaved(BuildContext context) {
   ).showSnackBar(SnackBar(content: Text(context.l10n.ipdSavedMessage)));
 }
 
+const String _stageAdmissionRequested = 'ADMISSION_REQUESTED';
 const String _stageAdmittedPendingBed = 'ADMITTED_PENDING_BED';
 const String _stageAdmittedInBed = 'ADMITTED_IN_BED';
 const String _stageInProcedureOt = 'IN_PROCEDURE_OT';
