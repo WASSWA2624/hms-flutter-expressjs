@@ -20459,7 +20459,9 @@
     "description": "Localized text for labConfigureTestDialogTitle."
   },
   "labOfferAtFacilityLabel": "Offer at this facility",
-  "labPlatformDefaultsHint": "Platform default — editable for this facility",
+  "labPlatformDefaultsHint": "Valeur par défaut de la plateforme — modifiable pour cette installation",
+  "labAddReferenceRangeAction": "Ajouter une plage de référence",
+  "labCatalogReadOnlyHint": "Contactez votre administrateur de laboratoire pour modifier les paramètres du catalogue.",
   "labOfferedStatusLabel": "Offered",
   "labNotOfferedStatusLabel": "Not offered",
   "labTestNameLabel": "Test nom",

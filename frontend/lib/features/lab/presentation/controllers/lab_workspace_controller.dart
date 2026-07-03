@@ -1014,16 +1014,25 @@ final class LabWorkspaceController
       }
 
       if (refreshCatalogs) {
-        final _LabReferenceData referenceData = await _referenceData();
+        final List<LabQcLog> qcLogs = await _qcLogs();
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(
-              catalogTests: referenceData.tests,
-              catalogPanels: referenceData.panels,
-              qcLogs: referenceData.qcLogs,
-            ),
-          );
+          final bool catalogsLoaded =
+              latest.catalogTests.isNotEmpty ||
+              latest.catalogPanels.isNotEmpty;
+          if (catalogsLoaded) {
+            final List<LabCatalogItem> tests = await _facilityTests();
+            final List<LabCatalogItem> panels = await _facilityPanels();
+            _emit(
+              latest.copyWith(
+                catalogTests: tests,
+                catalogPanels: panels,
+                qcLogs: qcLogs,
+              ),
+            );
+          } else {
+            _emit(latest.copyWith(qcLogs: qcLogs));
+          }
         }
       }
 
@@ -1158,25 +1167,18 @@ final class LabWorkspaceController
     );
   }
 
-  Future<_LabReferenceData> _referenceData() async {
-    final List<LabCatalogItem> tests = await _tests();
-    final List<LabCatalogItem> panels = await _panels();
-    final List<LabQcLog> qcLogs = await _qcLogs();
-    return _LabReferenceData(tests: tests, panels: panels, qcLogs: qcLogs);
-  }
-
-  Future<List<LabCatalogItem>> _facilityTests() async {
+  Future<List<LabCatalogItem>> _facilityTests({String? search}) async {
     final Result<List<LabCatalogItem>> result =
-        await _repository.listFacilityLabTests(limit: 200);
+        await _repository.listFacilityLabTests(search: search, limit: 200);
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],
     );
   }
 
-  Future<List<LabCatalogItem>> _facilityPanels() async {
+  Future<List<LabCatalogItem>> _facilityPanels({String? search}) async {
     final Result<List<LabCatalogItem>> result =
-        await _repository.listFacilityLabPanels(limit: 200);
+        await _repository.listFacilityLabPanels(search: search, limit: 200);
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],
@@ -1234,22 +1236,6 @@ final class LabWorkspaceController
         }
         return failure;
       },
-    );
-  }
-
-  Future<List<LabCatalogItem>> _tests() async {
-    final Result<List<LabCatalogItem>> result = await _repository.listTests();
-    return result.when(
-      success: (List<LabCatalogItem> value) => value,
-      failure: (_) => const <LabCatalogItem>[],
-    );
-  }
-
-  Future<List<LabCatalogItem>> _panels() async {
-    final Result<List<LabCatalogItem>> result = await _repository.listPanels();
-    return result.when(
-      success: (List<LabCatalogItem> value) => value,
-      failure: (_) => const <LabCatalogItem>[],
     );
   }
 
@@ -1531,16 +1517,4 @@ extension on LabOrderWorkflow {
       nextActions: nextActions,
     );
   }
-}
-
-final class _LabReferenceData {
-  const _LabReferenceData({
-    required this.tests,
-    required this.panels,
-    required this.qcLogs,
-  });
-
-  final List<LabCatalogItem> tests;
-  final List<LabCatalogItem> panels;
-  final List<LabQcLog> qcLogs;
 }

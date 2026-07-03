@@ -124,6 +124,7 @@ final class LabRepositoryImpl implements LabRepository {
     String? search,
     int page = 1,
     int limit = 100,
+    bool offeredOnly = false,
   }) {
     return _apiClient.get<List<LabCatalogItem>>(
       ApiEndpoints.apiV1(<String>[
@@ -134,6 +135,7 @@ final class LabRepositoryImpl implements LabRepository {
         'page': page,
         'limit': limit,
         'search': search,
+        if (offeredOnly) 'offered_only': 'true',
         'sort_by': 'name',
         'order': 'asc',
       }),
@@ -146,6 +148,7 @@ final class LabRepositoryImpl implements LabRepository {
     String? search,
     int page = 1,
     int limit = 100,
+    bool offeredOnly = false,
   }) {
     return _apiClient.get<List<LabCatalogItem>>(
       ApiEndpoints.apiV1(<String>[
@@ -156,6 +159,7 @@ final class LabRepositoryImpl implements LabRepository {
         'page': page,
         'limit': limit,
         'search': search,
+        if (offeredOnly) 'offered_only': 'true',
         'sort_by': 'name',
         'order': 'asc',
       }),

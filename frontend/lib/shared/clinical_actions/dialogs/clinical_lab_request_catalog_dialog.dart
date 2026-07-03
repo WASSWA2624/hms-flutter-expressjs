@@ -287,11 +287,11 @@ class _ClinicalLabRequestCatalogDialogState
       ClinicalLabRequestCatalogKind.tests =>
         _testCatalogOptions.isNotEmpty
             ? _testCatalogOptions
-            : widget.referenceData.labTests,
+            : const <ClinicalActionCatalogOption>[],
       ClinicalLabRequestCatalogKind.panels =>
         _panelCatalogOptions.isNotEmpty
             ? _panelCatalogOptions
-            : widget.referenceData.labPanels,
+            : const <ClinicalActionCatalogOption>[],
     };
   }
 
@@ -311,7 +311,7 @@ class _ClinicalLabRequestCatalogDialogState
       _isSearching = false;
       _panelCatalogOptions = result.when(
         success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => widget.referenceData.labPanels,
+        failure: (_) => const <ClinicalActionCatalogOption>[],
       );
     });
   }
@@ -332,7 +332,7 @@ class _ClinicalLabRequestCatalogDialogState
       _isSearching = false;
       _testCatalogOptions = result.when(
         success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => widget.referenceData.labTests,
+        failure: (_) => const <ClinicalActionCatalogOption>[],
       );
     });
   }

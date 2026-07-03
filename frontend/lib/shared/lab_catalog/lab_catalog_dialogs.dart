@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -13,6 +12,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
 
 typedef LabCatalogSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
@@ -590,8 +590,6 @@ class LabCatalogTestDialog extends StatefulWidget {
 }
 
 class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
-  static const String _anyGenderValue = '__ANY__';
-
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
@@ -599,22 +597,11 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   late final TextEditingController _specimenController;
   late final TextEditingController _unitController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _rangeLabelController;
-  late final TextEditingController _ageMinController;
-  late final TextEditingController _ageMaxController;
-  late final TextEditingController _rangeUnitController;
-  late final TextEditingController _normalMinController;
-  late final TextEditingController _normalMaxController;
-  late final TextEditingController _criticalMinController;
-  late final TextEditingController _criticalMaxController;
-  late final TextEditingController _referenceTextController;
-  late final TextEditingController _rangeNotesController;
   late List<_EditableLabValue> _unitOptions;
   late List<_EditableLabValue> _resultOptions;
+  late List<EditableLabReferenceRange> _referenceRanges;
   late final TextEditingController _priceController;
   String? _resultKind;
-  String? _gender;
-  String? _ageUnit = 'YEAR';
   bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
@@ -625,9 +612,6 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   void initState() {
     super.initState();
     final LabCatalogItem? item = widget.item;
-    final LabReferenceRange? range = item?.referenceRanges.isEmpty ?? true
-        ? null
-        : item!.referenceRanges.first;
     _nameController = TextEditingController(text: item?.name ?? '');
     _codeController = TextEditingController(text: item?.code ?? '');
     _categoryController = TextEditingController(text: item?.category ?? '');
@@ -644,39 +628,23 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
         .map(_EditableLabValue.fromResultOption)
         .where((_EditableLabValue value) => value.value.trim().isNotEmpty)
         .toList(growable: true);
-    _rangeLabelController = TextEditingController(text: range?.label ?? '');
-    _ageMinController = TextEditingController(
-      text: range?.ageMinValue?.toString() ?? '',
-    );
-    _ageMaxController = TextEditingController(
-      text: range?.ageMaxValue?.toString() ?? '',
-    );
-    _rangeUnitController = TextEditingController(
-      text: range?.unit ?? item?.unit ?? '',
-    );
-    _normalMinController = TextEditingController(
-      text: range?.normalMinValue ?? '',
-    );
-    _normalMaxController = TextEditingController(
-      text: range?.normalMaxValue ?? '',
-    );
-    _criticalMinController = TextEditingController(
-      text: range?.criticalMinValue ?? '',
-    );
-    _criticalMaxController = TextEditingController(
-      text: range?.criticalMaxValue ?? '',
-    );
-    _referenceTextController = TextEditingController(
-      text: range?.referenceText ?? '',
-    );
-    _rangeNotesController = TextEditingController(text: range?.notes ?? '');
+    _referenceRanges = (item?.referenceRanges.isEmpty ?? true)
+        ? <EditableLabReferenceRange>[
+            EditableLabReferenceRange(defaultUnit: item?.unit),
+          ]
+        : item!.referenceRanges
+              .map(
+                (LabReferenceRange range) => EditableLabReferenceRange(
+                  range: range,
+                  defaultUnit: item.unit,
+                ),
+              )
+              .toList(growable: true);
     _priceController = TextEditingController(
       text: item?.unitPrice?.toString() ?? '',
     );
     _isOfferedAtFacility = item?.isOfferedAtFacility ?? false;
     _resultKind = item?.resultKind ?? 'NUMERIC';
-    _gender = range?.gender ?? _anyGenderValue;
-    _ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEAR';
   }
 
   @override
@@ -687,16 +655,9 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     _specimenController.dispose();
     _unitController.dispose();
     _descriptionController.dispose();
-    _rangeLabelController.dispose();
-    _ageMinController.dispose();
-    _ageMaxController.dispose();
-    _rangeUnitController.dispose();
-    _normalMinController.dispose();
-    _normalMaxController.dispose();
-    _criticalMinController.dispose();
-    _criticalMaxController.dispose();
-    _referenceTextController.dispose();
-    _rangeNotesController.dispose();
+    for (final EditableLabReferenceRange range in _referenceRanges) {
+      range.dispose();
+    }
     _priceController.dispose();
     super.dispose();
   }
@@ -871,183 +832,26 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
               maxLines: 2,
             ),
             const Divider(height: 24),
-            LabSearchableTextField(
-              controller: _rangeLabelController,
-              labelText: l10n.labReferenceRangeLabel,
+            LabReferenceRangeListField(
+              ranges: _referenceRanges,
               enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.label_outline),
-              options: _rangeLabelOptions(l10n),
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppSelectField<String>.searchable(
-                value: _gender,
-                labelText: l10n.labGenderApplicabilityLabel,
-                enabled: !_isSaving,
-                allowClear: false,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: _anyGenderValue,
-                    label: l10n.labGenderAnyLabel,
-                    leadingIcon: const Icon(Icons.people_outline),
+              fallbackUnit: _unitController.text.trim(),
+              onChanged: () => setState(() {}),
+              onAdd: () {
+                setState(
+                  () => _referenceRanges.add(
+                    EditableLabReferenceRange(
+                      defaultUnit: _unitController.text.trim(),
+                    ),
                   ),
-                  AppSelectOption<String>(
-                    value: 'MALE',
-                    label: l10n.labGenderMaleLabel,
-                    leadingIcon: const Icon(Icons.male),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'FEMALE',
-                    label: l10n.labGenderFemaleLabel,
-                    leadingIcon: const Icon(Icons.female),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'OTHER',
-                    label: l10n.labGenderOtherLabel,
-                    leadingIcon: const Icon(Icons.diversity_3_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'UNKNOWN',
-                    label: l10n.labGenderUnknownLabel,
-                    leadingIcon: const Icon(Icons.help_outline),
-                  ),
-                ],
-                onChanged: (String? value) =>
-                    setState(() => _gender = value ?? _anyGenderValue),
-              ),
-              right: AppSelectField<String>.searchable(
-                value: _ageUnit,
-                labelText: l10n.labAgeUnitLabel,
-                enabled: !_isSaving,
-                allowClear: false,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: 'DAY',
-                    label: l10n.labAgeUnitDays,
-                    leadingIcon: const Icon(Icons.today_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'WEEK',
-                    label: l10n.labAgeUnitWeeks,
-                    leadingIcon: const Icon(Icons.view_week_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'MONTH',
-                    label: l10n.labAgeUnitMonths,
-                    leadingIcon: const Icon(Icons.calendar_view_month_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'YEAR',
-                    label: l10n.labAgeUnitYears,
-                    leadingIcon: const Icon(Icons.event_outlined),
-                  ),
-                ],
-                onChanged: (String? value) => setState(() => _ageUnit = value),
-              ),
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _ageMinController,
-                labelText: l10n.labAgeMinLabel,
-                enabled: !_isSaving,
-                keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                validator: _nonNegativeNumberValidator(l10n),
-              ),
-              right: AppTextField(
-                controller: _ageMaxController,
-                labelText: l10n.labAgeMaxLabel,
-                enabled: !_isSaving,
-                keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                validator: _orderedNumberValidator(
-                  l10n,
-                  _ageMinController,
-                  allowEqual: false,
-                  integerOnly: true,
-                  nonNegative: true,
-                ),
-              ),
-            ),
-            LabSearchableTextField(
-              controller: _rangeUnitController,
-              labelText: l10n.labResultUnitLabel,
-              enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.straighten_outlined),
-              options: _unitOptionsCatalog,
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _normalMinController,
-                labelText: l10n.labNormalMinLabel,
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                validator: _decimalNumberValidator(l10n),
-              ),
-              right: AppTextField(
-                controller: _normalMaxController,
-                labelText: l10n.labNormalMaxLabel,
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                validator: _orderedNumberValidator(
-                  l10n,
-                  _normalMinController,
-                  allowEqual: true,
-                  integerOnly: false,
-                ),
-              ),
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _criticalMinController,
-                labelText: l10n.labCriticalMinLabel,
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                validator: _decimalNumberValidator(l10n),
-              ),
-              right: AppTextField(
-                controller: _criticalMaxController,
-                labelText: l10n.labCriticalMaxLabel,
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                validator: _orderedNumberValidator(
-                  l10n,
-                  _criticalMinController,
-                  allowEqual: true,
-                  integerOnly: false,
-                ),
-              ),
-            ),
-            AppTextField(
-              controller: _referenceTextController,
-              labelText: l10n.labReferenceTextLabel,
-              enabled: !_isSaving,
-              maxLines: 2,
-            ),
-            AppTextField(
-              controller: _rangeNotesController,
-              labelText: l10n.labReferenceNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 2,
+                );
+              },
+              onRemove: (EditableLabReferenceRange range) {
+                setState(() {
+                  range.dispose();
+                  _referenceRanges.remove(range);
+                });
+              },
             ),
           ],
         ),
@@ -1099,16 +903,6 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
         for (final LabResultOption option in item.resultOptions)
           option.value ?? option.label,
       for (final _EditableLabValue option in _resultOptions) option.value,
-    ]);
-  }
-
-  List<String> _rangeLabelOptions(AppLocalizations l10n) {
-    return _uniqueNonEmpty(<String?>[
-      l10n.labAdultRangeLabel,
-      l10n.labPediatricRangeLabel,
-      l10n.labNeonateRangeLabel,
-      for (final LabCatalogItem item in widget.catalogTests)
-        for (final LabReferenceRange range in item.referenceRanges) range.label,
     ]);
   }
 
@@ -1179,39 +973,9 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   }
 
   bool _rangesAreValid() {
-    return _isRangeValid(
-          _normalMinController.text,
-          _normalMaxController.text,
-          allowEqual: true,
-        ) &&
-        _isRangeValid(
-          _criticalMinController.text,
-          _criticalMaxController.text,
-          allowEqual: true,
-        ) &&
-        _isRangeValid(
-          _ageMinController.text,
-          _ageMaxController.text,
-          allowEqual: false,
-        );
-  }
-
-  bool _isRangeValid(
-    String minValue,
-    String maxValue, {
-    required bool allowEqual,
-  }) {
-    final String minText = minValue.trim();
-    final String maxText = maxValue.trim();
-    if (minText.isEmpty || maxText.isEmpty) {
-      return true;
-    }
-    final num? minNumber = num.tryParse(minText);
-    final num? maxNumber = num.tryParse(maxText);
-    if (minNumber == null || maxNumber == null) {
-      return false;
-    }
-    return allowEqual ? minNumber <= maxNumber : minNumber < maxNumber;
+    return _referenceRanges.every(
+      (EditableLabReferenceRange range) => range.isValid(),
+    );
   }
 
   Map<String, Object?> _payload() {
@@ -1266,72 +1030,17 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
 
   List<Map<String, Object?>> _referenceRangePayloads(String unit) {
     final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
-    final LabReferenceRange? existingRange =
-        widget.item?.referenceRanges.isEmpty ?? true
-        ? null
-        : widget.item!.referenceRanges.first;
-    final Map<String, Object?> firstRange = <String, Object?>{
-      if (existingRange != null) 'id': existingRange.id,
-      'label': _rangeLabelController.text.trim(),
-      if (_gender != null && _gender != _anyGenderValue) 'gender': _gender,
-      'age_min_value': _ageMinController.text.trim(),
-      'age_min_unit': _ageMinController.text.trim().isEmpty ? null : _ageUnit,
-      'age_max_value': _ageMaxController.text.trim(),
-      'age_max_unit': _ageMaxController.text.trim().isEmpty ? null : _ageUnit,
-      'unit': _rangeUnitController.text.trim().isEmpty
-          ? unit
-          : _rangeUnitController.text.trim(),
-      'normal_min_value': _normalMinController.text.trim(),
-      'normal_max_value': _normalMaxController.text.trim(),
-      'critical_min_value': _criticalMinController.text.trim(),
-      'critical_max_value': _criticalMaxController.text.trim(),
-      'reference_text': _referenceTextController.text.trim(),
-      'notes': _rangeNotesController.text.trim(),
-      'sort_order': 0,
-    };
-    if (_rangeHasContent(firstRange)) {
-      payloads.add(firstRange);
-    }
-    final Iterable<LabReferenceRange> additionalRanges =
-        widget.item?.referenceRanges.skip(1) ?? const <LabReferenceRange>[];
-    for (final LabReferenceRange range in additionalRanges) {
-      payloads.add(_existingRangePayload(range));
+    for (int index = 0; index < _referenceRanges.length; index++) {
+      final EditableLabReferenceRange range = _referenceRanges[index];
+      final Map<String, Object?> payload = range.toPayload(
+        sortOrder: index,
+        fallbackUnit: unit,
+      );
+      if (range.hasContent(unit)) {
+        payloads.add(payload);
+      }
     }
     return payloads;
-  }
-
-  Map<String, Object?> _existingRangePayload(LabReferenceRange range) {
-    return <String, Object?>{
-      'id': range.id,
-      'label': range.label,
-      'gender': range.gender,
-      'age_min_value': range.ageMinValue,
-      'age_min_unit': range.ageMinUnit,
-      'age_max_value': range.ageMaxValue,
-      'age_max_unit': range.ageMaxUnit,
-      'unit': range.unit,
-      'normal_min_value': range.normalMinValue,
-      'normal_max_value': range.normalMaxValue,
-      'critical_min_value': range.criticalMinValue,
-      'critical_max_value': range.criticalMaxValue,
-      'reference_text': range.referenceText,
-      'notes': range.notes,
-      'sort_order': range.sortOrder,
-    };
-  }
-
-  bool _rangeHasContent(Map<String, Object?> range) {
-    return range.entries.any((MapEntry<String, Object?> entry) {
-      if (entry.key == 'id' ||
-          entry.key == 'sort_order' ||
-          entry.key == 'unit' ||
-          entry.key == 'age_min_unit' ||
-          entry.key == 'age_max_unit') {
-        return false;
-      }
-      final Object? value = entry.value;
-      return value != null && value.toString().trim().isNotEmpty;
-    });
   }
 }
 
@@ -2256,61 +1965,6 @@ List<Widget> _dialogActions(
       onPressed: onSubmit,
     ),
   ];
-}
-
-FormFieldValidator<String> _decimalNumberValidator(AppLocalizations l10n) {
-  return (String? value) {
-    final String text = value?.trim() ?? '';
-    if (text.isEmpty || num.tryParse(text) != null) {
-      return null;
-    }
-    return l10n.labNumericRangeValidationMessage;
-  };
-}
-
-FormFieldValidator<String> _nonNegativeNumberValidator(AppLocalizations l10n) {
-  return (String? value) {
-    final String text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return null;
-    }
-    final int? parsed = int.tryParse(text);
-    if (parsed != null && parsed >= 0) {
-      return null;
-    }
-    return l10n.labNumericRangeValidationMessage;
-  };
-}
-
-FormFieldValidator<String> _orderedNumberValidator(
-  AppLocalizations l10n,
-  TextEditingController minController, {
-  required bool allowEqual,
-  required bool integerOnly,
-  bool nonNegative = false,
-}) {
-  return (String? value) {
-    final String text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return null;
-    }
-    final num? parsed = integerOnly ? int.tryParse(text) : num.tryParse(text);
-    if (parsed == null || (nonNegative && parsed < 0)) {
-      return l10n.labNumericRangeValidationMessage;
-    }
-    final String minText = minController.text.trim();
-    if (minText.isEmpty) {
-      return null;
-    }
-    final num? minValue = integerOnly
-        ? int.tryParse(minText)
-        : num.tryParse(minText);
-    if (minValue == null || (nonNegative && minValue < 0)) {
-      return null;
-    }
-    final bool inOrder = allowEqual ? minValue <= parsed : minValue < parsed;
-    return inOrder ? null : l10n.labNumericRangeValidationMessage;
-  };
 }
 
 bool _containsCatalogItem(List<LabCatalogItem> items, LabCatalogItem item) {

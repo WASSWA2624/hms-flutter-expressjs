@@ -342,6 +342,29 @@ const getFacilityLabTest = async (labTestIdentifier, context = {}, filters = {})
   return mapMergedLabTestRecord(masterTest, offering);
 };
 
+const getFacilityLabPanel = async (labPanelIdentifier, context = {}, filters = {}) => {
+  const tenantId = context.tenant_id || filters.tenant_id;
+  if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
+  const facilityId = await resolveFacilityId(context, filters);
+  const labPanelId = await resolveModelIdOrThrow({
+    model: 'lab_panel',
+    identifier: labPanelIdentifier,
+    tenantId,
+  });
+  const masterPanel = await resolveModelRecordOrThrow({
+    model: 'lab_panel',
+    identifier: labPanelId,
+    tenantId,
+    include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  });
+  const offering = await facilityLabCatalogRepository.findPanelOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_panel_id: labPanelId,
+  });
+  return mapMergedLabPanelRecord(masterPanel, offering);
+};
+
 const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
   const tenantId = context.tenant_id || payload.tenant_id;
   const userId = context.user_id;
@@ -641,6 +664,7 @@ module.exports = {
   listFacilityLabTests,
   listFacilityLabPanels,
   getFacilityLabTest,
+  getFacilityLabPanel,
   upsertFacilityLabTestOffering,
   disableFacilityLabTestOffering,
   upsertFacilityLabPanelOffering,

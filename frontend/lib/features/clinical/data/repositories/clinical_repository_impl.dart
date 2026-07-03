@@ -16,7 +16,6 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   const ClinicalRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
-  static const int _largeCatalogPageSize = 5000;
   static const int _largeRadiologyCatalogPageSize = 6500;
   static const int _defaultCatalogPageSize = 100;
 
@@ -121,20 +120,8 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<Result<ClinicalReferenceData>> loadReferenceData() async {
     final results = await Future.wait(<Future<List<ClinicalCatalogOption>>>[
-      _catalogOrEmpty(
-        HmsApiResource.labTests,
-        limit: _largeCatalogPageSize,
-        queryParameters: const <String, Object?>{
-          'include_standard_catalog': true,
-        },
-      ),
-      _catalogOrEmpty(
-        HmsApiResource.labPanels,
-        limit: _largeCatalogPageSize,
-        queryParameters: const <String, Object?>{
-          'include_standard_catalog': true,
-        },
-      ),
+      Future<List<ClinicalCatalogOption>>.value(const <ClinicalCatalogOption>[]),
+      Future<List<ClinicalCatalogOption>>.value(const <ClinicalCatalogOption>[]),
       _catalogOrEmpty(
         HmsApiResource.radiologyTests,
         limit: _largeRadiologyCatalogPageSize,

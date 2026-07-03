@@ -90,6 +90,14 @@ router.get(
   facilityLabCatalogController.listFacilityLabPanels
 );
 
+router.get(
+  '/panels/:lab_panel_id',
+  validateRequest({ params: facilityLabPanelParamsSchema }),
+  authenticate(),
+  authorize(LAB_READ_ROLES, 'role'),
+  facilityLabCatalogController.getFacilityLabPanel
+);
+
 router.put(
   '/panels/:lab_panel_id',
   validateRequest({

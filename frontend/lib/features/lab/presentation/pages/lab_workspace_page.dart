@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
@@ -1374,21 +1375,45 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
   late final TextEditingController _statusController;
   late final TextEditingController _loggedAtController;
   late final TextEditingController _notesController;
+  List<LabCatalogItem> _offeredTests = <LabCatalogItem>[];
   String? _labTestId;
   AppFailure? _failure;
   bool _isSaving = false;
+  bool _isLoadingTests = true;
 
   @override
   void initState() {
     super.initState();
-    _labTestId = widget.state.catalogTests.isEmpty
-        ? null
-        : widget.state.catalogTests.first.apiId;
     _statusController = TextEditingController();
     _loggedAtController = TextEditingController(
       text: DateTime.now().toIso8601String(),
     );
     _notesController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_loadOfferedTests());
+    });
+  }
+
+  Future<void> _loadOfferedTests() async {
+    final Result<List<LabCatalogItem>> result = await ref
+        .read(labRepositoryProvider)
+        .listFacilityLabTests(offeredOnly: true, limit: 200);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isLoadingTests = false;
+      _offeredTests = result.when(
+        success: (List<LabCatalogItem> value) => value,
+        failure: (_) => widget.state.catalogTests
+            .where((LabCatalogItem item) => item.isOfferedAtFacility)
+            .toList(growable: false),
+      );
+      _labTestId = _offeredTests.isEmpty ? null : _offeredTests.first.apiId;
+    });
   }
 
   @override
@@ -1418,10 +1443,10 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
             AppSelectField<String>.searchable(
               value: _labTestId,
               labelText: l10n.labQcTestFieldLabel,
-              enabled: !_isSaving,
+              enabled: !_isSaving && !_isLoadingTests,
               validator: AppValidators.requiredValue(l10n.validationRequired),
               options: <AppSelectOption<String>>[
-                for (final LabCatalogItem item in widget.state.catalogTests)
+                for (final LabCatalogItem item in _offeredTests)
                   AppSelectOption<String>(
                     value: item.apiId,
                     label: item.displayTitle,

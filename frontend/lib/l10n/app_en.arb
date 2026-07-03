@@ -20326,6 +20326,14 @@
   "@labPlatformDefaultsHint": {
     "description": "Hint shown when facility lab settings inherit platform defaults."
   },
+  "labAddReferenceRangeAction": "Add reference range",
+  "@labAddReferenceRangeAction": {
+    "description": "Action label for adding another lab reference range row."
+  },
+  "labCatalogReadOnlyHint": "Contact your lab administrator to change catalog settings.",
+  "@labCatalogReadOnlyHint": {
+    "description": "Shown when the user can view but not edit facility lab catalog settings."
+  },
   "labOfferedStatusLabel": "Offered",
   "@labOfferedStatusLabel": {
     "description": "Status label when a lab catalog item is offered at the facility."

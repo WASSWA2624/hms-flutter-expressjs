@@ -15110,6 +15110,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPlatformDefaultsHint => 'Platform default — editable for this facility';
 
   @override
+  String get labAddReferenceRangeAction => 'Add reference range';
+
+  @override
+  String get labCatalogReadOnlyHint => 'Contact your lab administrator to change catalog settings.';
+
+  @override
   String get labOfferedStatusLabel => 'Offered';
 
   @override

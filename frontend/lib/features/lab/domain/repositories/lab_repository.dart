@@ -24,12 +24,14 @@ abstract interface class LabRepository {
     String? search,
     int page = 1,
     int limit = 100,
+    bool offeredOnly = false,
   });
 
   Future<Result<List<LabCatalogItem>>> listFacilityLabPanels({
     String? search,
     int page = 1,
     int limit = 100,
+    bool offeredOnly = false,
   });
 
   Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({

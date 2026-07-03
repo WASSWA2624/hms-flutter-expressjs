@@ -73,6 +73,16 @@ const getFacilityLabTest = asyncHandler(async (req, res) => {
   sendSuccess(res, 'messages.facility_lab_catalog.tests.get.success', item);
 });
 
+const getFacilityLabPanel = asyncHandler(async (req, res) => {
+  const { lab_panel_id: labPanelId } = req.params;
+  const item = await facilityLabCatalogService.getFacilityLabPanel(
+    labPanelId,
+    buildContext(req),
+    req.query
+  );
+  sendSuccess(res, 'messages.facility_lab_catalog.panels.get.success', item);
+});
+
 const upsertFacilityLabTestOffering = asyncHandler(async (req, res) => {
   const item = await facilityLabCatalogService.upsertFacilityLabTestOffering(
     { ...req.body, lab_test_id: req.params.lab_test_id },
@@ -121,6 +131,7 @@ module.exports = {
   listFacilityLabTests,
   listFacilityLabPanels,
   getFacilityLabTest,
+  getFacilityLabPanel,
   upsertFacilityLabTestOffering,
   disableFacilityLabTestOffering,
   upsertFacilityLabPanelOffering,

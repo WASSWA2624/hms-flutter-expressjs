@@ -1,110 +1,120 @@
-# Facility-scoped lab catalog configuration
+# Facility-Scoped Lab Catalog — Implementation Prompt
 
-## Context
+## Objective
 
-HOSSPI ships a **platform-wide lab test and panel catalog** (LOINC-backed defaults, reference ranges, units, qualitative options). The **Laboratory → Lab Configurations** modal (Tests / Panels tabs) and **Configure lab test** form already expose catalog CRUD and per-test settings (name, code, category, specimen type, result kind, units, qualitative options, description, and age/gender reference ranges).
+Implement **per-facility lab catalog offerings** for HOSSPI HMS. Each facility selects which platform tests and panels it runs, overrides operational defaults (including price and reference ranges), and exposes only those items in lab order and clinical request flows—with prices applied automatically at order time.
 
-**Problems today**
+**Architecture:** Keep tenant-level `lab_test` / `lab_panel` as the **master catalog** (LOINC-backed). Add a **facility offering layer** that toggles availability, stores facility price, and holds overrides—mirroring `facility_catalog_offering` / `clinical-catalog.service.js` patterns. Never mutate master records when a facility customizes its offering.
 
-- The configurations modal is slow and can overflow while loading the full catalog (including units manifest).
-- Catalog edits are effectively **tenant/global**, not **per facility**.
-- Lab order / clinical request flows load the full catalog instead of only what the active facility offers.
-- Pricing is not enforced at the facility level, so users may still enter costs manually when ordering tests.
+---
 
-## Goal
+## Problems to Solve
 
-Let each **facility** choose which platform tests/panels it offers and **override catalog defaults** (including price) for its own operations—without duplicating the master catalog. Clinical and lab users should only see and request **facility-enabled** tests/panels with **pre-set prices**. Configuration remains restricted to authorized admin/lab roles.
+| Issue | Required outcome |
+| ----- | ---------------- |
+| Lab Configurations modal loads the full catalog (incl. units manifest) → slow, overflows UI | Paginate or lazy-load; open modal in < ~2s; no overflow at 1280×720 |
+| Catalog edits are tenant/global | All operational config scoped to active `facility_id` |
+| Order/clinical pickers load full catalog | Lightweight typeahead over **offered-only** items |
+| Manual price entry on orders | Facility `unit_price` auto-attached to billing payload |
 
-## Scope
+---
 
-### 1. Data model (backend + migrations)
+## Deliverables
 
-Introduce a **facility lab offering** layer (mirror the existing `facility_catalog_offering` / clinical-catalog pattern where practical):
+### 1. Data model & backend
 
-| Concern | Requirement |
-|--------|-------------|
-| **Offering toggle** | Per facility + test/panel: `is_active`, optional sort order. |
-| **Pricing** | Required `unit_price` (+ currency) per offered test and panel at facility scope. Panel price may override sum-of-tests or stand alone—document chosen rule. |
-| **Overrides** | Facility may override: specimen type, result kind, default unit, unit options, qualitative options, description. |
-| **Reference ranges** | Support **multiple** ranges per offered test with gender, age min/max + unit, normal/critical bounds, reference text. |
-| **Defaults** | Seed platform defaults (LOINC / clinical norms) on first enable; facility edits override without mutating global catalog. |
-| **Interpretation** | Backend result interpretation must resolve the **facility-specific** range set using patient age and gender (existing `lab.interpretation.js` logic extended, not replaced). |
-| **Audit** | All create/update/delete/enable/disable actions require reason where destructive; write audit logs. |
+Introduce `facility_lab_offering` (or equivalent) linked to facility + master test/panel:
 
-Do **not** break existing tenant-level `lab_test` / `lab_panel` records; treat them as the master catalog.
+| Field / concern | Rule |
+| ---------------- | ---- |
+| Toggle | `is_active`, optional sort order per facility + test/panel |
+| Pricing | Required `unit_price` + currency when offered. **Panel price is standalone** (not sum-of-tests)—document in API/schema comments |
+| Overrides | Specimen type, result kind, default unit, unit options, qualitative options, description |
+| Reference ranges | Multiple rows per offered test: gender, age min/max + unit, normal/critical bounds, reference text |
+| Defaults on enable | Seed from platform defaults; facility edits persist locally only |
+| Interpretation | Extend `lab.interpretation.js` to resolve **facility-specific** ranges by patient age + gender |
+| Audit | Reason required on destructive actions; audit all create/update/delete/enable/disable |
+| Master catalog | Unchanged; existing `lab_test` / `lab_panel` CRUD remains for platform admins |
 
-### 2. Lab Configurations UI (screenshots)
+**Merge reads:** Facility endpoints return master + offering merged (reuse `facility-lab-catalog.merge.js` pattern).
 
-**Entry:** Laboratory module → overflow menu → **Lab Configurations**.
+### 2. API
 
-**Tests tab**
+| Endpoint | Purpose |
+| -------- | ------- |
+| Facility-scoped CRUD/list | Offerings and overrides by `facility_id` |
+| Lightweight search | `q`, `limit`, `term_type=LAB_TEST\|LAB_PANEL`, `offered_only=true` for pickers |
+| Master catalog endpoints | Unchanged for global catalog management |
 
-- List platform tests with facility status: *offered / not offered*, price, and key overrides.
-- Actions: enable/disable for facility, **Configure** (opens existing form extended with price + offering toggle), not global delete unless platform admin.
-- Search/filter must stay responsive; **do not load the entire catalog eagerly**—paginate or lazy-load (including units manifest).
+Enforce RBAC + facility scope server-side on every mutation.
 
-**Panels tab**
+### 3. Lab Configurations UI
 
-- Same offering model for panels; panel composition references **facility-offered** tests only.
+**Entry:** Laboratory → overflow → **Lab Configurations**
 
-**Configure lab test dialog** (extend current form)
+| Tab / dialog | Behavior |
+| ------------ | -------- |
+| **Tests** | List platform tests with offered/not offered, price, key overrides. Enable/disable, **Configure** (extend existing form). No global delete unless platform admin. Search/filter responsive; no eager full-catalog load |
+| **Panels** | Same offering model; composition uses **facility-offered** tests only |
+| **Configure lab test** | Add: *Offer at this facility* toggle, **Price per test** (required when offered). Keep existing fields. **Multiple reference-range rows** with platform-default pre-fill and source hint. Fix modal overflow |
 
-Add / clarify:
+Do **not** load `catalogTests` / `catalogPanels` on initial `LabWorkspacePage` mount—fetch on configuration or order dialog open only.
 
-- **Offer at this facility** (toggle)
-- **Price per test** (required when offered)
-- Keep existing fields: test name, code, category, specimen type, result kind, default unit, unit options, qualitative options, description
-- **Reference ranges:** support adding/editing **multiple** rows (gender applicability, age min/max + unit, result unit, normal/critical min/max, reference text)
-- Pre-fill reference ranges from platform defaults; show source hint (e.g. “Platform default — editable for this facility”)
+### 4. Lab order & clinical request flows
 
-**Performance / layout**
+- Pickers: facility-offered, active items only via search API (typeahead)
+- Selected items carry facility price into billing/clinical request payload—no manual price for standard orders
+- Retired offerings stay readable on existing orders but never appear in pickers
 
-- Fix modal overflow on smaller viewports.
-- Configurations dialog opens quickly; heavy catalog data loads on demand inside tabs/forms.
+### 5. Permissions
 
-### 3. Lab order & clinical request flows
+| Role | Config read | Config write | Order picker |
+| ---- | ----------- | ------------ | ------------ |
+| Platform / super admin | ✓ | ✓ global + facility | offered only |
+| Tenant admin | ✓ | ✓ tenant facilities | offered only |
+| Facility admin | ✓ | ✓ own facility | offered only |
+| Lab (`lab:write`) | ✓ | ✓ own facility overrides | offered only |
+| Others | read-only effective values | ✗ | offered only |
 
-- Test/panel pickers load **only facility-offered, active items** via lightweight search API (typeahead; no full catalog in workspace state).
-- Selected tests/panels attach **facility price automatically** to billing/clinical request payload—no manual price entry for standard orders.
-- If a test is not offered at the facility, it must not appear in pickers (existing orders with retired offerings remain readable).
+Read-only users see “contact your lab administrator”—not editable fields.
 
-### 4. Permissions
+---
 
-| Role / permission | Configurations (read) | Configurations (write) | Order/request (read catalog) |
-|-------------------|----------------------|------------------------|------------------------------|
-| Platform / super admin | ✓ | ✓ (global + facility) | ✓ offered only |
-| Tenant admin | ✓ | ✓ (tenant facilities) | ✓ offered only |
-| Facility admin | ✓ | ✓ (own facility) | ✓ offered only |
-| Lab team with `lab:write` | ✓ | ✓ (own facility overrides) | ✓ offered only |
-| Clinical / lab users without config rights | ✓ read-only effective values | ✗ | ✓ offered only |
+## Acceptance Criteria
 
-Users without write access who need catalog changes should see a clear “contact your lab administrator” message—not editable fields.
+- [ ] Facility A and B (same tenant) can offer different tests/panels and prices
+- [ ] Enabling a test pre-fills reference ranges from platform defaults; facility edits do not affect other facilities
+- [ ] Result entry flags abnormal/critical using patient-matched **facility** reference range (age + gender)
+- [ ] Lab Configurations modal loads in < ~2s on demo data; no layout overflow at 1280×720
+- [ ] Lab order / clinical request pickers never download full catalog; search returns offered items with price
+- [ ] Lab orders auto-apply facility test/panel prices to billing
+- [ ] Unauthorized config mutations rejected server-side
+- [ ] Migrations, seeds, and tests cover offering CRUD, override merge, interpretation, permissions
 
-### 5. API
+---
 
-- CRUD/list endpoints scoped by `facility_id` for offerings and overrides.
-- Separate **lightweight search** endpoint for order pickers (`q`, `limit`, `term_type=LAB_TEST|LAB_PANEL`, `offered_only=true`).
-- Existing lab-test endpoints remain for master catalog management; facility endpoints merge master + override for reads.
+## Reuse & Reference
 
-## Acceptance criteria
+| Area | Path |
+| ---- | ---- |
+| Clinical offering pattern | `backend/src/modules/clinical-term/services/clinical-catalog.service.js` |
+| Facility lab module | `backend/src/modules/facility-lab-catalog/` |
+| Merge logic | `backend/src/modules/lab-workspace/services/facility-lab-catalog.merge.js` |
+| Lab config / interpretation | `lab.configuration.js`, `lab.interpretation.js` |
+| Frontend catalog | `frontend/lib/shared/lab_catalog/` |
+| UI standards | `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`; l10n in `app_en.arb` |
 
-- [ ] Facility A and Facility B under the same tenant can offer different test sets and prices.
-- [ ] Enabling a test pre-fills reference ranges from platform defaults; facility edits persist without changing other facilities.
-- [ ] Result entry flags abnormal/critical results using the **patient-matched** facility reference range (age + gender).
-- [ ] Lab Configurations modal loads in under ~2s on demo data; no layout overflow at 1280×720.
-- [ ] Create Lab Order / clinical lab request pickers never download the full catalog; search returns only offered items with price.
-- [ ] Placing a lab order auto-applies facility test/panel prices to billing.
-- [ ] Unauthorized users cannot mutate facility lab configuration; attempts are rejected server-side.
-- [ ] Migrations, seeds, and tests cover offering CRUD, override merge, interpretation, and permission checks.
+---
 
-## Implementation notes
+## Out of Scope
 
-- Reuse patterns from `clinical-catalog.service.js` (`facility_catalog_offering`, layered GLOBAL vs FACILITY search) and existing lab modules: `lab-test`, `lab-panel`, `lab.configuration.js`, `lab.interpretation.js`, `frontend/lib/shared/lab_catalog/`.
-- Avoid loading `catalogTests` / `catalogPanels` on initial `LabWorkspacePage` load; fetch only when opening configuration or order dialogs.
-- Follow existing UI components, l10n keys, and audit conventions.
+- Cross-facility price templates or bulk import/export
+- Patient-specific negotiated pricing
+- Replacing the master LOINC/platform catalog source
 
-## Out of scope (for now)
+---
 
-- Cross-facility price templates or bulk import/export.
-- Patient-specific negotiated pricing.
-- Replacing the master LOINC/platform catalog source.
+## Quality Gate
+
+- **Backend:** targeted `npm test` for `facility-lab-catalog`, merge, interpretation
+- **Frontend:** `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` for touched modules

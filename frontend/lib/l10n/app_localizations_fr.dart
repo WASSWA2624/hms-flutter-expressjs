@@ -15107,7 +15107,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labOfferAtFacilityLabel => 'Offer at this facility';
 
   @override
-  String get labPlatformDefaultsHint => 'Platform default — editable for this facility';
+  String get labPlatformDefaultsHint => 'Valeur par défaut de la plateforme — modifiable pour cette installation';
+
+  @override
+  String get labAddReferenceRangeAction => 'Ajouter une plage de référence';
+
+  @override
+  String get labCatalogReadOnlyHint => 'Contactez votre administrateur de laboratoire pour modifier les paramètres du catalogue.';
 
   @override
   String get labOfferedStatusLabel => 'Offered';

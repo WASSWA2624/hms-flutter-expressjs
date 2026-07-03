@@ -29537,6 +29537,18 @@ abstract class AppLocalizations {
   /// **'Platform default — editable for this facility'**
   String get labPlatformDefaultsHint;
 
+  /// Action label for adding another lab reference range row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reference range'**
+  String get labAddReferenceRangeAction;
+
+  /// Shown when the user can view but not edit facility lab catalog settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact your lab administrator to change catalog settings.'**
+  String get labCatalogReadOnlyHint;
+
   /// Status label when a lab catalog item is offered at the facility.
   ///
   /// In en, this message translates to:
