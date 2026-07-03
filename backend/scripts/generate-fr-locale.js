@@ -84,11 +84,11 @@ const translateWithRetries = async (text, attempts = 4) => {
   let lastError;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      // eslint-disable-next-line no-await-in-loop
+       
       return await translateWithMyMemory(text);
     } catch (error) {
       lastError = error;
-      // eslint-disable-next-line no-await-in-loop
+       
       await sleep(400 * (attempt + 1));
     }
   }
@@ -122,13 +122,13 @@ const translateText = async (text, cache) => {
   const translatedChunks = [];
   for (const chunk of chunks) {
     try {
-      // eslint-disable-next-line no-await-in-loop
+       
       const next = await translateWithRetries(chunk);
       translatedChunks.push(next);
     } catch {
       translatedChunks.push(chunk);
     }
-    // eslint-disable-next-line no-await-in-loop
+     
     await sleep(250);
   }
 
@@ -146,7 +146,7 @@ const translateEntries = async (entries, onProgress) => {
   for (const key of keys) {
     const value = entries[key];
     if (typeof value === 'string') {
-      // eslint-disable-next-line no-await-in-loop
+       
       output[key] = await translateText(value, cache);
     } else {
       output[key] = value;
@@ -193,7 +193,7 @@ const generateFrontendFr = async () => {
   for (const key of messageKeys) {
     const value = source[key];
     if (typeof value === 'string') {
-      // eslint-disable-next-line no-await-in-loop
+       
       output[key] = await translateText(value, cache);
     } else {
       output[key] = value;

@@ -14,11 +14,11 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_authorization_panel.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
-import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -1122,13 +1122,26 @@ class _IpdDetailActions extends ConsumerWidget {
     if (admission == null) {
       return;
     }
-    final bool? saved = await showAppDialog<bool>(
+    final AppLocalizations l10n = context.l10n;
+    final bool dischargePlanned =
+        (admission.latestDischargeSummary?.status ?? '').toUpperCase() ==
+        'PLANNED';
+    final bool? saved = await showDischargePlanningDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => IpdDischargeClearanceDialog(admission: admission),
+      ref: ref,
+      admissionId: admission.summary.apiId,
+      title: Text(
+        dischargePlanned
+            ? l10n.ipdManageDischargeTitle
+            : l10n.ipdPlanDischargeAction,
+      ),
+      onFailure: (AppFailure failure) => _showFailureIfNeeded(context, failure),
     );
     if (saved == true && context.mounted) {
-      _showSaved(context);
+      await ref.read(ipdWorkspaceControllerProvider.notifier).refresh();
+      if (context.mounted) {
+        _showSaved(context);
+      }
     }
   }
 

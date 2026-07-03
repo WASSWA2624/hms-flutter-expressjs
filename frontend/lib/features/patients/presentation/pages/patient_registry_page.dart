@@ -17,7 +17,6 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
-import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
@@ -1300,120 +1299,116 @@ Future<void> _openPatientQuickAction(
       ? state?.selectedDetail
       : null;
 
-  if (action == PatientQuickAction.opdActions) {
-    await _openActiveOpdActions(context, ref, patient);
-    return;
-  }
-  if (action == PatientQuickAction.labOrder) {
-    final bool? changed = await openPatientLabOrderDialog(
-      context,
-      ref,
-      patient,
-      encounterId: patient.currentVisit?.publicId,
-    );
+  Future<void> refreshIfChanged(bool? changed) async {
     if (changed == true && context.mounted) {
       await _refreshPatientAfterQuickAction(context, ref, patient.id);
     }
-    return;
   }
-  if (action == PatientQuickAction.radiologyOrder) {
-    final bool? changed = await openPatientRadiologyOrderDialog(
-      context,
-      ref,
-      patient,
-      encounterId: patient.currentVisit?.publicId,
-    );
-    if (changed == true && context.mounted) {
-      await _refreshPatientAfterQuickAction(context, ref, patient.id);
-    }
-    return;
-  }
-  if (action == PatientQuickAction.theaterSchedule) {
-    final bool? changed = await openPatientTheaterScheduleDialog(
-      context,
-      ref,
-      patient,
-      encounterId: patient.currentVisit?.publicId,
-    );
-    if (changed == true && context.mounted) {
-      await _refreshPatientAfterQuickAction(context, ref, patient.id);
-    }
-    return;
-  }
-  if (action == PatientQuickAction.physiotherapy) {
-    if (detail == null) {
-      return;
-    }
-    final bool hasAdmission =
-        activePatientAdmissionRecord(detail.workspace.admissions) != null ||
-        isActiveAdmissionPatientVisit(patient.currentVisit);
-    if (!hasAdmission) {
-      await _openPatientQuickAction(
+
+  switch (action) {
+    case PatientQuickAction.opdActions:
+      await _openActiveOpdActions(context, ref, patient);
+    case PatientQuickAction.labOrder:
+      await refreshIfChanged(
+        await openPatientLabOrderDialog(
+          context,
+          ref,
+          patient,
+          encounterId: patient.currentVisit?.publicId,
+        ),
+      );
+    case PatientQuickAction.radiologyOrder:
+      await refreshIfChanged(
+        await openPatientRadiologyOrderDialog(
+          context,
+          ref,
+          patient,
+          encounterId: patient.currentVisit?.publicId,
+        ),
+      );
+    case PatientQuickAction.theaterSchedule:
+      await refreshIfChanged(
+        await openPatientTheaterScheduleDialog(
+          context,
+          ref,
+          patient,
+          encounterId: patient.currentVisit?.publicId,
+        ),
+      );
+    case PatientQuickAction.physiotherapy:
+      if (detail == null) {
+        return;
+      }
+      final bool hasAdmission =
+          activePatientAdmissionRecord(detail.workspace.admissions) != null ||
+          isActiveAdmissionPatientVisit(patient.currentVisit);
+      if (!hasAdmission) {
+        await _openPatientQuickAction(
+          context,
+          ref,
+          patient,
+          PatientQuickAction.opdCheckIn,
+        );
+        return;
+      }
+      await refreshIfChanged(
+        await openPatientPhysiotherapyRequestDialog(context, ref, detail),
+      );
+    case PatientQuickAction.opdCheckIn:
+      await openPatientOpdEncounterFlow(
         context,
         ref,
         patient,
-        PatientQuickAction.opdCheckIn,
+        onSaved: () =>
+            _refreshPatientAfterQuickAction(context, ref, patient.id),
       );
-      return;
-    }
-    final bool? changed = await openPatientPhysiotherapyRequestDialog(
-      context,
-      ref,
-      detail,
-    );
-    if (changed == true && context.mounted) {
-      await _refreshPatientAfterQuickAction(context, ref, patient.id);
-    }
-    return;
-  }
-  if (action == PatientQuickAction.opdCheckIn) {
-    await openPatientOpdEncounterFlow(
-      context,
-      ref,
-      patient,
-      onSaved: () => _refreshPatientAfterQuickAction(context, ref, patient.id),
-    );
-    return;
-  }
-  if (action == PatientQuickAction.discharge && detail == null) {
-    return;
-  }
-
-  final bool? changed = await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) {
-      return switch (action) {
-        PatientQuickAction.appointment => PatientAppointmentQuickDialog(
-          patient: patient,
-          referenceData: referenceData,
-        ),
-        PatientQuickAction.admission => _PatientAdmissionQuickDialog(
-          patient: patient,
-          referenceData: referenceData,
-        ),
-        PatientQuickAction.discharge => _PatientDischargeQuickDialog(
-          detail: detail!,
-          actionLabel: _patientDischargeActionLabel(context.l10n, detail),
-        ),
-        PatientQuickAction.report => _PatientReportPrintPreviewDialog(
+    case PatientQuickAction.discharge:
+      if (detail == null) {
+        return;
+      }
+      await refreshIfChanged(
+        await openPatientDischargePlanningDialog(
+          context: context,
+          ref: ref,
           detail: detail,
-          patient: patient,
+          actionLabel: _patientDischargeActionLabel(context.l10n, detail),
+          onFailure: (AppFailure failure) =>
+              _showFailureIfNeeded(context, failure),
         ),
-        PatientQuickAction.opdCheckIn ||
-        PatientQuickAction.opdActions ||
-        PatientQuickAction.labOrder ||
-        PatientQuickAction.radiologyOrder ||
-        PatientQuickAction.theaterSchedule ||
-        PatientQuickAction.physiotherapy => throw StateError(
-          'Action handled before dialog: $action',
+      );
+    case PatientQuickAction.appointment:
+      await refreshIfChanged(
+        await showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => PatientAppointmentQuickDialog(
+            patient: patient,
+            referenceData: referenceData,
+          ),
         ),
-      };
-    },
-  );
-
-  if (changed == true && context.mounted) {
-    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+      );
+    case PatientQuickAction.admission:
+      await refreshIfChanged(
+        await showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _PatientAdmissionQuickDialog(
+            patient: patient,
+            referenceData: referenceData,
+          ),
+        ),
+      );
+    case PatientQuickAction.report:
+      await refreshIfChanged(
+        await showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _PatientReportPrintPreviewDialog(
+            detail: detail,
+            patient: patient,
+          ),
+        ),
+      );
   }
 }
 
@@ -1495,21 +1490,6 @@ Future<void> _continuePatientActiveWork(
         PatientQuickAction.physiotherapy,
       );
   }
-}
-
-String? _activeAdmissionId(PatientDetail detail) {
-  final PatientSummaryRecord? admission = _activeAdmissionRecord(
-    detail.workspace.admissions,
-  );
-  if (admission != null) {
-    return admission.id.trim();
-  }
-
-  final PatientVisitContext? visit = detail.patient.currentVisit;
-  if (_isActiveAdmissionVisit(visit)) {
-    return visit!.publicId!.trim();
-  }
-  return null;
 }
 
 String _patientDischargeActionLabel(
@@ -1602,134 +1582,6 @@ Future<void> _openActiveOpdActions(
     await ref
         .read(patientRegistryControllerProvider.notifier)
         .selectPatient(patient.id);
-  }
-}
-
-class _PatientDischargeQuickDialog extends ConsumerStatefulWidget {
-  const _PatientDischargeQuickDialog({
-    required this.detail,
-    required this.actionLabel,
-  });
-
-  final PatientDetail detail;
-  final String actionLabel;
-
-  @override
-  ConsumerState<_PatientDischargeQuickDialog> createState() =>
-      _PatientDischargeQuickDialogState();
-}
-
-class _PatientDischargeQuickDialogState
-    extends ConsumerState<_PatientDischargeQuickDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _summaryController = TextEditingController();
-  bool _confirmed = false;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void dispose() {
-    _summaryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final String? admissionId = _activeAdmissionId(widget.detail);
-    final bool canSubmit = admissionId != null;
-
-    return AppDialog(
-      title: Text(widget.actionLabel),
-      icon: const Icon(Icons.logout_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      maxWidth: 680,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppFormSection(
-            title: l10n.ipdDischargeSectionTitle,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              Text(l10n.dischargeCompleteDialogBody),
-              AppTextField(
-                controller: _summaryController,
-                labelText: l10n.ipdSummaryFieldLabel,
-                enabled: !_isSaving,
-                isRequired: true,
-                minLines: 3,
-                maxLines: 6,
-                textCapitalization: TextCapitalization.sentences,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-              ),
-              AppCheckboxField(
-                title: l10n.dischargeCompleteConfirmLabel,
-                value: _confirmed,
-                enabled: !_isSaving && canSubmit,
-                validator: AppValidators.requiredTrue(
-                  l10n.dischargeCompleteConfirmRequiredMessage,
-                ),
-                onChanged: (bool value) => setState(() {
-                  _confirmed = value;
-                }),
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).maybePop(false),
-        ),
-        AppButton.primary(
-          label: widget.actionLabel,
-          leadingIcon: Icons.logout_outlined,
-          enabled: canSubmit,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final String? admissionId = _activeAdmissionId(widget.detail);
-    if (admissionId == null) {
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-
-    final result = await ref
-        .read(ipdRepositoryProvider)
-        .finalizeDischarge(admissionId, <String, Object?>{
-          'summary': _summaryController.text.trim(),
-          'discharged_at': DateTime.now().toUtc().toIso8601String(),
-        });
-
-    if (!mounted) {
-      return;
-    }
-    final AppFailure? failure = _failureOrNull(result);
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 

@@ -67,13 +67,13 @@ const translateLiteral = async (text) => {
   if (!trimmed) return text;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      // eslint-disable-next-line no-await-in-loop
+       
       const translated = (await translateWithGtx(trimmed)).trim();
       if (translated) return translated;
     } catch {
       // retry
     }
-    // eslint-disable-next-line no-await-in-loop
+     
     await sleep(150 * (attempt + 1));
   }
   return text;
@@ -88,7 +88,7 @@ const translateIcuSegment = async (segment) => {
     for (const match of body.matchAll(/(=\d+|\w+)\s*\{([^{}]*)\}/g)) {
       const keyword = match[1];
       const content = match[2];
-      // eslint-disable-next-line no-await-in-loop
+       
       const translatedContent = await translateLiteral(content);
       translatedBody = translatedBody.replace(
         `${keyword} {${content}}`,
@@ -113,14 +113,14 @@ const translateMessage = async (english) => {
       const nextBrace = english.indexOf('{', index);
       const end = nextBrace === -1 ? english.length : nextBrace;
       const literal = english.slice(index, end);
-      // eslint-disable-next-line no-await-in-loop
+       
       result += literal.trim() ? await translateLiteral(literal) : literal;
       index = end;
       continue;
     }
     const segment = readBraceSegment(english, index);
     if (isIcuSegment(segment)) {
-      // eslint-disable-next-line no-await-in-loop
+       
       result += await translateIcuSegment(segment);
     } else {
       result += segment;
@@ -137,7 +137,7 @@ const mapWithConcurrency = async (items, worker) => {
     while (index < items.length) {
       const current = index;
       index += 1;
-      // eslint-disable-next-line no-await-in-loop
+       
       results[current] = await worker(items[current], current);
     }
   });

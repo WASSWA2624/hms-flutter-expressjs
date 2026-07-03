@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -1310,7 +1311,9 @@ class _ClinicalActionBar extends ConsumerWidget {
                   canCompleteDisposition,
               onPressed: () => _openCompleteDispositionDialog(
                 context,
+                ref,
                 controller,
+                entry: bundle.entry,
                 actionLabel: dispositionActionLabel,
               ),
             ),
@@ -2443,9 +2446,45 @@ Future<void> _openNoteDialog(
 
 Future<void> _openCompleteDispositionDialog(
   BuildContext context,
+  WidgetRef ref,
   ClinicalWorkspaceController controller, {
+  required ClinicalWorklistEntry entry,
   required String actionLabel,
 }) async {
+  if (isClinicalAdmissionDischargeContext(
+    sourceQueue: entry.sourceQueue,
+    status: entry.status,
+    stage: entry.stage,
+    location: entry.currentLocation,
+    hasAdmission: entry.admissionId?.trim().isNotEmpty ?? false,
+  )) {
+    final String? admissionId = entry.apiAdmissionId?.trim();
+    if (admissionId == null || admissionId.isEmpty) {
+      return;
+    }
+
+    final bool? saved = await showDischargePlanningDialog(
+      context: context,
+      ref: ref,
+      admissionId: admissionId,
+      title: Text(actionLabel),
+    );
+    if (saved != true || !context.mounted) {
+      return;
+    }
+
+    await ref.read(clinicalWorkspaceControllerProvider.notifier).refresh();
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.clinicalSavedMessage)));
+    Navigator.of(context).pop(true);
+    return;
+  }
+
   final bool? saved = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,

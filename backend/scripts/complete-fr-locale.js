@@ -156,7 +156,7 @@ const translateLiteral = async (text, cache) => {
   for (const provider of providers) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        // eslint-disable-next-line no-await-in-loop
+         
         const candidate = await provider(trimmed);
         if (candidate && candidate.trim() && candidate.trim() !== trimmed) {
           translated = candidate.trim();
@@ -166,7 +166,7 @@ const translateLiteral = async (text, cache) => {
       } catch {
         // try next attempt/provider
       }
-      // eslint-disable-next-line no-await-in-loop
+       
       await sleep(250 * (attempt + 1));
     }
     if (translatedSuccessfully) {
@@ -195,9 +195,9 @@ const mapWithConcurrency = async (items, worker, concurrency = CONCURRENCY) => {
     while (index < items.length) {
       const current = index;
       index += 1;
-      // eslint-disable-next-line no-await-in-loop
+       
       results[current] = await worker(items[current], current);
-      // eslint-disable-next-line no-await-in-loop
+       
       await sleep(REQUEST_DELAY_MS);
     }
   });
@@ -235,7 +235,7 @@ const translateIcuSegment = async (segment, cache) => {
     for (const match of parts) {
       const keyword = match[1];
       const content = match[2];
-      // eslint-disable-next-line no-await-in-loop
+       
       const translatedContent = await translateLiteral(content, cache);
       translatedBody = translatedBody.replace(
         `${keyword} {${content}}`,
@@ -256,7 +256,7 @@ const translateIcuSegment = async (segment, cache) => {
     for (const match of parts) {
       const keyword = match[1];
       const content = match[2];
-      // eslint-disable-next-line no-await-in-loop
+       
       const translatedContent = await translateLiteral(content, cache);
       translatedBody = translatedBody.replace(
         `${keyword} {${content}}`,
@@ -302,7 +302,7 @@ const translateMessage = async (english, cache) => {
       const nextBrace = english.indexOf('{', index);
       const end = nextBrace === -1 ? english.length : nextBrace;
       const literal = english.slice(index, end);
-      // eslint-disable-next-line no-await-in-loop
+       
       result += literal.trim() ? await translateLiteral(literal, cache) : literal;
       index = end;
       continue;
@@ -310,7 +310,7 @@ const translateMessage = async (english, cache) => {
 
     const segment = readBraceSegment(english, index);
     if (isIcuSegment(segment)) {
-      // eslint-disable-next-line no-await-in-loop
+       
       result += await translateIcuSegment(segment, cache);
     } else {
       result += segment;

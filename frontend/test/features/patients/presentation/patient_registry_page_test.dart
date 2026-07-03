@@ -11,6 +11,9 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
+import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
+import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
@@ -955,7 +958,7 @@ void main() {
   ) async {
     final patientRepository = _MockPatientRepository();
     final opdRepository = _MockOpdRepository();
-    final ipdRepository = _MockIpdRepository();
+    final dischargeRepository = _MockDischargeRepository();
     const patient = Patient(
       id: 'patient-1',
       publicId: 'PAT-1001',
@@ -988,28 +991,50 @@ void main() {
         ],
       ),
     );
+    const dischargeDetail = DischargeAdmissionDetail(
+      ipd: IpdAdmissionDetail(
+        summary: IpdAdmissionSummary(
+          id: 'admission-1',
+          stage: 'DISCHARGE_PLANNED',
+          admissionStatus: 'ADMITTED',
+        ),
+        latestDischargeSummary: IpdDischargeSummary(
+          id: 'ds-1',
+          status: 'PLANNED',
+          summary: 'Ready for home care.',
+          clearance: IpdDischargeClearance(
+            summaryReady: true,
+            pendingOrdersReviewed: true,
+            pharmacyCleared: true,
+            billingCleared: true,
+            nursingCleared: true,
+            documentsReady: true,
+          ),
+        ),
+      ),
+      patientId: 'patient-1',
+    );
 
     _stubPatientRegistry(patientRepository, patient, detail: detail);
     _stubProviderLookup(opdRepository);
     when(
-      () => ipdRepository.finalizeDischarge('admission-1', any()),
+      () => dischargeRepository.getAdmissionDetail('admission-1'),
     ).thenAnswer(
-      (_) async => const Result<IpdAdmissionDetail>.success(
-        IpdAdmissionDetail(
-          summary: IpdAdmissionSummary(
-            id: 'admission-1',
-            stage: 'DISCHARGED',
-            admissionStatus: 'DISCHARGED',
-          ),
-        ),
-      ),
+      (_) async =>
+          const Result<DischargeAdmissionDetail>.success(dischargeDetail),
     );
+    when(
+      () => dischargeRepository.updateDischargeClearance(any(), any()),
+    ).thenAnswer((_) async => const Result<void>.success(null));
+    when(
+      () => dischargeRepository.finalizeDischarge('admission-1', any()),
+    ).thenAnswer((_) async => const Result<void>.success(null));
 
     await _pumpPatientRegistry(
       tester,
       patientRepository: patientRepository,
       opdRepository: opdRepository,
-      ipdRepository: ipdRepository,
+      dischargeRepository: dischargeRepository,
       size: const Size(1100, 960),
       roles: const <String>['SUPER_ADMIN'],
     );
@@ -1017,55 +1042,22 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
 
-    // For an admitted IPD patient the disposition action resolves to the
-    // shared discharge label; before the dialog opens it is the only match.
     expect(find.text('Discharge planning'), findsOneWidget);
 
     await tester.tap(find.text('Discharge planning'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        'Confirm the patient exit only after required clinical, nursing, '
-        'pharmacy, billing, and document checks are complete.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppTextField && widget.labelText == 'Summary',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Clearance checklist'), findsOneWidget);
     expect(
       find.text(
         'I confirm the patient has exited and documents were handed over.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
 
-    await tester.enterText(
-      find.byType(EditableText).last,
-      'Ready for home care.',
-    );
-    await tester.tap(
-      find.text(
-        'I confirm the patient has exited and documents were handed over.',
-      ),
-    );
-    // The discharge dialog's primary submit button reuses the action label.
-    await tester.tap(find.text('Discharge planning').last);
-    await tester.pumpAndSettle();
-
-    final captured =
-        verify(
-              () =>
-                  ipdRepository.finalizeDischarge('admission-1', captureAny()),
-            ).captured.single
-            as Map<String, Object?>;
-    expect(captured['summary'], 'Ready for home care.');
-    expect(captured['discharged_at'], isA<String>());
+    verify(
+      () => dischargeRepository.getAdmissionDetail('admission-1'),
+    ).called(1);
   });
 
   testWidgets('patient report opens configurable paginated print preview', (
@@ -1249,6 +1241,9 @@ final class _MockOpdRepository extends Mock implements OpdRepository {}
 
 final class _MockIpdRepository extends Mock implements IpdRepository {}
 
+final class _MockDischargeRepository extends Mock
+    implements DischargeRepository {}
+
 void _stubPatientRegistry(
   _MockPatientRepository patientRepository,
   Patient patient, {
@@ -1308,6 +1303,7 @@ Future<void> _pumpPatientRegistry(
   required PatientRepository patientRepository,
   required OpdRepository opdRepository,
   IpdRepository? ipdRepository,
+  DischargeRepository? dischargeRepository,
   required Size size,
   List<String> roles = const <String>['DOCTOR'],
 }) async {
@@ -1332,6 +1328,8 @@ Future<void> _pumpPatientRegistry(
         opdRepositoryProvider.overrideWithValue(opdRepository),
         if (ipdRepository != null)
           ipdRepositoryProvider.overrideWithValue(ipdRepository),
+        if (dischargeRepository != null)
+          dischargeRepositoryProvider.overrideWithValue(dischargeRepository),
       ],
       child: MaterialApp(
         theme: AppTheme.light,

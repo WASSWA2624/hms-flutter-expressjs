@@ -117,7 +117,7 @@ const translateLiteral = async (text, cache) => {
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      // eslint-disable-next-line no-await-in-loop
+       
       const translated = (await translateWithGtx(trimmed)).trim();
       if (translated && translated !== trimmed) {
         cache[trimmed] = translated;
@@ -126,7 +126,7 @@ const translateLiteral = async (text, cache) => {
     } catch {
       // retry
     }
-    // eslint-disable-next-line no-await-in-loop
+     
     await sleep(200 * (attempt + 1));
   }
 
@@ -144,7 +144,7 @@ const translateIcuSegment = async (segment, cache) => {
     for (const match of parts) {
       const keyword = match[1];
       const content = match[2];
-      // eslint-disable-next-line no-await-in-loop
+       
       const translatedContent = await translateLiteral(content, cache);
       translatedBody = translatedBody.replace(
         `${keyword} {${content}}`,
@@ -163,7 +163,7 @@ const translateIcuSegment = async (segment, cache) => {
     for (const match of parts) {
       const keyword = match[1];
       const content = match[2];
-      // eslint-disable-next-line no-await-in-loop
+       
       const translatedContent = await translateLiteral(content, cache);
       translatedBody = translatedBody.replace(
         `${keyword} {${content}}`,
@@ -203,7 +203,7 @@ const translateMessage = async (english, cache) => {
       const nextBrace = english.indexOf('{', index);
       const end = nextBrace === -1 ? english.length : nextBrace;
       const literal = english.slice(index, end);
-      // eslint-disable-next-line no-await-in-loop
+       
       result += literal.trim() ? await translateLiteral(literal, cache) : literal;
       index = end;
       continue;
@@ -211,7 +211,7 @@ const translateMessage = async (english, cache) => {
 
     const segment = readBraceSegment(english, index);
     if (isIcuSegment(segment)) {
-      // eslint-disable-next-line no-await-in-loop
+       
       result += await translateIcuSegment(segment, cache);
     } else {
       result += segment;
@@ -230,7 +230,7 @@ const mapWithConcurrency = async (items, worker) => {
     while (index < items.length) {
       const current = index;
       index += 1;
-      // eslint-disable-next-line no-await-in-loop
+       
       results[current] = await worker(items[current], current);
     }
   });

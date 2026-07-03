@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
@@ -53,6 +55,9 @@ void main() {
 
         final ProviderContainer container = ProviderContainer(
           overrides: [
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
             dischargeRepositoryProvider.overrideWithValue(repository),
           ],
         );
@@ -127,7 +132,12 @@ void main() {
       });
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [dischargeRepositoryProvider.overrideWithValue(repository)],
+        overrides: [
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          dischargeRepositoryProvider.overrideWithValue(repository),
+        ],
       );
       addTearDown(container.dispose);
       await container.read(dischargeWorkspaceControllerProvider.future);

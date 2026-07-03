@@ -12,7 +12,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
-import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_dialog.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -511,7 +511,12 @@ Future<void> _openDischargeDetailDialog(
   );
 
   if (openClearance && context.mounted) {
-    await _openClearanceDialog(context, detail);
+    await _openDischargePlanningDialog(
+      context,
+      ref,
+      detail,
+      title: Text(l10n.dischargeManageClearanceTitle),
+    );
   }
 }
 
@@ -598,14 +603,28 @@ class _DischargeDetailContent extends ConsumerWidget {
                   : l10n.dischargeStartPlanAction,
               leadingIcon: Icons.edit_note_outlined,
               isLoading: state.isSaving,
-              onPressed: () => _openPlanDialog(context, controller, detail),
+              onPressed: () => _openDischargePlanningDialog(
+                context,
+                ref,
+                detail,
+                title: Text(
+                  detail.hasSummary
+                      ? l10n.dischargeEditSummaryAction
+                      : l10n.dischargeStartPlanAction,
+                ),
+              ),
             ),
             AppButton.secondary(
               label: l10n.dischargeManageClearanceAction,
               leadingIcon: Icons.fact_check_outlined,
               isLoading: state.isSaving,
               enabled: detail.hasSummary && !detail.isCompleted,
-              onPressed: () => _openClearanceDialog(context, detail),
+              onPressed: () => _openDischargePlanningDialog(
+                context,
+                ref,
+                detail,
+                title: Text(l10n.dischargeManageClearanceTitle),
+              ),
             ),
             AppButton.secondary(
               label: l10n.dischargeRequestBillingAction,
@@ -627,7 +646,12 @@ class _DischargeDetailContent extends ConsumerWidget {
                   detail.hasSummary &&
                   !detail.isCompleted &&
                   detail.blockingItems.isEmpty,
-              onPressed: () => _openCompleteDialog(context, controller, detail),
+              onPressed: () => _openDischargePlanningDialog(
+                context,
+                ref,
+                detail,
+                title: Text(completeDischargeLabel),
+              ),
             ),
           ],
         ),
@@ -1005,112 +1029,6 @@ class _MobileQueueItem extends StatelessWidget {
   }
 }
 
-class _PlanDischargeDialog extends StatefulWidget {
-  const _PlanDischargeDialog({required this.detail, required this.onSubmit});
-
-  final DischargeAdmissionDetail detail;
-  final Future<AppFailure?> Function(String summary, DateTime? targetDate)
-  onSubmit;
-
-  @override
-  State<_PlanDischargeDialog> createState() => _PlanDischargeDialogState();
-}
-
-class _PlanDischargeDialogState extends State<_PlanDischargeDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _summaryController;
-  DateTime? _targetDate;
-  AppFailure? _failure;
-  bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _summaryController = TextEditingController(
-      text: widget.detail.summaryText ?? '',
-    );
-    _targetDate = widget.detail.latestDischargeSummary?.dischargedAt;
-  }
-
-  @override
-  void dispose() {
-    _summaryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final DateTime now = DateTime.now();
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        Text(l10n.dischargePlanDialogBody),
-        AppTextField(
-          controller: _summaryController,
-          labelText: l10n.dischargeSummaryFieldLabel,
-          helperText: l10n.dischargeSummaryHelperText,
-          isRequired: true,
-          maxLines: 8,
-          minLines: 5,
-          validator: AppValidators.requiredText(
-            l10n.dischargeSummaryRequiredMessage,
-          ),
-        ),
-        AppDateField(
-          value: _targetDate,
-          firstDate: DateTime(now.year - 1),
-          lastDate: DateTime(now.year + 2),
-          labelText: l10n.dischargeTargetDateLabel,
-          pickerButtonLabel: l10n.dischargeDatePickerLabel,
-          invalidDateMessage: l10n.dischargeInvalidDateMessage,
-          onChanged: (DateTime? value) {
-            setState(() {
-              _targetDate = value;
-            });
-          },
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.dischargeSavePlanAction,
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      _summaryController.text.trim(),
-      _targetDate,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-}
-
 class _BillingDialog extends StatefulWidget {
   const _BillingDialog({required this.onSubmit});
 
@@ -1371,126 +1289,24 @@ class _PharmacyDialogState extends State<_PharmacyDialog> {
   }
 }
 
-class _CompleteDialog extends StatefulWidget {
-  const _CompleteDialog({
-    required this.detail,
-    required this.submitLabel,
-    required this.onSubmit,
-  });
-
-  final DischargeAdmissionDetail detail;
-  final String submitLabel;
-  final Future<AppFailure?> Function() onSubmit;
-
-  @override
-  State<_CompleteDialog> createState() => _CompleteDialogState();
-}
-
-class _CompleteDialogState extends State<_CompleteDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _confirmed = false;
-  bool _isSubmitting = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        Text(l10n.dischargeCompleteDialogBody),
-        if (widget.detail.blockingItems.isNotEmpty)
-          AppWorkspaceStatePanel.state(
-            variant: AppStateViewVariant.validation,
-            title: l10n.dischargeCompletionBlockersTitle,
-            body: l10n.dischargeCompletionBlockersBody,
-            minHeight: 120,
-          ),
-        AppCheckboxField(
-          title: l10n.dischargeCompleteConfirmLabel,
-          value: _confirmed,
-          validator: AppValidators.requiredTrue(
-            l10n.dischargeCompleteConfirmRequiredMessage,
-          ),
-          onChanged: (bool value) {
-            setState(() {
-              _confirmed = value;
-            });
-          },
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: widget.submitLabel,
-          submitIcon: Icons.exit_to_app_outlined,
-          isSubmitting: _isSubmitting,
-          enabled: widget.detail.blockingItems.isEmpty,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit();
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSubmitting = false;
-    });
-  }
-}
-
-Future<void> _openClearanceDialog(
+Future<void> _openDischargePlanningDialog(
   BuildContext context,
-  DischargeAdmissionDetail detail,
-) async {
-  final bool? saved = await showAppDialog<bool>(
+  WidgetRef ref,
+  DischargeAdmissionDetail detail, {
+  Widget? title,
+}) async {
+  final bool? saved = await showDischargePlanningDialog(
     context: context,
-    builder: (_) => DischargeClearanceDialog(detail: detail),
+    ref: ref,
+    admissionId: detail.summary.apiId,
+    title: title,
+    initialDetail: detail,
   );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
-  }
-}
-
-Future<void> _openPlanDialog(
-  BuildContext context,
-  DischargeWorkspaceController controller,
-  DischargeAdmissionDetail detail,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(l10n.dischargePlanDialogTitle),
-    content: _PlanDischargeDialog(
-      detail: detail,
-      onSubmit: (String summary, DateTime? targetDate) {
-        return controller.planDischarge(
-          summary: summary,
-          targetDate: targetDate,
-        );
-      },
-    ),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
+  if (saved == true && context.mounted) {
+    await ref.read(dischargeWorkspaceControllerProvider.notifier).refresh();
+    if (context.mounted) {
+      _showSaved(context);
+    }
   }
 }
 
@@ -1528,34 +1344,6 @@ Future<void> _openPharmacyDialog(
     content: _PharmacyDialog(
       drugs: state.referenceData.drugs,
       onSubmit: controller.requestPharmacyMedicines,
-    ),
-  );
-  if (context.mounted && saved == true) {
-    _showSaved(context);
-  }
-}
-
-Future<void> _openCompleteDialog(
-  BuildContext context,
-  DischargeWorkspaceController controller,
-  DischargeAdmissionDetail detail,
-) async {
-  final AppLocalizations l10n = context.l10n;
-  final String actionLabel = clinicalDispositionActionLabel(
-    l10n,
-    sourceQueue: 'IPD',
-    status: detail.summary.admissionStatus,
-    stage: detail.summary.stage,
-    location: detail.summary.location,
-    hasAdmission: true,
-  );
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(actionLabel),
-    content: _CompleteDialog(
-      detail: detail,
-      submitLabel: actionLabel,
-      onSubmit: controller.completeDischarge,
     ),
   );
   if (context.mounted && saved == true) {

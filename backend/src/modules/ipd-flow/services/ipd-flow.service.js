@@ -4148,6 +4148,156 @@ const updateDischargeClearance = async (id, data, context = {}) => {
   });
 };
 
+const TERMINAL_ENCOUNTER_STATUSES = new Set(["CLOSED", "CANCELLED"]);
+const OPEN_APPOINTMENT_STATUSES = new Set([
+  "SCHEDULED",
+  "CONFIRMED",
+  "IN_PROGRESS",
+]);
+const OPEN_QUEUE_STATUSES = new Set(["SCHEDULED", "CONFIRMED", "IN_PROGRESS"]);
+
+const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
+  if (!encounter?.id) return false;
+
+  const status = String(encounter.status || "").toUpperCase();
+  if (TERMINAL_ENCOUNTER_STATUSES.has(status)) return false;
+
+  const extensionJson =
+    encounter.extension_json && typeof encounter.extension_json === "object"
+      ? { ...encounter.extension_json }
+      : {};
+  const flow =
+    extensionJson.opd_flow && typeof extensionJson.opd_flow === "object"
+      ? { ...extensionJson.opd_flow }
+      : {};
+
+  if (flow.visit_queue_id && tx.visit_queue?.update) {
+    await tx.visit_queue.update({
+      where: { id: flow.visit_queue_id },
+      data: { status: "COMPLETED" },
+    });
+  }
+
+  if (flow.appointment_id && tx.appointment?.findFirst) {
+    const appointment = await tx.appointment.findFirst({
+      where: { id: flow.appointment_id, deleted_at: null },
+    });
+    if (
+      appointment &&
+      OPEN_APPOINTMENT_STATUSES.has(String(appointment.status || "").toUpperCase())
+    ) {
+      await tx.appointment.update({
+        where: { id: appointment.id },
+        data: { status: "COMPLETED" },
+      });
+    }
+  }
+
+  if (flow.emergency_case_id && tx.emergency_case?.update) {
+    await tx.emergency_case.update({
+      where: { id: flow.emergency_case_id },
+      data: { status: "CLOSED" },
+    });
+  }
+
+  if (flow.stage) {
+    flow.stage = "DISCHARGED";
+    flow.closed_at = closedAt.toISOString();
+    flow.closed_early = true;
+    flow.close_reason_notes = "Closed on IPD discharge";
+    extensionJson.opd_flow = flow;
+  }
+
+  await tx.encounter.update({
+    where: { id: encounter.id },
+    data: {
+      status: "CLOSED",
+      active_opd_lock_key: null,
+      ended_at: closedAt,
+      extension_json: extensionJson,
+    },
+  });
+
+  return true;
+};
+
+const closePatientOpenWorkOnDischarge = async (
+  tx,
+  admission,
+  dischargedAt,
+) => {
+  const signals = [];
+  const patientId = admission.patient_id;
+  const tenantId = admission.tenant_id;
+  if (!patientId || !tenantId) return signals;
+
+  const closedEncounterIds = new Set();
+
+  if (admission.encounter_id && tx.encounter?.findFirst) {
+    const admissionEncounter = await tx.encounter.findFirst({
+      where: { id: admission.encounter_id, deleted_at: null },
+    });
+    if (
+      await closeEncounterForPatientDischarge(
+        tx,
+        admissionEncounter,
+        dischargedAt,
+      )
+    ) {
+      closedEncounterIds.add(admission.encounter_id);
+      signals.push("ENCOUNTER_CLOSED");
+    }
+  }
+
+  if (tx.encounter?.findMany) {
+    const openEncounters = await tx.encounter.findMany({
+      where: {
+        patient_id: patientId,
+        tenant_id: tenantId,
+        deleted_at: null,
+        status: { notIn: ["CLOSED", "CANCELLED"] },
+      },
+      select: { id: true, status: true, extension_json: true },
+    });
+
+    for (const encounter of openEncounters) {
+      if (closedEncounterIds.has(encounter.id)) continue;
+      if (
+        await closeEncounterForPatientDischarge(tx, encounter, dischargedAt)
+      ) {
+        closedEncounterIds.add(encounter.id);
+        signals.push("ENCOUNTER_CLOSED");
+      }
+    }
+  }
+
+  if (tx.visit_queue?.updateMany) {
+    await tx.visit_queue.updateMany({
+      where: {
+        patient_id: patientId,
+        tenant_id: tenantId,
+        deleted_at: null,
+        status: { in: [...OPEN_QUEUE_STATUSES] },
+      },
+      data: { status: "COMPLETED" },
+    });
+  }
+
+  if (tx.appointment?.updateMany) {
+    await tx.appointment.updateMany({
+      where: {
+        patient_id: patientId,
+        tenant_id: tenantId,
+        deleted_at: null,
+        status: { in: [...OPEN_APPOINTMENT_STATUSES] },
+      },
+      data: { status: "COMPLETED" },
+    });
+  }
+
+  return signals;
+};
+
 const finalizeDischarge = async (id, data, context = {}) => {
   const dischargedAt = toDate(data?.discharged_at, new Date());
   const payloadSummary = String(data?.summary || "").trim();
@@ -4249,6 +4399,13 @@ const finalizeDischarge = async (id, data, context = {}) => {
         discharged_at: dischargedAt,
       },
     });
+
+    const closedWorkSignals = await closePatientOpenWorkOnDischarge(
+      tx,
+      admission,
+      dischargedAt,
+    );
+    compatibilitySignals.push(...closedWorkSignals);
 
     return {
       admission_id: admission.id,
