@@ -20302,9 +20302,41 @@
   "@labReferenceRangesDialogTitle": {
     "description": "Localized text for labReferenceRangesDialogTitle."
   },
-  "labReferenceRangesDialogBody": "Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.",
+  "labReferenceRangesDialogBody": "Enable platform lab tests and panels for this facility, set prices, and customize reference ranges and result options.",
   "@labReferenceRangesDialogBody": {
     "description": "Localized text for labReferenceRangesDialogBody."
+  },
+  "labConfigurationsLoadingTitle": "Loading lab catalog",
+  "@labConfigurationsLoadingTitle": {
+    "description": "Title shown while the lab configuration catalog is loading."
+  },
+  "labConfigurationsLoadingBody": "Loading platform tests, panels, and facility offerings.",
+  "@labConfigurationsLoadingBody": {
+    "description": "Body shown while the lab configuration catalog is loading."
+  },
+  "labEnableTestAction": "Enable test",
+  "@labEnableTestAction": {
+    "description": "Action to enable a platform lab test at the facility."
+  },
+  "labEnablePanelAction": "Enable panel",
+  "@labEnablePanelAction": {
+    "description": "Action to enable a platform lab panel at the facility."
+  },
+  "labEnableOfferingDialogTitle": "Enable lab offering",
+  "@labEnableOfferingDialogTitle": {
+    "description": "Title for the dialog that enables a platform lab test or panel at the facility."
+  },
+  "labEnableOfferingDialogBody": "Select a platform catalog item and set the facility price clinicians will use when ordering.",
+  "@labEnableOfferingDialogBody": {
+    "description": "Body for the dialog that enables a platform lab test or panel at the facility."
+  },
+  "labEnableOfferingCatalogLabel": "Platform catalog item",
+  "@labEnableOfferingCatalogLabel": {
+    "description": "Label for selecting a platform lab catalog item to enable at the facility."
+  },
+  "labEnableOfferingNoItemsLabel": "All platform items are already offered at this facility.",
+  "@labEnableOfferingNoItemsLabel": {
+    "description": "Shown when there are no remaining platform lab items to enable."
   },
   "labConfigureTestAction": "Configure test",
   "@labConfigureTestAction": {

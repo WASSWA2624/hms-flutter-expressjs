@@ -217,6 +217,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     await showClinicalLabRequestCatalogDialog(
       context: context,
       referenceData: widget.referenceData,
+      facilityOfferingsOnly: true,
       onSearchLabTests: widget.onSearchLabTests,
       initialKind: editingRequest == null
           ? ClinicalLabRequestCatalogKind.tests

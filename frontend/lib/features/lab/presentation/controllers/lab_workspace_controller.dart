@@ -401,22 +401,6 @@ final class LabWorkspaceController
     );
   }
 
-  Future<AppFailure?> createLabTest(Map<String, Object?> payload) {
-    return _mutateCatalog(
-      () => _repository.createLabTest(payload),
-      refreshTests: true,
-      refreshPanels: false,
-    );
-  }
-
-  Future<AppFailure?> createLabPanel(Map<String, Object?> payload) {
-    return _mutateCatalog(
-      () => _repository.createLabPanel(payload),
-      refreshTests: false,
-      refreshPanels: true,
-    );
-  }
-
   Future<AppFailure?> updateLabPanel(
     String panelId,
     Map<String, Object?> payload,
@@ -426,8 +410,8 @@ final class LabWorkspaceController
       return refresh();
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result =
-        await _repository.upsertFacilityLabPanelOffering(panelId, payload);
+    final Result<LabCatalogItem> result = await _repository
+        .upsertFacilityLabPanelOffering(panelId, payload);
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
@@ -797,8 +781,8 @@ final class LabWorkspaceController
       return refresh();
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result =
-        await _repository.upsertFacilityLabTestOffering(testId, payload);
+    final Result<LabCatalogItem> result = await _repository
+        .upsertFacilityLabTestOffering(testId, payload);
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
@@ -812,48 +796,6 @@ final class LabWorkspaceController
                   : item,
           ];
           _emit(latest.copyWith(catalogTests: tests, isSaving: false));
-        }
-        return null;
-      },
-      failure: (AppFailure failure) {
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
-        }
-        return failure;
-      },
-    );
-  }
-
-  Future<AppFailure?> _mutateCatalog(
-    Future<Result<LabCatalogItem>> Function() submit, {
-    required bool refreshTests,
-    required bool refreshPanels,
-  }) async {
-    final LabWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result = await submit();
-    return result.when(
-      success: (_) async {
-        final List<LabCatalogItem>? tests = refreshTests
-            ? await _facilityTests()
-            : null;
-        final List<LabCatalogItem>? panels = refreshPanels
-            ? await _facilityPanels()
-            : null;
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(
-            latest.copyWith(
-              catalogTests: tests ?? latest.catalogTests,
-              catalogPanels: panels ?? latest.catalogPanels,
-              isSaving: false,
-            ),
-          );
         }
         return null;
       },
@@ -952,8 +894,26 @@ final class LabWorkspaceController
     }
 
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
-    final List<LabCatalogItem> tests = await _facilityTests();
-    final List<LabCatalogItem> panels = await _facilityPanels();
+    final Result<List<LabCatalogItem>> testsResult = await _repository
+        .listFacilityLabTests(limit: 200);
+    final Result<List<LabCatalogItem>> panelsResult = await _repository
+        .listFacilityLabPanels(limit: 200);
+
+    AppFailure? failure;
+    final List<LabCatalogItem> tests = testsResult.when(
+      success: (List<LabCatalogItem> value) => value,
+      failure: (AppFailure value) {
+        failure ??= value;
+        return const <LabCatalogItem>[];
+      },
+    );
+    final List<LabCatalogItem> panels = panelsResult.when(
+      success: (List<LabCatalogItem> value) => value,
+      failure: (AppFailure value) {
+        failure ??= value;
+        return const <LabCatalogItem>[];
+      },
+    );
     final LabWorkspaceState? latest = _currentState;
     if (latest != null) {
       _emit(
@@ -961,10 +921,12 @@ final class LabWorkspaceController
           catalogTests: tests,
           catalogPanels: panels,
           isRefreshing: false,
+          lastFailure: failure,
+          clearLastFailure: failure == null,
         ),
       );
     }
-    return null;
+    return failure;
   }
 
   Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
@@ -1018,8 +980,7 @@ final class LabWorkspaceController
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
           final bool catalogsLoaded =
-              latest.catalogTests.isNotEmpty ||
-              latest.catalogPanels.isNotEmpty;
+              latest.catalogTests.isNotEmpty || latest.catalogPanels.isNotEmpty;
           if (catalogsLoaded) {
             final List<LabCatalogItem> tests = await _facilityTests();
             final List<LabCatalogItem> panels = await _facilityPanels();
@@ -1168,8 +1129,8 @@ final class LabWorkspaceController
   }
 
   Future<List<LabCatalogItem>> _facilityTests({String? search}) async {
-    final Result<List<LabCatalogItem>> result =
-        await _repository.listFacilityLabTests(search: search, limit: 200);
+    final Result<List<LabCatalogItem>> result = await _repository
+        .listFacilityLabTests(search: search, limit: 200);
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],
@@ -1177,8 +1138,8 @@ final class LabWorkspaceController
   }
 
   Future<List<LabCatalogItem>> _facilityPanels({String? search}) async {
-    final Result<List<LabCatalogItem>> result =
-        await _repository.listFacilityLabPanels(search: search, limit: 200);
+    final Result<List<LabCatalogItem>> result = await _repository
+        .listFacilityLabPanels(search: search, limit: 200);
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],

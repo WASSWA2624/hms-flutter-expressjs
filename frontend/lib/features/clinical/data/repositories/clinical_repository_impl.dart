@@ -120,8 +120,12 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<Result<ClinicalReferenceData>> loadReferenceData() async {
     final results = await Future.wait(<Future<List<ClinicalCatalogOption>>>[
-      Future<List<ClinicalCatalogOption>>.value(const <ClinicalCatalogOption>[]),
-      Future<List<ClinicalCatalogOption>>.value(const <ClinicalCatalogOption>[]),
+      Future<List<ClinicalCatalogOption>>.value(
+        const <ClinicalCatalogOption>[],
+      ),
+      Future<List<ClinicalCatalogOption>>.value(
+        const <ClinicalCatalogOption>[],
+      ),
       _catalogOrEmpty(
         HmsApiResource.radiologyTests,
         limit: _largeRadiologyCatalogPageSize,
@@ -158,11 +162,13 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     int limit = 25,
     String source = 'ALL',
   }) {
+    final bool offeredOnly = termType == 'LAB_TEST' || termType == 'LAB_PANEL';
     return searchClinicalCatalog(
       termType: termType,
       query: query,
       limit: limit,
       source: source,
+      offeredOnly: offeredOnly,
     );
   }
 

@@ -29514,8 +29514,56 @@ abstract class AppLocalizations {
   /// Localized text for labReferenceRangesDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.'**
+  /// **'Enable platform lab tests and panels for this facility, set prices, and customize reference ranges and result options.'**
   String get labReferenceRangesDialogBody;
+
+  /// Title shown while the lab configuration catalog is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading lab catalog'**
+  String get labConfigurationsLoadingTitle;
+
+  /// Body shown while the lab configuration catalog is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading platform tests, panels, and facility offerings.'**
+  String get labConfigurationsLoadingBody;
+
+  /// Action to enable a platform lab test at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable test'**
+  String get labEnableTestAction;
+
+  /// Action to enable a platform lab panel at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable panel'**
+  String get labEnablePanelAction;
+
+  /// Title for the dialog that enables a platform lab test or panel at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable lab offering'**
+  String get labEnableOfferingDialogTitle;
+
+  /// Body for the dialog that enables a platform lab test or panel at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a platform catalog item and set the facility price clinicians will use when ordering.'**
+  String get labEnableOfferingDialogBody;
+
+  /// Label for selecting a platform lab catalog item to enable at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform catalog item'**
+  String get labEnableOfferingCatalogLabel;
+
+  /// Shown when there are no remaining platform lab items to enable.
+  ///
+  /// In en, this message translates to:
+  /// **'All platform items are already offered at this facility.'**
+  String get labEnableOfferingNoItemsLabel;
 
   /// Localized text for labConfigureTestAction.
   ///

@@ -15764,7 +15764,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReferenceRangesDialogBody =>
-      'Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.';
+      'Enable platform lab tests and panels for this facility, set prices, and customize reference ranges and result options.';
+
+  @override
+  String get labConfigurationsLoadingTitle => 'Loading lab catalog';
+
+  @override
+  String get labConfigurationsLoadingBody =>
+      'Loading platform tests, panels, and facility offerings.';
+
+  @override
+  String get labEnableTestAction => 'Enable test';
+
+  @override
+  String get labEnablePanelAction => 'Enable panel';
+
+  @override
+  String get labEnableOfferingDialogTitle => 'Enable lab offering';
+
+  @override
+  String get labEnableOfferingDialogBody =>
+      'Select a platform catalog item and set the facility price clinicians will use when ordering.';
+
+  @override
+  String get labEnableOfferingCatalogLabel => 'Platform catalog item';
+
+  @override
+  String get labEnableOfferingNoItemsLabel =>
+      'All platform items are already offered at this facility.';
 
   @override
   String get labConfigureTestAction => 'Configure test';

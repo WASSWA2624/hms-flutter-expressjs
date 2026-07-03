@@ -52,14 +52,15 @@ const labResultOptionSchema = z.object({
   is_positive: z.boolean().optional(),
 });
 
-const upsertFacilityLabTestOfferingSchema = z.object({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
-  lab_test_id: uuidOrFriendlyIdentifierSchema.optional(),
-  is_active: z.boolean().optional().default(true),
-  sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
-  unit_price: z.coerce.number().min(0),
-  currency: optionalTrimmedString(10),
+const upsertFacilityLabTestOfferingSchema = z
+  .object({
+    tenant_id: uuidSchema.optional(),
+    facility_id: uuidSchema.optional(),
+    lab_test_id: uuidOrFriendlyIdentifierSchema.optional(),
+    is_active: z.boolean().optional().default(true),
+    sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
+    unit_price: z.coerce.number().min(0).optional(),
+    currency: optionalTrimmedString(10),
   specimen_type: optionalTrimmedString(80),
   result_kind: labResultKindSchema.optional().nullable(),
   unit: optionalTrimmedString(40),
@@ -68,17 +69,36 @@ const upsertFacilityLabTestOfferingSchema = z.object({
   reference_ranges: z.array(labReferenceRangeSchema).max(20).optional(),
   unit_options: z.array(labUnitOptionSchema).max(20).optional(),
   result_options: z.array(labResultOptionSchema).max(40).optional(),
-});
+  })
+  .superRefine((data, ctx) => {
+    if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'unit_price is required when the offering is active',
+        path: ['unit_price'],
+      });
+    }
+  });
 
-const upsertFacilityLabPanelOfferingSchema = z.object({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
-  lab_panel_id: uuidOrFriendlyIdentifierSchema.optional(),
-  is_active: z.boolean().optional().default(true),
-  sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
-  unit_price: z.coerce.number().min(0),
-  currency: optionalTrimmedString(10),
-});
+const upsertFacilityLabPanelOfferingSchema = z
+  .object({
+    tenant_id: uuidSchema.optional(),
+    facility_id: uuidSchema.optional(),
+    lab_panel_id: uuidOrFriendlyIdentifierSchema.optional(),
+    is_active: z.boolean().optional().default(true),
+    sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
+    unit_price: z.coerce.number().min(0).optional(),
+    currency: optionalTrimmedString(10),
+  })
+  .superRefine((data, ctx) => {
+    if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'unit_price is required when the offering is active',
+        path: ['unit_price'],
+      });
+    }
+  });
 
 const disableFacilityLabOfferingSchema = z.object({
   reason: z.string().trim().min(1).max(500),

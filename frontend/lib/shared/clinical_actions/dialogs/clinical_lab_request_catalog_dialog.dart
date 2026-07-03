@@ -38,6 +38,7 @@ Future<void> showClinicalLabRequestCatalogDialog({
       ClinicalLabRequestCatalogKind.tests,
   ClinicalActionCatalogOption? editingOption,
   ClinicalLabRequestCatalogKind? editingKind,
+  bool facilityOfferingsOnly = false,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -49,6 +50,7 @@ Future<void> showClinicalLabRequestCatalogDialog({
       initialKind: initialKind,
       editingOption: editingOption,
       editingKind: editingKind,
+      facilityOfferingsOnly: facilityOfferingsOnly,
     ),
   );
 }
@@ -62,6 +64,7 @@ class ClinicalLabRequestCatalogDialog extends StatefulWidget {
     this.initialKind = ClinicalLabRequestCatalogKind.tests,
     this.editingOption,
     this.editingKind,
+    this.facilityOfferingsOnly = false,
     super.key,
   });
 
@@ -86,6 +89,7 @@ class ClinicalLabRequestCatalogDialog extends StatefulWidget {
   final ClinicalLabRequestCatalogKind initialKind;
   final ClinicalActionCatalogOption? editingOption;
   final ClinicalLabRequestCatalogKind? editingKind;
+  final bool facilityOfferingsOnly;
 
   @override
   State<ClinicalLabRequestCatalogDialog> createState() =>
@@ -99,7 +103,7 @@ class _ClinicalLabRequestCatalogDialogState
 
   Timer? _searchDebounce;
   late ClinicalLabRequestCatalogKind _selectionKind;
-  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
+  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.facility;
   String _searchQuery = '';
   int _searchRequest = 0;
   String? _selectedCatalogId;
@@ -120,9 +124,14 @@ class _ClinicalLabRequestCatalogDialogState
     _selectedCatalogId = widget.editingOption?.apiId;
     _searchQuery = widget.editingOption?.displayTitle ?? '';
     _searchRequest += 1;
+    if (widget.facilityOfferingsOnly) {
+      _catalogSource = ClinicalCatalogSource.facility;
+    }
     unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
     unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
-    unawaited(_loadFavoriteTests());
+    if (!widget.facilityOfferingsOnly) {
+      unawaited(_loadFavoriteTests());
+    }
   }
 
   @override
@@ -197,8 +206,8 @@ class _ClinicalLabRequestCatalogDialogState
               unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
             },
           ),
-          if (_selectionKind ==
-              ClinicalLabRequestCatalogKind.tests) ...<Widget>[
+          if (_selectionKind == ClinicalLabRequestCatalogKind.tests &&
+              !widget.facilityOfferingsOnly) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             ClinicalCatalogLayerSelector(
               value: _catalogSource,
@@ -323,7 +332,9 @@ class _ClinicalLabRequestCatalogDialogState
           termType: ClinicalCatalogTermType.labTest.apiValue,
           query: query.trim().isEmpty ? null : query.trim(),
           limit: _maxVisibleCatalogOptions,
-          source: _catalogSource.apiValue,
+          source: widget.facilityOfferingsOnly
+              ? ClinicalCatalogSource.facility.apiValue
+              : _catalogSource.apiValue,
         );
     if (!mounted || requestId != _searchRequest) {
       return;
