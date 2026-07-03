@@ -1,1 +1,110 @@
-The module Tony Coles The configuration is model, dialog which is accessible and it's overflowing. this model takes time to load the unit's manifest. So in this one See the tests, I can see the panels for each place and every panel I see there is the edits and the edits so which is gonna enhance panels and enhance tests that is okay. However, I want that for every facility the facility, because these, these tests, these tests are already defined within the module, i-i-actually, they're, they're already defined in the platform, in the app, but every facility is getting access to them and is only using what they need. So what I want is that every facility should be able to modify these tests according to how they want to customize them. For example they should be able to maybe modify things like They should be able to add a price per cost per test, and then also a price per annum depending on the test they do. So they should select which tests they are doing so that when lab personnel and the, when lab personnel and the clinical users are, are requesting for these tests, they are only, they are only able to see what those tests are that the facility is able to offer. But every facility, every test should have a price so that when you're requesting for a test, you don't need to, you don't need to attach a price or a cost to that test, so that should be very easy for the users instead of typing it in and every single every time. And also, a facility should decide Upon the reference ranges the different, the different uses for the tests the specimen type The quantitative results options description, so they should be able to modify all these, to change all these things reference ranges, and for every test where applicable for example, some tests that have different ranges for different agenda, different age groups, I think there should be a way for these tests to intelligently know from the patient's age that actually I should use this reference range, and there should be a way for multiple reference ranges. For now, I want you to make sure that these reference ranges have default values which you should be searched on And populate and pre-fill all those, but the facility should be able to adjust all these things according to them and the tests. So in the ad, in the request lab tests there should be a way there, it should be very easy for someone to add a test and the, the, the ad, the, the lab request shouldn't upload, shouldn't load everything, because this are for only the configurations people that have access to configurations, and I think lab configurations are only accessible to, they are only accessible to the lab tech team. Administrators super admins, the platform admins facility admins, internet admins, so the ones that have the rights to change all this, but all the other users can only see these values, and maybe if they need to be request, they need requests to modify all these things then they have to contact the users that have the specific rights. So let's make sure that even the database allows all these kind of information or kind of changes.
+# Facility-scoped lab catalog configuration
+
+## Context
+
+HOSSPI ships a **platform-wide lab test and panel catalog** (LOINC-backed defaults, reference ranges, units, qualitative options). The **Laboratory → Lab Configurations** modal (Tests / Panels tabs) and **Configure lab test** form already expose catalog CRUD and per-test settings (name, code, category, specimen type, result kind, units, qualitative options, description, and age/gender reference ranges).
+
+**Problems today**
+
+- The configurations modal is slow and can overflow while loading the full catalog (including units manifest).
+- Catalog edits are effectively **tenant/global**, not **per facility**.
+- Lab order / clinical request flows load the full catalog instead of only what the active facility offers.
+- Pricing is not enforced at the facility level, so users may still enter costs manually when ordering tests.
+
+## Goal
+
+Let each **facility** choose which platform tests/panels it offers and **override catalog defaults** (including price) for its own operations—without duplicating the master catalog. Clinical and lab users should only see and request **facility-enabled** tests/panels with **pre-set prices**. Configuration remains restricted to authorized admin/lab roles.
+
+## Scope
+
+### 1. Data model (backend + migrations)
+
+Introduce a **facility lab offering** layer (mirror the existing `facility_catalog_offering` / clinical-catalog pattern where practical):
+
+| Concern | Requirement |
+|--------|-------------|
+| **Offering toggle** | Per facility + test/panel: `is_active`, optional sort order. |
+| **Pricing** | Required `unit_price` (+ currency) per offered test and panel at facility scope. Panel price may override sum-of-tests or stand alone—document chosen rule. |
+| **Overrides** | Facility may override: specimen type, result kind, default unit, unit options, qualitative options, description. |
+| **Reference ranges** | Support **multiple** ranges per offered test with gender, age min/max + unit, normal/critical bounds, reference text. |
+| **Defaults** | Seed platform defaults (LOINC / clinical norms) on first enable; facility edits override without mutating global catalog. |
+| **Interpretation** | Backend result interpretation must resolve the **facility-specific** range set using patient age and gender (existing `lab.interpretation.js` logic extended, not replaced). |
+| **Audit** | All create/update/delete/enable/disable actions require reason where destructive; write audit logs. |
+
+Do **not** break existing tenant-level `lab_test` / `lab_panel` records; treat them as the master catalog.
+
+### 2. Lab Configurations UI (screenshots)
+
+**Entry:** Laboratory module → overflow menu → **Lab Configurations**.
+
+**Tests tab**
+
+- List platform tests with facility status: *offered / not offered*, price, and key overrides.
+- Actions: enable/disable for facility, **Configure** (opens existing form extended with price + offering toggle), not global delete unless platform admin.
+- Search/filter must stay responsive; **do not load the entire catalog eagerly**—paginate or lazy-load (including units manifest).
+
+**Panels tab**
+
+- Same offering model for panels; panel composition references **facility-offered** tests only.
+
+**Configure lab test dialog** (extend current form)
+
+Add / clarify:
+
+- **Offer at this facility** (toggle)
+- **Price per test** (required when offered)
+- Keep existing fields: test name, code, category, specimen type, result kind, default unit, unit options, qualitative options, description
+- **Reference ranges:** support adding/editing **multiple** rows (gender applicability, age min/max + unit, result unit, normal/critical min/max, reference text)
+- Pre-fill reference ranges from platform defaults; show source hint (e.g. “Platform default — editable for this facility”)
+
+**Performance / layout**
+
+- Fix modal overflow on smaller viewports.
+- Configurations dialog opens quickly; heavy catalog data loads on demand inside tabs/forms.
+
+### 3. Lab order & clinical request flows
+
+- Test/panel pickers load **only facility-offered, active items** via lightweight search API (typeahead; no full catalog in workspace state).
+- Selected tests/panels attach **facility price automatically** to billing/clinical request payload—no manual price entry for standard orders.
+- If a test is not offered at the facility, it must not appear in pickers (existing orders with retired offerings remain readable).
+
+### 4. Permissions
+
+| Role / permission | Configurations (read) | Configurations (write) | Order/request (read catalog) |
+|-------------------|----------------------|------------------------|------------------------------|
+| Platform / super admin | ✓ | ✓ (global + facility) | ✓ offered only |
+| Tenant admin | ✓ | ✓ (tenant facilities) | ✓ offered only |
+| Facility admin | ✓ | ✓ (own facility) | ✓ offered only |
+| Lab team with `lab:write` | ✓ | ✓ (own facility overrides) | ✓ offered only |
+| Clinical / lab users without config rights | ✓ read-only effective values | ✗ | ✓ offered only |
+
+Users without write access who need catalog changes should see a clear “contact your lab administrator” message—not editable fields.
+
+### 5. API
+
+- CRUD/list endpoints scoped by `facility_id` for offerings and overrides.
+- Separate **lightweight search** endpoint for order pickers (`q`, `limit`, `term_type=LAB_TEST|LAB_PANEL`, `offered_only=true`).
+- Existing lab-test endpoints remain for master catalog management; facility endpoints merge master + override for reads.
+
+## Acceptance criteria
+
+- [ ] Facility A and Facility B under the same tenant can offer different test sets and prices.
+- [ ] Enabling a test pre-fills reference ranges from platform defaults; facility edits persist without changing other facilities.
+- [ ] Result entry flags abnormal/critical results using the **patient-matched** facility reference range (age + gender).
+- [ ] Lab Configurations modal loads in under ~2s on demo data; no layout overflow at 1280×720.
+- [ ] Create Lab Order / clinical lab request pickers never download the full catalog; search returns only offered items with price.
+- [ ] Placing a lab order auto-applies facility test/panel prices to billing.
+- [ ] Unauthorized users cannot mutate facility lab configuration; attempts are rejected server-side.
+- [ ] Migrations, seeds, and tests cover offering CRUD, override merge, interpretation, and permission checks.
+
+## Implementation notes
+
+- Reuse patterns from `clinical-catalog.service.js` (`facility_catalog_offering`, layered GLOBAL vs FACILITY search) and existing lab modules: `lab-test`, `lab-panel`, `lab.configuration.js`, `lab.interpretation.js`, `frontend/lib/shared/lab_catalog/`.
+- Avoid loading `catalogTests` / `catalogPanels` on initial `LabWorkspacePage` load; fetch only when opening configuration or order dialogs.
+- Follow existing UI components, l10n keys, and audit conventions.
+
+## Out of scope (for now)
+
+- Cross-facility price templates or bulk import/export.
+- Patient-specific negotiated pricing.
+- Replacing the master LOINC/platform catalog source.
