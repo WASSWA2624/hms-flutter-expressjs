@@ -146,9 +146,7 @@ void main() {
 
     expect(find.text(l10n.settingsTitle), findsWidgets);
     expect(find.text(l10n.settingsBody), findsOneWidget);
-    expect(find.text(l10n.settingsLanguageFieldLabel), findsWidgets);
     expect(find.text(l10n.settingsThemeModeFieldLabel), findsOneWidget);
-    expect(find.text(l10n.settingsLanguageEnglish), findsWidgets);
     expect(find.byType(AppLogo), findsOneWidget);
   });
 

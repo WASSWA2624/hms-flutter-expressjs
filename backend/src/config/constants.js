@@ -27,8 +27,7 @@ const RETRY_MAX_DELAY_MS = 5000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 
 const SUPPORTED_LOCALES = [
-  'en',
-  'fr'
+  'en'
 ];
 const DEFAULT_LOCALE = 'en';
 const DEFAULT_SEED_RECORD_COUNT = 50;

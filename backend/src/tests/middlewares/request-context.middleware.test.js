@@ -52,7 +52,7 @@ describe('request-context middleware', () => {
   it('uses existing x-request-id and captures actor/scope when available', () => {
     const req = {
       headers: { 'x-request-id': 'external-request-id' },
-      locale: 'fr',
+      locale: 'en',
       localeDirection: 'ltr',
       user: {
         id: 'user-1',

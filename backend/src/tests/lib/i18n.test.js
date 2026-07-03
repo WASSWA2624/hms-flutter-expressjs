@@ -26,7 +26,7 @@ describe('i18n utilities', () => {
     expect(getLocale(req)).toBe('en');
 
     const frenchReq = { query: {}, headers: { 'x-locale': 'fr-FR' } };
-    expect(getLocale(frenchReq)).toBe('fr');
+    expect(getLocale(frenchReq)).toBe(DEFAULT_LOCALE);
   });
 
   test('resolves locale from Accept-Language header using supported locale', () => {
@@ -57,16 +57,15 @@ describe('i18n utilities', () => {
   test('resolveLocale handles base locale fallback', () => {
     expect(resolveLocale('en-ZZ')).toBe('en');
     expect(resolveLocale('en_zz')).toBe('en');
-    expect(resolveLocale('fr-ZZ')).toBe('fr');
-    expect(resolveLocale('fr_fr')).toBe('fr');
+    expect(resolveLocale('fr-ZZ')).toBe(DEFAULT_LOCALE);
+    expect(resolveLocale('fr_fr')).toBe(DEFAULT_LOCALE);
     expect(resolveLocale('ln-ZZ')).toBe('en');
   });
 
-  test('translate returns french copy for supported locale', () => {
+  test('translate uses english copy for the supported locale', () => {
     const english = translate('messages.abac_policy.create_success', 'en');
-    const french = translate('messages.abac_policy.create_success', 'fr');
-    expect(french).not.toBe(english);
-    expect(french.length).toBeGreaterThan(0);
+    expect(english.length).toBeGreaterThan(0);
+    expect(translate('messages.abac_policy.create_success', 'fr')).toBe(english);
   });
 
   test('translate falls back to english when locale file is missing a key', () => {
@@ -105,9 +104,9 @@ describe('i18n utilities', () => {
     expect(headers['Content-Language']).toBeUndefined();
 
     applyLocaleHeader(res, 'fr');
-    expect(headers['Content-Language']).toBe('fr');
+    expect(headers['Content-Language']).toBeUndefined();
 
     applyLocaleHeader(res, 'fr-FR');
-    expect(headers['Content-Language']).toBe('fr');
+    expect(headers['Content-Language']).toBeUndefined();
   });
 });

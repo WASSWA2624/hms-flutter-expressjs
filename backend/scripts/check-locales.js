@@ -121,10 +121,6 @@ const checkLocales = () => {
     errors.push('en-GB regional variants must resolve deterministically to "en".');
   }
 
-  if (resolveLocale('fr-FR') !== 'fr' || resolveLocale('FR_fr') !== 'fr') {
-    errors.push('fr-FR regional variants must resolve deterministically to "fr".');
-  }
-
   if (resolveLocale('sw') !== DEFAULT_LOCALE) {
     errors.push('Unsupported locales must resolve deterministically to the default locale.');
   }

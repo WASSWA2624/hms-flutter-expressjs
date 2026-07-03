@@ -29,8 +29,6 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
-    final Locale selectedLocale =
-        ref.watch(appLocaleProvider) ?? _englishLocale;
     final AppAccessibilityPreferences accessibility = ref.watch(
       appAccessibilityProvider,
     );
@@ -83,30 +81,6 @@ class SettingsPage extends ConsumerWidget {
                 body: l10n.settingsPreferencesSectionBody,
                 child: Column(
                   children: <Widget>[
-                    AppSelectField<Locale>(
-                      labelText: l10n.settingsLanguageFieldLabel,
-                      value: selectedLocale,
-                      options: <AppSelectOption<Locale>>[
-                        AppSelectOption<Locale>(
-                          value: _englishLocale,
-                          label: l10n.settingsLanguageEnglish,
-                          leadingIcon: const _LanguageFlag('🇬🇧'),
-                        ),
-                        AppSelectOption<Locale>(
-                          value: _frenchLocale,
-                          label: l10n.settingsLanguageFrench,
-                          leadingIcon: const _LanguageFlag('🇫🇷'),
-                        ),
-                      ],
-                      onChanged: (Locale? locale) {
-                        if (locale == null) {
-                          return;
-                        }
-
-                        unawaited(_setLocale(context, ref, locale));
-                      },
-                    ),
-                    SizedBox(height: Theme.of(context).spacing.lg),
                     AppRadioGroup<ThemeMode>(
                       labelText: l10n.settingsThemeModeFieldLabel,
                       value: themeMode,
@@ -227,20 +201,6 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _setLocale(
-    BuildContext context,
-    WidgetRef ref,
-    Locale locale,
-  ) async {
-    try {
-      await ref.read(appLocaleProvider.notifier).setLocale(locale);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
   }
 
   Future<void> _setThemeMode(
@@ -516,19 +476,6 @@ class _SettingsActionTile extends StatelessWidget {
   }
 }
 
-class _LanguageFlag extends StatelessWidget {
-  const _LanguageFlag(this.flag);
-
-  final String flag;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExcludeSemantics(
-      child: Text(flag, style: Theme.of(context).textTheme.titleMedium),
-    );
-  }
-}
-
 class _SettingsSectionGrid extends StatelessWidget {
   const _SettingsSectionGrid({required this.sections});
 
@@ -558,6 +505,4 @@ class _SettingsSectionGrid extends StatelessWidget {
   }
 }
 
-const Locale _englishLocale = Locale('en');
-const Locale _frenchLocale = Locale('fr');
 const double _twoColumnMinWidth = 920;
