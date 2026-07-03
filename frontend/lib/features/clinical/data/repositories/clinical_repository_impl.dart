@@ -185,6 +185,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     String? query,
     int limit = 80,
     String source = 'ALL',
+    bool offeredOnly = false,
   }) {
     return _apiClient.get<List<ClinicalCatalogOption>>(
       ApiEndpoints.apiV1(<String>[
@@ -196,6 +197,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
         'source': source,
         'q': query,
         'limit': limit.clamp(1, 1000),
+        if (offeredOnly) 'offered_only': 'true',
       }),
       decoder: decodeClinicalTermOptions,
     );

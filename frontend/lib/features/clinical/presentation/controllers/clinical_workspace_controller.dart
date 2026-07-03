@@ -292,11 +292,14 @@ final class ClinicalWorkspaceController
     int limit = 25,
     String source = 'ALL',
   }) {
+    final bool offeredOnly =
+        termType == 'LAB_TEST' || termType == 'LAB_PANEL';
     return _repository.searchClinicalCatalog(
       termType: termType,
       query: query,
       limit: limit,
       source: source,
+      offeredOnly: offeredOnly,
     );
   }
 

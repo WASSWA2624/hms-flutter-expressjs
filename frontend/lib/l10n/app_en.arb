@@ -20318,6 +20318,22 @@
   "@labConfigureTestDialogTitle": {
     "description": "Localized text for labConfigureTestDialogTitle."
   },
+  "labOfferAtFacilityLabel": "Offer at this facility",
+  "@labOfferAtFacilityLabel": {
+    "description": "Toggle label for enabling a lab test at the active facility."
+  },
+  "labPlatformDefaultsHint": "Platform default — editable for this facility",
+  "@labPlatformDefaultsHint": {
+    "description": "Hint shown when facility lab settings inherit platform defaults."
+  },
+  "labOfferedStatusLabel": "Offered",
+  "@labOfferedStatusLabel": {
+    "description": "Status label when a lab catalog item is offered at the facility."
+  },
+  "labNotOfferedStatusLabel": "Not offered",
+  "@labNotOfferedStatusLabel": {
+    "description": "Status label when a lab catalog item is not offered at the facility."
+  },
   "labTestNameLabel": "Test name",
   "@labTestNameLabel": {
     "description": "Localized text for labTestNameLabel."

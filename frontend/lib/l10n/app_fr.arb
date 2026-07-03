@@ -20458,6 +20458,10 @@
   "@labConfigureTestDialogTitle": {
     "description": "Localized text for labConfigureTestDialogTitle."
   },
+  "labOfferAtFacilityLabel": "Offer at this facility",
+  "labPlatformDefaultsHint": "Platform default — editable for this facility",
+  "labOfferedStatusLabel": "Offered",
+  "labNotOfferedStatusLabel": "Not offered",
   "labTestNameLabel": "Test nom",
   "@labTestNameLabel": {
     "description": "Localized text for labTestNameLabel."

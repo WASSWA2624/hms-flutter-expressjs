@@ -611,9 +611,11 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   late final TextEditingController _rangeNotesController;
   late List<_EditableLabValue> _unitOptions;
   late List<_EditableLabValue> _resultOptions;
+  late final TextEditingController _priceController;
   String? _resultKind;
   String? _gender;
   String? _ageUnit = 'YEAR';
+  bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
 
@@ -668,6 +670,10 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       text: range?.referenceText ?? '',
     );
     _rangeNotesController = TextEditingController(text: range?.notes ?? '');
+    _priceController = TextEditingController(
+      text: item?.unitPrice?.toString() ?? '',
+    );
+    _isOfferedAtFacility = item?.isOfferedAtFacility ?? false;
     _resultKind = item?.resultKind ?? 'NUMERIC';
     _gender = range?.gender ?? _anyGenderValue;
     _ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEAR';
@@ -691,6 +697,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     _criticalMaxController.dispose();
     _referenceTextController.dispose();
     _rangeNotesController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -718,6 +725,35 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 context: context,
                 failure: _failure!,
               ),
+            if (!_isCreateMode) ...<Widget>[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.labOfferAtFacilityLabel),
+                subtitle: widget.item?.usesPlatformDefaults ?? true
+                    ? Text(l10n.labPlatformDefaultsHint)
+                    : null,
+                value: _isOfferedAtFacility,
+                onChanged: _isSaving
+                    ? null
+                    : (bool value) {
+                        setState(() => _isOfferedAtFacility = value);
+                      },
+              ),
+              AppTextField(
+                controller: _priceController,
+                labelText: l10n.clinicalRequestUnitPriceLabel,
+                enabled: !_isSaving && _isOfferedAtFacility,
+                isRequired: _isOfferedAtFacility,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                prefixIcon: const Icon(Icons.payments_outlined),
+                validator: _isOfferedAtFacility
+                    ? AppValidators.requiredText(l10n.validationRequired)
+                    : null,
+              ),
+              const Divider(height: 24),
+            ],
             LabSearchableTextField(
               controller: _nameController,
               labelText: l10n.labTestNameLabel,
@@ -1185,8 +1221,14 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     );
     return <String, Object?>{
       if (_isCreateMode) 'tenant_id': widget.tenantId,
-      'name': _nameController.text.trim(),
-      'code': _codeController.text.trim(),
+      if (!_isCreateMode) ...<String, Object?>{
+        'is_active': _isOfferedAtFacility,
+        if (_isOfferedAtFacility)
+          'unit_price': num.tryParse(_priceController.text.trim()) ?? 0,
+        if (widget.item?.currency != null) 'currency': widget.item!.currency,
+      },
+      if (_isCreateMode) 'name': _nameController.text.trim(),
+      if (_isCreateMode) 'code': _codeController.text.trim(),
       'category': _categoryController.text.trim(),
       'specimen_type': _specimenController.text.trim(),
       'result_kind': _resultKind,
@@ -1322,7 +1364,9 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
   late final TextEditingController _categoryController;
   late final TextEditingController _descriptionController;
   late final List<LabCatalogItem> _selectedTests;
+  late final TextEditingController _priceController;
   String? _pendingTestId;
+  bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
 
@@ -1338,6 +1382,10 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     _descriptionController = TextEditingController(
       text: item?.description ?? '',
     );
+    _priceController = TextEditingController(
+      text: item?.unitPrice?.toString() ?? '',
+    );
+    _isOfferedAtFacility = item?.isOfferedAtFacility ?? false;
     _selectedTests = _initialSelectedTests(item);
   }
 
@@ -1347,6 +1395,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     _codeController.dispose();
     _categoryController.dispose();
     _descriptionController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -1376,6 +1425,32 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
                 context: context,
                 failure: _failure!,
               ),
+            if (!_isCreateMode) ...<Widget>[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.labOfferAtFacilityLabel),
+                value: _isOfferedAtFacility,
+                onChanged: _isSaving
+                    ? null
+                    : (bool value) {
+                        setState(() => _isOfferedAtFacility = value);
+                      },
+              ),
+              AppTextField(
+                controller: _priceController,
+                labelText: l10n.clinicalRequestUnitPriceLabel,
+                enabled: !_isSaving && _isOfferedAtFacility,
+                isRequired: _isOfferedAtFacility,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                prefixIcon: const Icon(Icons.payments_outlined),
+                validator: _isOfferedAtFacility
+                    ? AppValidators.requiredText(l10n.validationRequired)
+                    : null,
+              ),
+              const Divider(height: 24),
+            ],
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: LabSearchableTextField(
@@ -1578,22 +1653,29 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
   Map<String, Object?> _payload() {
     return <String, Object?>{
       if (_isCreateMode) 'tenant_id': widget.tenantId,
-      'name': _nameController.text.trim(),
-      'code': _codeController.text.trim(),
+      if (!_isCreateMode) ...<String, Object?>{
+        'is_active': _isOfferedAtFacility,
+        if (_isOfferedAtFacility)
+          'unit_price': num.tryParse(_priceController.text.trim()) ?? 0,
+        if (widget.item?.currency != null) 'currency': widget.item!.currency,
+      },
+      if (_isCreateMode) 'name': _nameController.text.trim(),
+      if (_isCreateMode) 'code': _codeController.text.trim(),
       'category': _categoryController.text.trim(),
       'description': _descriptionController.text.trim(),
-      'panel_items': _selectedTests
-          .asMap()
-          .entries
-          .map((MapEntry<int, LabCatalogItem> entry) {
-            return <String, Object?>{
-              'lab_test_id': entry.value.apiId,
-              'is_required': true,
-              'instructions': null,
-              'sort_order': entry.key,
-            };
-          })
-          .toList(growable: false),
+      if (_isCreateMode)
+        'panel_items': _selectedTests
+            .asMap()
+            .entries
+            .map((MapEntry<int, LabCatalogItem> entry) {
+              return <String, Object?>{
+                'lab_test_id': entry.value.apiId,
+                'is_required': true,
+                'instructions': null,
+                'sort_order': entry.key,
+              };
+            })
+            .toList(growable: false),
     };
   }
 }

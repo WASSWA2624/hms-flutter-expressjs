@@ -5,7 +5,7 @@
 const { z } = require('zod');
 const { listQuerySchema, uuidSchema } = require('@lib/validation/zod');
 
-const TERM_TYPE_VALUES = ['DIAGNOSIS', 'PROCEDURE', 'LAB_TEST', 'RADIOLOGY_TEST', 'PRESCRIPTION'];
+const TERM_TYPE_VALUES = ['DIAGNOSIS', 'PROCEDURE', 'LAB_TEST', 'LAB_PANEL', 'RADIOLOGY_TEST', 'PRESCRIPTION'];
 const TERM_SCOPE_VALUES = ['PERSONAL', 'SHARED'];
 const CATALOG_SOURCE_VALUES = ['FAVORITES', 'FACILITY', 'GLOBAL', 'ALL'];
 
@@ -25,6 +25,7 @@ const listClinicalCatalogSearchQuerySchema = z.object({
   source: z.enum(CATALOG_SOURCE_VALUES).optional().default('ALL'),
   q: z.string().trim().max(120).optional(),
   limit: z.coerce.number().int().min(1).max(1000).optional(),
+  offered_only: z.enum(['true', 'false']).optional(),
 });
 
 const listClinicalTermFavoritesQuerySchema = listQuerySchema.extend({

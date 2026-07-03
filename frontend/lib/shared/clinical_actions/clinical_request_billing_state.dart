@@ -137,7 +137,7 @@ String clinicalRequestPriceLabel(
   String? currency,
 ) {
   if (amount == null || amount <= 0) {
-    return AppLocalizations.of(context).clinicalRequestPriceNotSetLabel;
+    return AppLocalizations.of(context)!.clinicalRequestPriceNotSetLabel;
   }
   return opdMoneyLabel(context, amount, currency) ?? amount.toString();
 }

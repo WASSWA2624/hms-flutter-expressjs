@@ -182,6 +182,7 @@ apiV1Router.use('/goods-receipts', require('../modules/goods-receipt/routes/good
 apiV1Router.use('/stock-adjustments', require('../modules/stock-adjustment/routes/stock-adjustment.routes'));
 apiV1Router.use('/lab-tests', require('../modules/lab-test/routes/lab-test.routes'));
 apiV1Router.use('/lab-panels', require('../modules/lab-panel/routes/lab-panel.routes'));
+apiV1Router.use('/facility-lab-catalog', require('../modules/facility-lab-catalog/routes/facility-lab-catalog.routes'));
 apiV1Router.use('/lab-orders', require('../modules/lab-order/routes/lab-order.routes'));
 apiV1Router.use('/lab-order-items', require('../modules/lab-order-item/routes/lab-order-item.routes'));
 apiV1Router.use('/lab-samples', require('../modules/lab-sample/routes/lab-sample.routes'));

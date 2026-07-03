@@ -11,6 +11,14 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
+const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog/facility-lab-catalog.repository');
+const {
+  mapClinicalCatalogLabPanelRow,
+  mapClinicalCatalogLabTestRow,
+} = require('@services/lab-workspace/facility-lab-catalog.merge');
+const {
+  searchFacilityLabCatalog,
+} = require('@services/facility-lab-catalog/facility-lab-catalog.service');
 
 const CATALOG_SOURCES = new Set(['FAVORITES', 'FACILITY', 'GLOBAL', 'ALL']);
 
@@ -182,24 +190,57 @@ const loadFacilityCatalogItems = async ({ termType, tenantId, facilityId, q, lim
   }
 
   if (termType === 'LAB_TEST') {
-    const rows = await clinicalTermRepository.findLabTests(
+    const offerings = await facilityLabCatalogRepository.findTestOfferings(
       {
         tenant_id: tenantId,
-        deleted_at: null,
-        id: { in: offeringItemIds },
+        facility_id: facilityId,
+        is_active: true,
         ...(q
           ? {
-              OR: [
-                { name: { contains: q } },
-                { code: { contains: q } },
-                { category: { contains: q } },
-              ],
+              lab_test: {
+                deleted_at: null,
+                OR: [
+                  { name: { contains: q } },
+                  { code: { contains: q } },
+                  { category: { contains: q } },
+                ],
+              },
             }
           : {}),
       },
+      0,
       limit
     );
-    return rows.map((row) => mapLabTestRow(row, 'FACILITY'));
+    return offerings
+      .map((offering) => mapClinicalCatalogLabTestRow(offering.lab_test, offering))
+      .filter(Boolean);
+  }
+
+  if (termType === 'LAB_PANEL') {
+    const offerings = await facilityLabCatalogRepository.findPanelOfferings(
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        is_active: true,
+        ...(q
+          ? {
+              lab_panel: {
+                deleted_at: null,
+                OR: [
+                  { name: { contains: q } },
+                  { code: { contains: q } },
+                  { category: { contains: q } },
+                ],
+              },
+            }
+          : {}),
+      },
+      0,
+      limit
+    );
+    return offerings
+      .map((offering) => mapClinicalCatalogLabPanelRow(offering.lab_panel, offering))
+      .filter(Boolean);
   }
 
   if (termType === 'RADIOLOGY_TEST') {
@@ -423,6 +464,21 @@ const listClinicalCatalogSearch = async (filters = {}, context = {}) => {
         context
       );
     }
+  }
+
+  const offeredOnly = String(filters.offered_only || '').toLowerCase() === 'true';
+  if (offeredOnly && (termType === 'LAB_TEST' || termType === 'LAB_PANEL')) {
+    return searchFacilityLabCatalog(
+      {
+        ...filters,
+        term_type: termType,
+        q,
+        limit: safeLimit,
+        offered_only: 'true',
+        facility_id: facilityId,
+      },
+      context
+    );
   }
 
   const loaders = [];

@@ -29,6 +29,7 @@ abstract interface class ClinicalRepository {
     String? query,
     int limit = 80,
     String source = 'ALL',
+    bool offeredOnly = false,
   });
 
   Future<Result<void>> createClinicalTermFavorite(Map<String, Object?> payload);

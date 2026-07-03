@@ -17,7 +17,7 @@ class SubscriptionPaymentMethodSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

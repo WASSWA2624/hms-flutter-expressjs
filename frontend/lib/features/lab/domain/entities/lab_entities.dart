@@ -223,6 +223,9 @@ final class LabCatalogItem {
     this.unitPrice,
     this.currency,
     this.updatedAt,
+    this.isOfferedAtFacility = false,
+    this.facilityOfferingId,
+    this.usesPlatformDefaults = true,
   });
 
   final String id;
@@ -245,6 +248,61 @@ final class LabCatalogItem {
   final num? unitPrice;
   final String? currency;
   final DateTime? updatedAt;
+  final bool isOfferedAtFacility;
+  final String? facilityOfferingId;
+  final bool usesPlatformDefaults;
+
+  LabCatalogItem copyWith({
+    String? id,
+    LabCatalogItemType? type,
+    String? displayId,
+    String? name,
+    String? code,
+    String? category,
+    String? specimenType,
+    String? resultKind,
+    String? unit,
+    String? description,
+    String? referenceRange,
+    List<LabReferenceRange>? referenceRanges,
+    int? referenceRangeCount,
+    List<LabUnitOption>? unitOptions,
+    List<LabResultOption>? resultOptions,
+    List<LabPanelItem>? panelItems,
+    int? testCount,
+    num? unitPrice,
+    String? currency,
+    DateTime? updatedAt,
+    bool? isOfferedAtFacility,
+    String? facilityOfferingId,
+    bool? usesPlatformDefaults,
+  }) {
+    return LabCatalogItem(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      displayId: displayId ?? this.displayId,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      category: category ?? this.category,
+      specimenType: specimenType ?? this.specimenType,
+      resultKind: resultKind ?? this.resultKind,
+      unit: unit ?? this.unit,
+      description: description ?? this.description,
+      referenceRange: referenceRange ?? this.referenceRange,
+      referenceRanges: referenceRanges ?? this.referenceRanges,
+      referenceRangeCount: referenceRangeCount ?? this.referenceRangeCount,
+      unitOptions: unitOptions ?? this.unitOptions,
+      resultOptions: resultOptions ?? this.resultOptions,
+      panelItems: panelItems ?? this.panelItems,
+      testCount: testCount ?? this.testCount,
+      unitPrice: unitPrice ?? this.unitPrice,
+      currency: currency ?? this.currency,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isOfferedAtFacility: isOfferedAtFacility ?? this.isOfferedAtFacility,
+      facilityOfferingId: facilityOfferingId ?? this.facilityOfferingId,
+      usesPlatformDefaults: usesPlatformDefaults ?? this.usesPlatformDefaults,
+    );
+  }
 
   String get apiId => displayId ?? id;
   bool get isPanel => type == LabCatalogItemType.panel;

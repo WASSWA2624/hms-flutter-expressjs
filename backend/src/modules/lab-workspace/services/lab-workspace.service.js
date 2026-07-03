@@ -20,6 +20,9 @@ const {
   applyDateRangeFilter,
 } = require('@services/lab-workspace/lab.shared');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
+const {
+  resolveFacilityLabTestForInterpretation,
+} = require('@services/facility-lab-catalog/facility-lab-catalog.service');
 const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
 const {
   toPublicIdentifier,
@@ -326,6 +329,8 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
       patient: {
         select: {
           id: true,
+          tenant_id: true,
+          facility_id: true,
           date_of_birth: true,
           gender: true,
         },
@@ -823,9 +828,17 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
     reported_at: toDateOrNull(payload.reported_at, new Date()),
   };
 
+  const patient = item?.lab_order?.patient || {};
+  const resolvedTest = await resolveFacilityLabTestForInterpretation({
+    tenantId: patient.tenant_id,
+    facilityId: patient.facility_id,
+    labTestId: item?.lab_test_id || item?.lab_test?.id,
+    masterTest: item?.lab_test || {},
+  });
+
   const interpretation = evaluateLabResult({
-    test: item?.lab_test || {},
-    patient: item?.lab_order?.patient || {},
+    test: resolvedTest || item?.lab_test || {},
+    patient,
     resultValue: resultData.result_value,
     resultText: resultData.result_text,
     resultUnit: resultData.result_unit,

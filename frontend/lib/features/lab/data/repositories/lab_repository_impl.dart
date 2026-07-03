@@ -120,6 +120,137 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<List<LabCatalogItem>>> listFacilityLabTests({
+    String? search,
+    int page = 1,
+    int limit = 100,
+  }) {
+    return _apiClient.get<List<LabCatalogItem>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'tests',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': page,
+        'limit': limit,
+        'search': search,
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: decodeLabTests,
+    );
+  }
+
+  @override
+  Future<Result<List<LabCatalogItem>>> listFacilityLabPanels({
+    String? search,
+    int page = 1,
+    int limit = 100,
+  }) {
+    return _apiClient.get<List<LabCatalogItem>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'panels',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': page,
+        'limit': limit,
+        'search': search,
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: decodeLabPanels,
+    );
+  }
+
+  @override
+  Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
+    required String termType,
+    String? query,
+    int limit = 25,
+  }) {
+    return _apiClient.get<List<LabCatalogItem>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'search',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'term_type': termType,
+        'q': query,
+        'limit': limit,
+        'offered_only': 'true',
+      }),
+      decoder: termType == 'LAB_PANEL' ? decodeLabPanels : decodeLabTests,
+    );
+  }
+
+  @override
+  Future<Result<LabCatalogItem>> upsertFacilityLabTestOffering(
+    String testId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<LabCatalogItem>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'tests',
+        testId,
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.test),
+    );
+  }
+
+  @override
+  Future<Result<LabCatalogItem>> upsertFacilityLabPanelOffering(
+    String panelId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<LabCatalogItem>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'panels',
+        panelId,
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.panel),
+    );
+  }
+
+  @override
+  Future<Result<void>> disableFacilityLabTestOffering(
+    String testId,
+    String reason,
+  ) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'tests',
+        testId,
+      ]),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> disableFacilityLabPanelOffering(
+    String panelId,
+    String reason,
+  ) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityLabCatalog.path,
+        'panels',
+        panelId,
+      ]),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<List<LabQcLog>>> listQcLogs({String? search}) {
     return _apiClient.get<List<LabQcLog>>(
       ApiEndpoints.collection(HmsApiResource.labQcLogs),

@@ -164,6 +164,10 @@ final class LabCatalogItemDto {
       unitPrice: _num(json['unit_price']) ?? _num(json['price']),
       currency: _string(json['currency']),
       updatedAt: _date(json['updated_at']),
+      isOfferedAtFacility: json['is_offered_at_facility'] == true
+          || json['offering_is_active'] == true,
+      facilityOfferingId: _string(json['facility_offering_id']),
+      usesPlatformDefaults: json['uses_platform_defaults'] != false,
     );
   }
 }

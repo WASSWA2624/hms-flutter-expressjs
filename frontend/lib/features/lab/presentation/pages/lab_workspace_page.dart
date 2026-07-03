@@ -1054,6 +1054,29 @@ class _LabConfigurationsDialogState
         cellBuilder: (_, LabCatalogItem item) =>
             Text(item.category ?? l10n.profileUnknownValue),
       ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'offered',
+        label: l10n.labOfferedStatusLabel,
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+            appListTableCompareText(
+              left.isOfferedAtFacility ? '1' : '0',
+              right.isOfferedAtFacility ? '1' : '0',
+            ),
+        cellBuilder: (_, LabCatalogItem item) => Text(
+          item.isOfferedAtFacility
+              ? l10n.labOfferedStatusLabel
+              : l10n.labNotOfferedStatusLabel,
+        ),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'price',
+        label: l10n.clinicalRequestUnitPriceLabel,
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+            (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0),
+        cellBuilder: (_, LabCatalogItem item) => Text(
+          item.unitPrice?.toString() ?? l10n.clinicalRequestPriceNotSetLabel,
+        ),
+      ),
       _actionsColumn(context, state, showingTests),
     ];
   }
@@ -1479,9 +1502,25 @@ Future<void> _openLabConfigurationsDialog(
   LabWorkspaceState state,
   String? tenantId,
 ) async {
+  await _readLabController(context).loadFacilityCatalogConfig();
+  if (!context.mounted) {
+    return;
+  }
+  final LabWorkspaceState currentState =
+      ProviderScope.containerOf(context)
+          .read(labWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (LabWorkspaceState value) => value,
+            failure: (_) => state,
+          ) ??
+      state;
   await showAppDialog<void>(
     context: context,
-    builder: (_) => _LabConfigurationsDialog(state: state, tenantId: tenantId),
+    builder: (_) => _LabConfigurationsDialog(
+      state: currentState,
+      tenantId: tenantId,
+    ),
   );
 }
 
@@ -1557,11 +1596,12 @@ Future<void> _openLabOrderActionDialog(
             }) {
               return ProviderScope.containerOf(context)
                   .read(clinicalRepositoryProvider)
-                  .searchClinicalTerms(
+                  .searchClinicalCatalog(
                     termType: termType,
                     query: query,
                     limit: limit ?? 80,
                     source: source,
+                    offeredOnly: true,
                   );
             },
         onRequest:
@@ -1829,46 +1869,7 @@ LabWorkspaceController _readLabController(BuildContext context) {
 }
 
 ClinicalActionReferenceData _clinicalReferenceData(LabWorkspaceState state) {
-  return ClinicalActionReferenceData(
-    labTests: state.catalogTests
-        .map(_clinicalCatalogOption)
-        .toList(growable: false),
-    labPanels: state.catalogPanels
-        .map(_clinicalCatalogOption)
-        .toList(growable: false),
-  );
-}
-
-ClinicalActionCatalogOption _clinicalCatalogOption(LabCatalogItem item) {
-  return ClinicalActionCatalogOption(
-    id: item.id,
-    publicId: item.displayId,
-    name: item.name,
-    code: item.code,
-    category: item.category,
-    secondaryText: _joinNonEmpty(<String?>[
-      item.specimenType,
-      item.resultKind,
-      item.unit,
-      item.referenceRange,
-    ]),
-    unitPrice: item.unitPrice,
-    currency: item.currency,
-    metadata: <String, Object?>{
-      'type': item.type.name,
-      if (item.description != null) 'description': item.description,
-      if (item.unitPrice != null) 'unit_price': item.unitPrice,
-      if (item.currency != null) 'currency': item.currency,
-    },
-    childIds: item.panelItems
-        .map((LabPanelItem item) => item.labTestId)
-        .whereType<String>()
-        .toList(growable: false),
-    childCodes: item.panelItems
-        .map((LabPanelItem item) => item.testCode)
-        .whereType<String>()
-        .toList(growable: false),
-  );
+  return const ClinicalActionReferenceData();
 }
 
 ClinicalActionLabOrderRecord _clinicalLabOrderRecord(LabOrderSummary order) {

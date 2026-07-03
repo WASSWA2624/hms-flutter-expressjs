@@ -170,6 +170,10 @@ enum HmsApiResource {
   ),
   labTests('lab-tests', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   labPanels('lab-panels', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
+  facilityLabCatalog(
+    'facility-lab-catalog',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   labOrders('lab-orders', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   labOrderItems(
     'lab-order-items',

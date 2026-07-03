@@ -20,6 +20,44 @@ abstract interface class LabRepository {
 
   Future<Result<List<LabCatalogItem>>> listPanels({String? search});
 
+  Future<Result<List<LabCatalogItem>>> listFacilityLabTests({
+    String? search,
+    int page = 1,
+    int limit = 100,
+  });
+
+  Future<Result<List<LabCatalogItem>>> listFacilityLabPanels({
+    String? search,
+    int page = 1,
+    int limit = 100,
+  });
+
+  Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
+    required String termType,
+    String? query,
+    int limit = 25,
+  });
+
+  Future<Result<LabCatalogItem>> upsertFacilityLabTestOffering(
+    String testId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<LabCatalogItem>> upsertFacilityLabPanelOffering(
+    String panelId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> disableFacilityLabTestOffering(
+    String testId,
+    String reason,
+  );
+
+  Future<Result<void>> disableFacilityLabPanelOffering(
+    String panelId,
+    String reason,
+  );
+
   Future<Result<List<LabQcLog>>> listQcLogs({String? search});
 
   Future<Result<void>> createOrder(Map<String, Object?> payload);

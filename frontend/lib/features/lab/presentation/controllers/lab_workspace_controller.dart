@@ -426,23 +426,22 @@ final class LabWorkspaceController
       return refresh();
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result = await _repository.updateLabPanel(
-      panelId,
-      payload,
-    );
+    final Result<LabCatalogItem> result =
+        await _repository.upsertFacilityLabPanelOffering(panelId, payload);
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
           final List<LabCatalogItem> panels = <LabCatalogItem>[
             for (final LabCatalogItem item in latest.catalogPanels)
-              item.id == updated.id || item.apiId == updated.apiId
+              item.id == updated.id ||
+                      item.apiId == updated.apiId ||
+                      item.apiId == panelId
                   ? updated
                   : item,
           ];
           _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
         }
-        unawaited(_refreshWorkbench(showLoading: false));
         return null;
       },
       failure: (AppFailure failure) {
@@ -456,16 +455,16 @@ final class LabWorkspaceController
   }
 
   Future<AppFailure?> deleteLabTest(String testId, String reason) {
-    return _deleteCatalogItem(
-      () => _repository.deleteLabTest(testId, reason),
-      removeTestId: testId,
+    return _disableFacilityCatalogItem(
+      () => _repository.disableFacilityLabTestOffering(testId, reason),
+      testId: testId,
     );
   }
 
   Future<AppFailure?> deleteLabPanel(String panelId, String reason) {
-    return _deleteCatalogItem(
-      () => _repository.deleteLabPanel(panelId, reason),
-      removePanelId: panelId,
+    return _disableFacilityCatalogItem(
+      () => _repository.disableFacilityLabPanelOffering(panelId, reason),
+      panelId: panelId,
     );
   }
 
@@ -798,23 +797,22 @@ final class LabWorkspaceController
       return refresh();
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result = await _repository.updateLabTest(
-      testId,
-      payload,
-    );
+    final Result<LabCatalogItem> result =
+        await _repository.upsertFacilityLabTestOffering(testId, payload);
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
           final List<LabCatalogItem> tests = <LabCatalogItem>[
             for (final LabCatalogItem item in latest.catalogTests)
-              item.id == updated.id || item.apiId == updated.apiId
+              item.id == updated.id ||
+                      item.apiId == updated.apiId ||
+                      item.apiId == testId
                   ? updated
                   : item,
           ];
           _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         }
-        unawaited(_refreshWorkbench(showLoading: false));
         return null;
       },
       failure: (AppFailure failure) {
@@ -842,10 +840,10 @@ final class LabWorkspaceController
     return result.when(
       success: (_) async {
         final List<LabCatalogItem>? tests = refreshTests
-            ? await _tests()
+            ? await _facilityTests()
             : null;
         final List<LabCatalogItem>? panels = refreshPanels
-            ? await _panels()
+            ? await _facilityPanels()
             : null;
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -853,46 +851,6 @@ final class LabWorkspaceController
             latest.copyWith(
               catalogTests: tests ?? latest.catalogTests,
               catalogPanels: panels ?? latest.catalogPanels,
-              isSaving: false,
-            ),
-          );
-        }
-        return null;
-      },
-      failure: (AppFailure failure) {
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
-        }
-        return failure;
-      },
-    );
-  }
-
-  Future<AppFailure?> _deleteCatalogItem(
-    Future<Result<void>> Function() submit, {
-    String? removeTestId,
-    String? removePanelId,
-  }) async {
-    final LabWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<void> result = await submit();
-    return result.when(
-      success: (_) async {
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(
-            latest.copyWith(
-              catalogTests: removeTestId == null
-                  ? latest.catalogTests
-                  : _removeCatalogItem(latest.catalogTests, removeTestId),
-              catalogPanels: removePanelId == null
-                  ? latest.catalogPanels
-                  : _removeCatalogItem(latest.catalogPanels, removePanelId),
               isSaving: false,
             ),
           );
@@ -958,7 +916,6 @@ final class LabWorkspaceController
       );
     }
 
-    final _LabReferenceData referenceData = await _referenceData();
     LabOrderWorkflow? selectedWorkflow;
     List<LabOrderWorkflow> selectedWorkflows = const <LabOrderWorkflow>[];
     if (workbench.worklist.items.isNotEmpty) {
@@ -975,17 +932,50 @@ final class LabWorkspaceController
       }
     }
 
+    final List<LabQcLog> qcLogs = await _qcLogs();
     return Result<LabWorkspaceState>.success(
       LabWorkspaceState(
         query: query,
         summary: workbench.summary,
         worklist: workbench.worklist,
-        catalogTests: referenceData.tests,
-        catalogPanels: referenceData.panels,
-        qcLogs: referenceData.qcLogs,
+        qcLogs: qcLogs,
         selectedWorkflow: selectedWorkflow,
         selectedWorkflows: selectedWorkflows,
       ),
+    );
+  }
+
+  Future<AppFailure?> loadFacilityCatalogConfig() async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
+    final List<LabCatalogItem> tests = await _facilityTests();
+    final List<LabCatalogItem> panels = await _facilityPanels();
+    final LabWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          catalogTests: tests,
+          catalogPanels: panels,
+          isRefreshing: false,
+        ),
+      );
+    }
+    return null;
+  }
+
+  Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
+    required String termType,
+    String? query,
+    int limit = 25,
+  }) {
+    return _repository.searchFacilityLabCatalog(
+      termType: termType,
+      query: query,
+      limit: limit,
     );
   }
 
@@ -1175,6 +1165,78 @@ final class LabWorkspaceController
     return _LabReferenceData(tests: tests, panels: panels, qcLogs: qcLogs);
   }
 
+  Future<List<LabCatalogItem>> _facilityTests() async {
+    final Result<List<LabCatalogItem>> result =
+        await _repository.listFacilityLabTests(limit: 200);
+    return result.when(
+      success: (List<LabCatalogItem> value) => value,
+      failure: (_) => const <LabCatalogItem>[],
+    );
+  }
+
+  Future<List<LabCatalogItem>> _facilityPanels() async {
+    final Result<List<LabCatalogItem>> result =
+        await _repository.listFacilityLabPanels(limit: 200);
+    return result.when(
+      success: (List<LabCatalogItem> value) => value,
+      failure: (_) => const <LabCatalogItem>[],
+    );
+  }
+
+  Future<AppFailure?> _disableFacilityCatalogItem(
+    Future<Result<void>> Function() submit, {
+    String? testId,
+    String? panelId,
+  }) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await submit();
+    return result.when(
+      success: (_) async {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              catalogTests: testId == null
+                  ? latest.catalogTests
+                  : latest.catalogTests
+                        .map(
+                          (LabCatalogItem item) =>
+                              item.apiId == testId || item.id == testId
+                              ? item.copyWith(isOfferedAtFacility: false)
+                              : item,
+                        )
+                        .toList(growable: false),
+              catalogPanels: panelId == null
+                  ? latest.catalogPanels
+                  : latest.catalogPanels
+                        .map(
+                          (LabCatalogItem item) =>
+                              item.apiId == panelId || item.id == panelId
+                              ? item.copyWith(isOfferedAtFacility: false)
+                              : item,
+                        )
+                        .toList(growable: false),
+              isSaving: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
   Future<List<LabCatalogItem>> _tests() async {
     final Result<List<LabCatalogItem>> result = await _repository.listTests();
     return result.when(
@@ -1332,18 +1394,6 @@ final class LabWorkspaceController
           ? null
           : page.totalItemCount! - (page.items.length - items.length),
     );
-  }
-
-  List<LabCatalogItem> _removeCatalogItem(
-    List<LabCatalogItem> items,
-    String id,
-  ) {
-    return items
-        .where(
-          (LabCatalogItem item) =>
-              item.id != id && item.apiId != id && item.displayId != id,
-        )
-        .toList(growable: false);
   }
 
   bool _isSameOrder(LabOrderSummary left, LabOrderSummary right) {

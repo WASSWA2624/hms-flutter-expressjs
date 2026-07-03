@@ -105,6 +105,8 @@ class _ClinicalLabRequestCatalogDialogState
   String? _selectedCatalogId;
   List<ClinicalActionCatalogOption> _testCatalogOptions =
       const <ClinicalActionCatalogOption>[];
+  List<ClinicalActionCatalogOption> _panelCatalogOptions =
+      const <ClinicalActionCatalogOption>[];
   List<ClinicalActionCatalogOption> _favoriteTestOptions =
       const <ClinicalActionCatalogOption>[];
   bool _isSearching = false;
@@ -119,6 +121,7 @@ class _ClinicalLabRequestCatalogDialogState
     _searchQuery = widget.editingOption?.displayTitle ?? '';
     _searchRequest += 1;
     unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+    unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
     unawaited(_loadFavoriteTests());
   }
 
@@ -186,10 +189,12 @@ class _ClinicalLabRequestCatalogDialogState
                 _selectionKind = values.first;
                 _selectedCatalogId = null;
               });
+              _searchRequest += 1;
               if (values.first == ClinicalLabRequestCatalogKind.tests) {
-                _searchRequest += 1;
                 unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+                return;
               }
+              unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
             },
           ),
           if (_selectionKind ==
@@ -245,9 +250,7 @@ class _ClinicalLabRequestCatalogDialogState
             hintText: l10n.clinicalLabRequestSearchHint,
             options: selectOptions,
             value: _selectedCatalogId,
-            isLoading:
-                _isSearching &&
-                _selectionKind == ClinicalLabRequestCatalogKind.tests,
+            isLoading: _isSearching,
             isEditing: _isEditing,
             selectedIsDuplicate: selectedIsDuplicate,
             duplicateMessage: l10n.clinicalRadiologyDuplicateSelectionMessage,
@@ -285,8 +288,32 @@ class _ClinicalLabRequestCatalogDialogState
         _testCatalogOptions.isNotEmpty
             ? _testCatalogOptions
             : widget.referenceData.labTests,
-      ClinicalLabRequestCatalogKind.panels => widget.referenceData.labPanels,
+      ClinicalLabRequestCatalogKind.panels =>
+        _panelCatalogOptions.isNotEmpty
+            ? _panelCatalogOptions
+            : widget.referenceData.labPanels,
     };
+  }
+
+  Future<void> _loadPanelCatalog(String query, int requestId) async {
+    setState(() => _isSearching = true);
+    final Result<List<ClinicalActionCatalogOption>> result = await widget
+        .onSearchLabTests(
+          termType: ClinicalCatalogTermType.labPanel.apiValue,
+          query: query.trim().isEmpty ? null : query.trim(),
+          limit: _maxVisibleCatalogOptions,
+          source: ClinicalCatalogSource.facility.apiValue,
+        );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() {
+      _isSearching = false;
+      _panelCatalogOptions = result.when(
+        success: (List<ClinicalActionCatalogOption> value) => value,
+        failure: (_) => widget.referenceData.labPanels,
+      );
+    });
   }
 
   Future<void> _loadTestCatalog(String query, int requestId) async {
@@ -331,25 +358,7 @@ class _ClinicalLabRequestCatalogDialogState
   List<ClinicalActionCatalogOption> _searchCatalog(
     List<ClinicalActionCatalogOption> catalog,
   ) {
-    if (_selectionKind == ClinicalLabRequestCatalogKind.tests) {
-      return catalog.take(_maxVisibleCatalogOptions).toList(growable: false);
-    }
-
-    final List<String> tokens = _searchQuery
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((String token) => token.isNotEmpty)
-        .toList(growable: false);
-    if (tokens.isEmpty) {
-      return catalog.take(_maxVisibleCatalogOptions).toList(growable: false);
-    }
-
-    return <ClinicalActionCatalogOption>[
-      for (final ClinicalActionCatalogOption option in catalog)
-        if (tokens.every(clinicalCatalogOptionSearchText(option).contains))
-          option,
-    ].take(_maxVisibleCatalogOptions).toList(growable: false);
+    return catalog.take(_maxVisibleCatalogOptions).toList(growable: false);
   }
 
   void _scheduleSearch(String value) {
@@ -357,13 +366,14 @@ class _ClinicalLabRequestCatalogDialogState
       _searchQuery = value.trim();
       _selectedCatalogId = null;
     });
-    if (_selectionKind != ClinicalLabRequestCatalogKind.tests) {
-      return;
-    }
     _searchDebounce?.cancel();
     _searchDebounce = Timer(_searchDebounceDuration, () {
       _searchRequest += 1;
-      unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+      if (_selectionKind == ClinicalLabRequestCatalogKind.tests) {
+        unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+        return;
+      }
+      unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
     });
   }
 }

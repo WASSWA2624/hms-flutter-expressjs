@@ -1,0 +1,650 @@
+/**
+ * Facility lab catalog service
+ */
+
+const labTestRepository = require('@repositories/lab-test/lab-test.repository');
+const labPanelRepository = require('@repositories/lab-panel/lab-panel.repository');
+const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog/facility-lab-catalog.repository');
+const clinicalTermRepository = require('@repositories/clinical-term/clinical-term.repository');
+const { createAuditLog } = require('@lib/audit');
+const { HttpError } = require('@lib/errors');
+const {
+  LAB_TEST_WITH_RELATIONS_INCLUDE,
+  LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  buildPagination,
+  normalizeSearchTerm,
+  resolveModelIdOrThrow,
+  resolveModelRecordOrThrow,
+} = require('@services/lab-workspace/lab.shared');
+const {
+  buildLabReferenceRangeSummary,
+  normalizeLabReferenceRanges,
+  normalizeLabResultOptions,
+  normalizeLabUnitOptions,
+  toOptionalText,
+} = require('@services/lab-workspace/lab.configuration');
+const {
+  mapMergedLabPanelRecord,
+  mapMergedLabTestRecord,
+  mapClinicalCatalogLabPanelRow,
+  mapClinicalCatalogLabTestRow,
+  mergeLabTestWithOffering,
+} = require('@services/lab-workspace/facility-lab-catalog.merge');
+
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+const normalizeText = (value) => String(value || '').trim();
+const isTrue = (value) => String(value || '').toLowerCase() === 'true';
+
+const withoutChildIdentifier = (entry = {}) => {
+  const { id, ...data } = entry;
+  return data;
+};
+
+const buildNestedChildWritePayload = (entries = [], options = {}) => {
+  const preserveExisting = options.preserveExisting === true;
+  if (!preserveExisting) {
+    return { create: entries.map(withoutChildIdentifier) };
+  }
+
+  const existingRows = entries.filter((entry) => toOptionalText(entry.id));
+  const existingIds = existingRows.map((entry) => entry.id);
+  const createRows = entries.filter((entry) => !toOptionalText(entry.id));
+  const payload = {
+    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {},
+  };
+  if (createRows.length > 0) {
+    payload.create = createRows.map(withoutChildIdentifier);
+  }
+  if (existingRows.length > 0) {
+    payload.update = existingRows.map((entry) => ({
+      where: { id: entry.id },
+      data: withoutChildIdentifier(entry),
+    }));
+  }
+  return payload;
+};
+
+const buildOfferingWritePayload = (payload = {}, options = {}) => {
+  const data = { ...payload };
+  const preserveExistingChildren = options.includeDeleteMany === true;
+  const hasReferenceRanges = hasOwn(data, 'reference_ranges');
+  const normalizedRanges = hasReferenceRanges
+    ? normalizeLabReferenceRanges(data.reference_ranges)
+    : [];
+  const hasUnitOptions = hasOwn(data, 'unit_options');
+  const normalizedUnitOptions = hasUnitOptions
+    ? normalizeLabUnitOptions(data.unit_options)
+    : [];
+  const hasResultOptions = hasOwn(data, 'result_options');
+  const normalizedResultOptions = hasResultOptions
+    ? normalizeLabResultOptions(data.result_options)
+    : [];
+
+  if (hasReferenceRanges) {
+    data.reference_ranges = buildNestedChildWritePayload(normalizedRanges, {
+      preserveExisting: preserveExistingChildren,
+    });
+  } else {
+    delete data.reference_ranges;
+  }
+
+  if (hasOwn(data, 'reference_range') || hasReferenceRanges) {
+    data.reference_range = buildLabReferenceRangeSummary(data.reference_range, normalizedRanges);
+  }
+
+  if (hasUnitOptions) {
+    data.unit_options = buildNestedChildWritePayload(normalizedUnitOptions, {
+      preserveExisting: preserveExistingChildren,
+    });
+    const defaultUnitOption = normalizedUnitOptions.find((entry) => entry.is_default)
+      || normalizedUnitOptions[0]
+      || null;
+    if (defaultUnitOption?.unit) {
+      data.unit = defaultUnitOption.unit;
+    }
+  } else {
+    delete data.unit_options;
+  }
+
+  if (hasResultOptions) {
+    data.result_options = buildNestedChildWritePayload(normalizedResultOptions, {
+      preserveExisting: preserveExistingChildren,
+    });
+  } else {
+    delete data.result_options;
+  }
+
+  return data;
+};
+
+const copyMasterDefaults = (masterTest = {}) => ({
+  reference_ranges: (masterTest.reference_ranges || []).map((entry) => ({
+    label: entry.label,
+    unit: entry.unit,
+    gender: entry.gender,
+    age_min_value: entry.age_min_value,
+    age_min_unit: entry.age_min_unit,
+    age_max_value: entry.age_max_value,
+    age_max_unit: entry.age_max_unit,
+    normal_min_value: entry.normal_min_value,
+    normal_max_value: entry.normal_max_value,
+    critical_min_value: entry.critical_min_value,
+    critical_max_value: entry.critical_max_value,
+    reference_text: entry.reference_text,
+    notes: entry.notes,
+    sort_order: entry.sort_order,
+  })),
+  unit_options: (masterTest.unit_options || []).map((entry) => ({
+    label: entry.label,
+    unit: entry.unit,
+    ucum_code: entry.ucum_code,
+    is_default: entry.is_default,
+    sort_order: entry.sort_order,
+  })),
+  result_options: (masterTest.result_options || []).map((entry) => ({
+    value: entry.value,
+    label: entry.label,
+    aliases_json: entry.aliases_json,
+    status: entry.status,
+    result_flag: entry.result_flag,
+    is_positive: entry.is_positive,
+    sort_order: entry.sort_order,
+  })),
+  reference_range: masterTest.reference_range,
+});
+
+const resolveFacilityId = async (context = {}, payload = {}) => {
+  const facilityId = payload.facility_id || context.facility_id || null;
+  if (!facilityId) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'facility_id' }]);
+  }
+  return resolveModelIdOrThrow({
+    model: 'facility',
+    identifier: facilityId,
+    tenantId: context.tenant_id,
+  });
+};
+
+const syncLegacyOffering = async ({ tenantId, facilityId, labTestId, isActive }) => {
+  const existing = await clinicalTermRepository.findFacilityOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    term_type: 'LAB_TEST',
+    item_id: labTestId,
+    deleted_at: null,
+  });
+
+  const data = {
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    term_type: 'LAB_TEST',
+    item_id: labTestId,
+    is_active: isActive !== false,
+  };
+
+  if (existing) {
+    await clinicalTermRepository.updateFacilityOffering(existing.id, data);
+    return;
+  }
+  if (isActive !== false) {
+    await clinicalTermRepository.createFacilityOffering(data);
+  }
+};
+
+const buildTestSearchWhere = (tenantId, searchTerm) => {
+  const where = { tenant_id: tenantId };
+  if (!searchTerm?.raw) return where;
+  return {
+    ...where,
+    OR: [
+      { name: { contains: searchTerm.raw } },
+      { code: { contains: searchTerm.raw } },
+      { category: { contains: searchTerm.raw } },
+      { specimen_type: { contains: searchTerm.raw } },
+      { description: { contains: searchTerm.raw } },
+    ],
+  };
+};
+
+const buildPanelSearchWhere = (tenantId, searchTerm) => {
+  const where = { tenant_id: tenantId };
+  if (!searchTerm?.raw) return where;
+  return {
+    ...where,
+    OR: [
+      { name: { contains: searchTerm.raw } },
+      { code: { contains: searchTerm.raw } },
+      { category: { contains: searchTerm.raw } },
+      { description: { contains: searchTerm.raw } },
+    ],
+  };
+};
+
+const listFacilityLabTests = async (filters, page, limit, sortBy, order, context = {}) => {
+  const tenantId = context.tenant_id || filters.tenant_id;
+  if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, filters);
+  const skip = (page - 1) * limit;
+  const orderBy = sortBy ? { [sortBy]: order || 'asc' } : { name: 'asc' };
+  const searchTerm = normalizeSearchTerm(filters.search);
+  const offeredOnly = isTrue(filters.offered_only);
+  const includeInactive = isTrue(filters.include_inactive);
+
+  if (offeredOnly) {
+    const offeringWhere = {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      ...(includeInactive ? {} : { is_active: true }),
+    };
+    const offerings = await facilityLabCatalogRepository.findTestOfferings(
+      offeringWhere,
+      skip,
+      limit,
+      { sort_order: 'asc' }
+    );
+    const items = offerings
+      .map((offering) => mapMergedLabTestRecord(offering.lab_test, offering))
+      .filter(Boolean);
+    const total = await facilityLabCatalogRepository.countTestOfferings(offeringWhere);
+    return { items, pagination: buildPagination(page, limit, total) };
+  }
+
+  const masterWhere = buildTestSearchWhere(tenantId, searchTerm);
+  const [masterTests, total] = await Promise.all([
+    labTestRepository.findMany(masterWhere, skip, limit, orderBy, LAB_TEST_WITH_RELATIONS_INCLUDE),
+    labTestRepository.count(masterWhere),
+  ]);
+  const offeringRows = await facilityLabCatalogRepository.findTestOfferings(
+    {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      lab_test_id: { in: masterTests.map((row) => row.id) },
+    },
+    0,
+    masterTests.length
+  );
+  const offeringByTestId = new Map(offeringRows.map((row) => [row.lab_test_id, row]));
+  const items = masterTests.map((masterTest) =>
+    mapMergedLabTestRecord(masterTest, offeringByTestId.get(masterTest.id) || null)
+  );
+
+  return { items, pagination: buildPagination(page, limit, total) };
+};
+
+const listFacilityLabPanels = async (filters, page, limit, sortBy, order, context = {}) => {
+  const tenantId = context.tenant_id || filters.tenant_id;
+  if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, filters);
+  const skip = (page - 1) * limit;
+  const orderBy = sortBy ? { [sortBy]: order || 'asc' } : { name: 'asc' };
+  const searchTerm = normalizeSearchTerm(filters.search);
+  const offeredOnly = isTrue(filters.offered_only);
+
+  if (offeredOnly) {
+    const offeringWhere = { tenant_id: tenantId, facility_id: facilityId, is_active: true };
+    const offerings = await facilityLabCatalogRepository.findPanelOfferings(
+      offeringWhere,
+      skip,
+      limit,
+      { sort_order: 'asc' }
+    );
+    const items = offerings
+      .map((offering) => mapMergedLabPanelRecord(offering.lab_panel, offering))
+      .filter(Boolean);
+    const total = await facilityLabCatalogRepository.countPanelOfferings(offeringWhere);
+    return { items, pagination: buildPagination(page, limit, total) };
+  }
+
+  const masterWhere = buildPanelSearchWhere(tenantId, searchTerm);
+  const [masterPanels, total] = await Promise.all([
+    labPanelRepository.findMany(masterWhere, skip, limit, orderBy, LAB_PANEL_WITH_RELATIONS_INCLUDE),
+    labPanelRepository.count(masterWhere),
+  ]);
+  const offeringRows = await facilityLabCatalogRepository.findPanelOfferings(
+    {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      lab_panel_id: { in: masterPanels.map((row) => row.id) },
+    },
+    0,
+    masterPanels.length
+  );
+  const offeringByPanelId = new Map(offeringRows.map((row) => [row.lab_panel_id, row]));
+  const items = masterPanels.map((masterPanel) =>
+    mapMergedLabPanelRecord(masterPanel, offeringByPanelId.get(masterPanel.id) || null)
+  );
+
+  return { items, pagination: buildPagination(page, limit, total) };
+};
+
+const getFacilityLabTest = async (labTestIdentifier, context = {}, filters = {}) => {
+  const tenantId = context.tenant_id || filters.tenant_id;
+  if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
+  const facilityId = await resolveFacilityId(context, filters);
+  const labTestId = await resolveModelIdOrThrow({
+    model: 'lab_test',
+    identifier: labTestIdentifier,
+    tenantId,
+  });
+  const masterTest = await resolveModelRecordOrThrow({
+    model: 'lab_test',
+    identifier: labTestId,
+    tenantId,
+    include: LAB_TEST_WITH_RELATIONS_INCLUDE,
+  });
+  const offering = await facilityLabCatalogRepository.findTestOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_test_id: labTestId,
+  });
+  return mapMergedLabTestRecord(masterTest, offering);
+};
+
+const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
+  const tenantId = context.tenant_id || payload.tenant_id;
+  const userId = context.user_id;
+  if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, payload);
+  const labTestId = await resolveModelIdOrThrow({
+    model: 'lab_test',
+    identifier: payload.lab_test_id,
+    tenantId,
+  });
+  const masterTest = await resolveModelRecordOrThrow({
+    model: 'lab_test',
+    identifier: labTestId,
+    tenantId,
+    include: LAB_TEST_WITH_RELATIONS_INCLUDE,
+  });
+
+  const existing = await facilityLabCatalogRepository.findTestOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_test_id: labTestId,
+  });
+
+  const shouldSeedDefaults = !existing
+    && payload.is_active !== false
+    && !hasOwn(payload, 'reference_ranges')
+    && !hasOwn(payload, 'unit_options')
+    && !hasOwn(payload, 'result_options');
+
+  const basePayload = {
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_test_id: labTestId,
+    is_active: payload.is_active !== false,
+    sort_order: Number(payload.sort_order || 0),
+    unit_price: payload.unit_price,
+    currency: toOptionalText(payload.currency) || masterTest.currency || null,
+    specimen_type: toOptionalText(payload.specimen_type),
+    result_kind: payload.result_kind || null,
+    unit: toOptionalText(payload.unit),
+    description: toOptionalText(payload.description),
+    reference_range: toOptionalText(payload.reference_range),
+    ...(shouldSeedDefaults ? copyMasterDefaults(masterTest) : {}),
+    ...(hasOwn(payload, 'reference_ranges') ? { reference_ranges: payload.reference_ranges } : {}),
+    ...(hasOwn(payload, 'unit_options') ? { unit_options: payload.unit_options } : {}),
+    ...(hasOwn(payload, 'result_options') ? { result_options: payload.result_options } : {}),
+  };
+
+  const writePayload = buildOfferingWritePayload(basePayload, {
+    includeDeleteMany: Boolean(existing),
+  });
+
+  const offering = existing
+    ? await facilityLabCatalogRepository.updateTestOffering(existing.id, writePayload)
+    : await facilityLabCatalogRepository.createTestOffering(writePayload);
+
+  await syncLegacyOffering({
+    tenantId,
+    facilityId,
+    labTestId,
+    isActive: offering.is_active,
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: existing ? 'UPDATE' : 'CREATE',
+    entity: 'facility_lab_test_offering',
+    entity_id: offering.id,
+    diff: { after: offering },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return mapMergedLabTestRecord(masterTest, offering);
+};
+
+const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, context = {}) => {
+  const tenantId = context.tenant_id;
+  const userId = context.user_id;
+  if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, payload);
+  const labTestId = await resolveModelIdOrThrow({
+    model: 'lab_test',
+    identifier: labTestIdentifier,
+    tenantId,
+  });
+  const offering = await facilityLabCatalogRepository.findTestOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_test_id: labTestId,
+  });
+  if (!offering) {
+    throw new HttpError('errors.facility_lab_test_offering.not_found', 404);
+  }
+
+  const updated = await facilityLabCatalogRepository.updateTestOffering(offering.id, {
+    is_active: false,
+    deleted_at: new Date(),
+  });
+
+  await syncLegacyOffering({ tenantId, facilityId, labTestId, isActive: false });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'DELETE',
+    entity: 'facility_lab_test_offering',
+    entity_id: offering.id,
+    diff: { before: offering, reason: normalizeText(payload.reason) },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return updated;
+};
+
+const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
+  const tenantId = context.tenant_id || payload.tenant_id;
+  const userId = context.user_id;
+  if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, payload);
+  const labPanelId = await resolveModelIdOrThrow({
+    model: 'lab_panel',
+    identifier: payload.lab_panel_id,
+    tenantId,
+  });
+  const masterPanel = await resolveModelRecordOrThrow({
+    model: 'lab_panel',
+    identifier: labPanelId,
+    tenantId,
+    include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  });
+
+  const existing = await facilityLabCatalogRepository.findPanelOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_panel_id: labPanelId,
+  });
+
+  const writePayload = {
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_panel_id: labPanelId,
+    is_active: payload.is_active !== false,
+    sort_order: Number(payload.sort_order || 0),
+    unit_price: payload.unit_price,
+    currency: toOptionalText(payload.currency) || masterPanel.currency || null,
+  };
+
+  const offering = existing
+    ? await facilityLabCatalogRepository.updatePanelOffering(existing.id, writePayload)
+    : await facilityLabCatalogRepository.createPanelOffering(writePayload);
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: existing ? 'UPDATE' : 'CREATE',
+    entity: 'facility_lab_panel_offering',
+    entity_id: offering.id,
+    diff: { after: offering },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return mapMergedLabPanelRecord(masterPanel, offering);
+};
+
+const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {}, context = {}) => {
+  const tenantId = context.tenant_id;
+  const userId = context.user_id;
+  if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, payload);
+  const labPanelId = await resolveModelIdOrThrow({
+    model: 'lab_panel',
+    identifier: labPanelIdentifier,
+    tenantId,
+  });
+  const offering = await facilityLabCatalogRepository.findPanelOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_panel_id: labPanelId,
+  });
+  if (!offering) {
+    throw new HttpError('errors.facility_lab_panel_offering.not_found', 404);
+  }
+
+  const updated = await facilityLabCatalogRepository.updatePanelOffering(offering.id, {
+    is_active: false,
+    deleted_at: new Date(),
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'DELETE',
+    entity: 'facility_lab_panel_offering',
+    entity_id: offering.id,
+    diff: { before: offering, reason: normalizeText(payload.reason) },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return updated;
+};
+
+const searchFacilityLabCatalog = async (filters = {}, context = {}) => {
+  const tenantId = context.tenant_id || filters.tenant_id;
+  if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
+
+  const facilityId = await resolveFacilityId(context, filters);
+  const limit = Number(filters.limit || 25);
+  const searchTerm = normalizeSearchTerm(filters.q);
+  const offeredOnly = filters.offered_only !== 'false';
+  const termType = String(filters.term_type || 'LAB_TEST').toUpperCase();
+
+  if (termType === 'LAB_PANEL') {
+    const offeringWhere = {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      is_active: true,
+      ...(searchTerm.raw
+        ? {
+            lab_panel: {
+              deleted_at: null,
+              OR: [
+                { name: { contains: searchTerm.raw } },
+                { code: { contains: searchTerm.raw } },
+                { category: { contains: searchTerm.raw } },
+              ],
+            },
+          }
+        : {}),
+    };
+    const offerings = await facilityLabCatalogRepository.findPanelOfferings(
+      offeringWhere,
+      0,
+      limit,
+      { sort_order: 'asc' }
+    );
+    return offerings
+      .map((offering) => mapClinicalCatalogLabPanelRow(offering.lab_panel, offering))
+      .filter(Boolean);
+  }
+
+  const offeringWhere = {
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    is_active: offeredOnly ? true : undefined,
+    ...(searchTerm.raw
+      ? {
+          lab_test: {
+            deleted_at: null,
+            OR: [
+              { name: { contains: searchTerm.raw } },
+              { code: { contains: searchTerm.raw } },
+              { category: { contains: searchTerm.raw } },
+            ],
+          },
+        }
+      : {}),
+  };
+  const offerings = await facilityLabCatalogRepository.findTestOfferings(
+    offeringWhere,
+    0,
+    limit,
+    { sort_order: 'asc' }
+  );
+  return offerings
+    .map((offering) => mapClinicalCatalogLabTestRow(offering.lab_test, offering))
+    .filter(Boolean);
+};
+
+const resolveFacilityLabTestForInterpretation = async ({
+  tenantId,
+  facilityId,
+  labTestId,
+  masterTest = null,
+}) => {
+  if (!tenantId || !facilityId || !labTestId) {
+    return masterTest;
+  }
+
+  const offering = await facilityLabCatalogRepository.findTestOffering({
+    tenant_id: tenantId,
+    facility_id: facilityId,
+    lab_test_id: labTestId,
+    is_active: true,
+  });
+  if (!offering) {
+    return masterTest;
+  }
+  return mergeLabTestWithOffering(masterTest, offering) || masterTest;
+};
+
+module.exports = {
+  listFacilityLabTests,
+  listFacilityLabPanels,
+  getFacilityLabTest,
+  upsertFacilityLabTestOffering,
+  disableFacilityLabTestOffering,
+  upsertFacilityLabPanelOffering,
+  disableFacilityLabPanelOffering,
+  searchFacilityLabCatalog,
+  resolveFacilityLabTestForInterpretation,
+};
