@@ -168,7 +168,7 @@ class LabReferenceRangeListField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
 
     return Column(
@@ -236,7 +236,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
     final String title = range.labelController.text.trim().isEmpty
         ? l10n.labReferenceRangeCount(index + 1)

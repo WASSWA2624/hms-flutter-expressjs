@@ -36,6 +36,11 @@ Use the port-specific script when running the Flutter web app locally:
 .\tool\run_web_5201.ps1
 ```
 
+On Windows the script defaults to `-d web-server` (open `http://127.0.0.1:5201/`
+in your browser). Pass `-ChromeDebug` when you need Chrome hot reload and the
+debugger; the script still retries with a fresh profile and falls back to
+web-server if DWDS cannot attach.
+
 The script frees port 5201 first, uses a persistent Chrome profile under
 `.dart_tool/flutter_chrome_profile` (avoids Windows DWDS debugger timeouts), and
 disables web debugger expression evaluation by default. This avoids DWDS
@@ -44,4 +49,9 @@ evaluation is required for a debugging session, pass `-EnableExpressionEvaluatio
 
 If Chrome debug still fails after a crash, pass `-ResetChromeProfile` or delete
 `.dart_tool/flutter_chrome_profile`. The script also auto-resets profiles larger
-than 150 MB, which commonly happens after interrupted runs on Windows.
+than 150 MB, or when a previous run left a `.debug_connection_failed` marker.
+
+On Windows, if DWDS still cannot attach after one automatic profile reset/retry,
+the script falls back to `-d web-server` (app runs at `http://127.0.0.1:5201/`
+without hot reload). Pass `-NoWebServerFallback` to disable that fallback, or
+`-WebServerOnly` to skip Chrome debug entirely.

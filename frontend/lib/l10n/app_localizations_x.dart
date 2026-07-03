@@ -4,7 +4,7 @@ import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 extension AppLocalizationsBuildContext on BuildContext {
-  AppLocalizations get l10n => AppLocalizations.of(this)!;
+  AppLocalizations get l10n => AppLocalizations.of(this);
 }
 
 extension AppFailureLocalizations on AppLocalizations {
