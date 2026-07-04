@@ -34,7 +34,8 @@ final class NetworkFailureMapper {
     return switch (error.type) {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout => const AppFailure.timeout(),
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.transformTimeout => const AppFailure.timeout(),
       DioExceptionType.connectionError => const AppFailure.network(
         code: 'network.connection_failed',
       ),

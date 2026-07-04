@@ -15698,7 +15698,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labVerifyResultAction => 'Verify result';
 
   @override
-  String get labEditVerifiedResultAction => 'Edit verified result';
+  String get labEditVerifiedResultAction => 'Edit';
 
   @override
   String get labReopenVerifiedResultDialogTitle => 'Edit Verified Result';

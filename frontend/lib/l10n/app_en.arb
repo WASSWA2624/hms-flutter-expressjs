@@ -20206,7 +20206,7 @@
   "@labVerifyResultAction": {
     "description": "Localized text for labVerifyResultAction."
   },
-  "labEditVerifiedResultAction": "Edit verified result",
+  "labEditVerifiedResultAction": "Edit",
   "@labEditVerifiedResultAction": {
     "description": "Action label to reopen a verified lab result for correction."
   },

@@ -1471,27 +1471,6 @@ class _InlineOrderMeta extends StatelessWidget {
   }
 }
 
-class _CompactStatusRow extends StatelessWidget {
-  const _CompactStatusRow({required this.item});
-
-  final LabOrderItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<String> statuses = _uniqueNonEmpty(<String?>[item.status]);
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        for (final String status in statuses)
-          AppWorkspaceStatusBadge(
-            status: _statusBadge(context, status),
-          ),
-      ],
-    );
-  }
-}
-
 bool _isCancelledItem(LabOrderItem item) {
   return item.isRejected ||
       (item.status ?? '').trim().toUpperCase() == 'CANCELLED';
@@ -1509,6 +1488,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
     required this.onReject,
     required this.onRemove,
     this.onToggleItemSelection,
+    this.embeddedInPanel = false,
   });
 
   final List<_ResultDraft> drafts;
@@ -1522,6 +1502,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
   final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
+  final bool embeddedInPanel;
 
   @override
   Widget build(BuildContext context) {
@@ -1553,6 +1534,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
           onReject: onReject,
           onRemove: onRemove,
           availableWidth: constraints.maxWidth,
+          embeddedInPanel: embeddedInPanel,
         );
       },
     );
@@ -1598,6 +1580,8 @@ class _LabResultEntryCards extends StatelessWidget {
                   ? theme.colorScheme.errorContainer.withValues(alpha: 0.22)
                   : draft.showValidationError
                   ? theme.colorScheme.errorContainer.withValues(alpha: 0.28)
+                  : _isAbnormalEntry(draft.item, draft)
+                  ? theme.colorScheme.errorContainer.withValues(alpha: 0.14)
                   : theme.colorScheme.surfaceContainerLowest,
               border: Border.all(
                 color: _isCancelledItem(draft.item) || draft.showValidationError
@@ -1705,8 +1689,8 @@ class _LabResultEntryTable extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         for (final _LabPanelDraftGroup group in groups) ...<Widget>[
-          if (group.panelTitle != null) ...<Widget>[
-            _PanelGroupHeader(
+          if (group.panelTitle != null)
+            _LabPanelResultBlock(
               title: group.panelTitle!,
               canDelete: canMutate,
               orderId: group.drafts.isNotEmpty
@@ -1715,24 +1699,75 @@ class _LabResultEntryTable extends StatelessWidget {
               itemIds: group.drafts
                   .map((_ResultDraft draft) => draft.item.apiId)
                   .toList(growable: false),
+              child: _ResponsiveLabResultEntry(
+                drafts: group.drafts,
+                canMutate: canMutate,
+                selectedItemIds: selectedItemIds,
+                onToggleItemSelection: onToggleItemSelection,
+                onSaveDraft: onSaveDraft,
+                onSubmit: onSubmit,
+                onVerify: onVerify,
+                onEditVerified: onEditVerified,
+                onReject: onReject,
+                onRemove: onRemove,
+                embeddedInPanel: true,
+              ),
+            )
+          else
+            _ResponsiveLabResultEntry(
+              drafts: group.drafts,
+              canMutate: canMutate,
+              selectedItemIds: selectedItemIds,
+              onToggleItemSelection: onToggleItemSelection,
+              onSaveDraft: onSaveDraft,
+              onSubmit: onSubmit,
+              onVerify: onVerify,
+              onEditVerified: onEditVerified,
+              onReject: onReject,
+              onRemove: onRemove,
             ),
-            SizedBox(height: theme.spacing.xs),
-          ],
-          _ResponsiveLabResultEntry(
-            drafts: group.drafts,
-            canMutate: canMutate,
-            selectedItemIds: selectedItemIds,
-            onToggleItemSelection: onToggleItemSelection,
-            onSaveDraft: onSaveDraft,
-            onSubmit: onSubmit,
-            onVerify: onVerify,
-            onEditVerified: onEditVerified,
-            onReject: onReject,
-            onRemove: onRemove,
-          ),
           SizedBox(height: theme.spacing.sm),
         ],
       ],
+    );
+  }
+}
+
+class _LabPanelResultBlock extends StatelessWidget {
+  const _LabPanelResultBlock({
+    required this.title,
+    required this.child,
+    this.orderId,
+    this.itemIds = const <String>[],
+    this.canDelete = false,
+  });
+
+  final String title;
+  final Widget child;
+  final String? orderId;
+  final List<String> itemIds;
+  final bool canDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: theme.colorScheme.surfaceContainerLowest,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PanelGroupHeader(
+            title: title,
+            canDelete: canDelete,
+            orderId: orderId,
+            itemIds: itemIds,
+          ),
+          child,
+        ],
+      ),
     );
   }
 }
@@ -1750,6 +1785,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     required this.onRemove,
     required this.availableWidth,
     this.onToggleItemSelection,
+    this.embeddedInPanel = false,
   });
 
   final List<_ResultDraft> drafts;
@@ -1764,6 +1800,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
   final double availableWidth;
+  final bool embeddedInPanel;
 
   @override
   Widget build(BuildContext context) {
@@ -1772,12 +1809,22 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     final double tableWidth = availableWidth
         .clamp(860.0, double.infinity)
         .toDouble();
+    final Color borderColor = theme.colorScheme.outlineVariant;
+    final TableBorder tableBorder = embeddedInPanel
+        ? TableBorder(
+            left: BorderSide(color: borderColor),
+            right: BorderSide(color: borderColor),
+            bottom: BorderSide(color: borderColor),
+            horizontalInside: BorderSide(color: borderColor),
+            verticalInside: BorderSide(color: borderColor),
+          )
+        : TableBorder.all(color: borderColor);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: SizedBox(
         width: tableWidth,
         child: Table(
-          border: TableBorder.all(color: theme.colorScheme.outlineVariant),
+          border: tableBorder,
           columnWidths: const <int, TableColumnWidth>{
             0: FlexColumnWidth(2.2),
             1: FlexColumnWidth(1.35),
@@ -1974,15 +2021,6 @@ class _LabResultTestCell extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            _CompactStatusRow(item: item),
-            _LabResultLifecycleBadge(draft: draft),
-          ],
-        ),
         if (draft.showValidationError) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           _LabResultValidationMessage(draft: draft),
@@ -2005,19 +2043,6 @@ class _LabResultTestCell extends StatelessWidget {
         SizedBox(width: theme.spacing.xs),
         Expanded(child: titleColumn),
       ],
-    );
-  }
-}
-
-class _LabResultLifecycleBadge extends StatelessWidget {
-  const _LabResultLifecycleBadge({required this.draft});
-
-  final _ResultDraft draft;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
-      status: _resultLifecycleStatus(context, draft),
     );
   }
 }
@@ -2280,7 +2305,9 @@ class _PanelGroupHeader extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.32),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -2546,25 +2573,12 @@ class _CompletedResultReadout extends StatelessWidget {
           item.effectiveResultStatus,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: abnormal ? theme.colorScheme.error : null,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          '${l10n.labResultFlagLabel}: ${_resolveItemResultFlagLabel(context, item)}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: abnormal
-                ? theme.colorScheme.error
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+    return Text(
+      value,
+      style: theme.textTheme.titleSmall?.copyWith(
+        color: abnormal ? theme.colorScheme.error : null,
+        fontWeight: FontWeight.w700,
+      ),
     );
   }
 }
@@ -4209,59 +4223,6 @@ bool _isBulkSelectable(_ResultDraft draft) {
       _canVerifyDraft(draft) ||
       _canRemoveResult(draft.item, draft) ||
       draft.item.canReject;
-}
-
-AppWorkspaceStatus _resultLifecycleStatus(
-  BuildContext context,
-  _ResultDraft draft,
-) {
-  final LabOrderItem item = draft.item;
-  if (item.isRejected) {
-    return AppWorkspaceStatus(
-      label: context.l10n.labStatusCancelled,
-      tone: AppWorkspaceStatusTone.error,
-      icon: Icons.block_outlined,
-    );
-  }
-  if (item.isCompleted && item.hasResult) {
-    return AppWorkspaceStatus(
-      label: context.l10n.labStatusVerified,
-      tone: AppWorkspaceStatusTone.success,
-      icon: Icons.verified_outlined,
-    );
-  }
-
-  final bool pendingSavedResult =
-      _hasSavedResult(item) &&
-      (item.resultStatus ?? '').trim().toUpperCase() == 'PENDING';
-  if (pendingSavedResult || (draft.hasEntry && draft.hasChangedEntry)) {
-    return AppWorkspaceStatus(
-      label: context.l10n.labResultLifecycleDraft,
-      tone: AppWorkspaceStatusTone.warning,
-      icon: Icons.edit_note_outlined,
-    );
-  }
-
-  if (_hasSavedResult(item)) {
-    return AppWorkspaceStatus(
-      label: context.l10n.labResultLifecycleSubmitted,
-      tone: AppWorkspaceStatusTone.info,
-      icon: Icons.outbox_outlined,
-    );
-  }
-
-  if (draft.hasEntry) {
-    return AppWorkspaceStatus(
-      label: context.l10n.labResultLifecycleDraft,
-      tone: AppWorkspaceStatusTone.warning,
-      icon: Icons.edit_note_outlined,
-    );
-  }
-
-  return AppWorkspaceStatus(
-    label: context.l10n.labResultLifecycleBlank,
-    icon: Icons.radio_button_unchecked,
-  );
 }
 
 String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {

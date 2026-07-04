@@ -1,97 +1,78 @@
-# Lab result entry & report preview — UI polish and correctness
+# Lab Result Entry — Lab Orders Table Refinement
 
 ## Context
 
-The lab result entry dialog (`lab_result_entry_dialog.dart`) opens maximized by default — keep that behavior. The result report preview dialog works for test selection but has flag/print correctness issues. Screenshots show duplicated patient/order metadata, redundant workflow status, and a **WBC result of 15** flagged **High** in the entry table but **Normal** in the report preview.
+The **Lab Result Entry** dialog (`frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`) is largely improved. The **patient details** header (name, patient ID, encounter, order summary) is acceptable as-is — **do not change it**.
 
-Primary file: `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`
+Focus only on refining the **lab orders / results table** within each order card.
 
----
+## Problem
 
-## 1. Dialog titles (all dialogs)
+The results table is visually noisy and hard to scan:
 
-- Use **Title Case** for every dialog title (e.g. **Lab Result Entry**, **Result Report Preview**), unless a product exception already exists.
-- Update l10n strings in `app_en.arb` (and generated localizations) as needed.
+1. **Weak panel–test hierarchy** — Panel headers (e.g. *Panel Bmp | PANEL_BMP*, *Brucellosis Screen Panel | BRUCSCR*) feel disconnected from their child test rows. It is not immediately obvious which tests belong to which panel.
+2. **Duplicate status badges in the Tests column** — Under each test name, two badges often show the same state (e.g. double **Cancelled**, double **Verified**). This comes from `_CompactStatusRow` and `_LabResultLifecycleBadge` both rendering lifecycle/status info.
+3. **Duplicate flag in the Result column** — Completed results show the value plus a secondary line like `Flag: Negative`, even though a dedicated **Flag** column already exists (`_CompletedResultReadout`).
+4. **Overlong action label** — **Edit verified result** truncates in the Action column; it should be shorter.
 
----
+## Goal
 
+Make the table **simple, scannable, and easy to read** — one piece of information per column, no redundant labels, clear panel grouping.
 
+## Requirements
 
-## 2. Lab result entry — header & metadata (remove duplication)
+### 1. Panel–test visual continuity
 
-**Problem:** Patient name, order status, and encounter info appear multiple times (dialog subtitle, context header, order section).
+- Visually group each panel header with its test rows so the relationship is obvious at a glance.
+- Use a single cohesive block per panel (shared container, border, background, or indentation) rather than a floating header above a separate table.
+- Preserve existing panel delete/actions on `_PanelGroupHeader` where applicable.
 
-**Target layout:**
+### 2. Tests column — remove duplicate status
 
-- **Dialog title area:** Title only (no repeated patient/order subtitle).
-- **Single patient context strip** immediately below the title, using inline `Label: Value` pairs in a `Wrap`:
-  - Patient name, Patient ID, Encounter (if any), Orders included — each as `Label: Value`.
-  - Fill horizontally until space runs out, then wrap to the next row.
-  - Keep copy-to-clipboard on identifiers where it exists today.
-- **Order section:** Show order ID, ordered-at date, and encounter **once**. Do **not** repeat the aggregate order status badge if it already appears in the patient strip (show it in one place only).
+- Show **test name only** (plus selection checkbox when bulk actions are enabled).
+- Remove redundant status/lifecycle badges from the Tests column (`_CompactStatusRow`, `_LabResultLifecycleBadge`, or equivalent).
+- Do **not** lose status meaning: row-level styling already communicates state — keep and rely on:
+  - Cancelled/rejected → error background + border
+  - Abnormal/high → error-tinted background
+  - Verified/normal → neutral/success styling as today
+- Status text that must remain visible belongs in the **Flag** or **Action** columns, not duplicated under the test name.
 
-**Remove** the workflow progress block (`_LabWorkflowProgressIndicator` — “Current step: Rejected”, timeline chips). Order-level rejection/progress belongs in the test rows, not a separate workflow panel.
+### 3. Result column — value only
 
----
+- In `_CompletedResultReadout`, display **only the result value** (e.g. `Non-reactive`, `15 | x10^9/L`).
+- Remove the secondary `Flag: …` line; flag interpretation stays exclusively in the **Flag** column.
+- Keep abnormal result values highlighted in red where applicable.
 
+### 4. Action column — shorter label
 
+- Change **Edit verified result** → **Edit** (`labEditVerifiedResultAction` in l10n, or equivalent).
+- Ensure the label fits without truncation at typical table widths.
 
-## 3. Lab result entry — test table
+### 5. General simplification
 
-- **Group tests by panel** (panel header → child tests). Standalone tests stay ungrouped. Preserve current panel ordering from catalog/panel metadata.
-- **Per-test status** (Cancelled, Not entered, Verified, etc.) lives in the test rows only — not in a separate workflow section.
-- **Cancelled/rejected tests:** Use theme **error/danger** styling (badge, row tint, or both) so they are immediately distinguishable.
-- **Result flags** must match reference ranges and stored overrides — same logic as the entry table today:
-  - Numeric: derive High/Low/Normal/Critical from reference ranges when no explicit flag override exists.
-  - Qualitative: respect option flags (e.g. Negative/Positive).
-  - Verified entry table is the source of truth; preview/print must reuse that logic (see §5).
+- Do not add new columns or metadata to the table.
+- Avoid reintroducing information that already has a dedicated column.
+- Match existing design tokens, spacing, and component patterns (`AppButton`, `AppWorkspaceStatusBadge`, theme colors).
 
-**Delete / reject behavior:**
+## Out of scope
 
-- **Reject (delete request):** Require a **mandatory reason** before confirming. After success, the test row is removed or clearly marked cancelled per existing workflow rules.
-- **Panel child tests:** Do **not** offer delete for individual tests inside a panel (administrative constraint). Show blank/disabled action or **Restore test** only where applicable — never a standalone delete that breaks panel integrity.
-- Verify **Edit verified result** and **Delete request** actions complete successfully end-to-end.
+- Patient details / encounter header
+- Footer actions (Preview report, Create Lab Order, Edit order, Delete order, Close)
+- Backend/API or result-entry workflow logic (save, verify, restore, reject)
+- Report preview dialog
 
----
+## Acceptance criteria
 
+- [ ] Each panel reads as one unified group; child tests are clearly nested under their panel header.
+- [ ] Tests column shows test name only — no duplicate Cancelled/Verified/Draft badges.
+- [ ] Cancelled, abnormal, and verified rows remain distinguishable via row color/border styling.
+- [ ] Result column shows the value only; no `Flag:` sub-label.
+- [ ] Flag column remains the single source for Normal / Negative / High / Cancelled flags.
+- [ ] Verified-result action button reads **Edit** and does not truncate.
+- [ ] Existing tests pass; update or add widget tests if behavior changes.
 
+## Key files
 
-## 4. Result report preview dialog
-
-- Open **maximized by default** (`initialMaximized: true` on `AppDialog`), consistent with the entry dialog.
-- Keep existing test-selection UX (include checkboxes, select all/clear, include-order-details toggle, print action).
-- **Fix flag column** in both on-screen preview and print HTML: flags must match the entry table for the same item (e.g. WBC 15 → **High**, not Normal).
-  - Do not rely solely on `item.resultFlag ?? item.effectiveResultStatus` when a computed flag from reference range is available.
-  - Reuse or extract the same flag-resolution path used by `_resultFlagLabel` / `_submittedResultStatus` in the entry table.
-- Printed output should render cleanly: correct flags, reference ranges, result values, and cancelled/pending states.
-
----
-
-
-
-## 5. Acceptance criteria
-
-
-| Area            | Expected                                                                                      |
-| --------------- | --------------------------------------------------------------------------------------------- |
-| Titles          | All lab dialog titles in Title Case                                                           |
-| Header          | No duplicate patient name or order status; metadata shown as `Label: Value` in a wrapping row |
-| Workflow block  | “Current step” / timeline section removed from entry dialog                                   |
-| Panels          | Tests nested under panel headers in correct order                                             |
-| Cancelled tests | Visually distinct (danger styling)                                                            |
-| Entry flags     | WBC 15 outside 4.0–11.0 shows **High** with abnormal row styling                              |
-| Preview flags   | Same WBC row shows **High** in preview and printed report                                     |
-| Preview dialog  | Opens maximized                                                                               |
-| Delete          | Cannot proceed without a reason; row updates after success                                    |
-| Panel tests     | No per-test delete inside panels                                                              |
-
-
----
-
-
-
-## 6. Out of scope
-
-- Backend/API changes unless required to fix flag persistence.
-- New administrative panel-editing flows.
-
+- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`
+- `frontend/lib/l10n/app_en.arb` (action label)
+- `frontend/test/features/lab/presentation/` (if applicable)

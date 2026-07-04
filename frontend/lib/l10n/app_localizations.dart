@@ -29394,7 +29394,7 @@ abstract class AppLocalizations {
   /// Action label to reopen a verified lab result for correction.
   ///
   /// In en, this message translates to:
-  /// **'Edit verified result'**
+  /// **'Edit'**
   String get labEditVerifiedResultAction;
 
   /// Title for the dialog that reopens a verified lab result.
