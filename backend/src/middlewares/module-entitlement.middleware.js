@@ -160,6 +160,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'lab-samples': 'lab-workflows',
   'lab-results': 'lab-workflows',
   'lab-qc-logs': 'lab-workflows',
+  'facility-lab-catalog': 'lab-workflows',
   radiology: 'radiology-workflows',
   'radiology-tests': 'radiology-workflows',
   'radiology-orders': 'radiology-workflows',

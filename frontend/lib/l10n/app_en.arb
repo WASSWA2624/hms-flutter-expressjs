@@ -20338,6 +20338,23 @@
   "@labEnableOfferingNoItemsLabel": {
     "description": "Shown when there are no remaining platform lab items to enable."
   },
+  "labEnableOfferingNoPlatformItemsLabel": "No platform lab catalog items are available for this tenant.",
+  "@labEnableOfferingNoPlatformItemsLabel": {
+    "description": "Shown when the tenant master lab catalog is empty."
+  },
+  "labConfigurationsSelectFacilityBody": "Select a tenant and facility to load and configure the lab catalog.",
+  "@labConfigurationsSelectFacilityBody": {
+    "description": "Prompt shown before a facility context is selected in lab configurations."
+  },
+  "labConfigurationsFacilityContextLabel": "Configuring lab catalog for {facilityName}.",
+  "@labConfigurationsFacilityContextLabel": {
+    "description": "Read-only facility context label in lab configurations.",
+    "placeholders": {
+      "facilityName": {
+        "type": "String"
+      }
+    }
+  },
   "labConfigureTestAction": "Configure test",
   "@labConfigureTestAction": {
     "description": "Localized text for labConfigureTestAction."

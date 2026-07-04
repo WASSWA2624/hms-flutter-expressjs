@@ -11,6 +11,9 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
@@ -203,8 +206,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
               leadingIcon: Icons.tune_outlined,
               semanticLabel: l10n.labReferenceRangesAction,
               tooltip: l10n.labReferenceRangesAction,
-              onPressed: () =>
-                  _openLabConfigurationsDialog(context, state, policy.tenantId),
+              onPressed: () => _openLabConfigurationsDialog(context, state),
             ),
         ],
         primary: canMutate
@@ -728,10 +730,9 @@ class _CompactRecordRow extends StatelessWidget {
 }
 
 class _LabConfigurationsDialog extends ConsumerStatefulWidget {
-  const _LabConfigurationsDialog({required this.state, this.tenantId});
+  const _LabConfigurationsDialog({required this.state});
 
   final LabWorkspaceState state;
-  final String? tenantId;
 
   @override
   ConsumerState<_LabConfigurationsDialog> createState() =>
@@ -750,6 +751,22 @@ class _LabConfigurationsDialogState
   late LabWorkspaceState _dialogState;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   LabCatalogItemType _catalogType = LabCatalogItemType.test;
+  String? _tenantId;
+  String? _facilityId;
+  bool _initializedScope = false;
+
+  LabCatalogScope get _catalogScope =>
+      LabCatalogScope(tenantId: _tenantId, facilityId: _facilityId);
+
+  bool get _canSelectFacilityContext {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.canManageTenant();
+  }
+
+  bool get _canEnableOfferings {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.isElevated || policy.hasRole(AppRole.tenantAdmin);
+  }
 
   @override
   void initState() {
@@ -758,6 +775,51 @@ class _LabConfigurationsDialogState
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<LabCatalogItem>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeScope());
+    });
+  }
+
+  Future<void> _initializeScope() async {
+    if (!mounted) {
+      return;
+    }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final LabCatalogScope? existingScope = widget.state.catalogScope;
+    final String? tenantId =
+        existingScope?.tenantId ?? policy.tenantId;
+    final String? facilityId = _canSelectFacilityContext
+        ? existingScope?.facilityId ?? policy.facilityId
+        : policy.facilityId ?? existingScope?.facilityId;
+
+    setState(() {
+      _tenantId = tenantId;
+      _facilityId = facilityId;
+      _initializedScope = true;
+    });
+    await _reloadCatalogIfReady();
+  }
+
+  Future<void> _reloadCatalogIfReady() async {
+    if (!_catalogScope.isReady) {
+      return;
+    }
+    await ref
+        .read(labWorkspaceControllerProvider.notifier)
+        .loadFacilityCatalogConfig(_catalogScope);
+  }
+
+  LabEnableOfferingAvailability _enableAvailability(List<LabCatalogItem> items) {
+    if (_dialogState.isLoadingCatalog) {
+      return LabEnableOfferingAvailability.loading;
+    }
+    if (items.isEmpty) {
+      return LabEnableOfferingAvailability.noPlatformItems;
+    }
+    if (items.every((LabCatalogItem item) => item.isOfferedAtFacility)) {
+      return LabEnableOfferingAvailability.allOffered;
+    }
+    return LabEnableOfferingAvailability.selectable;
   }
 
   @override
@@ -793,13 +855,36 @@ class _LabConfigurationsDialogState
     final LabWorkspaceState state = _dialogState;
     final List<LabCatalogItem> items = _filteredItems(state);
     final bool showingTests = _catalogType == LabCatalogItemType.test;
-    final bool isLoading =
-        state.isRefreshing &&
-        state.catalogTests.isEmpty &&
-        state.catalogPanels.isEmpty;
-    final AppFailure? loadFailure = state.lastFailure is AppFailure
-        ? state.lastFailure as AppFailure
+    final bool scopeReady = _catalogScope.isReady;
+    final bool isLoading = !_initializedScope || state.isLoadingCatalog;
+    final AppFailure? loadFailure = state.catalogLoadFailure is AppFailure
+        ? state.catalogLoadFailure as AppFailure
         : null;
+    final AsyncValue<Result<HomeDashboardLookups>>? lookupsAsync =
+        _initializedScope
+        ? ref.watch(
+            homeLookupsControllerProvider(
+              HomeDashboardRequest(
+                tenantId: _tenantId,
+                facilityId: _facilityId,
+              ),
+            ),
+          )
+        : null;
+    final List<HomeLookupOption> tenantOptions =
+        lookupsAsync?.value?.when(
+          success: (HomeDashboardLookups value) => value.tenants,
+          failure: (_) => const <HomeLookupOption>[],
+        ) ??
+        const <HomeLookupOption>[];
+    final List<HomeLookupOption> facilityOptions =
+        lookupsAsync?.value?.when(
+          success: (HomeDashboardLookups value) =>
+              value.facilitiesForTenant(_tenantId),
+          failure: (_) => const <HomeLookupOption>[],
+        ) ??
+        const <HomeLookupOption>[];
+    final String? facilityLabel = _facilityLabel(facilityOptions);
 
     return AppDialog(
       title: Text(l10n.labReferenceRangesDialogTitle),
@@ -817,6 +902,57 @@ class _LabConfigurationsDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
+          if (_canSelectFacilityContext && tenantOptions.isNotEmpty)
+            Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.md,
+              children: <Widget>[
+                SizedBox(
+                  width: 280,
+                  child: AppSelectField<String>.searchable(
+                    value: _tenantId,
+                    labelText: l10n.settingsWorkspaceTenantLabel,
+                    options: <AppSelectOption<String>>[
+                      for (final HomeLookupOption tenant in tenantOptions)
+                        AppSelectOption<String>(
+                          value: tenant.id,
+                          label: tenant.label,
+                        ),
+                    ],
+                    onChanged: (String? value) async {
+                      setState(() {
+                        _tenantId = value;
+                        _facilityId = null;
+                      });
+                      await _reloadCatalogIfReady();
+                    },
+                  ),
+                ),
+                if (facilityOptions.isNotEmpty)
+                  SizedBox(
+                    width: 280,
+                    child: AppSelectField<String>.searchable(
+                      value: _facilityId,
+                      labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+                      isRequired: true,
+                      options: <AppSelectOption<String>>[
+                        for (final HomeLookupOption facility in facilityOptions)
+                          AppSelectOption<String>(
+                            value: facility.id,
+                            label: facility.label,
+                          ),
+                      ],
+                      onChanged: (String? value) async {
+                        setState(() => _facilityId = value);
+                        await _reloadCatalogIfReady();
+                      },
+                    ),
+                  ),
+              ],
+            )
+          else if (facilityLabel != null && facilityLabel.isNotEmpty)
+            AppMutedText(l10n.labConfigurationsFacilityContextLabel(facilityLabel)),
+          SizedBox(height: theme.spacing.md),
           _LabConfigurationTabs(
             value: _catalogType,
             onChanged: (LabCatalogItemType value) {
@@ -828,7 +964,12 @@ class _LabConfigurationsDialogState
             },
           ),
           SizedBox(height: theme.spacing.md),
-          if (isLoading)
+          if (!scopeReady)
+            AppMessagePanel(
+              message: l10n.labConfigurationsSelectFacilityBody,
+              icon: Icons.domain_outlined,
+            )
+          else if (isLoading)
             AppWorkspaceStatePanel.loading(
               title: l10n.labConfigurationsLoadingTitle,
               body: l10n.labConfigurationsLoadingBody,
@@ -859,20 +1000,21 @@ class _LabConfigurationsDialogState
                 matcher: (LabCatalogItem item, String query) =>
                     item.matchesSearch(query),
                 trailingActions: <AppSearchBarAction>[
-                  AppSearchBarAction(
-                    icon: showingTests
-                        ? Icons.add_circle_outline
-                        : Icons.add_box_outlined,
-                    label: showingTests
-                        ? l10n.labEnableTestAction
-                        : l10n.labEnablePanelAction,
-                    tooltip: showingTests
-                        ? l10n.labEnableTestAction
-                        : l10n.labEnablePanelAction,
-                    onPressed: () => showingTests
-                        ? _openEnableLabTestDialog(context, state)
-                        : _openEnableLabPanelDialog(context, state),
-                  ),
+                  if (_canEnableOfferings && scopeReady)
+                    AppSearchBarAction(
+                      icon: showingTests
+                          ? Icons.add_circle_outline
+                          : Icons.add_box_outlined,
+                      label: showingTests
+                          ? l10n.labEnableTestAction
+                          : l10n.labEnablePanelAction,
+                      tooltip: showingTests
+                          ? l10n.labEnableTestAction
+                          : l10n.labEnablePanelAction,
+                      onPressed: () => showingTests
+                          ? _openEnableLabTestDialog(context, state)
+                          : _openEnableLabPanelDialog(context, state),
+                    ),
                 ],
                 showAdvancedFilterButton: true,
                 advancedFilterButtonLabel: l10n.labFiltersLabel,
@@ -1003,9 +1145,62 @@ class _LabConfigurationsDialogState
   ) {
     return current.catalogTests != next.catalogTests ||
         current.catalogPanels != next.catalogPanels ||
+        current.catalogScope != next.catalogScope ||
         current.qcLogs != next.qcLogs ||
-        current.isRefreshing != next.isRefreshing ||
-        current.lastFailure != next.lastFailure;
+        current.isLoadingCatalog != next.isLoadingCatalog ||
+        current.catalogLoadFailure != next.catalogLoadFailure;
+  }
+
+  String? _facilityLabel(List<HomeLookupOption> facilityOptions) {
+    if (_facilityId == null || _facilityId!.trim().isEmpty) {
+      return null;
+    }
+    for (final HomeLookupOption option in facilityOptions) {
+      if (option.id == _facilityId) {
+        return option.label;
+      }
+    }
+    return _facilityId;
+  }
+
+  Future<void> _openEnableLabTestDialog(
+    BuildContext context,
+    LabWorkspaceState state,
+  ) async {
+    await _showActionResult(
+      context,
+      showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabEnableFacilityOfferingDialog(
+          kind: LabEnableOfferingKind.test,
+          catalogItems: state.catalogTests,
+          availability: _enableAvailability(state.catalogTests),
+          onEnable: (String id, Map<String, Object?> payload) =>
+              _readLabController(context).updateLabTest(id, payload),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEnableLabPanelDialog(
+    BuildContext context,
+    LabWorkspaceState state,
+  ) async {
+    await _showActionResult(
+      context,
+      showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabEnableFacilityOfferingDialog(
+          kind: LabEnableOfferingKind.panel,
+          catalogItems: state.catalogPanels,
+          availability: _enableAvailability(state.catalogPanels),
+          onEnable: (String id, Map<String, Object?> payload) =>
+              _readLabController(context).updateLabPanel(id, payload),
+        ),
+      ),
+    );
   }
 
   List<LabCatalogItem> _filteredItems(LabWorkspaceState state) {
@@ -1412,9 +1607,21 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
   }
 
   Future<void> _loadOfferedTests() async {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final LabCatalogScope scope =
+        widget.state.catalogScope ??
+        LabCatalogScope(
+          tenantId: policy.tenantId,
+          facilityId: policy.facilityId,
+        );
     final Result<List<LabCatalogItem>> result = await ref
         .read(labRepositoryProvider)
-        .listFacilityLabTests(offeredOnly: true, limit: 200);
+        .listFacilityLabTests(
+          tenantId: scope.tenantId,
+          facilityId: scope.facilityId,
+          offeredOnly: true,
+          limit: 200,
+        );
     if (!mounted) {
       return;
     }
@@ -1540,30 +1747,10 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
 Future<void> _openLabConfigurationsDialog(
   BuildContext context,
   LabWorkspaceState state,
-  String? tenantId,
 ) async {
-  final AppFailure? failure = await _readLabController(
-    context,
-  ).loadFacilityCatalogConfig();
-  if (!context.mounted) {
-    return;
-  }
-  if (failure != null) {
-    _showFailureIfNeeded(context, failure);
-  }
-  final LabWorkspaceState currentState =
-      ProviderScope.containerOf(context)
-          .read(labWorkspaceControllerProvider)
-          .value
-          ?.when(
-            success: (LabWorkspaceState value) => value,
-            failure: (_) => state,
-          ) ??
-      state;
   await showAppDialog<void>(
     context: context,
-    builder: (_) =>
-        _LabConfigurationsDialog(state: currentState, tenantId: tenantId),
+    builder: (_) => _LabConfigurationsDialog(state: state),
   );
 }
 
@@ -1697,44 +1884,6 @@ Future<void> _openLabTestConfigurationDialog(
         item: item,
         onUpdate: (String id, Map<String, Object?> payload) =>
             _readLabController(context).updateLabTest(id, payload),
-      ),
-    ),
-  );
-}
-
-Future<void> _openEnableLabTestDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => LabEnableFacilityOfferingDialog(
-        kind: LabEnableOfferingKind.test,
-        catalogItems: state.catalogTests,
-        onEnable: (String id, Map<String, Object?> payload) =>
-            _readLabController(context).updateLabTest(id, payload),
-      ),
-    ),
-  );
-}
-
-Future<void> _openEnableLabPanelDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => LabEnableFacilityOfferingDialog(
-        kind: LabEnableOfferingKind.panel,
-        catalogItems: state.catalogPanels,
-        onEnable: (String id, Map<String, Object?> payload) =>
-            _readLabController(context).updateLabPanel(id, payload),
       ),
     ),
   );

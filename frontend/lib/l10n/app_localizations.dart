@@ -29565,6 +29565,24 @@ abstract class AppLocalizations {
   /// **'All platform items are already offered at this facility.'**
   String get labEnableOfferingNoItemsLabel;
 
+  /// Shown when the tenant master lab catalog is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No platform lab catalog items are available for this tenant.'**
+  String get labEnableOfferingNoPlatformItemsLabel;
+
+  /// Prompt shown before a facility context is selected in lab configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant and facility to load and configure the lab catalog.'**
+  String get labConfigurationsSelectFacilityBody;
+
+  /// Read-only facility context label in lab configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuring lab catalog for {facilityName}.'**
+  String labConfigurationsFacilityContextLabel(String facilityName);
+
   /// Localized text for labConfigureTestAction.
   ///
   /// In en, this message translates to:

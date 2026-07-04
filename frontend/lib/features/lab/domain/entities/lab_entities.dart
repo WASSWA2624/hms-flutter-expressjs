@@ -1034,6 +1034,47 @@ final class LabOrderWorkflow {
 }
 
 @immutable
+final class LabCatalogScope {
+  const LabCatalogScope({this.tenantId, this.facilityId});
+
+  final String? tenantId;
+  final String? facilityId;
+
+  bool get isReady {
+    final String? tenant = tenantId?.trim();
+    final String? facility = facilityId?.trim();
+    return tenant != null &&
+        tenant.isNotEmpty &&
+        facility != null &&
+        facility.isNotEmpty;
+  }
+
+  Map<String, Object?> get apiParams {
+    final Map<String, Object?> params = <String, Object?>{};
+    final String? tenant = tenantId?.trim();
+    final String? facility = facilityId?.trim();
+    if (tenant != null && tenant.isNotEmpty) {
+      params['tenant_id'] = tenant;
+    }
+    if (facility != null && facility.isNotEmpty) {
+      params['facility_id'] = facility;
+    }
+    return params;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is LabCatalogScope &&
+            tenantId == other.tenantId &&
+            facilityId == other.facilityId;
+  }
+
+  @override
+  int get hashCode => Object.hash(tenantId, facilityId);
+}
+
+@immutable
 final class LabWorkspaceState {
   const LabWorkspaceState({
     required this.query,
@@ -1041,12 +1082,15 @@ final class LabWorkspaceState {
     required this.worklist,
     this.catalogTests = const <LabCatalogItem>[],
     this.catalogPanels = const <LabCatalogItem>[],
+    this.catalogScope,
     this.qcLogs = const <LabQcLog>[],
     this.selectedWorkflow,
     this.selectedWorkflows = const <LabOrderWorkflow>[],
     this.lastFailure,
+    this.catalogLoadFailure,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
+    this.isLoadingCatalog = false,
     this.isSaving = false,
   });
 
@@ -1055,12 +1099,15 @@ final class LabWorkspaceState {
   final AppPage<LabOrderSummary> worklist;
   final List<LabCatalogItem> catalogTests;
   final List<LabCatalogItem> catalogPanels;
+  final LabCatalogScope? catalogScope;
   final List<LabQcLog> qcLogs;
   final LabOrderWorkflow? selectedWorkflow;
   final List<LabOrderWorkflow> selectedWorkflows;
   final Object? lastFailure;
+  final Object? catalogLoadFailure;
   final bool isRefreshing;
   final bool isRefreshingDetail;
+  final bool isLoadingCatalog;
   final bool isSaving;
 
   int get workloadCount {
@@ -1081,15 +1128,19 @@ final class LabWorkspaceState {
     AppPage<LabOrderSummary>? worklist,
     List<LabCatalogItem>? catalogTests,
     List<LabCatalogItem>? catalogPanels,
+    LabCatalogScope? catalogScope,
     List<LabQcLog>? qcLogs,
     LabOrderWorkflow? selectedWorkflow,
     List<LabOrderWorkflow>? selectedWorkflows,
     Object? lastFailure,
+    Object? catalogLoadFailure,
     bool? isRefreshing,
     bool? isRefreshingDetail,
+    bool? isLoadingCatalog,
     bool? isSaving,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
+    bool clearCatalogLoadFailure = false,
   }) {
     return LabWorkspaceState(
       query: query ?? this.query,
@@ -1097,6 +1148,7 @@ final class LabWorkspaceState {
       worklist: worklist ?? this.worklist,
       catalogTests: catalogTests ?? this.catalogTests,
       catalogPanels: catalogPanels ?? this.catalogPanels,
+      catalogScope: catalogScope ?? this.catalogScope,
       qcLogs: qcLogs ?? this.qcLogs,
       selectedWorkflow: clearSelectedWorkflow
           ? null
@@ -1105,8 +1157,12 @@ final class LabWorkspaceState {
           ? const <LabOrderWorkflow>[]
           : selectedWorkflows ?? this.selectedWorkflows,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
+      catalogLoadFailure: clearCatalogLoadFailure
+          ? null
+          : catalogLoadFailure ?? this.catalogLoadFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
+      isLoadingCatalog: isLoadingCatalog ?? this.isLoadingCatalog,
       isSaving: isSaving ?? this.isSaving,
     );
   }

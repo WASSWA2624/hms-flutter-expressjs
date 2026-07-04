@@ -21,6 +21,8 @@ abstract interface class LabRepository {
   Future<Result<List<LabCatalogItem>>> listPanels({String? search});
 
   Future<Result<List<LabCatalogItem>>> listFacilityLabTests({
+    String? tenantId,
+    String? facilityId,
     String? search,
     int page = 1,
     int limit = 100,
@@ -28,6 +30,8 @@ abstract interface class LabRepository {
   });
 
   Future<Result<List<LabCatalogItem>>> listFacilityLabPanels({
+    String? tenantId,
+    String? facilityId,
     String? search,
     int page = 1,
     int limit = 100,
@@ -36,29 +40,39 @@ abstract interface class LabRepository {
 
   Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
     required String termType,
+    String? tenantId,
+    String? facilityId,
     String? query,
     int limit = 25,
   });
 
   Future<Result<LabCatalogItem>> upsertFacilityLabTestOffering(
     String testId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  });
 
   Future<Result<LabCatalogItem>> upsertFacilityLabPanelOffering(
     String panelId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  });
 
   Future<Result<void>> disableFacilityLabTestOffering(
     String testId,
-    String reason,
-  );
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  });
 
   Future<Result<void>> disableFacilityLabPanelOffering(
     String panelId,
-    String reason,
-  );
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  });
 
   Future<Result<List<LabQcLog>>> listQcLogs({String? search});
 

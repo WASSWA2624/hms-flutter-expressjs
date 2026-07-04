@@ -15794,6 +15794,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'All platform items are already offered at this facility.';
 
   @override
+  String get labEnableOfferingNoPlatformItemsLabel =>
+      'No platform lab catalog items are available for this tenant.';
+
+  @override
+  String get labConfigurationsSelectFacilityBody =>
+      'Select a tenant and facility to load and configure the lab catalog.';
+
+  @override
+  String labConfigurationsFacilityContextLabel(String facilityName) {
+    return 'Configuring lab catalog for $facilityName.';
+  }
+
+  @override
   String get labConfigureTestAction => 'Configure test';
 
   @override

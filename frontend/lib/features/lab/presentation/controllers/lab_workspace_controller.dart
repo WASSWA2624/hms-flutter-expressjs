@@ -411,7 +411,12 @@ final class LabWorkspaceController
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<LabCatalogItem> result = await _repository
-        .upsertFacilityLabPanelOffering(panelId, payload);
+        .upsertFacilityLabPanelOffering(
+          panelId,
+          payload,
+          tenantId: current.catalogScope?.tenantId,
+          facilityId: current.catalogScope?.facilityId,
+        );
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
@@ -439,15 +444,27 @@ final class LabWorkspaceController
   }
 
   Future<AppFailure?> deleteLabTest(String testId, String reason) {
+    final LabCatalogScope? scope = _currentState?.catalogScope;
     return _disableFacilityCatalogItem(
-      () => _repository.disableFacilityLabTestOffering(testId, reason),
+      () => _repository.disableFacilityLabTestOffering(
+        testId,
+        reason,
+        tenantId: scope?.tenantId,
+        facilityId: scope?.facilityId,
+      ),
       testId: testId,
     );
   }
 
   Future<AppFailure?> deleteLabPanel(String panelId, String reason) {
+    final LabCatalogScope? scope = _currentState?.catalogScope;
     return _disableFacilityCatalogItem(
-      () => _repository.disableFacilityLabPanelOffering(panelId, reason),
+      () => _repository.disableFacilityLabPanelOffering(
+        panelId,
+        reason,
+        tenantId: scope?.tenantId,
+        facilityId: scope?.facilityId,
+      ),
       panelId: panelId,
     );
   }
@@ -782,7 +799,12 @@ final class LabWorkspaceController
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<LabCatalogItem> result = await _repository
-        .upsertFacilityLabTestOffering(testId, payload);
+        .upsertFacilityLabTestOffering(
+          testId,
+          payload,
+          tenantId: current.catalogScope?.tenantId,
+          facilityId: current.catalogScope?.facilityId,
+        );
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
@@ -887,17 +909,43 @@ final class LabWorkspaceController
     );
   }
 
-  Future<AppFailure?> loadFacilityCatalogConfig() async {
+  Future<AppFailure?> loadFacilityCatalogConfig(LabCatalogScope scope) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
     }
+    if (!scope.isReady) {
+      _emit(
+        current.copyWith(
+          catalogScope: scope,
+          catalogTests: const <LabCatalogItem>[],
+          catalogPanels: const <LabCatalogItem>[],
+          isLoadingCatalog: false,
+          clearCatalogLoadFailure: true,
+        ),
+      );
+      return null;
+    }
 
-    _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
+    _emit(
+      current.copyWith(
+        catalogScope: scope,
+        isLoadingCatalog: true,
+        clearCatalogLoadFailure: true,
+      ),
+    );
     final Result<List<LabCatalogItem>> testsResult = await _repository
-        .listFacilityLabTests(limit: 200);
+        .listFacilityLabTests(
+          tenantId: scope.tenantId,
+          facilityId: scope.facilityId,
+          limit: 200,
+        );
     final Result<List<LabCatalogItem>> panelsResult = await _repository
-        .listFacilityLabPanels(limit: 200);
+        .listFacilityLabPanels(
+          tenantId: scope.tenantId,
+          facilityId: scope.facilityId,
+          limit: 200,
+        );
 
     AppFailure? failure;
     final List<LabCatalogItem> tests = testsResult.when(
@@ -920,9 +968,10 @@ final class LabWorkspaceController
         latest.copyWith(
           catalogTests: tests,
           catalogPanels: panels,
-          isRefreshing: false,
-          lastFailure: failure,
-          clearLastFailure: failure == null,
+          catalogScope: scope,
+          isLoadingCatalog: false,
+          catalogLoadFailure: failure,
+          clearCatalogLoadFailure: failure == null,
         ),
       );
     }
@@ -934,8 +983,11 @@ final class LabWorkspaceController
     String? query,
     int limit = 25,
   }) {
+    final LabCatalogScope? scope = _currentState?.catalogScope;
     return _repository.searchFacilityLabCatalog(
       termType: termType,
+      tenantId: scope?.tenantId,
+      facilityId: scope?.facilityId,
       query: query,
       limit: limit,
     );
@@ -1129,8 +1181,14 @@ final class LabWorkspaceController
   }
 
   Future<List<LabCatalogItem>> _facilityTests({String? search}) async {
+    final LabCatalogScope? scope = _currentState?.catalogScope;
     final Result<List<LabCatalogItem>> result = await _repository
-        .listFacilityLabTests(search: search, limit: 200);
+        .listFacilityLabTests(
+          tenantId: scope?.tenantId,
+          facilityId: scope?.facilityId,
+          search: search,
+          limit: 200,
+        );
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],
@@ -1138,8 +1196,14 @@ final class LabWorkspaceController
   }
 
   Future<List<LabCatalogItem>> _facilityPanels({String? search}) async {
+    final LabCatalogScope? scope = _currentState?.catalogScope;
     final Result<List<LabCatalogItem>> result = await _repository
-        .listFacilityLabPanels(search: search, limit: 200);
+        .listFacilityLabPanels(
+          tenantId: scope?.tenantId,
+          facilityId: scope?.facilityId,
+          search: search,
+          limit: 200,
+        );
     return result.when(
       success: (List<LabCatalogItem> value) => value,
       failure: (_) => const <LabCatalogItem>[],

@@ -121,6 +121,8 @@ final class LabRepositoryImpl implements LabRepository {
 
   @override
   Future<Result<List<LabCatalogItem>>> listFacilityLabTests({
+    String? tenantId,
+    String? facilityId,
     String? search,
     int page = 1,
     int limit = 100,
@@ -132,6 +134,7 @@ final class LabRepositoryImpl implements LabRepository {
         'tests',
       ]),
       queryParameters: _withoutEmpty(<String, Object?>{
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
         'page': page,
         'limit': limit,
         'search': search,
@@ -145,6 +148,8 @@ final class LabRepositoryImpl implements LabRepository {
 
   @override
   Future<Result<List<LabCatalogItem>>> listFacilityLabPanels({
+    String? tenantId,
+    String? facilityId,
     String? search,
     int page = 1,
     int limit = 100,
@@ -156,6 +161,7 @@ final class LabRepositoryImpl implements LabRepository {
         'panels',
       ]),
       queryParameters: _withoutEmpty(<String, Object?>{
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
         'page': page,
         'limit': limit,
         'search': search,
@@ -170,6 +176,8 @@ final class LabRepositoryImpl implements LabRepository {
   @override
   Future<Result<List<LabCatalogItem>>> searchFacilityLabCatalog({
     required String termType,
+    String? tenantId,
+    String? facilityId,
     String? query,
     int limit = 25,
   }) {
@@ -179,6 +187,7 @@ final class LabRepositoryImpl implements LabRepository {
         'search',
       ]),
       queryParameters: _withoutEmpty(<String, Object?>{
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
         'term_type': termType,
         'q': query,
         'limit': limit,
@@ -191,15 +200,20 @@ final class LabRepositoryImpl implements LabRepository {
   @override
   Future<Result<LabCatalogItem>> upsertFacilityLabTestOffering(
     String testId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  }) {
     return _apiClient.put<LabCatalogItem>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityLabCatalog.path,
         'tests',
         testId,
       ]),
-      data: _withoutEmpty(payload),
+      data: _withoutEmpty(<String, Object?>{
+        ...payload,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
       decoder: (Object? data) =>
           _decodeCatalogItem(data, LabCatalogItemType.test),
     );
@@ -208,15 +222,20 @@ final class LabRepositoryImpl implements LabRepository {
   @override
   Future<Result<LabCatalogItem>> upsertFacilityLabPanelOffering(
     String panelId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  }) {
     return _apiClient.put<LabCatalogItem>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityLabCatalog.path,
         'panels',
         panelId,
       ]),
-      data: _withoutEmpty(payload),
+      data: _withoutEmpty(<String, Object?>{
+        ...payload,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
       decoder: (Object? data) =>
           _decodeCatalogItem(data, LabCatalogItemType.panel),
     );
@@ -225,15 +244,20 @@ final class LabRepositoryImpl implements LabRepository {
   @override
   Future<Result<void>> disableFacilityLabTestOffering(
     String testId,
-    String reason,
-  ) {
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  }) {
     return _apiClient.delete<void>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityLabCatalog.path,
         'tests',
         testId,
       ]),
-      data: <String, Object?>{'reason': reason},
+      data: _withoutEmpty(<String, Object?>{
+        'reason': reason,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
       decoder: (_) {},
     );
   }
@@ -241,15 +265,20 @@ final class LabRepositoryImpl implements LabRepository {
   @override
   Future<Result<void>> disableFacilityLabPanelOffering(
     String panelId,
-    String reason,
-  ) {
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  }) {
     return _apiClient.delete<void>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityLabCatalog.path,
         'panels',
         panelId,
       ]),
-      data: <String, Object?>{'reason': reason},
+      data: _withoutEmpty(<String, Object?>{
+        'reason': reason,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
       decoder: (_) {},
     );
   }
@@ -576,6 +605,18 @@ final class LabRepositoryImpl implements LabRepository {
       LabQueueScope.completed => 'COMPLETED',
       LabQueueScope.cancelled => 'CANCELLED',
       LabQueueScope.all || LabQueueScope.critical => null,
+    };
+  }
+
+  Map<String, Object?> _catalogScopeParams({
+    String? tenantId,
+    String? facilityId,
+  }) {
+    return <String, Object?>{
+      if (tenantId != null && tenantId.trim().isNotEmpty)
+        'tenant_id': tenantId.trim(),
+      if (facilityId != null && facilityId.trim().isNotEmpty)
+        'facility_id': facilityId.trim(),
     };
   }
 

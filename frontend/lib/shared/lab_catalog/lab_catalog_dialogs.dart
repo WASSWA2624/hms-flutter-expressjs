@@ -13,6 +13,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_stat
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 typedef LabCatalogUpdateSubmit =
     Future<AppFailure?> Function(String id, Map<String, Object?> payload);
@@ -1284,16 +1285,25 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
 
 enum LabEnableOfferingKind { test, panel }
 
+enum LabEnableOfferingAvailability {
+  loading,
+  selectable,
+  noPlatformItems,
+  allOffered,
+}
+
 class LabEnableFacilityOfferingDialog extends StatefulWidget {
   const LabEnableFacilityOfferingDialog({
     required this.kind,
     required this.catalogItems,
+    required this.availability,
     required this.onEnable,
     super.key,
   });
 
   final LabEnableOfferingKind kind;
   final List<LabCatalogItem> catalogItems;
+  final LabEnableOfferingAvailability availability;
   final LabCatalogUpdateSubmit onEnable;
 
   @override
@@ -1368,7 +1378,19 @@ class _LabEnableFacilityOfferingDialogState
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (available.isEmpty)
+            if (widget.availability == LabEnableOfferingAvailability.loading)
+              AppWorkspaceStatePanel.loading(
+                title: l10n.labConfigurationsLoadingTitle,
+                body: l10n.labConfigurationsLoadingBody,
+                minHeight: 120,
+              )
+            else if (widget.availability ==
+                LabEnableOfferingAvailability.noPlatformItems)
+              AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
+            else if (widget.availability ==
+                LabEnableOfferingAvailability.allOffered)
+              AppMutedText(l10n.labEnableOfferingNoItemsLabel)
+            else if (available.isEmpty)
               AppMutedText(l10n.labEnableOfferingNoItemsLabel)
             else ...<Widget>[
               AppSelectField<String>.searchable(
@@ -1420,7 +1442,9 @@ class _LabEnableFacilityOfferingDialogState
             ? l10n.labEnableTestAction
             : l10n.labEnablePanelAction,
         isSaving: _isSaving,
-        onSubmit: _submit,
+        onSubmit: widget.availability == LabEnableOfferingAvailability.selectable
+            ? _submit
+            : null,
       ),
     );
   }
@@ -2045,7 +2069,7 @@ List<Widget> _dialogActions(
   BuildContext context, {
   required String submitLabel,
   required bool isSaving,
-  required VoidCallback onSubmit,
+  VoidCallback? onSubmit,
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
@@ -2057,6 +2081,7 @@ List<Widget> _dialogActions(
     AppButton.primary(
       label: submitLabel,
       isLoading: isSaving,
+      enabled: onSubmit != null && !isSaving,
       onPressed: onSubmit,
     ),
   ];

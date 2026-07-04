@@ -185,6 +185,7 @@ describe('module entitlement middleware', () => {
   test.each([
     ['/lab/workbench', 'lab-workflows'],
     ['/lab-orders', 'lab-workflows'],
+    ['/facility-lab-catalog/tests', 'lab-workflows'],
     ['/radiology/workbench', 'radiology-workflows'],
     ['/radiology-orders', 'radiology-workflows'],
     ['/pharmacy/workbench', 'pharmacy-dispensing'],
