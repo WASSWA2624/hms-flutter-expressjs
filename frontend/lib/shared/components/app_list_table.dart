@@ -78,7 +78,7 @@ List<AppListTableColumn<T>> appListTableDefaultVisibleColumns<T>(
       : configuredDefault;
   final List<AppListTableColumn<T>> visible = defaultSource
       .take(math.min(defaultSource.length, _maxVisibleTableColumns))
-      .toList(growable: false);
+      .toList(growable: true);
   final Set<String> visibleKeys = visible
       .map((AppListTableColumn<T> column) => column.key)
       .toSet();
