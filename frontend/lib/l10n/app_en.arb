@@ -12592,6 +12592,14 @@
   "@labNoCatalogItemsLabel": {
     "description": "Localized text for labNoCatalogItemsLabel."
   },
+  "labNoOfferedTestsLabel": "No tests are offered at this facility. Use Enable test to add one.",
+  "@labNoOfferedTestsLabel": {
+    "description": "Empty state when the facility has no offered lab tests in configurations."
+  },
+  "labNoOfferedPanelsLabel": "No panels are offered at this facility. Use Enable panel to add one.",
+  "@labNoOfferedPanelsLabel": {
+    "description": "Empty state when the facility has no offered lab panels in configurations."
+  },
   "labNoQcLogsLabel": "No QC logs recorded",
   "@labNoQcLogsLabel": {
     "description": "Localized text for labNoQcLogsLabel."
@@ -20326,7 +20334,7 @@
   "@labConfigurationsLoadingTitle": {
     "description": "Title shown while the lab configuration catalog is loading."
   },
-  "labConfigurationsLoadingBody": "Loading platform tests, panels, and facility offerings.",
+  "labConfigurationsLoadingBody": "Loading facility lab offerings.",
   "@labConfigurationsLoadingBody": {
     "description": "Body shown while the lab configuration catalog is loading."
   },
@@ -20358,17 +20366,26 @@
   "@labEnableOfferingNoPlatformItemsLabel": {
     "description": "Shown when the tenant master lab catalog is empty."
   },
+  "labEnableOfferingAlreadyOfferedLabel": "Already offered",
+  "@labEnableOfferingAlreadyOfferedLabel": {
+    "description": "Badge shown on platform catalog items that are already offered at the facility."
+  },
   "labConfigurationsSelectScopeBody": "Select a tenant and facility to load and configure the lab catalog.",
   "@labConfigurationsSelectScopeBody": {
     "description": "Prompt shown before tenant and facility are selected in lab configurations."
   },
-  "labConfigurationsSelectFacilityOnlyBody": "Select a facility to load and configure the lab catalog.",
+  "labConfigurationsSelectFacilityOnlyBody": "Select a facility for {tenantName} to load and configure the lab catalog.",
   "@labConfigurationsSelectFacilityOnlyBody": {
-    "description": "Prompt shown when tenant is set but facility is still missing in lab configurations."
+    "description": "Prompt shown when tenant is set but facility is still missing in lab configurations.",
+    "placeholders": {
+      "tenantName": {
+        "type": "String"
+      }
+    }
   },
-  "labConfigurationsSelectFacilityBody": "Select a tenant and facility to load and configure the lab catalog.",
-  "@labConfigurationsSelectFacilityBody": {
-    "description": "Prompt shown before a facility context is selected in lab configurations."
+  "labConfigurationsSelectTenantFirstTooltip": "Select a tenant first",
+  "@labConfigurationsSelectTenantFirstTooltip": {
+    "description": "Tooltip shown when the facility selector is disabled because no tenant is selected."
   },
   "labConfigurationsFacilityContextLabel": "Configuring lab catalog for {facilityName}.",
   "@labConfigurationsFacilityContextLabel": {
@@ -20386,6 +20403,10 @@
   "labQcLogsAction": "QC logs",
   "@labQcLogsAction": {
     "description": "Localized text for labQcLogsAction."
+  },
+  "labQcLogsSectionBody": "Record quality-control runs for tests offered at this facility.",
+  "@labQcLogsSectionBody": {
+    "description": "Explains the purpose of the QC logs section in lab configurations."
   },
   "labConfigureTestDialogTitle": "Configure lab test",
   "@labConfigureTestDialogTitle": {

@@ -891,25 +891,9 @@ class _LabConfigurationsDialogState
   }
 
   Future<void> _reloadCatalogIfReady() async {
-    if (!_catalogScope.isReady) {
-      return;
-    }
     await ref
         .read(labWorkspaceControllerProvider.notifier)
         .loadFacilityCatalogConfig(_catalogScope);
-  }
-
-  LabEnableOfferingAvailability _enableAvailability(List<LabCatalogItem> items) {
-    if (_dialogState.isLoadingCatalog) {
-      return LabEnableOfferingAvailability.loading;
-    }
-    if (items.isEmpty) {
-      return LabEnableOfferingAvailability.noPlatformItems;
-    }
-    if (items.every((LabCatalogItem item) => item.isOfferedAtFacility)) {
-      return LabEnableOfferingAvailability.allOffered;
-    }
-    return LabEnableOfferingAvailability.selectable;
   }
 
   @override
@@ -975,6 +959,10 @@ class _LabConfigurationsDialogState
         ) ??
         const <HomeLookupOption>[];
     final String? facilityLabel = _facilityLabel(facilityOptions);
+    final String? tenantLabel = _tenantLabel(tenantOptions);
+    final bool hasTenant = _tenantId?.trim().isNotEmpty ?? false;
+    final bool facilitySelectorEnabled =
+        hasTenant && facilityOptions.isNotEmpty;
 
     return AppDialog(
       title: Text(l10n.labReferenceRangesDialogTitle),
@@ -993,35 +981,28 @@ class _LabConfigurationsDialogState
           ),
           SizedBox(height: theme.spacing.md),
           if (_showTenantSelector && tenantOptions.isNotEmpty)
-            Wrap(
-              spacing: theme.spacing.md,
-              runSpacing: theme.spacing.md,
-              children: <Widget>[
-                SizedBox(
-                  width: 280,
-                  child: AppSelectField<String>.searchable(
-                    value: _tenantId,
-                    labelText: l10n.settingsWorkspaceTenantLabel,
-                    options: <AppSelectOption<String>>[
-                      for (final HomeLookupOption tenant in tenantOptions)
-                        AppSelectOption<String>(
-                          value: tenant.id,
-                          label: tenant.label,
-                        ),
-                    ],
-                    onChanged: (String? value) async {
-                      setState(() {
-                        _tenantId = value;
-                        _facilityId = null;
-                      });
-                      await _reloadCatalogIfReady();
-                    },
-                  ),
-                ),
-                if (facilityOptions.isNotEmpty)
-                  SizedBox(
-                    width: 280,
-                    child: AppSelectField<String>.searchable(
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppSelectField<String>.searchable(
+                value: _tenantId,
+                labelText: l10n.settingsWorkspaceTenantLabel,
+                options: <AppSelectOption<String>>[
+                  for (final HomeLookupOption tenant in tenantOptions)
+                    AppSelectOption<String>(
+                      value: tenant.id,
+                      label: tenant.label,
+                    ),
+                ],
+                onChanged: (String? value) async {
+                  setState(() {
+                    _tenantId = value;
+                    _facilityId = null;
+                  });
+                  await _reloadCatalogIfReady();
+                },
+              ),
+              right: facilitySelectorEnabled
+                  ? AppSelectField<String>.searchable(
                       value: _facilityId,
                       labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
                       isRequired: true,
@@ -1036,34 +1017,49 @@ class _LabConfigurationsDialogState
                         setState(() => _facilityId = value);
                         await _reloadCatalogIfReady();
                       },
+                    )
+                  : Tooltip(
+                      message: l10n.labConfigurationsSelectTenantFirstTooltip,
+                      child: AppSelectField<String>.searchable(
+                        value: _facilityId,
+                        labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+                        isRequired: true,
+                        enabled: false,
+                        options: const <AppSelectOption<String>>[],
+                      ),
                     ),
-                  ),
-              ],
             )
           else if (_showFacilitySelector && facilityOptions.isNotEmpty)
-            SizedBox(
-              width: 280,
-              child: AppSelectField<String>.searchable(
-                value: _facilityId,
-                labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                isRequired: true,
-                options: <AppSelectOption<String>>[
-                  for (final HomeLookupOption facility in facilityOptions)
-                    AppSelectOption<String>(
-                      value: facility.id,
-                      label: facility.label,
-                    ),
-                ],
-                onChanged: (String? value) async {
-                  setState(() => _facilityId = value);
-                  await _reloadCatalogIfReady();
-                },
-              ),
+            AppSelectField<String>.searchable(
+              value: _facilityId,
+              labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+              isRequired: true,
+              options: <AppSelectOption<String>>[
+                for (final HomeLookupOption facility in facilityOptions)
+                  AppSelectOption<String>(
+                    value: facility.id,
+                    label: facility.label,
+                  ),
+              ],
+              onChanged: (String? value) async {
+                setState(() => _facilityId = value);
+                await _reloadCatalogIfReady();
+              },
             )
           else if (_showScopeContextLabel &&
               facilityLabel != null &&
               facilityLabel.isNotEmpty)
             AppMutedText(l10n.labConfigurationsFacilityContextLabel(facilityLabel)),
+          if (scopeReady &&
+              facilityLabel != null &&
+              facilityLabel.isNotEmpty &&
+              (_showTenantSelector || _showFacilitySelector))
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.sm),
+              child: AppMutedText(
+                l10n.labConfigurationsFacilityContextLabel(facilityLabel),
+              ),
+            ),
           SizedBox(height: theme.spacing.md),
           _LabConfigurationTabs(
             value: _catalogType,
@@ -1078,7 +1074,10 @@ class _LabConfigurationsDialogState
           SizedBox(height: theme.spacing.md),
           if (!scopeReady)
             AppMessagePanel(
-              message: _scopePromptMessage(l10n),
+              message: _scopePromptMessage(
+                l10n,
+                tenantLabel: tenantLabel,
+              ),
               icon: Icons.domain_outlined,
             )
           else if (isLoading)
@@ -1164,7 +1163,11 @@ class _LabConfigurationsDialogState
                   setState(() => _filterValue = value);
                 },
               ),
-              emptyBuilder: (_) => AppMutedText(l10n.labNoCatalogItemsLabel),
+              emptyBuilder: (_) => AppMutedText(
+                showingTests
+                    ? l10n.labNoOfferedTestsLabel
+                    : l10n.labNoOfferedPanelsLabel,
+              ),
               columns: _defaultColumns(context, state, showingTests),
               columnChoices: _additionalColumns(context, showingTests),
               mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
@@ -1217,6 +1220,15 @@ class _LabConfigurationsDialogState
               },
             ),
           const Divider(height: 24),
+          Text(
+            l10n.labQcLogsAction,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          AppMutedText(l10n.labQcLogsSectionBody),
+          SizedBox(height: theme.spacing.sm),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: AppButton.tertiary(
@@ -1275,11 +1287,28 @@ class _LabConfigurationsDialogState
     return _facilityId;
   }
 
-  String _scopePromptMessage(AppLocalizations l10n) {
+  String? _tenantLabel(List<HomeLookupOption> tenantOptions) {
+    if (_tenantId == null || _tenantId!.trim().isEmpty) {
+      return null;
+    }
+    for (final HomeLookupOption option in tenantOptions) {
+      if (option.id == _tenantId) {
+        return option.label;
+      }
+    }
+    return _tenantId;
+  }
+
+  String _scopePromptMessage(
+    AppLocalizations l10n, {
+    required String? tenantLabel,
+  }) {
     final bool hasTenant = _tenantId?.trim().isNotEmpty ?? false;
     final bool hasFacility = _facilityId?.trim().isNotEmpty ?? false;
     if (hasTenant && !hasFacility) {
-      return l10n.labConfigurationsSelectFacilityOnlyBody;
+      return l10n.labConfigurationsSelectFacilityOnlyBody(
+        tenantLabel ?? l10n.profileUnknownValue,
+      );
     }
     return l10n.labConfigurationsSelectScopeBody;
   }
@@ -1288,6 +1317,8 @@ class _LabConfigurationsDialogState
     BuildContext context,
     LabWorkspaceState state,
   ) async {
+    final LabWorkspaceController controller =
+        _readLabController(context);
     await _showActionResult(
       context,
       showAppDialog<bool>(
@@ -1295,10 +1326,23 @@ class _LabConfigurationsDialogState
         barrierDismissible: false,
         builder: (_) => LabEnableFacilityOfferingDialog(
           kind: LabEnableOfferingKind.test,
-          catalogItems: state.catalogTests,
-          availability: _enableAvailability(state.catalogTests),
+          scope: _catalogScope,
+          onSearchCatalog:
+              ({
+                required LabEnableOfferingKind kind,
+                required LabCatalogScope scope,
+                String? query,
+                int limit = 25,
+              }) {
+                return controller.searchPlatformLabCatalogForOffering(
+                  type: LabCatalogItemType.test,
+                  scope: scope,
+                  query: query,
+                  limit: limit,
+                );
+              },
           onEnable: (String id, Map<String, Object?> payload) =>
-              _readLabController(context).updateLabTest(id, payload),
+              controller.updateLabTest(id, payload),
         ),
       ),
     );
@@ -1308,6 +1352,8 @@ class _LabConfigurationsDialogState
     BuildContext context,
     LabWorkspaceState state,
   ) async {
+    final LabWorkspaceController controller =
+        _readLabController(context);
     await _showActionResult(
       context,
       showAppDialog<bool>(
@@ -1315,10 +1361,23 @@ class _LabConfigurationsDialogState
         barrierDismissible: false,
         builder: (_) => LabEnableFacilityOfferingDialog(
           kind: LabEnableOfferingKind.panel,
-          catalogItems: state.catalogPanels,
-          availability: _enableAvailability(state.catalogPanels),
+          scope: _catalogScope,
+          onSearchCatalog:
+              ({
+                required LabEnableOfferingKind kind,
+                required LabCatalogScope scope,
+                String? query,
+                int limit = 25,
+              }) {
+                return controller.searchPlatformLabCatalogForOffering(
+                  type: LabCatalogItemType.panel,
+                  scope: scope,
+                  query: query,
+                  limit: limit,
+                );
+              },
           onEnable: (String id, Map<String, Object?> payload) =>
-              _readLabController(context).updateLabPanel(id, payload),
+              controller.updateLabPanel(id, payload),
         ),
       ),
     );
@@ -1384,20 +1443,6 @@ class _LabConfigurationsDialogState
             appListTableCompareText(left.category, right.category),
         cellBuilder: (_, LabCatalogItem item) =>
             Text(item.category ?? l10n.profileUnknownValue),
-      ),
-      AppListTableColumn<LabCatalogItem>(
-        id: 'offered',
-        label: l10n.labOfferedStatusLabel,
-        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
-            appListTableCompareText(
-              left.isOfferedAtFacility ? '1' : '0',
-              right.isOfferedAtFacility ? '1' : '0',
-            ),
-        cellBuilder: (_, LabCatalogItem item) => Text(
-          item.isOfferedAtFacility
-              ? l10n.labOfferedStatusLabel
-              : l10n.labNotOfferedStatusLabel,
-        ),
       ),
       AppListTableColumn<LabCatalogItem>(
         id: 'price',

@@ -106,12 +106,14 @@ void main() {
         () => repository.listFacilityLabTests(
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
+          offeredOnly: true,
         ),
       ).called(1);
       verify(
         () => repository.listFacilityLabPanels(
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
+          offeredOnly: true,
         ),
       ).called(1);
 
@@ -122,6 +124,66 @@ void main() {
       expect(state.catalogTests, const <LabCatalogItem>[_catalogTest]);
       expect(state.catalogScope?.tenantId, 'TEN0000001');
       expect(state.catalogScope?.facilityId, 'FAC0000001');
+    },
+  );
+
+  test(
+    'searchPlatformLabCatalogForOffering requests full platform catalog',
+    () async {
+      when(
+        () => repository.listFacilityLabTests(
+          tenantId: any(named: 'tenantId'),
+          facilityId: any(named: 'facilityId'),
+          search: any(named: 'search'),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<LabCatalogItem>>.success(
+          <LabCatalogItem>[_catalogTest],
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          labRepositoryProvider.overrideWithValue(repository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(labWorkspaceControllerProvider.future);
+
+      final LabWorkspaceController controller =
+          container.read(labWorkspaceControllerProvider.notifier);
+      await controller.loadFacilityCatalogConfig(
+        const LabCatalogScope(
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+        ),
+      );
+
+      final Result<List<LabCatalogItem>> result =
+          await controller.searchPlatformLabCatalogForOffering(
+        type: LabCatalogItemType.test,
+        scope: const LabCatalogScope(
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+        ),
+        query: 'LFT',
+      );
+
+      expect(result, isA<ResultSuccess<List<LabCatalogItem>>>());
+      verify(
+        () => repository.listFacilityLabTests(
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+          search: 'LFT',
+          limit: 25,
+        ),
+      ).called(1);
     },
   );
 }

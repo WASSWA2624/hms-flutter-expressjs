@@ -1,66 +1,86 @@
-# Fix Lab Configurations modal — scope, role UX, and catalog loading
+# Lab Configurations UX refinement
+
+Refine the **Lab Configurations** dialog (`_LabConfigurationsDialog` in `lab_workspace_page.dart`) and the **Enable lab offering** flow (`LabEnableFacilityOfferingDialog` in `lab_catalog_dialogs.dart`) so scope selection, catalog listing, and offering creation are clear and match facility-admin expectations.
 
 ## Problem
 
-The **Lab Configurations** modal (`Lab Configurations` action on the Lab workspace) is implemented but broken in practice:
+The current flow is confusing:
 
-1. **Catalog never loads** — After selecting Tenant and Facility, the Tests and Panels tabs stay empty instead of showing the facility lab catalog.
-2. **Misleading validation banner** — A red **“Check the details”** banner appears with:
-   - Enter a valid Limit.
-   - Enter a valid Tenant.
-   - Enter a valid Facility.
-   even though Tenant and Facility appear selected in the dropdowns.
-3. **Misleading empty-state copy** — With Tenant selected but Facility still empty, the info banner still says *“Select a tenant and facility…”* instead of prompting only for the missing field.
+1. Empty-state copy is generic and does not reflect what the user has already selected.
+2. The Tests/Panels tables list the **entire platform catalog**, mostly marked **Not offered** — users expect to see only what the facility already offers.
+3. The **Enable test/panel** dialog should be the place to search and add catalog items; already-offered items need clear feedback.
+4. **Unit price** uses a plain text field instead of the shared amount+currency component.
+5. **Tenant** and **Facility context** selectors are fixed-width and not responsive; facility is selectable before a tenant is chosen.
+6. **QC logs** at the bottom of Lab Configurations has no explained purpose.
 
-## Expected behavior
+## Requirements
 
-### Role-based scope UI
+### 1. Context-aware empty states
 
-| Role | Tenant field | Facility field | Scope resolution |
-|------|--------------|----------------|------------------|
-| Platform admin / super admin | Visible (required) | Visible (required) | User selects both; catalog loads when both are set |
-| Tenant admin | **Hidden** | Visible (required) | Tenant auto-filled from session; user picks facility only |
-| Facility admin | **Hidden** | **Hidden** | Tenant + facility auto-filled from session; catalog loads immediately on open |
+Replace generic prompts with step-specific guidance:
 
-For scoped roles, show a muted context line (e.g. *“Configuring lab catalog for {facilityName}.”*) instead of selectors.
+| State | Message intent |
+|-------|----------------|
+| No tenant, no facility | Ask user to select tenant and facility. |
+| Tenant selected, no facility | Ask user to select a facility; optionally name the selected tenant. |
+| Facility selected | Show configuring context (e.g. “Configuring lab catalog for {facilityName}.”). |
 
-### Catalog loading
+Use/update l10n keys: `labConfigurationsSelectScopeBody`, `labConfigurationsSelectFacilityOnlyBody`, `labConfigurationsFacilityContextLabel`.
 
-Once scope is ready, load and display platform lab **Tests** and **Panels** for the selected facility (enable offerings, set prices, configure reference ranges / result options). Switching tabs or changing scope should reload appropriately.
+### 2. Main catalog tables — offered items only
 
-### Empty / error states
+- **Tests** and **Panels** tabs must list **only facility-offered** items (`isOfferedAtFacility == true`).
+- Load with `offeredOnly: true` via `loadFacilityCatalogConfig` / repository (`listFacilityLabTests`, `listFacilityLabPanels`).
+- Remove or repurpose the **Offered** column (all visible rows are offered).
+- Keep search, filters, edit, delete, and configure actions on offered items.
+- Empty state when nothing is offered: prompt user to use **Enable test** / **Enable panel**.
 
-- Tenant only → prompt to select a **facility** (not “tenant and facility”).
-- Neither selected (platform admin) → prompt for both.
-- API failure → show a clear, field-accurate error; do not show generic validation for fields that are visibly populated.
+### 3. Enable lab offering dialog
 
-## Likely root causes (investigate first)
+- Searchable **Platform catalog item** picker (e.g. typing `LFT` finds “Liver Function Panel | LFT”).
+- Scope options to the active tab type (tests vs panels) and items **not yet offered** at the facility.
+- When a searched item is already offered, show explicit feedback (disabled option, badge, or helper text) — do not allow duplicate enable.
+- Support server-side search if needed (`searchFacilityLabCatalog` / `offered_only=false`) so large catalogs stay performant.
 
-1. **Request validation mismatch** — `loadFacilityCatalogConfig` calls `listFacilityLabTests` / `listFacilityLabPanels` with `limit: 200`, but shared pagination validation caps `limit` at **100** (`MAX_PAGE_LIMIT`). This likely triggers *“Enter a valid Limit.”*
-2. **Identifier format mismatch** — Lookup dropdown values may be human-friendly IDs, while `listFacilityLabCatalogQuerySchema` uses strict `uuidSchema` for `tenant_id` and `facility_id`. Align with `uuidOrFriendlyIdentifierSchema` (as other lab endpoints do) or ensure the frontend sends internal UUIDs.
-3. **Scope not propagated** — Confirm `_LabConfigurationsDialog` passes the resolved `_tenantId` / `_facilityId` into `LabCatalogScope` and that `_catalogScope.isReady` matches what the API receives.
+### 4. Unit price input
+
+- Replace `AppTextField` price input with **`AppCurrencyAmountField`** (`app_currency_amount_field.dart`).
+- Persist **amount and currency** together in the enable/configure payload (same pattern as billing, OPD, claims).
+- Default currency from tenant/facility context where available.
+
+### 5. Tenant & facility selectors — layout and gating
+
+- Make selectors **full-width** and **responsive** (stack on narrow viewports; side-by-side on wide).
+- **Disable** Facility context until a tenant is selected (multi-facility tenants).
+- On hover/focus of disabled facility field, show tooltip: **“Select a tenant first.”**
+- Clearing tenant clears facility and catalog state.
+
+### 6. QC logs placement and clarity
+
+- Either move **QC logs** out of Lab Configurations into the main lab workspace toolbar, **or**
+- Keep it but add a short labeled section explaining purpose: *“Record quality-control runs for tests offered at this facility.”*
+- QC logs must continue to use **offered tests only**.
 
 ## Key files
 
-- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`, scope init, role-gated selectors
+- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`
+- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` — `LabEnableFacilityOfferingDialog`
 - `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart` — `loadFacilityCatalogConfig`
-- `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart` — facility catalog API params
-- `frontend/lib/core/permissions/access_policy.dart` — `canManageTenant()`, `canManageFacility()`, session `tenantId` / `facilityId`
-- `backend/src/modules/facility-lab-catalog/schemas/facility-lab-catalog.schema.js` — list query validation
-- `frontend/lib/l10n/app_en.arb` — `labConfigurationsSelectFacilityBody` and related strings
+- `frontend/lib/shared/components/app_currency_amount_field.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `backend/src/modules/facility-lab-catalog/` — `offered_only` query support
 
 ## Acceptance criteria
 
-- [ ] Platform admin can select tenant + facility and see populated Tests/Panels tables.
-- [ ] Tenant admin sees only facility selector; tenant is implicit; catalog loads after facility selection.
-- [ ] Facility admin sees no selectors; catalog loads on open using session scope.
-- [ ] No spurious “valid Limit / Tenant / Facility” errors when scope is correctly set.
-- [ ] Empty-state messaging reflects what is actually missing.
-- [ ] Add or update tests covering scope resolution and catalog load request params (limit ≤ 100, valid identifiers).
+- [ ] Empty-state copy updates as tenant/facility selection progresses.
+- [ ] Tests/Panels tables show only offered items; no long list of “Not offered” rows.
+- [ ] Enable dialog searches platform catalog; already-offered items are clearly indicated.
+- [ ] Unit price uses `AppCurrencyAmountField` with amount + currency.
+- [ ] Tenant/facility selectors span full width, respond to screen size, and facility is disabled until tenant is set.
+- [ ] QC logs purpose is obvious or entry point is relocated.
+- [ ] Existing lab configuration and catalog-scope tests updated; new behavior covered where practical.
 
-## Verification
+## Out of scope
 
-1. Open Lab workspace → **Lab Configurations**.
-2. Repeat as platform admin, tenant admin, and facility admin (or simulate via session fixtures).
-3. Confirm catalog rows appear on Tests and Panels tabs after scope is ready.
-4. Confirm network calls to `/facility-lab-catalog/tests` and `/panels` return 200 with valid query params.
+- Fixing malformed platform catalog seed data (e.g. corrupt test names).
+- Super-admin cross-tenant login behavior.

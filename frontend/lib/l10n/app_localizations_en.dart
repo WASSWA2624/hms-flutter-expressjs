@@ -9742,6 +9742,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNoCatalogItemsLabel => 'No catalog items found';
 
   @override
+  String get labNoOfferedTestsLabel =>
+      'No tests are offered at this facility. Use Enable test to add one.';
+
+  @override
+  String get labNoOfferedPanelsLabel =>
+      'No panels are offered at this facility. Use Enable panel to add one.';
+
+  @override
   String get labNoQcLogsLabel => 'No QC logs recorded';
 
   @override
@@ -15782,8 +15790,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labConfigurationsLoadingTitle => 'Loading lab catalog';
 
   @override
-  String get labConfigurationsLoadingBody =>
-      'Loading platform tests, panels, and facility offerings.';
+  String get labConfigurationsLoadingBody => 'Loading facility lab offerings.';
 
   @override
   String get labEnableTestAction => 'Enable test';
@@ -15810,16 +15817,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'No platform lab catalog items are available for this tenant.';
 
   @override
+  String get labEnableOfferingAlreadyOfferedLabel => 'Already offered';
+
+  @override
   String get labConfigurationsSelectScopeBody =>
       'Select a tenant and facility to load and configure the lab catalog.';
 
   @override
-  String get labConfigurationsSelectFacilityOnlyBody =>
-      'Select a facility to load and configure the lab catalog.';
+  String labConfigurationsSelectFacilityOnlyBody(String tenantName) {
+    return 'Select a facility for $tenantName to load and configure the lab catalog.';
+  }
 
   @override
-  String get labConfigurationsSelectFacilityBody =>
-      'Select a tenant and facility to load and configure the lab catalog.';
+  String get labConfigurationsSelectTenantFirstTooltip =>
+      'Select a tenant first';
 
   @override
   String labConfigurationsFacilityContextLabel(String facilityName) {
@@ -15831,6 +15842,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labQcLogsAction => 'QC logs';
+
+  @override
+  String get labQcLogsSectionBody =>
+      'Record quality-control runs for tests offered at this facility.';
 
   @override
   String get labConfigureTestDialogTitle => 'Configure lab test';

@@ -18130,6 +18130,18 @@ abstract class AppLocalizations {
   /// **'No catalog items found'**
   String get labNoCatalogItemsLabel;
 
+  /// Empty state when the facility has no offered lab tests in configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'No tests are offered at this facility. Use Enable test to add one.'**
+  String get labNoOfferedTestsLabel;
+
+  /// Empty state when the facility has no offered lab panels in configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'No panels are offered at this facility. Use Enable panel to add one.'**
+  String get labNoOfferedPanelsLabel;
+
   /// Localized text for labNoQcLogsLabel.
   ///
   /// In en, this message translates to:
@@ -29550,7 +29562,7 @@ abstract class AppLocalizations {
   /// Body shown while the lab configuration catalog is loading.
   ///
   /// In en, this message translates to:
-  /// **'Loading platform tests, panels, and facility offerings.'**
+  /// **'Loading facility lab offerings.'**
   String get labConfigurationsLoadingBody;
 
   /// Action to enable a platform lab test at the facility.
@@ -29595,6 +29607,12 @@ abstract class AppLocalizations {
   /// **'No platform lab catalog items are available for this tenant.'**
   String get labEnableOfferingNoPlatformItemsLabel;
 
+  /// Badge shown on platform catalog items that are already offered at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Already offered'**
+  String get labEnableOfferingAlreadyOfferedLabel;
+
   /// Prompt shown before tenant and facility are selected in lab configurations.
   ///
   /// In en, this message translates to:
@@ -29604,14 +29622,14 @@ abstract class AppLocalizations {
   /// Prompt shown when tenant is set but facility is still missing in lab configurations.
   ///
   /// In en, this message translates to:
-  /// **'Select a facility to load and configure the lab catalog.'**
-  String get labConfigurationsSelectFacilityOnlyBody;
+  /// **'Select a facility for {tenantName} to load and configure the lab catalog.'**
+  String labConfigurationsSelectFacilityOnlyBody(String tenantName);
 
-  /// Prompt shown before a facility context is selected in lab configurations.
+  /// Tooltip shown when the facility selector is disabled because no tenant is selected.
   ///
   /// In en, this message translates to:
-  /// **'Select a tenant and facility to load and configure the lab catalog.'**
-  String get labConfigurationsSelectFacilityBody;
+  /// **'Select a tenant first'**
+  String get labConfigurationsSelectTenantFirstTooltip;
 
   /// Read-only facility context label in lab configurations.
   ///
@@ -29630,6 +29648,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QC logs'**
   String get labQcLogsAction;
+
+  /// Explains the purpose of the QC logs section in lab configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'Record quality-control runs for tests offered at this facility.'**
+  String get labQcLogsSectionBody;
 
   /// Localized text for labConfigureTestDialogTitle.
   ///

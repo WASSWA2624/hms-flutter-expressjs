@@ -596,6 +596,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   late List<EditableLabReferenceRange> _referenceRanges;
   late final TextEditingController _priceController;
   String? _resultKind;
+  String _currency = appDefaultCurrencyCode;
   bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
@@ -635,6 +636,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     _priceController = TextEditingController(
       text: item.unitPrice?.toString() ?? '',
     );
+    _currency = item.currency ?? appDefaultCurrencyCode;
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _resultKind = item.resultKind ?? 'NUMERIC';
   }
@@ -686,15 +688,19 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                       setState(() => _isOfferedAtFacility = value);
                     },
             ),
-            AppTextField(
-              controller: _priceController,
-              labelText: l10n.clinicalRequestUnitPriceLabel,
+            AppCurrencyAmountField(
+              amountController: _priceController,
+              currency: _currency,
+              amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+              currencyLabelText: l10n.opdCurrencyLabel,
               enabled: !_isSaving && _isOfferedAtFacility,
               isRequired: _isOfferedAtFacility,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              prefixIcon: const Icon(Icons.payments_outlined),
+              allowZero: false,
+              onCurrencyChanged: (String? value) {
+                setState(() {
+                  _currency = value ?? appDefaultCurrencyCode;
+                });
+              },
               validator: _isOfferedAtFacility
                   ? (String? value) => _positiveUnitPriceValidator(l10n, value)
                   : null,
@@ -967,7 +973,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
         controller: _priceController,
         fallback: widget.item.unitPrice,
       ),
-      if (widget.item.currency != null) 'currency': widget.item.currency,
+      if (_isOfferedAtFacility) 'currency': _currency,
       'category': _categoryController.text.trim(),
       'specimen_type': _specimenController.text.trim(),
       'result_kind': _resultKind,
@@ -1046,6 +1052,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
   late final List<LabCatalogItem> _selectedTests;
   late final TextEditingController _priceController;
   String? _pendingTestId;
+  String _currency = appDefaultCurrencyCode;
   bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
@@ -1063,6 +1070,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     _priceController = TextEditingController(
       text: item.unitPrice?.toString() ?? '',
     );
+    _currency = item.currency ?? appDefaultCurrencyCode;
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _selectedTests = _initialSelectedTests(item);
   }
@@ -1109,15 +1117,19 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
                       setState(() => _isOfferedAtFacility = value);
                     },
             ),
-            AppTextField(
-              controller: _priceController,
-              labelText: l10n.clinicalRequestUnitPriceLabel,
+            AppCurrencyAmountField(
+              amountController: _priceController,
+              currency: _currency,
+              amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+              currencyLabelText: l10n.opdCurrencyLabel,
               enabled: !_isSaving && _isOfferedAtFacility,
               isRequired: _isOfferedAtFacility,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              prefixIcon: const Icon(Icons.payments_outlined),
+              allowZero: false,
+              onCurrencyChanged: (String? value) {
+                setState(() {
+                  _currency = value ?? appDefaultCurrencyCode;
+                });
+              },
               validator: _isOfferedAtFacility
                   ? (String? value) => _positiveUnitPriceValidator(l10n, value)
                   : null,
@@ -1276,7 +1288,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
         controller: _priceController,
         fallback: widget.item.unitPrice,
       ),
-      if (widget.item.currency != null) 'currency': widget.item.currency,
+      if (_isOfferedAtFacility) 'currency': _currency,
       'category': _categoryController.text.trim(),
       'description': _descriptionController.text.trim(),
     };
@@ -1285,26 +1297,29 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
 
 enum LabEnableOfferingKind { test, panel }
 
-enum LabEnableOfferingAvailability {
-  loading,
-  selectable,
-  noPlatformItems,
-  allOffered,
-}
+typedef LabEnableOfferingCatalogSearch =
+    Future<Result<List<LabCatalogItem>>> Function({
+      required LabEnableOfferingKind kind,
+      required LabCatalogScope scope,
+      String? query,
+      int limit,
+    });
 
 class LabEnableFacilityOfferingDialog extends StatefulWidget {
   const LabEnableFacilityOfferingDialog({
     required this.kind,
-    required this.catalogItems,
-    required this.availability,
+    required this.scope,
+    required this.onSearchCatalog,
     required this.onEnable,
+    this.defaultCurrency = appDefaultCurrencyCode,
     super.key,
   });
 
   final LabEnableOfferingKind kind;
-  final List<LabCatalogItem> catalogItems;
-  final LabEnableOfferingAvailability availability;
+  final LabCatalogScope scope;
+  final LabEnableOfferingCatalogSearch onSearchCatalog;
   final LabCatalogUpdateSubmit onEnable;
+  final String defaultCurrency;
 
   @override
   State<LabEnableFacilityOfferingDialog> createState() =>
@@ -1313,14 +1328,22 @@ class LabEnableFacilityOfferingDialog extends StatefulWidget {
 
 class _LabEnableFacilityOfferingDialogState
     extends State<LabEnableFacilityOfferingDialog> {
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
+  static const int _searchLimit = 25;
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _priceController;
+  Timer? _searchDebounce;
   String? _selectedItemId;
+  late String _currency;
+  List<LabCatalogItem> _catalogItems = const <LabCatalogItem>[];
   AppFailure? _failure;
   bool _isSaving = false;
+  bool _isSearching = true;
+  int _searchRequest = 0;
 
   List<LabCatalogItem> get _availableItems {
-    return widget.catalogItems
+    return _catalogItems
         .where((LabCatalogItem item) => !item.isOfferedAtFacility)
         .toList(growable: false);
   }
@@ -1329,14 +1352,65 @@ class _LabEnableFacilityOfferingDialogState
   void initState() {
     super.initState();
     _priceController = TextEditingController();
-    final List<LabCatalogItem> available = _availableItems;
-    _selectedItemId = available.isEmpty ? null : available.first.apiId;
+    _currency = widget.defaultCurrency;
+    _searchRequest += 1;
+    unawaited(_loadCatalog(query: null, requestId: _searchRequest));
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _priceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCatalog({required String? query, required int requestId}) async {
+    setState(() {
+      _isSearching = true;
+      _failure = null;
+    });
+    final Result<List<LabCatalogItem>> result = await widget.onSearchCatalog(
+      kind: widget.kind,
+      scope: widget.scope,
+      query: query?.trim().isEmpty ?? true ? null : query?.trim(),
+      limit: _searchLimit,
+    );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    result.when(
+      success: (List<LabCatalogItem> items) {
+        setState(() {
+          _catalogItems = items;
+          _isSearching = false;
+          final List<LabCatalogItem> available = _availableItems;
+          if (_selectedItemId == null ||
+              !available.any((LabCatalogItem item) => item.apiId == _selectedItemId)) {
+            _selectedItemId = available.isEmpty ? null : available.first.apiId;
+          }
+        });
+      },
+      failure: (AppFailure value) {
+        setState(() {
+          _catalogItems = const <LabCatalogItem>[];
+          _selectedItemId = null;
+          _isSearching = false;
+          _failure = value;
+        });
+      },
+    );
+  }
+
+  void _scheduleCatalogSearch(String query) {
+    _searchDebounce?.cancel();
+    _searchRequest += 1;
+    final int requestId = _searchRequest;
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_loadCatalog(query: query, requestId: requestId));
+    });
   }
 
   @override
@@ -1345,7 +1419,7 @@ class _LabEnableFacilityOfferingDialogState
     final ThemeData theme = Theme.of(context);
     final List<LabCatalogItem> available = _availableItems;
     LabCatalogItem? selectedItem;
-    for (final LabCatalogItem item in available) {
+    for (final LabCatalogItem item in _catalogItems) {
       if (item.apiId == _selectedItemId) {
         selectedItem = item;
         break;
@@ -1378,33 +1452,34 @@ class _LabEnableFacilityOfferingDialogState
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (widget.availability == LabEnableOfferingAvailability.loading)
+            if (_isSearching && _catalogItems.isEmpty)
               AppWorkspaceStatePanel.loading(
                 title: l10n.labConfigurationsLoadingTitle,
                 body: l10n.labConfigurationsLoadingBody,
                 minHeight: 120,
               )
-            else if (widget.availability ==
-                LabEnableOfferingAvailability.noPlatformItems)
+            else if (!_isSearching && _catalogItems.isEmpty)
               AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
-            else if (widget.availability ==
-                LabEnableOfferingAvailability.allOffered)
-              AppMutedText(l10n.labEnableOfferingNoItemsLabel)
-            else if (available.isEmpty)
+            else if (!_isSearching && available.isEmpty)
               AppMutedText(l10n.labEnableOfferingNoItemsLabel)
             else ...<Widget>[
               AppSelectField<String>.searchable(
                 value: _selectedItemId,
                 labelText: l10n.labEnableOfferingCatalogLabel,
                 enabled: !_isSaving,
+                isLoading: _isSearching,
                 isRequired: true,
                 validator: AppValidators.requiredValue(l10n.validationRequired),
+                onSearchTextChanged: _scheduleCatalogSearch,
                 options: <AppSelectOption<String>>[
-                  for (final LabCatalogItem item in available)
+                  for (final LabCatalogItem item in _catalogItems)
                     AppSelectOption<String>(
                       value: item.apiId,
-                      label: item.displayTitle,
+                      label: item.isOfferedAtFacility
+                          ? '${item.displayTitle} (${l10n.labEnableOfferingAlreadyOfferedLabel})'
+                          : item.displayTitle,
                       searchText: item.displaySubtitle,
+                      enabled: !item.isOfferedAtFacility,
                       leadingIcon: Icon(
                         widget.kind == LabEnableOfferingKind.test
                             ? Icons.science_outlined
@@ -1416,15 +1491,19 @@ class _LabEnableFacilityOfferingDialogState
                   setState(() => _selectedItemId = value);
                 },
               ),
-              AppTextField(
-                controller: _priceController,
-                labelText: l10n.clinicalRequestUnitPriceLabel,
+              AppCurrencyAmountField(
+                amountController: _priceController,
+                currency: _currency,
+                amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+                currencyLabelText: l10n.opdCurrencyLabel,
                 enabled: !_isSaving,
                 isRequired: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                prefixIcon: const Icon(Icons.payments_outlined),
+                allowZero: false,
+                onCurrencyChanged: (String? value) {
+                  setState(() {
+                    _currency = value ?? appDefaultCurrencyCode;
+                  });
+                },
                 validator: (String? value) =>
                     _positiveUnitPriceValidator(l10n, value),
               ),
@@ -1442,9 +1521,7 @@ class _LabEnableFacilityOfferingDialogState
             ? l10n.labEnableTestAction
             : l10n.labEnablePanelAction,
         isSaving: _isSaving,
-        onSubmit: widget.availability == LabEnableOfferingAvailability.selectable
-            ? _submit
-            : null,
+        onSubmit: available.isEmpty ? null : _submit,
       ),
     );
   }
@@ -1467,7 +1544,9 @@ class _LabEnableFacilityOfferingDialogState
     });
     final AppFailure? failure = await widget.onEnable(itemId, <String, Object?>{
       'is_active': true,
-      'unit_price': num.tryParse(_priceController.text.trim()) ?? 0,
+      'unit_price':
+          num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+      'currency': _currency,
     });
     if (!mounted) {
       return;
@@ -2047,7 +2126,7 @@ String? _positiveUnitPriceValidator(AppLocalizations l10n, String? value) {
   if (requiredFailure != null) {
     return requiredFailure;
   }
-  final num? parsed = num.tryParse(value?.trim() ?? '');
+  final num? parsed = num.tryParse(normalizeCurrencyAmount(value ?? ''));
   if (parsed == null || parsed <= 0) {
     return l10n.validationRequired;
   }
@@ -2060,7 +2139,7 @@ num _resolvedOfferingUnitPrice({
   required num? fallback,
 }) {
   if (isOffered) {
-    return num.tryParse(controller.text.trim()) ?? 0;
+    return num.tryParse(normalizeCurrencyAmount(controller.text)) ?? 0;
   }
   return fallback ?? 0;
 }

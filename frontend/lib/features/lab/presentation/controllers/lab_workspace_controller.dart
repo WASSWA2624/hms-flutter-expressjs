@@ -953,11 +953,13 @@ final class LabWorkspaceController
         .listFacilityLabTests(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
+          offeredOnly: true,
         );
     final Result<List<LabCatalogItem>> panelsResult = await _repository
         .listFacilityLabPanels(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
+          offeredOnly: true,
         );
 
     AppFailure? failure;
@@ -1002,6 +1004,28 @@ final class LabWorkspaceController
       tenantId: scope?.tenantId,
       facilityId: scope?.facilityId,
       query: query,
+      limit: limit,
+    );
+  }
+
+  Future<Result<List<LabCatalogItem>>> searchPlatformLabCatalogForOffering({
+    required LabCatalogItemType type,
+    required LabCatalogScope scope,
+    String? query,
+    int limit = 25,
+  }) {
+    if (type == LabCatalogItemType.test) {
+      return _repository.listFacilityLabTests(
+        tenantId: scope.tenantId,
+        facilityId: scope.facilityId,
+        search: query,
+        limit: limit,
+      );
+    }
+    return _repository.listFacilityLabPanels(
+      tenantId: scope.tenantId,
+      facilityId: scope.facilityId,
+      search: query,
       limit: limit,
     );
   }
@@ -1202,6 +1226,7 @@ final class LabWorkspaceController
           tenantId: scope?.tenantId,
           facilityId: scope?.facilityId,
           search: search,
+          offeredOnly: true,
         );
     return result.when(
       success: (List<LabCatalogItem> value) => value,
@@ -1216,6 +1241,7 @@ final class LabWorkspaceController
           tenantId: scope?.tenantId,
           facilityId: scope?.facilityId,
           search: search,
+          offeredOnly: true,
         );
     return result.when(
       success: (List<LabCatalogItem> value) => value,
