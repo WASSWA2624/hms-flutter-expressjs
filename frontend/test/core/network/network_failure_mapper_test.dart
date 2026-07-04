@@ -109,6 +109,26 @@ void main() {
       expect(notFoundFailure.category, AppFailureCategory.notFound);
     });
 
+    test('maps server errors to unexpected response failures', () {
+      final requestOptions = RequestOptions(
+        path: '/facility-lab-catalog/tests/STD_LAB_TEST:CBC',
+      );
+      final failure = mapper.map(
+        DioException(
+          requestOptions: requestOptions,
+          response: Response<Object?>(
+            requestOptions: requestOptions,
+            statusCode: 500,
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(failure.category, AppFailureCategory.unexpectedResponse);
+      expect(failure.statusCode, 500);
+    });
+
     test('maps rate limited responses to retryable network failures', () {
       final requestOptions = RequestOptions(path: '/auth/login');
       final failure = mapper.map(

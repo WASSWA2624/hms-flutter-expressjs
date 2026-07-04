@@ -109,10 +109,7 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode >= 500) {
-      return AppFailure.network(
-        code: 'network.server_error',
-        statusCode: statusCode,
-      );
+      return AppFailure.unexpectedResponse(statusCode: statusCode);
     }
 
     return AppFailure.unexpectedResponse(statusCode: statusCode);

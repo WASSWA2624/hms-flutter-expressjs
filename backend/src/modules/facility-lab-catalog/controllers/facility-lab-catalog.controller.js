@@ -70,7 +70,7 @@ const getFacilityLabTest = asyncHandler(async (req, res) => {
     buildContext(req),
     req.query
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.tests.get.success', item);
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.tests.get.success', item);
 });
 
 const getFacilityLabPanel = asyncHandler(async (req, res) => {
@@ -80,7 +80,7 @@ const getFacilityLabPanel = asyncHandler(async (req, res) => {
     buildContext(req),
     req.query
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.panels.get.success', item);
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.panels.get.success', item);
 });
 
 const upsertFacilityLabTestOffering = asyncHandler(async (req, res) => {
@@ -88,7 +88,7 @@ const upsertFacilityLabTestOffering = asyncHandler(async (req, res) => {
     { ...req.body, lab_test_id: req.params.lab_test_id },
     buildContext(req)
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.tests.upsert.success', item);
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.tests.upsert.success', item);
 });
 
 const disableFacilityLabTestOffering = asyncHandler(async (req, res) => {
@@ -98,7 +98,7 @@ const disableFacilityLabTestOffering = asyncHandler(async (req, res) => {
     req.body,
     buildContext(req)
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.tests.disable.success');
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.tests.disable.success');
 });
 
 const upsertFacilityLabPanelOffering = asyncHandler(async (req, res) => {
@@ -106,7 +106,7 @@ const upsertFacilityLabPanelOffering = asyncHandler(async (req, res) => {
     { ...req.body, lab_panel_id: req.params.lab_panel_id },
     buildContext(req)
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.panels.upsert.success', item);
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.panels.upsert.success', item);
 });
 
 const disableFacilityLabPanelOffering = asyncHandler(async (req, res) => {
@@ -116,7 +116,7 @@ const disableFacilityLabPanelOffering = asyncHandler(async (req, res) => {
     req.body,
     buildContext(req)
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.panels.disable.success');
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.panels.disable.success');
 });
 
 const searchFacilityLabCatalog = asyncHandler(async (req, res) => {
@@ -124,7 +124,7 @@ const searchFacilityLabCatalog = asyncHandler(async (req, res) => {
     req.query,
     buildContext(req)
   );
-  sendSuccess(res, 'messages.facility_lab_catalog.search.success', items);
+  sendSuccess(res, 200, 'messages.facility_lab_catalog.search.success', items);
 });
 
 module.exports = {

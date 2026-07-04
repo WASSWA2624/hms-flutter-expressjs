@@ -9,7 +9,7 @@ const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog
 const clinicalTermRepository = require('@repositories/clinical-term/clinical-term.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
+const { STANDARD_LAB_TESTS, STANDARD_LAB_PANELS } = require('@services/lab-order/lab-order.service');
 const {
   LAB_TEST_WITH_RELATIONS_INCLUDE,
   LAB_PANEL_WITH_RELATIONS_INCLUDE,
@@ -115,6 +115,123 @@ const resolveOrCreateStandardLabTest = async ({
   }).catch(() => {});
 
   return labTest;
+};
+
+const standardPanelNameFromCode = (catalogCode) =>
+  normalizeText(catalogCode)
+    .replace(/^PANEL_/, '')
+    .replace(/^LOINC_/, 'LOINC ')
+    .replace(/_/g, ' ');
+
+const resolveOrCreateStandardLabPanel = async ({
+  identifier,
+  tenantId,
+  userId,
+  ipAddress,
+}) => {
+  const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_PANEL');
+  if (!catalogCode) {
+    return null;
+  }
+
+  const testCodes = STANDARD_LAB_PANELS[catalogCode];
+  if (!Array.isArray(testCodes) || !testCodes.length) {
+    return null;
+  }
+
+  const existing = await prisma.lab_panel.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      code: catalogCode,
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const panelItems = [];
+  for (let index = 0; index < testCodes.length; index += 1) {
+    const testCode = testCodes[index];
+    const labTest = await resolveOrCreateStandardLabTest({
+      identifier: `STD_LAB_TEST:${testCode}`,
+      tenantId,
+      userId,
+      ipAddress,
+    });
+    if (!labTest?.id) {
+      continue;
+    }
+    const definition = STANDARD_LAB_TESTS[testCode] || {};
+    panelItems.push({
+      lab_test_id: labTest.id,
+      is_required: true,
+      sort_order: index,
+      instructions: null,
+      unit: definition.unit || null,
+    });
+  }
+
+  if (!panelItems.length) {
+    return null;
+  }
+
+  const labPanel = await prisma.lab_panel.create({
+    data: {
+      tenant_id: tenantId,
+      name: standardPanelNameFromCode(catalogCode),
+      code: catalogCode,
+      category: 'STANDARD',
+      description: 'Standard lab panel',
+      panel_items: {
+        create: panelItems,
+      },
+    },
+    select: { id: true },
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId || null,
+    action: 'CREATE',
+    entity: 'lab_panel',
+    entity_id: labPanel.id,
+    diff: {
+      after: {
+        id: labPanel.id,
+        code: catalogCode,
+        source: 'STANDARD_LAB_CATALOG',
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  return labPanel;
+};
+
+const resolveLabPanelIdOrThrow = async ({
+  identifier,
+  tenantId,
+  context = {},
+  errorKey = 'errors.lab_panel.not_found',
+}) => {
+  const standardLabPanel = await resolveOrCreateStandardLabPanel({
+    identifier,
+    tenantId,
+    userId: context.user_id,
+    ipAddress: context.ip_address,
+  });
+  if (standardLabPanel?.id) {
+    return standardLabPanel.id;
+  }
+
+  return resolveModelIdOrThrow({
+    model: 'lab_panel',
+    identifier,
+    tenantId,
+    errorKey,
+  });
 };
 
 const resolveLabTestIdOrThrow = async ({
@@ -452,10 +569,10 @@ const getFacilityLabPanel = async (labPanelIdentifier, context = {}, filters = {
   const tenantId = context.tenant_id || filters.tenant_id;
   if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
   const facilityId = await resolveFacilityId(context, filters);
-  const labPanelId = await resolveModelIdOrThrow({
-    model: 'lab_panel',
+  const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: labPanelIdentifier,
     tenantId,
+    context,
   });
   const masterPanel = await resolveModelRecordOrThrow({
     model: 'lab_panel',
@@ -594,10 +711,10 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
   if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
 
   const facilityId = await resolveFacilityId(context, payload);
-  const labPanelId = await resolveModelIdOrThrow({
-    model: 'lab_panel',
+  const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: payload.lab_panel_id,
     tenantId,
+    context,
   });
   const masterPanel = await resolveModelRecordOrThrow({
     model: 'lab_panel',
@@ -645,10 +762,10 @@ const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {},
   if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
 
   const facilityId = await resolveFacilityId(context, payload);
-  const labPanelId = await resolveModelIdOrThrow({
-    model: 'lab_panel',
+  const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: labPanelIdentifier,
     tenantId,
+    context,
   });
   const offering = await facilityLabCatalogRepository.findPanelOffering({
     tenant_id: tenantId,
@@ -692,7 +809,7 @@ const searchFacilityLabCatalog = async (filters = {}, context = {}) => {
       tenant_id: tenantId,
       facility_id: facilityId,
       is_active: true,
-      ...(searchTerm.raw
+      ...(searchTerm?.raw
         ? {
             lab_panel: {
               deleted_at: null,
@@ -720,7 +837,7 @@ const searchFacilityLabCatalog = async (filters = {}, context = {}) => {
     tenant_id: tenantId,
     facility_id: facilityId,
     is_active: offeredOnly ? true : undefined,
-    ...(searchTerm.raw
+    ...(searchTerm?.raw
       ? {
           lab_test: {
             deleted_at: null,
