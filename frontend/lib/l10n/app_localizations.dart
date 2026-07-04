@@ -31230,8 +31230,14 @@ abstract class AppLocalizations {
   /// Nested lab catalog picker dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Choose lab tests'**
+  /// **'Choose lab tests or panels'**
   String get clinicalLabRequestCatalogPickerTitle;
+
+  /// Primary action that applies staged lab test and panel selections.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm selected tests or panels'**
+  String get clinicalLabRequestCatalogPickerConfirmAction;
 
   /// Title for configuring visible columns in the lab request catalog picker table.
   ///

@@ -21529,9 +21529,13 @@
       }
     }
   },
-  "clinicalLabRequestCatalogPickerTitle": "Choose lab tests",
+  "clinicalLabRequestCatalogPickerTitle": "Choose lab tests or panels",
   "@clinicalLabRequestCatalogPickerTitle": {
     "description": "Nested lab catalog picker dialog title."
+  },
+  "clinicalLabRequestCatalogPickerConfirmAction": "Confirm selected tests or panels",
+  "@clinicalLabRequestCatalogPickerConfirmAction": {
+    "description": "Primary action that applies staged lab test and panel selections."
   },
   "clinicalLabRequestCatalogColumnsTitle": "Lab catalog table columns",
   "@clinicalLabRequestCatalogColumnsTitle": {

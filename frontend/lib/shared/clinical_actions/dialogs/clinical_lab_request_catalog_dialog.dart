@@ -14,6 +14,18 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 enum ClinicalLabRequestCatalogKind { tests, panels }
 
+final class ClinicalLabRequestCatalogSelection {
+  const ClinicalLabRequestCatalogSelection({
+    required this.option,
+    required this.kind,
+  });
+
+  final ClinicalActionCatalogOption option;
+  final ClinicalLabRequestCatalogKind kind;
+
+  String get key => '${kind.name}:${option.apiId}';
+}
+
 List<ClinicalActionCatalogOption> orderClinicalLabRequestCatalogItems(
   List<ClinicalActionCatalogOption> catalog, {
   required bool Function(ClinicalActionCatalogOption option) includeOption,
@@ -36,7 +48,8 @@ List<ClinicalActionCatalogOption> orderClinicalLabRequestCatalogItems(
   return <ClinicalActionCatalogOption>[...selected, ...unselected];
 }
 
-Future<void> showClinicalLabRequestCatalogDialog({
+Future<List<ClinicalLabRequestCatalogSelection>?>
+showClinicalLabRequestCatalogDialog({
   required BuildContext context,
   required ClinicalActionReferenceData referenceData,
   required Future<Result<List<ClinicalActionCatalogOption>>> Function({
@@ -46,30 +59,17 @@ Future<void> showClinicalLabRequestCatalogDialog({
     String source,
   })
   onSearchLabTests,
-  required bool Function(
-    ClinicalActionCatalogOption option,
-    ClinicalLabRequestCatalogKind kind,
-  )
-  isSelected,
-  required void Function(
-    ClinicalActionCatalogOption option,
-    ClinicalLabRequestCatalogKind kind,
-    bool selected,
-  )
-  onSelectionChanged,
-  required int selectedCount,
+  required List<ClinicalLabRequestCatalogSelection> initialSelections,
   ClinicalLabRequestCatalogKind initialKind =
       ClinicalLabRequestCatalogKind.tests,
   bool facilityOfferingsOnly = false,
 }) {
-  return showAppDialog<void>(
+  return showAppDialog<List<ClinicalLabRequestCatalogSelection>>(
     context: context,
     builder: (BuildContext context) => ClinicalLabRequestCatalogDialog(
       referenceData: referenceData,
       onSearchLabTests: onSearchLabTests,
-      isSelected: isSelected,
-      onSelectionChanged: onSelectionChanged,
-      selectedCount: selectedCount,
+      initialSelections: initialSelections,
       initialKind: initialKind,
       facilityOfferingsOnly: facilityOfferingsOnly,
     ),
@@ -80,9 +80,7 @@ class ClinicalLabRequestCatalogDialog extends StatefulWidget {
   const ClinicalLabRequestCatalogDialog({
     required this.referenceData,
     required this.onSearchLabTests,
-    required this.isSelected,
-    required this.onSelectionChanged,
-    required this.selectedCount,
+    required this.initialSelections,
     this.initialKind = ClinicalLabRequestCatalogKind.tests,
     this.facilityOfferingsOnly = false,
     super.key,
@@ -96,18 +94,7 @@ class ClinicalLabRequestCatalogDialog extends StatefulWidget {
     String source,
   })
   onSearchLabTests;
-  final bool Function(
-    ClinicalActionCatalogOption option,
-    ClinicalLabRequestCatalogKind kind,
-  )
-  isSelected;
-  final void Function(
-    ClinicalActionCatalogOption option,
-    ClinicalLabRequestCatalogKind kind,
-    bool selected,
-  )
-  onSelectionChanged;
-  final int selectedCount;
+  final List<ClinicalLabRequestCatalogSelection> initialSelections;
   final ClinicalLabRequestCatalogKind initialKind;
   final bool facilityOfferingsOnly;
 
@@ -134,6 +121,7 @@ class _ClinicalLabRequestCatalogDialogState
       ClinicalActionCatalogOption
   >
   _columnVisibilityController;
+  late final List<ClinicalLabRequestCatalogSelection> _stagedSelections;
   Timer? _searchDebounce;
   late ClinicalLabRequestCatalogKind _selectionKind;
   ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.facility;
@@ -147,7 +135,6 @@ class _ClinicalLabRequestCatalogDialogState
       const <ClinicalActionCatalogOption>[];
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   bool _isSearching = false;
-  late int _displaySelectedCount;
 
   bool get _showingTests =>
       _selectionKind == ClinicalLabRequestCatalogKind.tests;
@@ -158,8 +145,10 @@ class _ClinicalLabRequestCatalogDialogState
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<ClinicalActionCatalogOption>();
+    _stagedSelections = List<ClinicalLabRequestCatalogSelection>.from(
+      widget.initialSelections,
+    );
     _selectionKind = widget.initialKind;
-    _displaySelectedCount = widget.selectedCount;
     _searchRequest += 1;
     if (widget.facilityOfferingsOnly) {
       _catalogSource = ClinicalCatalogSource.facility;
@@ -205,35 +194,14 @@ class _ClinicalLabRequestCatalogDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          SegmentedButton<ClinicalLabRequestCatalogKind>(
-            segments: <ButtonSegment<ClinicalLabRequestCatalogKind>>[
-              ButtonSegment<ClinicalLabRequestCatalogKind>(
-                value: ClinicalLabRequestCatalogKind.tests,
-                icon: const Icon(Icons.science_outlined),
-                label: Text(l10n.clinicalLabRequestTestsModeLabel),
-              ),
-              ButtonSegment<ClinicalLabRequestCatalogKind>(
-                value: ClinicalLabRequestCatalogKind.panels,
-                icon: const Icon(Icons.inventory_2_outlined),
-                label: Text(l10n.clinicalLabRequestPanelsModeLabel),
-              ),
-            ],
-            selected: <ClinicalLabRequestCatalogKind>{_selectionKind},
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              minimumSize: WidgetStatePropertyAll<Size>(
-                Size(theme.spacing.none, 44),
-              ),
-              shape: const WidgetStatePropertyAll<OutlinedBorder>(
-                RoundedRectangleBorder(),
-              ),
-            ),
-            onSelectionChanged: (Set<ClinicalLabRequestCatalogKind> values) {
-              setState(() {
-                _selectionKind = values.first;
-              });
+          _CatalogKindRadioGroup(
+            value: _selectionKind,
+            testsLabel: l10n.clinicalLabRequestTestsModeLabel,
+            panelsLabel: l10n.clinicalLabRequestPanelsModeLabel,
+            onChanged: (ClinicalLabRequestCatalogKind kind) {
+              setState(() => _selectionKind = kind);
               _searchRequest += 1;
-              if (values.first == ClinicalLabRequestCatalogKind.tests) {
+              if (kind == ClinicalLabRequestCatalogKind.tests) {
                 unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
                 return;
               }
@@ -280,7 +248,7 @@ class _ClinicalLabRequestCatalogDialogState
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: Text(
-              l10n.clinicalLabRequestSelectedCount(_displaySelectedCount),
+              l10n.clinicalLabRequestSelectedCount(_stagedSelections.length),
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: colorScheme.primary,
@@ -303,7 +271,7 @@ class _ClinicalLabRequestCatalogDialogState
               tableHorizontalMargin: 0,
               isLoading: _isSearching,
               rowColorBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-                if (!widget.isSelected(item, _selectionKind)) {
+                if (!_isStagedSelected(item, _selectionKind)) {
                   return null;
                 }
                 return colorScheme.primaryContainer.withValues(alpha: 0.35);
@@ -341,7 +309,7 @@ class _ClinicalLabRequestCatalogDialogState
                         item.category,
                       ]),
                       trailing: Checkbox(
-                        value: widget.isSelected(item, _selectionKind),
+                        value: _isStagedSelected(item, _selectionKind),
                         onChanged: (bool? value) {
                           _toggleSelection(item, selected: value ?? false);
                         },
@@ -354,11 +322,32 @@ class _ClinicalLabRequestCatalogDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.primary(
-          label: l10n.clinicalRequestCatalogPickerDoneAction,
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(),
         ),
+        AppButton.primary(
+          label: l10n.clinicalLabRequestCatalogPickerConfirmAction,
+          leadingIcon: Icons.playlist_add_check,
+          onPressed: () => Navigator.of(context).pop(
+            List<ClinicalLabRequestCatalogSelection>.from(_stagedSelections),
+          ),
+        ),
       ],
+    );
+  }
+
+  bool _isStagedSelected(
+    ClinicalActionCatalogOption option,
+    ClinicalLabRequestCatalogKind kind,
+  ) {
+    final String key = ClinicalLabRequestCatalogSelection(
+      option: option,
+      kind: kind,
+    ).key;
+    return _stagedSelections.any(
+      (ClinicalLabRequestCatalogSelection selection) =>
+          selection.key == key,
     );
   }
 
@@ -366,6 +355,7 @@ class _ClinicalLabRequestCatalogDialogState
     BuildContext context,
   ) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     return <AppListTableColumn<ClinicalActionCatalogOption>>[
       _selectionColumn(context),
       AppListTableColumn<ClinicalActionCatalogOption>(
@@ -407,11 +397,15 @@ class _ClinicalLabRequestCatalogDialogState
           return (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0);
         },
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-          return Text(
-            clinicalRequestPriceLabel(
-              context,
-              item.unitPrice,
-              clinicalCatalogOptionCurrency(item),
+          return Padding(
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.md),
+            child: Text(
+              clinicalRequestPriceLabel(
+                context,
+                item.unitPrice,
+                clinicalCatalogOptionCurrency(item),
+              ),
+              textAlign: TextAlign.end,
             ),
           );
         },
@@ -440,11 +434,11 @@ class _ClinicalLabRequestCatalogDialogState
             final bool allSelected = visibleItems.isNotEmpty &&
                 visibleItems.every(
                   (ClinicalActionCatalogOption item) =>
-                      widget.isSelected(item, _selectionKind),
+                      _isStagedSelected(item, _selectionKind),
                 );
             final bool someSelected = visibleItems.any(
               (ClinicalActionCatalogOption item) =>
-                  widget.isSelected(item, _selectionKind),
+                  _isStagedSelected(item, _selectionKind),
             );
             return Checkbox(
               tristate: true,
@@ -468,7 +462,7 @@ class _ClinicalLabRequestCatalogDialogState
       },
       cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
         return Checkbox(
-          value: widget.isSelected(item, _selectionKind),
+          value: _isStagedSelected(item, _selectionKind),
           onChanged: (bool? value) {
             _toggleSelection(item, selected: value ?? false);
           },
@@ -537,7 +531,7 @@ class _ClinicalLabRequestCatalogDialogState
       catalog,
       includeOption: _matchesCategoryFilter,
       isSelected: (ClinicalActionCatalogOption option) =>
-          widget.isSelected(option, _selectionKind),
+          _isStagedSelected(option, _selectionKind),
     );
   }
 
@@ -545,13 +539,28 @@ class _ClinicalLabRequestCatalogDialogState
     ClinicalActionCatalogOption option, {
     required bool selected,
   }) {
-    final bool currentlySelected = widget.isSelected(option, _selectionKind);
+    final bool currentlySelected = _isStagedSelected(option, _selectionKind);
     if (currentlySelected == selected) {
       return;
     }
-    widget.onSelectionChanged(option, _selectionKind, selected);
     setState(() {
-      _displaySelectedCount += selected ? 1 : -1;
+      if (selected) {
+        if (_isStagedSelected(option, _selectionKind)) {
+          return;
+        }
+        _stagedSelections.add(
+          ClinicalLabRequestCatalogSelection(
+            option: option,
+            kind: _selectionKind,
+          ),
+        );
+        return;
+      }
+      _stagedSelections.removeWhere(
+        (ClinicalLabRequestCatalogSelection selection) =>
+            selection.option.apiId == option.apiId &&
+            selection.kind == _selectionKind,
+      );
     });
   }
 
@@ -559,20 +568,27 @@ class _ClinicalLabRequestCatalogDialogState
     List<ClinicalActionCatalogOption> items, {
     required bool selected,
   }) {
-    var delta = 0;
-    for (final ClinicalActionCatalogOption item in items) {
-      final bool currentlySelected = widget.isSelected(item, _selectionKind);
-      if (currentlySelected == selected) {
-        continue;
-      }
-      widget.onSelectionChanged(item, _selectionKind, selected);
-      delta += selected ? 1 : -1;
-    }
-    if (delta == 0) {
-      return;
-    }
     setState(() {
-      _displaySelectedCount += delta;
+      for (final ClinicalActionCatalogOption item in items) {
+        final bool currentlySelected = _isStagedSelected(item, _selectionKind);
+        if (currentlySelected == selected) {
+          continue;
+        }
+        if (selected) {
+          _stagedSelections.add(
+            ClinicalLabRequestCatalogSelection(
+              option: item,
+              kind: _selectionKind,
+            ),
+          );
+          continue;
+        }
+        _stagedSelections.removeWhere(
+          (ClinicalLabRequestCatalogSelection selection) =>
+              selection.option.apiId == item.apiId &&
+              selection.kind == _selectionKind,
+        );
+      }
     });
   }
 
@@ -656,5 +672,58 @@ class _ClinicalLabRequestCatalogDialogState
       }
       unawaited(_loadPanelCatalog(_searchQuery, _searchRequest));
     });
+  }
+}
+
+class _CatalogKindRadioGroup extends StatelessWidget {
+  const _CatalogKindRadioGroup({
+    required this.value,
+    required this.testsLabel,
+    required this.panelsLabel,
+    required this.onChanged,
+  });
+
+  final ClinicalLabRequestCatalogKind value;
+  final String testsLabel;
+  final String panelsLabel;
+  final ValueChanged<ClinicalLabRequestCatalogKind> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return RadioGroup<ClinicalLabRequestCatalogKind>(
+      groupValue: value,
+      onChanged: (ClinicalLabRequestCatalogKind? next) {
+        if (next != null && next != value) {
+          onChanged(next);
+        }
+      },
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: RadioListTile<ClinicalLabRequestCatalogKind>(
+              value: ClinicalLabRequestCatalogKind.tests,
+              title: Text(testsLabel),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ),
+          SizedBox(width: theme.spacing.md),
+          Expanded(
+            child: RadioListTile<ClinicalLabRequestCatalogKind>(
+              value: ClinicalLabRequestCatalogKind.panels,
+              title: Text(panelsLabel),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

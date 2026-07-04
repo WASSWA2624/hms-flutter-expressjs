@@ -179,54 +179,47 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     ClinicalLabRequestCatalogKind initialKind =
         ClinicalLabRequestCatalogKind.tests,
   }) async {
-    await showClinicalLabRequestCatalogDialog(
-      context: context,
-      referenceData: widget.referenceData,
-      facilityOfferingsOnly: true,
-      onSearchLabTests: widget.onSearchLabTests,
-      initialKind: initialKind,
-      selectedCount: _requests.length,
-      isSelected:
-          (
-            ClinicalActionCatalogOption option,
-            ClinicalLabRequestCatalogKind kind,
-          ) {
-            return _requests.any(
-              (_PendingLabRequest request) =>
-                  request.id == option.apiId &&
-                  _matchesCatalogKind(request.kind, kind),
-            );
-          },
-      onSelectionChanged:
-          (
-            ClinicalActionCatalogOption option,
-            ClinicalLabRequestCatalogKind kind,
-            bool selected,
-          ) {
-            setState(() {
-              _failure = null;
-              final _LabRequestSelectionKind selectionKind =
-                  kind == ClinicalLabRequestCatalogKind.tests
-                  ? _LabRequestSelectionKind.tests
-                  : _LabRequestSelectionKind.panels;
-              if (selected) {
-                if (_isDuplicateSelection(option, selectionKind)) {
-                  return;
-                }
-                _requests.add(
-                  _PendingLabRequest(kind: selectionKind, option: option),
-                );
-                return;
-              }
-              _requests.removeWhere(
+    final List<ClinicalLabRequestCatalogSelection>? confirmed =
+        await showClinicalLabRequestCatalogDialog(
+          context: context,
+          referenceData: widget.referenceData,
+          facilityOfferingsOnly: true,
+          onSearchLabTests: widget.onSearchLabTests,
+          initialKind: initialKind,
+          initialSelections: _requests
+              .map(
                 (_PendingLabRequest request) =>
-                    request.id == option.apiId &&
-                    request.kind == selectionKind,
-              );
-              _pruneSelection();
-            });
-          },
-    );
+                    ClinicalLabRequestCatalogSelection(
+                      option: request.option,
+                      kind: _matchesCatalogKind(
+                            request.kind,
+                            ClinicalLabRequestCatalogKind.tests,
+                          )
+                          ? ClinicalLabRequestCatalogKind.tests
+                          : ClinicalLabRequestCatalogKind.panels,
+                    ),
+              )
+              .toList(growable: false),
+        );
+    if (!mounted || confirmed == null) {
+      return;
+    }
+    setState(() {
+      _failure = null;
+      _requests
+        ..clear()
+        ..addAll(
+          confirmed.map(
+            (ClinicalLabRequestCatalogSelection selection) => _PendingLabRequest(
+              kind: selection.kind == ClinicalLabRequestCatalogKind.tests
+                  ? _LabRequestSelectionKind.tests
+                  : _LabRequestSelectionKind.panels,
+              option: selection.option,
+            ),
+          ),
+        );
+      _pruneSelection();
+    });
   }
 
   bool _matchesCatalogKind(
@@ -402,16 +395,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       _selectedRequestKeys.clear();
       _failure = null;
     });
-  }
-
-  bool _isDuplicateSelection(
-    ClinicalActionCatalogOption option,
-    _LabRequestSelectionKind kind,
-  ) {
-    return _requests.any(
-      (_PendingLabRequest request) =>
-          request.kind == kind && request.id == option.apiId,
-    );
   }
 
   Future<void> _submit() async {

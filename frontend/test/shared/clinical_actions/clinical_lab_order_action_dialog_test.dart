@@ -57,15 +57,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      expect(find.text('CHOOSE LAB TESTS'), findsOneWidget);
+      expect(find.text('CHOOSE LAB TESTS OR PANELS'), findsOneWidget);
       expect(find.text('0 selected'), findsOneWidget);
+      expect(find.byType(RadioListTile<ClinicalLabRequestCatalogKind>), findsNWidgets(2));
 
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
 
       expect(find.text('1 selected'), findsOneWidget);
 
-      await tester.tap(find.text('Done'));
+      await tester.tap(
+        find.widgetWithText(
+          AppButton,
+          'Confirm selected tests or panels',
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Complete blood count'), findsWidgets);
@@ -88,7 +94,12 @@ void main() {
       await tester.pumpAndSettle();
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Done'));
+      await tester.tap(
+        find.widgetWithText(
+          AppButton,
+          'Confirm selected tests or panels',
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Complete blood count'), findsWidgets);
@@ -126,7 +137,12 @@ void main() {
       await tester.pumpAndSettle();
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Done'));
+      await tester.tap(
+        find.widgetWithText(
+          AppButton,
+          'Confirm selected tests or panels',
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Remove item').first);
@@ -168,7 +184,12 @@ void main() {
       await tester.pumpAndSettle();
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Done'));
+      await tester.tap(
+        find.widgetWithText(
+          AppButton,
+          'Confirm selected tests or panels',
+        ),
+      );
       await tester.pumpAndSettle();
 
       await _tapTableRowCheckbox(tester, 'Complete blood count');
@@ -177,6 +198,57 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsOneWidget);
       expect(find.text('Test name'), findsOneWidget);
       expect(find.text('Remove item'), findsOneWidget);
+    });
+
+    testWidgets('catalog picker cancel discards staged selections', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: _sampleCatalogOptions(),
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      await _tapRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+      expect(find.text('1 selected'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Complete blood count'), findsNothing);
+      expect(
+        find.text(
+          'No lab requests selected. Use Add items to choose tests or panels.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('catalog picker close discards staged selections', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: _sampleCatalogOptions(),
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      await _tapRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Complete blood count'), findsNothing);
     });
 
     testWidgets('loads facility catalog offerings only', (
