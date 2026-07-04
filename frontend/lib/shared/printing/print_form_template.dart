@@ -337,8 +337,7 @@ $renderedPages
     required bool explicitPages,
   }) {
     final bool isFirstPage = pageNumber == 1;
-    return '''
-<article class="print-template-page">
+    final String pageBody = '''
   ${isFirstPage ? _header(branding) : _compactHeader(patientContext)}
   ${isFirstPage ? _patientContextSection(patientContext) : ''}
   <section class="print-template-title print-template-title--standard">
@@ -349,11 +348,32 @@ $renderedPages
   <section class="print-template-content">
     $bodyHtml
   </section>
-  ${signatures == null ? '' : _renderSignatures(signatures)}
+''';
+    final String pageFooter = '''
   <footer class="print-template-footer">
     <span>${escape(footerNote ?? '')}</span>
     <span>${explicitPages ? 'Page $pageNumber of $totalPages' : ''}</span>
   </footer>
+''';
+
+    if (signatures != null) {
+      return '''
+<article class="print-template-page print-template-page--anchored-footer">
+  <div class="print-template-page-body">
+$pageBody
+  </div>
+  <div class="print-template-page-bottom">
+    ${_renderSignatures(signatures)}
+$pageFooter
+  </div>
+</article>
+''';
+    }
+
+    return '''
+<article class="print-template-page">
+$pageBody
+$pageFooter
 </article>
 ''';
   }
@@ -462,9 +482,6 @@ $renderedPages
     String? stampLabel,
   ) {
     final String normalizedName = name?.trim() ?? '';
-    final String nameLine = normalizedName.isEmpty
-        ? ''
-        : '<div class="print-template-signature-name">${escape(normalizedName)}</div>';
     final String stampLine = stampLabel == null || stampLabel.trim().isEmpty
         ? '<div class="print-template-signature-stamp"></div>'
         : '<div class="print-template-signature-stamp">${escape(stampLabel.trim())}</div>';
@@ -472,7 +489,7 @@ $renderedPages
     return '''
 <div class="print-template-signature">
   <div class="print-template-signature-label">${escape(label)}</div>
-  $nameLine
+  <div class="print-template-signature-name">${escape(normalizedName)}</div>
   $stampLine
 </div>
 ''';
@@ -609,6 +626,23 @@ $renderedPages
     color: #374151;
     font-size: 11px;
   }
+  .print-template-page--anchored-footer {
+    display: flex;
+    flex-direction: column;
+    min-height: 265mm;
+  }
+  .print-template-page-body {
+    flex: 1 1 auto;
+  }
+  .print-template-page-bottom {
+    break-inside: avoid;
+    flex: 0 0 auto;
+    margin-top: auto;
+    page-break-inside: avoid;
+  }
+  .print-template-page-bottom .print-template-footer {
+    margin-top: 4mm;
+  }
   .print-template-signature-label {
     color: #4b5563;
     font-size: 9px;
@@ -633,10 +667,13 @@ $renderedPages
     display: flex;
     flex-wrap: nowrap;
     gap: 20mm;
+    margin-top: 0;
     page-break-inside: avoid;
   }
   .print-template-signatures .print-template-signature {
+    display: flex;
     flex: 1 1 0;
+    flex-direction: column;
     min-width: 0;
   }
 '''
@@ -844,6 +881,9 @@ $renderedPages
       margin: 0;
       padding: 0;
       box-shadow: none;
+    }
+    .print-template-page--anchored-footer {
+      min-height: 100%;
     }
   }
 </style>

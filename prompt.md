@@ -1,127 +1,46 @@
-# Laboratory Result Report — Print Layout Refinement
+# Refine laboratory print report — signature footer layout
 
-## Objective
+## Context
+Laboratory result reports (e.g. **Laboratory result report** for DemoCare General Hospital) use the shared print template in `frontend/lib/shared/printing/print_form_template.dart`. Header, patient metadata, results table, and footer note are acceptable — **do not change them**.
 
-Refine the **Laboratory result report** print template (shared `PrintFormTemplate` standard layout) so the document reads like a clean clinical report: compact facility header, inline patient metadata, lab-order and print timestamp under the title, unchanged results table, and a single-row signature block.
+## Problem
+The **Printed by** / **Verified by** signature block is not finalized. On the current output:
 
-**Reference:** attached screenshots of the current report (DemoCare General Hospital / Joshua Suuna / LAB0000006).
+- **Printed by** may show a name (e.g. “Platform Demo”); **Verified by** may have no name.
+- Because the name line is omitted when empty, the signature/stamp rule (the horizontal line above where someone signs) sits higher on the right than on the left.
+- When the results table is short, the signature block and page footer float mid-page instead of anchoring to the bottom, leaving awkward empty space.
 
----
+## Goal
+Polish only the signature/footer region so the report looks balanced in print preview and on paper.
 
-## Scope
+## Requirements
 
-| In scope | Out of scope |
-| -------- | ------------ |
-| Shared print template layout (`PrintFormTemplate` standard layout) | Lab result table columns, abnormal-row styling, or result-entry logic |
-| Facility header ordering and fields | New data sources or API changes |
-| Patient / order / print metadata presentation | Legacy (non-standard) print layout |
-| Signature row layout | Footer note text |
+### 1. Horizontally aligned signature lines
+- The **signature/stamp rule** under **Printed by** and **Verified by** must sit on the **same baseline**, left and right.
+- Alignment must hold in all cases:
+  - name present on one side only
+  - names present on both sides
+  - names absent on both sides
+- Labels (“PRINTED BY”, “VERIFIED BY”) stay at the top of each column; optional names occupy a **fixed reserved area** above the rule so missing names do not shift the line.
 
-**Primary files:**
+### 2. Bottom-anchored footer block
+- On the **last page**, treat **signatures + footer note** (“Generated from laboratory workflow data.”) as one footer unit.
+- That unit should sit at the **bottom of the printable page area**, even when body content is short.
+- Do not overlap or collide with the results table on longer reports; content may grow upward naturally when needed.
 
-- `frontend/lib/shared/printing/print_form_template.dart` — HTML/CSS layout
-- `frontend/lib/app/printing/print_form_template_context.dart` — facility branding data (contacts, address, details)
-- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart` — lab report invocation (`printFormTemplateDocument`, `_reportContextReference`)
-- `frontend/test/shared/printing/print_form_template_test.dart` — update/add layout assertions
+### 3. Scope and constraints
+- Change layout/CSS (and minimal markup if needed) in the shared print template only.
+- Preserve existing labels, copy, and data wiring (`PrintFormSignatures`, l10n keys).
+- Apply consistently to all reports using the standard print layout, not only lab reports.
+- Keep print-safe behavior: no broken page breaks, no clipped signature area.
 
----
+## Acceptance criteria
+- [ ] With **Printed by** filled and **Verified by** empty, both signature rules align on one horizontal line.
+- [ ] With both names filled, both rules still align.
+- [ ] With both names empty, both rules still align.
+- [ ] Short-content report: signatures and footer note appear at the bottom of the page, not immediately under the table.
+- [ ] Long-content report: layout remains readable; signatures stay on the last page only.
+- [ ] Existing print template tests pass; add/update tests for signature alignment and bottom anchoring if practical.
 
-## Layout Requirements
-
-### 1. Facility header (top block)
-
-**Order (top → bottom):**
-
-1. **Facility name** (bold, prominent)
-2. **Address** — full address on **one line** (join line 1, city, country with commas; no line breaks)
-3. **Contacts** — only when present, comma-separated on one line:
-   - `Phone: {value}` if phone exists
-   - `Email: {value}` if email exists
-   - Example: `Phone: +2567001000, Email: info@democare.ug`
-
-**Remove from header:** facility **Type** and **Tenant** (stop populating `PrintFormBranding.details` for facility branding, or omit from render).
-
-Keep logo placement as today (left of facility block).
-
----
-
-### 2. Patient information (no bordered boxes)
-
-Replace the current 3-column bordered key-value grid with **plain inline text** — no borders, no boxed cells.
-
-**Single line** (comma-separated pairs):
-
-```
-Patient name: {name}, Patient ID: {id}, Encounter ID: {id}
-```
-
-- Omit any field whose value is empty.
-- Use existing l10n labels (`printFormPatientNameLabel`, `printFormPatientIdLabel`, `printFormEncounterIdLabel`).
-- Format: `{Label}: {value}` with `, ` between pairs.
-
----
-
-### 3. Report title block
-
-Keep the main title (e.g. **Laboratory result report**) as `h1`.
-
-**Directly below the title** — one row with lab order and print timestamp:
-
-```
-Lab order: {LAB0000006}, Printed on: {date}, Printed at: {time}
-```
-
-| Field | Rule |
-| ----- | ---- |
-| Lab order | Move out of patient context; use `PrintFormContextReference` value (label: `labOrderFieldLabel`) |
-| Printed on | Date only — locale-formatted date from `printedAt` |
-| Printed at | Time only — locale-formatted time from `printedAt` |
-
-- Add l10n keys if needed (`printFormPrintedOnLabel`, `printFormPrintedAtLabel`) — do not hardcode strings.
-- Remove the separate top-right metadata box that currently shows a single combined “Printed” datetime.
-
----
-
-### 4. Results table
-
-**No changes.** Keep columns: Tests, Reference range, Result, Flag. Preserve abnormal-result row highlighting (red text / bold).
-
----
-
-### 5. Signatures (footer of content)
-
-**Printed by** and **Verified by** on the **same horizontal row** (two equal columns), each with:
-
-- Uppercase label
-- Printed name (when available)
-- Ample space below for **signature / stamp** line
-
-Ensure sufficient width and min-height so both blocks fit side-by-side on A4 without wrapping labels onto separate rows.
-
----
-
-## Acceptance Criteria
-
-- [ ] Facility header shows name → single-line address → phone/email contacts only; no Type or Tenant
-- [ ] Patient name, Patient ID, and Encounter ID appear inline on one line without bordered boxes
-- [ ] Lab order ID sits below the report title, not in the patient line
-- [ ] Print timestamp split into **Printed on** (date) and **Printed at** (time) on the same row as lab order
-- [ ] Results table and abnormal highlighting unchanged
-- [ ] Printed by / Verified by share one row with room for signature and stamp
-- [ ] All new user-visible strings in `app_en.arb`
-- [ ] `flutter test frontend/test/shared/printing/print_form_template_test.dart` passes
-- [ ] Lab report print preview matches the layout above
-
----
-
-## Quality Gate
-
-From `frontend/`:
-
-```bash
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/shared/printing/print_form_template_test.dart
-```
-
-Manually print/preview a lab report with at least one abnormal result row to confirm visual layout.
+## Reference
+See attached lab report screenshots: misaligned **Verified by** stamp line vs **Printed by**, and unused vertical space above the signature block.

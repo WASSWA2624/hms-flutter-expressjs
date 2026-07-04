@@ -196,6 +196,92 @@ void main() {
     expect(html, isNot(contains('Tenant:')));
   });
 
+  testWidgets('anchors signature footer and reserves name space', (
+    tester,
+  ) async {
+    late String html;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            html = PrintFormTemplate.build(
+              context: context,
+              title: 'Laboratory result report',
+              appBranding: const PrintFormBranding(
+                name: 'HOSSPI',
+                kind: PrintFormBrandingKind.app,
+              ),
+              patientContext: const PrintFormPatientContext(
+                patientNameLabel: 'Patient name',
+                patientName: 'Joshua Suuna',
+              ),
+              signatures: const PrintFormSignatures(
+                printedByLabel: 'Printed by',
+                verifiedByLabel: 'Verified by',
+                printedByName: 'Platform Demo',
+                signatureStampLabel: 'Signature / stamp',
+              ),
+              footerNote: 'Generated from laboratory workflow data.',
+              bodyHtml: '<p>Short results</p>',
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(html, contains('print-template-page--anchored-footer'));
+    expect(html, contains('print-template-page-bottom'));
+    expect(
+      _occurrences(html, '<div class="print-template-signature-name">'),
+      2,
+    );
+    expect(
+      html,
+      contains(
+        '<div class="print-template-signature-name">Platform Demo</div>',
+      ),
+    );
+    expect(html, contains('<div class="print-template-signature-name"></div>'));
+    expect(html, contains('Generated from laboratory workflow data.'));
+  });
+
+  testWidgets('renders signature name slots when both names are empty', (
+    tester,
+  ) async {
+    late String html;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            html = PrintFormTemplate.build(
+              context: context,
+              title: 'Laboratory result report',
+              appBranding: const PrintFormBranding(
+                name: 'HOSSPI',
+                kind: PrintFormBrandingKind.app,
+              ),
+              signatures: const PrintFormSignatures(
+                printedByLabel: 'Printed by',
+                verifiedByLabel: 'Verified by',
+                signatureStampLabel: 'Signature / stamp',
+              ),
+              bodyHtml: '<p>Short results</p>',
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(
+      _occurrences(html, '<div class="print-template-signature-name"></div>'),
+      2,
+    );
+  });
+
   testWidgets('drops empty explicit pages instead of printing blanks', (
     tester,
   ) async {
