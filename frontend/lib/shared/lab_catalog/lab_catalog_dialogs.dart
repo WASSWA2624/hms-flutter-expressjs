@@ -1330,6 +1330,8 @@ class _LabEnableFacilityOfferingDialogState
     extends State<LabEnableFacilityOfferingDialog> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
   static const int _searchLimit = 100;
+  static const String _categoryFilterKey = 'category';
+  static const String _resultKindFilterKey = 'result_kind';
 
   late final TextEditingController _searchController;
   Timer? _searchDebounce;
@@ -1337,9 +1339,28 @@ class _LabEnableFacilityOfferingDialogState
   AppFailure? _failure;
   bool _isSearching = true;
   int _searchRequest = 0;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+
+  List<LabCatalogItem> get _filteredCatalogItems {
+    final String? category = _filterValue.option(_categoryFilterKey);
+    final String? resultKind = _filterValue.option(_resultKindFilterKey);
+    return _catalogItems
+        .where((LabCatalogItem item) {
+          if (category != null && item.category != category) {
+            return false;
+          }
+          if (_showingTests &&
+              resultKind != null &&
+              item.resultKind != resultKind) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
+  }
 
   List<LabCatalogItem> get _availableItems {
-    return _catalogItems
+    return _filteredCatalogItems
         .where((LabCatalogItem item) => !item.isOfferedAtFacility)
         .toList(growable: false);
   }
@@ -1468,13 +1489,16 @@ class _LabEnableFacilityOfferingDialogState
             )
           else if (!_isSearching && _catalogItems.isEmpty)
             AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
+          else if (!_isSearching && _filteredCatalogItems.isEmpty)
+            AppMutedText(l10n.labEnableOfferingNoItemsLabel)
           else if (!_isSearching && available.isEmpty)
             AppMutedText(l10n.labEnableOfferingNoItemsLabel)
           else
             AppListTable<LabCatalogItem>(
-              items: _catalogItems,
+              items: _filteredCatalogItems,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              tableHorizontalMargin: 0,
               isLoading: _isSearching,
               onRowSelected: (LabCatalogItem item) {
                 if (!item.isOfferedAtFacility) {
@@ -1489,6 +1513,39 @@ class _LabEnableFacilityOfferingDialogState
                 matcher: (LabCatalogItem item, String query) =>
                     item.matchesSearch(query),
                 onChanged: _scheduleCatalogSearch,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.labFiltersLabel,
+                advancedFilterTitle: l10n.labFiltersLabel,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                enableDateFilter: false,
+                allFieldsLabel: l10n.labScopeAll,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: _categoryFilterKey,
+                    label: l10n.labCategoryLabel,
+                    allLabel: l10n.labScopeAll,
+                    choices: _enableOfferingFilterChoices(
+                      _catalogItems.map((LabCatalogItem item) => item.category),
+                    ),
+                  ),
+                  if (_showingTests)
+                    AppSearchBarFilterGroup(
+                      key: _resultKindFilterKey,
+                      label: l10n.labResultKindLabel,
+                      allLabel: l10n.labScopeAll,
+                      choices: _enableOfferingFilterChoices(
+                        _catalogItems.map(
+                          (LabCatalogItem item) => item.resultKind,
+                        ),
+                      ),
+                    ),
+                ],
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
               ),
               emptyBuilder: (_) => AppMutedText(
                 _showingTests
@@ -1535,10 +1592,8 @@ class _LabEnableFacilityOfferingDialogState
         label: _showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             appListTableCompareText(left.name, right.name),
-        cellBuilder: (_, LabCatalogItem item) => Text(
+        cellBuilder: (_, LabCatalogItem item) => _catalogOfferingNameCell(
           item.name ?? item.displayTitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
         ),
       ),
       AppListTableColumn<LabCatalogItem>(
@@ -1593,6 +1648,31 @@ String _joinEnableOfferingSubtitle(
       .whereType<String>()
       .where((String value) => value.isNotEmpty)
       .join(' · ');
+}
+
+List<AppSearchBarFilterChoice> _enableOfferingFilterChoices(
+  Iterable<String?> values,
+) {
+  return _uniqueNonEmpty(values)
+      .map(
+        (String value) =>
+            AppSearchBarFilterChoice(value: value, label: value),
+      )
+      .toList(growable: false);
+}
+
+Widget _catalogOfferingNameCell(String label, {double maxWidth = 280}) {
+  return ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: maxWidth),
+    child: Tooltip(
+      message: label,
+      child: Text(
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  );
 }
 
 class _LabEnableOfferingPriceDialog extends StatefulWidget {

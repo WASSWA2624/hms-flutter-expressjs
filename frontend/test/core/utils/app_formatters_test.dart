@@ -30,6 +30,10 @@ void main() {
         AppFormatters.currency(1234.5, locale, currencyCode: 'USD'),
         r'$1,234.50',
       );
+      expect(
+        AppFormatters.currency(50000, locale, currencyCode: 'UGX'),
+        'UGX 50,000',
+      );
       expect(AppFormatters.percent(0.42, locale), '42%');
     });
   });

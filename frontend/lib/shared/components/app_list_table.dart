@@ -528,6 +528,7 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityResetLabel,
     this.columnVisibilityController,
     this.columnVisibilityStorageKey,
+    this.tableHorizontalMargin,
     super.key,
   }) : assert(
          items != null || page != null,
@@ -571,6 +572,7 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnVisibilityResetLabel;
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
   final String? columnVisibilityStorageKey;
+  final double? tableHorizontalMargin;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -816,6 +818,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           minWidth: _tableMinWidth(constraints, visibleColumns),
           rowColorBuilder: widget.rowColorBuilder,
           compact: _usesCompactTableLayout(constraints),
+          horizontalMargin: widget.tableHorizontalMargin,
           sortColumnKey: _sortColumnKey,
           sortAscending: _sortAscending,
           onSort: _sortByColumn,
@@ -1523,6 +1526,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.minWidth,
     required this.rowColorBuilder,
     required this.compact,
+    this.horizontalMargin,
     required this.sortColumnKey,
     required this.sortAscending,
     required this.onSort,
@@ -1535,6 +1539,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   final double minWidth;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool compact;
+  final double? horizontalMargin;
   final String? sortColumnKey;
   final bool sortAscending;
   final ValueChanged<AppListTableColumn<T>> onSort;
@@ -1562,9 +1567,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double horizontalMargin = widget.compact
-        ? theme.spacing.sm
-        : theme.spacing.md;
+    final double horizontalMargin = widget.horizontalMargin ??
+        (widget.compact ? theme.spacing.sm : theme.spacing.md);
     final double columnSpacing = widget.compact
         ? theme.spacing.md
         : theme.spacing.xl;

@@ -33,11 +33,26 @@ abstract final class AppFormatters {
     String? currencyCode,
     int? decimalDigits,
   }) {
-    return NumberFormat.simpleCurrency(
+    final String formatted = NumberFormat.simpleCurrency(
       locale: _localeName(locale),
       name: currencyCode,
       decimalDigits: decimalDigits,
     ).format(value);
+    return _normalizeCurrencySpacing(formatted, currencyCode);
+  }
+
+  static String _normalizeCurrencySpacing(
+    String formatted,
+    String? currencyCode,
+  ) {
+    final String normalized = formatted
+        .replaceAll('\u00a0', ' ')
+        .replaceAll('\u202f', ' ');
+    final String? code = currencyCode?.trim();
+    if (code == null || code.length != 3) {
+      return normalized;
+    }
+    return normalized.replaceFirst(RegExp('^$code(?=\\d)'), '$code ');
   }
 
   static String percent(num value, Locale locale) {

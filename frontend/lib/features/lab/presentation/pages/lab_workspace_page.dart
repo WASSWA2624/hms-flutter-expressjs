@@ -914,14 +914,6 @@ class _LabConfigurationsDialogState
   }
 
   @override
-  void didUpdateWidget(covariant _LabConfigurationsDialog oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_shouldSyncCatalogState(_dialogState, widget.state)) {
-      _dialogState = widget.state;
-    }
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     _columnVisibilityController.dispose();
@@ -1056,6 +1048,7 @@ class _LabConfigurationsDialogState
               maxVisibleItems: _maxVisibleCatalogItems,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              tableHorizontalMargin: 0,
               columnVisibilityController: _columnVisibilityController,
               columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
               columnVisibilityTitle: l10n.labTableColumnsTitle,
@@ -1411,10 +1404,8 @@ class _LabConfigurationsDialogState
         label: showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             appListTableCompareText(left.name, right.name),
-        cellBuilder: (_, LabCatalogItem item) => Text(
+        cellBuilder: (_, LabCatalogItem item) => _catalogItemNameCell(
           item.name ?? item.displayTitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
         ),
       ),
       AppListTableColumn<LabCatalogItem>(
@@ -2581,6 +2572,20 @@ String _formatCatalogUnitPrice(
     price.toDouble(),
     Localizations.localeOf(context),
     currencyCode: item.currency ?? appDefaultCurrencyCode,
+  );
+}
+
+Widget _catalogItemNameCell(String label, {double maxWidth = 280}) {
+  return ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: maxWidth),
+    child: Tooltip(
+      message: label,
+      child: Text(
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
   );
 }
 
