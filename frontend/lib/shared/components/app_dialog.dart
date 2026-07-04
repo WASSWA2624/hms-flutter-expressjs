@@ -421,8 +421,12 @@ class _DialogBody extends StatelessWidget {
       compact ? theme.spacing.md : theme.spacing.lg,
     );
     final TextStyle titleStyle =
-        (compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge) ??
-        TextStyle(color: colorScheme.onSurface, fontSize: compact ? 18 : 22);
+        ((compact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge) ??
+                TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: compact ? 18 : 22,
+                ))
+            .copyWith(fontWeight: FontWeight.w700);
     final TextStyle contentStyle =
         theme.textTheme.bodyMedium ?? TextStyle(color: colorScheme.onSurface);
     final Widget? dialogContent = content == null

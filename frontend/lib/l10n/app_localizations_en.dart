@@ -9934,6 +9934,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search test, result, reference range, or flag';
 
   @override
+  String get labReportFiltersLabel => 'Report filters';
+
+  @override
+  String get labReportFlagFilterLabel => 'Result flag';
+
+  @override
+  String get labReportAllFlagsLabel => 'All flags';
+
+  @override
+  String get labReportSelectionFilterLabel => 'Selection';
+
+  @override
+  String get labReportSelectionAllLabel => 'All tests';
+
+  @override
+  String get labReportSelectionSelectedLabel => 'Selected';
+
+  @override
+  String get labReportSelectionUnselectedLabel => 'Unselected';
+
+  @override
   String get labReportTableColumnsTitle => 'Report table columns';
 
   @override

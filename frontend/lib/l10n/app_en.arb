@@ -12840,6 +12840,34 @@
   "@labReportSearchHint": {
     "description": "Hint text for searching tests in the lab report preview table."
   },
+  "labReportFiltersLabel": "Report filters",
+  "@labReportFiltersLabel": {
+    "description": "Filter button label for the lab report preview table."
+  },
+  "labReportFlagFilterLabel": "Result flag",
+  "@labReportFlagFilterLabel": {
+    "description": "Filter group label for result flags in the lab report preview."
+  },
+  "labReportAllFlagsLabel": "All flags",
+  "@labReportAllFlagsLabel": {
+    "description": "All flags option in the lab report preview filter dialog."
+  },
+  "labReportSelectionFilterLabel": "Selection",
+  "@labReportSelectionFilterLabel": {
+    "description": "Filter group label for row selection in the lab report preview."
+  },
+  "labReportSelectionAllLabel": "All tests",
+  "@labReportSelectionAllLabel": {
+    "description": "All tests option in the lab report preview selection filter."
+  },
+  "labReportSelectionSelectedLabel": "Selected",
+  "@labReportSelectionSelectedLabel": {
+    "description": "Selected tests option in the lab report preview selection filter."
+  },
+  "labReportSelectionUnselectedLabel": "Unselected",
+  "@labReportSelectionUnselectedLabel": {
+    "description": "Unselected tests option in the lab report preview selection filter."
+  },
   "labReportTableColumnsTitle": "Report table columns",
   "@labReportTableColumnsTitle": {
     "description": "Title for configuring visible columns in the lab report preview table."

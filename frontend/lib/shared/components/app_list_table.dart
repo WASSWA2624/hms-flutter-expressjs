@@ -1461,7 +1461,7 @@ class _NumberedMobileListItem extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1588,7 +1588,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       dataRowMaxHeight: rowMaxHeight,
       headingTextStyle: theme.textTheme.labelLarge?.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
       dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
         color: colorScheme.onSurface,
@@ -1604,7 +1604,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               textAlign: TextAlign.center,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1717,7 +1717,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final double maxWidth = compact ? 132 : 164;
     final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
       color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
-      fontWeight: isSorted ? FontWeight.w800 : FontWeight.w700,
+      fontWeight: isSorted ? FontWeight.w700 : FontWeight.w600,
     );
 
     if (!column.isSortable) {

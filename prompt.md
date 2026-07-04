@@ -1,56 +1,49 @@
-# Lab — Result Report Preview UI Simplification
+# Lab Result Report Preview — UI refinements
+
+Refine the **Result Report Preview** dialog (`_LabReportPreviewDialog` in `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`) shown when previewing/printing lab results. Match existing HMS patterns; prefer shared-component fixes over one-off styling.
 
 ## Context
-Refactor the **Result Report Preview** dialog in the Lab module (`_LabReportPreviewDialog` / `_LabReportPreview` in `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`). The dialog lets users choose which test results to include before printing. Keep the dialog title **"Result Report Preview"** unchanged.
 
-## Goal
-Replace the current multi-section layout with a single, clean, searchable table that doubles as both the selection UI and the print preview. The preview must accurately reflect what appears on the printed report.
+The dialog uses `AppDialog` + `AppReportPreviewPanel` + `AppListTable`. The toolbar currently exposes search and **Table settings** only. Patient metadata sits above the table; footer actions are **Reset selection** (tertiary) and **Print report**.
 
-## Remove
-- The options header (`_reportOptionsHeader`): selection title, hint text, "Include order details" toggle, selected-count label, and **Select all** / **Clear selection** actions.
-- Per-order section headers (`_PreviewOrderSectionHeader`) and order metadata blocks (order ID, ordered-at, order status) from the preview body.
-- The **Close** footer action (dialog already has a close control in the top-right).
-- The custom `_PreviewResultsTable` / Flutter `Table` implementation.
+## Requirements
 
-## Keep
-- Dialog title and print icon.
-- **Reset selection** and **Print report** footer actions.
-- Existing selection state (`_selectedItemIds`, `_toggleReportItem`, `_resetSelection`, `_printSelectedReport`).
-- Patient name and patient ID in the report header (above the table).
-- Signature / stamp placeholder below the table.
+### 1. Typography hierarchy (shared components first)
 
-## Replace with `AppListTable`
-Use the shared `AppListTable` component (`frontend/lib/shared/components/app_list_table.dart`), following patterns from `lab_workspace_page.dart`.
+- **`AppListTable`** (`frontend/lib/shared/components/app_list_table.dart`): Reduce table header weight — column headers and `#` currently use `FontWeight.w700`–`w800`; soften to a lighter emphasis (e.g. `w600`–`w700`) so headers do not overpower row content.
+- **`AppDialog`** (`frontend/lib/shared/components/app_dialog.dart`): Make the **dialog title** visually bolder/prominent (e.g. stronger weight on `_DialogHeader` title). Apply at component level so all dialogs benefit consistently.
 
-### Columns
-| # | Column | Notes |
-|---|--------|-------|
-| 1 | *(selection)* | Row checkbox per test. **Header checkbox** selects/deselects all visible rows (respecting active search filter). No "Include" column label — checkbox only. |
-| 2 | Tests | `item.displayTitle` |
-| 3 | Reference range | `item.displayReferenceRange` |
-| 4 | Result | `item.displayResultValue` |
-| 5 | Flag | `_resolveItemResultFlagLabel` |
+### 2. Search toolbar — add Filter control
 
-Wire `AppListTableColumnVisibilityController` so users can show/hide data columns (Tests, Reference range, Result, Flag) via the table's column-settings control. **Selection checkbox column is always visible.** Only visible columns should appear in the printed report.
+- Beside **Table settings**, show a **Filter** button using existing `AppListTableSearch` / `AppSearchBar` APIs (`filterGroups`, `filterValue`, `onFilterChanged`, or `showAdvancedFilterButton` where appropriate).
+- Follow patterns from other workspaces (e.g. pharmacy, reports) for filter UX and l10n.
+- Suggested lab report filters: result status/flag (Normal, Abnormal, Pending, Cancelled, Negative, etc.) and/or selection state (selected vs unselected). Keep scope practical for preview/print workflow.
 
-### Search
-Enable `AppListTableSearch` so users can filter tests by name, result value, flag, etc.
+### 3. Search must match all visible cell text
 
-### Abnormal result highlighting
-Reuse existing abnormal-detection logic (`_isAbnormalStatus`, `_computedNumericFlagToken`, `_resolveItemResultFlagLabel`). In the preview table:
-- Color-code abnormal rows/flags (e.g. error tone for High, Low, Critical, Abnormal).
-- Apply the same styling in the **printed HTML** (`_labReportTableHtml` / `_labReportPrintStyle`) so abnormal results remain visually distinct on paper.
+- Typing **"pending"** must surface rows whose **Result** shows the pending placeholder (`labStatusPendingResults`), not only rows with a stored result value.
+- Extend `_matchesReportItemSearch` so search covers every user-visible string in the table: test name, reference range, **displayed result** (including pending/cancelled placeholders), and flag label.
+- Search and filters should compose (both apply together).
 
-## Print behavior
-- Print only **selected** rows.
-- Print only **visible** (column-settings-enabled) columns — exclude the selection checkbox from print output.
-- Remove order-details branching (`showOrderDetails`); always render a flat results table.
-- Ensure preview and print output stay in sync.
+### 4. Patient identity — clearer prominence
+
+- Patient name and Patient ID above the table (`_PreviewMeta`) must be easy to scan at a glance — stronger typography and/or layout (e.g. label/value separation, `titleSmall`/`bodyLarge`, or a compact summary row). Do not rely on small `bodySmall` alone.
+
+### 5. Reset selection — clearer action affordance
+
+- Replace or restyle the plain **Reset selection** tertiary text action so it reads as an intentional reset control (e.g. secondary button with reset/clear icon, consistent with other HMS actions). Keep existing `_resetSelection` behavior.
 
 ## Acceptance criteria
-- [ ] Dialog shows only: patient info, searchable `AppListTable` with column settings, signature placeholder, and footer actions (**Reset selection**, **Print report**).
-- [ ] Header checkbox toggles all filtered rows; per-row checkboxes toggle individual tests.
-- [ ] Abnormal results are flagged and color-coded in preview and print.
-- [ ] Column visibility preferences control which data columns appear in preview and print.
-- [ ] No redundant Close button, selection hints, order-detail toggles, or separate select-all/clear controls outside the table.
-- [ ] Existing print flow and selection reset continue to work.
+
+- [ ] Dialog title is bolder; table headers are noticeably less bold.
+- [ ] Filter button appears next to Table settings and filters rows correctly.
+- [ ] Search finds rows by flag, test name, range, result value, **and** pending/cancelled display text.
+- [ ] Patient name and ID are clearly visible without squinting.
+- [ ] Reset selection looks and behaves like a deliberate reset action.
+- [ ] Add/update l10n keys in `app_en.arb` as needed; run codegen if required.
+- [ ] No regressions to print flow, row selection, or column visibility.
+
+## Out of scope
+
+- Changing print template/HTML layout.
+- New backend fields or lab workflow logic.

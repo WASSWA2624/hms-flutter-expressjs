@@ -18502,6 +18502,48 @@ abstract class AppLocalizations {
   /// **'Search test, result, reference range, or flag'**
   String get labReportSearchHint;
 
+  /// Filter button label for the lab report preview table.
+  ///
+  /// In en, this message translates to:
+  /// **'Report filters'**
+  String get labReportFiltersLabel;
+
+  /// Filter group label for result flags in the lab report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Result flag'**
+  String get labReportFlagFilterLabel;
+
+  /// All flags option in the lab report preview filter dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'All flags'**
+  String get labReportAllFlagsLabel;
+
+  /// Filter group label for row selection in the lab report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection'**
+  String get labReportSelectionFilterLabel;
+
+  /// All tests option in the lab report preview selection filter.
+  ///
+  /// In en, this message translates to:
+  /// **'All tests'**
+  String get labReportSelectionAllLabel;
+
+  /// Selected tests option in the lab report preview selection filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get labReportSelectionSelectedLabel;
+
+  /// Unselected tests option in the lab report preview selection filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Unselected'**
+  String get labReportSelectionUnselectedLabel;
+
   /// Title for configuring visible columns in the lab report preview table.
   ///
   /// In en, this message translates to:

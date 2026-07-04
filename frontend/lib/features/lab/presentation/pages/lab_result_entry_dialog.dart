@@ -18,6 +18,9 @@ import 'package:hosspi_hms/shared/printing/printing.dart';
 
 part 'lab_result_entry_status.dart';
 
+const String _labReportFlagFilterKey = 'flag';
+const String _labReportSelectionFilterKey = 'selection';
+
 /// Full-screen lab result entry workspace opened from the lab worklist or queue.
 class LabResultEntryDialog extends ConsumerStatefulWidget {
   const LabResultEntryDialog({
@@ -2612,6 +2615,7 @@ class _LabReportPreviewDialogState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<LabOrderItem>
   _columnVisibilityController;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   bool _isPrinting = false;
 
   @override
@@ -2660,6 +2664,12 @@ class _LabReportPreviewDialogState
                 items: _allReportItems,
                 selectedItemIds: _selectedItemIds,
                 searchController: _searchController,
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                filterGroups: _reportPreviewFilterGroups(l10n),
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
                 columnVisibilityController: _columnVisibilityController,
                 columns: _reportPreviewColumns(context),
                 columnChoices: _reportPreviewColumnChoices(context),
@@ -2667,8 +2677,9 @@ class _LabReportPreviewDialogState
               ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.labResetReportSelectionAction,
+          leadingIcon: Icons.restart_alt_outlined,
           enabled: !_isPrinting,
           onPressed: () => setState(_resetSelection),
         ),
@@ -2770,7 +2781,7 @@ class _LabReportPreviewDialogState
         return ValueListenableBuilder<TextEditingValue>(
           valueListenable: _searchController,
           builder: (BuildContext context, TextEditingValue value, Widget? _) {
-            final List<LabOrderItem> filteredItems = _filteredReportItems(
+            final List<LabOrderItem> filteredItems = _visibleReportItems(
               value.text,
             );
             final bool allSelected = filteredItems.isNotEmpty &&
@@ -2814,12 +2825,78 @@ class _LabReportPreviewDialogState
     );
   }
 
-  List<LabOrderItem> _filteredReportItems(String query) {
+  List<LabOrderItem> _visibleReportItems(String query) {
     return _allReportItems
         .where(
-          (LabOrderItem item) => _matchesReportItemSearch(context, item, query),
+          (LabOrderItem item) =>
+              _matchesReportItemFilter(
+                context,
+                item,
+                _filterValue,
+                _selectedItemIds,
+              ) &&
+              _matchesReportItemSearch(context, item, query),
         )
         .toList(growable: false);
+  }
+
+  List<AppSearchBarFilterGroup> _reportPreviewFilterGroups(
+    AppLocalizations l10n,
+  ) {
+    return <AppSearchBarFilterGroup>[
+      AppSearchBarFilterGroup(
+        key: _labReportFlagFilterKey,
+        label: l10n.labReportFlagFilterLabel,
+        allLabel: l10n.labReportAllFlagsLabel,
+        choices: _reportFlagFilterChoices(l10n),
+      ),
+      AppSearchBarFilterGroup(
+        key: _labReportSelectionFilterKey,
+        label: l10n.labReportSelectionFilterLabel,
+        allLabel: l10n.labReportSelectionAllLabel,
+        choices: <AppSearchBarFilterChoice>[
+          AppSearchBarFilterChoice(
+            value: 'selected',
+            label: l10n.labReportSelectionSelectedLabel,
+          ),
+          AppSearchBarFilterChoice(
+            value: 'unselected',
+            label: l10n.labReportSelectionUnselectedLabel,
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<AppSearchBarFilterChoice> _reportFlagFilterChoices(
+    AppLocalizations l10n,
+  ) {
+    return <AppSearchBarFilterChoice>[
+      AppSearchBarFilterChoice(
+        value: 'NORMAL',
+        label: l10n.labStatusNormal,
+      ),
+      AppSearchBarFilterChoice(
+        value: 'ABNORMAL',
+        label: l10n.labStatusAbnormal,
+      ),
+      AppSearchBarFilterChoice(
+        value: 'CRITICAL',
+        label: l10n.labStatusCritical,
+      ),
+      AppSearchBarFilterChoice(
+        value: 'PENDING',
+        label: l10n.labStatusPending,
+      ),
+      AppSearchBarFilterChoice(
+        value: 'CANCELLED',
+        label: l10n.labStatusCancelled,
+      ),
+      AppSearchBarFilterChoice(
+        value: 'NEGATIVE',
+        label: l10n.labNegativeOption,
+      ),
+    ];
   }
 
   void _toggleFilteredReportItems(
@@ -2926,6 +3003,10 @@ class _LabReportPreview extends StatelessWidget {
     required this.items,
     required this.selectedItemIds,
     required this.searchController,
+    required this.filterValue,
+    required this.hasActiveFilters,
+    required this.filterGroups,
+    required this.onFilterChanged,
     required this.columnVisibilityController,
     required this.columns,
     required this.columnChoices,
@@ -2936,6 +3017,10 @@ class _LabReportPreview extends StatelessWidget {
   final List<LabOrderItem> items;
   final Set<String> selectedItemIds;
   final TextEditingController searchController;
+  final AppSearchBarFilterValue filterValue;
+  final bool hasActiveFilters;
+  final List<AppSearchBarFilterGroup> filterGroups;
+  final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
   final AppListTableColumnVisibilityController<LabOrderItem>
   columnVisibilityController;
   final List<AppListTableColumn<LabOrderItem>> columns;
@@ -2958,8 +3043,8 @@ class _LabReportPreview extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.sm),
         Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.xs,
+          spacing: theme.spacing.lg,
+          runSpacing: theme.spacing.sm,
           children: <Widget>[
             _PreviewMeta(
               label: l10n.labReportPatientLabel,
@@ -2989,8 +3074,23 @@ class _LabReportPreview extends StatelessWidget {
             semanticLabel: l10n.labReportSearchLabel,
             hintText: l10n.labReportSearchHint,
             matcher: (LabOrderItem item, String query) {
-              return _matchesReportItemSearch(context, item, query);
+              return _matchesReportItemSearch(context, item, query) &&
+                  _matchesReportItemFilter(
+                    context,
+                    item,
+                    filterValue,
+                    selectedItemIds,
+                  );
             },
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.labReportFiltersLabel,
+            advancedFilterTitle: l10n.labReportFiltersLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            filterGroups: filterGroups,
+            filterValue: filterValue,
+            hasActiveFilters: hasActiveFilters,
+            onFilterChanged: onFilterChanged,
           ),
           rowColorBuilder: (BuildContext context, LabOrderItem item) {
             final bool selected = selectedItemIds.contains(
@@ -3107,9 +3207,29 @@ class _PreviewMeta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Text(
-      '$label: $value',
-      style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+    final ColorScheme colorScheme = theme.colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 160),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -4611,13 +4731,113 @@ bool _matchesReportItemSearch(
   if (normalized.isEmpty) {
     return true;
   }
-  final Iterable<String> values = <String?>[
+  final Iterable<String> values = <String>[
     item.displayTitle,
-    item.displayReferenceRange,
-    item.displayResultValue,
+    item.displayReferenceRange ?? '',
+    _reportItemDisplayResult(context, item),
     _resolveItemResultFlagLabel(context, item),
-  ].map((String? value) => value?.trim().toLowerCase() ?? '');
+  ].map((String value) => value.trim().toLowerCase());
   return values.any((String value) => value.contains(normalized));
+}
+
+String _reportItemDisplayResult(BuildContext context, LabOrderItem item) {
+  final AppLocalizations l10n = context.l10n;
+  final String? value = item.displayResultValue;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.labStatusPendingResults;
+  }
+  return value;
+}
+
+bool _matchesReportItemFilter(
+  BuildContext context,
+  LabOrderItem item,
+  AppSearchBarFilterValue filterValue,
+  Set<String> selectedItemIds,
+) {
+  if (!filterValue.isActive) {
+    return true;
+  }
+
+  final String? flagFilter = filterValue.option(_labReportFlagFilterKey);
+  if (flagFilter != null &&
+      !_matchesReportItemFlagFilter(context, item, flagFilter)) {
+    return false;
+  }
+
+  final String? selectionFilter =
+      filterValue.option(_labReportSelectionFilterKey);
+  if (selectionFilter != null) {
+    final bool isSelected =
+        selectedItemIds.contains(_itemSelectionKey(item));
+    return switch (selectionFilter) {
+      'selected' => isSelected,
+      'unselected' => !isSelected,
+      _ => true,
+    };
+  }
+
+  return true;
+}
+
+bool _matchesReportItemFlagFilter(
+  BuildContext context,
+  LabOrderItem item,
+  String flagFilter,
+) {
+  final String token = _resolveReportItemFlagToken(context, item);
+  if (token == flagFilter) {
+    return true;
+  }
+  if (flagFilter == 'ABNORMAL') {
+    return <String>{'ABNORMAL', 'HIGH', 'LOW'}.contains(token);
+  }
+  if (flagFilter == 'NEGATIVE') {
+    if (token == 'NEGATIVE' || token == 'NON_REACTIVE') {
+      return true;
+    }
+    final String label =
+        _resolveItemResultFlagLabel(context, item).trim().toLowerCase();
+    return label == context.l10n.labNegativeOption.trim().toLowerCase();
+  }
+  return false;
+}
+
+String _resolveReportItemFlagToken(BuildContext context, LabOrderItem item) {
+  if (item.isRejected || _isCancelledItem(item)) {
+    return 'CANCELLED';
+  }
+
+  final String? explicitFlag = item.resultFlag?.trim().toUpperCase();
+  if (explicitFlag != null && explicitFlag.isNotEmpty) {
+    return explicitFlag;
+  }
+
+  final String? optionFlag =
+      _storedQualitativeOptionFlag(item)?.trim().toUpperCase();
+  if (optionFlag != null && optionFlag.isNotEmpty) {
+    return optionFlag;
+  }
+
+  final String valueText = item.resultValue?.trim() ?? '';
+  if (valueText.isNotEmpty) {
+    final String? computed = _computedNumericFlagToken(item, valueText);
+    if (computed != null && computed.trim().isNotEmpty) {
+      return computed.trim().toUpperCase();
+    }
+  }
+
+  final String? displayResult = item.displayResultValue?.trim();
+  if (displayResult == null || displayResult.isEmpty) {
+    return 'PENDING';
+  }
+
+  final String? status = item.effectiveResultStatus?.trim().toUpperCase();
+  if (status != null && status.isNotEmpty) {
+    return status;
+  }
+
+  return 'PENDING';
 }
 
 bool _isAbnormalReportItem(LabOrderItem item) {
