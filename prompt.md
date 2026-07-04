@@ -1,68 +1,88 @@
-# Refine patient lab request flow
+# Request Lab dialog — toolbar, table, and patient context polish
 
-## Context
+Refine the **Request Lab** dialog (`ClinicalLabOrderActionDialog`) layout and styling. The selected-items table and overall flow are good; apply the changes below.
 
-Entry point: **Patient detail → Quick actions → Request lab** (`ClinicalLabOrderActionDialog`).
+## Scope
 
-Current behavior uses a compact modal with a dropdown-style catalog picker (`ClinicalLabRequestCatalogDialog`). Replace that picker with the standard **`AppListTable`** pattern used elsewhere (e.g. patient registry, lab enable-offering dialog in `lab_catalog_dialogs.dart`).
+Primary files:
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart` (`ClinicalRequestFlowToolbar`, `ClinicalRequestSelectedCatalogTable`)
+- `frontend/lib/l10n/app_en.arb` (new/updated labels)
+- `frontend/test/shared/clinical_actions/clinical_lab_order_action_dialog_test.dart`
 
-## 1. Request Lab dialog (main modal)
+Reuse existing components and patterns; keep changes minimal and consistent with other clinical request dialogs.
 
-Update `ClinicalLabOrderActionDialog`:
+---
 
-- Open **maximized by default** (`AppDialog.initialMaximized: true`).
-- **Remove the Cancel button**; closing via the dialog X / backdrop is sufficient.
-- Add a **leading icon** to the primary **Request lab** action button (match existing icon usage, e.g. `Icons.science_outlined`).
-- Keep the existing flow: help text → **Add items** / **Review billing** toolbar → summary bar (item count + total price) → selected-items panel → submit.
+## 1. Toolbar layout
 
-## 2. Choose lab tests dialog (Add items)
+Replace the current left-aligned `Wrap` toolbar with a single horizontal row:
 
-Replace the current search dropdown in `ClinicalLabRequestCatalogDialog` with a table-based multi-select picker.
+| Left | Right |
+|------|-------|
+| Patient context (see §2) | Action buttons |
 
-### Layout
+**Right-aligned actions** (order left → right):
+1. **Remove selected** — leftmost in the right group; red/destructive icon (treat as a flagged destructive action)
+2. **Add items**
+3. **Review billing**
 
-- Maximized dialog titled **Choose lab tests**.
-- **Segmented control** at top: **Individual tests** | **Lab panels** (keep current tab behavior).
-- Below: **`AppListTable`** with the standard toolbar:
-  - Search bar (name, code, category, specimen, status)
-  - **Advanced filters**
-  - **Table settings** (column visibility)
-- Footer: **Done** only (no per-row Add button required if checkbox selection is used).
+- **Remove selected** is enabled only when one or more table rows are checked.
+- **Review billing** stays disabled when the list is empty.
+- Use `MainAxisAlignment.spaceBetween` (or equivalent) so patient info stays left and actions stay right.
 
-### Data scope
+---
 
-- Show **only catalog items configured for the current facility** (`facilityOfferingsOnly: true` — already passed from the main dialog).
-- Include both **lab tests** and **lab panels**, switched by the segmented control.
+## 2. Patient context strip (toolbar left)
 
-### Table columns
+Show who the request is for on **one row** (no wrapping to multiple lines):
 
-| Column | Source |
-|--------|--------|
-| Full name | `ClinicalActionCatalogOption.name` |
-| Short name / code | `ClinicalActionCatalogOption.code` |
-| Test type | `ClinicalActionCatalogOption.category` (e.g. Chemistry) |
-| Price | `ClinicalActionCatalogOption.unitPrice` + currency |
+```
+Name: {patient name}   ID: {patient ID}   Encounter ID: {encounter ID}
+```
 
-Add a trailing **checkbox column** for selection. Toggling a checkbox adds/removes the item from the pending lab request list in the parent dialog.
+- Use the `label: value` pattern above.
+- Source values from the dialog’s patient/encounter context (e.g. pass `patientName`, `patientId`, and `encounterId` into `ClinicalLabOrderActionDialog` from existing call sites such as `openPatientLabOrderDialog`).
+- Omit a field only if the value is genuinely unavailable; do not show empty placeholders.
 
-### Selection UX
+---
 
-- Show a **selected count** (e.g. “3 selected”) in the dialog header or above the table.
-- **Sort order**: selected rows **pinned to the top**; unselected rows below.
-- **Visual treatment**: selected rows use a distinct highlight (reuse existing `AppListTable` row-color patterns where available).
-- Prevent duplicate selections (keep current duplicate guard).
-- Persist selections when switching between **Individual tests** and **Lab panels** tabs within the same session.
+## 3. Selected-items table
 
-## 3. Implementation notes
+### Container
+- Remove corner radius — **sharp, square edges** on the table border (no `borderRadius`).
 
-- Reuse **`AppListTable`**, **`AppListTableSearch`**, and **`AppListTableColumnVisibilityController`** — do not introduce a one-off table widget.
-- Follow patterns in `lab_catalog_dialogs.dart` (`LabEnableOfferingDialog`) for maximized catalog dialogs with search + filters.
-- Wire selection state back to `ClinicalLabOrderActionDialog` so the main dialog’s summary bar and selected-items panel update live.
-- Add/adjust l10n keys in `app_en.arb` for any new labels (column headers, selection count).
-- Add widget tests covering: default maximized main dialog, checkbox multi-select, selected-first sort order, and facility-only filtering.
+### Column headers & alignment
+- Rename the **Name** column to a clearer label such as **Test name** (pick the clearest option; update l10n).
+- Left-align all table cell content (name, type, price) so long test/panel names read cleanly.
+
+### Actions column
+- Replace the icon-only delete control with a labeled action: **Remove item**.
+- Style the delete icon and/or label as **red/destructive** to signal a flagged removal.
+- Clicking **Remove item** removes that row (existing `onDeleteItem` behavior).
+
+### Bulk remove
+- Row checkboxes + header select-all stay as-is.
+- **Remove selected** in the toolbar removes all checked rows (existing `onRemoveSelected` behavior).
+
+---
 
 ## 4. Out of scope
 
-- Billing dialog changes.
-- Backend/API changes (use existing `onSearchLabTests` callback).
-- Radiology or other clinical request flows (apply the same pattern only if explicitly requested later).
+Do **not** change:
+- Catalog picker (“Add items”) flow
+- Billing review dialog
+- Submit / “Request lab” footer action
+- Pricing, totals, or row data logic
+
+---
+
+## 5. Acceptance criteria
+
+- [ ] Toolbar: patient context left; **Remove selected**, **Add items**, **Review billing** right-aligned in that order.
+- [ ] **Remove selected** uses a red/destructive icon and is disabled until rows are selected.
+- [ ] Patient strip shows `Name`, `ID`, and `Encounter ID` on a single row.
+- [ ] Table has square corners (no border radius).
+- [ ] **Name** column renamed to a clear test-name label; cells are left-aligned.
+- [ ] Per-row **Remove item** action is labeled and uses destructive/red styling.
+- [ ] Existing widget tests updated; new cases cover toolbar alignment, patient strip, and remove actions where practical.

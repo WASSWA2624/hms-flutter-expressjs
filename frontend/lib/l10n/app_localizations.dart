@@ -31137,6 +31137,42 @@ abstract class AppLocalizations {
   /// **'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.'**
   String get clinicalRequestMainPanelHelp;
 
+  /// Remove checked items from a clinical request selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected'**
+  String get clinicalRequestRemoveSelectedAction;
+
+  /// Name column on selected catalog item table.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get clinicalRequestSelectedNameColumnLabel;
+
+  /// Type column on selected catalog item table.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get clinicalRequestSelectedTypeColumnLabel;
+
+  /// Price column on selected catalog item table.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get clinicalRequestSelectedPriceColumnLabel;
+
+  /// Actions column on selected catalog item table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get clinicalRequestSelectedActionsColumnLabel;
+
+  /// Empty state for selected lab requests table.
+  ///
+  /// In en, this message translates to:
+  /// **'No lab requests selected. Use Add items to choose tests or panels.'**
+  String get clinicalLabRequestSelectedTableEmptyLabel;
+
   /// Selected item count on request flow summary bar.
   ///
   /// In en, this message translates to:

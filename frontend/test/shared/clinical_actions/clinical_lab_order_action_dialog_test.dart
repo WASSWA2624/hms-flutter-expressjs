@@ -32,6 +32,14 @@ void main() {
 
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Cancel'), findsNothing);
+      expect(
+        find.text(
+          'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.',
+        ),
+        findsNothing,
+      );
+      expect(find.text('No items'), findsNothing);
+      expect(find.text('Selected lab requests'), findsNothing);
       expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
       expect(find.widgetWithIcon(AppButton, Icons.science_outlined), findsOneWidget);
     });
@@ -60,7 +68,41 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      expect(find.text('1 item'), findsOneWidget);
+      expect(find.text('Complete blood count'), findsWidgets);
+      expect(find.text('Test'), findsOneWidget);
+      expect(find.text('\$25.00'), findsWidgets);
+      expect(find.text('Total'), findsOneWidget);
+    });
+
+    testWidgets('supports removing a selected lab request from the table', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: _sampleCatalogOptions(),
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await _tapRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Complete blood count'), findsWidgets);
+
+      await tester.tap(find.byIcon(Icons.delete_outline).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Complete blood count'), findsNothing);
+      expect(
+        find.text(
+          'No lab requests selected. Use Add items to choose tests or panels.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('loads facility catalog offerings only', (

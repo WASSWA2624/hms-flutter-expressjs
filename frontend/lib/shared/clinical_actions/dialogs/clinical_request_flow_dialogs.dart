@@ -79,6 +79,7 @@ class ClinicalRequestFlowToolbar extends StatelessWidget {
   const ClinicalRequestFlowToolbar({
     required this.onAddItems,
     this.onReviewBilling,
+    this.onRemoveSelected,
     this.addItemsLabel,
     this.enabled = true,
     this.showBillingAction = true,
@@ -87,6 +88,7 @@ class ClinicalRequestFlowToolbar extends StatelessWidget {
 
   final VoidCallback? onAddItems;
   final VoidCallback? onReviewBilling;
+  final VoidCallback? onRemoveSelected;
   final String? addItemsLabel;
   final bool enabled;
   final bool showBillingAction;
@@ -113,8 +115,290 @@ class ClinicalRequestFlowToolbar extends StatelessWidget {
             enabled: enabled && onReviewBilling != null,
             onPressed: onReviewBilling,
           ),
+        if (onRemoveSelected != null)
+          AppButton.tertiary(
+            label: l10n.clinicalRequestRemoveSelectedAction,
+            leadingIcon: Icons.delete_outline,
+            enabled: enabled,
+            onPressed: onRemoveSelected,
+          ),
       ],
     );
+  }
+}
+
+const String _selectedCatalogSelectColumnKey = 'select';
+const String _selectedCatalogNameColumnKey = 'name';
+const String _selectedCatalogTypeColumnKey = 'type';
+const String _selectedCatalogPriceColumnKey = 'price';
+const String _selectedCatalogActionsColumnKey = 'actions';
+
+typedef ClinicalRequestSelectedCatalogItemKey<T> = String Function(T item);
+typedef ClinicalRequestSelectedCatalogItemLabel<T> = String Function(T item);
+typedef ClinicalRequestSelectedCatalogItemOption<T> =
+    ClinicalActionCatalogOption Function(T item);
+
+/// Read-only table for reviewing and removing selected catalog items.
+class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
+  const ClinicalRequestSelectedCatalogTable({
+    required this.items,
+    required this.itemKey,
+    required this.nameLabel,
+    required this.typeLabel,
+    required this.optionFor,
+    required this.selectedKeys,
+    required this.onSelectedKeysChanged,
+    required this.onDeleteItem,
+    required this.emptyLabel,
+    this.enabled = true,
+    this.billing,
+    super.key,
+  });
+
+  final List<T> items;
+  final ClinicalRequestSelectedCatalogItemKey<T> itemKey;
+  final ClinicalRequestSelectedCatalogItemLabel<T> nameLabel;
+  final ClinicalRequestSelectedCatalogItemLabel<T> typeLabel;
+  final ClinicalRequestSelectedCatalogItemOption<T> optionFor;
+  final Set<String> selectedKeys;
+  final ValueChanged<Set<String>> onSelectedKeysChanged;
+  final ValueChanged<T> onDeleteItem;
+  final String emptyLabel;
+  final bool enabled;
+  final ClinicalRequestBillingSubmit? billing;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalRequestBillingLineItem> lineItems =
+        clinicalRequestBillingLineItems(
+          options: items.map(optionFor).toList(growable: false),
+        );
+    final num total = clinicalRequestBillingTotal(lineItems);
+    final String currency =
+        billing?.currency ?? resolveClinicalRequestBillingCurrency(lineItems);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(theme.spacing.xs),
+      ),
+      child: AppListTable<T>(
+        items: items,
+        displayMode: AppListTableDisplayMode.table,
+        tableHorizontalMargin: theme.spacing.sm,
+        itemKeyBuilder: (T item) => ValueKey<String>(itemKey(item)),
+        columns: _columns(context),
+        emptyBuilder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(theme.spacing.lg),
+            child: Center(
+              child: Text(
+                emptyLabel,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        },
+        footer: items.isEmpty
+            ? null
+            : Padding(
+                padding: EdgeInsets.fromLTRB(
+                  theme.spacing.md,
+                  theme.spacing.sm,
+                  theme.spacing.md,
+                  theme.spacing.md,
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(top: theme.spacing.sm),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            l10n.clinicalRequestBillingTotalLabel,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          clinicalRequestPriceLabel(
+                            context,
+                            total > 0 ? total : null,
+                            currency,
+                          ),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+        mobileItemBuilder: (BuildContext context, T item) {
+          final String key = itemKey(item);
+          return AppListItemRow(
+            title: nameLabel(item),
+            subtitle: typeLabel(item),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  clinicalRequestCatalogPriceLabel(context, optionFor(item)),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Checkbox(
+                  value: selectedKeys.contains(key),
+                  onChanged: enabled
+                      ? (bool? value) => _toggleKey(key, value ?? false)
+                      : null,
+                  visualDensity: VisualDensity.compact,
+                ),
+                AppButton(
+                  iconOnly: true,
+                  leadingIcon: Icons.delete_outline,
+                  label: l10n.clinicalLabRequestDeleteSelectionAction,
+                  semanticLabel: l10n.clinicalLabRequestDeleteSelectionAction,
+                  tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+                  enabled: enabled,
+                  onPressed: enabled ? () => onDeleteItem(item) : null,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<AppListTableColumn<T>> _columns(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return <AppListTableColumn<T>>[
+      _selectionColumn(context),
+      AppListTableColumn<T>(
+        id: _selectedCatalogNameColumnKey,
+        label: l10n.clinicalRequestSelectedNameColumnLabel,
+        sortComparator: (T left, T right) =>
+            appListTableCompareText(nameLabel(left), nameLabel(right)),
+        cellBuilder: (BuildContext context, T item) {
+          return Text(nameLabel(item));
+        },
+      ),
+      AppListTableColumn<T>(
+        id: _selectedCatalogTypeColumnKey,
+        label: l10n.clinicalRequestSelectedTypeColumnLabel,
+        sortComparator: (T left, T right) =>
+            appListTableCompareText(typeLabel(left), typeLabel(right)),
+        cellBuilder: (BuildContext context, T item) {
+          return Text(typeLabel(item));
+        },
+      ),
+      AppListTableColumn<T>(
+        id: _selectedCatalogPriceColumnKey,
+        label: l10n.clinicalRequestSelectedPriceColumnLabel,
+        numeric: true,
+        sortComparator: (T left, T right) {
+          final num? leftPrice = clinicalCatalogOptionUnitPrice(optionFor(left));
+          final num? rightPrice =
+              clinicalCatalogOptionUnitPrice(optionFor(right));
+          return (leftPrice ?? 0).compareTo(rightPrice ?? 0);
+        },
+        cellBuilder: (BuildContext context, T item) {
+          return Text(clinicalRequestCatalogPriceLabel(context, optionFor(item)));
+        },
+      ),
+      AppListTableColumn<T>(
+        id: _selectedCatalogActionsColumnKey,
+        label: l10n.clinicalRequestSelectedActionsColumnLabel,
+        alwaysVisible: true,
+        cellBuilder: (BuildContext context, T item) {
+          return Align(
+            alignment: Alignment.centerRight,
+            child: AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: l10n.clinicalLabRequestDeleteSelectionAction,
+              semanticLabel: l10n.clinicalLabRequestDeleteSelectionAction,
+              tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+              enabled: enabled,
+              onPressed: enabled ? () => onDeleteItem(item) : null,
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  AppListTableColumn<T> _selectionColumn(BuildContext context) {
+    return AppListTableColumn<T>(
+      id: _selectedCatalogSelectColumnKey,
+      label: '',
+      alwaysVisible: true,
+      headerBuilder: (BuildContext context) {
+        final bool allSelected = items.isNotEmpty &&
+            items.every((T item) => selectedKeys.contains(itemKey(item)));
+        final bool someSelected = items.any(
+          (T item) => selectedKeys.contains(itemKey(item)),
+        );
+        return Checkbox(
+          tristate: true,
+          value: allSelected
+              ? true
+              : someSelected
+              ? null
+              : false,
+          onChanged: !enabled || items.isEmpty
+              ? null
+              : (bool? checked) => _toggleAll(checked ?? false),
+          visualDensity: VisualDensity.compact,
+        );
+      },
+      cellBuilder: (BuildContext context, T item) {
+        final String key = itemKey(item);
+        return Checkbox(
+          value: selectedKeys.contains(key),
+          onChanged: enabled
+              ? (bool? value) => _toggleKey(key, value ?? false)
+              : null,
+          visualDensity: VisualDensity.compact,
+        );
+      },
+    );
+  }
+
+  void _toggleKey(String key, bool selected) {
+    final Set<String> next = Set<String>.from(selectedKeys);
+    if (selected) {
+      next.add(key);
+    } else {
+      next.remove(key);
+    }
+    onSelectedKeysChanged(next);
+  }
+
+  void _toggleAll(bool selected) {
+    if (!selected) {
+      onSelectedKeysChanged(<String>{});
+      return;
+    }
+    onSelectedKeysChanged(items.map(itemKey).toSet());
   }
 }
 

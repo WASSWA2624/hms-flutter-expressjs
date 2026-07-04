@@ -16670,6 +16670,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.';
 
   @override
+  String get clinicalRequestRemoveSelectedAction => 'Remove selected';
+
+  @override
+  String get clinicalRequestSelectedNameColumnLabel => 'Name';
+
+  @override
+  String get clinicalRequestSelectedTypeColumnLabel => 'Type';
+
+  @override
+  String get clinicalRequestSelectedPriceColumnLabel => 'Price';
+
+  @override
+  String get clinicalRequestSelectedActionsColumnLabel => 'Actions';
+
+  @override
+  String get clinicalLabRequestSelectedTableEmptyLabel =>
+      'No lab requests selected. Use Add items to choose tests or panels.';
+
+  @override
   String clinicalRequestFlowItemCountLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

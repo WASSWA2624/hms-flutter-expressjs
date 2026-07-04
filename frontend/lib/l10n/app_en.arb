@@ -21459,6 +21459,30 @@
   "@clinicalRequestMainPanelHelp": {
     "description": "Help text on modular clinical request main dialog."
   },
+  "clinicalRequestRemoveSelectedAction": "Remove selected",
+  "@clinicalRequestRemoveSelectedAction": {
+    "description": "Remove checked items from a clinical request selection table."
+  },
+  "clinicalRequestSelectedNameColumnLabel": "Name",
+  "@clinicalRequestSelectedNameColumnLabel": {
+    "description": "Name column on selected catalog item table."
+  },
+  "clinicalRequestSelectedTypeColumnLabel": "Type",
+  "@clinicalRequestSelectedTypeColumnLabel": {
+    "description": "Type column on selected catalog item table."
+  },
+  "clinicalRequestSelectedPriceColumnLabel": "Price",
+  "@clinicalRequestSelectedPriceColumnLabel": {
+    "description": "Price column on selected catalog item table."
+  },
+  "clinicalRequestSelectedActionsColumnLabel": "Actions",
+  "@clinicalRequestSelectedActionsColumnLabel": {
+    "description": "Actions column on selected catalog item table."
+  },
+  "clinicalLabRequestSelectedTableEmptyLabel": "No lab requests selected. Use Add items to choose tests or panels.",
+  "@clinicalLabRequestSelectedTableEmptyLabel": {
+    "description": "Empty state for selected lab requests table."
+  },
   "clinicalRequestFlowItemCountLabel": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
   "@clinicalRequestFlowItemCountLabel": {
     "description": "Selected item count on request flow summary bar.",

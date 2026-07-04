@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -7,7 +5,6 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart';
@@ -64,7 +61,7 @@ final class _PendingLabRequest {
 
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
-  String? _focusedSelectionId;
+  final Set<String> _selectedRequestKeys = <String>{};
   bool _isSaving = false;
   AppFailure? _failure;
   ClinicalRequestBillingSubmit? _billingSubmit;
@@ -78,15 +75,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final bool isEditingOrder = widget.existingOrder != null;
-    final List<ClinicalRequestBillingLineItem> lineItems =
-        clinicalRequestBillingLineItems(
-          options: _requests
-              .map((_PendingLabRequest request) => request.option)
-              .toList(growable: false),
-        );
 
     return AppDialog(
       title: Text(
@@ -107,26 +96,16 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
               context: context,
               failure: _failure!,
             ),
-          Text(
-            l10n.clinicalRequestMainPanelHelp,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
           ClinicalRequestFlowToolbar(
             enabled: !_isSaving,
             onAddItems: _openCatalogPicker,
             onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
+            onRemoveSelected: _selectedRequestKeys.isEmpty
+                ? null
+                : _deleteSelectedRequests,
           ),
-          SizedBox(height: theme.spacing.md),
-          ClinicalRequestFlowSummaryBar(
-            itemCount: _requests.length,
-            lineItems: lineItems,
-            billing: _billingSubmit,
-          ),
-          SizedBox(height: theme.spacing.md),
-          Expanded(child: _buildSelectedPanel(context)),
+          SizedBox(height: Theme.of(context).spacing.md),
+          Expanded(child: _buildSelectedTable(context)),
         ],
       ),
       actions: <Widget>[
@@ -143,60 +122,47 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     );
   }
 
-  Widget _buildSelectedPanel(BuildContext context) {
+  Widget _buildSelectedTable(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final _PendingLabRequest? focusedRequest = _focusedRequest();
-    final List<AppSelectOption<String>> options = clinicalCatalogSelectOptions(
-      _requests.map((_PendingLabRequest request) => request.option).toList(),
-      icon: Icons.science_outlined,
-      labelBuilder: (ClinicalActionCatalogOption option) {
-        final _PendingLabRequest request = _requests.firstWhere(
-          (_PendingLabRequest item) => item.option.apiId == option.apiId,
-        );
-        return ClinicalCatalogOptionLabel(
-          option: option,
-          subtitle: clinicalActionJoinDisplay(<String?>[
-            _labRequestTypeLabel(l10n, request.kind),
-            option.displaySubtitle,
-          ]),
-        );
-      },
-    );
 
-    return ClinicalRequestSelectionManager(
-      title: l10n.clinicalLabRequestSelectedTitle,
-      emptyLabel: l10n.clinicalLabRequestNoSelection,
-      options: options,
-      value: _focusedSelectionId,
-      enabled: !_isSaving,
-      onChanged: (String? value) {
-        setState(() => _focusedSelectionId = value);
+    return ClinicalRequestSelectedCatalogTable<_PendingLabRequest>(
+      items: _requests,
+      itemKey: _requestKey,
+      nameLabel: ( _PendingLabRequest request) =>
+          request.option.name ?? request.option.displayTitle,
+      typeLabel: ( _PendingLabRequest request) =>
+          _labRequestTypeLabel(l10n, request.kind),
+      optionFor: ( _PendingLabRequest request) => request.option,
+      selectedKeys: _selectedRequestKeys,
+      onSelectedKeysChanged: (Set<String> keys) {
+        setState(() {
+          _selectedRequestKeys
+            ..clear()
+            ..addAll(keys);
+        });
       },
-      onEdit: focusedRequest == null
-          ? null
-          : () => _editRequest(_requestIndex(focusedRequest)),
-      onDelete: focusedRequest == null
-          ? null
-          : () => _deleteRequest(_requestIndex(focusedRequest)),
+      onDeleteItem: ( _PendingLabRequest request) {
+        _deleteRequest(_requestIndex(request));
+      },
+      emptyLabel: l10n.clinicalLabRequestSelectedTableEmptyLabel,
+      enabled: !_isSaving,
+      billing: _billingSubmit,
     );
   }
 
-  _PendingLabRequest? _focusedRequest() {
-    if (_focusedSelectionId == null) {
-      return null;
-    }
-    for (final _PendingLabRequest request in _requests) {
-      if (request.id == _focusedSelectionId) {
-        return request;
-      }
-    }
-    return null;
+  String _requestKey(_PendingLabRequest request) {
+    return '${request.kind.name}:${request.id}';
   }
 
   int _requestIndex(_PendingLabRequest request) {
     return _requests.indexWhere(
-      (_PendingLabRequest item) => item.id == request.id,
+      (_PendingLabRequest item) => _requestKey(item) == _requestKey(request),
     );
+  }
+
+  void _pruneSelection() {
+    final Set<String> validKeys = _requests.map(_requestKey).toSet();
+    _selectedRequestKeys.removeWhere((String key) => !validKeys.contains(key));
   }
 
   Future<void> _openCatalogPicker({
@@ -247,9 +213,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                     request.id == option.apiId &&
                     request.kind == selectionKind,
               );
-              if (_focusedSelectionId == option.apiId) {
-                _focusedSelectionId = null;
-              }
+              _pruneSelection();
             });
           },
     );
@@ -357,30 +321,28 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     );
   }
 
-  void _editRequest(int index) {
-    if (index < 0 || index >= _requests.length) {
-      return;
-    }
-    final _PendingLabRequest request = _requests[index];
-    unawaited(
-      _openCatalogPicker(
-        initialKind: request.kind == _LabRequestSelectionKind.tests
-            ? ClinicalLabRequestCatalogKind.tests
-            : ClinicalLabRequestCatalogKind.panels,
-      ),
-    );
-  }
-
   void _deleteRequest(int index) {
     if (index < 0 || index >= _requests.length) {
       return;
     }
-    final String removedId = _requests[index].id;
+    final String removedKey = _requestKey(_requests[index]);
     setState(() {
       _requests.removeAt(index);
-      if (_focusedSelectionId == removedId) {
-        _focusedSelectionId = null;
-      }
+      _selectedRequestKeys.remove(removedKey);
+      _failure = null;
+    });
+  }
+
+  void _deleteSelectedRequests() {
+    if (_selectedRequestKeys.isEmpty) {
+      return;
+    }
+    setState(() {
+      _requests.removeWhere(
+        (_PendingLabRequest request) =>
+            _selectedRequestKeys.contains(_requestKey(request)),
+      );
+      _selectedRequestKeys.clear();
       _failure = null;
     });
   }
