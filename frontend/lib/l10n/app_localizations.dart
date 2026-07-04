@@ -17617,7 +17617,7 @@ abstract class AppLocalizations {
   /// Title for the lab result entry workspace dialog.
   ///
   /// In en, this message translates to:
-  /// **'Lab result entry'**
+  /// **'Lab Result Entry'**
   String get labResultEntryDialogTitle;
 
   /// Subtitle for the lab result entry dialog showing patient and order.
@@ -17923,7 +17923,7 @@ abstract class AppLocalizations {
   /// Title for bulk remove draft lab results confirmation.
   ///
   /// In en, this message translates to:
-  /// **'Remove draft results?'**
+  /// **'Remove Draft Results?'**
   String get labRemoveAllDraftsDialogTitle;
 
   /// Body for bulk remove draft lab results confirmation.
@@ -18163,7 +18163,7 @@ abstract class AppLocalizations {
   /// Localized text for labRequestOrderDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Request lab order'**
+  /// **'Request Lab Order'**
   String get labRequestOrderDialogTitle;
 
   /// Localized text for labPatientIdLabel.
@@ -18241,7 +18241,7 @@ abstract class AppLocalizations {
   /// Localized text for labCollectDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Collect sample'**
+  /// **'Collect Sample'**
   String get labCollectDialogTitle;
 
   /// Localized text for labCollectedAtLabel.
@@ -18265,7 +18265,7 @@ abstract class AppLocalizations {
   /// Localized text for labReceiveDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Receive sample'**
+  /// **'Receive Sample'**
   String get labReceiveDialogTitle;
 
   /// Localized text for labSampleFieldLabel.
@@ -18283,7 +18283,7 @@ abstract class AppLocalizations {
   /// Localized text for labRejectDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reject sample'**
+  /// **'Reject Sample'**
   String get labRejectDialogTitle;
 
   /// Localized text for labRejectReasonLabel.
@@ -18295,7 +18295,7 @@ abstract class AppLocalizations {
   /// Localized text for labReleaseDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Verify lab result'**
+  /// **'Verify Lab Result'**
   String get labReleaseDialogTitle;
 
   /// Localized text for labOrderItemFieldLabel.
@@ -18337,7 +18337,7 @@ abstract class AppLocalizations {
   /// Localized text for labReverseDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reverse lab workflow'**
+  /// **'Reverse Lab Workflow'**
   String get labReverseDialogTitle;
 
   /// Localized text for labReverseReasonLabel.
@@ -18349,7 +18349,7 @@ abstract class AppLocalizations {
   /// Localized text for labRecordQcDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Record quality control'**
+  /// **'Record Quality Control'**
   String get labRecordQcDialogTitle;
 
   /// Localized text for labQcTestFieldLabel.
@@ -18487,7 +18487,7 @@ abstract class AppLocalizations {
   /// Localized text for labReportPreviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'Result report preview'**
+  /// **'Result Report Preview'**
   String get labReportPreviewTitle;
 
   /// Localized text for labReportTitle.
@@ -29364,7 +29364,7 @@ abstract class AppLocalizations {
   /// Localized text for labSelectOrderDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Select lab order'**
+  /// **'Select Lab Order'**
   String get labSelectOrderDialogTitle;
 
   /// Localized text for labSelectOrderDialogBody.
@@ -29400,7 +29400,7 @@ abstract class AppLocalizations {
   /// Title for the dialog that reopens a verified lab result.
   ///
   /// In en, this message translates to:
-  /// **'Edit verified result'**
+  /// **'Edit Verified Result'**
   String get labReopenVerifiedResultDialogTitle;
 
   /// Body text for the verified result reopen dialog.
@@ -29430,7 +29430,7 @@ abstract class AppLocalizations {
   /// Title for the dialog confirming restoration of a cancelled lab test.
   ///
   /// In en, this message translates to:
-  /// **'Restore cancelled test'**
+  /// **'Restore Cancelled Test'**
   String get labRestoreOrderItemDialogTitle;
 
   /// Body confirming restoration of a cancelled lab test.
@@ -29448,7 +29448,7 @@ abstract class AppLocalizations {
   /// Title for the dialog confirming deletion of a lab test request.
   ///
   /// In en, this message translates to:
-  /// **'Delete test request'**
+  /// **'Delete Test Request'**
   String get labDeleteOrderItemDialogTitle;
 
   /// Body confirming deletion of an individual lab test request.
@@ -29466,7 +29466,7 @@ abstract class AppLocalizations {
   /// Dialog title for deleting a lab panel.
   ///
   /// In en, this message translates to:
-  /// **'Delete lab panel'**
+  /// **'Delete Lab Panel'**
   String get labDeletePanelDialogTitle;
 
   /// Confirmation body for deleting a lab panel.
@@ -29490,7 +29490,7 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyResultDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter and verify result'**
+  /// **'Enter and Verify Result'**
   String get labVerifyResultDialogTitle;
 
   /// Localized text for labNumericRangeValidationMessage.
@@ -29502,13 +29502,13 @@ abstract class AppLocalizations {
   /// Localized text for labVerifyAllDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Verify entered results'**
+  /// **'Verify Entered Results'**
   String get labVerifyAllDialogTitle;
 
   /// Localized text for labRejectOrderItemDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reject requested test'**
+  /// **'Reject Requested Test'**
   String get labRejectOrderItemDialogTitle;
 
   /// Localized text for labRejectReasonNotPerformedHere.
@@ -29580,7 +29580,7 @@ abstract class AppLocalizations {
   /// Title for the dialog that enables a platform lab test or panel at the facility.
   ///
   /// In en, this message translates to:
-  /// **'Enable lab offering'**
+  /// **'Enable Lab Offering'**
   String get labEnableOfferingDialogTitle;
 
   /// Body for the dialog that enables a platform lab test or panel at the facility.
@@ -29658,7 +29658,7 @@ abstract class AppLocalizations {
   /// Localized text for labConfigureTestDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Configure lab test'**
+  /// **'Configure Lab Test'**
   String get labConfigureTestDialogTitle;
 
   /// Toggle label for enabling a lab test at the active facility.
@@ -29898,7 +29898,7 @@ abstract class AppLocalizations {
   /// Title for the laboratory create action picker dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create laboratory item'**
+  /// **'Create Laboratory Item'**
   String get labCreateChoiceDialogTitle;
 
   /// Body text for the laboratory create action picker dialog.
@@ -29922,7 +29922,7 @@ abstract class AppLocalizations {
   /// Title for the create lab order dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create lab order'**
+  /// **'Create Lab Order'**
   String get labCreateOrderDialogTitle;
 
   /// Action label for creating a lab test.
@@ -29940,7 +29940,7 @@ abstract class AppLocalizations {
   /// Title for the create lab test dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create lab test'**
+  /// **'Create Lab Test'**
   String get labCreateTestDialogTitle;
 
   /// Action label for creating a lab panel.
@@ -29958,7 +29958,7 @@ abstract class AppLocalizations {
   /// Title for the create lab panel dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create lab panel'**
+  /// **'Create Lab Panel'**
   String get labCreatePanelDialogTitle;
 
   /// Label for the lab panel name field.
@@ -30036,7 +30036,7 @@ abstract class AppLocalizations {
   /// Dialog title for editing lab order patient and encounter context.
   ///
   /// In en, this message translates to:
-  /// **'Edit lab order context'**
+  /// **'Edit Lab Order Context'**
   String get labEditOrderDialogTitle;
 
   /// Action label for updating a lab order.
@@ -30078,7 +30078,7 @@ abstract class AppLocalizations {
   /// Dialog title for deleting a lab order.
   ///
   /// In en, this message translates to:
-  /// **'Delete lab order'**
+  /// **'Delete Lab Order'**
   String get labDeleteOrderDialogTitle;
 
   /// Confirmation body for deleting a lab order.
@@ -30090,7 +30090,7 @@ abstract class AppLocalizations {
   /// Dialog title for deleting a lab test.
   ///
   /// In en, this message translates to:
-  /// **'Delete lab test'**
+  /// **'Delete Lab Test'**
   String get labDeleteTestDialogTitle;
 
   /// Confirmation body for deleting a lab test.
@@ -30132,7 +30132,7 @@ abstract class AppLocalizations {
   /// Dialog title for editing a lab panel.
   ///
   /// In en, this message translates to:
-  /// **'Edit lab panel'**
+  /// **'Edit Lab Panel'**
   String get labUpdatePanelDialogTitle;
 
   /// Action label for editing or saving a lab panel.
@@ -30294,7 +30294,7 @@ abstract class AppLocalizations {
   /// Confirmation dialog title for removing a draft or unverified lab result.
   ///
   /// In en, this message translates to:
-  /// **'Remove lab result?'**
+  /// **'Remove Lab Result?'**
   String get labRemoveDraftResultDialogTitle;
 
   /// Confirmation dialog body for removing a draft or unverified lab result.

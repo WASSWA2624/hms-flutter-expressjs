@@ -9443,7 +9443,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading order details, ordered tests, results, timeline, and available actions.';
 
   @override
-  String get labResultEntryDialogTitle => 'Lab result entry';
+  String get labResultEntryDialogTitle => 'Lab Result Entry';
 
   @override
   String labResultEntryDialogSubtitle(String patientName, String orderId) {
@@ -9633,7 +9633,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labSubmitAllResultsAction => 'Submit all';
 
   @override
-  String get labRemoveAllDraftsDialogTitle => 'Remove draft results?';
+  String get labRemoveAllDraftsDialogTitle => 'Remove Draft Results?';
 
   @override
   String get labRemoveAllDraftsDialogBody =>
@@ -9759,7 +9759,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPanelsTabLabel => 'Panels';
 
   @override
-  String get labRequestOrderDialogTitle => 'Request lab order';
+  String get labRequestOrderDialogTitle => 'Request Lab Order';
 
   @override
   String get labPatientIdLabel => 'Patient ID';
@@ -9801,7 +9801,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateOrderSubmitAction => 'Create lab order';
 
   @override
-  String get labCollectDialogTitle => 'Collect sample';
+  String get labCollectDialogTitle => 'Collect Sample';
 
   @override
   String get labCollectedAtLabel => 'Collected at';
@@ -9813,7 +9813,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNotesLabel => 'Notes';
 
   @override
-  String get labReceiveDialogTitle => 'Receive sample';
+  String get labReceiveDialogTitle => 'Receive Sample';
 
   @override
   String get labSampleFieldLabel => 'Sample';
@@ -9822,13 +9822,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReceivedAtLabel => 'Received at';
 
   @override
-  String get labRejectDialogTitle => 'Reject sample';
+  String get labRejectDialogTitle => 'Reject Sample';
 
   @override
   String get labRejectReasonLabel => 'Rejection reason';
 
   @override
-  String get labReleaseDialogTitle => 'Verify lab result';
+  String get labReleaseDialogTitle => 'Verify Lab Result';
 
   @override
   String get labOrderItemFieldLabel => 'Order item';
@@ -9849,13 +9849,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportedAtInputLabel => 'Reported at';
 
   @override
-  String get labReverseDialogTitle => 'Reverse lab workflow';
+  String get labReverseDialogTitle => 'Reverse Lab Workflow';
 
   @override
   String get labReverseReasonLabel => 'Reason';
 
   @override
-  String get labRecordQcDialogTitle => 'Record quality control';
+  String get labRecordQcDialogTitle => 'Record Quality Control';
 
   @override
   String get labQcTestFieldLabel => 'Lab test';
@@ -9924,7 +9924,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNextActionWatch => 'Review order';
 
   @override
-  String get labReportPreviewTitle => 'Result report preview';
+  String get labReportPreviewTitle => 'Result Report Preview';
 
   @override
   String get labReportTitle => 'Laboratory result report';
@@ -15682,7 +15682,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEntryStatusColumnLabel => 'Entry status';
 
   @override
-  String get labSelectOrderDialogTitle => 'Select lab order';
+  String get labSelectOrderDialogTitle => 'Select Lab Order';
 
   @override
   String get labSelectOrderDialogBody =>
@@ -15701,7 +15701,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEditVerifiedResultAction => 'Edit verified result';
 
   @override
-  String get labReopenVerifiedResultDialogTitle => 'Edit verified result';
+  String get labReopenVerifiedResultDialogTitle => 'Edit Verified Result';
 
   @override
   String get labReopenVerifiedResultDialogBody =>
@@ -15717,7 +15717,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRestoreOrderItemAction => 'Restore test';
 
   @override
-  String get labRestoreOrderItemDialogTitle => 'Restore cancelled test';
+  String get labRestoreOrderItemDialogTitle => 'Restore Cancelled Test';
 
   @override
   String labRestoreOrderItemDialogBody(String testName) {
@@ -15728,7 +15728,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDeleteOrderItemAction => 'Delete request';
 
   @override
-  String get labDeleteOrderItemDialogTitle => 'Delete test request';
+  String get labDeleteOrderItemDialogTitle => 'Delete Test Request';
 
   @override
   String labDeleteOrderItemDialogBody(String testName) {
@@ -15739,7 +15739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDeletePanelAction => 'Delete panel';
 
   @override
-  String get labDeletePanelDialogTitle => 'Delete lab panel';
+  String get labDeletePanelDialogTitle => 'Delete Lab Panel';
 
   @override
   String labDeletePanelDialogBody(String panelName) {
@@ -15753,16 +15753,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labResultFlagLabel => 'Flag';
 
   @override
-  String get labVerifyResultDialogTitle => 'Enter and verify result';
+  String get labVerifyResultDialogTitle => 'Enter and Verify Result';
 
   @override
   String get labNumericRangeValidationMessage => 'Enter a valid number.';
 
   @override
-  String get labVerifyAllDialogTitle => 'Verify entered results';
+  String get labVerifyAllDialogTitle => 'Verify Entered Results';
 
   @override
-  String get labRejectOrderItemDialogTitle => 'Reject requested test';
+  String get labRejectOrderItemDialogTitle => 'Reject Requested Test';
 
   @override
   String get labRejectReasonNotPerformedHere => 'Test not performed here';
@@ -15799,7 +15799,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEnablePanelAction => 'Enable panel';
 
   @override
-  String get labEnableOfferingDialogTitle => 'Enable lab offering';
+  String get labEnableOfferingDialogTitle => 'Enable Lab Offering';
 
   @override
   String get labEnableOfferingDialogBody =>
@@ -15848,7 +15848,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Record quality-control runs for tests offered at this facility.';
 
   @override
-  String get labConfigureTestDialogTitle => 'Configure lab test';
+  String get labConfigureTestDialogTitle => 'Configure Lab Test';
 
   @override
   String get labOfferAtFacilityLabel => 'Offer at this facility';
@@ -15970,7 +15970,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateAction => 'Create Lab Order';
 
   @override
-  String get labCreateChoiceDialogTitle => 'Create laboratory item';
+  String get labCreateChoiceDialogTitle => 'Create Laboratory Item';
 
   @override
   String get labCreateChoiceDialogBody =>
@@ -15984,7 +15984,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Request tests or panels for a patient.';
 
   @override
-  String get labCreateOrderDialogTitle => 'Create lab order';
+  String get labCreateOrderDialogTitle => 'Create Lab Order';
 
   @override
   String get labCreateTestAction => 'Add test';
@@ -15994,7 +15994,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a configurable test to the lab catalog.';
 
   @override
-  String get labCreateTestDialogTitle => 'Create lab test';
+  String get labCreateTestDialogTitle => 'Create Lab Test';
 
   @override
   String get labCreatePanelAction => 'Add panel';
@@ -16004,7 +16004,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Group existing tests into a reusable panel.';
 
   @override
-  String get labCreatePanelDialogTitle => 'Create lab panel';
+  String get labCreatePanelDialogTitle => 'Create Lab Panel';
 
   @override
   String get labPanelNameLabel => 'Panel name';
@@ -16044,7 +16044,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEditOrderAction => 'Edit order';
 
   @override
-  String get labEditOrderDialogTitle => 'Edit lab order context';
+  String get labEditOrderDialogTitle => 'Edit Lab Order Context';
 
   @override
   String get labUpdateOrderSubmitAction => 'Update lab order';
@@ -16066,7 +16066,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDeleteReasonValidationMessage => 'Enter a deletion reason.';
 
   @override
-  String get labDeleteOrderDialogTitle => 'Delete lab order';
+  String get labDeleteOrderDialogTitle => 'Delete Lab Order';
 
   @override
   String labDeleteOrderDialogBody(String orderId) {
@@ -16074,7 +16074,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get labDeleteTestDialogTitle => 'Delete lab test';
+  String get labDeleteTestDialogTitle => 'Delete Lab Test';
 
   @override
   String labDeleteTestDialogBody(String testName) {
@@ -16101,7 +16101,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A lab panel with this code already exists.';
 
   @override
-  String get labUpdatePanelDialogTitle => 'Edit lab panel';
+  String get labUpdatePanelDialogTitle => 'Edit Lab Panel';
 
   @override
   String get labUpdatePanelAction => 'Edit panel';
@@ -16194,7 +16194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRemoveDraftResultAction => 'Remove result';
 
   @override
-  String get labRemoveDraftResultDialogTitle => 'Remove lab result?';
+  String get labRemoveDraftResultDialogTitle => 'Remove Lab Result?';
 
   @override
   String get labRemoveDraftResultDialogBody =>

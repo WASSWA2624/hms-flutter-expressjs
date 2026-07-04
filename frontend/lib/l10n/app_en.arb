@@ -12170,7 +12170,7 @@
   "@labDetailLoadingBody": {
     "description": "Localized text for labDetailLoadingBody."
   },
-  "labResultEntryDialogTitle": "Lab result entry",
+  "labResultEntryDialogTitle": "Lab Result Entry",
   "@labResultEntryDialogTitle": {
     "description": "Title for the lab result entry workspace dialog."
   },
@@ -12452,7 +12452,7 @@
   "@labSubmitAllResultsAction": {
     "description": "Action label for submitting all selected lab results."
   },
-  "labRemoveAllDraftsDialogTitle": "Remove draft results?",
+  "labRemoveAllDraftsDialogTitle": "Remove Draft Results?",
   "@labRemoveAllDraftsDialogTitle": {
     "description": "Title for bulk remove draft lab results confirmation."
   },
@@ -12612,7 +12612,7 @@
   "@labPanelsTabLabel": {
     "description": "Localized text for labPanelsTabLabel."
   },
-  "labRequestOrderDialogTitle": "Request lab order",
+  "labRequestOrderDialogTitle": "Request Lab Order",
   "@labRequestOrderDialogTitle": {
     "description": "Localized text for labRequestOrderDialogTitle."
   },
@@ -12664,7 +12664,7 @@
   "@labCreateOrderSubmitAction": {
     "description": "Localized text for labCreateOrderSubmitAction."
   },
-  "labCollectDialogTitle": "Collect sample",
+  "labCollectDialogTitle": "Collect Sample",
   "@labCollectDialogTitle": {
     "description": "Localized text for labCollectDialogTitle."
   },
@@ -12680,7 +12680,7 @@
   "@labNotesLabel": {
     "description": "Localized text for labNotesLabel."
   },
-  "labReceiveDialogTitle": "Receive sample",
+  "labReceiveDialogTitle": "Receive Sample",
   "@labReceiveDialogTitle": {
     "description": "Localized text for labReceiveDialogTitle."
   },
@@ -12692,7 +12692,7 @@
   "@labReceivedAtLabel": {
     "description": "Localized text for labReceivedAtLabel."
   },
-  "labRejectDialogTitle": "Reject sample",
+  "labRejectDialogTitle": "Reject Sample",
   "@labRejectDialogTitle": {
     "description": "Localized text for labRejectDialogTitle."
   },
@@ -12700,7 +12700,7 @@
   "@labRejectReasonLabel": {
     "description": "Localized text for labRejectReasonLabel."
   },
-  "labReleaseDialogTitle": "Verify lab result",
+  "labReleaseDialogTitle": "Verify Lab Result",
   "@labReleaseDialogTitle": {
     "description": "Localized text for labReleaseDialogTitle."
   },
@@ -12728,7 +12728,7 @@
   "@labReportedAtInputLabel": {
     "description": "Localized text for labReportedAtInputLabel."
   },
-  "labReverseDialogTitle": "Reverse lab workflow",
+  "labReverseDialogTitle": "Reverse Lab Workflow",
   "@labReverseDialogTitle": {
     "description": "Localized text for labReverseDialogTitle."
   },
@@ -12736,7 +12736,7 @@
   "@labReverseReasonLabel": {
     "description": "Localized text for labReverseReasonLabel."
   },
-  "labRecordQcDialogTitle": "Record quality control",
+  "labRecordQcDialogTitle": "Record Quality Control",
   "@labRecordQcDialogTitle": {
     "description": "Localized text for labRecordQcDialogTitle."
   },
@@ -12828,7 +12828,7 @@
   "@labNextActionWatch": {
     "description": "Localized text for labNextActionWatch."
   },
-  "labReportPreviewTitle": "Result report preview",
+  "labReportPreviewTitle": "Result Report Preview",
   "@labReportPreviewTitle": {
     "description": "Localized text for labReportPreviewTitle."
   },
@@ -20186,7 +20186,7 @@
   "@labEntryStatusColumnLabel": {
     "description": "Localized text for labEntryStatusColumnLabel."
   },
-  "labSelectOrderDialogTitle": "Select lab order",
+  "labSelectOrderDialogTitle": "Select Lab Order",
   "@labSelectOrderDialogTitle": {
     "description": "Localized text for labSelectOrderDialogTitle."
   },
@@ -20210,7 +20210,7 @@
   "@labEditVerifiedResultAction": {
     "description": "Action label to reopen a verified lab result for correction."
   },
-  "labReopenVerifiedResultDialogTitle": "Edit verified result",
+  "labReopenVerifiedResultDialogTitle": "Edit Verified Result",
   "@labReopenVerifiedResultDialogTitle": {
     "description": "Title for the dialog that reopens a verified lab result."
   },
@@ -20230,7 +20230,7 @@
   "@labRestoreOrderItemAction": {
     "description": "Action label to restore a cancelled lab test."
   },
-  "labRestoreOrderItemDialogTitle": "Restore cancelled test",
+  "labRestoreOrderItemDialogTitle": "Restore Cancelled Test",
   "@labRestoreOrderItemDialogTitle": {
     "description": "Title for the dialog confirming restoration of a cancelled lab test."
   },
@@ -20247,7 +20247,7 @@
   "@labDeleteOrderItemAction": {
     "description": "Action label to delete an individual lab test request from an order."
   },
-  "labDeleteOrderItemDialogTitle": "Delete test request",
+  "labDeleteOrderItemDialogTitle": "Delete Test Request",
   "@labDeleteOrderItemDialogTitle": {
     "description": "Title for the dialog confirming deletion of a lab test request."
   },
@@ -20264,7 +20264,7 @@
   "@labDeletePanelAction": {
     "description": "Action label for deleting a lab panel."
   },
-  "labDeletePanelDialogTitle": "Delete lab panel",
+  "labDeletePanelDialogTitle": "Delete Lab Panel",
   "@labDeletePanelDialogTitle": {
     "description": "Dialog title for deleting a lab panel."
   },
@@ -20286,7 +20286,7 @@
   "@labResultFlagLabel": {
     "description": "Localized text for labResultFlagLabel."
   },
-  "labVerifyResultDialogTitle": "Enter and verify result",
+  "labVerifyResultDialogTitle": "Enter and Verify Result",
   "@labVerifyResultDialogTitle": {
     "description": "Localized text for labVerifyResultDialogTitle."
   },
@@ -20294,11 +20294,11 @@
   "@labNumericRangeValidationMessage": {
     "description": "Localized text for labNumericRangeValidationMessage."
   },
-  "labVerifyAllDialogTitle": "Verify entered results",
+  "labVerifyAllDialogTitle": "Verify Entered Results",
   "@labVerifyAllDialogTitle": {
     "description": "Localized text for labVerifyAllDialogTitle."
   },
-  "labRejectOrderItemDialogTitle": "Reject requested test",
+  "labRejectOrderItemDialogTitle": "Reject Requested Test",
   "@labRejectOrderItemDialogTitle": {
     "description": "Localized text for labRejectOrderItemDialogTitle."
   },
@@ -20346,7 +20346,7 @@
   "@labEnablePanelAction": {
     "description": "Action to enable a platform lab panel at the facility."
   },
-  "labEnableOfferingDialogTitle": "Enable lab offering",
+  "labEnableOfferingDialogTitle": "Enable Lab Offering",
   "@labEnableOfferingDialogTitle": {
     "description": "Title for the dialog that enables a platform lab test or panel at the facility."
   },
@@ -20408,7 +20408,7 @@
   "@labQcLogsSectionBody": {
     "description": "Explains the purpose of the QC logs section in lab configurations."
   },
-  "labConfigureTestDialogTitle": "Configure lab test",
+  "labConfigureTestDialogTitle": "Configure Lab Test",
   "@labConfigureTestDialogTitle": {
     "description": "Localized text for labConfigureTestDialogTitle."
   },
@@ -20568,7 +20568,7 @@
   "@labCreateAction": {
     "description": "Action label for opening laboratory create actions."
   },
-  "labCreateChoiceDialogTitle": "Create laboratory item",
+  "labCreateChoiceDialogTitle": "Create Laboratory Item",
   "@labCreateChoiceDialogTitle": {
     "description": "Title for the laboratory create action picker dialog."
   },
@@ -20584,7 +20584,7 @@
   "@labCreateOrderChoiceBody": {
     "description": "Description for the create lab order choice."
   },
-  "labCreateOrderDialogTitle": "Create lab order",
+  "labCreateOrderDialogTitle": "Create Lab Order",
   "@labCreateOrderDialogTitle": {
     "description": "Title for the create lab order dialog."
   },
@@ -20596,7 +20596,7 @@
   "@labCreateTestChoiceBody": {
     "description": "Description for the create lab test choice."
   },
-  "labCreateTestDialogTitle": "Create lab test",
+  "labCreateTestDialogTitle": "Create Lab Test",
   "@labCreateTestDialogTitle": {
     "description": "Title for the create lab test dialog."
   },
@@ -20608,7 +20608,7 @@
   "@labCreatePanelChoiceBody": {
     "description": "Description for the create lab panel choice."
   },
-  "labCreatePanelDialogTitle": "Create lab panel",
+  "labCreatePanelDialogTitle": "Create Lab Panel",
   "@labCreatePanelDialogTitle": {
     "description": "Title for the create lab panel dialog."
   },
@@ -20660,7 +20660,7 @@
   "@labEditOrderAction": {
     "description": "Action label for editing a lab order."
   },
-  "labEditOrderDialogTitle": "Edit lab order context",
+  "labEditOrderDialogTitle": "Edit Lab Order Context",
   "@labEditOrderDialogTitle": {
     "description": "Dialog title for editing lab order patient and encounter context."
   },
@@ -20688,7 +20688,7 @@
   "@labDeleteReasonValidationMessage": {
     "description": "Validation message shown when a lab deletion reason is missing."
   },
-  "labDeleteOrderDialogTitle": "Delete lab order",
+  "labDeleteOrderDialogTitle": "Delete Lab Order",
   "@labDeleteOrderDialogTitle": {
     "description": "Dialog title for deleting a lab order."
   },
@@ -20702,7 +20702,7 @@
       }
     }
   },
-  "labDeleteTestDialogTitle": "Delete lab test",
+  "labDeleteTestDialogTitle": "Delete Lab Test",
   "@labDeleteTestDialogTitle": {
     "description": "Dialog title for deleting a lab test."
   },
@@ -20736,7 +20736,7 @@
   "@labDuplicatePanelCodeMessage": {
     "description": "Validation message for duplicate lab panel codes."
   },
-  "labUpdatePanelDialogTitle": "Edit lab panel",
+  "labUpdatePanelDialogTitle": "Edit Lab Panel",
   "@labUpdatePanelDialogTitle": {
     "description": "Dialog title for editing a lab panel."
   },
@@ -20858,7 +20858,7 @@
   "@labRemoveDraftResultAction": {
     "description": "Action label for removing a draft or unverified lab result."
   },
-  "labRemoveDraftResultDialogTitle": "Remove lab result?",
+  "labRemoveDraftResultDialogTitle": "Remove Lab Result?",
   "@labRemoveDraftResultDialogTitle": {
     "description": "Confirmation dialog title for removing a draft or unverified lab result."
   },
