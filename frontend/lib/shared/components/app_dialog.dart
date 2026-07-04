@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/utils/app_title_case.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
@@ -542,7 +543,7 @@ class _DialogHeader extends StatelessWidget {
                       style: titleStyle.copyWith(color: colorScheme.onSurface),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      child: title!,
+                      child: normalizeDialogTitleWidget(title!),
                     ),
             ),
             if (showMaximizeButton)

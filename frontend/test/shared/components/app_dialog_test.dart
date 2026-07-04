@@ -55,7 +55,7 @@ void main() {
     await tester.tap(find.text('Open dialog'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Confirm action'), findsOneWidget);
+    expect(find.text('Confirm Action'), findsOneWidget);
     expect(openerFocusNode.hasFocus, isFalse);
 
     await tester.tap(find.text('Close'));
@@ -87,6 +87,21 @@ void main() {
     expect(find.text('Middle name (optional)'), findsOneWidget);
   });
 
+  testWidgets('AppDialog normalizes all-caps titles to title case', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('LAB RESULT ENTRY'),
+        content: SizedBox(height: 120, child: Text('Dialog body')),
+      ),
+    );
+
+    expect(find.text('Lab Result Entry'), findsOneWidget);
+    expect(find.text('LAB RESULT ENTRY'), findsNothing);
+  });
+
   testWidgets('desktop header drag moves the dialog surface', (
     WidgetTester tester,
   ) async {
@@ -101,19 +116,19 @@ void main() {
 
     final Finder dialog = find.byType(Dialog);
     final Offset dialogBefore = tester.getTopLeft(dialog);
-    final Offset titleBefore = tester.getTopLeft(find.text('Move encounter'));
+    final Offset titleBefore = tester.getTopLeft(find.text('Move Encounter'));
 
-    await tester.drag(find.text('Move encounter'), const Offset(80, 40));
+    await tester.drag(find.text('Move Encounter'), const Offset(80, 40));
     await tester.pump();
 
     expect(tester.getTopLeft(dialog).dx, closeTo(dialogBefore.dx + 80, 1));
     expect(tester.getTopLeft(dialog).dy, closeTo(dialogBefore.dy + 40, 1));
     expect(
-      tester.getTopLeft(find.text('Move encounter')).dx,
+      tester.getTopLeft(find.text('Move Encounter')).dx,
       closeTo(titleBefore.dx + 80, 1),
     );
     expect(
-      tester.getTopLeft(find.text('Move encounter')).dy,
+      tester.getTopLeft(find.text('Move Encounter')).dy,
       closeTo(titleBefore.dy + 40, 1),
     );
   });

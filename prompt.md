@@ -1,78 +1,81 @@
-# Lab Result Entry — Lab Orders Table Refinement
+# Lab Result Entry — Modal & UI Polish
 
-## Context
+Refine the **Lab Result Entry** dialog (`lab_result_entry_dialog.dart`) and shared modal infrastructure so the UI matches app-wide conventions. Reference: Lab Result Entry modal (order header actions, results table with checkboxes, footer action bar).
 
-The **Lab Result Entry** dialog (`frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`) is largely improved. The **patient details** header (name, patient ID, encounter, order summary) is acceptable as-is — **do not change it**.
+## Scope
 
-Focus only on refining the **lab orders / results table** within each order card.
+### 1. Modal title capitalization (shared, all dialogs)
 
-## Problem
+**Problem:** Modal titles are inconsistent; some are not properly capitalized.
 
-The results table is visually noisy and hard to scan:
+**Fix at the shared component level** — do not patch individual dialogs.
 
-1. **Weak panel–test hierarchy** — Panel headers (e.g. *Panel Bmp | PANEL_BMP*, *Brucellosis Screen Panel | BRUCSCR*) feel disconnected from their child test rows. It is not immediately obvious which tests belong to which panel.
-2. **Duplicate status badges in the Tests column** — Under each test name, two badges often show the same state (e.g. double **Cancelled**, double **Verified**). This comes from `_CompactStatusRow` and `_LabResultLifecycleBadge` both rendering lifecycle/status info.
-3. **Duplicate flag in the Result column** — Completed results show the value plus a secondary line like `Flag: Negative`, even though a dedicated **Flag** column already exists (`_CompletedResultReadout`).
-4. **Overlong action label** — **Edit verified result** truncates in the Action column; it should be shorter.
+- Update `AppDialog` (`frontend/lib/shared/components/app_dialog.dart`) so every modal title is rendered in **Title Case** (capitalize each significant word; preserve acronyms/IDs).
+- Apply normalization in the dialog header (`_DialogHeader`) when rendering the `title` widget — e.g. extract plain text from `Text`/`RichText` children and re-apply styled Title Case, or introduce an optional `AppDialogTitle` helper if needed.
+- Ensure existing titles like `"Lab Result Entry"` remain correct; fix any ALL CAPS or sentence-case titles app-wide without changing l10n strings unless necessary.
+- Add/update tests in `app_dialog_test.dart`.
 
-## Goal
+### 2. Icon + label on large screens (order & panel actions)
 
-Make the table **simple, scannable, and easy to read** — one piece of information per column, no redundant labels, clear panel grouping.
+**Problem:** Edit and Delete controls in the order header and panel header are icon-only (`iconOnly: true`) even on wide layouts.
 
-## Requirements
+**Convention:** On large screens, action buttons show **icon + label**; icon-only is for compact/toolbar contexts only.
 
-### 1. Panel–test visual continuity
+Affected controls in `lab_result_entry_dialog.dart`:
+- Order header: Edit order, Delete order (`_LabOrderSection`, ~lines 1381–1398)
+- Panel header: Delete panel (`_PanelGroupHeader`, ~lines 2332–2341)
 
-- Visually group each panel header with its test rows so the relationship is obvious at a glance.
-- Use a single cohesive block per panel (shared container, border, background, or indentation) rather than a floating header above a separate table.
-- Preserve existing panel delete/actions on `_PanelGroupHeader` where applicable.
+**Fix:**
+- Remove hardcoded `iconOnly: true` where labels exist.
+- Wrap the dialog content (or action regions) in `AppActionLabelScope` using the same breakpoint logic as `app_workspace_toolbar.dart` (`AppBreakpoints.of(context).showsToolbarActionLabels`), so labels appear on large screens and icons-only on small screens.
+- Keep `semanticLabel` and `tooltip` for accessibility.
 
-### 2. Tests column — remove duplicate status
+### 3. Destructive (red) delete styling
 
-- Show **test name only** (plus selection checkbox when bulk actions are enabled).
-- Remove redundant status/lifecycle badges from the Tests column (`_CompactStatusRow`, `_LabResultLifecycleBadge`, or equivalent).
-- Do **not** lose status meaning: row-level styling already communicates state — keep and rely on:
-  - Cancelled/rejected → error background + border
-  - Abnormal/high → error-tinted background
-  - Verified/normal → neutral/success styling as today
-- Status text that must remain visible belongs in the **Flag** or **Action** columns, not duplicated under the test name.
+**Problem:** Delete actions look like generic tertiary buttons; delete should read as destructive.
 
-### 3. Result column — value only
+**Fix:**
+- Style all **delete** actions with the theme danger color: `Theme.of(context).statusColors.danger` (or `colorScheme.error` if that is the established pattern).
+- Apply via `AppButton`’s existing `color` parameter — extend `AppButton` only if needed for hover/pressed/disabled states on custom colors.
+- Affected buttons:
+  - Order header delete
+  - Panel header delete
+  - Footer **Delete order** action
 
-- In `_CompletedResultReadout`, display **only the result value** (e.g. `Non-reactive`, `15 | x10^9/L`).
-- Remove the secondary `Flag: …` line; flag interpretation stays exclusively in the **Flag** column.
-- Keep abnormal result values highlighted in red where applicable.
+Do **not** recolor non-destructive actions (Edit, Restore test, Preview report, etc.).
 
-### 4. Action column — shorter label
+### 4. Results table — checkbox column alignment
 
-- Change **Edit verified result** → **Edit** (`labEditVerifiedResultAction` in l10n, or equivalent).
-- Ensure the label fits without truncation at typical table widths.
+**Problem:** In the results table, the selection checkbox in the first column is vertically misaligned relative to the test name and other row cells.
 
-### 5. General simplification
+**Fix in `_LabResultTestCell` and/or `_LabResultTableCell`:**
+- Align checkbox with the first line of row content (center or top-align consistently with other columns).
+- Match padding used by `_LabResultTableCell` (`theme.spacing.sm`) so the checkbox column lines up with Reference range, Result, Flag, and Action cells.
+- Verify alignment for both standalone tests and tests inside panels (`embeddedInPanel: true`).
 
-- Do not add new columns or metadata to the table.
-- Avoid reintroducing information that already has a dedicated column.
-- Match existing design tokens, spacing, and component patterns (`AppButton`, `AppWorkspaceStatusBadge`, theme colors).
+### 5. Footer action bar cleanup
 
-## Out of scope
+**Problem:** The footer duplicates the modal’s top-right close control.
 
-- Patient details / encounter header
-- Footer actions (Preview report, Create Lab Order, Edit order, Delete order, Close)
-- Backend/API or result-entry workflow logic (save, verify, restore, reject)
-- Report preview dialog
+**Fix in `LabResultEntryDialog.build` footer `actions`:**
+- **Keep:** Preview report, Create lab order, Edit order, Delete order.
+- **Remove:** Close button (`commonCloseActionLabel`) — users already close via the header ✕.
+- Style **Delete order** as destructive (see §3).
+- Leave Preview report, Create lab order, and Edit order unchanged.
 
-## Acceptance criteria
+Also remove the Close button from the empty/loading footer state if present.
 
-- [ ] Each panel reads as one unified group; child tests are clearly nested under their panel header.
-- [ ] Tests column shows test name only — no duplicate Cancelled/Verified/Draft badges.
-- [ ] Cancelled, abnormal, and verified rows remain distinguishable via row color/border styling.
-- [ ] Result column shows the value only; no `Flag:` sub-label.
-- [ ] Flag column remains the single source for Normal / Negative / High / Cancelled flags.
-- [ ] Verified-result action button reads **Edit** and does not truncate.
-- [ ] Existing tests pass; update or add widget tests if behavior changes.
+## Constraints
 
-## Key files
+- Minimal diff — reuse `AppDialog`, `AppButton`, `AppActionLabelScope`, and theme tokens; no new abstractions unless required.
+- Respect light/dark themes for danger styling.
+- Do not change lab business logic, result entry workflow, or API behavior.
+- Run existing tests; add targeted widget tests where behavior changes.
 
-- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`
-- `frontend/lib/l10n/app_en.arb` (action label)
-- `frontend/test/features/lab/presentation/` (if applicable)
+## Verification
+
+1. Open Lab Result Entry on a wide viewport (≥ toolbar label breakpoint): order/panel Edit and Delete show icon + label; Delete is red.
+2. Narrow viewport: those actions collapse to icon-only with tooltips.
+3. Results table checkboxes align with row content across panels and standalone rows.
+4. Footer shows four primary actions (no Close); Delete order is red.
+5. All app modals render titles in consistent Title Case.

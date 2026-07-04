@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
@@ -243,6 +244,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final AsyncValue<Result<LabWorkspaceState>> asyncState = ref.watch(
       labWorkspaceControllerProvider,
     );
@@ -264,74 +266,71 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
+    final bool showActionLabels =
+        AppBreakpoints.of(context).showsToolbarActionLabels;
+    final Color destructiveActionColor = theme.statusColors.danger;
 
-    return AppDialog(
-      title: Text(l10n.labResultEntryDialogTitle),
-      icon: const Icon(Icons.biotech_outlined),
-      scrollable: true,
-      initialMaximized: true,
-      maxWidth: compact ? double.infinity : 1600,
-      closeEnabled: !_isSaving,
-      content: _buildContent(
-        context,
-        isLoading: isLoading,
-        workflows: workflows,
-        catalogPanels: catalogPanels,
-        drafts: drafts,
-        canMutate: canMutate,
-      ),
-      actions: workflows.isEmpty || isLoading
-          ? <Widget>[
-              AppButton.tertiary(
-                label: l10n.commonCloseActionLabel,
-                enabled: !_isSaving,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ]
-          : <Widget>[
-              AppReportActionButton.preview(
-                label: l10n.labPreviewReportAction,
-                enabled: !_isSaving,
-                onPressed: () => _openPrintPreview(context, workflows),
-              ),
-              if (workflows.length == 1 &&
-                  canMutate &&
-                  widget.onCreateAdditionalOrder != null)
-                AppButton.secondary(
-                  label: l10n.labCreateAction,
-                  leadingIcon: Icons.add_circle_outline,
+    return AppActionLabelScope(
+      showLabels: showActionLabels,
+      forceIconOnly: !showActionLabels,
+      child: AppDialog(
+        title: Text(l10n.labResultEntryDialogTitle),
+        icon: const Icon(Icons.biotech_outlined),
+        scrollable: true,
+        initialMaximized: true,
+        maxWidth: compact ? double.infinity : 1600,
+        closeEnabled: !_isSaving,
+        content: _buildContent(
+          context,
+          isLoading: isLoading,
+          workflows: workflows,
+          catalogPanels: catalogPanels,
+          drafts: drafts,
+          canMutate: canMutate,
+        ),
+        actions: workflows.isEmpty || isLoading
+            ? const <Widget>[]
+            : <Widget>[
+                AppReportActionButton.preview(
+                  label: l10n.labPreviewReportAction,
                   enabled: !_isSaving,
-                  onPressed: () => widget.onCreateAdditionalOrder?.call(
-                    context,
-                    workflows.first,
+                  onPressed: () => _openPrintPreview(context, workflows),
+                ),
+                if (workflows.length == 1 &&
+                    canMutate &&
+                    widget.onCreateAdditionalOrder != null)
+                  AppButton.secondary(
+                    label: l10n.labCreateAction,
+                    leadingIcon: Icons.add_circle_outline,
+                    enabled: !_isSaving,
+                    onPressed: () => widget.onCreateAdditionalOrder?.call(
+                      context,
+                      workflows.first,
+                    ),
                   ),
-                ),
-              if (workflows.length == 1 &&
-                  canMutate &&
-                  widget.onEditOrder != null)
-                AppButton.secondary(
-                  label: l10n.labEditOrderAction,
-                  leadingIcon: Icons.edit_outlined,
-                  enabled: !_isSaving,
-                  onPressed: () =>
-                      widget.onEditOrder?.call(context, workflows.first),
-                ),
-              if (workflows.length == 1 &&
-                  canMutate &&
-                  widget.onDeleteOrder != null)
-                AppButton.tertiary(
-                  label: l10n.labDeleteOrderAction,
-                  leadingIcon: Icons.delete_outline,
-                  enabled: !_isSaving,
-                  onPressed: () =>
-                      widget.onDeleteOrder?.call(context, workflows.first),
-                ),
-              AppButton.tertiary(
-                label: l10n.commonCloseActionLabel,
-                enabled: !_isSaving,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
+                if (workflows.length == 1 &&
+                    canMutate &&
+                    widget.onEditOrder != null)
+                  AppButton.secondary(
+                    label: l10n.labEditOrderAction,
+                    leadingIcon: Icons.edit_outlined,
+                    enabled: !_isSaving,
+                    onPressed: () =>
+                        widget.onEditOrder?.call(context, workflows.first),
+                  ),
+                if (workflows.length == 1 &&
+                    canMutate &&
+                    widget.onDeleteOrder != null)
+                  AppButton.tertiary(
+                    label: l10n.labDeleteOrderAction,
+                    leadingIcon: Icons.delete_outline,
+                    color: destructiveActionColor,
+                    enabled: !_isSaving,
+                    onPressed: () =>
+                        widget.onDeleteOrder?.call(context, workflows.first),
+                  ),
+              ],
+      ),
     );
   }
 
@@ -1380,7 +1379,6 @@ class _LabOrderResultSection extends StatelessWidget {
                     children: <Widget>[
                       if (onEditOrder != null)
                         AppButton(
-                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.labEditOrderAction,
                           semanticLabel: l10n.labEditOrderAction,
@@ -1389,11 +1387,11 @@ class _LabOrderResultSection extends StatelessWidget {
                         ),
                       if (onDeleteOrder != null)
                         AppButton(
-                          iconOnly: true,
                           icon: Icons.delete_outline,
                           label: l10n.labDeleteOrderAction,
                           semanticLabel: l10n.labDeleteOrderAction,
                           tooltip: l10n.labDeleteOrderAction,
+                          color: theme.statusColors.danger,
                           onPressed: onDeleteOrder,
                         ),
                     ],
@@ -2012,14 +2010,17 @@ class _LabResultTestCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
+    final TextStyle titleStyle =
+        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800) ??
+        const TextStyle(fontWeight: FontWeight.w800);
+    final double firstLineHeight =
+        (titleStyle.fontSize ?? 14) * (titleStyle.height ?? 1.2);
     final Widget titleColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           item.displayTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: titleStyle,
         ),
         if (draft.showValidationError) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
@@ -2035,10 +2036,16 @@ class _LabResultTestCell extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Checkbox(
-          value: isSelected,
-          onChanged: selectionEnabled ? onSelectionChanged : null,
-          visualDensity: VisualDensity.compact,
+        SizedBox(
+          height: firstLineHeight,
+          child: Align(
+            child: Checkbox(
+              value: isSelected,
+              onChanged: selectionEnabled ? onSelectionChanged : null,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
         ),
         SizedBox(width: theme.spacing.xs),
         Expanded(child: titleColumn),
@@ -2331,12 +2338,11 @@ class _PanelGroupHeader extends ConsumerWidget {
             ),
             if (showDelete)
               AppButton(
-                iconOnly: true,
                 leadingIcon: Icons.delete_outline,
                 label: l10n.labDeletePanelAction,
-
                 semanticLabel: l10n.labDeletePanelAction,
                 tooltip: l10n.labDeletePanelAction,
+                color: theme.statusColors.danger,
                 onPressed: () => _deletePanel(context, ref),
               ),
           ],
