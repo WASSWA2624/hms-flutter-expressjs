@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/lab/data/dtos/lab_dtos.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 
 void main() {
   group('LabOrderSummaryDto', () {
@@ -95,6 +96,30 @@ void main() {
       expect(item.referenceRangeOverride, '10 - 18 (manual)');
       expect(item.resultFlagOverride, 'HIGH');
       expect(item.displayReferenceRange, '10 - 18 (manual)');
+    });
+  });
+
+  group('decodeLabTests', () {
+    test('maps paginated facility lab catalog payloads', () {
+      final List<LabCatalogItem> items = decodeLabTests(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LAB0000001',
+            'name': 'Hemoglobin',
+            'is_offered_at_facility': false,
+          },
+          <String, Object?>{
+            'id': 'LAB0000002',
+            'name': 'Glucose',
+            'is_offered_at_facility': true,
+          },
+        ],
+      });
+
+      expect(items, hasLength(2));
+      expect(items.first.name, 'Hemoglobin');
+      expect(items.first.isOfferedAtFacility, isFalse);
+      expect(items.last.isOfferedAtFacility, isTrue);
     });
   });
 }
