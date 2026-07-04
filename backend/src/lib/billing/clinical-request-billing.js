@@ -329,10 +329,47 @@ const resolveClinicalInvoiceContexts = async (invoiceIds = []) => {
 };
 
 const CLINICAL_INVOICE_SOURCES = Object.freeze([
-  { model: 'lab_order', label: 'Laboratory' },
-  { model: 'radiology_order', label: 'Radiology' },
-  { model: 'pharmacy_order', label: 'Pharmacy' },
+  {
+    model: 'lab_order',
+    label: 'Laboratory',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
+  {
+    model: 'pharmacy_order',
+    label: 'Pharmacy',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
+  {
+    model: 'radiology_order',
+    label: 'Radiology',
+    invoiceFilterField: 'request_details',
+    invoiceFilterPath: '$.billing.invoice_id',
+    orderSelect: {
+      request_details: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
 ]);
+
+const buildClinicalInvoiceIdFilter = (source, invoiceId) => ({
+  [source.invoiceFilterField]: {
+    path: source.invoiceFilterPath,
+    equals: invoiceId,
+  },
+});
 
 const normalizeSourceModuleLabel = (value) => {
   const token = String(value || '').trim();
@@ -367,15 +404,9 @@ const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
     const orders = await prisma[source.model].findMany({
       where: {
         deleted_at: null,
-        OR: uniqueIds.map((invoiceId) => ({
-          billing_snapshot: { path: '$.invoice_id', equals: invoiceId },
-        })),
+        OR: uniqueIds.map((invoiceId) => buildClinicalInvoiceIdFilter(source, invoiceId)),
       },
-      select: {
-        billing_snapshot: true,
-        encounter_id: true,
-        encounter: { select: { id: true, human_friendly_id: true } },
-      },
+      select: source.orderSelect,
     });
 
     for (const order of orders) {
@@ -438,11 +469,7 @@ const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
           deleted_at: null,
           encounter_id: { in: encounterIds },
         },
-        select: {
-          billing_snapshot: true,
-          encounter_id: true,
-          encounter: { select: { human_friendly_id: true } },
-        },
+        select: source.orderSelect,
         take: 500,
       });
       for (const order of orders) {
@@ -462,10 +489,7 @@ const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
     }
     const orders = await prisma[source.model].findMany({
       where: { deleted_at: null },
-      select: {
-        billing_snapshot: true,
-        encounter: { select: { human_friendly_id: true } },
-      },
+      select: source.orderSelect,
       take: 500,
       orderBy: { ordered_at: 'desc' },
     });
@@ -501,7 +525,7 @@ const resolveInvoiceIdsForSourceModule = async (scope, sourceModule) => {
   }
   const orders = await prisma[source.model].findMany({
     where: { deleted_at: null },
-    select: { billing_snapshot: true },
+    select: source.orderSelect,
     take: 1000,
   });
   const invoiceIds = new Set();
