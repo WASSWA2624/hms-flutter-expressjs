@@ -3,6 +3,17 @@ import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 
 void main() {
   group('TenantSubscriptionSummary', () {
+    test('defaults to unknown before hydration', () {
+      expect(
+        const TenantSubscriptionSummary().headerState,
+        TenantSubscriptionHeaderState.unknown,
+      );
+      expect(
+        TenantSubscriptionHeaderState.fromServer(null),
+        TenantSubscriptionHeaderState.unknown,
+      );
+    });
+
     test('parses header state from server payload', () {
       final TenantSubscriptionSummary summary =
           TenantSubscriptionSummary.fromJson(<String, Object?>{

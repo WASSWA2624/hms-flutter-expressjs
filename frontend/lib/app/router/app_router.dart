@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
+import 'package:hosspi_hms/core/workspace/workspace_prefetch_ready_provider.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
@@ -853,7 +854,10 @@ class _AppShell extends ConsumerWidget {
       AppRoutes.theater,
       accessPolicy,
     );
-    final int? opdWorkloadCount = canAccessOpd
+    final bool prefetchWorkspaceBadges = ref
+        .watch(workspacePrefetchReadyProvider)
+        .maybeWhen(data: (bool ready) => ready, orElse: () => false);
+    final int? opdWorkloadCount = canAccessOpd && prefetchWorkspaceBadges
         ? ref
               .watch(opdWorkspaceControllerProvider)
               .asData
@@ -863,7 +867,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? emergencyWorkloadCount = canAccessEmergency
+    final int? emergencyWorkloadCount =
+        canAccessEmergency && prefetchWorkspaceBadges
         ? ref
               .watch(emergencyWorkspaceControllerProvider)
               .asData
@@ -875,7 +880,7 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? ipdWorkloadCount = canAccessIpd
+    final int? ipdWorkloadCount = canAccessIpd && prefetchWorkspaceBadges
         ? ref
               .watch(ipdWorkspaceControllerProvider)
               .asData
@@ -887,7 +892,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? roomsBedsWorkloadCount = canAccessRoomsBeds
+    final int? roomsBedsWorkloadCount =
+        canAccessRoomsBeds && prefetchWorkspaceBadges
         ? ref
               .watch(roomsBedsWorkspaceControllerProvider)
               .asData
@@ -899,7 +905,7 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? icuCriticalCount = canAccessIcu
+    final int? icuCriticalCount = canAccessIcu && prefetchWorkspaceBadges
         ? ref
               .watch(icuWorkspaceControllerProvider)
               .asData
@@ -911,7 +917,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? nursingWorkloadCount = canAccessNursing
+    final int? nursingWorkloadCount =
+        canAccessNursing && prefetchWorkspaceBadges
         ? ref
               .watch(nursingWorkspaceControllerProvider)
               .asData
@@ -923,7 +930,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? clinicalWorkloadCount = canAccessClinical
+    final int? clinicalWorkloadCount =
+        canAccessClinical && prefetchWorkspaceBadges
         ? ref
               .watch(clinicalWorkspaceControllerProvider)
               .asData
@@ -936,7 +944,7 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? labWorkloadCount = canAccessLab
+    final int? labWorkloadCount = canAccessLab && prefetchWorkspaceBadges
         ? ref
               .watch(labWorkspaceControllerProvider)
               .asData
@@ -948,7 +956,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? radiologyWorkloadCount = canAccessRadiology
+    final int? radiologyWorkloadCount =
+        canAccessRadiology && prefetchWorkspaceBadges
         ? ref
               .watch(radiologyWorkspaceControllerProvider)
               .asData
@@ -960,7 +969,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? billingWorkloadCount = canAccessBilling
+    final int? billingWorkloadCount =
+        canAccessBilling && prefetchWorkspaceBadges
         ? ref
               .watch(billingWorkspaceControllerProvider)
               .asData
@@ -972,7 +982,7 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? claimsWorkloadCount = canAccessClaims
+    final int? claimsWorkloadCount = canAccessClaims && prefetchWorkspaceBadges
         ? ref
               .watch(claimsWorkspaceControllerProvider)
               .asData
@@ -984,7 +994,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? subscriptionsWorkloadCount = canAccessSubscriptions
+    final int? subscriptionsWorkloadCount =
+        canAccessSubscriptions && prefetchWorkspaceBadges
         ? ref
               .watch(subscriptionsWorkspaceControllerProvider)
               .asData
@@ -996,7 +1007,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? pharmacyWorkloadCount = canAccessPharmacy
+    final int? pharmacyWorkloadCount =
+        canAccessPharmacy && prefetchWorkspaceBadges
         ? ref
               .watch(pharmacyWorkspaceControllerProvider)
               .asData
@@ -1008,7 +1020,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? operationsWorkloadCount = canAccessOperations
+    final int? operationsWorkloadCount =
+        canAccessOperations && prefetchWorkspaceBadges
         ? ref
               .watch(operationsWorkspaceControllerProvider)
               .asData
@@ -1020,7 +1033,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? housekeepingWorkloadCount = canAccessHousekeeping
+    final int? housekeepingWorkloadCount =
+        canAccessHousekeeping && prefetchWorkspaceBadges
         ? ref
               .watch(housekeepingWorkspaceControllerProvider)
               .asData
@@ -1032,7 +1046,7 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? hrWorkloadCount = canAccessHr
+    final int? hrWorkloadCount = canAccessHr && prefetchWorkspaceBadges
         ? ref
               .watch(hrWorkspaceControllerProvider)
               .asData
@@ -1044,7 +1058,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? biomedicalWorkloadCount = canAccessBiomedical
+    final int? biomedicalWorkloadCount =
+        canAccessBiomedical && prefetchWorkspaceBadges
         ? ref
               .watch(biomedicalWorkspaceControllerProvider)
               .asData
@@ -1056,7 +1071,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? communicationsWorkloadCount = canAccessCommunications
+    final int? communicationsWorkloadCount =
+        canAccessCommunications && prefetchWorkspaceBadges
         ? ref
               .watch(communicationsWorkspaceControllerProvider)
               .asData
@@ -1068,7 +1084,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? integrationsWorkloadCount = canAccessIntegrations
+    final int? integrationsWorkloadCount =
+        canAccessIntegrations && prefetchWorkspaceBadges
         ? ref
               .watch(integrationsWorkspaceControllerProvider)
               .asData
@@ -1080,7 +1097,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? notificationUnreadCount = canAccessCommunications
+    final int? notificationUnreadCount =
+        canAccessCommunications && prefetchWorkspaceBadges
         ? ref
               .watch(communicationsWorkspaceControllerProvider)
               .asData
@@ -1094,7 +1112,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? dischargeWorkloadCount = canAccessDischarge
+    final int? dischargeWorkloadCount =
+        canAccessDischarge && prefetchWorkspaceBadges
         ? ref
               .watch(dischargeWorkspaceControllerProvider)
               .asData
@@ -1106,7 +1125,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? mortuaryWorkloadCount = canAccessMortuary
+    final int? mortuaryWorkloadCount =
+        canAccessMortuary && prefetchWorkspaceBadges
         ? ref
               .watch(mortuaryWorkspaceControllerProvider)
               .asData
@@ -1118,7 +1138,8 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
-    final int? theaterWorkloadCount = canAccessTheater
+    final int? theaterWorkloadCount =
+        canAccessTheater && prefetchWorkspaceBadges
         ? ref
               .watch(theaterWorkspaceControllerProvider)
               .asData
@@ -1296,8 +1317,10 @@ Widget? _subscriptionHeaderAction({
     return null;
   }
 
-  final TenantSubscriptionSummary summary =
-      session.subscriptionSummary ?? const TenantSubscriptionSummary();
+  final TenantSubscriptionSummary? summary = session.subscriptionSummary;
+  if (summary == null || !summary.headerState.isHydrated) {
+    return null;
+  }
 
   return SubscriptionHeaderButton(
     summary: summary,

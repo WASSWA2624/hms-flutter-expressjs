@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
+import 'package:hosspi_hms/core/workspace/workspace_bootstrap_helpers.dart';
 import 'package:hosspi_hms/features/nursing/data/dtos/nursing_dtos.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
@@ -489,18 +490,13 @@ final class NursingRepositoryImpl implements NursingRepository {
     return result.when(
       success: (List<T> value) => value,
       failure: (AppFailure failure) {
-        if (_isAccessDenied(failure) ||
+        if (isWorkspaceAccessDeniedFailure(failure) ||
             failure.category == AppFailureCategory.validation) {
           return <T>[];
         }
         return <T>[];
       },
     );
-  }
-
-  bool _isAccessDenied(AppFailure failure) {
-    return failure.category == AppFailureCategory.unauthorized ||
-        failure.category == AppFailureCategory.forbidden;
   }
 
   String? _backendStage(String status) {

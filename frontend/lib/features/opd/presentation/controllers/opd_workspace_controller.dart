@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_bootstrap_helpers.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -677,7 +678,7 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
         .listAppointments(appointmentQuery);
-    final AppPage<OpdAppointment> appointments = _pageOrEmptyOnFailure(
+    final AppPage<OpdAppointment> appointments = workspacePageOrEmptyOnFailure(
       appointmentsResult,
       appointmentQuery.pageRequest,
     );
@@ -685,7 +686,7 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdQueueEntry>> queueResult = await _repository
         .listVisitQueues(queueQuery);
-    final AppPage<OpdQueueEntry> queue = _pageOrEmptyOnFailure(
+    final AppPage<OpdQueueEntry> queue = workspacePageOrEmptyOnFailure(
       queueResult,
       queueQuery.pageRequest,
     );
@@ -693,7 +694,7 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdFlowSummary>> flowsResult = await _repository
         .listOpdFlows(flowQuery);
-    final AppPage<OpdFlowSummary> flows = _pageOrEmptyOnFailure(
+    final AppPage<OpdFlowSummary> flows = workspacePageOrEmptyOnFailure(
       flowsResult,
       flowQuery.pageRequest,
     );
@@ -706,7 +707,7 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
         .listTriageQueue(triageQueueQuery);
-    final AppPage<OpdFlowSummary> triageQueue = _pageOrEmptyOnFailure(
+    final AppPage<OpdFlowSummary> triageQueue = workspacePageOrEmptyOnFailure(
       triageQueueResult,
       triageQueueQuery.pageRequest,
     );
@@ -725,7 +726,7 @@ final class OpdWorkspaceController
       flowsFailure,
       triageQueueFailure,
     ]) {
-      if (failure == null || _isAccessDeniedFailure(failure)) {
+      if (failure == null || isWorkspaceAccessDeniedFailure(failure)) {
         continue;
       }
       firstFailure ??= failure;
@@ -1516,27 +1517,6 @@ final class OpdWorkspaceController
     return result.when(success: (T value) => value, failure: (_) => null);
   }
 
-  AppPage<T> _pageOrEmptyOnFailure<T>(
-    Result<AppPage<T>> result,
-    AppPageRequest request,
-  ) {
-    return result.when(
-      success: (AppPage<T> page) => page,
-      failure: (_) => AppPage<T>(
-        items: List<T>.empty(),
-        request: request,
-        totalItemCount: 0,
-      ),
-    );
-  }
-
-  AppFailure? _failureOrNull<T>(Result<T> result) {
-    return result.when(
-      success: (_) => null,
-      failure: (AppFailure failure) => failure,
-    );
-  }
-
   String _dispositionReviewNote(Map<String, Object?> payload) {
     final String decision = (payload['decision'] ?? '').toString().trim();
     final String reason = (payload['reason'] ?? '').toString().trim();
@@ -1549,8 +1529,10 @@ final class OpdWorkspaceController
     return parts.isEmpty ? 'Disposition review' : parts.join(' - ');
   }
 
-  bool _isAccessDeniedFailure(AppFailure failure) {
-    return failure.category == AppFailureCategory.unauthorized ||
-        failure.category == AppFailureCategory.forbidden;
+  AppFailure? _failureOrNull<T>(Result<T> result) {
+    return result.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
   }
 }

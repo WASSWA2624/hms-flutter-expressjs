@@ -126,6 +126,14 @@ final class _SubscriptionHeaderPresentation {
           background: const Color(0xFFFEE2E2),
           border: const Color(0xFFFCA5A5),
         );
+      case TenantSubscriptionHeaderState.unknown:
+        return _SubscriptionHeaderPresentation(
+          label: l10n.subscriptionHeaderActiveLabel,
+          icon: Icons.hourglass_empty_outlined,
+          foreground: const Color(0xFF475569),
+          background: const Color(0xFFF1F5F9),
+          border: const Color(0xFFCBD5E1),
+        );
     }
   }
 }

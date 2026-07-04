@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 enum TenantSubscriptionHeaderState {
+  unknown,
   active,
   expiringSoon,
   expired;
+
+  bool get isHydrated => this != TenantSubscriptionHeaderState.unknown;
 
   static TenantSubscriptionHeaderState fromServer(String? value) {
     switch ((value ?? '').trim().toLowerCase()) {
@@ -12,8 +15,9 @@ enum TenantSubscriptionHeaderState {
       case 'expiring_soon':
         return TenantSubscriptionHeaderState.expiringSoon;
       case 'expired':
-      default:
         return TenantSubscriptionHeaderState.expired;
+      default:
+        return TenantSubscriptionHeaderState.unknown;
     }
   }
 }
@@ -107,7 +111,7 @@ final class TenantSubscriptionSummary {
     this.endDate,
     this.daysUntilExpiry,
     this.expiringSoonDays = 14,
-    this.headerState = TenantSubscriptionHeaderState.expired,
+    this.headerState = TenantSubscriptionHeaderState.unknown,
   });
 
   final String? subscriptionId;

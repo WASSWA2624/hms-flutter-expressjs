@@ -47,6 +47,26 @@ final class SessionTokenProvider {
     return session?.tokens.accessToken;
   }
 
+  /// Waits briefly for a bearer token while session restoration or refresh
+  /// completes. Used before workspace bootstrap API calls.
+  Future<String?> ensureAccessTokenReady({
+    int maxAttempts = 6,
+    Duration initialDelay = const Duration(milliseconds: 40),
+  }) async {
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(initialDelay * attempt);
+      }
+
+      final String? token = (await readAccessToken())?.trim();
+      if (token != null && token.isNotEmpty) {
+        return token;
+      }
+    }
+
+    return null;
+  }
+
   Future<AuthSession?> refreshStoredSession() {
     return _refreshStoredSession();
   }
