@@ -42,4 +42,62 @@ void main() {
       tester.getTopLeft(applyAction).dy,
     );
   });
+
+  testWidgets('attached toolbar actions show labels on large screens', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search records',
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: 'Filters',
+        trailingActions: <AppSearchBarAction>[
+          AppSearchBarAction(
+            icon: Icons.settings_outlined,
+            label: 'Table settings',
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(960, 498),
+    );
+
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Table settings'), findsOneWidget);
+  });
+
+  testWidgets('attached toolbar actions stay icon-only on compact screens', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search records',
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: 'Filters',
+        trailingActions: <AppSearchBarAction>[
+          AppSearchBarAction(
+            icon: Icons.settings_outlined,
+            label: 'Table settings',
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(720, 498),
+    );
+
+    expect(find.text('Filters'), findsNothing);
+    expect(find.text('Table settings'), findsNothing);
+    expect(find.byTooltip('Filters'), findsOneWidget);
+    expect(find.byTooltip('Table settings'), findsOneWidget);
+  });
 }

@@ -440,25 +440,11 @@ final class LabWorkspaceController
         if (latest == null) {
           return null;
         }
-        final bool exists = latest.catalogPanels.any(
-          (LabCatalogItem item) =>
-              item.id == updated.id ||
-              item.apiId == updated.apiId ||
-              item.apiId == panelId,
+        final List<LabCatalogItem> panels = _mergeCatalogOfferingUpdate(
+          latest.catalogPanels,
+          updated,
+          panelId,
         );
-        if (!exists && (effectiveScope?.isReady ?? false)) {
-          _emit(latest.copyWith(isSaving: false));
-          await loadFacilityCatalogConfig(effectiveScope!);
-          return null;
-        }
-        final List<LabCatalogItem> panels = <LabCatalogItem>[
-          for (final LabCatalogItem item in latest.catalogPanels)
-            item.id == updated.id ||
-                    item.apiId == updated.apiId ||
-                    item.apiId == panelId
-                ? updated
-                : item,
-        ];
         _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
         return null;
       },
@@ -842,25 +828,11 @@ final class LabWorkspaceController
         if (latest == null) {
           return null;
         }
-        final bool exists = latest.catalogTests.any(
-          (LabCatalogItem item) =>
-              item.id == updated.id ||
-              item.apiId == updated.apiId ||
-              item.apiId == testId,
+        final List<LabCatalogItem> tests = _mergeCatalogOfferingUpdate(
+          latest.catalogTests,
+          updated,
+          testId,
         );
-        if (!exists && (effectiveScope?.isReady ?? false)) {
-          _emit(latest.copyWith(isSaving: false));
-          await loadFacilityCatalogConfig(effectiveScope!);
-          return null;
-        }
-        final List<LabCatalogItem> tests = <LabCatalogItem>[
-          for (final LabCatalogItem item in latest.catalogTests)
-            item.id == updated.id ||
-                    item.apiId == updated.apiId ||
-                    item.apiId == testId
-                ? updated
-                : item,
-        ];
         _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         return null;
       },
@@ -1009,8 +981,8 @@ final class LabWorkspaceController
     if (latest != null) {
       _emit(
         latest.copyWith(
-          catalogTests: tests,
-          catalogPanels: panels,
+          catalogTests: _reconcileCatalogSnapshot(latest.catalogTests, tests),
+          catalogPanels: _reconcileCatalogSnapshot(latest.catalogPanels, panels),
           catalogScope: scope,
           isLoadingCatalog: false,
           catalogLoadFailure: failure,
@@ -1731,6 +1703,58 @@ final class LabWorkspaceController
     }
     return true;
   }
+
+  List<LabCatalogItem> _mergeCatalogOfferingUpdate(
+    List<LabCatalogItem> items,
+    LabCatalogItem updated,
+    String requestId,
+  ) {
+    final String normalizedRequestId = requestId.trim();
+    var replaced = false;
+    final List<LabCatalogItem> merged = <LabCatalogItem>[];
+    for (final LabCatalogItem item in items) {
+      if (_catalogItemMatchesRequest(item, updated, normalizedRequestId)) {
+        replaced = true;
+        merged.add(updated.copyWith(isOfferedAtFacility: true));
+      } else {
+        merged.add(item);
+      }
+    }
+    if (!replaced) {
+      merged.add(updated.copyWith(isOfferedAtFacility: true));
+    }
+    return merged;
+  }
+
+  bool _catalogItemMatchesRequest(
+    LabCatalogItem item,
+    LabCatalogItem updated,
+    String requestId,
+  ) {
+    return item.id == updated.id ||
+        item.apiId == updated.apiId ||
+        item.apiId == requestId ||
+        item.id == requestId;
+  }
+
+  List<LabCatalogItem> _reconcileCatalogSnapshot(
+    List<LabCatalogItem> previous,
+    List<LabCatalogItem> refreshed,
+  ) {
+    final Map<String, LabCatalogItem> merged = <String, LabCatalogItem>{
+      for (final LabCatalogItem item in refreshed)
+        _catalogItemKey(item): item,
+    };
+    for (final LabCatalogItem item in previous) {
+      if (!item.isOfferedAtFacility) {
+        continue;
+      }
+      merged.putIfAbsent(_catalogItemKey(item), () => item);
+    }
+    return merged.values.toList(growable: false);
+  }
+
+  String _catalogItemKey(LabCatalogItem item) => item.apiId;
 }
 
 extension on LabOrderWorkflow {

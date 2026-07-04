@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
@@ -1437,8 +1438,8 @@ class _LabConfigurationsDialogState
         label: l10n.clinicalRequestUnitPriceLabel,
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0),
-        cellBuilder: (_, LabCatalogItem item) => Text(
-          item.unitPrice?.toString() ?? l10n.clinicalRequestPriceNotSetLabel,
+        cellBuilder: (BuildContext context, LabCatalogItem item) => Text(
+          _formatCatalogUnitPrice(context, item, l10n),
         ),
       ),
       _actionsColumn(context, state, showingTests),
@@ -2565,6 +2566,22 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+}
+
+String _formatCatalogUnitPrice(
+  BuildContext context,
+  LabCatalogItem item,
+  AppLocalizations l10n,
+) {
+  final num? price = item.unitPrice;
+  if (price == null) {
+    return l10n.clinicalRequestPriceNotSetLabel;
+  }
+  return AppFormatters.currency(
+    price.toDouble(),
+    Localizations.localeOf(context),
+    currencyCode: item.currency ?? appDefaultCurrencyCode,
+  );
 }
 
 String _joinNonEmpty(Iterable<String?> values) {

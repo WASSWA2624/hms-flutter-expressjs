@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
@@ -318,77 +320,96 @@ class _AppSearchBarState extends State<AppSearchBar> {
         final double minHeight =
             theme.inputDecorationTheme.constraints?.minHeight ?? 48;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: _fillColor(theme, canEdit),
-            border: Border.all(
-              color: borderSide.color,
-              width: borderSide.width,
-            ),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Semantics(
-                    textField: true,
-                    enabled: canEdit,
-                    label: widget.semanticLabel,
-                    child: TextFormField(
-                      controller: widget.controller,
-                      enabled: canEdit,
-                      focusNode: _focusNode,
-                      autofocus: widget.autofocus,
-                      textInputAction: TextInputAction.search,
-                      onChanged: widget.onChanged,
-                      onFieldSubmitted: widget.onSubmitted,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: canEdit
-                            ? theme.colorScheme.onSurface
-                            : theme.colorScheme.onSurface.withValues(
-                                alpha: 0.62,
-                              ),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: widget.hintText,
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _suffixIcon(clearLabel, canClear),
-                        filled: false,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        focusedErrorBorder: InputBorder.none,
-                      ),
-                    ),
+        return LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final AppBreakpoint breakpoint = AppBreakpoints.fromConstraints(
+              constraints,
+            );
+            final bool showActionLabels =
+                breakpoint.showsToolbarActionLabels;
+
+            return AppActionLabelScope(
+              showLabels: showActionLabels,
+              forceIconOnly: !showActionLabels,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _fillColor(theme, canEdit),
+                  border: Border.all(
+                    color: borderSide.color,
+                    width: borderSide.width,
                   ),
                 ),
-                if (showFilters)
-                  _AttachedFilterButton(
-                    borderColor: borderSide.color,
-                    enabled: widget.enabled && !widget.isLoading,
-                    active:
-                        widget.hasActiveFilters || widget.filterValue.isActive,
-                    label:
-                        widget.advancedFilterButtonLabel ?? 'Advanced filters',
-                    onPressed: _openAdvancedFilters,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: minHeight),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Semantics(
+                          textField: true,
+                          enabled: canEdit,
+                          label: widget.semanticLabel,
+                          child: TextFormField(
+                            controller: widget.controller,
+                            enabled: canEdit,
+                            focusNode: _focusNode,
+                            autofocus: widget.autofocus,
+                            textInputAction: TextInputAction.search,
+                            onChanged: widget.onChanged,
+                            onFieldSubmitted: widget.onSubmitted,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: canEdit
+                                  ? theme.colorScheme.onSurface
+                                  : theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.62,
+                                    ),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: widget.hintText,
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _suffixIcon(clearLabel, canClear),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (showFilters)
+                        _AttachedFilterButton(
+                          borderColor: borderSide.color,
+                          enabled: widget.enabled && !widget.isLoading,
+                          active:
+                              widget.hasActiveFilters ||
+                              widget.filterValue.isActive,
+                          label:
+                              widget.advancedFilterButtonLabel ??
+                              'Advanced filters',
+                          showLabel: showActionLabels,
+                          onPressed: _openAdvancedFilters,
+                        ),
+                      for (final AppSearchBarAction action
+                          in widget.trailingActions)
+                        _AttachedSearchBarActionButton(
+                          borderColor: borderSide.color,
+                          action: action,
+                          showLabel: showActionLabels,
+                          enabled:
+                              widget.enabled &&
+                              !widget.isLoading &&
+                              action.enabled &&
+                              action.onPressed != null,
+                        ),
+                    ],
                   ),
-                for (final AppSearchBarAction action in widget.trailingActions)
-                  _AttachedSearchBarActionButton(
-                    borderColor: borderSide.color,
-                    action: action,
-                    enabled:
-                        widget.enabled &&
-                        !widget.isLoading &&
-                        action.enabled &&
-                        action.onPressed != null,
-                  ),
-              ],
-            ),
-          ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -530,43 +551,25 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
     required this.borderColor,
     required this.action,
     required this.enabled,
+    required this.showLabel,
   });
 
   final Color borderColor;
   final AppSearchBarAction action;
   final bool enabled;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = action.active
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-    final Color background = action.active
-        ? colorScheme.primaryContainer.withValues(alpha: 0.54)
-        : Colors.transparent;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        border: BorderDirectional(start: BorderSide(color: borderColor)),
-      ),
-      child: SizedBox(
-        width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
-        child: Center(
-          child: AppButton(
-            iconOnly: true,
-            leadingIcon: action.icon,
-            label: action.label,
-            semanticLabel: action.label,
-            tooltip: action.tooltip ?? action.label,
-            color: foreground,
-            enabled: enabled,
-            onPressed: enabled ? action.onPressed : null,
-          ),
-        ),
-      ),
+    return _AttachedSearchBarButton(
+      borderColor: borderColor,
+      enabled: enabled,
+      active: action.active,
+      showLabel: showLabel,
+      icon: action.icon,
+      label: action.label,
+      tooltip: action.tooltip,
+      onPressed: action.onPressed,
     );
   }
 }
@@ -577,6 +580,7 @@ class _AttachedFilterButton extends StatelessWidget {
     required this.enabled,
     required this.active,
     required this.label,
+    required this.showLabel,
     required this.onPressed,
   });
 
@@ -584,7 +588,43 @@ class _AttachedFilterButton extends StatelessWidget {
   final bool enabled;
   final bool active;
   final String label;
+  final bool showLabel;
   final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AttachedSearchBarButton(
+      borderColor: borderColor,
+      enabled: enabled,
+      active: active,
+      showLabel: showLabel,
+      icon: active ? Icons.filter_alt : Icons.filter_alt_outlined,
+      label: label,
+      onPressed: onPressed,
+    );
+  }
+}
+
+class _AttachedSearchBarButton extends StatelessWidget {
+  const _AttachedSearchBarButton({
+    required this.borderColor,
+    required this.enabled,
+    required this.active,
+    required this.showLabel,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  final Color borderColor;
+  final bool enabled;
+  final bool active;
+  final bool showLabel;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -596,27 +636,35 @@ class _AttachedFilterButton extends StatelessWidget {
     final Color background = active
         ? colorScheme.primaryContainer.withValues(alpha: 0.54)
         : Colors.transparent;
+    final String resolvedTooltip = tooltip ?? label;
+    final Widget button = AppButton(
+      iconOnly: !showLabel,
+      leadingIcon: icon,
+      label: label,
+      semanticLabel: label,
+      tooltip: resolvedTooltip,
+      color: foreground,
+      enabled: enabled,
+      onPressed: enabled ? onPressed : null,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: background,
         border: BorderDirectional(start: BorderSide(color: borderColor)),
       ),
-      child: SizedBox(
-        width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
-        child: Center(
-          child: AppButton(
-            iconOnly: true,
-            leadingIcon: active ? Icons.filter_alt : Icons.filter_alt_outlined,
-            label: label,
-            semanticLabel: label,
-            tooltip: label,
-            color: foreground,
-            enabled: enabled,
-            onPressed: enabled ? onPressed : null,
-          ),
-        ),
-      ),
+      child: showLabel
+          ? Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: theme.spacing.xs,
+                end: theme.spacing.sm,
+              ),
+              child: button,
+            )
+          : SizedBox(
+              width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
+              child: Center(child: button),
+            ),
     );
   }
 }

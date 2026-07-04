@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -25,6 +26,16 @@ const LabCatalogItem _offeredTest = LabCatalogItem(
   name: 'LFT',
   code: 'LFT',
   isOfferedAtFacility: true,
+);
+
+const LabCatalogItem _offeredPanel = LabCatalogItem(
+  id: 'LBP0000001',
+  type: LabCatalogItemType.panel,
+  name: 'Basic metabolic panel',
+  code: 'BMP',
+  isOfferedAtFacility: true,
+  unitPrice: 25000,
+  currency: 'UGX',
 );
 
 LabWorkbenchBundle _emptyWorkbench() {
@@ -305,6 +316,124 @@ void main() {
           limit: any(named: 'limit'),
         ),
       );
+    },
+  );
+
+  test(
+    'updateLabPanel appends newly enabled panel to catalog state immediately',
+    () async {
+      const LabCatalogScope scope = LabCatalogScope(
+        tenantId: 'TEN0000001',
+        facilityId: 'FAC0000001',
+      );
+      when(
+        () => repository.upsertFacilityLabPanelOffering(
+          any(),
+          any(),
+          tenantId: any(named: 'tenantId'),
+          facilityId: any(named: 'facilityId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<LabCatalogItem>.success(_offeredPanel),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          labRepositoryProvider.overrideWithValue(repository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(labWorkspaceControllerProvider.future);
+
+      final LabWorkspaceController controller =
+          container.read(labWorkspaceControllerProvider.notifier);
+      await controller.loadFacilityCatalogConfig(scope);
+
+      final AppFailure? failure = await controller.updateLabPanel(
+        'LBP0000001',
+        <String, Object?>{
+          'is_active': true,
+          'unit_price': 25000,
+          'currency': 'UGX',
+        },
+        scope: scope,
+      );
+
+      expect(failure, isNull);
+      final LabWorkspaceState state =
+          (container.read(labWorkspaceControllerProvider).value
+                  as ResultSuccess<LabWorkspaceState>)
+              .value;
+      expect(state.catalogPanels, hasLength(1));
+      expect(state.catalogPanels.single.code, 'BMP');
+      expect(state.catalogPanels.single.unitPrice, 25000);
+    },
+  );
+
+  test(
+    'updateLabTest replaces existing catalog test after price edit',
+    () async {
+      const LabCatalogScope scope = LabCatalogScope(
+        tenantId: 'TEN0000001',
+        facilityId: 'FAC0000001',
+      );
+      const LabCatalogItem updatedTest = LabCatalogItem(
+        id: 'LBT0000001',
+        type: LabCatalogItemType.test,
+        name: 'CBC',
+        code: 'CBC',
+        isOfferedAtFacility: true,
+        unitPrice: 18000,
+        currency: 'UGX',
+      );
+      when(
+        () => repository.upsertFacilityLabTestOffering(
+          any(),
+          any(),
+          tenantId: any(named: 'tenantId'),
+          facilityId: any(named: 'facilityId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<LabCatalogItem>.success(updatedTest),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          labRepositoryProvider.overrideWithValue(repository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(labWorkspaceControllerProvider.future);
+
+      final LabWorkspaceController controller =
+          container.read(labWorkspaceControllerProvider.notifier);
+      await controller.loadFacilityCatalogConfig(scope);
+
+      final AppFailure? failure = await controller.updateLabTest(
+        'LBT0000001',
+        <String, Object?>{
+          'unit_price': 18000,
+          'currency': 'UGX',
+        },
+        scope: scope,
+      );
+
+      expect(failure, isNull);
+      final LabWorkspaceState state =
+          (container.read(labWorkspaceControllerProvider).value
+                  as ResultSuccess<LabWorkspaceState>)
+              .value;
+      expect(state.catalogTests, hasLength(1));
+      expect(state.catalogTests.single.unitPrice, 18000);
+      expect(state.catalogTests.single.currency, 'UGX');
     },
   );
 }
