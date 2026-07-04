@@ -130,44 +130,26 @@ function Get-FlutterWebRunArgs {
 
 function Invoke-FlutterWebRun {
   param(
-    [string[]]$RunArgs
+    [string[]]$RunArgs,
+    [string]$AppUrl = '',
+    [switch]$OpenBrowserWhenReady
   )
 
   Write-Host ("Running: flutter {0}" -f ($RunArgs -join ' '))
-  & flutter @RunArgs
-  return $LASTEXITCODE
-}
-
-function Start-WebServerBrowserOpener {
-  param(
-    [string]$Address,
-    [int]$ListenPort,
-    [string]$AppUrl
-  )
-
-  $null = Start-Job -Name "OpenHmsWebApp" -ScriptBlock {
-    param(
-      [string]$JobAddress,
-      [int]$JobPort,
-      [string]$JobUrl
-    )
-
-    $deadline = (Get-Date).AddMinutes(4)
-    while ((Get-Date) -lt $deadline) {
-      $listening = Get-NetTCPConnection `
-        -LocalPort $JobPort `
-        -State Listen `
-        -ErrorAction SilentlyContinue
-
-      if ($listening) {
-        Start-Sleep -Seconds 2
-        Start-Process $JobUrl
-        break
+  $script:browserOpenedForWebServer = $false
+  & flutter @RunArgs 2>&1 | ForEach-Object {
+    $line = "$_"
+    Write-Host $line
+    if ($OpenBrowserWhenReady -and -not $script:browserOpenedForWebServer -and $line -match 'is being served at') {
+      if ($AppUrl) {
+        Write-Host "Opening $AppUrl"
+        Start-Process $AppUrl
       }
-
-      Start-Sleep -Milliseconds 500
+      $script:browserOpenedForWebServer = $true
+      Write-Host 'Dev server is ready. The terminal stays open for hot reload (r/R/q); that is normal.'
     }
-  } -ArgumentList $Address, $ListenPort, $AppUrl
+  }
+  return $LASTEXITCODE
 }
 
 function Release-WebPort {
@@ -215,6 +197,7 @@ function Prepare-ForWebRunRetry {
 }
 
 Stop-FlutterBrowserProcesses -ProfileDir $ChromeProfileDir -BrowserDevice $Device
+Get-Job -Name 'OpenHmsWebApp' -ErrorAction SilentlyContinue | Stop-Job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 Stop-FlutterBrowserProcesses -ProfileDir $ChromeProfileDir -BrowserDevice $Device
 
@@ -295,30 +278,31 @@ if ($useWebServer) {
   $includeBrowserFlags = $false
   $appUrl = "http://${HostName}:${Port}/"
   Write-Host "The app will be served at $appUrl"
-  Write-Host 'Opening your default browser once the dev server is ready (first build may take 1-2 minutes)...'
-  Start-WebServerBrowserOpener -Address $HostName -ListenPort $Port -AppUrl $appUrl
+  Write-Host 'The browser opens automatically when Flutter prints that the app is being served.'
 } else {
+  $appUrl = ''
   $runDevice = $Device
   $includeBrowserFlags = $true
 }
 
 $flutterArgs = Get-FlutterWebRunArgs -RunDevice $runDevice -IncludeBrowserFlags:$includeBrowserFlags
-$exitCode = Invoke-FlutterWebRun -RunArgs $flutterArgs
+$exitCode = Invoke-FlutterWebRun -RunArgs $flutterArgs -AppUrl $appUrl -OpenBrowserWhenReady:$useWebServer
 
 if ($exitCode -ne 0 -and -not $WebServerOnly -and -not $ResetChromeProfile) {
   Write-Host 'Browser debug connection failed. Resetting profile and retrying once...'
   Reset-FlutterChromeProfile -ProfileDir $ChromeProfileDir -Reason 'debug connection failed'
   Prepare-ForWebRunRetry
   New-Item -ItemType Directory -Force -Path $ChromeProfileDir | Out-Null
-  $exitCode = Invoke-FlutterWebRun -RunArgs $flutterArgs
+  $exitCode = Invoke-FlutterWebRun -RunArgs $flutterArgs -AppUrl $appUrl -OpenBrowserWhenReady:$useWebServer
 }
 
 if ($exitCode -ne 0 -and -not $WebServerOnly -and -not $NoWebServerFallback) {
   Write-Host "Chrome debug still failed. Falling back to web-server at http://${HostName}:${Port}/"
   Write-Host 'Hot reload/debugger attachment are unavailable in this mode.'
   Prepare-ForWebRunRetry
+  $appUrl = "http://${HostName}:${Port}/"
   $fallbackArgs = Get-FlutterWebRunArgs -RunDevice 'web-server'
-  $exitCode = Invoke-FlutterWebRun -RunArgs $fallbackArgs
+  $exitCode = Invoke-FlutterWebRun -RunArgs $fallbackArgs -AppUrl $appUrl -OpenBrowserWhenReady
 }
 
 if ($exitCode -eq 0) {
