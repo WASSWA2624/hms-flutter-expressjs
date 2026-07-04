@@ -1,59 +1,48 @@
-# Lab Configurations — scope selection UX
+## Bug: Enable lab offering fails with "Connection problem"
 
-## Context
+### Context
+- **App:** HOSSPI Hospital Management (`http://127.0.0.1:5201/lab`)
+- **Role:** Super admin
+- **Feature:** Lab → Lab Configurations → **Enable lab offering** → select a platform catalog item → set unit price → **Enable test** / **Enable panel**
 
-In the **Lab Configurations** modal (`_LabConfigurationsDialog` in `lab_workspace_page.dart`), elevated users who manage multiple tenants and facilities must choose a **Tenant** and **Facility context** before the lab catalog can load.
+### Observed behavior
+When enabling a platform lab test or panel at a facility, the price dialog shows:
 
-The dialog is opened from the Lab workspace and is used to enable platform tests/panels, set prices, and configure reference ranges for a specific facility.
+> **Connection problem**  
+> Check your connection and try again.
 
-## Problem
+Reproduced for at least:
+- **Test:** `1,3 beta glucan [Mass/volume] in Serum | 42176-8` — unit price `50,000 UGX`
+- **Panel:** `Abdominal Pain Panel | ABDP` — unit price `40,000 UGX`
 
-When the dialog opens and **no tenant is selected**, the **Facility context** field still appears interactive (see attached screenshot). This is confusing for users with cross-tenant access: they can attempt to pick a facility before a tenant is known, and the main content area can show catalog UI or empty states instead of a clear scope-selection prompt.
+The catalog list loads and search works; the failure occurs only on submit.
 
-## Goal
+### Prior / related symptoms
+- Earlier attempts returned an **invalid ID** error (frontend); the backend did not surface a corresponding error in logs.
+- One test (CBC) may already be enabled; other catalog items still fail on enable.
 
-Enforce a strict **tenant → facility** selection flow with clear, disabled UI and messaging until scope is complete.
+### Expected behavior
+Submitting **Enable test** or **Enable panel** with a valid unit price and currency should create or update the facility offering and close the dialog successfully.
 
-## Requirements
+### Investigation scope
+Trace the full enable flow end to end and align frontend, API, and database:
 
-### 1. Facility selector gating
+1. **Frontend**
+   - `LabEnableFacilityOfferingDialog` / `_LabEnableOfferingPriceDialog` in `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
+   - `LabWorkspaceController.updateLabTest` / `updateLabPanel` and `LabRepositoryImpl.upsertFacilityLabTestOffering` / `upsertFacilityLabPanelOffering`
+   - Confirm the ID sent in the request (`item.apiId`) matches what the backend expects
+   - Confirm failures are mapped correctly (`AppFailure.network` vs validation/server errors)
 
-- When `_showTenantSelector` is true and no tenant is selected:
-  - Render the **Facility context** field as **disabled** (not merely empty).
-  - Do **not** allow facility selection or clearing.
-  - Show an inline helper message such as: *"Select a tenant first"* (reuse or extend `labConfigurationsSelectTenantFirstTooltip`).
-- When a tenant **is** selected:
-  - Enable the facility selector and populate it with `facilitiesForTenant(_tenantId)`.
-  - Clear any previously selected facility when the tenant changes.
+2. **Backend**
+   - `PUT /api/v1/facility-lab-catalog/tests/:id` and `.../panels/:id`
+   - `facility-lab-catalog` service/repository upsert logic and validation schema
+   - Ensure errors (invalid ID, missing tenant/facility scope, validation) return actionable HTTP responses and are logged
 
-### 2. Scope-dependent content
+3. **Database**
+   - Verify `facility_lab_test_offering` / `facility_lab_panel_offering` rows are created/updated for the selected tenant, facility, and catalog item
 
-- Until `LabCatalogScope.isReady` (both non-empty `tenantId` and `facilityId`):
-  - **Hide** Tests/Panels toggle, search bar, catalog table, and enable actions.
-  - **Show** `AppMessagePanel` with the appropriate scope prompt:
-    - No tenant: `labConfigurationsSelectScopeBody` — *"Select a tenant and facility to load and configure the lab catalog."*
-    - Tenant only: `labConfigurationsSelectFacilityOnlyBody(tenantName)` — *"Select a facility for {tenant} to load and configure the lab catalog."*
-- Do **not** call `loadFacilityCatalogConfig` or show catalog empty states (e.g. *"No tests are offered at this facility"*) until scope is ready.
-
-### 3. Visual affordance
-
-- The disabled facility field must be visually distinct from an active empty dropdown (muted styling, no misleading clear/action controls).
-- Optional: keep tooltip + tap-to-snackbar on the disabled field for accessibility.
-
-## Files likely involved
-
-- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`, `_LabConfigurationsDisabledFacilityField`
-- `frontend/lib/l10n/app_en.arb` — scope prompt / helper strings if new copy is needed
-- `frontend/test/features/lab/...` — widget or controller tests for scope gating
-
-## Acceptance criteria
-
-- [ ] With tenant unselected, facility selector is disabled and shows a clear helper message.
-- [ ] With tenant selected but facility unselected, facility selector is enabled; main area shows facility-only scope prompt.
-- [ ] With both selected, catalog loads and Tests/Panels UI appears.
-- [ ] Changing tenant resets facility and does not retain stale catalog data.
-- [ ] No catalog empty/loading states appear before scope is ready.
-
-## Reference
-
-Existing partial implementation: `facilitySelectorEnabled`, `_LabConfigurationsDisabledFacilityField`, and `_scopePromptMessage` in `_LabConfigurationsDialogState`.
+### Acceptance criteria
+- Enable test/panel succeeds for catalog items not yet offered at the facility
+- Real API/validation errors show accurate messages (not a generic connection error when online)
+- Backend logs reflect failed requests with enough detail to diagnose ID/scope issues
+- Frontend catalog refreshes and shows the newly enabled item with the configured price

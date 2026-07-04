@@ -995,82 +995,34 @@ class _LabConfigurationsDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          if (_showTenantSelector && tenantOptions.isNotEmpty)
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppSelectField<String>.searchable(
-                value: _tenantId,
-                labelText: l10n.settingsWorkspaceTenantLabel,
-                options: <AppSelectOption<String>>[
-                  for (final HomeLookupOption tenant in tenantOptions)
-                    AppSelectOption<String>(
-                      value: tenant.id,
-                      label: tenant.label,
-                    ),
-                ],
-                onChanged: (String? value) async {
-                  setState(() {
-                    _tenantId = value;
-                    _facilityId = null;
-                  });
-                  await _reloadCatalogIfReady();
-                },
-              ),
-              right: facilitySelectorEnabled
-                  ? AppSelectField<String>.searchable(
-                      value: _facilityId,
-                      labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                      isRequired: true,
-                      options: <AppSelectOption<String>>[
-                        for (final HomeLookupOption facility in facilityOptions)
-                          AppSelectOption<String>(
-                            value: facility.id,
-                            label: facility.label,
-                          ),
-                      ],
-                      onChanged: (String? value) async {
-                        setState(() => _facilityId = value);
-                        await _reloadCatalogIfReady();
-                      },
-                    )
-                  : _LabConfigurationsDisabledFacilityField(
-                      helperMessage:
-                          l10n.labConfigurationsSelectTenantFirstTooltip,
-                      labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                    ),
-            )
-          else if (_showFacilitySelector && facilityOptions.isNotEmpty)
-            AppSelectField<String>.searchable(
-              value: _facilityId,
-              labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-              isRequired: true,
-              options: <AppSelectOption<String>>[
-                for (final HomeLookupOption facility in facilityOptions)
-                  AppSelectOption<String>(
-                    value: facility.id,
-                    label: facility.label,
-                  ),
-              ],
-              onChanged: (String? value) async {
-                setState(() => _facilityId = value);
-                await _reloadCatalogIfReady();
-              },
-            )
-          else if (_showScopeContextLabel &&
-              scopeReady &&
-              facilityLabel != null &&
-              facilityLabel.isNotEmpty)
-            AppMutedText(l10n.labConfigurationsFacilityContextLabel(facilityLabel)),
-          if (scopeReady &&
-              facilityLabel != null &&
-              facilityLabel.isNotEmpty &&
-              (_showTenantSelector || _showFacilitySelector))
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.sm),
-              child: AppMutedText(
-                l10n.labConfigurationsFacilityContextLabel(facilityLabel),
-              ),
+          _LabConfigurationsScopeSection(
+            l10n: l10n,
+            scopeReady: scopeReady,
+            showTenantSelector: _showTenantSelector,
+            showFacilitySelector: _showFacilitySelector,
+            showScopeContextLabel: _showScopeContextLabel,
+            tenantOptions: tenantOptions,
+            facilityOptions: facilityOptions,
+            tenantId: _tenantId,
+            facilityId: _facilityId,
+            facilitySelectorEnabled: facilitySelectorEnabled,
+            facilityLabel: facilityLabel,
+            scopePromptMessage: _scopePromptMessage(
+              l10n,
+              tenantLabel: tenantLabel,
             ),
+            onTenantChanged: (String? value) async {
+              setState(() {
+                _tenantId = value;
+                _facilityId = null;
+              });
+              await _reloadCatalogIfReady();
+            },
+            onFacilityChanged: (String? value) async {
+              setState(() => _facilityId = value);
+              await _reloadCatalogIfReady();
+            },
+          ),
           if (scopeReady) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             _LabConfigurationTypeSelector(
@@ -1084,30 +1036,21 @@ class _LabConfigurationsDialogState
               },
             ),
             SizedBox(height: theme.spacing.md),
-          ],
-          if (!scopeReady)
-            AppMessagePanel(
-              message: _scopePromptMessage(
-                l10n,
-                tenantLabel: tenantLabel,
-              ),
-              icon: Icons.domain_outlined,
-            )
-          else if (isLoading)
-            AppWorkspaceStatePanel.loading(
-              title: l10n.labConfigurationsLoadingTitle,
-              body: l10n.labConfigurationsLoadingBody,
-              minHeight: 220,
-            )
-          else if (loadFailure != null &&
-              state.catalogTests.isEmpty &&
-              state.catalogPanels.isEmpty)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: loadFailure,
-            )
-          else
-            AppListTable<LabCatalogItem>(
+            if (isLoading)
+              AppWorkspaceStatePanel.loading(
+                title: l10n.labConfigurationsLoadingTitle,
+                body: l10n.labConfigurationsLoadingBody,
+                minHeight: 220,
+              )
+            else if (loadFailure != null &&
+                state.catalogTests.isEmpty &&
+                state.catalogPanels.isEmpty)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: loadFailure,
+              )
+            else
+              AppListTable<LabCatalogItem>(
               items: items,
               maxVisibleItems: _maxVisibleCatalogItems,
               shrinkWrap: true,
@@ -1124,7 +1067,7 @@ class _LabConfigurationsDialogState
                 matcher: (LabCatalogItem item, String query) =>
                     item.matchesSearch(query),
                 trailingActions: <AppSearchBarAction>[
-                  if (_canEnableOfferings && scopeReady)
+                  if (_canEnableOfferings)
                     AppSearchBarAction(
                       icon: showingTests
                           ? Icons.add_circle_outline
@@ -1232,7 +1175,6 @@ class _LabConfigurationsDialogState
                 );
               },
             ),
-          if (scopeReady) ...<Widget>[
             const Divider(height: 24),
             Text(
               l10n.labQcLogsAction,
@@ -1605,13 +1547,189 @@ class _LabConfigurationsDialogState
   }
 }
 
+class _LabConfigurationsScopeSection extends StatelessWidget {
+  const _LabConfigurationsScopeSection({
+    required this.l10n,
+    required this.scopeReady,
+    required this.showTenantSelector,
+    required this.showFacilitySelector,
+    required this.showScopeContextLabel,
+    required this.tenantOptions,
+    required this.facilityOptions,
+    required this.tenantId,
+    required this.facilityId,
+    required this.facilitySelectorEnabled,
+    required this.facilityLabel,
+    required this.scopePromptMessage,
+    required this.onTenantChanged,
+    required this.onFacilityChanged,
+  });
+
+  final AppLocalizations l10n;
+  final bool scopeReady;
+  final bool showTenantSelector;
+  final bool showFacilitySelector;
+  final bool showScopeContextLabel;
+  final List<HomeLookupOption> tenantOptions;
+  final List<HomeLookupOption> facilityOptions;
+  final String? tenantId;
+  final String? facilityId;
+  final bool facilitySelectorEnabled;
+  final String? facilityLabel;
+  final String scopePromptMessage;
+  final ValueChanged<String?> onTenantChanged;
+  final ValueChanged<String?> onFacilityChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasTenantRow = showTenantSelector && tenantOptions.isNotEmpty;
+    final bool hasFacilityOnlyRow =
+        !hasTenantRow && showFacilitySelector && facilityOptions.isNotEmpty;
+    final bool hasFixedContextLabel = showScopeContextLabel &&
+        scopeReady &&
+        facilityLabel != null &&
+        facilityLabel!.isNotEmpty;
+
+    if (!hasTenantRow && !hasFacilityOnlyRow && !hasFixedContextLabel) {
+      if (!scopeReady) {
+        return AppSectionPanel(
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+          leadingIcon: Icons.domain_outlined,
+          children: <Widget>[
+            Text(
+              scopePromptMessage,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    if (hasFixedContextLabel && !hasTenantRow && !hasFacilityOnlyRow) {
+      return AppMutedText(
+        l10n.labConfigurationsFacilityContextLabel(facilityLabel!),
+      );
+    }
+
+    final String? guidanceMessage = scopeReady &&
+            facilityLabel != null &&
+            facilityLabel!.isNotEmpty
+        ? l10n.labConfigurationsFacilityContextLabel(facilityLabel!)
+        : (!scopeReady ? scopePromptMessage : null);
+
+    return AppSectionPanel(
+      tone: scopeReady
+          ? AppWorkspaceStatusTone.neutral
+          : AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        if (hasTenantRow)
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppSelectField<String>.searchable(
+              value: tenantId,
+              labelText: l10n.settingsWorkspaceTenantLabel,
+              options: <AppSelectOption<String>>[
+                for (final HomeLookupOption tenant in tenantOptions)
+                  AppSelectOption<String>(
+                    value: tenant.id,
+                    label: tenant.label,
+                  ),
+              ],
+              onChanged: onTenantChanged,
+            ),
+            right: facilitySelectorEnabled
+                ? AppSelectField<String>.searchable(
+                    value: facilityId,
+                    labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+                    isRequired: true,
+                    options: <AppSelectOption<String>>[
+                      for (final HomeLookupOption facility in facilityOptions)
+                        AppSelectOption<String>(
+                          value: facility.id,
+                          label: facility.label,
+                        ),
+                    ],
+                    onChanged: onFacilityChanged,
+                  )
+                : _LabConfigurationsDisabledFacilityField(
+                    tooltipMessage:
+                        l10n.labConfigurationsSelectTenantFirstTooltip,
+                    labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+                  ),
+          )
+        else if (hasFacilityOnlyRow)
+          AppSelectField<String>.searchable(
+            value: facilityId,
+            labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+            isRequired: true,
+            options: <AppSelectOption<String>>[
+              for (final HomeLookupOption facility in facilityOptions)
+                AppSelectOption<String>(
+                  value: facility.id,
+                  label: facility.label,
+                ),
+            ],
+            onChanged: onFacilityChanged,
+          ),
+        if (guidanceMessage != null)
+          _LabConfigurationsScopeGuidance(
+            message: guidanceMessage,
+            showIcon: !scopeReady,
+          ),
+      ],
+    );
+  }
+}
+
+class _LabConfigurationsScopeGuidance extends StatelessWidget {
+  const _LabConfigurationsScopeGuidance({
+    required this.message,
+    required this.showIcon,
+  });
+
+  final String message;
+  final bool showIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? textStyle = showIcon
+        ? theme.textTheme.bodyMedium
+        : theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+
+    if (!showIcon) {
+      return Text(message, style: textStyle);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(
+          Icons.domain_outlined,
+          color: theme.colorScheme.primary,
+          size: theme.appTokens.listIconSize,
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Text(message, style: textStyle),
+        ),
+      ],
+    );
+  }
+}
+
 class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
   const _LabConfigurationsDisabledFacilityField({
-    required this.helperMessage,
+    required this.tooltipMessage,
     required this.labelText,
   });
 
-  final String helperMessage;
+  final String tooltipMessage;
   final String labelText;
 
   @override
@@ -1620,18 +1738,16 @@ class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(helperMessage)),
+          SnackBar(content: Text(tooltipMessage)),
         );
       },
       child: Tooltip(
-        message: helperMessage,
+        message: tooltipMessage,
         child: AppSelectField<String>.searchable(
           labelText: labelText,
           isRequired: true,
           enabled: false,
           allowClear: false,
-          helperText: helperMessage,
-          hintText: helperMessage,
           options: const <AppSelectOption<String>>[],
         ),
       ),
