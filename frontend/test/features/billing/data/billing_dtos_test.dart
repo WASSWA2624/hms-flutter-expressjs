@@ -94,7 +94,7 @@ void main() {
     });
 
     test('maps unpaid issued invoices to awaiting payment clearance', () {
-      final BillingWorkItem item = BillingWorkItemDto(
+      final BillingWorkItem item = const BillingWorkItemDto(
         <String, Object?>{
           'id': 'invoice-2',
           'display_id': 'INV-002',
