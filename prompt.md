@@ -1,88 +1,51 @@
-# Request Lab dialog — toolbar, table, and patient context polish
+# Request Lab dialog — UI polish
 
-Refine the **Request Lab** dialog (`ClinicalLabOrderActionDialog`) layout and styling. The selected-items table and overall flow are good; apply the changes below.
+Refine typography and alignment in the **Request Lab** dialog (and other clinical request flows that reuse the same shared widgets).
 
-## Scope
+## Context
 
-Primary files:
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart` (`ClinicalRequestFlowToolbar`, `ClinicalRequestSelectedCatalogTable`)
-- `frontend/lib/l10n/app_en.arb` (new/updated labels)
-- `frontend/test/shared/clinical_actions/clinical_lab_order_action_dialog_test.dart`
+- Dialog: `ClinicalLabOrderActionDialog` (`frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`)
+- Shared UI: `ClinicalRequestPatientContextStrip`, `ClinicalRequestSelectedCatalogTable`, `_ClinicalRequestRemoveItemButton` in `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart`
+- Strings: `frontend/lib/l10n/app_en.arb` (`clinicalRequestPatientIdLabel`, etc.)
 
-Reuse existing components and patterns; keep changes minimal and consistent with other clinical request dialogs.
+## Changes
 
----
+### 1. Patient context strip
 
-## 1. Toolbar layout
+Current: entire line is semi-bold — e.g. **Name: Amina Demo-Alpha   ID: PAT-…   Encounter ID: VIS…**
 
-Replace the current left-aligned `Wrap` toolbar with a single horizontal row:
+Target:
+- **Bold** only the field labels: **Name**, **Patient ID**, **Encounter ID**
+- Values (patient name, IDs) use normal body weight
+- Rename label **ID** → **Patient ID** (update `clinicalRequestPatientIdLabel` in l10n; regenerate localizations)
 
-| Left | Right |
-|------|-------|
-| Patient context (see §2) | Action buttons |
+### 2. Actions column — Remove item
 
-**Right-aligned actions** (order left → right):
-1. **Remove selected** — leftmost in the right group; red/destructive icon (treat as a flagged destructive action)
-2. **Add items**
-3. **Review billing**
+Current: both the trash icon and “Remove item” text are red (`colorScheme.error`).
 
-- **Remove selected** is enabled only when one or more table rows are checked.
-- **Review billing** stays disabled when the list is empty.
-- Use `MainAxisAlignment.spaceBetween` (or equivalent) so patient info stays left and actions stay right.
+Target:
+- Keep the delete **icon** red (destructive cue)
+- “Remove item” label uses default/neutral text color (not error red)
+- Apply in `_ClinicalRequestRemoveItemButton` so all clinical request tables stay consistent
 
----
+### 3. Table footer — Total row
 
-## 2. Patient context strip (toolbar left)
+Current: “Total” is left-aligned; amount is right-aligned in a separate column area.
 
-Show who the request is for on **one row** (no wrapping to multiple lines):
+Target:
+- Place the total **amount in the Price column**, aligned with row prices above
+- “Total” label can sit under the Test name / Type columns or span left columns — amount must line up with the **Price** column
+- Increase emphasis on the total row (bolder weight than line-item prices)
 
-```
-Name: {patient name}   ID: {patient ID}   Encounter ID: {encounter ID}
-```
+## Acceptance criteria
 
-- Use the `label: value` pattern above.
-- Source values from the dialog’s patient/encounter context (e.g. pass `patientName`, `patientId`, and `encounterId` into `ClinicalLabOrderActionDialog` from existing call sites such as `openPatientLabOrderDialog`).
-- Omit a field only if the value is genuinely unavailable; do not show empty placeholders.
+- [ ] Patient strip shows **Name**, **Patient ID**, **Encounter ID** bold; values not bold
+- [ ] “Patient ID” replaces “ID” in UI and l10n
+- [ ] Remove-item icon red; label neutral
+- [ ] Footer total amount aligns with Price column; total row visually bolder
+- [ ] Existing tests pass; update `clinical_lab_order_action_dialog_test.dart` if labels/assertions change
+- [ ] Run `flutter gen-l10n` after arb edits
 
----
+## Out of scope
 
-## 3. Selected-items table
-
-### Container
-- Remove corner radius — **sharp, square edges** on the table border (no `borderRadius`).
-
-### Column headers & alignment
-- Rename the **Name** column to a clearer label such as **Test name** (pick the clearest option; update l10n).
-- Left-align all table cell content (name, type, price) so long test/panel names read cleanly.
-
-### Actions column
-- Replace the icon-only delete control with a labeled action: **Remove item**.
-- Style the delete icon and/or label as **red/destructive** to signal a flagged removal.
-- Clicking **Remove item** removes that row (existing `onDeleteItem` behavior).
-
-### Bulk remove
-- Row checkboxes + header select-all stay as-is.
-- **Remove selected** in the toolbar removes all checked rows (existing `onRemoveSelected` behavior).
-
----
-
-## 4. Out of scope
-
-Do **not** change:
-- Catalog picker (“Add items”) flow
-- Billing review dialog
-- Submit / “Request lab” footer action
-- Pricing, totals, or row data logic
-
----
-
-## 5. Acceptance criteria
-
-- [ ] Toolbar: patient context left; **Remove selected**, **Add items**, **Review billing** right-aligned in that order.
-- [ ] **Remove selected** uses a red/destructive icon and is disabled until rows are selected.
-- [ ] Patient strip shows `Name`, `ID`, and `Encounter ID` on a single row.
-- [ ] Table has square corners (no border radius).
-- [ ] **Name** column renamed to a clear test-name label; cells are left-aligned.
-- [ ] Per-row **Remove item** action is labeled and uses destructive/red styling.
-- [ ] Existing widget tests updated; new cases cover toolbar alignment, patient strip, and remove actions where practical.
+No changes to catalog picker, billing dialog, submit logic, or toolbar actions.

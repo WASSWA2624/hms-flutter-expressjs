@@ -21467,7 +21467,7 @@
   "@clinicalRequestPatientNameLabel": {
     "description": "Patient name label on clinical request toolbar context strip."
   },
-  "clinicalRequestPatientIdLabel": "ID",
+  "clinicalRequestPatientIdLabel": "Patient ID",
   "@clinicalRequestPatientIdLabel": {
     "description": "Patient ID label on clinical request toolbar context strip."
   },

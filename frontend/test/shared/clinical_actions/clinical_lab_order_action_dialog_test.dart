@@ -119,7 +119,9 @@ void main() {
       );
 
       expect(
-        find.text('Name: Jane Doe   ID: P-1001   Encounter ID: ENC-42'),
+        find.text(
+          'Name: Jane Doe   Patient ID: P-1001   Encounter ID: ENC-42',
+        ),
         findsOneWidget,
       );
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);

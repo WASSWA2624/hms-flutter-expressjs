@@ -16676,7 +16676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestPatientNameLabel => 'Name';
 
   @override
-  String get clinicalRequestPatientIdLabel => 'ID';
+  String get clinicalRequestPatientIdLabel => 'Patient ID';
 
   @override
   String get clinicalRequestPatientEncounterIdLabel => 'Encounter ID';

@@ -109,22 +109,62 @@ class ClinicalRequestPatientContextStrip extends StatelessWidget {
 
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<String> segments = <String>[
+    final TextStyle valueStyle = theme.textTheme.bodyMedium!;
+    final TextStyle labelStyle = valueStyle.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    final List<InlineSpan> segments = <InlineSpan>[
       if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
-        '${l10n.clinicalRequestPatientNameLabel}: ${patientContext.patientName!.trim()}',
+        _patientContextSegment(
+          l10n.clinicalRequestPatientNameLabel,
+          patientContext.patientName!.trim(),
+          labelStyle,
+          valueStyle,
+        ),
       if (!ClinicalRequestPatientContext._isBlank(patientContext.patientId))
-        '${l10n.clinicalRequestPatientIdLabel}: ${patientContext.patientId!.trim()}',
+        _patientContextSegment(
+          l10n.clinicalRequestPatientIdLabel,
+          patientContext.patientId!.trim(),
+          labelStyle,
+          valueStyle,
+        ),
       if (!ClinicalRequestPatientContext._isBlank(patientContext.encounterId))
-        '${l10n.clinicalRequestPatientEncounterIdLabel}: ${patientContext.encounterId!.trim()}',
+        _patientContextSegment(
+          l10n.clinicalRequestPatientEncounterIdLabel,
+          patientContext.encounterId!.trim(),
+          labelStyle,
+          valueStyle,
+        ),
     ];
 
-    return Text(
-      segments.join('   '),
+    return Text.rich(
+      TextSpan(
+        style: valueStyle,
+        children: <InlineSpan>[
+          for (int index = 0; index < segments.length; index += 1) ...<InlineSpan>[
+            if (index > 0) const TextSpan(text: '   '),
+            segments[index],
+          ],
+        ],
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
+}
+
+InlineSpan _patientContextSegment(
+  String label,
+  String value,
+  TextStyle labelStyle,
+  TextStyle valueStyle,
+) {
+  return TextSpan(
+    children: <InlineSpan>[
+      TextSpan(text: '$label: ', style: labelStyle),
+      TextSpan(text: value, style: valueStyle),
+    ],
+  );
 }
 
 /// Toolbar with actions to open nested catalog and billing dialogs.
@@ -283,46 +323,14 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         },
         footer: items.isEmpty
             ? null
-            : Padding(
-                padding: EdgeInsets.fromLTRB(
-                  theme.spacing.md,
-                  theme.spacing.sm,
-                  theme.spacing.md,
-                  theme.spacing.md,
+            : _ClinicalRequestCatalogTableTotalFooter(
+                totalLabel: l10n.clinicalRequestBillingTotalLabel,
+                amountLabel: clinicalRequestPriceLabel(
+                  context,
+                  total > 0 ? total : null,
+                  currency,
                 ),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: colorScheme.outlineVariant),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: theme.spacing.sm),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            l10n.clinicalRequestBillingTotalLabel,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          clinicalRequestPriceLabel(
-                            context,
-                            total > 0 ? total : null,
-                            currency,
-                          ),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                horizontalMargin: theme.spacing.sm,
               ),
         mobileItemBuilder: (BuildContext context, T item) {
           final String key = itemKey(item);
@@ -466,6 +474,73 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
   }
 }
 
+const double _catalogTableRowNumberWidth = 48;
+const double _catalogTableActionsColumnWidth = 120;
+
+/// Footer row aligned with [AppListTable] price and actions columns.
+class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
+  const _ClinicalRequestCatalogTableTotalFooter({
+    required this.totalLabel,
+    required this.amountLabel,
+    required this.horizontalMargin,
+  });
+
+  final String totalLabel;
+  final String amountLabel;
+  final double horizontalMargin;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle totalLabelStyle = theme.textTheme.titleSmall!.copyWith(
+      fontWeight: FontWeight.w800,
+    );
+    final TextStyle totalAmountStyle = theme.textTheme.titleSmall!.copyWith(
+      fontWeight: FontWeight.w900,
+      color: colorScheme.primary,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: colorScheme.outlineVariant),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: theme.spacing.sm),
+        child: DataTable(
+          showCheckboxColumn: false,
+          horizontalMargin: horizontalMargin,
+          headingRowHeight: 0,
+          dataRowMinHeight: 40,
+          dataRowMaxHeight: 48,
+          columns: const <DataColumn>[
+            DataColumn(label: SizedBox(width: _catalogTableRowNumberWidth)),
+            DataColumn(label: SizedBox(width: 48)),
+            DataColumn(label: SizedBox()),
+            DataColumn(label: SizedBox()),
+            DataColumn(label: SizedBox()),
+            DataColumn(label: SizedBox()),
+          ],
+          rows: <DataRow>[
+            DataRow(
+              cells: <DataCell>[
+                const DataCell(SizedBox(width: _catalogTableRowNumberWidth)),
+                const DataCell(SizedBox(width: 48)),
+                DataCell(Text(totalLabel, style: totalLabelStyle)),
+                const DataCell(SizedBox.shrink()),
+                DataCell(Text(amountLabel, style: totalAmountStyle)),
+                const DataCell(SizedBox(width: _catalogTableActionsColumnWidth)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ClinicalRequestRemoveItemButton extends StatelessWidget {
   const _ClinicalRequestRemoveItemButton({
     required this.label,
@@ -483,20 +558,27 @@ class _ClinicalRequestRemoveItemButton extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final double iconSize = theme.appTokens.listIconSize;
 
+    final Color labelColor = enabled
+        ? colorScheme.onSurface
+        : colorScheme.onSurface.withValues(alpha: 0.38);
+    final Color iconColor = enabled
+        ? colorScheme.error
+        : colorScheme.onSurface.withValues(alpha: 0.38);
+
     return TextButton.icon(
       style: TextButton.styleFrom(
-        foregroundColor: colorScheme.error,
+        foregroundColor: labelColor,
         padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       onPressed: enabled ? onPressed : null,
-      icon: Icon(Icons.delete_outline, size: iconSize),
+      icon: Icon(Icons.delete_outline, size: iconSize, color: iconColor),
       label: Text(
         label,
         style: theme.textTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.w700,
-          color: colorScheme.error,
+          color: labelColor,
         ),
       ),
     );
