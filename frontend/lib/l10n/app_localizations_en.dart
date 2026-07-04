@@ -16673,7 +16673,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestRemoveSelectedAction => 'Remove selected';
 
   @override
-  String get clinicalRequestSelectedNameColumnLabel => 'Name';
+  String get clinicalRequestPatientNameLabel => 'Name';
+
+  @override
+  String get clinicalRequestPatientIdLabel => 'ID';
+
+  @override
+  String get clinicalRequestPatientEncounterIdLabel => 'Encounter ID';
+
+  @override
+  String get clinicalRequestRemoveItemAction => 'Remove item';
+
+  @override
+  String get clinicalRequestSelectedNameColumnLabel => 'Test name';
 
   @override
   String get clinicalRequestSelectedTypeColumnLabel => 'Type';

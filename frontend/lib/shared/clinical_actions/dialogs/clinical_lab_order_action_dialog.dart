@@ -18,11 +18,13 @@ class ClinicalLabOrderActionDialog extends StatefulWidget {
     required this.onUpdate,
     required this.onSearchLabTests,
     this.existingOrder,
+    this.patientContext = const ClinicalRequestPatientContext(),
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
   final ClinicalActionLabOrderRecord? existingOrder;
+  final ClinicalRequestPatientContext patientContext;
   final Future<Result<List<ClinicalActionCatalogOption>>> Function({
     required String termType,
     String? query,
@@ -98,6 +100,12 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             ),
           ClinicalRequestFlowToolbar(
             enabled: !_isSaving,
+            leading: widget.patientContext.isEmpty
+                ? null
+                : ClinicalRequestPatientContextStrip(
+                    patientContext: widget.patientContext,
+                  ),
+            removeSelectedDestructive: true,
             onAddItems: _openCatalogPicker,
             onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
             onRemoveSelected: _selectedRequestKeys.isEmpty

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -15,11 +16,23 @@ Future<bool?> openIpdLabOrderDialog(BuildContext context) async {
   if (!context.mounted) {
     return null;
   }
+  final IpdAdmissionDetail? admission = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(ipdWorkspaceControllerProvider).value?.when(
+    success: (IpdWorkspaceState state) => state.selectedAdmission,
+    failure: (_) => null,
+  );
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => ClinicalLabOrderActionDialog(
       referenceData: referenceData,
+      patientContext: ClinicalRequestPatientContext(
+        patientName: admission?.summary.patientDisplayName,
+        patientId: admission?.summary.patientId,
+        encounterId: admission?.summary.encounterId,
+      ),
       onSearchLabTests:
           ({
             required String termType,

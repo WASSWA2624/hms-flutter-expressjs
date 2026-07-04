@@ -21463,9 +21463,25 @@
   "@clinicalRequestRemoveSelectedAction": {
     "description": "Remove checked items from a clinical request selection table."
   },
-  "clinicalRequestSelectedNameColumnLabel": "Name",
+  "clinicalRequestPatientNameLabel": "Name",
+  "@clinicalRequestPatientNameLabel": {
+    "description": "Patient name label on clinical request toolbar context strip."
+  },
+  "clinicalRequestPatientIdLabel": "ID",
+  "@clinicalRequestPatientIdLabel": {
+    "description": "Patient ID label on clinical request toolbar context strip."
+  },
+  "clinicalRequestPatientEncounterIdLabel": "Encounter ID",
+  "@clinicalRequestPatientEncounterIdLabel": {
+    "description": "Encounter ID label on clinical request toolbar context strip."
+  },
+  "clinicalRequestRemoveItemAction": "Remove item",
+  "@clinicalRequestRemoveItemAction": {
+    "description": "Remove a single item from a clinical request selection table."
+  },
+  "clinicalRequestSelectedNameColumnLabel": "Test name",
   "@clinicalRequestSelectedNameColumnLabel": {
-    "description": "Name column on selected catalog item table."
+    "description": "Test or panel name column on selected catalog item table."
   },
   "clinicalRequestSelectedTypeColumnLabel": "Type",
   "@clinicalRequestSelectedTypeColumnLabel": {

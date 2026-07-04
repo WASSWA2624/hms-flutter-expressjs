@@ -22,11 +22,13 @@ typedef LabCatalogUpdateSubmit =
 final class LabOrderContextInput {
   const LabOrderContextInput({
     required this.patientId,
+    this.patientName,
     this.encounterId,
     this.existingOrderId,
   });
 
   final String patientId;
+  final String? patientName;
   final String? encounterId;
   final String? existingOrderId;
 
@@ -516,6 +518,7 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
     Navigator.of(context).pop(
       LabOrderContextInput(
         patientId: _selectedPatientId?.trim() ?? '',
+        patientName: _selectedPatientOption?.label,
         encounterId: _emptyToNull(_selectedEncounterId),
         existingOrderId: _emptyToNull(_selectedOrderId),
       ),

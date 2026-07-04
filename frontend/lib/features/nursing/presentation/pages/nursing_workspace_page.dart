@@ -2047,6 +2047,13 @@ Future<void> _openLabOrderDialog(
   if (!context.mounted) {
     return;
   }
+  final NursingPatientSummary? summary = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(nursingWorkspaceControllerProvider).value?.when(
+    success: (NursingWorkspaceState state) => state.selectedDetail?.summary,
+    failure: (_) => null,
+  );
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -2054,6 +2061,11 @@ Future<void> _openLabOrderDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: referenceData,
+        patientContext: ClinicalRequestPatientContext(
+          patientName: summary?.patientDisplayName ?? summary?.displayTitle,
+          patientId: summary?.patientDisplayId ?? summary?.patientId,
+          encounterId: summary?.encounterDisplayId,
+        ),
         onSearchLabTests:
             ({
               required String termType,

@@ -61,6 +61,11 @@ Future<bool?> openPatientLabOrderDialog(
     barrierDismissible: false,
     builder: (_) => ClinicalLabOrderActionDialog(
       referenceData: referenceData,
+      patientContext: ClinicalRequestPatientContext(
+        patientName: patient.effectiveDisplayName,
+        patientId: patientApiId(patient),
+        encounterId: orderContext.encounterId,
+      ),
       onSearchLabTests:
           ({
             required String termType,

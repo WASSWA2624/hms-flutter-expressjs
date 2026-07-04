@@ -2574,6 +2574,7 @@ Future<void> _openLabDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: referenceData,
+        patientContext: _clinicalLabOrderPatientContext(context),
         existingOrder: existingOrder == null
             ? null
             : _clinicalActionLabOrderRecord(existingOrder),
@@ -3526,3 +3527,23 @@ const String _clinicalFilterScope = 'scope';
 const String _clinicalFilterSource = 'source';
 const String _clinicalFilterStatus = 'status';
 const String _clinicalFilterProvider = 'provider';
+
+ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
+  BuildContext context,
+) {
+  final ClinicalWorklistEntry? entry = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(clinicalWorkspaceControllerProvider).value?.when(
+    success: (ClinicalWorkspaceState state) => state.selectedBundle?.entry,
+    failure: (_) => null,
+  );
+  if (entry == null) {
+    return const ClinicalRequestPatientContext();
+  }
+  return ClinicalRequestPatientContext(
+    patientName: entry.patientDisplayName,
+    patientId: entry.apiPatientId,
+    encounterId: entry.apiEncounterId,
+  );
+}

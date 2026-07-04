@@ -31143,10 +31143,34 @@ abstract class AppLocalizations {
   /// **'Remove selected'**
   String get clinicalRequestRemoveSelectedAction;
 
-  /// Name column on selected catalog item table.
+  /// Patient name label on clinical request toolbar context strip.
   ///
   /// In en, this message translates to:
   /// **'Name'**
+  String get clinicalRequestPatientNameLabel;
+
+  /// Patient ID label on clinical request toolbar context strip.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get clinicalRequestPatientIdLabel;
+
+  /// Encounter ID label on clinical request toolbar context strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get clinicalRequestPatientEncounterIdLabel;
+
+  /// Remove a single item from a clinical request selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove item'**
+  String get clinicalRequestRemoveItemAction;
+
+  /// Test or panel name column on selected catalog item table.
+  ///
+  /// In en, this message translates to:
+  /// **'Test name'**
   String get clinicalRequestSelectedNameColumnLabel;
 
   /// Type column on selected catalog item table.

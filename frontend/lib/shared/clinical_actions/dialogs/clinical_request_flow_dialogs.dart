@@ -74,6 +74,59 @@ class ClinicalRequestFlowSummaryBar extends StatelessWidget {
   }
 }
 
+@immutable
+final class ClinicalRequestPatientContext {
+  const ClinicalRequestPatientContext({
+    this.patientName,
+    this.patientId,
+    this.encounterId,
+  });
+
+  final String? patientName;
+  final String? patientId;
+  final String? encounterId;
+
+  bool get isEmpty =>
+      _isBlank(patientName) && _isBlank(patientId) && _isBlank(encounterId);
+
+  static bool _isBlank(String? value) => value == null || value.trim().isEmpty;
+}
+
+/// Single-line patient summary for clinical request toolbars.
+class ClinicalRequestPatientContextStrip extends StatelessWidget {
+  const ClinicalRequestPatientContextStrip({
+    required this.patientContext,
+    super.key,
+  });
+
+  final ClinicalRequestPatientContext patientContext;
+
+  @override
+  Widget build(BuildContext context) {
+    if (patientContext.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<String> segments = <String>[
+      if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
+        '${l10n.clinicalRequestPatientNameLabel}: ${patientContext.patientName!.trim()}',
+      if (!ClinicalRequestPatientContext._isBlank(patientContext.patientId))
+        '${l10n.clinicalRequestPatientIdLabel}: ${patientContext.patientId!.trim()}',
+      if (!ClinicalRequestPatientContext._isBlank(patientContext.encounterId))
+        '${l10n.clinicalRequestPatientEncounterIdLabel}: ${patientContext.encounterId!.trim()}',
+    ];
+
+    return Text(
+      segments.join('   '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+    );
+  }
+}
+
 /// Toolbar with actions to open nested catalog and billing dialogs.
 class ClinicalRequestFlowToolbar extends StatelessWidget {
   const ClinicalRequestFlowToolbar({
@@ -81,8 +134,10 @@ class ClinicalRequestFlowToolbar extends StatelessWidget {
     this.onReviewBilling,
     this.onRemoveSelected,
     this.addItemsLabel,
+    this.leading,
     this.enabled = true,
     this.showBillingAction = true,
+    this.removeSelectedDestructive = false,
     super.key,
   });
 
@@ -90,38 +145,60 @@ class ClinicalRequestFlowToolbar extends StatelessWidget {
   final VoidCallback? onReviewBilling;
   final VoidCallback? onRemoveSelected;
   final String? addItemsLabel;
+  final Widget? leading;
   final bool enabled;
   final bool showBillingAction;
+  final bool removeSelectedDestructive;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color? destructiveColor = removeSelectedDestructive
+        ? colorScheme.error
+        : null;
 
-    return Wrap(
+    final List<Widget> actions = <Widget>[
+      if (onRemoveSelected != null)
+        AppButton.tertiary(
+          label: l10n.clinicalRequestRemoveSelectedAction,
+          leadingIcon: Icons.delete_outline,
+          color: destructiveColor,
+          enabled: enabled,
+          onPressed: onRemoveSelected,
+        ),
+      AppButton.secondary(
+        label: addItemsLabel ?? l10n.clinicalRequestAddCatalogItemsAction,
+        leadingIcon: Icons.add_circle_outline,
+        enabled: enabled,
+        onPressed: onAddItems,
+      ),
+      if (showBillingAction)
+        AppButton.tertiary(
+          label: l10n.clinicalRequestReviewBillingAction,
+          leadingIcon: Icons.payments_outlined,
+          enabled: enabled && onReviewBilling != null,
+          onPressed: onReviewBilling,
+        ),
+    ];
+
+    final Widget actionGroup = Wrap(
       spacing: theme.spacing.sm,
       runSpacing: theme.spacing.sm,
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: actions,
+    );
+
+    if (leading == null) {
+      return actionGroup;
+    }
+
+    return Row(
       children: <Widget>[
-        AppButton.secondary(
-          label: addItemsLabel ?? l10n.clinicalRequestAddCatalogItemsAction,
-          leadingIcon: Icons.add_circle_outline,
-          enabled: enabled,
-          onPressed: onAddItems,
-        ),
-        if (showBillingAction)
-          AppButton.tertiary(
-            label: l10n.clinicalRequestReviewBillingAction,
-            leadingIcon: Icons.payments_outlined,
-            enabled: enabled && onReviewBilling != null,
-            onPressed: onReviewBilling,
-          ),
-        if (onRemoveSelected != null)
-          AppButton.tertiary(
-            label: l10n.clinicalRequestRemoveSelectedAction,
-            leadingIcon: Icons.delete_outline,
-            enabled: enabled,
-            onPressed: onRemoveSelected,
-          ),
+        Expanded(child: leading!),
+        actionGroup,
       ],
     );
   }
@@ -183,7 +260,6 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(theme.spacing.xs),
       ),
       child: AppListTable<T>(
         items: items,
@@ -270,12 +346,8 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
                       : null,
                   visualDensity: VisualDensity.compact,
                 ),
-                AppButton(
-                  iconOnly: true,
-                  leadingIcon: Icons.delete_outline,
-                  label: l10n.clinicalLabRequestDeleteSelectionAction,
-                  semanticLabel: l10n.clinicalLabRequestDeleteSelectionAction,
-                  tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+                _ClinicalRequestRemoveItemButton(
+                  label: l10n.clinicalRequestRemoveItemAction,
                   enabled: enabled,
                   onPressed: enabled ? () => onDeleteItem(item) : null,
                 ),
@@ -313,7 +385,6 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
       AppListTableColumn<T>(
         id: _selectedCatalogPriceColumnKey,
         label: l10n.clinicalRequestSelectedPriceColumnLabel,
-        numeric: true,
         sortComparator: (T left, T right) {
           final num? leftPrice = clinicalCatalogOptionUnitPrice(optionFor(left));
           final num? rightPrice =
@@ -329,17 +400,10 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         label: l10n.clinicalRequestSelectedActionsColumnLabel,
         alwaysVisible: true,
         cellBuilder: (BuildContext context, T item) {
-          return Align(
-            alignment: Alignment.centerRight,
-            child: AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.delete_outline,
-              label: l10n.clinicalLabRequestDeleteSelectionAction,
-              semanticLabel: l10n.clinicalLabRequestDeleteSelectionAction,
-              tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
-              enabled: enabled,
-              onPressed: enabled ? () => onDeleteItem(item) : null,
-            ),
+          return _ClinicalRequestRemoveItemButton(
+            label: l10n.clinicalRequestRemoveItemAction,
+            enabled: enabled,
+            onPressed: enabled ? () => onDeleteItem(item) : null,
           );
         },
       ),
@@ -399,6 +463,43 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
       return;
     }
     onSelectedKeysChanged(items.map(itemKey).toSet());
+  }
+}
+
+class _ClinicalRequestRemoveItemButton extends StatelessWidget {
+  const _ClinicalRequestRemoveItemButton({
+    required this.label,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double iconSize = theme.appTokens.listIconSize;
+
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        foregroundColor: colorScheme.error,
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onPressed: enabled ? onPressed : null,
+      icon: Icon(Icons.delete_outline, size: iconSize),
+      label: Text(
+        label,
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: colorScheme.error,
+        ),
+      ),
+    );
   }
 }
 

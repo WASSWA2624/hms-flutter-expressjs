@@ -2165,6 +2165,7 @@ Future<void> _openAdditionalLabOrderDialog(
     state,
     orderContext: LabOrderContextInput(
       patientId: patientId,
+      patientName: order.patientDisplayName,
       encounterId: order.encounterId,
     ),
   );
@@ -2196,6 +2197,11 @@ Future<void> _openLabOrderActionDialog(
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: _clinicalReferenceData(state),
         existingOrder: existingOrder,
+        patientContext: ClinicalRequestPatientContext(
+          patientName: orderContext.patientName,
+          patientId: orderContext.patientId,
+          encounterId: orderContext.encounterId,
+        ),
         onSearchLabTests:
             ({
               required String termType,

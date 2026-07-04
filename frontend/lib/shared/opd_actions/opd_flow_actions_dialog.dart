@@ -863,6 +863,11 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalLabOrderActionDialog(
         referenceData: referenceData,
+        patientContext: ClinicalRequestPatientContext(
+          patientName: flow.patientDisplayName ?? flow.displayTitle,
+          patientId: flow.patientId ?? flow.patientIdentifier,
+          encounterId: flow.publicId,
+        ),
         onSearchLabTests:
             ({
               required String termType,

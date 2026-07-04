@@ -93,7 +93,7 @@ void main() {
 
       expect(find.text('Complete blood count'), findsWidgets);
 
-      await tester.tap(find.byIcon(Icons.delete_outline).first);
+      await tester.tap(find.text('Remove item').first);
       await tester.pumpAndSettle();
 
       expect(find.text('Complete blood count'), findsNothing);
@@ -103,6 +103,42 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows patient context strip and toolbar remove selected', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: _sampleCatalogOptions(),
+        patientContext: const ClinicalRequestPatientContext(
+          patientName: 'Jane Doe',
+          patientId: 'P-1001',
+          encounterId: 'ENC-42',
+        ),
+      );
+
+      expect(
+        find.text('Name: Jane Doe   ID: P-1001   Encounter ID: ENC-42'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await _tapRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(AppButton, 'Remove selected'), findsOneWidget);
+      expect(find.text('Test name'), findsOneWidget);
+      expect(find.text('Remove item'), findsOneWidget);
     });
 
     testWidgets('loads facility catalog offerings only', (
@@ -143,6 +179,11 @@ void main() {
       );
     });
   });
+}
+
+Future<void> _tapTableRowCheckbox(WidgetTester tester, String rowLabel) async {
+  expect(find.text(rowLabel), findsOneWidget);
+  await tester.tap(find.byType(Checkbox).at(1));
 }
 
 Future<void> _tapRowCheckbox(WidgetTester tester, String rowLabel) async {
@@ -193,6 +234,8 @@ Future<void> _pumpLabOrderDialog(
   WidgetTester tester, {
   List<ClinicalActionCatalogOption> catalogOptions =
       const <ClinicalActionCatalogOption>[],
+  ClinicalRequestPatientContext patientContext =
+      const ClinicalRequestPatientContext(),
   Future<Result<List<ClinicalActionCatalogOption>>> Function({
     required String termType,
     String? query,
@@ -218,6 +261,7 @@ Future<void> _pumpLabOrderDialog(
             referenceData: ClinicalActionReferenceData(
               labTests: catalogOptions,
             ),
+            patientContext: patientContext,
             onSearchLabTests:
                 onSearchLabTests ??
                 ({
