@@ -145,13 +145,6 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
                 onChanged: (bool value) =>
                     _update(_settings.copyWith(includeSigner: value)),
               ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeMetadataLabel,
-                value: _settings.includeMetadata,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeMetadata: value)),
-              ),
               if (widget.workflow.studies.any(
                 (ImagingStudy study) => study.assets.isNotEmpty,
               ))
@@ -219,12 +212,28 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       ref: ref,
       context: context,
       title: context.l10n.radiologyPrintReportTitle,
-      subtitle: widget.workflow.order.patientDisplayName,
+      patientContext: _settings.includePatient
+          ? buildPrintFormPatientContext(
+              context.l10n,
+              patientName:
+                  widget.workflow.order.patientDisplayName ??
+                  context.l10n.profileUnknownValue,
+              patientId: widget.workflow.order.patientId,
+              encounterId: widget.workflow.order.encounterId,
+              patientNameLabel: context.l10n.radiologyPatientLabel,
+              patientIdLabel: context.l10n.radiologyPatientIdLabel,
+              encounterIdLabel: context.l10n.radiologyEncounterLabel,
+            )
+          : null,
+      contextReference: _settings.includeOrder
+          ? PrintFormContextReference(
+              label: context.l10n.radiologyOrderColumnLabel,
+              value: widget.workflow.order.effectiveDisplayId,
+            )
+          : null,
       bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, _settings),
-      metadata: _settings.includeMetadata
-          ? _radiologyPrintMetadata(context, widget.workflow)
-          : const <PrintFormMetadataItem>[],
       footerNote: context.l10n.radiologyPrintFooterNote,
+      includeSignatures: _settings.includeSigner,
     );
     if (mounted) {
       setState(() => _isPrinting = false);
@@ -241,7 +250,6 @@ final class _RadiologyPrintSettings {
     this.includeReport = true,
     this.includeReferences = true,
     this.includeSigner = true,
-    this.includeMetadata = false,
     this.includeImages = false,
   });
 
@@ -251,7 +259,6 @@ final class _RadiologyPrintSettings {
   final bool includeReport;
   final bool includeReferences;
   final bool includeSigner;
-  final bool includeMetadata;
   final bool includeImages;
 
   _RadiologyPrintSettings copyWith({
@@ -261,7 +268,6 @@ final class _RadiologyPrintSettings {
     bool? includeReport,
     bool? includeReferences,
     bool? includeSigner,
-    bool? includeMetadata,
     bool? includeImages,
   }) {
     return _RadiologyPrintSettings(
@@ -271,32 +277,9 @@ final class _RadiologyPrintSettings {
       includeReport: includeReport ?? this.includeReport,
       includeReferences: includeReferences ?? this.includeReferences,
       includeSigner: includeSigner ?? this.includeSigner,
-      includeMetadata: includeMetadata ?? this.includeMetadata,
       includeImages: includeImages ?? this.includeImages,
     );
   }
-}
-
-List<PrintFormMetadataItem> _radiologyPrintMetadata(
-  BuildContext context,
-  RadiologyWorkflow workflow,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final RadiologyOrder order = workflow.order;
-  return <PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.radiologyOrderColumnLabel,
-      value: order.effectiveDisplayId,
-    ),
-    PrintFormMetadataItem(
-      label: l10n.radiologyStatusColumnLabel,
-      value: _orderStatusLabel(l10n, order.status),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.radiologyModalityLabel,
-      value: _modalityLabelOrNull(l10n, order.modality) ?? '',
-    ),
-  ];
 }
 
 String _radiologyPrintBodyHtml(
@@ -309,23 +292,6 @@ String _radiologyPrintBodyHtml(
   final RadiologyResult? result = order.latestResult;
   final List<String> sections = <String>[];
 
-  if (settings.includePatient) {
-    sections.add(
-      PrintFormTemplate.section(
-        title: l10n.radiologyPrintPatientSectionTitle,
-        bodyHtml: PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-          PrintFormMetadataItem(
-            label: l10n.radiologyPatientLabel,
-            value: order.patientDisplayName ?? l10n.profileUnknownValue,
-          ),
-          PrintFormMetadataItem(
-            label: l10n.radiologyPatientIdLabel,
-            value: order.patientId ?? l10n.profileUnknownValue,
-          ),
-        ]),
-      ),
-    );
-  }
   if (settings.includeOrder) {
     sections.add(
       PrintFormTemplate.section(
@@ -631,15 +597,6 @@ String _radiologyPrintPreviewText(
         workflow.order.latestResult == null
             ? l10n.radiologyNoReportBody
             : _resultStatusLabel(l10n, workflow.order.latestResult!.status),
-      );
-  }
-  if (settings.includeMetadata) {
-    buffer
-      ..writeln('\n${l10n.radiologyPrintIncludeMetadataLabel}')
-      ..writeln(
-        _radiologyPrintMetadata(context, workflow)
-            .map((PrintFormMetadataItem item) => '${item.label}: ${item.value}')
-            .join('\n'),
       );
   }
   return buffer.toString().trim();

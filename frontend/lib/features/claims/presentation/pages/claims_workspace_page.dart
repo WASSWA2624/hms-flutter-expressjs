@@ -585,9 +585,22 @@ Future<void> _openClaimsDetailDialog(
               ref: ref,
               context: context,
               title: title,
-              subtitle: detail.item.displayId,
+              patientContext: detail.item.patientDisplayId == null
+                  ? null
+                  : buildPrintFormPatientContext(
+                      l10n,
+                      patientName: detail.item.patientDisplayId!,
+                      patientId: detail.item.patientDisplayId,
+                    ),
+              contextReference: PrintFormContextReference(
+                label: detail.isAuthorization
+                    ? l10n.claimsAuthorizationStatementTitle
+                    : l10n.claimsClaimStatementTitle,
+                value: detail.item.displayId,
+              ),
               bodyHtml: _claimsStatementHtml(context, detail),
               footerNote: l10n.claimsReportFooter,
+              includeSignatures: true,
             );
           },
         ),

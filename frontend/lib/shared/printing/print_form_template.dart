@@ -14,6 +14,68 @@ final class PrintFormMetadataItem {
 }
 
 @immutable
+final class PrintFormPatientContext {
+  const PrintFormPatientContext({
+    required this.patientNameLabel,
+    required this.patientName,
+    this.patientIdLabel,
+    this.patientId,
+    this.encounterIdLabel,
+    this.encounterId,
+  });
+
+  final String patientNameLabel;
+  final String patientName;
+  final String? patientIdLabel;
+  final String? patientId;
+  final String? encounterIdLabel;
+  final String? encounterId;
+
+  List<PrintFormMetadataItem> get items {
+    return <PrintFormMetadataItem>[
+      PrintFormMetadataItem(label: patientNameLabel, value: patientName),
+      if (patientIdLabel != null && patientId != null)
+        PrintFormMetadataItem(label: patientIdLabel!, value: patientId!),
+      if (encounterIdLabel != null && encounterId != null)
+        PrintFormMetadataItem(label: encounterIdLabel!, value: encounterId!),
+    ].where((PrintFormMetadataItem item) => item.hasValue).toList(growable: false);
+  }
+
+  bool get hasCompactHeader =>
+      patientName.trim().isNotEmpty || (patientId?.trim().isNotEmpty ?? false);
+}
+
+@immutable
+final class PrintFormContextReference {
+  const PrintFormContextReference({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  bool get hasValue => label.trim().isNotEmpty && value.trim().isNotEmpty;
+}
+
+@immutable
+final class PrintFormSignatures {
+  const PrintFormSignatures({
+    required this.printedByLabel,
+    required this.verifiedByLabel,
+    this.printedByName,
+    this.verifiedByName,
+    this.signatureStampLabel,
+  });
+
+  final String printedByLabel;
+  final String verifiedByLabel;
+  final String? printedByName;
+  final String? verifiedByName;
+  final String? signatureStampLabel;
+}
+
+@immutable
 final class PrintFormBranding {
   const PrintFormBranding({
     required this.name,
@@ -54,7 +116,11 @@ abstract final class PrintFormTemplate {
     String? bodyHtml,
     List<PrintFormPage> pages = const <PrintFormPage>[],
     List<PrintFormMetadataItem> metadata = const <PrintFormMetadataItem>[],
+    PrintFormPatientContext? patientContext,
+    PrintFormContextReference? contextReference,
+    PrintFormSignatures? signatures,
     DateTime? printedAt,
+    String printedLabel = 'Printed',
     String? footerNote,
   }) {
     assert(
@@ -67,17 +133,26 @@ abstract final class PrintFormTemplate {
         facilityBranding?.canBrandDocument == true
         ? facilityBranding!
         : appBranding;
-    final List<PrintFormMetadataItem> effectiveMetadata =
+    final bool useStandardLayout =
+        patientContext != null ||
+        contextReference != null ||
+        signatures != null;
+    final List<PrintFormMetadataItem> printedMetadata =
         <PrintFormMetadataItem>[
           PrintFormMetadataItem(
-            label: 'Printed',
+            label: printedLabel,
             value: AppFormatters.dateTime(
               effectivePrintedAt,
               Localizations.localeOf(context),
             ),
           ),
-          ...metadata,
-        ].where((PrintFormMetadataItem item) => item.hasValue).toList();
+        ];
+    final List<PrintFormMetadataItem> effectiveMetadata = useStandardLayout
+        ? printedMetadata
+        : <PrintFormMetadataItem>[
+            ...printedMetadata,
+            ...metadata,
+          ].where((PrintFormMetadataItem item) => item.hasValue).toList();
 
     final List<PrintFormPage> sourcePages = pages.isEmpty
         ? <PrintFormPage>[PrintFormPage(bodyHtml: bodyHtml ?? '')]
@@ -92,23 +167,38 @@ abstract final class PrintFormTemplate {
     ) {
       final int pageNumber = entry.key + 1;
       final PrintFormPage page = entry.value;
-      return _page(
-        branding: branding,
-        title: page.title ?? title,
-        subtitle: subtitle,
-        metadata: effectiveMetadata,
-        bodyHtml: page.bodyHtml,
-        pageNumber: pageNumber,
-        totalPages: totalPages,
-        footerNote: footerNote,
-        explicitPages: explicitPages,
-        showHeader: pageNumber == 1,
-        showMetadata: !explicitPages || pageNumber == 1,
-      );
+      return useStandardLayout
+          ? _standardPage(
+              branding: branding,
+              title: page.title ?? title,
+              subtitle: subtitle,
+              patientContext: patientContext,
+              contextReference: contextReference,
+              printedMetadata: printedMetadata,
+              bodyHtml: page.bodyHtml,
+              signatures: pageNumber == totalPages ? signatures : null,
+              pageNumber: pageNumber,
+              totalPages: totalPages,
+              footerNote: footerNote,
+              explicitPages: explicitPages,
+            )
+          : _legacyPage(
+              branding: branding,
+              title: page.title ?? title,
+              subtitle: subtitle,
+              metadata: effectiveMetadata,
+              bodyHtml: page.bodyHtml,
+              pageNumber: pageNumber,
+              totalPages: totalPages,
+              footerNote: footerNote,
+              explicitPages: explicitPages,
+              showHeader: pageNumber == 1,
+              showMetadata: !explicitPages || pageNumber == 1,
+            );
     }).join();
 
     return '''
-${_style(explicitPages: explicitPages)}
+${_style(explicitPages: explicitPages, useStandardLayout: useStandardLayout)}
 <main class="print-template-document${explicitPages ? ' print-template-document--paged' : ''}">
 $renderedPages
 </main>
@@ -146,6 +236,21 @@ $renderedPages
     }
 
     return '<dl class="print-template-kv">$rows</dl>';
+  }
+
+  static String signatures({
+    required String printedByLabel,
+    required String verifiedByLabel,
+    String? printedByName,
+    String? verifiedByName,
+    String? signatureStampLabel,
+  }) {
+    return '''
+<div class="print-template-signatures">
+  ${_signatureBlock(printedByLabel, printedByName, signatureStampLabel)}
+  ${_signatureBlock(verifiedByLabel, verifiedByName, signatureStampLabel)}
+</div>
+''';
   }
 
   static String unorderedList(
@@ -202,7 +307,45 @@ $renderedPages
         .replaceAll("'", '&#39;');
   }
 
-  static String _page({
+  static String _standardPage({
+    required PrintFormBranding branding,
+    required String title,
+    required String? subtitle,
+    required PrintFormPatientContext? patientContext,
+    required PrintFormContextReference? contextReference,
+    required List<PrintFormMetadataItem> printedMetadata,
+    required String bodyHtml,
+    required PrintFormSignatures? signatures,
+    required int pageNumber,
+    required int totalPages,
+    required String? footerNote,
+    required bool explicitPages,
+  }) {
+    final bool isFirstPage = pageNumber == 1;
+    return '''
+<article class="print-template-page">
+  ${isFirstPage ? _header(branding) : _compactHeader(patientContext)}
+  ${isFirstPage ? _patientContextSection(patientContext, contextReference) : ''}
+  <section class="print-template-title">
+    <div>
+      <h1>${escape(title)}</h1>
+      ${_optionalText(subtitle, 'p', 'print-template-subtitle')}
+    </div>
+    ${isFirstPage ? _metadata(printedMetadata) : ''}
+  </section>
+  <section class="print-template-content">
+    $bodyHtml
+  </section>
+  ${signatures == null ? '' : _renderSignatures(signatures)}
+  <footer class="print-template-footer">
+    <span>${escape(footerNote ?? '')}</span>
+    <span>${explicitPages ? 'Page $pageNumber of $totalPages' : ''}</span>
+  </footer>
+</article>
+''';
+  }
+
+  static String _legacyPage({
     required PrintFormBranding branding,
     required String title,
     required String? subtitle,
@@ -233,6 +376,77 @@ $renderedPages
     <span>${explicitPages ? 'Page $pageNumber of $totalPages' : ''}</span>
   </footer>
 </article>
+''';
+  }
+
+  static String _patientContextSection(
+    PrintFormPatientContext? patientContext,
+    PrintFormContextReference? contextReference,
+  ) {
+    final List<PrintFormMetadataItem> items = <PrintFormMetadataItem>[
+      ...?patientContext?.items,
+      if (contextReference != null && contextReference.hasValue)
+        PrintFormMetadataItem(
+          label: contextReference.label,
+          value: contextReference.value,
+        ),
+    ];
+    final String grid = keyValueGrid(items);
+    if (grid.isEmpty) {
+      return '';
+    }
+
+    return '''
+<section class="print-template-patient-context">
+  $grid
+</section>
+''';
+  }
+
+  static String _compactHeader(PrintFormPatientContext? patientContext) {
+    if (patientContext == null || !patientContext.hasCompactHeader) {
+      return '';
+    }
+
+    final String name = patientContext.patientName.trim();
+    final String? patientId = patientContext.patientId?.trim();
+    return '''
+<section class="print-template-compact-header">
+  ${name.isEmpty ? '' : '<strong>${escape(name)}</strong>'}
+  ${patientId == null || patientId.isEmpty ? '' : '<span>${escape(patientId)}</span>'}
+</section>
+''';
+  }
+
+  static String _renderSignatures(PrintFormSignatures value) {
+    return PrintFormTemplate.signatures(
+      printedByLabel: value.printedByLabel,
+      verifiedByLabel: value.verifiedByLabel,
+      printedByName: value.printedByName,
+      verifiedByName: value.verifiedByName,
+      signatureStampLabel: value.signatureStampLabel,
+    );
+  }
+
+  static String _signatureBlock(
+    String label,
+    String? name,
+    String? stampLabel,
+  ) {
+    final String normalizedName = name?.trim() ?? '';
+    final String nameLine = normalizedName.isEmpty
+        ? ''
+        : '<div class="print-template-signature-name">${escape(normalizedName)}</div>';
+    final String stampLine = stampLabel == null || stampLabel.trim().isEmpty
+        ? '<div class="print-template-signature-stamp"></div>'
+        : '<div class="print-template-signature-stamp">${escape(stampLabel.trim())}</div>';
+
+    return '''
+<div class="print-template-signature">
+  <div class="print-template-signature-label">${escape(label)}</div>
+  $nameLine
+  $stampLine
+</div>
 ''';
   }
 
@@ -320,7 +534,61 @@ $renderedPages
         .toUpperCase();
   }
 
-  static String _style({required bool explicitPages}) {
+  static String _style({
+    required bool explicitPages,
+    required bool useStandardLayout,
+  }) {
+    final String standardLayoutStyles = useStandardLayout
+        ? '''
+  .print-template-patient-context {
+    margin-bottom: 5mm;
+  }
+  .print-template-patient-context .print-template-kv {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2mm;
+    margin: 0;
+  }
+  .print-template-compact-header {
+    border-bottom: 1px solid #d1d5db;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4mm;
+    margin-bottom: 4mm;
+    padding-bottom: 2mm;
+  }
+  .print-template-compact-header strong {
+    font-size: 12px;
+  }
+  .print-template-compact-header span {
+    color: #374151;
+    font-size: 11px;
+  }
+  .print-template-signature-label {
+    color: #4b5563;
+    font-size: 9px;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    text-transform: uppercase;
+  }
+  .print-template-signature-name {
+    font-weight: 700;
+    margin-bottom: 8mm;
+    min-height: 4mm;
+  }
+  .print-template-signature-stamp {
+    border-top: 1px solid #111827;
+    color: #6b7280;
+    font-size: 9px;
+    min-height: 10mm;
+    padding-top: 2mm;
+  }
+  .print-template-signatures {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+'''
+        : '';
+
     return '''
 <style>
   @page {
@@ -493,8 +761,6 @@ $renderedPages
     margin-top: 18mm;
   }
   .print-template-signature {
-    border-top: 1px solid #111827;
-    padding-top: 2mm;
     min-height: 10mm;
   }
   .print-template-footer {
@@ -507,6 +773,7 @@ $renderedPages
     margin-top: 8mm;
     font-size: 10px;
   }
+  $standardLayoutStyles
   @media screen {
     body { padding: 8mm 0; }
     .print-template-page {

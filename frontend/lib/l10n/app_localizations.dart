@@ -18556,6 +18556,48 @@ abstract class AppLocalizations {
   /// **'Generated from laboratory workflow data.'**
   String get labReportFooter;
 
+  /// Label for the print timestamp shown on report documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed'**
+  String get printFormPrintedLabel;
+
+  /// Signature label for the user who printed a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed by'**
+  String get printFormPrintedByLabel;
+
+  /// Signature label for the user who verified a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified by'**
+  String get printFormVerifiedByLabel;
+
+  /// Placeholder line beneath printed-by and verified-by names.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature / stamp'**
+  String get printFormSignatureStampLabel;
+
+  /// Patient name label on standardized print reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient name'**
+  String get printFormPatientNameLabel;
+
+  /// Patient identifier label on standardized print reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get printFormPatientIdLabel;
+
+  /// Encounter identifier label on standardized print reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get printFormEncounterIdLabel;
+
   /// Localized text for labGapBillingTitle.
   ///
   /// In en, this message translates to:

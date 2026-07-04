@@ -1767,33 +1767,17 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
               ref: ref,
               context: context,
               title: l10n.opdPrintSummaryAction,
-              subtitle: flow.displayTitle,
-              metadata: <PrintFormMetadataItem>[
-                PrintFormMetadataItem(
-                  label: l10n.patientsIdentifierLabel,
-                  value: flow.patientIdentifier ?? '',
-                ),
-                PrintFormMetadataItem(
-                  label: l10n.opdStageLabel,
-                  value: opdStageDisplayLabel(
-                    l10n,
-                    flow.displayCode ?? flow.stage,
-                  ),
-                ),
-                PrintFormMetadataItem(
-                  label: l10n.opdNextStepColumnLabel,
-                  value: opdNextStepDisplayLabel(
-                    l10n,
-                    flow.displayNextStep ?? flow.nextStep,
-                  ),
-                ),
-                PrintFormMetadataItem(
-                  label: l10n.opdPaymentStatusLabel,
-                  value: opdFlowBillingDisplay(context, flow).label,
-                ),
-              ],
+              patientContext: buildPrintFormPatientContext(
+                l10n,
+                patientName:
+                    flow.patientDisplayName ??
+                    flow.displayTitle,
+                patientId: flow.patientId ?? flow.patientIdentifier,
+                encounterId: flow.publicId,
+              ),
               bodyHtml:
                   '<div class="print-template-note">${printHtmlEscape(summary)}</div>',
+              includeSignatures: true,
             );
             if (!context.mounted) {
               return;

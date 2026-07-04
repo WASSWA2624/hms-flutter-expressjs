@@ -913,21 +913,11 @@ Future<void> _printBiomedicalReport(
     context: context,
     title: '${l10n.biomedicalPrintReportDialogTitle} - ${asset.displayId}',
     subtitle: asset.displayTitle,
+    contextReference: PrintFormContextReference(
+      label: l10n.biomedicalAssetTagLabel,
+      value: asset.displayId,
+    ),
     bodyHtml: _biomedicalReportHtml(context, asset),
-    metadata: <PrintFormMetadataItem>[
-      PrintFormMetadataItem(
-        label: l10n.biomedicalAssetTagLabel,
-        value: asset.displayId,
-      ),
-      PrintFormMetadataItem(
-        label: l10n.biomedicalResourceLabel,
-        value: _labelForResource(l10n, asset.resource),
-      ),
-      PrintFormMetadataItem(
-        label: l10n.reportsGeneratedByLabel,
-        value: l10n.appTitle,
-      ),
-    ],
     footerNote: l10n.biomedicalPrintReportBody,
   );
 }

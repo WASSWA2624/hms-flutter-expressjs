@@ -785,19 +785,19 @@ class _PharmacyActionPanel extends ConsumerWidget {
                 ref: ref,
                 context: context,
                 title: l10n.pharmacyReportTitle,
-                subtitle: workflow.order.displayTitle,
-                metadata: <PrintFormMetadataItem>[
-                  PrintFormMetadataItem(
-                    label: l10n.pharmacyReportOrderLabel,
-                    value: workflow.order.displayId ?? l10n.profileUnknownValue,
-                  ),
-                  PrintFormMetadataItem(
-                    label: l10n.claimsStatusColumnLabel,
-                    value: _apiLabel(workflow.order.status ?? ''),
-                  ),
-                ],
+                patientContext: buildPrintFormPatientContext(
+                  l10n,
+                  patientName: workflow.order.displayTitle,
+                  patientId: workflow.order.patientId,
+                  encounterId: workflow.order.encounterId,
+                ),
+                contextReference: PrintFormContextReference(
+                  label: l10n.pharmacyReportOrderLabel,
+                  value: workflow.order.displayId ?? l10n.profileUnknownValue,
+                ),
                 bodyHtml: _pharmacyInstructionsHtml(context, workflow),
                 footerNote: l10n.pharmacyReportFooter,
+                includeSignatures: true,
               );
             },
           ),

@@ -1504,25 +1504,19 @@ Future<void> _printItem(
     ref: ref,
     context: context,
     title: l10n.mortuaryReportTitle,
-    subtitle: _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
-    metadata: <PrintFormMetadataItem>[
-      PrintFormMetadataItem(
-        label: l10n.mortuaryCaseFieldLabel,
-        value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
-      ),
-      PrintFormMetadataItem(
-        label: l10n.mortuaryDeceasedFieldLabel,
-        value: item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
-      ),
-      PrintFormMetadataItem(
-        label: l10n.mortuaryStatusFieldLabel,
-        value:
-            _displayCode(item.caseStatus ?? item.status) ??
-            l10n.mortuaryUnknownValueLabel,
-      ),
-    ],
+    patientContext: buildPrintFormPatientContext(
+      l10n,
+      patientName:
+          item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+      patientNameLabel: l10n.mortuaryDeceasedFieldLabel,
+    ),
+    contextReference: PrintFormContextReference(
+      label: l10n.mortuaryCaseFieldLabel,
+      value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
+    ),
     bodyHtml: _reportBodyHtml(context, l10n, item),
     footerNote: l10n.mortuaryReportFooter,
+    includeSignatures: true,
   );
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(

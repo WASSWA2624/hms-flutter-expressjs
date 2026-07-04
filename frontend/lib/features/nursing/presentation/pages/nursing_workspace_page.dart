@@ -1328,23 +1328,19 @@ class _PrintNursingSummaryDialog extends ConsumerWidget {
               ref: ref,
               context: context,
               title: l10n.nursingReportTitle,
-              subtitle: summary.displayTitle,
-              metadata: <PrintFormMetadataItem>[
-                PrintFormMetadataItem(
-                  label: l10n.nursingAdmissionLabel,
-                  value: summary.displayId ?? '',
-                ),
-                PrintFormMetadataItem(
-                  label: l10n.nursingLocationLabel,
-                  value: summary.locationLabel ?? l10n.profileUnknownValue,
-                ),
-                PrintFormMetadataItem(
-                  label: l10n.nursingPriorityColumnLabel,
-                  value: _priorityStatus(context, summary).label,
-                ),
-              ],
+              patientContext: buildPrintFormPatientContext(
+                l10n,
+                patientName: summary.displayTitle,
+                patientId: summary.patientId ?? summary.patientDisplayId,
+                encounterId: summary.encounterDisplayId,
+              ),
+              contextReference: PrintFormContextReference(
+                label: l10n.nursingAdmissionLabel,
+                value: summary.displayId ?? l10n.profileUnknownValue,
+              ),
               bodyHtml: _nursingSummaryHtml(context, detail),
               footerNote: l10n.nursingReportFooter,
+              includeSignatures: true,
             );
           },
         ),

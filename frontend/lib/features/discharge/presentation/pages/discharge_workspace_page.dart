@@ -483,25 +483,24 @@ Future<void> _openDischargeDetailDialog(
                     ref: ref,
                     context: context,
                     title: l10n.dischargeReportTitle,
-                    subtitle: detail.ipd.patientDisplayName,
-                    metadata: <PrintFormMetadataItem>[
-                      PrintFormMetadataItem(
-                        label: l10n.dischargeReportPatientNoLabel,
-                        value: l10n.profileUnknownValue,
-                      ),
-                      PrintFormMetadataItem(
-                        label: l10n.dischargeReportAdmissionLabel,
-                        value:
-                            detail.summary.displayId ??
-                            l10n.profileUnknownValue,
-                      ),
-                      PrintFormMetadataItem(
-                        label: l10n.dischargeReportLocationLabel,
-                        value: _locationLabel(context, detail.summary),
-                      ),
-                    ],
+                    patientContext: buildPrintFormPatientContext(
+                      l10n,
+                      patientName:
+                          detail.ipd.patientDisplayName,
+                      patientId: detail.patientId,
+                      encounterId: detail.encounterId,
+                      patientNameLabel: l10n.dischargeReportPatientLabel,
+                      patientIdLabel: l10n.dischargeReportPatientNoLabel,
+                    ),
+                    contextReference: PrintFormContextReference(
+                      label: l10n.dischargeReportAdmissionLabel,
+                      value:
+                          detail.summary.displayId ??
+                          l10n.profileUnknownValue,
+                    ),
                     bodyHtml: _dischargeSummaryHtml(context, detail),
                     footerNote: l10n.dischargeReportFooter,
+                    includeSignatures: true,
                   );
                 }
               : null,

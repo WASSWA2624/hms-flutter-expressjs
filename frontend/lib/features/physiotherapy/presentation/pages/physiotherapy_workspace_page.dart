@@ -2035,18 +2035,17 @@ Future<void> _printInstructions(
     ref: ref,
     context: context,
     title: l10n.physiotherapyInstructionsReportTitle,
+    patientContext: buildPrintFormPatientContext(
+      l10n,
+      patientName: item.displayTitle,
+      patientId: item.patientId ?? item.patientPublicId,
+      encounterId: item.encounterPublicId,
+      patientNameLabel: l10n.physiotherapyReportPatientLabel,
+      encounterIdLabel: l10n.physiotherapyReportEncounterLabel,
+    ),
     bodyHtml: bodyHtml,
-    metadata: <PrintFormMetadataItem>[
-      PrintFormMetadataItem(
-        label: l10n.physiotherapyReportPatientLabel,
-        value: item.displayTitle,
-      ),
-      PrintFormMetadataItem(
-        label: l10n.physiotherapyReportEncounterLabel,
-        value: item.encounterPublicId ?? l10n.profileUnknownValue,
-      ),
-    ],
     footerNote: l10n.physiotherapyReportFooterNote,
+    includeSignatures: true,
   );
 }
 

@@ -12876,6 +12876,34 @@
   "@labReportFooter": {
     "description": "Localized text for labReportFooter."
   },
+  "printFormPrintedLabel": "Printed",
+  "@printFormPrintedLabel": {
+    "description": "Label for the print timestamp shown on report documents."
+  },
+  "printFormPrintedByLabel": "Printed by",
+  "@printFormPrintedByLabel": {
+    "description": "Signature label for the user who printed a report."
+  },
+  "printFormVerifiedByLabel": "Verified by",
+  "@printFormVerifiedByLabel": {
+    "description": "Signature label for the user who verified a report."
+  },
+  "printFormSignatureStampLabel": "Signature / stamp",
+  "@printFormSignatureStampLabel": {
+    "description": "Placeholder line beneath printed-by and verified-by names."
+  },
+  "printFormPatientNameLabel": "Patient name",
+  "@printFormPatientNameLabel": {
+    "description": "Patient name label on standardized print reports."
+  },
+  "printFormPatientIdLabel": "Patient ID",
+  "@printFormPatientIdLabel": {
+    "description": "Patient identifier label on standardized print reports."
+  },
+  "printFormEncounterIdLabel": "Encounter ID",
+  "@printFormEncounterIdLabel": {
+    "description": "Encounter identifier label on standardized print reports."
+  },
   "labGapBillingTitle": "Payment and authorization gate",
   "@labGapBillingTitle": {
     "description": "Localized text for labGapBillingTitle."

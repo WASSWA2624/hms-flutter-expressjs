@@ -9961,6 +9961,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportFooter => 'Generated from laboratory workflow data.';
 
   @override
+  String get printFormPrintedLabel => 'Printed';
+
+  @override
+  String get printFormPrintedByLabel => 'Printed by';
+
+  @override
+  String get printFormVerifiedByLabel => 'Verified by';
+
+  @override
+  String get printFormSignatureStampLabel => 'Signature / stamp';
+
+  @override
+  String get printFormPatientNameLabel => 'Patient name';
+
+  @override
+  String get printFormPatientIdLabel => 'Patient ID';
+
+  @override
+  String get printFormEncounterIdLabel => 'Encounter ID';
+
+  @override
   String get labGapBillingTitle => 'Payment and authorization gate';
 
   @override

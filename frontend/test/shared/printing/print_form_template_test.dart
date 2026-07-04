@@ -68,6 +68,12 @@ void main() {
                 name: 'Subscribed Facility',
                 kind: PrintFormBrandingKind.facility,
               ),
+              patientContext: const PrintFormPatientContext(
+                patientNameLabel: 'Patient name',
+                patientName: 'Jane Doe',
+                patientIdLabel: 'Patient ID',
+                patientId: 'PAT0000001',
+              ),
               pages: const <PrintFormPage>[
                 PrintFormPage(bodyHtml: '<p>First</p>'),
                 PrintFormPage(bodyHtml: '<p>Second</p>'),
@@ -81,8 +87,61 @@ void main() {
 
     expect(html, contains('Subscribed Facility'));
     expect(_occurrences(html, '<strong>Subscribed Facility</strong>'), 1);
+    expect(html, contains('Jane Doe'));
+    expect(html, contains('PAT0000001'));
+    expect(html, contains('print-template-compact-header'));
     expect(html, contains('Page 1 of 2'));
     expect(html, contains('Page 2 of 2'));
+  });
+
+  testWidgets('renders signatures only on the last page', (tester) async {
+    late String html;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            html = PrintFormTemplate.build(
+              context: context,
+              title: 'Laboratory result report',
+              appBranding: const PrintFormBranding(
+                name: 'HOSSPI',
+                kind: PrintFormBrandingKind.app,
+              ),
+              patientContext: const PrintFormPatientContext(
+                patientNameLabel: 'Patient name',
+                patientName: 'Joshua Evans',
+                patientIdLabel: 'Patient ID',
+                patientId: 'PAT0000002',
+                encounterIdLabel: 'Encounter ID',
+                encounterId: 'ENC0000002',
+              ),
+              contextReference: const PrintFormContextReference(
+                label: 'Lab order',
+                value: 'LAB0000006',
+              ),
+              signatures: const PrintFormSignatures(
+                printedByLabel: 'Printed by',
+                verifiedByLabel: 'Verified by',
+                printedByName: 'Lab Tech',
+                signatureStampLabel: 'Signature / stamp',
+              ),
+              pages: const <PrintFormPage>[
+                PrintFormPage(bodyHtml: '<p>First page</p>'),
+                PrintFormPage(bodyHtml: '<p>Second page</p>'),
+              ],
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(html, contains('print-template-patient-context'));
+    expect(html, contains('LAB0000006'));
+    expect(html, contains('Printed by'));
+    expect(html, contains('Lab Tech'));
+    expect(_occurrences(html, '<div class="print-template-signatures">'), 1);
   });
 
   testWidgets('drops empty explicit pages instead of printing blanks', (

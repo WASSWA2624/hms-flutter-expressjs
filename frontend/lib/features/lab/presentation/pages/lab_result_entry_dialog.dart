@@ -2891,7 +2891,8 @@ class _LabReportPreviewDialogState
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
-      metadata: _reportMetadata(context, workflows),
+      patientContext: _reportPatientContext(context, workflows),
+      contextReference: _reportContextReference(context, workflows),
       pages: _reportPages(
         context,
         workflows,
@@ -2899,6 +2900,7 @@ class _LabReportPreviewDialogState
         _visibleReportColumnKeys(),
       ),
       footerNote: l10n.labReportFooter,
+      includeSignatures: true,
     );
     if (mounted) {
       setState(() => _isPrinting = false);
@@ -3022,11 +3024,23 @@ class _LabReportPreview extends StatelessWidget {
           },
         ),
         SizedBox(height: theme.spacing.md),
-        Text(
-          l10n.labReportSignatureLabel,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        Wrap(
+          spacing: theme.spacing.lg,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            Text(
+              l10n.printFormPrintedByLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              l10n.printFormVerifiedByLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -4394,7 +4408,7 @@ final class _LabPanelDraftGroup {
   final List<_ResultDraft> drafts;
 }
 
-List<PrintFormMetadataItem> _reportMetadata(
+PrintFormPatientContext _reportPatientContext(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
 ) {
@@ -4403,22 +4417,35 @@ List<PrintFormMetadataItem> _reportMetadata(
   final List<String> encounterIds = _uniqueNonEmpty(
     workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
   );
-  return <PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.labReportPatientLabel,
-      value: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
+  return buildPrintFormPatientContext(
+    l10n,
+    patientName: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
+    patientId: firstOrder.patientId,
+    encounterId: encounterIds.length == 1 ? encounterIds.single : null,
+    patientNameLabel: l10n.labReportPatientLabel,
+    patientIdLabel: l10n.labPatientIdFieldLabel,
+    encounterIdLabel: l10n.labEncounterFieldLabel,
+  );
+}
+
+PrintFormContextReference? _reportContextReference(
+  BuildContext context,
+  List<LabOrderWorkflow> workflows,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final List<String> orderIds = _uniqueNonEmpty(
+    workflows.map(
+      (LabOrderWorkflow workflow) =>
+          workflow.order.displayId ?? workflow.order.apiId,
     ),
-    if (firstOrder.patientId != null)
-      PrintFormMetadataItem(
-        label: l10n.labPatientIdFieldLabel,
-        value: firstOrder.patientId!,
-      ),
-    if (encounterIds.length == 1)
-      PrintFormMetadataItem(
-        label: l10n.labEncounterFieldLabel,
-        value: encounterIds.single,
-      ),
-  ];
+  );
+  if (orderIds.isEmpty) {
+    return null;
+  }
+  return PrintFormContextReference(
+    label: l10n.labOrderFieldLabel,
+    value: orderIds.length == 1 ? orderIds.single : orderIds.join(', '),
+  );
 }
 
 List<PrintFormPage> _reportPages(
@@ -4456,7 +4483,6 @@ String _labReportHtml(
 ${_labReportPrintStyle()}
 <div class="lab-report-compact">
   $table
-  ${_labReportSignatureHtml(context)}
 </div>
 ''';
 }
@@ -4541,27 +4567,9 @@ String _labReportColumnValue(
   };
 }
 
-String _labReportSignatureHtml(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-  return '''
-<div class="print-template-signatures">
-  <div class="print-template-signature">${PrintFormTemplate.escape(l10n.labReportVerifiedLabel)}</div>
-  <div class="print-template-signature">${PrintFormTemplate.escape(l10n.labReportSignatureLabel)}</div>
-</div>
-''';
-}
-
 String _labReportPrintStyle() {
   return '''
 <style>
-  .lab-report-compact .print-template-kv {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.5mm;
-    margin-bottom: 2.5mm;
-  }
-  .lab-report-compact .print-template-kv-item {
-    padding: 1.5mm;
-  }
   .lab-report-tests .print-template-table th,
   .lab-report-tests .print-template-table td {
     padding: 1.6mm;
@@ -4577,11 +4585,6 @@ String _labReportPrintStyle() {
   .lab-report-tests .print-template-table th:nth-child(3),
   .lab-report-tests .print-template-table td:nth-child(3) {
     width: 22%;
-  }
-  .lab-report-compact .print-template-signatures {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin-top: 12mm;
   }
 </style>
 ''';

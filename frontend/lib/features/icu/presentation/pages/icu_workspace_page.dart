@@ -886,20 +886,20 @@ class _IcuActionPanel extends ConsumerWidget {
                 ref: ref,
                 context: context,
                 title: l10n.icuStayDialogTitle,
-                subtitle: detail.summary.displayTitle,
-                metadata: <PrintFormMetadataItem>[
-                  PrintFormMetadataItem(
-                    label: l10n.icuAdmissionLabel,
-                    value:
-                        detail.summary.displayId ??
-                        context.l10n.profileUnknownValue,
-                  ),
-                  PrintFormMetadataItem(
-                    label: l10n.icuLocationLabel,
-                    value: detail.summary.locationLabel,
-                  ),
-                ],
+                patientContext: buildPrintFormPatientContext(
+                  l10n,
+                  patientName: detail.summary.displayTitle,
+                  patientId: detail.summary.patientId,
+                  encounterId: detail.summary.encounterId,
+                ),
+                contextReference: PrintFormContextReference(
+                  label: l10n.icuAdmissionLabel,
+                  value:
+                      detail.summary.displayId ??
+                      context.l10n.profileUnknownValue,
+                ),
                 bodyHtml: _icuSummaryHtml(context, detail),
+                includeSignatures: true,
               );
             },
           ),

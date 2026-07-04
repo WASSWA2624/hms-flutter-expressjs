@@ -1326,20 +1326,14 @@ class _ClinicalActionBar extends ConsumerWidget {
                   ref: ref,
                   context: context,
                   title: l10n.clinicalConsultationSummaryTitle,
-                  subtitle: bundle.entry.displayTitle,
-                  metadata: <PrintFormMetadataItem>[
-                    PrintFormMetadataItem(
-                      label: l10n.patientsIdentifierLabel,
-                      value:
-                          bundle.entry.encounterPublicId ??
-                          l10n.profileUnknownValue,
-                    ),
-                    PrintFormMetadataItem(
-                      label: l10n.opdStageLabel,
-                      value: _apiLabel(bundle.entry.stage ?? ''),
-                    ),
-                  ],
+                  patientContext: buildPrintFormPatientContext(
+                    l10n,
+                    patientName: bundle.entry.displayTitle,
+                    patientId: bundle.entry.apiPatientId,
+                    encounterId: bundle.entry.encounterPublicId,
+                  ),
                   bodyHtml: _consultationSummaryHtml(context, bundle),
+                  includeSignatures: true,
                 );
               },
             ),

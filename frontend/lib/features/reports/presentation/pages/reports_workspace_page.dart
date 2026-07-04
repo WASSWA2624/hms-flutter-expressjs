@@ -1553,17 +1553,11 @@ Future<void> _printReportItem(
     context: context,
     title: item.title,
     subtitle: l10n.reportsPrintSubtitle,
+    contextReference: PrintFormContextReference(
+      label: l10n.reportsReferenceLabel,
+      value: _valueOrUnknown(context, item.reference),
+    ),
     bodyHtml: _reportItemHtml(context, item),
-    metadata: <PrintFormMetadataItem>[
-      PrintFormMetadataItem(
-        label: l10n.reportsReferenceLabel,
-        value: _valueOrUnknown(context, item.reference),
-      ),
-      PrintFormMetadataItem(
-        label: l10n.reportsGeneratedByLabel,
-        value: l10n.appTitle,
-      ),
-    ],
     footerNote: l10n.reportsPrintFooter,
   );
 }
@@ -1579,14 +1573,11 @@ Future<void> _printComplianceItem(
     context: context,
     title: item.title,
     subtitle: l10n.reportsEvidenceSubtitle,
+    contextReference: PrintFormContextReference(
+      label: l10n.reportsReferenceLabel,
+      value: item.id,
+    ),
     bodyHtml: _complianceItemHtml(context, item),
-    metadata: <PrintFormMetadataItem>[
-      PrintFormMetadataItem(label: l10n.reportsReferenceLabel, value: item.id),
-      PrintFormMetadataItem(
-        label: l10n.reportsGeneratedByLabel,
-        value: l10n.appTitle,
-      ),
-    ],
     footerNote: l10n.reportsEvidenceFooter,
   );
 }

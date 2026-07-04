@@ -2774,22 +2774,16 @@ class _PatientReportPrintPreviewDialogState
                     ref: ref,
                     context: context,
                     title: document.title,
-                    subtitle: document.patientName,
-                    metadata: <PrintFormMetadataItem>[
-                      PrintFormMetadataItem(
-                        label: l10n.patientsIdentifierLabel,
-                        value: document.patientIdentifier,
-                      ),
-                      PrintFormMetadataItem(
-                        label: l10n.patientsReportPeriodLabel,
-                        value: document.periodLabel,
-                      ),
-                      PrintFormMetadataItem(
-                        label: l10n.patientsReportPreparedOnLabel,
-                        value: document.generatedAtLabel,
-                      ),
-                    ],
+                    subtitle: document.periodLabel,
+                    patientContext: buildPrintFormPatientContext(
+                      l10n,
+                      patientName: document.patientName,
+                      patientId: document.patientIdentifier,
+                      patientNameLabel: l10n.labReportPatientLabel,
+                      patientIdLabel: l10n.patientsIdentifierLabel,
+                    ),
                     pages: _patientReportPrintPages(document),
+                    includeSignatures: true,
                   );
                 }
               : null,

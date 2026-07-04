@@ -8,6 +8,8 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 @immutable
@@ -21,6 +23,43 @@ final class PrintFormTemplateContext {
   final PrintFormBranding? facilityBranding;
 }
 
+PrintFormSignatures buildPrintFormSignatures(
+  AppLocalizations l10n, {
+  String? printedByName,
+  String? verifiedByName,
+}) {
+  return PrintFormSignatures(
+    printedByLabel: l10n.printFormPrintedByLabel,
+    verifiedByLabel: l10n.printFormVerifiedByLabel,
+    printedByName: printedByName,
+    verifiedByName: verifiedByName,
+    signatureStampLabel: l10n.printFormSignatureStampLabel,
+  );
+}
+
+PrintFormPatientContext buildPrintFormPatientContext(
+  AppLocalizations l10n, {
+  required String patientName,
+  String? patientId,
+  String? encounterId,
+  String? patientNameLabel,
+  String? patientIdLabel,
+  String? encounterIdLabel,
+}) {
+  return PrintFormPatientContext(
+    patientNameLabel: patientNameLabel ?? l10n.printFormPatientNameLabel,
+    patientName: patientName,
+    patientIdLabel: patientId != null
+        ? (patientIdLabel ?? l10n.printFormPatientIdLabel)
+        : null,
+    patientId: patientId,
+    encounterIdLabel: encounterId != null
+        ? (encounterIdLabel ?? l10n.printFormEncounterIdLabel)
+        : null,
+    encounterId: encounterId,
+  );
+}
+
 Future<void> printFormTemplateDocument({
   required WidgetRef ref,
   required BuildContext context,
@@ -29,6 +68,11 @@ Future<void> printFormTemplateDocument({
   String? bodyHtml,
   List<PrintFormPage> pages = const <PrintFormPage>[],
   List<PrintFormMetadataItem> metadata = const <PrintFormMetadataItem>[],
+  PrintFormPatientContext? patientContext,
+  PrintFormContextReference? contextReference,
+  PrintFormSignatures? signatures,
+  bool includeSignatures = false,
+  String? verifiedByName,
   DateTime? printedAt,
   String? footerNote,
 }) async {
@@ -39,6 +83,20 @@ Future<void> printFormTemplateDocument({
     return;
   }
 
+  final AppLocalizations l10n = context.l10n;
+  final AuthSession? session = ref.read(
+    sessionStateProvider.select((state) => state.session),
+  );
+  final PrintFormSignatures? effectiveSignatures =
+      signatures ??
+      (includeSignatures
+          ? buildPrintFormSignatures(
+              l10n,
+              printedByName: session?.user?.displayName,
+              verifiedByName: verifiedByName,
+            )
+          : null);
+
   printHtmlDocument(
     PrintFormTemplate.build(
       context: context,
@@ -47,7 +105,11 @@ Future<void> printFormTemplateDocument({
       bodyHtml: bodyHtml,
       pages: pages,
       metadata: metadata,
+      patientContext: patientContext,
+      contextReference: contextReference,
+      signatures: effectiveSignatures,
       printedAt: printedAt,
+      printedLabel: l10n.printFormPrintedLabel,
       footerNote: footerNote,
       appBranding: templateContext.appBranding,
       facilityBranding: templateContext.facilityBranding,

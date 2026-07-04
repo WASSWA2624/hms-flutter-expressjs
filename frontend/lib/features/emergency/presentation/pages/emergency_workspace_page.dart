@@ -765,26 +765,18 @@ class _EmergencyActionPanel extends ConsumerWidget {
               ref: ref,
               context: context,
               title: 'Emergency summary',
-              subtitle: detail.summary.displayTitle,
-              metadata: <PrintFormMetadataItem>[
-                PrintFormMetadataItem(
-                  label: _EmergencyText.caseLabel,
-                  value: detail.summary.caseLabel,
-                ),
-                PrintFormMetadataItem(
-                  label: _EmergencyText.severity,
-                  value: _apiLabel(detail.summary.severity ?? ''),
-                ),
-                PrintFormMetadataItem(
-                  label: _EmergencyText.status,
-                  value: _apiLabel(detail.summary.status ?? ''),
-                ),
-                PrintFormMetadataItem(
-                  label: _EmergencyText.arrival,
-                  value: _dateTimeLabel(context, detail.summary.createdAt),
-                ),
-              ],
+              patientContext: buildPrintFormPatientContext(
+                context.l10n,
+                patientName: detail.summary.displayTitle,
+                patientId:
+                    detail.summary.patientId ?? detail.summary.patientDisplayId,
+              ),
+              contextReference: PrintFormContextReference(
+                label: _EmergencyText.caseLabel,
+                value: detail.summary.caseLabel,
+              ),
               bodyHtml: _emergencySummaryHtml(context, detail),
+              includeSignatures: true,
             );
           },
         ),
@@ -2008,9 +2000,7 @@ abstract final class _EmergencyText {
   static const String responseNotes = 'Response notes';
   static const String saveTriage = 'Save triage';
   static const String searchHint = 'Search patient, case, ambulance, or status';
-  static const String severity = 'Severity';
   static const String startTrip = 'Start trip';
-  static const String status = 'Status';
   static const String theater = 'Theater';
   static const String scheduleTheater = 'Schedule in Theater';
   static const String transporting = 'Transporting';
