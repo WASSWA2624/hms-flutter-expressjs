@@ -10,10 +10,7 @@ import '../../helpers/test_harness.dart';
 void main() {
   const ClinicalActionReferenceData referenceData = ClinicalActionReferenceData(
     wards: <ClinicalActionCatalogOption>[
-      ClinicalActionCatalogOption(
-        id: 'ward-1',
-        name: 'Medical ward',
-      ),
+      ClinicalActionCatalogOption(id: 'ward-1', name: 'Medical ward'),
     ],
     rooms: <ClinicalActionCatalogOption>[
       ClinicalActionCatalogOption(

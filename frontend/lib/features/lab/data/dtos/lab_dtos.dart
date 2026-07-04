@@ -164,8 +164,9 @@ final class LabCatalogItemDto {
       unitPrice: _num(json['unit_price']) ?? _num(json['price']),
       currency: _string(json['currency']),
       updatedAt: _date(json['updated_at']),
-      isOfferedAtFacility: json['is_offered_at_facility'] == true
-          || json['offering_is_active'] == true,
+      isOfferedAtFacility:
+          json['is_offered_at_facility'] == true ||
+          json['offering_is_active'] == true,
       facilityOfferingId: _string(json['facility_offering_id']),
       usesPlatformDefaults: json['uses_platform_defaults'] != false,
     );
@@ -298,6 +299,8 @@ final class LabOrderSummaryDto {
       orderIds: _stringList(json['order_ids']),
       orderDisplayIds: _stringList(json['order_display_ids']),
       testsSummary: _string(json['tests_summary']),
+      paymentStatus: _string(json['payment_status']),
+      billing: _map(json['billing']),
       items: _list(json['items'])
           .map(LabOrderItemDto.new)
           .map((LabOrderItemDto dto) => dto.toEntity())

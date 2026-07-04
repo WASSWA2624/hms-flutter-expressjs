@@ -8,6 +8,28 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
+  test(
+    'buildPendingClinicalRequestBillingSubmit always defers to billing office',
+    () {
+      final ClinicalRequestBillingSubmit billing =
+          buildPendingClinicalRequestBillingSubmit(
+            options: <ClinicalActionCatalogOption>[
+              const ClinicalActionCatalogOption(
+                id: 'LAB-CBC',
+                name: 'Complete blood count',
+                unitPrice: 25,
+                currency: 'USD',
+              ),
+            ],
+          );
+
+      expect(billing.mode, ClinicalRequestPaymentMode.billLater);
+      expect(billing.paymentStatus, ClinicalRequestPaymentStatus.unpaid);
+      expect(billing.totalAmount, 25);
+      expect(billing.toPayloadMap()['payment_status'], 'PENDING');
+    },
+  );
+
   test('orderClinicalLabRequestCatalogItems keeps selected rows first', () {
     final List<ClinicalActionCatalogOption> options = _sampleCatalogOptions();
     final List<ClinicalActionCatalogOption> ordered =
@@ -41,7 +63,10 @@ void main() {
       expect(find.text('No items'), findsNothing);
       expect(find.text('Selected lab requests'), findsNothing);
       expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
-      expect(find.widgetWithIcon(AppButton, Icons.science_outlined), findsOneWidget);
+      expect(
+        find.widgetWithIcon(AppButton, Icons.science_outlined),
+        findsOneWidget,
+      );
     });
 
     testWidgets('catalog picker supports checkbox multi-select', (
@@ -59,7 +84,10 @@ void main() {
 
       expect(find.text('CHOOSE LAB TESTS OR PANELS'), findsOneWidget);
       expect(find.text('0 selected'), findsOneWidget);
-      expect(find.byType(RadioListTile<ClinicalLabRequestCatalogKind>), findsNWidgets(2));
+      expect(
+        find.byType(RadioListTile<ClinicalLabRequestCatalogKind>),
+        findsNWidgets(2),
+      );
 
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
@@ -67,10 +95,7 @@ void main() {
       expect(find.text('1 selected'), findsOneWidget);
 
       await tester.tap(
-        find.widgetWithText(
-          AppButton,
-          'Confirm selected tests or panels',
-        ),
+        find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
       );
       await tester.pumpAndSettle();
 
@@ -95,10 +120,7 @@ void main() {
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
       await tester.tap(
-        find.widgetWithText(
-          AppButton,
-          'Confirm selected tests or panels',
-        ),
+        find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
       );
       await tester.pumpAndSettle();
 
@@ -123,39 +145,37 @@ void main() {
       );
     });
 
-    testWidgets('cancel keeps lab request when remove confirmation is dismissed', (
-      WidgetTester tester,
-    ) async {
-      await _pumpLabOrderDialog(
-        tester,
-        catalogOptions: _sampleCatalogOptions(),
-      );
+    testWidgets(
+      'cancel keeps lab request when remove confirmation is dismissed',
+      (WidgetTester tester) async {
+        await _pumpLabOrderDialog(
+          tester,
+          catalogOptions: _sampleCatalogOptions(),
+        );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pumpAndSettle();
-      await _tapRowCheckbox(tester, 'Complete blood count');
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.widgetWithText(
-          AppButton,
-          'Confirm selected tests or panels',
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+        await _tapRowCheckbox(tester, 'Complete blood count');
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Remove item').first);
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove item').first);
+        await tester.pumpAndSettle();
 
-      expect(find.text('REMOVE LAB REQUEST?'), findsOneWidget);
+        expect(find.text('REMOVE LAB REQUEST?'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('REMOVE LAB REQUEST?'), findsNothing);
-      expect(find.text('Complete blood count'), findsWidgets);
-    });
+        expect(find.text('REMOVE LAB REQUEST?'), findsNothing);
+        expect(find.text('Complete blood count'), findsWidgets);
+      },
+    );
 
     testWidgets('shows patient context strip and toolbar remove selected', (
       WidgetTester tester,
@@ -171,9 +191,7 @@ void main() {
       );
 
       expect(
-        find.text(
-          'Name: Jane Doe   Patient ID: P-1001   Encounter ID: ENC-42',
-        ),
+        find.text('Name: Jane Doe   Patient ID: P-1001   Encounter ID: ENC-42'),
         findsOneWidget,
       );
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);
@@ -185,10 +203,7 @@ void main() {
       await _tapRowCheckbox(tester, 'Complete blood count');
       await tester.pumpAndSettle();
       await tester.tap(
-        find.widgetWithText(
-          AppButton,
-          'Confirm selected tests or panels',
-        ),
+        find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
       );
       await tester.pumpAndSettle();
 

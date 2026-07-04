@@ -29475,6 +29475,12 @@ abstract class AppLocalizations {
   /// **'Entry status'**
   String get labEntryStatusColumnLabel;
 
+  /// Lab worklist column for billing clearance status.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get labPaymentColumnLabel;
+
   /// Localized text for labSelectOrderDialogTitle.
   ///
   /// In en, this message translates to:

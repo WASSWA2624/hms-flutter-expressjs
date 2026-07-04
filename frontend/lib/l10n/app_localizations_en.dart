@@ -15740,6 +15740,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEntryStatusColumnLabel => 'Entry status';
 
   @override
+  String get labPaymentColumnLabel => 'Payment';
+
+  @override
   String get labSelectOrderDialogTitle => 'Select Lab Order';
 
   @override

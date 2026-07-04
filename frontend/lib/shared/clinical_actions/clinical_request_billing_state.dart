@@ -224,6 +224,21 @@ String clinicalRequestPaymentStatusDisplayLabel(
   return clinicalRequestPaymentStatusLabel(l10n, status);
 }
 
+ClinicalRequestBillingSubmit buildPendingClinicalRequestBillingSubmit({
+  required List<ClinicalActionCatalogOption> options,
+}) {
+  final List<ClinicalRequestBillingLineItem> lineItems =
+      clinicalRequestBillingLineItems(options: options);
+  final num total = clinicalRequestBillingTotal(lineItems);
+  return ClinicalRequestBillingSubmit(
+    mode: ClinicalRequestPaymentMode.billLater,
+    totalAmount: total,
+    currency: resolveClinicalRequestBillingCurrency(lineItems),
+    paymentStatus: ClinicalRequestPaymentStatus.unpaid,
+    lineItems: lineItems,
+  );
+}
+
 Map<String, Object?> mergeClinicalRequestBilling(
   Map<String, Object?> payload,
   ClinicalRequestBillingSubmit? billing,

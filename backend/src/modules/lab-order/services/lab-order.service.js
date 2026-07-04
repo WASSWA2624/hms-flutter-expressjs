@@ -19,6 +19,8 @@ const {
   persistLabOrderBilling,
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
+  buildLabOrderBillingFromRequest,
+  normalizeBillingOfficeClinicalBilling,
 } = require('@lib/billing/clinical-request-billing');
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -46233,6 +46235,82 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
   return items;
 };
 
+const resolveEncounterDisplayMeta = async (encounterId) => {
+  if (!encounterId) {
+    return { encounterId: null, encounterDisplayId: null };
+  }
+  const encounter = await prisma.encounter.findFirst({
+    where: { id: encounterId, deleted_at: null },
+    select: { id: true, human_friendly_id: true },
+  });
+  return {
+    encounterId: encounter?.id || encounterId,
+    encounterDisplayId: encounter?.human_friendly_id || encounterId,
+  };
+};
+
+const resolveLabOrderBillingPayload = async ({
+  billing,
+  requestedTests,
+  requestedPanels,
+  tenantId,
+  facilityId,
+  shouldReplaceItems = true,
+}) => {
+  let resolvedBilling = billing ? normalizeBillingOfficeClinicalBilling(billing) : null;
+  if (!resolvedBilling && shouldReplaceItems) {
+    resolvedBilling = await buildLabOrderBillingFromRequest({
+      requestedTests,
+      requestedPanels,
+      tenantId,
+      facilityId,
+    });
+  }
+  return resolvedBilling;
+};
+
+const applyLabOrderBilling = async ({
+  orderId,
+  billing,
+  existingSnapshot = null,
+  patientRecord,
+  encounterId,
+  description = 'Laboratory order',
+}) => {
+  if (!billing || !patientRecord) {
+    return;
+  }
+  const encounterMeta = await resolveEncounterDisplayMeta(encounterId);
+  await prisma.$transaction(async (tx) => {
+    await persistLabOrderBilling(tx, {
+      orderId,
+      billing,
+      existingSnapshot,
+      tenantId: patientRecord.tenant_id,
+      facilityId: patientRecord.facility_id || null,
+      patientId: patientRecord.id,
+      description,
+      encounterId: encounterMeta.encounterId,
+      encounterDisplayId: encounterMeta.encounterDisplayId,
+    });
+  });
+};
+
+const notifyLabOrdersBillingUpdated = async (orderIds = [], actorUserId = null) => {
+  const uniqueIds = [...new Set((orderIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
+  for (const orderId of uniqueIds) {
+    const orderRecord = await labOrderRepository.findById(orderId, LAB_ORDER_WITH_RELATIONS_INCLUDE);
+    if (!orderRecord) {
+      continue;
+    }
+    await publishLabOrderRealtimeUpdate({
+      orderRecord,
+      action: 'BILLING_UPDATED',
+      actorUserId,
+    });
+  }
+};
+
 const createLabOrder = async (data, userId, ipAddress) => {
   try {
     const payload = { ...data };
@@ -46288,16 +46366,19 @@ const createLabOrder = async (data, userId, ipAddress) => {
     }
 
     const labOrder = await labOrderRepository.create(payload);
-    if (billing) {
-      await prisma.$transaction(async (tx) => {
-        await persistLabOrderBilling(tx, {
-          orderId: labOrder.id,
-          billing,
-          tenantId: patientRecord.tenant_id,
-          facilityId: patientRecord.facility_id || null,
-          patientId: patientRecord.id,
-          description: 'Laboratory order',
-        });
+    const resolvedBilling = await resolveLabOrderBillingPayload({
+      billing,
+      requestedTests,
+      requestedPanels,
+      tenantId: patientRecord.tenant_id,
+      facilityId: patientRecord.facility_id || null,
+    });
+    if (resolvedBilling) {
+      await applyLabOrderBilling({
+        orderId: labOrder.id,
+        billing: resolvedBilling,
+        patientRecord,
+        encounterId: payload.encounter_id,
       });
     }
     const createdOrder = await labOrderRepository.findById(labOrder.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
@@ -46404,24 +46485,39 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
 
     const updated = await labOrderRepository.update(before.id, payload);
     const existingSnapshot = extractStoredClinicalBilling(before);
-    if (billing) {
+    const shouldRefreshBilling = billing !== undefined || shouldReplaceItems;
+    if (shouldRefreshBilling) {
       const patientId = payload.patient_id || before.patient_id;
       const patientRecord = await prisma.patient.findFirst({
         where: { id: patientId, deleted_at: null },
         select: { id: true, tenant_id: true, facility_id: true },
       });
       if (patientRecord) {
-        await prisma.$transaction(async (tx) => {
-          await persistLabOrderBilling(tx, {
-            orderId: updated.id,
-            billing,
-            existingSnapshot,
-            tenantId: patientRecord.tenant_id,
-            facilityId: patientRecord.facility_id || null,
-            patientId: patientRecord.id,
-            description: 'Laboratory order',
-          });
+        const resolvedBilling = await resolveLabOrderBillingPayload({
+          billing,
+          requestedTests,
+          requestedPanels,
+          tenantId: patientRecord.tenant_id,
+          facilityId: patientRecord.facility_id || null,
+          shouldReplaceItems,
         });
+        if (resolvedBilling) {
+          await applyLabOrderBilling({
+            orderId: updated.id,
+            billing: resolvedBilling,
+            existingSnapshot,
+            patientRecord,
+            encounterId: payload.encounter_id ?? before.encounter_id,
+          });
+        } else if (shouldReplaceItems && existingSnapshot?.invoice_id) {
+          await prisma.$transaction(async (tx) => {
+            await reverseClinicalRequestBilling(tx, { existingSnapshot });
+            await tx.lab_order.update({
+              where: { id: updated.id },
+              data: { billing_snapshot: null },
+            });
+          });
+        }
       }
     } else if (payload.status === 'CANCELLED' && existingSnapshot?.invoice_id) {
       await prisma.$transaction(async (tx) => {
@@ -46513,5 +46609,6 @@ module.exports = {
   getLabOrderById,
   createLabOrder,
   updateLabOrder,
-  deleteLabOrder
+  deleteLabOrder,
+  notifyLabOrdersBillingUpdated,
 };

@@ -269,8 +269,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
     final bool compact = MediaQuery.sizeOf(context).width < 600;
-    final bool showActionLabels =
-        AppBreakpoints.of(context).showsToolbarActionLabels;
+    final bool showActionLabels = AppBreakpoints.of(
+      context,
+    ).showsToolbarActionLabels;
     final Color destructiveActionColor = theme.statusColors.danger;
 
     return AppActionLabelScope(
@@ -2021,10 +2022,7 @@ class _LabResultTestCell extends StatelessWidget {
     final Widget titleColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          item.displayTitle,
-          style: titleStyle,
-        ),
+        Text(item.displayTitle, style: titleStyle),
         if (draft.showValidationError) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           _LabResultValidationMessage(draft: draft),
@@ -2717,10 +2715,7 @@ class _LabReportPreviewDialogState
         id: _testsColumnKey,
         label: l10n.labTestsColumnLabel,
         sortComparator: (LabOrderItem left, LabOrderItem right) {
-          return appListTableCompareText(
-            left.displayTitle,
-            right.displayTitle,
-          );
+          return appListTableCompareText(left.displayTitle, right.displayTitle);
         },
         cellBuilder: (BuildContext context, LabOrderItem item) {
           return Text(item.displayTitle);
@@ -2784,7 +2779,8 @@ class _LabReportPreviewDialogState
             final List<LabOrderItem> filteredItems = _visibleReportItems(
               value.text,
             );
-            final bool allSelected = filteredItems.isNotEmpty &&
+            final bool allSelected =
+                filteredItems.isNotEmpty &&
                 filteredItems.every(
                   (LabOrderItem item) =>
                       _selectedItemIds.contains(_itemSelectionKey(item)),
@@ -2872,10 +2868,7 @@ class _LabReportPreviewDialogState
     AppLocalizations l10n,
   ) {
     return <AppSearchBarFilterChoice>[
-      AppSearchBarFilterChoice(
-        value: 'NORMAL',
-        label: l10n.labStatusNormal,
-      ),
+      AppSearchBarFilterChoice(value: 'NORMAL', label: l10n.labStatusNormal),
       AppSearchBarFilterChoice(
         value: 'ABNORMAL',
         label: l10n.labStatusAbnormal,
@@ -2884,10 +2877,7 @@ class _LabReportPreviewDialogState
         value: 'CRITICAL',
         label: l10n.labStatusCritical,
       ),
-      AppSearchBarFilterChoice(
-        value: 'PENDING',
-        label: l10n.labStatusPending,
-      ),
+      AppSearchBarFilterChoice(value: 'PENDING', label: l10n.labStatusPending),
       AppSearchBarFilterChoice(
         value: 'CANCELLED',
         label: l10n.labStatusCancelled,
@@ -2909,8 +2899,7 @@ class _LabReportPreviewDialogState
         LabOrderWorkflow? owningWorkflow;
         for (final LabOrderWorkflow workflow in widget.workflows) {
           if (workflow.order.items.any(
-            (LabOrderItem orderItem) =>
-                _itemSelectionKey(orderItem) == itemKey,
+            (LabOrderItem orderItem) => _itemSelectionKey(orderItem) == itemKey,
           )) {
             owningWorkflow = workflow;
             break;
@@ -3110,9 +3099,7 @@ class _LabReportPreview extends StatelessWidget {
             return AppListItemRow(
               title: item.displayTitle,
               subtitle: item.displayResultValue ?? l10n.labStatusPendingResults,
-              details: <Widget>[
-                _ReportPreviewFlagCell(item: item),
-              ],
+              details: <Widget>[_ReportPreviewFlagCell(item: item)],
               leading: Checkbox(
                 value: selectedItemIds.contains(_itemSelectionKey(item)),
                 onChanged: (bool? value) {
@@ -3918,7 +3905,8 @@ class _DeleteOrderItemDialog extends ConsumerStatefulWidget {
       _DeleteOrderItemDialogState();
 }
 
-class _DeleteOrderItemDialogState extends ConsumerState<_DeleteOrderItemDialog> {
+class _DeleteOrderItemDialogState
+    extends ConsumerState<_DeleteOrderItemDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _notesController;
   late final TextEditingController _customReasonController;
@@ -4638,22 +4626,20 @@ String _labReportTableHtml(
     emptyText: l10n.labNoOrderItemsEntryTitle,
   );
 
-  final String styledRows = items
-      .asMap()
-      .entries
-      .map((MapEntry<int, LabOrderItem> entry) {
-        if (!_isAbnormalReportItem(entry.value)) {
-          return '';
-        }
-        final int rowIndex = entry.key + 1;
-        return '''
+  final String styledRows = items.asMap().entries.map((
+    MapEntry<int, LabOrderItem> entry,
+  ) {
+    if (!_isAbnormalReportItem(entry.value)) {
+      return '';
+    }
+    final int rowIndex = entry.key + 1;
+    return '''
 .lab-report-tests .print-template-table tbody tr:nth-child($rowIndex) td {
   color: #b3261e;
   font-weight: 700;
 }
 ''';
-      })
-      .join();
+  }).join();
 
   return '''
 <style>$styledRows</style>
@@ -4717,8 +4703,7 @@ String _itemSelectionKey(LabOrderItem item) {
 List<LabOrderItem> _reportItems(List<LabOrderWorkflow> workflows) {
   return <LabOrderItem>[
     for (final LabOrderWorkflow workflow in workflows)
-      for (final LabOrderItem item in workflow.order.items)
-        item,
+      for (final LabOrderItem item in workflow.order.items) item,
   ];
 }
 
@@ -4765,11 +4750,11 @@ bool _matchesReportItemFilter(
     return false;
   }
 
-  final String? selectionFilter =
-      filterValue.option(_labReportSelectionFilterKey);
+  final String? selectionFilter = filterValue.option(
+    _labReportSelectionFilterKey,
+  );
   if (selectionFilter != null) {
-    final bool isSelected =
-        selectedItemIds.contains(_itemSelectionKey(item));
+    final bool isSelected = selectedItemIds.contains(_itemSelectionKey(item));
     return switch (selectionFilter) {
       'selected' => isSelected,
       'unselected' => !isSelected,
@@ -4796,8 +4781,10 @@ bool _matchesReportItemFlagFilter(
     if (token == 'NEGATIVE' || token == 'NON_REACTIVE') {
       return true;
     }
-    final String label =
-        _resolveItemResultFlagLabel(context, item).trim().toLowerCase();
+    final String label = _resolveItemResultFlagLabel(
+      context,
+      item,
+    ).trim().toLowerCase();
     return label == context.l10n.labNegativeOption.trim().toLowerCase();
   }
   return false;
@@ -4813,8 +4800,9 @@ String _resolveReportItemFlagToken(BuildContext context, LabOrderItem item) {
     return explicitFlag;
   }
 
-  final String? optionFlag =
-      _storedQualitativeOptionFlag(item)?.trim().toUpperCase();
+  final String? optionFlag = _storedQualitativeOptionFlag(
+    item,
+  )?.trim().toUpperCase();
   if (optionFlag != null && optionFlag.isNotEmpty) {
     return optionFlag;
   }

@@ -493,6 +493,8 @@ final class LabOrderSummary {
     this.testsSummary,
     this.items = const <LabOrderItem>[],
     this.samples = const <LabSample>[],
+    this.paymentStatus,
+    this.billing = const <String, Object?>{},
   });
 
   final String id;
@@ -525,6 +527,8 @@ final class LabOrderSummary {
   final String? testsSummary;
   final List<LabOrderItem> items;
   final List<LabSample> samples;
+  final String? paymentStatus;
+  final Map<String, Object?> billing;
 
   String get apiId => displayId ?? id;
 
@@ -584,6 +588,44 @@ final class LabOrderSummary {
       return names.join(', ');
     }
     return '${names.join(', ')} +$remaining';
+  }
+
+  bool get hasBillingGate {
+    return effectivePaymentStatus != null;
+  }
+
+  String? get effectivePaymentStatus {
+    final String? direct = _trimmedOrNull(paymentStatus);
+    if (direct != null) {
+      return direct;
+    }
+    final Object? nested = billing['payment_status'];
+    return _trimmedOrNull(nested?.toString());
+  }
+
+  num? get billingTotalAmount {
+    final Object? value = billing['total_amount'] ?? billing['line_amount'];
+    if (value is num) {
+      return value;
+    }
+    if (value is String) {
+      return num.tryParse(value.trim());
+    }
+    return null;
+  }
+
+  String? get billingCurrency {
+    return _trimmedOrNull(billing['currency']?.toString());
+  }
+
+  bool get isPaymentSatisfied {
+    final String normalized = (effectivePaymentStatus ?? '').toUpperCase();
+    return <String>{'PAID', 'NOT_REQUIRED', 'NO_CHARGE'}.contains(normalized);
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
   }
 
   bool get hasCriticalResult {

@@ -324,6 +324,21 @@ class _BillingQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<BillingWorkItem>(
+            label: l10n.billingEncounterLabel,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.encounterDisplayId ?? left.encounterId,
+                  right.encounterDisplayId ?? right.encounterId,
+                ),
+            cellBuilder: (BuildContext context, BillingWorkItem item) {
+              return Text(
+                item.encounterDisplayId ??
+                    item.encounterId ??
+                    l10n.profileUnknownValue,
+              );
+            },
+          ),
+          AppListTableColumn<BillingWorkItem>(
             label: l10n.billingStatusColumn,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
                 appListTableCompareText(

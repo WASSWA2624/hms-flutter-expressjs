@@ -4,6 +4,15 @@ jest.mock('@repositories/lab-order/lab-order.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(),
 }));
+jest.mock('@lib/billing/clinical-request-billing', () => {
+  const actual = jest.requireActual('@lib/billing/clinical-request-billing');
+  return {
+    ...actual,
+    buildLabOrderBillingFromRequest: jest.fn().mockResolvedValue(null),
+    normalizeBillingOfficeClinicalBilling: jest.fn().mockReturnValue(null),
+    persistLabOrderBilling: jest.fn().mockResolvedValue(null),
+  };
+});
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {

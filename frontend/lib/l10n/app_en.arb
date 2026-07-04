@@ -20262,6 +20262,10 @@
   "@labEntryStatusColumnLabel": {
     "description": "Localized text for labEntryStatusColumnLabel."
   },
+  "labPaymentColumnLabel": "Payment",
+  "@labPaymentColumnLabel": {
+    "description": "Lab worklist column for billing clearance status."
+  },
   "labSelectOrderDialogTitle": "Select Lab Order",
   "@labSelectOrderDialogTitle": {
     "description": "Localized text for labSelectOrderDialogTitle."

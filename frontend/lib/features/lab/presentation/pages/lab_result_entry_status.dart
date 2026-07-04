@@ -11,9 +11,7 @@ int _enteredResultItemCount(LabOrderSummary order) {
   if (order.items.isEmpty) {
     return order.completedItemCount;
   }
-  return order.items
-      .where((item) => !item.isRejected && item.hasResult)
-      .length;
+  return order.items.where((item) => !item.isRejected && item.hasResult).length;
 }
 
 int _completedResultItemCount(LabOrderSummary order) {
@@ -54,21 +52,14 @@ AppWorkspaceStatus _statusBadge(BuildContext context, String? value) {
       'COMPLETED' ||
       'NORMAL' ||
       'RECEIVED' ||
-      'VERIFIED' =>
-        AppWorkspaceStatusTone.success,
-      'CRITICAL' ||
-      'CANCELLED' ||
-      'REJECTED' =>
-        AppWorkspaceStatusTone.error,
+      'VERIFIED' => AppWorkspaceStatusTone.success,
+      'CRITICAL' || 'CANCELLED' || 'REJECTED' => AppWorkspaceStatusTone.error,
       'ABNORMAL' ||
       'ORDERED' ||
       'COLLECTED' ||
-      'PENDING' =>
-        AppWorkspaceStatusTone.warning,
-      'IN_PROCESS' =>
-        AppWorkspaceStatusTone.info,
-      _ =>
-        AppWorkspaceStatusTone.neutral,
+      'PENDING' => AppWorkspaceStatusTone.warning,
+      'IN_PROCESS' => AppWorkspaceStatusTone.info,
+      _ => AppWorkspaceStatusTone.neutral,
     },
   );
 }
@@ -149,9 +140,15 @@ AppWorkspaceStatus _aggregateOrderStatus(
     );
   }
 
-  final anyRejected = workflows.any((workflow) => workflow.order.hasRejectedItem);
-  final allVerified = workflows.every((workflow) => _isVerifiedOrder(workflow.order));
-  final anyVerified = workflows.any((workflow) => _isVerifiedOrder(workflow.order));
+  final anyRejected = workflows.any(
+    (workflow) => workflow.order.hasRejectedItem,
+  );
+  final allVerified = workflows.every(
+    (workflow) => _isVerifiedOrder(workflow.order),
+  );
+  final anyVerified = workflows.any(
+    (workflow) => _isVerifiedOrder(workflow.order),
+  );
   final allCancelled = workflows.every(
     (workflow) => (workflow.order.status ?? '').toUpperCase() == 'CANCELLED',
   );

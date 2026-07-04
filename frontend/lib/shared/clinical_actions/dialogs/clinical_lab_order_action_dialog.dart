@@ -68,7 +68,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   final Set<String> _selectedRequestKeys = <String>{};
   bool _isSaving = false;
   AppFailure? _failure;
-  ClinicalRequestBillingSubmit? _billingSubmit;
 
   @override
   void initState() {
@@ -109,7 +108,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                   ),
             removeSelectedDestructive: true,
             onAddItems: _openCatalogPicker,
-            onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
             onRemoveSelected: _selectedRequestKeys.isEmpty
                 ? null
                 : () => unawaited(_confirmAndDeleteSelectedRequests()),
@@ -138,11 +136,11 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     return ClinicalRequestSelectedCatalogTable<_PendingLabRequest>(
       items: _requests,
       itemKey: _requestKey,
-      nameLabel: ( _PendingLabRequest request) =>
+      nameLabel: (_PendingLabRequest request) =>
           request.option.name ?? request.option.displayTitle,
-      typeLabel: ( _PendingLabRequest request) =>
+      typeLabel: (_PendingLabRequest request) =>
           _labRequestTypeLabel(l10n, request.kind),
-      optionFor: ( _PendingLabRequest request) => request.option,
+      optionFor: (_PendingLabRequest request) => request.option,
       selectedKeys: _selectedRequestKeys,
       onSelectedKeysChanged: (Set<String> keys) {
         setState(() {
@@ -156,7 +154,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       },
       emptyLabel: l10n.clinicalLabRequestSelectedTableEmptyLabel,
       enabled: !_isSaving,
-      billing: _billingSubmit,
     );
   }
 
@@ -191,7 +188,8 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                 (_PendingLabRequest request) =>
                     ClinicalLabRequestCatalogSelection(
                       option: request.option,
-                      kind: _matchesCatalogKind(
+                      kind:
+                          _matchesCatalogKind(
                             request.kind,
                             ClinicalLabRequestCatalogKind.tests,
                           )
@@ -210,12 +208,13 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
         ..clear()
         ..addAll(
           confirmed.map(
-            (ClinicalLabRequestCatalogSelection selection) => _PendingLabRequest(
-              kind: selection.kind == ClinicalLabRequestCatalogKind.tests
-                  ? _LabRequestSelectionKind.tests
-                  : _LabRequestSelectionKind.panels,
-              option: selection.option,
-            ),
+            (ClinicalLabRequestCatalogSelection selection) =>
+                _PendingLabRequest(
+                  kind: selection.kind == ClinicalLabRequestCatalogKind.tests
+                      ? _LabRequestSelectionKind.tests
+                      : _LabRequestSelectionKind.panels,
+                  option: selection.option,
+                ),
           ),
         );
       _pruneSelection();
@@ -229,31 +228,10 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     return switch ((selectionKind, catalogKind)) {
       (_LabRequestSelectionKind.tests, ClinicalLabRequestCatalogKind.tests) =>
         true,
-      (
-        _LabRequestSelectionKind.panels,
-        ClinicalLabRequestCatalogKind.panels,
-      ) =>
+      (_LabRequestSelectionKind.panels, ClinicalLabRequestCatalogKind.panels) =>
         true,
       _ => false,
     };
-  }
-
-  Future<void> _openBillingDialog() async {
-    final ClinicalRequestBillingSubmit? billing =
-        await showClinicalRequestBillingDialog(
-          context: context,
-          lineItems: clinicalRequestBillingLineItems(
-            options: _requests
-                .map((_PendingLabRequest request) => request.option)
-                .toList(growable: false),
-          ),
-          initialBilling: _billingSubmit,
-          enabled: !_isSaving,
-        );
-    if (!mounted || billing == null) {
-      return;
-    }
-    setState(() => _billingSubmit = billing);
   }
 
   List<_PendingLabRequest> _initialRequests() {
@@ -358,10 +336,11 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
           context: context,
           items: selectedRequests
               .map(
-                (_PendingLabRequest request) => ClinicalRequestRemovePreviewItem(
-                  name: request.option.name ?? request.option.displayTitle,
-                  typeLabel: _labRequestTypeLabel(l10n, request.kind),
-                ),
+                (_PendingLabRequest request) =>
+                    ClinicalRequestRemovePreviewItem(
+                      name: request.option.name ?? request.option.displayTitle,
+                      typeLabel: _labRequestTypeLabel(l10n, request.kind),
+                    ),
               )
               .toList(growable: false),
         );
@@ -397,6 +376,17 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     });
   }
 
+  ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
+    if (_requests.isEmpty) {
+      return null;
+    }
+    return buildPendingClinicalRequestBillingSubmit(
+      options: _requests
+          .map((_PendingLabRequest request) => request.option)
+          .toList(growable: false),
+    );
+  }
+
   Future<void> _submit() async {
     if (_requests.isEmpty) {
       setState(() => _failure = AppFailure.validation());
@@ -414,18 +404,19 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       for (final _PendingLabRequest request in _requests)
         if (request.kind == _LabRequestSelectionKind.panels) request.id,
     ];
+    final ClinicalRequestBillingSubmit? billing = _pendingBillingSubmit();
     final ClinicalActionLabOrderRecord? existingOrder = widget.existingOrder;
     final AppFailure? failure = existingOrder == null
         ? await widget.onRequest(
             labTestIds: labTestIds,
             labPanelIds: labPanelIds,
-            billing: _billingSubmit,
+            billing: billing,
           )
         : await widget.onUpdate(
             labOrderId: existingOrder.id,
             labTestIds: labTestIds,
             labPanelIds: labPanelIds,
-            billing: _billingSubmit,
+            billing: billing,
           );
     _finishSubmit(failure);
   }

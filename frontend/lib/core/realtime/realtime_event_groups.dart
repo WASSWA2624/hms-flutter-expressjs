@@ -178,6 +178,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.labResultReady,
     RealtimeEvents.labResultUpdated,
     RealtimeEvents.labResultCritical,
+    ...billing,
   };
 
   static const Set<String> radiology = <String>{

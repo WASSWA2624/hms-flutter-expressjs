@@ -122,9 +122,7 @@ Future<bool> showClinicalRequestRemoveItemsConfirmationDialog({
 }
 
 class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
-  const _ClinicalRequestRemoveItemsConfirmationDialog({
-    required this.items,
-  });
+  const _ClinicalRequestRemoveItemsConfirmationDialog({required this.items});
 
   final List<ClinicalRequestRemovePreviewItem> items;
 
@@ -271,7 +269,11 @@ class ClinicalRequestPatientContextStrip extends StatelessWidget {
       TextSpan(
         style: valueStyle,
         children: <InlineSpan>[
-          for (int index = 0; index < segments.length; index += 1) ...<InlineSpan>[
+          for (
+            int index = 0;
+            index < segments.length;
+            index += 1
+          ) ...<InlineSpan>[
             if (index > 0) const TextSpan(text: '   '),
             segments[index],
           ],
@@ -524,13 +526,18 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
         id: _selectedCatalogPriceColumnKey,
         label: l10n.clinicalRequestSelectedPriceColumnLabel,
         sortComparator: (T left, T right) {
-          final num? leftPrice = clinicalCatalogOptionUnitPrice(optionFor(left));
-          final num? rightPrice =
-              clinicalCatalogOptionUnitPrice(optionFor(right));
+          final num? leftPrice = clinicalCatalogOptionUnitPrice(
+            optionFor(left),
+          );
+          final num? rightPrice = clinicalCatalogOptionUnitPrice(
+            optionFor(right),
+          );
           return (leftPrice ?? 0).compareTo(rightPrice ?? 0);
         },
         cellBuilder: (BuildContext context, T item) {
-          return Text(clinicalRequestCatalogPriceLabel(context, optionFor(item)));
+          return Text(
+            clinicalRequestCatalogPriceLabel(context, optionFor(item)),
+          );
         },
       ),
       AppListTableColumn<T>(
@@ -554,7 +561,8 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
       label: '',
       alwaysVisible: true,
       headerBuilder: (BuildContext context) {
-        final bool allSelected = items.isNotEmpty &&
+        final bool allSelected =
+            items.isNotEmpty &&
             items.every((T item) => selectedKeys.contains(itemKey(item)));
         final bool someSelected = items.any(
           (T item) => selectedKeys.contains(itemKey(item)),
@@ -633,9 +641,7 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant),
-        ),
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -661,7 +667,9 @@ class _ClinicalRequestCatalogTableTotalFooter extends StatelessWidget {
                 DataCell(Text(totalLabel, style: totalLabelStyle)),
                 const DataCell(SizedBox.shrink()),
                 DataCell(Text(amountLabel, style: totalAmountStyle)),
-                const DataCell(SizedBox(width: _catalogTableActionsColumnWidth)),
+                const DataCell(
+                  SizedBox(width: _catalogTableActionsColumnWidth),
+                ),
               ],
             ),
           ],

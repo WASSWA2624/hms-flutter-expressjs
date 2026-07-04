@@ -15,6 +15,11 @@ const {
   computeInvoiceFinancials,
 } = require('@lib/billing/financials');
 const { generateInvoicePdfBuffer } = require('@lib/billing/pdf');
+const {
+  resolveClinicalInvoiceContexts,
+  syncClinicalOrderBillingSnapshotsFromInvoiceTx,
+} = require('@lib/billing/clinical-request-billing');
+const { notifyLabOrdersBillingUpdated } = require('@services/lab-order/lab-order.service');
 const { publishDomainEvent, BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
 
 const QUEUE_TYPES = {
@@ -488,6 +493,31 @@ const commonInvoiceWhere = (scope, search) => {
   return where;
 };
 
+const attachClinicalInvoiceContexts = async (items = []) => {
+  if (!Array.isArray(items) || !items.length) {
+    return items;
+  }
+  const invoiceIds = items
+    .map((item) => clean(item?.id))
+    .filter(Boolean);
+  const contexts = await resolveClinicalInvoiceContexts(invoiceIds);
+  if (!contexts.size) {
+    return items;
+  }
+  return items.map((item) => {
+    const invoiceId = clean(item?.id);
+    const context = invoiceId ? contexts.get(invoiceId) : null;
+    if (!context) {
+      return item;
+    }
+    return {
+      ...item,
+      encounter_id: context.encounter_id || item.encounter_id || null,
+      encounter_display_id: context.encounter_display_id || item.encounter_display_id || null,
+    };
+  });
+};
+
 const runQueue = async (queue, scope, page, limit, search) => {
   const skip = (page - 1) * limit;
   const invoiceWhere = commonInvoiceWhere(scope, search);
@@ -497,7 +527,8 @@ const runQueue = async (queue, scope, page, limit, search) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    return { queue, items: items.map((item) => mapInvoice(item)), total };
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    return { queue, items: mappedItems, total };
   }
   if (queue === QUEUE_TYPES.PENDING_PAYMENT) {
     const where = { ...invoiceWhere, billing_status: { in: ['ISSUED', 'PARTIAL'] }, status: { in: ['SENT', 'OVERDUE'] } };
@@ -505,7 +536,8 @@ const runQueue = async (queue, scope, page, limit, search) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'desc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    return { queue, items: items.map((item) => mapInvoice(item)), total };
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    return { queue, items: mappedItems, total };
   }
   if (queue === QUEUE_TYPES.CLAIMS_PENDING) {
     const claimWhere = {
@@ -549,7 +581,8 @@ const runQueue = async (queue, scope, page, limit, search) => {
       billingRepository.findManyInvoices(where, skip, limit, { issued_at: 'asc' }, INVOICE_INCLUDE),
       billingRepository.countInvoices(where),
     ]);
-    return { queue, items: items.map((item) => mapInvoice(item)), total };
+    const mappedItems = await attachClinicalInvoiceContexts(items.map((item) => mapInvoice(item)));
+    return { queue, items: mappedItems, total };
   }
   throw new HttpError('errors.validation.invalid', 400, [{ field: 'queue' }]);
 };
@@ -845,7 +878,11 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
       data: { status: payload.status || 'COMPLETED', paid_at: payment.paid_at || new Date() },
     });
     const invoiceState = await recalculateInvoiceStateTx(tx, payment.invoice_id);
-    return { payment: updatedPayment, invoiceState };
+    const clinicalSync = await syncClinicalOrderBillingSnapshotsFromInvoiceTx(
+      tx,
+      payment.invoice_id
+    );
+    return { payment: updatedPayment, invoiceState, clinicalSync };
   });
 
   auditUpdate(user, ip, 'payment', payment.id, { transition: 'RECONCILE', status: payload.status || 'COMPLETED', notes: payload.notes || null });
@@ -881,6 +918,7 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     payment: updatedPayment || mutation.payment,
     actorUserId: user?.id || null,
   });
+  await notifyLabOrdersBillingUpdated(mutation.clinicalSync?.labOrderIds || [], user?.id || null);
   return {
     payment: mapPayment(updatedPayment || mutation.payment),
     invoice: updatedInvoice ? mapInvoice(updatedInvoice, true) : null,

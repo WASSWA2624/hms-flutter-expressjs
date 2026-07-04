@@ -168,7 +168,7 @@ const resolvePaymentStatusAfterApply = (billing, invoice, payment) => {
   return 'PENDING';
 };
 
-const buildBillingSnapshot = (billing, { invoice, payment, paymentStatus }) => ({
+const buildBillingSnapshot = (billing, { invoice, payment, paymentStatus, encounterId, encounterDisplayId }) => ({
   payment_status: paymentStatus,
   currency: resolveBillingCurrency(billing, invoice?.currency || 'USD'),
   total_amount: toMoneyString(invoice?.total_amount ?? resolveScopedBillingAmount(billing)),
@@ -180,7 +180,245 @@ const buildBillingSnapshot = (billing, { invoice, payment, paymentStatus }) => (
   ...(billing?.line_amount !== undefined && billing?.line_amount !== null
     ? { line_amount: toMoneyString(billing.line_amount) }
     : {}),
+  ...(encounterId ? { encounter_id: String(encounterId) } : {}),
+  ...(encounterDisplayId ? { encounter_display_id: String(encounterDisplayId) } : {}),
 });
+
+const normalizeBillingLineItem = (entry = {}) => {
+  const quantity = Math.max(1, Number(entry.quantity) || 1);
+  const unitPrice = entry.unit_price != null ? toMoneyString(entry.unit_price) : null;
+  const lineTotal = toMoneyString(
+    entry.line_total ?? (unitPrice ? toDecimalNumber(unitPrice) * quantity : 0)
+  );
+  return {
+    id: String(entry.id || entry.lab_test_id || entry.lab_panel_id || '').trim(),
+    label: String(entry.label || entry.name || 'Clinical service').trim() || 'Clinical service',
+    quantity,
+    ...(unitPrice ? { unit_price: unitPrice } : {}),
+    ...(toDecimalNumber(lineTotal) > 0 ? { line_total: lineTotal } : {}),
+  };
+};
+
+/**
+ * Build a pending billing payload for the billing office (no point-of-care payment).
+ *
+ * @param {Object} options
+ * @param {Array<Object>} [options.lineItems]
+ * @param {string} [options.currency]
+ * @returns {Object|null}
+ */
+const buildPendingClinicalRequestBilling = ({ lineItems = [], currency = 'USD' } = {}) => {
+  const normalizedItems = (Array.isArray(lineItems) ? lineItems : [])
+    .map(normalizeBillingLineItem)
+    .filter((entry) => entry.id || entry.label);
+  const total = roundMoney(
+    normalizedItems.reduce(
+      (sum, item) => sum + toDecimalNumber(item.line_total ?? item.unit_price ?? 0),
+      0
+    )
+  );
+  if (total <= 0) {
+    return null;
+  }
+  return {
+    payment_status: 'PENDING',
+    currency: resolveBillingCurrency({ currency }),
+    line_items: normalizedItems,
+    total_amount: toMoneyString(total),
+  };
+};
+
+/**
+ * Strip pay-now fields and force pending clearance for billing-office payment.
+ *
+ * @param {Object|null|undefined} billing
+ * @returns {Object|null}
+ */
+const normalizeBillingOfficeClinicalBilling = (billing) => {
+  if (!billing || typeof billing !== 'object' || Array.isArray(billing)) {
+    return null;
+  }
+  return buildPendingClinicalRequestBilling({
+    lineItems: billing.line_items,
+    currency: billing.currency,
+  });
+};
+
+const resolveInvoicePaymentStatus = (invoice = {}) => {
+  const billingStatus = normalizePaymentStatus(invoice.billing_status);
+  if (billingStatus === 'PAID') {
+    return 'PAID';
+  }
+  if (billingStatus === 'PARTIAL') {
+    return 'PARTIAL';
+  }
+  const completedPayments = (invoice.payments || []).filter(
+    (payment) =>
+      payment &&
+      !payment.deleted_at &&
+      COMPLETED_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())
+  );
+  const paidAmount = completedPayments.reduce(
+    (sum, payment) => sum + toDecimalNumber(payment.amount),
+    0
+  );
+  const invoiceTotal = toDecimalNumber(invoice.total_amount);
+  if (paidAmount >= invoiceTotal - 0.009 && invoiceTotal > 0) {
+    return 'PAID';
+  }
+  if (paidAmount > 0) {
+    return 'PARTIAL';
+  }
+  return 'PENDING';
+};
+
+const mergeSnapshotPaymentStatus = (snapshot, invoice, paymentStatus) => {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return null;
+  }
+  const completedPayments = (invoice?.payments || []).filter(
+    (payment) =>
+      payment &&
+      !payment.deleted_at &&
+      COMPLETED_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())
+  );
+  const paidAmount = completedPayments.reduce(
+    (sum, payment) => sum + toDecimalNumber(payment.amount),
+    0
+  );
+  const latestPayment = completedPayments.sort(
+    (left, right) =>
+      (toDate(right.paid_at)?.getTime() || 0) - (toDate(left.paid_at)?.getTime() || 0)
+  )[0];
+  return {
+    ...snapshot,
+    payment_status: paymentStatus,
+    total_amount: toMoneyString(invoice?.total_amount ?? snapshot.total_amount),
+    paid_amount: paidAmount > 0 ? toMoneyString(paidAmount) : null,
+    payment_method: latestPayment?.method || snapshot.payment_method || null,
+    payment_reference: latestPayment?.transaction_ref || snapshot.payment_reference || null,
+    invoice_id: invoice?.id || snapshot.invoice_id || null,
+  };
+};
+
+const toDate = (value) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+/**
+ * Resolve encounter context for invoices linked to clinical orders.
+ *
+ * @param {string[]} invoiceIds
+ * @returns {Promise<Map<string, { encounter_id: string|null, encounter_display_id: string|null }>>}
+ */
+const resolveClinicalInvoiceContexts = async (invoiceIds = []) => {
+  const prisma = require('@prisma/client');
+  const uniqueIds = [...new Set((invoiceIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+  const contexts = new Map();
+  if (!uniqueIds.length || !prisma?.lab_order?.findMany) {
+    return contexts;
+  }
+
+  const labOrders = await prisma.lab_order.findMany({
+    where: {
+      deleted_at: null,
+      OR: uniqueIds.map((invoiceId) => ({
+        billing_snapshot: { path: '$.invoice_id', equals: invoiceId },
+      })),
+    },
+    select: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  });
+
+  for (const order of labOrders) {
+    const snapshot = extractStoredClinicalBilling(order);
+    const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
+    if (!invoiceId || contexts.has(invoiceId)) {
+      continue;
+    }
+    contexts.set(invoiceId, {
+      encounter_id: order.encounter_id || snapshot?.encounter_id || null,
+      encounter_display_id:
+        order.encounter?.human_friendly_id ||
+        snapshot?.encounter_display_id ||
+        order.encounter_id ||
+        null,
+    });
+  }
+
+  return contexts;
+};
+
+/**
+ * Sync stored clinical-order billing snapshots after invoice payment changes.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {string} invoiceId
+ * @returns {Promise<{ labOrderIds: string[] }>}
+ */
+const syncClinicalOrderBillingSnapshotsFromInvoiceTx = async (tx, invoiceId) => {
+  const normalizedInvoiceId = String(invoiceId || '').trim();
+  if (!normalizedInvoiceId) {
+    return { labOrderIds: [] };
+  }
+
+  const invoice = await tx.invoice.findFirst({
+    where: { id: normalizedInvoiceId, deleted_at: null },
+    include: { payments: { where: { deleted_at: null } } },
+  });
+  if (!invoice) {
+    return { labOrderIds: [] };
+  }
+
+  const paymentStatus = resolveInvoicePaymentStatus(invoice);
+  const labOrders = await tx.lab_order.findMany({
+    where: {
+      deleted_at: null,
+      billing_snapshot: { path: '$.invoice_id', equals: normalizedInvoiceId },
+    },
+    select: { id: true, billing_snapshot: true },
+  });
+
+  const labOrderIds = [];
+  for (const order of labOrders) {
+    const snapshot = extractStoredClinicalBilling(order);
+    if (!snapshot) {
+      continue;
+    }
+    const nextSnapshot = mergeSnapshotPaymentStatus(snapshot, invoice, paymentStatus);
+    await tx.lab_order.update({
+      where: { id: order.id },
+      data: { billing_snapshot: nextSnapshot },
+    });
+    labOrderIds.push(order.id);
+  }
+
+  const pharmacyOrders = await tx.pharmacy_order.findMany({
+    where: {
+      deleted_at: null,
+      billing_snapshot: { path: '$.invoice_id', equals: normalizedInvoiceId },
+    },
+    select: { id: true, billing_snapshot: true },
+  });
+  for (const order of pharmacyOrders) {
+    const snapshot = extractStoredClinicalBilling(order);
+    if (!snapshot) {
+      continue;
+    }
+    const nextSnapshot = mergeSnapshotPaymentStatus(snapshot, invoice, paymentStatus);
+    await tx.pharmacy_order.update({
+      where: { id: order.id },
+      data: { billing_snapshot: nextSnapshot },
+    });
+  }
+
+  return { labOrderIds };
+};
 
 const extractStoredClinicalBilling = (record = {}) => {
   if (record.billing_snapshot && typeof record.billing_snapshot === 'object' && !Array.isArray(record.billing_snapshot)) {
@@ -456,18 +694,211 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
   invoice = recalculated?.invoice || invoice;
 
   const paymentStatus = resolvePaymentStatusAfterApply(billing, invoice, payment);
-  return buildBillingSnapshot(billing, { invoice, payment, paymentStatus });
+  return buildBillingSnapshot(billing, {
+    invoice,
+    payment,
+    paymentStatus,
+    encounterId: options.encounterId,
+    encounterDisplayId: options.encounterDisplayId,
+  });
 };
 
 const syncClinicalRequestBilling = applyClinicalRequestBilling;
 
-const persistLabOrderBilling = async (tx, { orderId, billing, existingSnapshot, ...context }) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+const persistLabOrderBilling = async (
+  tx,
+  { orderId, billing, existingSnapshot, encounterId, encounterDisplayId, ...context }
+) => {
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    encounterId,
+    encounterDisplayId,
+    ...context,
+  });
   await tx.lab_order.update({
     where: { id: orderId },
     data: { billing_snapshot: snapshot },
   });
   return snapshot;
+};
+
+const resolveCatalogRecord = async ({ identifier, model, tenantId, select }) => {
+  const prisma = require('@prisma/client');
+  const token = String(identifier || '').trim();
+  if (!token || !prisma?.[model]?.findFirst) {
+    return null;
+  }
+  return prisma[model].findFirst({
+    where: {
+      deleted_at: null,
+      tenant_id: tenantId,
+      OR: [{ id: token }, { human_friendly_id: token }],
+    },
+    select,
+  });
+};
+
+const resolveLabTestPricing = async ({ labTestId, tenantId, facilityId }) => {
+  const prisma = require('@prisma/client');
+  if (facilityId && prisma?.facility_lab_test_offering?.findFirst) {
+    const offering = await prisma.facility_lab_test_offering.findFirst({
+      where: {
+        deleted_at: null,
+        is_active: true,
+        facility_id: facilityId,
+        lab_test_id: labTestId,
+      },
+      select: { unit_price: true, currency: true },
+    });
+    if (offering?.unit_price != null && toDecimalNumber(offering.unit_price) > 0) {
+      return {
+        unitPrice: toMoneyString(offering.unit_price),
+        currency: offering.currency || null,
+      };
+    }
+  }
+  const test = await prisma.lab_test.findFirst({
+    where: { id: labTestId, deleted_at: null, tenant_id: tenantId },
+    select: { unit_price: true, currency: true },
+  });
+  if (test?.unit_price != null && toDecimalNumber(test.unit_price) > 0) {
+    return {
+      unitPrice: toMoneyString(test.unit_price),
+      currency: test.currency || null,
+    };
+  }
+  return null;
+};
+
+const resolveLabPanelPricing = async ({ labPanelId, tenantId, facilityId }) => {
+  const prisma = require('@prisma/client');
+  if (facilityId && prisma?.facility_lab_panel_offering?.findFirst) {
+    const offering = await prisma.facility_lab_panel_offering.findFirst({
+      where: {
+        deleted_at: null,
+        is_active: true,
+        facility_id: facilityId,
+        lab_panel_id: labPanelId,
+      },
+      select: { unit_price: true, currency: true },
+    });
+    if (offering?.unit_price != null && toDecimalNumber(offering.unit_price) > 0) {
+      return {
+        unitPrice: toMoneyString(offering.unit_price),
+        currency: offering.currency || null,
+      };
+    }
+  }
+  const panel = await prisma.lab_panel.findFirst({
+    where: { id: labPanelId, deleted_at: null, tenant_id: tenantId },
+    select: { unit_price: true, currency: true },
+  });
+  if (panel?.unit_price != null && toDecimalNumber(panel.unit_price) > 0) {
+    return {
+      unitPrice: toMoneyString(panel.unit_price),
+      currency: panel.currency || null,
+    };
+  }
+  return null;
+};
+
+/**
+ * Build pending billing from lab order request selections (server-side fallback).
+ *
+ * @param {Object} options
+ * @returns {Promise<Object|null>}
+ */
+const buildLabOrderBillingFromRequest = async ({
+  requestedTests = [],
+  requestedPanels = [],
+  tenantId,
+  facilityId = null,
+}) => {
+  const lineItems = [];
+  let currency = 'USD';
+
+  for (const request of requestedTests) {
+    const requestedId = String(request?.lab_test_id || '').trim();
+    if (!requestedId) {
+      continue;
+    }
+    const test = await resolveCatalogRecord({
+      identifier: requestedId,
+      model: 'lab_test',
+      tenantId,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        unit_price: true,
+        currency: true,
+      },
+    });
+    if (!test) {
+      continue;
+    }
+    const pricing = await resolveLabTestPricing({
+      labTestId: test.id,
+      tenantId,
+      facilityId,
+    });
+    const unitPrice = pricing?.unitPrice ?? (test.unit_price != null ? toMoneyString(test.unit_price) : null);
+    if (pricing?.currency) {
+      currency = resolveBillingCurrency({ currency: pricing.currency }, currency);
+    } else if (test.currency) {
+      currency = resolveBillingCurrency({ currency: test.currency }, currency);
+    }
+    lineItems.push({
+      id: test.human_friendly_id || test.id,
+      label: test.name,
+      quantity: 1,
+      unit_price: unitPrice,
+      line_total: unitPrice,
+    });
+  }
+
+  for (const request of requestedPanels) {
+    const requestedId = String(request?.lab_panel_id || '').trim();
+    if (!requestedId || requestedId.startsWith('STD_LAB_PANEL:')) {
+      continue;
+    }
+    const panel = await resolveCatalogRecord({
+      identifier: requestedId,
+      model: 'lab_panel',
+      tenantId,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        unit_price: true,
+        currency: true,
+      },
+    });
+    if (!panel) {
+      continue;
+    }
+    const pricing = await resolveLabPanelPricing({
+      labPanelId: panel.id,
+      tenantId,
+      facilityId,
+    });
+    const unitPrice = pricing?.unitPrice ?? (panel.unit_price != null ? toMoneyString(panel.unit_price) : null);
+    if (pricing?.currency) {
+      currency = resolveBillingCurrency({ currency: pricing.currency }, currency);
+    } else if (panel.currency) {
+      currency = resolveBillingCurrency({ currency: panel.currency }, currency);
+    }
+    lineItems.push({
+      id: panel.human_friendly_id || panel.id,
+      label: panel.name,
+      quantity: 1,
+      unit_price: unitPrice,
+      line_total: unitPrice,
+    });
+  }
+
+  return buildPendingClinicalRequestBilling({ lineItems, currency });
 };
 
 const persistPharmacyOrderBilling = async (
@@ -550,6 +981,12 @@ module.exports = {
   persistProcedureBilling,
   persistTheatreCaseBilling,
   buildBillingSnapshot,
+  buildPendingClinicalRequestBilling,
+  normalizeBillingOfficeClinicalBilling,
+  buildLabOrderBillingFromRequest,
+  resolveClinicalInvoiceContexts,
+  syncClinicalOrderBillingSnapshotsFromInvoiceTx,
+  resolveInvoicePaymentStatus,
   extractStoredClinicalBilling,
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,

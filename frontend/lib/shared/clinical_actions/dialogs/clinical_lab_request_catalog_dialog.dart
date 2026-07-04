@@ -117,9 +117,7 @@ class _ClinicalLabRequestCatalogDialogState
       'clinical-lab-request-catalog';
 
   late final TextEditingController _searchController;
-  late final AppListTableColumnVisibilityController<
-      ClinicalActionCatalogOption
-  >
+  late final AppListTableColumnVisibilityController<ClinicalActionCatalogOption>
   _columnVisibilityController;
   late final List<ClinicalLabRequestCatalogSelection> _stagedSelections;
   Timer? _searchDebounce;
@@ -270,12 +268,13 @@ class _ClinicalLabRequestCatalogDialogState
               displayMode: AppListTableDisplayMode.table,
               tableHorizontalMargin: 0,
               isLoading: _isSearching,
-              rowColorBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
-                if (!_isStagedSelected(item, _selectionKind)) {
-                  return null;
-                }
-                return colorScheme.primaryContainer.withValues(alpha: 0.35);
-              },
+              rowColorBuilder:
+                  (BuildContext context, ClinicalActionCatalogOption item) {
+                    if (!_isStagedSelected(item, _selectionKind)) {
+                      return null;
+                    }
+                    return colorScheme.primaryContainer.withValues(alpha: 0.35);
+                  },
               search: AppListTableSearch<ClinicalActionCatalogOption>(
                 controller: _searchController,
                 semanticLabel: l10n.clinicalLabRequestSearchLabel,
@@ -297,9 +296,8 @@ class _ClinicalLabRequestCatalogDialogState
                   setState(() => _filterValue = value);
                 },
               ),
-              emptyBuilder: (_) => AppMutedText(
-                l10n.clinicalLabRequestNoCatalogOptions,
-              ),
+              emptyBuilder: (_) =>
+                  AppMutedText(l10n.clinicalLabRequestNoCatalogOptions),
               mobileItemBuilder:
                   (BuildContext context, ClinicalActionCatalogOption item) {
                     return AppListItemRow(
@@ -346,8 +344,7 @@ class _ClinicalLabRequestCatalogDialogState
       kind: kind,
     ).key;
     return _stagedSelections.any(
-      (ClinicalLabRequestCatalogSelection selection) =>
-          selection.key == key,
+      (ClinicalLabRequestCatalogSelection selection) => selection.key == key,
     );
   }
 
@@ -360,22 +357,24 @@ class _ClinicalLabRequestCatalogDialogState
       _selectionColumn(context),
       AppListTableColumn<ClinicalActionCatalogOption>(
         id: _nameColumnKey,
-        label: _showingTests
-            ? l10n.labTestNameLabel
-            : l10n.labPanelNameLabel,
-        sortComparator: (ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) =>
-            appListTableCompareText(left.name, right.name),
+        label: _showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) => appListTableCompareText(left.name, right.name),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Text(item.name ?? item.displayTitle);
         },
       ),
       AppListTableColumn<ClinicalActionCatalogOption>(
         id: _codeColumnKey,
-        label: _showingTests
-            ? l10n.labTestCodeLabel
-            : l10n.labPanelCodeLabel,
-        sortComparator: (ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) =>
-            appListTableCompareText(left.code, right.code),
+        label: _showingTests ? l10n.labTestCodeLabel : l10n.labPanelCodeLabel,
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) => appListTableCompareText(left.code, right.code),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Text(item.code ?? l10n.profileUnknownValue);
         },
@@ -383,8 +382,11 @@ class _ClinicalLabRequestCatalogDialogState
       AppListTableColumn<ClinicalActionCatalogOption>(
         id: _categoryColumnKey,
         label: l10n.labCategoryLabel,
-        sortComparator: (ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) =>
-            appListTableCompareText(left.category, right.category),
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) => appListTableCompareText(left.category, right.category),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Text(item.category ?? l10n.profileUnknownValue);
         },
@@ -393,9 +395,13 @@ class _ClinicalLabRequestCatalogDialogState
         id: _priceColumnKey,
         label: l10n.clinicalRequestUnitPriceLabel,
         numeric: true,
-        sortComparator: (ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) {
-          return (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0);
-        },
+        sortComparator:
+            (
+              ClinicalActionCatalogOption left,
+              ClinicalActionCatalogOption right,
+            ) {
+              return (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0);
+            },
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Padding(
             padding: EdgeInsetsDirectional.only(end: theme.spacing.md),
@@ -425,13 +431,14 @@ class _ClinicalLabRequestCatalogDialogState
           valueListenable: _searchController,
           builder: (BuildContext context, TextEditingValue value, Widget? _) {
             final List<ClinicalActionCatalogOption> visibleItems =
-                _sortedCatalogItems(_catalogForSelection()).where(
-              (ClinicalActionCatalogOption item) {
-                return _matchesCatalogSearch(item, value.text) &&
-                    _matchesCategoryFilter(item);
-              },
-            ).toList(growable: false);
-            final bool allSelected = visibleItems.isNotEmpty &&
+                _sortedCatalogItems(_catalogForSelection())
+                    .where((ClinicalActionCatalogOption item) {
+                      return _matchesCatalogSearch(item, value.text) &&
+                          _matchesCategoryFilter(item);
+                    })
+                    .toList(growable: false);
+            final bool allSelected =
+                visibleItems.isNotEmpty &&
                 visibleItems.every(
                   (ClinicalActionCatalogOption item) =>
                       _isStagedSelected(item, _selectionKind),

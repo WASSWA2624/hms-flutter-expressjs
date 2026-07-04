@@ -982,7 +982,10 @@ final class LabWorkspaceController
       _emit(
         latest.copyWith(
           catalogTests: _reconcileCatalogSnapshot(latest.catalogTests, tests),
-          catalogPanels: _reconcileCatalogSnapshot(latest.catalogPanels, panels),
+          catalogPanels: _reconcileCatalogSnapshot(
+            latest.catalogPanels,
+            panels,
+          ),
           catalogScope: scope,
           isLoadingCatalog: false,
           catalogLoadFailure: failure,
@@ -1664,10 +1667,7 @@ final class LabWorkspaceController
     return true;
   }
 
-  bool _worklistRowEquivalent(
-    LabOrderSummary next,
-    LabOrderSummary previous,
-  ) {
+  bool _worklistRowEquivalent(LabOrderSummary next, LabOrderSummary previous) {
     return next.id == previous.id &&
         next.displayId == previous.displayId &&
         next.status == previous.status &&
@@ -1742,8 +1742,7 @@ final class LabWorkspaceController
     List<LabCatalogItem> refreshed,
   ) {
     final Map<String, LabCatalogItem> merged = <String, LabCatalogItem>{
-      for (final LabCatalogItem item in refreshed)
-        _catalogItemKey(item): item,
+      for (final LabCatalogItem item in refreshed) _catalogItemKey(item): item,
     };
     for (final LabCatalogItem item in previous) {
       if (!item.isOfferedAtFacility) {
