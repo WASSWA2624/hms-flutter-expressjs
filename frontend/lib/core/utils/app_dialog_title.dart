@@ -1,45 +1,15 @@
 import 'package:flutter/widgets.dart';
 
-/// Normalizes dialog titles to Title Case while preserving mixed-case tokens and IDs.
-String toDialogTitleCase(String value) {
+/// Normalizes dialog titles to uppercase for consistent header styling.
+String toDialogTitleUppercase(String value) {
   if (value.trim().isEmpty) {
     return value;
   }
 
-  return value.splitMapJoin(
-    RegExp(r'(\s+)'),
-    onMatch: (Match match) => match.group(0)!,
-    onNonMatch: _titleCaseToken,
-  );
+  return value.toUpperCase();
 }
 
-String _titleCaseToken(String token) {
-  if (token.isEmpty) {
-    return token;
-  }
-
-  if (RegExp(r'\d').hasMatch(token)) {
-    return token;
-  }
-
-  if (_hasMixedCase(token)) {
-    return token;
-  }
-
-  if (token.length == 1) {
-    return token.toUpperCase();
-  }
-
-  return '${token[0].toUpperCase()}${token.substring(1).toLowerCase()}';
-}
-
-bool _hasMixedCase(String token) {
-  final bool hasUpper = token.contains(RegExp(r'[A-Z]'));
-  final bool hasLower = token.contains(RegExp(r'[a-z]'));
-  return hasUpper && hasLower;
-}
-
-/// Applies [toDialogTitleCase] to plain [Text] dialog titles.
+/// Applies [toDialogTitleUppercase] to plain [Text] dialog titles.
 Widget normalizeDialogTitleWidget(Widget title) {
   if (title is! Text) {
     return title;
@@ -51,7 +21,7 @@ Widget normalizeDialogTitleWidget(Widget title) {
     if (data == null) {
       return title;
     }
-    return _copyText(title, toDialogTitleCase(data));
+    return _copyText(title, toDialogTitleUppercase(data));
   }
 
   if (textSpan is! TextSpan ||
@@ -60,7 +30,7 @@ Widget normalizeDialogTitleWidget(Widget title) {
     return title;
   }
 
-  return _copyText(title, toDialogTitleCase(textSpan.text!));
+  return _copyText(title, toDialogTitleUppercase(textSpan.text!));
 }
 
 Text _copyText(Text source, String data) {

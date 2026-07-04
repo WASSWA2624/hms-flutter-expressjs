@@ -55,7 +55,7 @@ void main() {
     await tester.tap(find.text('Open dialog'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Confirm Action'), findsOneWidget);
+    expect(find.text('CONFIRM ACTION'), findsOneWidget);
     expect(openerFocusNode.hasFocus, isFalse);
 
     await tester.tap(find.text('Close'));
@@ -87,19 +87,19 @@ void main() {
     expect(find.text('Middle name (optional)'), findsOneWidget);
   });
 
-  testWidgets('AppDialog normalizes all-caps titles to title case', (
+  testWidgets('AppDialog uppercases dialog header titles', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
       const AppDialog(
-        title: Text('LAB RESULT ENTRY'),
+        title: Text('Lab result entry'),
         content: SizedBox(height: 120, child: Text('Dialog body')),
       ),
     );
 
-    expect(find.text('Lab Result Entry'), findsOneWidget);
-    expect(find.text('LAB RESULT ENTRY'), findsNothing);
+    expect(find.text('LAB RESULT ENTRY'), findsOneWidget);
+    expect(find.text('Lab result entry'), findsNothing);
   });
 
   testWidgets('desktop header drag moves the dialog surface', (
@@ -116,19 +116,19 @@ void main() {
 
     final Finder dialog = find.byType(Dialog);
     final Offset dialogBefore = tester.getTopLeft(dialog);
-    final Offset titleBefore = tester.getTopLeft(find.text('Move Encounter'));
+    final Offset titleBefore = tester.getTopLeft(find.text('MOVE ENCOUNTER'));
 
-    await tester.drag(find.text('Move Encounter'), const Offset(80, 40));
+    await tester.drag(find.text('MOVE ENCOUNTER'), const Offset(80, 40));
     await tester.pump();
 
     expect(tester.getTopLeft(dialog).dx, closeTo(dialogBefore.dx + 80, 1));
     expect(tester.getTopLeft(dialog).dy, closeTo(dialogBefore.dy + 40, 1));
     expect(
-      tester.getTopLeft(find.text('Move Encounter')).dx,
+      tester.getTopLeft(find.text('MOVE ENCOUNTER')).dx,
       closeTo(titleBefore.dx + 80, 1),
     );
     expect(
-      tester.getTopLeft(find.text('Move Encounter')).dy,
+      tester.getTopLeft(find.text('MOVE ENCOUNTER')).dy,
       closeTo(titleBefore.dy + 40, 1),
     );
   });
