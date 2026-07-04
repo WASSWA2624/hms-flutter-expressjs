@@ -1,49 +1,127 @@
-# Lab Result Report Preview — UI refinements
+# Laboratory Result Report — Print Layout Refinement
 
-Refine the **Result Report Preview** dialog (`_LabReportPreviewDialog` in `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`) shown when previewing/printing lab results. Match existing HMS patterns; prefer shared-component fixes over one-off styling.
+## Objective
 
-## Context
+Refine the **Laboratory result report** print template (shared `PrintFormTemplate` standard layout) so the document reads like a clean clinical report: compact facility header, inline patient metadata, lab-order and print timestamp under the title, unchanged results table, and a single-row signature block.
 
-The dialog uses `AppDialog` + `AppReportPreviewPanel` + `AppListTable`. The toolbar currently exposes search and **Table settings** only. Patient metadata sits above the table; footer actions are **Reset selection** (tertiary) and **Print report**.
+**Reference:** attached screenshots of the current report (DemoCare General Hospital / Joshua Suuna / LAB0000006).
 
-## Requirements
+---
 
-### 1. Typography hierarchy (shared components first)
+## Scope
 
-- **`AppListTable`** (`frontend/lib/shared/components/app_list_table.dart`): Reduce table header weight — column headers and `#` currently use `FontWeight.w700`–`w800`; soften to a lighter emphasis (e.g. `w600`–`w700`) so headers do not overpower row content.
-- **`AppDialog`** (`frontend/lib/shared/components/app_dialog.dart`): Make the **dialog title** visually bolder/prominent (e.g. stronger weight on `_DialogHeader` title). Apply at component level so all dialogs benefit consistently.
+| In scope | Out of scope |
+| -------- | ------------ |
+| Shared print template layout (`PrintFormTemplate` standard layout) | Lab result table columns, abnormal-row styling, or result-entry logic |
+| Facility header ordering and fields | New data sources or API changes |
+| Patient / order / print metadata presentation | Legacy (non-standard) print layout |
+| Signature row layout | Footer note text |
 
-### 2. Search toolbar — add Filter control
+**Primary files:**
 
-- Beside **Table settings**, show a **Filter** button using existing `AppListTableSearch` / `AppSearchBar` APIs (`filterGroups`, `filterValue`, `onFilterChanged`, or `showAdvancedFilterButton` where appropriate).
-- Follow patterns from other workspaces (e.g. pharmacy, reports) for filter UX and l10n.
-- Suggested lab report filters: result status/flag (Normal, Abnormal, Pending, Cancelled, Negative, etc.) and/or selection state (selected vs unselected). Keep scope practical for preview/print workflow.
+- `frontend/lib/shared/printing/print_form_template.dart` — HTML/CSS layout
+- `frontend/lib/app/printing/print_form_template_context.dart` — facility branding data (contacts, address, details)
+- `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart` — lab report invocation (`printFormTemplateDocument`, `_reportContextReference`)
+- `frontend/test/shared/printing/print_form_template_test.dart` — update/add layout assertions
 
-### 3. Search must match all visible cell text
+---
 
-- Typing **"pending"** must surface rows whose **Result** shows the pending placeholder (`labStatusPendingResults`), not only rows with a stored result value.
-- Extend `_matchesReportItemSearch` so search covers every user-visible string in the table: test name, reference range, **displayed result** (including pending/cancelled placeholders), and flag label.
-- Search and filters should compose (both apply together).
+## Layout Requirements
 
-### 4. Patient identity — clearer prominence
+### 1. Facility header (top block)
 
-- Patient name and Patient ID above the table (`_PreviewMeta`) must be easy to scan at a glance — stronger typography and/or layout (e.g. label/value separation, `titleSmall`/`bodyLarge`, or a compact summary row). Do not rely on small `bodySmall` alone.
+**Order (top → bottom):**
 
-### 5. Reset selection — clearer action affordance
+1. **Facility name** (bold, prominent)
+2. **Address** — full address on **one line** (join line 1, city, country with commas; no line breaks)
+3. **Contacts** — only when present, comma-separated on one line:
+   - `Phone: {value}` if phone exists
+   - `Email: {value}` if email exists
+   - Example: `Phone: +2567001000, Email: info@democare.ug`
 
-- Replace or restyle the plain **Reset selection** tertiary text action so it reads as an intentional reset control (e.g. secondary button with reset/clear icon, consistent with other HMS actions). Keep existing `_resetSelection` behavior.
+**Remove from header:** facility **Type** and **Tenant** (stop populating `PrintFormBranding.details` for facility branding, or omit from render).
 
-## Acceptance criteria
+Keep logo placement as today (left of facility block).
 
-- [ ] Dialog title is bolder; table headers are noticeably less bold.
-- [ ] Filter button appears next to Table settings and filters rows correctly.
-- [ ] Search finds rows by flag, test name, range, result value, **and** pending/cancelled display text.
-- [ ] Patient name and ID are clearly visible without squinting.
-- [ ] Reset selection looks and behaves like a deliberate reset action.
-- [ ] Add/update l10n keys in `app_en.arb` as needed; run codegen if required.
-- [ ] No regressions to print flow, row selection, or column visibility.
+---
 
-## Out of scope
+### 2. Patient information (no bordered boxes)
 
-- Changing print template/HTML layout.
-- New backend fields or lab workflow logic.
+Replace the current 3-column bordered key-value grid with **plain inline text** — no borders, no boxed cells.
+
+**Single line** (comma-separated pairs):
+
+```
+Patient name: {name}, Patient ID: {id}, Encounter ID: {id}
+```
+
+- Omit any field whose value is empty.
+- Use existing l10n labels (`printFormPatientNameLabel`, `printFormPatientIdLabel`, `printFormEncounterIdLabel`).
+- Format: `{Label}: {value}` with `, ` between pairs.
+
+---
+
+### 3. Report title block
+
+Keep the main title (e.g. **Laboratory result report**) as `h1`.
+
+**Directly below the title** — one row with lab order and print timestamp:
+
+```
+Lab order: {LAB0000006}, Printed on: {date}, Printed at: {time}
+```
+
+| Field | Rule |
+| ----- | ---- |
+| Lab order | Move out of patient context; use `PrintFormContextReference` value (label: `labOrderFieldLabel`) |
+| Printed on | Date only — locale-formatted date from `printedAt` |
+| Printed at | Time only — locale-formatted time from `printedAt` |
+
+- Add l10n keys if needed (`printFormPrintedOnLabel`, `printFormPrintedAtLabel`) — do not hardcode strings.
+- Remove the separate top-right metadata box that currently shows a single combined “Printed” datetime.
+
+---
+
+### 4. Results table
+
+**No changes.** Keep columns: Tests, Reference range, Result, Flag. Preserve abnormal-result row highlighting (red text / bold).
+
+---
+
+### 5. Signatures (footer of content)
+
+**Printed by** and **Verified by** on the **same horizontal row** (two equal columns), each with:
+
+- Uppercase label
+- Printed name (when available)
+- Ample space below for **signature / stamp** line
+
+Ensure sufficient width and min-height so both blocks fit side-by-side on A4 without wrapping labels onto separate rows.
+
+---
+
+## Acceptance Criteria
+
+- [ ] Facility header shows name → single-line address → phone/email contacts only; no Type or Tenant
+- [ ] Patient name, Patient ID, and Encounter ID appear inline on one line without bordered boxes
+- [ ] Lab order ID sits below the report title, not in the patient line
+- [ ] Print timestamp split into **Printed on** (date) and **Printed at** (time) on the same row as lab order
+- [ ] Results table and abnormal highlighting unchanged
+- [ ] Printed by / Verified by share one row with room for signature and stamp
+- [ ] All new user-visible strings in `app_en.arb`
+- [ ] `flutter test frontend/test/shared/printing/print_form_template_test.dart` passes
+- [ ] Lab report print preview matches the layout above
+
+---
+
+## Quality Gate
+
+From `frontend/`:
+
+```bash
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test test/shared/printing/print_form_template_test.dart
+```
+
+Manually print/preview a lab report with at least one abnormal result row to confirm visual layout.

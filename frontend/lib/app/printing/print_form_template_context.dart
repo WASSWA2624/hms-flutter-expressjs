@@ -110,6 +110,8 @@ Future<void> printFormTemplateDocument({
       signatures: effectiveSignatures,
       printedAt: printedAt,
       printedLabel: l10n.printFormPrintedLabel,
+      printedOnLabel: l10n.printFormPrintedOnLabel,
+      printedAtLabel: l10n.printFormPrintedAtLabel,
       footerNote: footerNote,
       appBranding: templateContext.appBranding,
       facilityBranding: templateContext.facilityBranding,
@@ -198,14 +200,14 @@ PrintFormBranding? _facilityBranding({
 
   final FacilityContactAddress contactAddress =
       setup?.contactAddress ?? const FacilityContactAddress();
-  final String? tenantName = _firstText(<String?>[
-    setup?.tenant?.name,
-    user?.tenantName,
+  final String fullAddress = _join(<String?>[
+    contactAddress.addressLine1,
+    contactAddress.city,
+    contactAddress.country,
   ]);
-  final String? facilityType = _firstText(<String?>[
-    facility?.type.apiValue,
-    user?.facilityType,
-  ]);
+  final List<String> addressLines = fullAddress.isEmpty
+      ? const <String>[]
+      : <String>[fullAddress];
 
   return PrintFormBranding(
     name: facilityName,
@@ -215,15 +217,7 @@ PrintFormBranding? _facilityBranding({
       if (_hasText(contactAddress.phone)) 'Phone: ${contactAddress.phone}',
       if (_hasText(contactAddress.email)) 'Email: ${contactAddress.email}',
     ],
-    addressLines: <String>[
-      if (_hasText(contactAddress.addressLine1))
-        contactAddress.addressLine1!.trim(),
-      _join(<String?>[contactAddress.city, contactAddress.country]),
-    ],
-    details: <String>[
-      if (_hasText(facilityType)) 'Type: ${_displayToken(facilityType!)}',
-      if (_hasText(tenantName)) 'Tenant: ${tenantName!.trim()}',
-    ],
+    addressLines: addressLines,
     isSubscribed: _hasFacilitySubscription(session),
   );
 }
@@ -272,17 +266,4 @@ String _join(Iterable<String?> values) {
       .map((String? value) => value?.trim() ?? '')
       .where((String value) => value.isNotEmpty)
       .join(', ');
-}
-
-String _displayToken(String value) {
-  return value
-      .trim()
-      .replaceAll(RegExp(r'[_-]+'), ' ')
-      .split(RegExp(r'\s+'))
-      .where((String part) => part.isNotEmpty)
-      .map((String part) {
-        final String lower = part.toLowerCase();
-        return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-      })
-      .join(' ');
 }

@@ -126,6 +126,7 @@ void main() {
                 printedByName: 'Lab Tech',
                 signatureStampLabel: 'Signature / stamp',
               ),
+              printedAt: DateTime(2026, 7, 4, 16, 1),
               pages: const <PrintFormPage>[
                 PrintFormPage(bodyHtml: '<p>First page</p>'),
                 PrintFormPage(bodyHtml: '<p>Second page</p>'),
@@ -137,11 +138,62 @@ void main() {
       ),
     );
 
-    expect(html, contains('print-template-patient-context'));
-    expect(html, contains('LAB0000006'));
+    expect(html, contains('print-template-patient-inline'));
+    expect(html, contains('Patient name: Joshua Evans'));
+    expect(html, contains('print-template-title-meta'));
+    expect(html, contains('Lab order: LAB0000006'));
+    expect(html, contains('Printed on:'));
+    expect(html, contains('Printed at:'));
+    expect(html, isNot(contains('<div class="print-template-kv-item">')));
     expect(html, contains('Printed by'));
     expect(html, contains('Lab Tech'));
     expect(_occurrences(html, '<div class="print-template-signatures">'), 1);
+  });
+
+  testWidgets('renders facility header with address before contacts', (
+    tester,
+  ) async {
+    late String html;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext context) {
+            html = PrintFormTemplate.build(
+              context: context,
+              title: 'Laboratory result report',
+              appBranding: const PrintFormBranding(
+                name: 'HOSSPI',
+                kind: PrintFormBrandingKind.app,
+              ),
+              facilityBranding: const PrintFormBranding(
+                name: 'DemoCare General Hospital',
+                kind: PrintFormBrandingKind.facility,
+                contacts: <String>[
+                  'Phone: +2567001000',
+                  'Email: info@democare.ug',
+                ],
+                addressLines: <String>[
+                  '1 Demo Hospital Avenue, Kampala, Uganda',
+                ],
+              ),
+              patientContext: const PrintFormPatientContext(
+                patientNameLabel: 'Patient name',
+                patientName: 'Joshua Suuna',
+              ),
+              bodyHtml: '<p>Results</p>',
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    expect(html, contains('DemoCare General Hospital'));
+    expect(html, contains('1 Demo Hospital Avenue, Kampala, Uganda'));
+    expect(html, contains('Phone: +2567001000, Email: info@democare.ug'));
+    expect(html, isNot(contains('Type:')));
+    expect(html, isNot(contains('Tenant:')));
   });
 
   testWidgets('drops empty explicit pages instead of printing blanks', (

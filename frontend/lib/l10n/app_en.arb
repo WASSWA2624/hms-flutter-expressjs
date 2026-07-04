@@ -12908,6 +12908,14 @@
   "@printFormPrintedLabel": {
     "description": "Label for the print timestamp shown on report documents."
   },
+  "printFormPrintedOnLabel": "Printed on",
+  "@printFormPrintedOnLabel": {
+    "description": "Date-only label for when a report was printed."
+  },
+  "printFormPrintedAtLabel": "Printed at",
+  "@printFormPrintedAtLabel": {
+    "description": "Time-only label for when a report was printed."
+  },
   "printFormPrintedByLabel": "Printed by",
   "@printFormPrintedByLabel": {
     "description": "Signature label for the user who printed a report."

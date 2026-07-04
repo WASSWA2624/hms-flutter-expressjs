@@ -9985,6 +9985,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printFormPrintedLabel => 'Printed';
 
   @override
+  String get printFormPrintedOnLabel => 'Printed on';
+
+  @override
+  String get printFormPrintedAtLabel => 'Printed at';
+
+  @override
   String get printFormPrintedByLabel => 'Printed by';
 
   @override

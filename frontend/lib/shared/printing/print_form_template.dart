@@ -33,12 +33,23 @@ final class PrintFormPatientContext {
 
   List<PrintFormMetadataItem> get items {
     return <PrintFormMetadataItem>[
-      PrintFormMetadataItem(label: patientNameLabel, value: patientName),
-      if (patientIdLabel != null && patientId != null)
-        PrintFormMetadataItem(label: patientIdLabel!, value: patientId!),
-      if (encounterIdLabel != null && encounterId != null)
-        PrintFormMetadataItem(label: encounterIdLabel!, value: encounterId!),
-    ].where((PrintFormMetadataItem item) => item.hasValue).toList(growable: false);
+          PrintFormMetadataItem(label: patientNameLabel, value: patientName),
+          if (patientIdLabel != null && patientId != null)
+            PrintFormMetadataItem(label: patientIdLabel!, value: patientId!),
+          if (encounterIdLabel != null && encounterId != null)
+            PrintFormMetadataItem(
+              label: encounterIdLabel!,
+              value: encounterId!,
+            ),
+        ]
+        .where((PrintFormMetadataItem item) => item.hasValue)
+        .toList(growable: false);
+  }
+
+  String inlineText() {
+    return items
+        .map((PrintFormMetadataItem item) => '${item.label}: ${item.value}')
+        .join(', ');
   }
 
   bool get hasCompactHeader =>
@@ -47,10 +58,7 @@ final class PrintFormPatientContext {
 
 @immutable
 final class PrintFormContextReference {
-  const PrintFormContextReference({
-    required this.label,
-    required this.value,
-  });
+  const PrintFormContextReference({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -121,6 +129,8 @@ abstract final class PrintFormTemplate {
     PrintFormSignatures? signatures,
     DateTime? printedAt,
     String printedLabel = 'Printed',
+    String printedOnLabel = 'Printed on',
+    String printedAtLabel = 'Printed at',
     String? footerNote,
   }) {
     assert(
@@ -137,16 +147,15 @@ abstract final class PrintFormTemplate {
         patientContext != null ||
         contextReference != null ||
         signatures != null;
-    final List<PrintFormMetadataItem> printedMetadata =
-        <PrintFormMetadataItem>[
-          PrintFormMetadataItem(
-            label: printedLabel,
-            value: AppFormatters.dateTime(
-              effectivePrintedAt,
-              Localizations.localeOf(context),
-            ),
-          ),
-        ];
+    final List<PrintFormMetadataItem> printedMetadata = <PrintFormMetadataItem>[
+      PrintFormMetadataItem(
+        label: printedLabel,
+        value: AppFormatters.dateTime(
+          effectivePrintedAt,
+          Localizations.localeOf(context),
+        ),
+      ),
+    ];
     final List<PrintFormMetadataItem> effectiveMetadata = useStandardLayout
         ? printedMetadata
         : <PrintFormMetadataItem>[
@@ -169,12 +178,15 @@ abstract final class PrintFormTemplate {
       final PrintFormPage page = entry.value;
       return useStandardLayout
           ? _standardPage(
+              context: context,
               branding: branding,
               title: page.title ?? title,
               subtitle: subtitle,
               patientContext: patientContext,
               contextReference: contextReference,
-              printedMetadata: printedMetadata,
+              printedAt: effectivePrintedAt,
+              printedOnLabel: printedOnLabel,
+              printedAtLabel: printedAtLabel,
               bodyHtml: page.bodyHtml,
               signatures: pageNumber == totalPages ? signatures : null,
               pageNumber: pageNumber,
@@ -308,12 +320,15 @@ $renderedPages
   }
 
   static String _standardPage({
+    required BuildContext context,
     required PrintFormBranding branding,
     required String title,
     required String? subtitle,
     required PrintFormPatientContext? patientContext,
     required PrintFormContextReference? contextReference,
-    required List<PrintFormMetadataItem> printedMetadata,
+    required DateTime printedAt,
+    required String printedOnLabel,
+    required String printedAtLabel,
     required String bodyHtml,
     required PrintFormSignatures? signatures,
     required int pageNumber,
@@ -325,13 +340,11 @@ $renderedPages
     return '''
 <article class="print-template-page">
   ${isFirstPage ? _header(branding) : _compactHeader(patientContext)}
-  ${isFirstPage ? _patientContextSection(patientContext, contextReference) : ''}
-  <section class="print-template-title">
-    <div>
-      <h1>${escape(title)}</h1>
-      ${_optionalText(subtitle, 'p', 'print-template-subtitle')}
-    </div>
-    ${isFirstPage ? _metadata(printedMetadata) : ''}
+  ${isFirstPage ? _patientContextSection(patientContext) : ''}
+  <section class="print-template-title print-template-title--standard">
+    <h1>${escape(title)}</h1>
+    ${_optionalText(subtitle, 'p', 'print-template-subtitle')}
+    ${isFirstPage ? _titleMetaRow(context: context, contextReference: contextReference, printedAt: printedAt, printedOnLabel: printedOnLabel, printedAtLabel: printedAtLabel) : ''}
   </section>
   <section class="print-template-content">
     $bodyHtml
@@ -381,25 +394,40 @@ $renderedPages
 
   static String _patientContextSection(
     PrintFormPatientContext? patientContext,
-    PrintFormContextReference? contextReference,
   ) {
-    final List<PrintFormMetadataItem> items = <PrintFormMetadataItem>[
-      ...?patientContext?.items,
-      if (contextReference != null && contextReference.hasValue)
-        PrintFormMetadataItem(
-          label: contextReference.label,
-          value: contextReference.value,
-        ),
-    ];
-    final String grid = keyValueGrid(items);
-    if (grid.isEmpty) {
+    if (patientContext == null) {
+      return '';
+    }
+
+    final String inlineText = patientContext.inlineText().trim();
+    if (inlineText.isEmpty) {
       return '';
     }
 
     return '''
 <section class="print-template-patient-context">
-  $grid
+  <p class="print-template-patient-inline">${escape(inlineText)}</p>
 </section>
+''';
+  }
+
+  static String _titleMetaRow({
+    required BuildContext context,
+    required PrintFormContextReference? contextReference,
+    required DateTime printedAt,
+    required String printedOnLabel,
+    required String printedAtLabel,
+  }) {
+    final Locale locale = Localizations.localeOf(context);
+    final List<String> parts = <String>[
+      if (contextReference != null && contextReference.hasValue)
+        '${contextReference.label}: ${contextReference.value}',
+      '$printedOnLabel: ${AppFormatters.mediumDate(printedAt, locale)}',
+      '$printedAtLabel: ${AppFormatters.time(printedAt, locale)}',
+    ];
+
+    return '''
+<p class="print-template-title-meta">${escape(parts.join(', '))}</p>
 ''';
   }
 
@@ -455,9 +483,13 @@ $renderedPages
     final List<String> contacts = _normalizedLines(branding.contacts);
     final List<String> addressLines = _normalizedLines(branding.addressLines);
     final List<String> details = _normalizedLines(branding.details);
+    final String? addressLine = addressLines.isEmpty
+        ? null
+        : addressLines.join(', ');
+    final String? contactLine = contacts.isEmpty ? null : contacts.join(', ');
     final List<String> secondaryLines = <String>[
-      ...contacts,
-      ...addressLines,
+      ?addressLine,
+      ?contactLine,
       ...details,
     ];
 
@@ -541,11 +573,25 @@ $renderedPages
     final String standardLayoutStyles = useStandardLayout
         ? '''
   .print-template-patient-context {
+    margin-bottom: 4mm;
+  }
+  .print-template-patient-inline {
+    color: #111827;
+    font-size: 11px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .print-template-title--standard {
+    display: block;
     margin-bottom: 5mm;
   }
-  .print-template-patient-context .print-template-kv {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2mm;
+  .print-template-title--standard h1 {
+    margin: 0 0 2mm;
+  }
+  .print-template-title-meta {
+    color: #374151;
+    font-size: 10.5px;
+    font-weight: 700;
     margin: 0;
   }
   .print-template-compact-header {
@@ -572,19 +618,26 @@ $renderedPages
   }
   .print-template-signature-name {
     font-weight: 700;
-    margin-bottom: 8mm;
-    min-height: 4mm;
+    margin-bottom: 10mm;
+    min-height: 6mm;
   }
   .print-template-signature-stamp {
     border-top: 1px solid #111827;
     color: #6b7280;
     font-size: 9px;
-    min-height: 10mm;
+    min-height: 14mm;
     padding-top: 2mm;
   }
   .print-template-signatures {
     break-inside: avoid;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 20mm;
     page-break-inside: avoid;
+  }
+  .print-template-signatures .print-template-signature {
+    flex: 1 1 0;
+    min-width: 0;
   }
 '''
         : '';

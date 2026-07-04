@@ -18604,6 +18604,18 @@ abstract class AppLocalizations {
   /// **'Printed'**
   String get printFormPrintedLabel;
 
+  /// Date-only label for when a report was printed.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed on'**
+  String get printFormPrintedOnLabel;
+
+  /// Time-only label for when a report was printed.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed at'**
+  String get printFormPrintedAtLabel;
+
   /// Signature label for the user who printed a report.
   ///
   /// In en, this message translates to:
