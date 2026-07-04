@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -110,7 +112,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
             onRemoveSelected: _selectedRequestKeys.isEmpty
                 ? null
-                : _deleteSelectedRequests,
+                : () => unawaited(_confirmAndDeleteSelectedRequests()),
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           Expanded(child: _buildSelectedTable(context)),
@@ -149,8 +151,8 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             ..addAll(keys);
         });
       },
-      onDeleteItem: ( _PendingLabRequest request) {
-        _deleteRequest(_requestIndex(request));
+      onDeleteItem: (_PendingLabRequest request) {
+        unawaited(_confirmAndDeleteRequest(request));
       },
       emptyLabel: l10n.clinicalLabRequestSelectedTableEmptyLabel,
       enabled: !_isSaving,
@@ -327,6 +329,53 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       secondaryText: item.specimenType,
       status: item.status,
     );
+  }
+
+  Future<void> _confirmAndDeleteRequest(_PendingLabRequest request) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool confirmed =
+        await showClinicalRequestRemoveItemsConfirmationDialog(
+          context: context,
+          items: <ClinicalRequestRemovePreviewItem>[
+            ClinicalRequestRemovePreviewItem(
+              name: request.option.name ?? request.option.displayTitle,
+              typeLabel: _labRequestTypeLabel(l10n, request.kind),
+            ),
+          ],
+        );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    _deleteRequest(_requestIndex(request));
+  }
+
+  Future<void> _confirmAndDeleteSelectedRequests() async {
+    if (_selectedRequestKeys.isEmpty) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final List<_PendingLabRequest> selectedRequests = _requests
+        .where(
+          (_PendingLabRequest request) =>
+              _selectedRequestKeys.contains(_requestKey(request)),
+        )
+        .toList(growable: false);
+    final bool confirmed =
+        await showClinicalRequestRemoveItemsConfirmationDialog(
+          context: context,
+          items: selectedRequests
+              .map(
+                (_PendingLabRequest request) => ClinicalRequestRemovePreviewItem(
+                  name: request.option.name ?? request.option.displayTitle,
+                  typeLabel: _labRequestTypeLabel(l10n, request.kind),
+                ),
+              )
+              .toList(growable: false),
+        );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    _deleteSelectedRequests();
   }
 
   void _deleteRequest(int index) {

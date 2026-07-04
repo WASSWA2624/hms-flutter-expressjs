@@ -96,6 +96,13 @@ void main() {
       await tester.tap(find.text('Remove item').first);
       await tester.pumpAndSettle();
 
+      expect(find.text('REMOVE LAB REQUEST?'), findsOneWidget);
+      expect(find.text('Complete blood count'), findsWidgets);
+      expect(find.text('Test'), findsWidgets);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Remove'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Complete blood count'), findsNothing);
       expect(
         find.text(
@@ -103,6 +110,35 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('cancel keeps lab request when remove confirmation is dismissed', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: _sampleCatalogOptions(),
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await _tapRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Remove item').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('REMOVE LAB REQUEST?'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('REMOVE LAB REQUEST?'), findsNothing);
+      expect(find.text('Complete blood count'), findsWidgets);
     });
 
     testWidgets('shows patient context strip and toolbar remove selected', (

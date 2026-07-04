@@ -21479,6 +21479,27 @@
   "@clinicalRequestRemoveItemAction": {
     "description": "Remove a single item from a clinical request selection table."
   },
+  "clinicalLabRequestRemoveConfirmTitle": "Remove lab request?",
+  "@clinicalLabRequestRemoveConfirmTitle": {
+    "description": "Title for confirming removal of one lab request from the selection table."
+  },
+  "clinicalLabRequestRemoveConfirmTitleMultiple": "Remove {count} lab requests?",
+  "@clinicalLabRequestRemoveConfirmTitleMultiple": {
+    "description": "Title for confirming removal of multiple lab requests from the selection table.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalLabRequestRemoveConfirmBody": "The following will be removed from this request:",
+  "@clinicalLabRequestRemoveConfirmBody": {
+    "description": "Body text above the list of lab requests pending removal."
+  },
+  "clinicalLabRequestRemoveConfirmAction": "Remove",
+  "@clinicalLabRequestRemoveConfirmAction": {
+    "description": "Confirm button label for removing lab requests from the selection table."
+  },
   "clinicalRequestSelectedNameColumnLabel": "Test name",
   "@clinicalRequestSelectedNameColumnLabel": {
     "description": "Test or panel name column on selected catalog item table."

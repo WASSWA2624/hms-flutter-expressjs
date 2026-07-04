@@ -92,6 +92,136 @@ final class ClinicalRequestPatientContext {
   static bool _isBlank(String? value) => value == null || value.trim().isEmpty;
 }
 
+/// One row shown in the remove-items confirmation dialog.
+@immutable
+final class ClinicalRequestRemovePreviewItem {
+  const ClinicalRequestRemovePreviewItem({
+    required this.name,
+    required this.typeLabel,
+  });
+
+  final String name;
+  final String typeLabel;
+}
+
+/// Confirms removal of selected catalog items before deleting from a request.
+Future<bool> showClinicalRequestRemoveItemsConfirmationDialog({
+  required BuildContext context,
+  required List<ClinicalRequestRemovePreviewItem> items,
+}) async {
+  if (items.isEmpty) {
+    return false;
+  }
+
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext context) =>
+        _ClinicalRequestRemoveItemsConfirmationDialog(items: items),
+  );
+  return confirmed == true;
+}
+
+class _ClinicalRequestRemoveItemsConfirmationDialog extends StatelessWidget {
+  const _ClinicalRequestRemoveItemsConfirmationDialog({
+    required this.items,
+  });
+
+  final List<ClinicalRequestRemovePreviewItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool isSingleItem = items.length == 1;
+    final String title = isSingleItem
+        ? l10n.clinicalLabRequestRemoveConfirmTitle
+        : l10n.clinicalLabRequestRemoveConfirmTitleMultiple(items.length);
+    final String submitLabel = isSingleItem
+        ? l10n.clinicalLabRequestRemoveConfirmAction
+        : l10n.clinicalRequestRemoveSelectedAction;
+
+    return AppDialog(
+      title: Text(title),
+      icon: const Icon(Icons.delete_outline),
+      maxWidth: 560,
+      scrollable: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.clinicalLabRequestRemoveConfirmBody,
+            style: theme.textTheme.bodyMedium,
+          ),
+          SizedBox(height: theme.spacing.md),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(theme.spacing.xs),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 280),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (BuildContext context, int index) {
+                  return Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: colorScheme.outlineVariant,
+                  );
+                },
+                itemBuilder: (BuildContext context, int index) {
+                  final ClinicalRequestRemovePreviewItem item = items[index];
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: theme.spacing.md,
+                      vertical: theme.spacing.sm,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: theme.spacing.sm),
+                        Text(
+                          item.typeLabel,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: submitLabel,
+          leadingIcon: Icons.delete_outline,
+          color: colorScheme.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+  }
+}
+
 /// Single-line patient summary for clinical request toolbars.
 class ClinicalRequestPatientContextStrip extends StatelessWidget {
   const ClinicalRequestPatientContextStrip({

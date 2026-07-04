@@ -31167,6 +31167,30 @@ abstract class AppLocalizations {
   /// **'Remove item'**
   String get clinicalRequestRemoveItemAction;
 
+  /// Title for confirming removal of one lab request from the selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove lab request?'**
+  String get clinicalLabRequestRemoveConfirmTitle;
+
+  /// Title for confirming removal of multiple lab requests from the selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} lab requests?'**
+  String clinicalLabRequestRemoveConfirmTitleMultiple(int count);
+
+  /// Body text above the list of lab requests pending removal.
+  ///
+  /// In en, this message translates to:
+  /// **'The following will be removed from this request:'**
+  String get clinicalLabRequestRemoveConfirmBody;
+
+  /// Confirm button label for removing lab requests from the selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get clinicalLabRequestRemoveConfirmAction;
+
   /// Test or panel name column on selected catalog item table.
   ///
   /// In en, this message translates to:

@@ -16685,6 +16685,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestRemoveItemAction => 'Remove item';
 
   @override
+  String get clinicalLabRequestRemoveConfirmTitle => 'Remove lab request?';
+
+  @override
+  String clinicalLabRequestRemoveConfirmTitleMultiple(int count) {
+    return 'Remove $count lab requests?';
+  }
+
+  @override
+  String get clinicalLabRequestRemoveConfirmBody =>
+      'The following will be removed from this request:';
+
+  @override
+  String get clinicalLabRequestRemoveConfirmAction => 'Remove';
+
+  @override
   String get clinicalRequestSelectedNameColumnLabel => 'Test name';
 
   @override
