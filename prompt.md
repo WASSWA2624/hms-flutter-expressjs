@@ -1,46 +1,68 @@
-# Refine laboratory print report — signature footer layout
+# Refine patient lab request flow
 
 ## Context
-Laboratory result reports (e.g. **Laboratory result report** for DemoCare General Hospital) use the shared print template in `frontend/lib/shared/printing/print_form_template.dart`. Header, patient metadata, results table, and footer note are acceptable — **do not change them**.
 
-## Problem
-The **Printed by** / **Verified by** signature block is not finalized. On the current output:
+Entry point: **Patient detail → Quick actions → Request lab** (`ClinicalLabOrderActionDialog`).
 
-- **Printed by** may show a name (e.g. “Platform Demo”); **Verified by** may have no name.
-- Because the name line is omitted when empty, the signature/stamp rule (the horizontal line above where someone signs) sits higher on the right than on the left.
-- When the results table is short, the signature block and page footer float mid-page instead of anchoring to the bottom, leaving awkward empty space.
+Current behavior uses a compact modal with a dropdown-style catalog picker (`ClinicalLabRequestCatalogDialog`). Replace that picker with the standard **`AppListTable`** pattern used elsewhere (e.g. patient registry, lab enable-offering dialog in `lab_catalog_dialogs.dart`).
 
-## Goal
-Polish only the signature/footer region so the report looks balanced in print preview and on paper.
+## 1. Request Lab dialog (main modal)
 
-## Requirements
+Update `ClinicalLabOrderActionDialog`:
 
-### 1. Horizontally aligned signature lines
-- The **signature/stamp rule** under **Printed by** and **Verified by** must sit on the **same baseline**, left and right.
-- Alignment must hold in all cases:
-  - name present on one side only
-  - names present on both sides
-  - names absent on both sides
-- Labels (“PRINTED BY”, “VERIFIED BY”) stay at the top of each column; optional names occupy a **fixed reserved area** above the rule so missing names do not shift the line.
+- Open **maximized by default** (`AppDialog.initialMaximized: true`).
+- **Remove the Cancel button**; closing via the dialog X / backdrop is sufficient.
+- Add a **leading icon** to the primary **Request lab** action button (match existing icon usage, e.g. `Icons.science_outlined`).
+- Keep the existing flow: help text → **Add items** / **Review billing** toolbar → summary bar (item count + total price) → selected-items panel → submit.
 
-### 2. Bottom-anchored footer block
-- On the **last page**, treat **signatures + footer note** (“Generated from laboratory workflow data.”) as one footer unit.
-- That unit should sit at the **bottom of the printable page area**, even when body content is short.
-- Do not overlap or collide with the results table on longer reports; content may grow upward naturally when needed.
+## 2. Choose lab tests dialog (Add items)
 
-### 3. Scope and constraints
-- Change layout/CSS (and minimal markup if needed) in the shared print template only.
-- Preserve existing labels, copy, and data wiring (`PrintFormSignatures`, l10n keys).
-- Apply consistently to all reports using the standard print layout, not only lab reports.
-- Keep print-safe behavior: no broken page breaks, no clipped signature area.
+Replace the current search dropdown in `ClinicalLabRequestCatalogDialog` with a table-based multi-select picker.
 
-## Acceptance criteria
-- [ ] With **Printed by** filled and **Verified by** empty, both signature rules align on one horizontal line.
-- [ ] With both names filled, both rules still align.
-- [ ] With both names empty, both rules still align.
-- [ ] Short-content report: signatures and footer note appear at the bottom of the page, not immediately under the table.
-- [ ] Long-content report: layout remains readable; signatures stay on the last page only.
-- [ ] Existing print template tests pass; add/update tests for signature alignment and bottom anchoring if practical.
+### Layout
 
-## Reference
-See attached lab report screenshots: misaligned **Verified by** stamp line vs **Printed by**, and unused vertical space above the signature block.
+- Maximized dialog titled **Choose lab tests**.
+- **Segmented control** at top: **Individual tests** | **Lab panels** (keep current tab behavior).
+- Below: **`AppListTable`** with the standard toolbar:
+  - Search bar (name, code, category, specimen, status)
+  - **Advanced filters**
+  - **Table settings** (column visibility)
+- Footer: **Done** only (no per-row Add button required if checkbox selection is used).
+
+### Data scope
+
+- Show **only catalog items configured for the current facility** (`facilityOfferingsOnly: true` — already passed from the main dialog).
+- Include both **lab tests** and **lab panels**, switched by the segmented control.
+
+### Table columns
+
+| Column | Source |
+|--------|--------|
+| Full name | `ClinicalActionCatalogOption.name` |
+| Short name / code | `ClinicalActionCatalogOption.code` |
+| Test type | `ClinicalActionCatalogOption.category` (e.g. Chemistry) |
+| Price | `ClinicalActionCatalogOption.unitPrice` + currency |
+
+Add a trailing **checkbox column** for selection. Toggling a checkbox adds/removes the item from the pending lab request list in the parent dialog.
+
+### Selection UX
+
+- Show a **selected count** (e.g. “3 selected”) in the dialog header or above the table.
+- **Sort order**: selected rows **pinned to the top**; unselected rows below.
+- **Visual treatment**: selected rows use a distinct highlight (reuse existing `AppListTable` row-color patterns where available).
+- Prevent duplicate selections (keep current duplicate guard).
+- Persist selections when switching between **Individual tests** and **Lab panels** tabs within the same session.
+
+## 3. Implementation notes
+
+- Reuse **`AppListTable`**, **`AppListTableSearch`**, and **`AppListTableColumnVisibilityController`** — do not introduce a one-off table widget.
+- Follow patterns in `lab_catalog_dialogs.dart` (`LabEnableOfferingDialog`) for maximized catalog dialogs with search + filters.
+- Wire selection state back to `ClinicalLabOrderActionDialog` so the main dialog’s summary bar and selected-items panel update live.
+- Add/adjust l10n keys in `app_en.arb` for any new labels (column headers, selection count).
+- Add widget tests covering: default maximized main dialog, checkbox multi-select, selected-first sort order, and facility-only filtering.
+
+## 4. Out of scope
+
+- Billing dialog changes.
+- Backend/API changes (use existing `onSearchLabTests` callback).
+- Radiology or other clinical request flows (apply the same pattern only if explicitly requested later).

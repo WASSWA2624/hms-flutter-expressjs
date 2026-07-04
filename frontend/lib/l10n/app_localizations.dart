@@ -31149,6 +31149,12 @@ abstract class AppLocalizations {
   /// **'Choose lab tests'**
   String get clinicalLabRequestCatalogPickerTitle;
 
+  /// Title for configuring visible columns in the lab request catalog picker table.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab catalog table columns'**
+  String get clinicalLabRequestCatalogColumnsTitle;
+
   /// Nested radiology catalog picker dialog title.
   ///
   /// In en, this message translates to:

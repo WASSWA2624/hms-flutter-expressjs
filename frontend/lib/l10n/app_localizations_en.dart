@@ -16685,6 +16685,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalLabRequestCatalogPickerTitle => 'Choose lab tests';
 
   @override
+  String get clinicalLabRequestCatalogColumnsTitle =>
+      'Lab catalog table columns';
+
+  @override
   String get clinicalRadiologyCatalogPickerTitle => 'Choose imaging study';
 
   @override

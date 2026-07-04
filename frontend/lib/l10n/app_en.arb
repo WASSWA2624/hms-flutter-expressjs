@@ -21472,6 +21472,10 @@
   "@clinicalLabRequestCatalogPickerTitle": {
     "description": "Nested lab catalog picker dialog title."
   },
+  "clinicalLabRequestCatalogColumnsTitle": "Lab catalog table columns",
+  "@clinicalLabRequestCatalogColumnsTitle": {
+    "description": "Title for configuring visible columns in the lab request catalog picker table."
+  },
   "clinicalRadiologyCatalogPickerTitle": "Choose imaging study",
   "@clinicalRadiologyCatalogPickerTitle": {
     "description": "Nested radiology catalog picker dialog title."

@@ -64,7 +64,6 @@ final class _PendingLabRequest {
 
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
-  int? _editingIndex;
   String? _focusedSelectionId;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -96,51 +95,46 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             : l10n.clinicalRequestLabAction,
       ),
       icon: const Icon(Icons.science_outlined),
-      maxWidth: 560,
+      initialMaximized: true,
+      maxWidth: 880,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      content: SizedBox(
-        height: (MediaQuery.sizeOf(context).height * 0.5).clamp(360.0, 520.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            Text(
-              l10n.clinicalRequestMainPanelHelp,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
             ),
-            SizedBox(height: theme.spacing.md),
-            ClinicalRequestFlowToolbar(
-              enabled: !_isSaving,
-              onAddItems: _openCatalogPicker,
-              onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
+          Text(
+            l10n.clinicalRequestMainPanelHelp,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
-            SizedBox(height: theme.spacing.md),
-            ClinicalRequestFlowSummaryBar(
-              itemCount: _requests.length,
-              lineItems: lineItems,
-              billing: _billingSubmit,
-            ),
-            SizedBox(height: theme.spacing.md),
-            Expanded(child: _buildSelectedPanel(context)),
-          ],
-        ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          ClinicalRequestFlowToolbar(
+            enabled: !_isSaving,
+            onAddItems: _openCatalogPicker,
+            onReviewBilling: _requests.isEmpty ? null : _openBillingDialog,
+          ),
+          SizedBox(height: theme.spacing.md),
+          ClinicalRequestFlowSummaryBar(
+            itemCount: _requests.length,
+            lineItems: lineItems,
+            billing: _billingSubmit,
+          ),
+          SizedBox(height: theme.spacing.md),
+          Expanded(child: _buildSelectedPanel(context)),
+        ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: isEditingOrder
               ? l10n.clinicalUpdateLabOrderAction
               : l10n.clinicalRequestLabAction,
+          leadingIcon: Icons.science_outlined,
           isLoading: _isSaving,
           enabled: !_isSaving && _requests.isNotEmpty,
           onPressed: _submit,
@@ -205,55 +199,76 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     );
   }
 
-  Future<void> _openCatalogPicker() async {
-    final int? editingIndex = _editingIndex;
-    final _PendingLabRequest? editingRequest =
-        editingIndex != null &&
-            editingIndex >= 0 &&
-            editingIndex < _requests.length
-        ? _requests[editingIndex]
-        : null;
-
+  Future<void> _openCatalogPicker({
+    ClinicalLabRequestCatalogKind initialKind =
+        ClinicalLabRequestCatalogKind.tests,
+  }) async {
     await showClinicalLabRequestCatalogDialog(
       context: context,
       referenceData: widget.referenceData,
       facilityOfferingsOnly: true,
       onSearchLabTests: widget.onSearchLabTests,
-      initialKind: editingRequest == null
-          ? ClinicalLabRequestCatalogKind.tests
-          : editingRequest.kind == _LabRequestSelectionKind.tests
-          ? ClinicalLabRequestCatalogKind.tests
-          : ClinicalLabRequestCatalogKind.panels,
-      editingOption: editingRequest?.option,
-      editingKind: editingRequest == null
-          ? null
-          : editingRequest.kind == _LabRequestSelectionKind.tests
-          ? ClinicalLabRequestCatalogKind.tests
-          : ClinicalLabRequestCatalogKind.panels,
-      isDuplicate:
+      initialKind: initialKind,
+      selectedCount: _requests.length,
+      isSelected:
           (
             ClinicalActionCatalogOption option,
             ClinicalLabRequestCatalogKind kind,
           ) {
-            final _LabRequestSelectionKind selectionKind =
-                kind == ClinicalLabRequestCatalogKind.tests
-                ? _LabRequestSelectionKind.tests
-                : _LabRequestSelectionKind.panels;
-            return _isDuplicateSelection(option, selectionKind, editingIndex);
-          },
-      onAdd:
-          (
-            ClinicalActionCatalogOption option,
-            ClinicalLabRequestCatalogKind kind,
-          ) {
-            _addOrUpdateRequest(
-              option,
-              kind == ClinicalLabRequestCatalogKind.tests
-                  ? _LabRequestSelectionKind.tests
-                  : _LabRequestSelectionKind.panels,
+            return _requests.any(
+              (_PendingLabRequest request) =>
+                  request.id == option.apiId &&
+                  _matchesCatalogKind(request.kind, kind),
             );
           },
+      onSelectionChanged:
+          (
+            ClinicalActionCatalogOption option,
+            ClinicalLabRequestCatalogKind kind,
+            bool selected,
+          ) {
+            setState(() {
+              _failure = null;
+              final _LabRequestSelectionKind selectionKind =
+                  kind == ClinicalLabRequestCatalogKind.tests
+                  ? _LabRequestSelectionKind.tests
+                  : _LabRequestSelectionKind.panels;
+              if (selected) {
+                if (_isDuplicateSelection(option, selectionKind)) {
+                  return;
+                }
+                _requests.add(
+                  _PendingLabRequest(kind: selectionKind, option: option),
+                );
+                return;
+              }
+              _requests.removeWhere(
+                (_PendingLabRequest request) =>
+                    request.id == option.apiId &&
+                    request.kind == selectionKind,
+              );
+              if (_focusedSelectionId == option.apiId) {
+                _focusedSelectionId = null;
+              }
+            });
+          },
     );
+  }
+
+  bool _matchesCatalogKind(
+    _LabRequestSelectionKind selectionKind,
+    ClinicalLabRequestCatalogKind catalogKind,
+  ) {
+    return switch ((selectionKind, catalogKind)) {
+      (_LabRequestSelectionKind.tests, ClinicalLabRequestCatalogKind.tests) =>
+        true,
+      (
+        _LabRequestSelectionKind.panels,
+        ClinicalLabRequestCatalogKind.panels,
+      ) =>
+        true,
+      _ => false,
+    };
   }
 
   Future<void> _openBillingDialog() async {
@@ -342,37 +357,18 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     );
   }
 
-  void _addOrUpdateRequest(
-    ClinicalActionCatalogOption option,
-    _LabRequestSelectionKind kind,
-  ) {
-    final int? editingIndex = _editingIndex;
-    final _PendingLabRequest request = _PendingLabRequest(
-      kind: kind,
-      option: option,
-    );
-    setState(() {
-      _failure = null;
-      if (editingIndex != null &&
-          editingIndex >= 0 &&
-          editingIndex < _requests.length) {
-        _requests[editingIndex] = request;
-        _editingIndex = null;
-        return;
-      }
-      _requests.add(request);
-    });
-  }
-
   void _editRequest(int index) {
     if (index < 0 || index >= _requests.length) {
       return;
     }
-    setState(() {
-      _editingIndex = index;
-      _failure = null;
-    });
-    unawaited(_openCatalogPicker());
+    final _PendingLabRequest request = _requests[index];
+    unawaited(
+      _openCatalogPicker(
+        initialKind: request.kind == _LabRequestSelectionKind.tests
+            ? ClinicalLabRequestCatalogKind.tests
+            : ClinicalLabRequestCatalogKind.panels,
+      ),
+    );
   }
 
   void _deleteRequest(int index) {
@@ -385,12 +381,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
       if (_focusedSelectionId == removedId) {
         _focusedSelectionId = null;
       }
-      if (_editingIndex == index) {
-        _editingIndex = null;
-      } else if (_editingIndex case final int editingIndex
-          when editingIndex > index) {
-        _editingIndex = editingIndex - 1;
-      }
       _failure = null;
     });
   }
@@ -398,18 +388,11 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   bool _isDuplicateSelection(
     ClinicalActionCatalogOption option,
     _LabRequestSelectionKind kind,
-    int? editingIndex,
   ) {
-    for (var index = 0; index < _requests.length; index += 1) {
-      if (index == editingIndex) {
-        continue;
-      }
-      final _PendingLabRequest request = _requests[index];
-      if (request.kind == kind && request.id == option.apiId) {
-        return true;
-      }
-    }
-    return false;
+    return _requests.any(
+      (_PendingLabRequest request) =>
+          request.kind == kind && request.id == option.apiId,
+    );
   }
 
   Future<void> _submit() async {
