@@ -1329,7 +1329,7 @@ class LabEnableFacilityOfferingDialog extends StatefulWidget {
 class _LabEnableFacilityOfferingDialogState
     extends State<LabEnableFacilityOfferingDialog> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
-  static const int _searchLimit = 25;
+  static const int _searchLimit = 100;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _priceController;

@@ -418,34 +418,48 @@ final class LabWorkspaceController
 
   Future<AppFailure?> updateLabPanel(
     String panelId,
-    Map<String, Object?> payload,
-  ) async {
+    Map<String, Object?> payload, {
+    LabCatalogScope? scope,
+  }) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
     }
+    final LabCatalogScope? effectiveScope = scope ?? current.catalogScope;
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<LabCatalogItem> result = await _repository
         .upsertFacilityLabPanelOffering(
           panelId,
           payload,
-          tenantId: current.catalogScope?.tenantId,
-          facilityId: current.catalogScope?.facilityId,
+          tenantId: effectiveScope?.tenantId,
+          facilityId: effectiveScope?.facilityId,
         );
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final List<LabCatalogItem> panels = <LabCatalogItem>[
-            for (final LabCatalogItem item in latest.catalogPanels)
-              item.id == updated.id ||
-                      item.apiId == updated.apiId ||
-                      item.apiId == panelId
-                  ? updated
-                  : item,
-          ];
-          _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
+        if (latest == null) {
+          return null;
         }
+        final bool exists = latest.catalogPanels.any(
+          (LabCatalogItem item) =>
+              item.id == updated.id ||
+              item.apiId == updated.apiId ||
+              item.apiId == panelId,
+        );
+        if (!exists && (effectiveScope?.isReady ?? false)) {
+          _emit(latest.copyWith(isSaving: false));
+          await loadFacilityCatalogConfig(effectiveScope!);
+          return null;
+        }
+        final List<LabCatalogItem> panels = <LabCatalogItem>[
+          for (final LabCatalogItem item in latest.catalogPanels)
+            item.id == updated.id ||
+                    item.apiId == updated.apiId ||
+                    item.apiId == panelId
+                ? updated
+                : item,
+        ];
+        _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
         return null;
       },
       failure: (AppFailure failure) {
@@ -806,34 +820,48 @@ final class LabWorkspaceController
 
   Future<AppFailure?> updateLabTest(
     String testId,
-    Map<String, Object?> payload,
-  ) async {
+    Map<String, Object?> payload, {
+    LabCatalogScope? scope,
+  }) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
     }
+    final LabCatalogScope? effectiveScope = scope ?? current.catalogScope;
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<LabCatalogItem> result = await _repository
         .upsertFacilityLabTestOffering(
           testId,
           payload,
-          tenantId: current.catalogScope?.tenantId,
-          facilityId: current.catalogScope?.facilityId,
+          tenantId: effectiveScope?.tenantId,
+          facilityId: effectiveScope?.facilityId,
         );
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final List<LabCatalogItem> tests = <LabCatalogItem>[
-            for (final LabCatalogItem item in latest.catalogTests)
-              item.id == updated.id ||
-                      item.apiId == updated.apiId ||
-                      item.apiId == testId
-                  ? updated
-                  : item,
-          ];
-          _emit(latest.copyWith(catalogTests: tests, isSaving: false));
+        if (latest == null) {
+          return null;
         }
+        final bool exists = latest.catalogTests.any(
+          (LabCatalogItem item) =>
+              item.id == updated.id ||
+              item.apiId == updated.apiId ||
+              item.apiId == testId,
+        );
+        if (!exists && (effectiveScope?.isReady ?? false)) {
+          _emit(latest.copyWith(isSaving: false));
+          await loadFacilityCatalogConfig(effectiveScope!);
+          return null;
+        }
+        final List<LabCatalogItem> tests = <LabCatalogItem>[
+          for (final LabCatalogItem item in latest.catalogTests)
+            item.id == updated.id ||
+                    item.apiId == updated.apiId ||
+                    item.apiId == testId
+                ? updated
+                : item,
+        ];
+        _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         return null;
       },
       failure: (AppFailure failure) {
@@ -1012,7 +1040,7 @@ final class LabWorkspaceController
     required LabCatalogItemType type,
     required LabCatalogScope scope,
     String? query,
-    int limit = 25,
+    int limit = 100,
   }) {
     if (type == LabCatalogItemType.test) {
       return _repository.listFacilityLabTests(

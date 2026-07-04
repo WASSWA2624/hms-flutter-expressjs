@@ -1018,15 +1018,10 @@ class _LabConfigurationsDialogState
                         await _reloadCatalogIfReady();
                       },
                     )
-                  : Tooltip(
-                      message: l10n.labConfigurationsSelectTenantFirstTooltip,
-                      child: AppSelectField<String>.searchable(
-                        value: _facilityId,
-                        labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                        isRequired: true,
-                        enabled: false,
-                        options: const <AppSelectOption<String>>[],
-                      ),
+                  : _LabConfigurationsDisabledFacilityField(
+                      tooltipMessage:
+                          l10n.labConfigurationsSelectTenantFirstTooltip,
+                      labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
                     ),
             )
           else if (_showFacilitySelector && facilityOptions.isNotEmpty)
@@ -1061,7 +1056,7 @@ class _LabConfigurationsDialogState
               ),
             ),
           SizedBox(height: theme.spacing.md),
-          _LabConfigurationTabs(
+          _LabConfigurationTypeSelector(
             value: _catalogType,
             onChanged: (LabCatalogItemType value) {
               setState(() {
@@ -1319,33 +1314,41 @@ class _LabConfigurationsDialogState
   ) async {
     final LabWorkspaceController controller =
         _readLabController(context);
-    await _showActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => LabEnableFacilityOfferingDialog(
-          kind: LabEnableOfferingKind.test,
-          scope: _catalogScope,
-          onSearchCatalog:
-              ({
-                required LabEnableOfferingKind kind,
-                required LabCatalogScope scope,
-                String? query,
-                int limit = 25,
-              }) {
-                return controller.searchPlatformLabCatalogForOffering(
-                  type: LabCatalogItemType.test,
-                  scope: scope,
-                  query: query,
-                  limit: limit,
-                );
-              },
-          onEnable: (String id, Map<String, Object?> payload) =>
-              controller.updateLabTest(id, payload),
-        ),
+    final LabCatalogScope scope = _catalogScope;
+    final AppLocalizations l10n = context.l10n;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LabEnableFacilityOfferingDialog(
+        kind: LabEnableOfferingKind.test,
+        scope: scope,
+        onSearchCatalog:
+            ({
+              required LabEnableOfferingKind kind,
+              required LabCatalogScope scope,
+              String? query,
+              int limit = 100,
+            }) {
+              return controller.searchPlatformLabCatalogForOffering(
+                type: LabCatalogItemType.test,
+                scope: scope,
+                query: query,
+                limit: limit,
+              );
+            },
+        onEnable: (String id, Map<String, Object?> payload) =>
+            controller.updateLabTest(id, payload, scope: scope),
       ),
     );
+    if (!context.mounted) {
+      return;
+    }
+    if (saved == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.labSavedMessage)),
+      );
+      await _reloadCatalogIfReady();
+    }
   }
 
   Future<void> _openEnableLabPanelDialog(
@@ -1354,33 +1357,41 @@ class _LabConfigurationsDialogState
   ) async {
     final LabWorkspaceController controller =
         _readLabController(context);
-    await _showActionResult(
-      context,
-      showAppDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => LabEnableFacilityOfferingDialog(
-          kind: LabEnableOfferingKind.panel,
-          scope: _catalogScope,
-          onSearchCatalog:
-              ({
-                required LabEnableOfferingKind kind,
-                required LabCatalogScope scope,
-                String? query,
-                int limit = 25,
-              }) {
-                return controller.searchPlatformLabCatalogForOffering(
-                  type: LabCatalogItemType.panel,
-                  scope: scope,
-                  query: query,
-                  limit: limit,
-                );
-              },
-          onEnable: (String id, Map<String, Object?> payload) =>
-              controller.updateLabPanel(id, payload),
-        ),
+    final LabCatalogScope scope = _catalogScope;
+    final AppLocalizations l10n = context.l10n;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LabEnableFacilityOfferingDialog(
+        kind: LabEnableOfferingKind.panel,
+        scope: scope,
+        onSearchCatalog:
+            ({
+              required LabEnableOfferingKind kind,
+              required LabCatalogScope scope,
+              String? query,
+              int limit = 100,
+            }) {
+              return controller.searchPlatformLabCatalogForOffering(
+                type: LabCatalogItemType.panel,
+                scope: scope,
+                query: query,
+                limit: limit,
+              );
+            },
+        onEnable: (String id, Map<String, Object?> payload) =>
+            controller.updateLabPanel(id, payload, scope: scope),
       ),
     );
+    if (!context.mounted) {
+      return;
+    }
+    if (saved == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.labSavedMessage)),
+      );
+      await _reloadCatalogIfReady();
+    }
   }
 
   List<LabCatalogItem> _filteredItems(LabWorkspaceState state) {
@@ -1559,8 +1570,42 @@ class _LabConfigurationsDialogState
   }
 }
 
-class _LabConfigurationTabs extends StatelessWidget {
-  const _LabConfigurationTabs({required this.value, required this.onChanged});
+class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
+  const _LabConfigurationsDisabledFacilityField({
+    required this.tooltipMessage,
+    required this.labelText,
+  });
+
+  final String tooltipMessage;
+  final String labelText;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tooltipMessage)),
+        );
+      },
+      child: Tooltip(
+        message: tooltipMessage,
+        child: AppSelectField<String>.searchable(
+          labelText: labelText,
+          isRequired: true,
+          enabled: false,
+          options: const <AppSelectOption<String>>[],
+        ),
+      ),
+    );
+  }
+}
+
+class _LabConfigurationTypeSelector extends StatelessWidget {
+  const _LabConfigurationTypeSelector({
+    required this.value,
+    required this.onChanged,
+  });
 
   final LabCatalogItemType value;
   final ValueChanged<LabCatalogItemType> onChanged;
@@ -1568,56 +1613,82 @@ class _LabConfigurationTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: _LabConfigurationTab(
-            label: l10n.labTestsTabLabel,
-            icon: Icons.science_outlined,
-            selected: value == LabCatalogItemType.test,
-            onPressed: () => onChanged(LabCatalogItemType.test),
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return RadioGroup<LabCatalogItemType>(
+      groupValue: value,
+      onChanged: (LabCatalogItemType? next) {
+        if (next != null) {
+          onChanged(next);
+        }
+      },
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _LabConfigurationTypeOption(
+              value: LabCatalogItemType.test,
+              groupValue: value,
+              label: l10n.labTestsTabLabel,
+              icon: Icons.science_outlined,
+              colorScheme: colorScheme,
+              theme: theme,
+              onChanged: onChanged,
+            ),
           ),
-        ),
-        Expanded(
-          child: _LabConfigurationTab(
-            label: l10n.labPanelsTabLabel,
-            icon: Icons.dashboard_customize_outlined,
-            selected: value == LabCatalogItemType.panel,
-            onPressed: () => onChanged(LabCatalogItemType.panel),
+          Expanded(
+            child: _LabConfigurationTypeOption(
+              value: LabCatalogItemType.panel,
+              groupValue: value,
+              label: l10n.labPanelsTabLabel,
+              icon: Icons.dashboard_customize_outlined,
+              colorScheme: colorScheme,
+              theme: theme,
+              onChanged: onChanged,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _LabConfigurationTab extends StatelessWidget {
-  const _LabConfigurationTab({
+class _LabConfigurationTypeOption extends StatelessWidget {
+  const _LabConfigurationTypeOption({
+    required this.value,
+    required this.groupValue,
     required this.label,
     required this.icon,
-    required this.selected,
-    required this.onPressed,
+    required this.colorScheme,
+    required this.theme,
+    required this.onChanged,
   });
 
+  final LabCatalogItemType value;
+  final LabCatalogItemType groupValue;
   final String label;
   final IconData icon;
-  final bool selected;
-  final VoidCallback onPressed;
+  final ColorScheme colorScheme;
+  final ThemeData theme;
+  final ValueChanged<LabCatalogItemType> onChanged;
+
+  bool get _selected => groupValue == value;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = selected
+    final Color foreground = _selected
         ? colorScheme.onPrimaryContainer
         : colorScheme.onSurfaceVariant;
     return Material(
-      color: selected ? colorScheme.primaryContainer : colorScheme.surface,
-      shape: Border.all(
-        color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+      color: _selected ? colorScheme.primaryContainer : colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        side: BorderSide(
+          color: _selected ? colorScheme.primary : colorScheme.outlineVariant,
+        ),
       ),
       child: InkWell(
-        onTap: selected ? null : onPressed,
+        onTap: _selected ? null : () => onChanged(value),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: theme.spacing.md,
@@ -1626,6 +1697,11 @@ class _LabConfigurationTab extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              Radio<LabCatalogItemType>(
+                value: value,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               Icon(icon, size: theme.appTokens.listIconSize, color: foreground),
               SizedBox(width: theme.spacing.xs),
               Flexible(

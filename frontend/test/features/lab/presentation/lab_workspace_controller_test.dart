@@ -137,6 +137,7 @@ void main() {
           search: any(named: 'search'),
           page: any(named: 'page'),
           limit: any(named: 'limit'),
+          offeredOnly: any(named: 'offeredOnly'),
         ),
       ).thenAnswer(
         (_) async => const Result<List<LabCatalogItem>>.success(
@@ -181,7 +182,6 @@ void main() {
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
           search: 'LFT',
-          limit: 25,
         ),
       ).called(1);
     },
