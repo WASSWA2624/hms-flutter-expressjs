@@ -29595,6 +29595,18 @@ abstract class AppLocalizations {
   /// **'No platform lab catalog items are available for this tenant.'**
   String get labEnableOfferingNoPlatformItemsLabel;
 
+  /// Prompt shown before tenant and facility are selected in lab configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant and facility to load and configure the lab catalog.'**
+  String get labConfigurationsSelectScopeBody;
+
+  /// Prompt shown when tenant is set but facility is still missing in lab configurations.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility to load and configure the lab catalog.'**
+  String get labConfigurationsSelectFacilityOnlyBody;
+
   /// Prompt shown before a facility context is selected in lab configurations.
   ///
   /// In en, this message translates to:

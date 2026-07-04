@@ -953,13 +953,11 @@ final class LabWorkspaceController
         .listFacilityLabTests(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
-          limit: 200,
         );
     final Result<List<LabCatalogItem>> panelsResult = await _repository
         .listFacilityLabPanels(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
-          limit: 200,
         );
 
     AppFailure? failure;
@@ -1204,7 +1202,6 @@ final class LabWorkspaceController
           tenantId: scope?.tenantId,
           facilityId: scope?.facilityId,
           search: search,
-          limit: 200,
         );
     return result.when(
       success: (List<LabCatalogItem> value) => value,
@@ -1219,7 +1216,6 @@ final class LabWorkspaceController
           tenantId: scope?.tenantId,
           facilityId: scope?.facilityId,
           search: search,
-          limit: 200,
         );
     return result.when(
       success: (List<LabCatalogItem> value) => value,

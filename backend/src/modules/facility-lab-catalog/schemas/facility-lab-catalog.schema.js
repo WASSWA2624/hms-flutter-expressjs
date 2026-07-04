@@ -3,7 +3,7 @@
  */
 
 const { z } = require('zod');
-const { listQuerySchema, uuidSchema, uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
+const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 
 const optionalTrimmedString = (max) =>
   z.preprocess(
@@ -54,8 +54,8 @@ const labResultOptionSchema = z.object({
 
 const upsertFacilityLabTestOfferingSchema = z
   .object({
-    tenant_id: uuidSchema.optional(),
-    facility_id: uuidSchema.optional(),
+    tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+    facility_id: uuidOrFriendlyIdentifierSchema.optional(),
     lab_test_id: uuidOrFriendlyIdentifierSchema.optional(),
     is_active: z.boolean().optional().default(true),
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
@@ -82,8 +82,8 @@ const upsertFacilityLabTestOfferingSchema = z
 
 const upsertFacilityLabPanelOfferingSchema = z
   .object({
-    tenant_id: uuidSchema.optional(),
-    facility_id: uuidSchema.optional(),
+    tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+    facility_id: uuidOrFriendlyIdentifierSchema.optional(),
     lab_panel_id: uuidOrFriendlyIdentifierSchema.optional(),
     is_active: z.boolean().optional().default(true),
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
@@ -113,16 +113,16 @@ const facilityLabPanelParamsSchema = z.object({
 });
 
 const listFacilityLabCatalogQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   search: z.string().trim().max(120).optional(),
   offered_only: z.enum(['true', 'false']).optional(),
   include_inactive: z.enum(['true', 'false']).optional(),
 });
 
 const searchFacilityLabCatalogQuerySchema = z.object({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   term_type: z.enum(['LAB_TEST', 'LAB_PANEL']),
   q: z.string().trim().max(120).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(25),

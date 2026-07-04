@@ -1033,6 +1033,9 @@ final class LabOrderWorkflow {
   }
 }
 
+/// Maximum page size accepted by facility lab catalog list endpoints.
+const int labFacilityCatalogPageLimit = 100;
+
 @immutable
 final class LabCatalogScope {
   const LabCatalogScope({this.tenantId, this.facilityId});

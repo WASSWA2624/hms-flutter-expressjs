@@ -831,9 +831,24 @@ class _LabConfigurationsDialogState
   LabCatalogScope get _catalogScope =>
       LabCatalogScope(tenantId: _tenantId, facilityId: _facilityId);
 
-  bool get _canSelectFacilityContext {
+  bool get _showTenantSelector {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    return policy.canManageTenant();
+    return policy.isElevated;
+  }
+
+  bool get _showFacilitySelector {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (policy.isElevated) {
+      return true;
+    }
+    return policy.canManageTenant() && !policy.hasFacilityContext;
+  }
+
+  bool get _showScopeContextLabel {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return !_showTenantSelector &&
+        !_showFacilitySelector &&
+        policy.hasFacilityContext;
   }
 
   bool get _canEnableOfferings {
@@ -859,10 +874,12 @@ class _LabConfigurationsDialogState
     }
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final LabCatalogScope? existingScope = widget.state.catalogScope;
-    final String? tenantId =
-        existingScope?.tenantId ?? policy.tenantId;
-    final String? facilityId = _canSelectFacilityContext
-        ? existingScope?.facilityId ?? policy.facilityId
+    final String? tenantId = _showTenantSelector
+        ? existingScope?.tenantId ?? policy.tenantId
+        : policy.tenantId ?? existingScope?.tenantId;
+    final String? facilityId = _showFacilitySelector
+        ? existingScope?.facilityId ??
+            (_showTenantSelector ? policy.facilityId : null)
         : policy.facilityId ?? existingScope?.facilityId;
 
     setState(() {
@@ -975,7 +992,7 @@ class _LabConfigurationsDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          if (_canSelectFacilityContext && tenantOptions.isNotEmpty)
+          if (_showTenantSelector && tenantOptions.isNotEmpty)
             Wrap(
               spacing: theme.spacing.md,
               runSpacing: theme.spacing.md,
@@ -1023,7 +1040,29 @@ class _LabConfigurationsDialogState
                   ),
               ],
             )
-          else if (facilityLabel != null && facilityLabel.isNotEmpty)
+          else if (_showFacilitySelector && facilityOptions.isNotEmpty)
+            SizedBox(
+              width: 280,
+              child: AppSelectField<String>.searchable(
+                value: _facilityId,
+                labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
+                isRequired: true,
+                options: <AppSelectOption<String>>[
+                  for (final HomeLookupOption facility in facilityOptions)
+                    AppSelectOption<String>(
+                      value: facility.id,
+                      label: facility.label,
+                    ),
+                ],
+                onChanged: (String? value) async {
+                  setState(() => _facilityId = value);
+                  await _reloadCatalogIfReady();
+                },
+              ),
+            )
+          else if (_showScopeContextLabel &&
+              facilityLabel != null &&
+              facilityLabel.isNotEmpty)
             AppMutedText(l10n.labConfigurationsFacilityContextLabel(facilityLabel)),
           SizedBox(height: theme.spacing.md),
           _LabConfigurationTabs(
@@ -1039,7 +1078,7 @@ class _LabConfigurationsDialogState
           SizedBox(height: theme.spacing.md),
           if (!scopeReady)
             AppMessagePanel(
-              message: l10n.labConfigurationsSelectFacilityBody,
+              message: _scopePromptMessage(l10n),
               icon: Icons.domain_outlined,
             )
           else if (isLoading)
@@ -1234,6 +1273,15 @@ class _LabConfigurationsDialogState
       }
     }
     return _facilityId;
+  }
+
+  String _scopePromptMessage(AppLocalizations l10n) {
+    final bool hasTenant = _tenantId?.trim().isNotEmpty ?? false;
+    final bool hasFacility = _facilityId?.trim().isNotEmpty ?? false;
+    if (hasTenant && !hasFacility) {
+      return l10n.labConfigurationsSelectFacilityOnlyBody;
+    }
+    return l10n.labConfigurationsSelectScopeBody;
   }
 
   Future<void> _openEnableLabTestDialog(
@@ -1693,7 +1741,6 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           offeredOnly: true,
-          limit: 200,
         );
     if (!mounted) {
       return;

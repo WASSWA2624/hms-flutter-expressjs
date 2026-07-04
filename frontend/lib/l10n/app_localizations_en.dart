@@ -15810,6 +15810,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'No platform lab catalog items are available for this tenant.';
 
   @override
+  String get labConfigurationsSelectScopeBody =>
+      'Select a tenant and facility to load and configure the lab catalog.';
+
+  @override
+  String get labConfigurationsSelectFacilityOnlyBody =>
+      'Select a facility to load and configure the lab catalog.';
+
+  @override
   String get labConfigurationsSelectFacilityBody =>
       'Select a tenant and facility to load and configure the lab catalog.';
 

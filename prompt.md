@@ -1,98 +1,66 @@
-# Lab workspace UX improvements
+# Fix Lab Configurations modal — scope, role UX, and catalog loading
 
-## Context
+## Problem
 
-Improve the **Laboratory → Patient lab worklist** screen and the **Lab result entry** dialog. Primary files: `lab_workspace_page.dart`, `lab_result_entry_dialog.dart`, `lab_workspace_controller.dart`, and related l10n keys in `app_en.arb`.
+The **Lab Configurations** modal (`Lab Configurations` action on the Lab workspace) is implemented but broken in practice:
 
-Reference screenshots show the current patient worklist table and the result-entry dialog for Joshua Suuna (order `LAB0000006`).
+1. **Catalog never loads** — After selecting Tenant and Facility, the Tests and Panels tabs stay empty instead of showing the facility lab catalog.
+2. **Misleading validation banner** — A red **“Check the details”** banner appears with:
+   - Enter a valid Limit.
+   - Enter a valid Tenant.
+   - Enter a valid Facility.
+   even though Tenant and Facility appear selected in the dropdowns.
+3. **Misleading empty-state copy** — With Tenant selected but Facility still empty, the info banner still says *“Select a tenant and facility…”* instead of prompting only for the missing field.
 
----
+## Expected behavior
 
-## 1. Worklist panel header
+### Role-based scope UI
 
-- **Remove the subtitle** under “Patient lab worklist” (`labPatientsWorklistDescription` — e.g. “Patients with active lab orders and result-entry work.”).
-- Keep the title only. Do not leave redundant or duplicated heading text elsewhere on the panel.
+| Role | Tenant field | Facility field | Scope resolution |
+|------|--------------|----------------|------------------|
+| Platform admin / super admin | Visible (required) | Visible (required) | User selects both; catalog loads when both are set |
+| Tenant admin | **Hidden** | Visible (required) | Tenant auto-filled from session; user picks facility only |
+| Facility admin | **Hidden** | **Hidden** | Tenant + facility auto-filled from session; catalog loads immediately on open |
 
----
+For scoped roles, show a muted context line (e.g. *“Configuring lab catalog for {facilityName}.”*) instead of selectors.
 
-## 2. Worklist table — column layout
+### Catalog loading
 
-Split the overloaded **Patient** column into dedicated columns. Each field gets its own column (sortable where practical):
+Once scope is ready, load and display platform lab **Tests** and **Panels** for the selected facility (enable offerings, set prices, configure reference ranges / result options). Switching tabs or changing scope should reload appropriately.
 
-| Column | Content |
-|--------|---------|
-| **Patient** | Patient display name only |
-| **Patient ID** | e.g. `PAT0000002` |
-| **Encounter** | Clinical encounter ID (e.g. `ENC0000002`) |
-| **Lab encounter** | Lab-specific encounter / lab ID (e.g. `LAB0000006` or equivalent field from `LabOrderSummary`) |
-| **Source / location** | Encounter source (e.g. OPD) and location if available |
-| **Orders** | Active order count + order IDs (unchanged intent, see §3) |
-| **Entry status** | Existing badge |
-| **Result status** | Existing badge |
+### Empty / error states
 
-- Remove stacked multi-line identity blocks from a single cell (`_LabOrderIdentity` currently joins name, patient ID, encounter, order count, OPD, etc.).
-- Preserve column-visibility settings support (`AppListTableColumnVisibilityController`).
-- Ensure cells use stable single-line layout (`maxLines: 1`, ellipsis) so rows stay a consistent height.
+- Tenant only → prompt to select a **facility** (not “tenant and facility”).
+- Neither selected (platform admin) → prompt for both.
+- API failure → show a clear, field-accurate error; do not show generic validation for fields that are visibly populated.
 
----
+## Likely root causes (investigate first)
 
-## 3. Orders column
+1. **Request validation mismatch** — `loadFacilityCatalogConfig` calls `listFacilityLabTests` / `listFacilityLabPanels` with `limit: 200`, but shared pagination validation caps `limit` at **100** (`MAX_PAGE_LIMIT`). This likely triggers *“Enter a valid Limit.”*
+2. **Identifier format mismatch** — Lookup dropdown values may be human-friendly IDs, while `listFacilityLabCatalogQuerySchema` uses strict `uuidSchema` for `tenant_id` and `facility_id`. Align with `uuidOrFriendlyIdentifierSchema` (as other lab endpoints do) or ensure the frontend sends internal UUIDs.
+3. **Scope not propagated** — Confirm `_LabConfigurationsDialog` passes the resolved `_tenantId` / `_facilityId` into `LabCatalogScope` and that `_catalogScope.isReady` matches what the API receives.
 
-- **Remove copy-to-clipboard** from order identifiers in the worklist (`AppCopyableIdentifier` in `_LabOrderIdentifier`). Show plain text only.
-- For patient-group rows, keep “N active order(s)” plus a truncated list of order IDs.
-- Detailed identifiers remain accessible in the result-entry dialog (see §5).
+## Key files
 
----
-
-## 4. Worklist table — row stability
-
-Rows currently flicker or visually “break” during background refresh (likely realtime/polling updates in `lab_workspace_controller.dart`).
-
-- Identify and fix unnecessary full-table rebuilds or loading-state toggles during silent refresh.
-- Preserve scroll position, selection, and row content while data updates in place.
-- Avoid blanking or resizing rows when only status fields change.
-- Verify with the worklist open while realtime events fire: no layout jump, no row height change, no momentary empty state.
-
----
-
-## 5. Lab result entry dialog
-
-### 5a. Open maximized by default
-
-- Set `initialMaximized: true` on `AppDialog` in `LabResultEntryDialog` (and/or `showAppDialog` call site) so the dialog opens full-screen on desktop without requiring a manual maximize click.
-
-### 5b. Status display clarity
-
-Screenshots show conflicting badges at the same level (e.g. **Verified** and **Rejected** together on the patient header and on order `LAB0000006`).
-
-- Audit aggregate status logic (`_aggregateOrderStatus`, `_entryStatus`, `_resultStatus`, per-item badges).
-- Show **one primary status** at patient/order summary level that reflects the dominant workflow state.
-- Surface item-level rejection separately (e.g. per-test row or a “N rejected” sub-badge), not as competing top-level badges.
-- Do not show both “Verified” and “Rejected” as peer summary badges unless that accurately reflects business rules; if mixed, prefer labels like “Partially verified” or “Partially rejected.”
-
-### 5c. Workflow timeline deduplication
-
-The workflow section lists duplicate steps (e.g. “Result reported for Brucella Agglutination Test” appears three times).
-
-- Deduplicate `workflow.timeline` entries before rendering in `_LabWorkflowProgressIndicator`.
-- Match on a stable key (step id + type, or normalized label); keep the most recent / highest-priority entry when duplicates exist.
-- Timeline chips should reflect unique workflow events only.
-
-### 5d. General dialog layout
-
-- Ensure all sections (patient context header, order blocks, workflow progress, result-entry table) render cleanly at maximized size without overflow or awkward wrapping.
-- Copyable identifiers (patient ID, encounter) stay in the dialog; not in the worklist orders column.
-
----
+- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`, scope init, role-gated selectors
+- `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart` — `loadFacilityCatalogConfig`
+- `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart` — facility catalog API params
+- `frontend/lib/core/permissions/access_policy.dart` — `canManageTenant()`, `canManageFacility()`, session `tenantId` / `facilityId`
+- `backend/src/modules/facility-lab-catalog/schemas/facility-lab-catalog.schema.js` — list query validation
+- `frontend/lib/l10n/app_en.arb` — `labConfigurationsSelectFacilityBody` and related strings
 
 ## Acceptance criteria
 
-- [ ] Patient worklist shows title only — no subtitle.
-- [ ] Table has separate columns for patient name, patient ID, encounter, lab encounter, and source/location.
-- [ ] Order IDs in the worklist are plain text (no copy icon).
-- [ ] Table rows remain stable during background refresh — no flicker, jump, or height change.
-- [ ] Clicking a row opens the lab result entry dialog **maximized by default**.
-- [ ] Dialog status badges are unambiguous — no conflicting Verified/Rejected pair at the same summary level.
-- [ ] Workflow timeline shows no duplicate step labels.
-- [ ] Existing sort, filter, search, pagination, and column-visibility behavior still work.
-- [ ] Add/update l10n keys for any new column headers; run codegen if needed.
+- [ ] Platform admin can select tenant + facility and see populated Tests/Panels tables.
+- [ ] Tenant admin sees only facility selector; tenant is implicit; catalog loads after facility selection.
+- [ ] Facility admin sees no selectors; catalog loads on open using session scope.
+- [ ] No spurious “valid Limit / Tenant / Facility” errors when scope is correctly set.
+- [ ] Empty-state messaging reflects what is actually missing.
+- [ ] Add or update tests covering scope resolution and catalog load request params (limit ≤ 100, valid identifiers).
+
+## Verification
+
+1. Open Lab workspace → **Lab Configurations**.
+2. Repeat as platform admin, tenant admin, and facility admin (or simulate via session fixtures).
+3. Confirm catalog rows appear on Tests and Panels tabs after scope is ready.
+4. Confirm network calls to `/facility-lab-catalog/tests` and `/panels` return 200 with valid query params.
