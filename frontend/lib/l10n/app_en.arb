@@ -950,9 +950,81 @@
   "@billingQueueLabel": {
     "description": "Label for billing queue filter group."
   },
-  "billingSearchHint": "Invoice, patient, or reference",
+  "billingSearchHint": "Patient, ID, invoice, encounter, email, or phone",
   "@billingSearchHint": {
     "description": "Search hint for billing worklist."
+  },
+  "billingPatientNameColumn": "Patient name",
+  "@billingPatientNameColumn": {
+    "description": "Patient name column label for billing worklist."
+  },
+  "billingPatientIdColumn": "Patient ID",
+  "@billingPatientIdColumn": {
+    "description": "Patient ID column label for billing worklist."
+  },
+  "billingInvoiceColumn": "Invoice",
+  "@billingInvoiceColumn": {
+    "description": "Invoice column label for billing worklist."
+  },
+  "billingSourceColumn": "Source",
+  "@billingSourceColumn": {
+    "description": "Charge source column label for billing worklist."
+  },
+  "billingAmountDueColumn": "Amount due",
+  "@billingAmountDueColumn": {
+    "description": "Outstanding amount column label for billing worklist."
+  },
+  "billingSourceFilterLabel": "Source",
+  "@billingSourceFilterLabel": {
+    "description": "Source filter label for billing worklist."
+  },
+  "billingAnySourceOption": "Any source",
+  "@billingAnySourceOption": {
+    "description": "All-sources option for billing filters."
+  },
+  "billingStatusFilterLabel": "Status",
+  "@billingStatusFilterLabel": {
+    "description": "Status filter label for billing worklist."
+  },
+  "billingAnyStatusOption": "Any status",
+  "@billingAnyStatusOption": {
+    "description": "All-statuses option for billing filters."
+  },
+  "billingSourceLaboratory": "Laboratory",
+  "@billingSourceLaboratory": {
+    "description": "Laboratory source filter option."
+  },
+  "billingSourceRadiology": "Radiology",
+  "@billingSourceRadiology": {
+    "description": "Radiology source filter option."
+  },
+  "billingSourcePharmacy": "Pharmacy",
+  "@billingSourcePharmacy": {
+    "description": "Pharmacy source filter option."
+  },
+  "billingStatusDraftOption": "Draft",
+  "@billingStatusDraftOption": {
+    "description": "Draft billing status filter option."
+  },
+  "billingStatusIssuedOption": "Issued",
+  "@billingStatusIssuedOption": {
+    "description": "Issued billing status filter option."
+  },
+  "billingStatusPartialOption": "Partially paid",
+  "@billingStatusPartialOption": {
+    "description": "Partial billing status filter option."
+  },
+  "billingStatusPaidOption": "Paid",
+  "@billingStatusPaidOption": {
+    "description": "Paid billing status filter option."
+  },
+  "billingStatusOverdueOption": "Overdue",
+  "@billingStatusOverdueOption": {
+    "description": "Overdue billing status filter option."
+  },
+  "billingIssuedDateFilterLabel": "Issued date",
+  "@billingIssuedDateFilterLabel": {
+    "description": "Issued date filter label for billing worklist."
   },
   "billingSearchSemanticLabel": "Search billing worklist",
   "@billingSearchSemanticLabel": {

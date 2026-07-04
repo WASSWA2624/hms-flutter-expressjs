@@ -211,6 +211,7 @@ final class BillingWorkItemDto {
       approvedAt: _date(json['approved_at']),
       encounterId: _string(json['encounter_id']),
       encounterDisplayId: _string(json['encounter_display_id']),
+      sourceModule: _string(json['source_module']),
       settlementAmount: _num(json['settlement_amount']),
       decisionNotes: _string(json['decision_notes']),
     );

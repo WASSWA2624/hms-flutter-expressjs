@@ -1471,8 +1471,116 @@ abstract class AppLocalizations {
   /// Search hint for billing worklist.
   ///
   /// In en, this message translates to:
-  /// **'Invoice, patient, or reference'**
+  /// **'Patient, ID, invoice, encounter, email, or phone'**
   String get billingSearchHint;
+
+  /// Patient name column label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient name'**
+  String get billingPatientNameColumn;
+
+  /// Patient ID column label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get billingPatientIdColumn;
+
+  /// Invoice column label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get billingInvoiceColumn;
+
+  /// Charge source column label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get billingSourceColumn;
+
+  /// Outstanding amount column label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount due'**
+  String get billingAmountDueColumn;
+
+  /// Source filter label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get billingSourceFilterLabel;
+
+  /// All-sources option for billing filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Any source'**
+  String get billingAnySourceOption;
+
+  /// Status filter label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get billingStatusFilterLabel;
+
+  /// All-statuses option for billing filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Any status'**
+  String get billingAnyStatusOption;
+
+  /// Laboratory source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory'**
+  String get billingSourceLaboratory;
+
+  /// Radiology source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get billingSourceRadiology;
+
+  /// Pharmacy source filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get billingSourcePharmacy;
+
+  /// Draft billing status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get billingStatusDraftOption;
+
+  /// Issued billing status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued'**
+  String get billingStatusIssuedOption;
+
+  /// Partial billing status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially paid'**
+  String get billingStatusPartialOption;
+
+  /// Paid billing status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get billingStatusPaidOption;
+
+  /// Overdue billing status filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get billingStatusOverdueOption;
+
+  /// Issued date filter label for billing worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued date'**
+  String get billingIssuedDateFilterLabel;
 
   /// Semantic label for billing search field.
   ///

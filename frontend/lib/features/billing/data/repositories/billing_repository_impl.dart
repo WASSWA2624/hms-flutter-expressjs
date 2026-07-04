@@ -36,11 +36,7 @@ final class BillingRepositoryImpl implements BillingRepository {
         'workspace',
         const <String>[],
       ),
-      queryParameters: _withoutEmpty(<String, Object?>{
-        'page': request.pageIndex + 1,
-        'limit': request.pageSize,
-        'search': query.search,
-      }),
+      queryParameters: _workspaceQueryParameters(query, request),
       decoder: (Object? data) {
         return BillingWorkspaceOverviewDto.fromResponse(data).toEntity();
       },
@@ -58,14 +54,7 @@ final class BillingRepositoryImpl implements BillingRepository {
         'work-items',
         const <String>[],
       ),
-      queryParameters: _withoutEmpty(<String, Object?>{
-        'page': request.pageIndex + 1,
-        'limit': request.pageSize,
-        'queue': query.queue == BillingQueueType.all
-            ? null
-            : query.queue.serverValue,
-        'search': query.search,
-      }),
+      queryParameters: _workItemsQueryParameters(query, request),
       decoder: (Object? data) {
         return BillingWorkItemPageDto.fromResponse(data, request).page;
       },
@@ -383,6 +372,44 @@ final class BillingRepositoryImpl implements BillingRepository {
           BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
+}
+
+Map<String, Object?> _workspaceQueryParameters(
+  BillingWorkspaceQuery query,
+  AppPageRequest request,
+) {
+  return _withoutEmpty(<String, Object?>{
+    'page': request.pageIndex + 1,
+    'limit': request.pageSize,
+    ..._billingFilterQueryParameters(query),
+  });
+}
+
+Map<String, Object?> _workItemsQueryParameters(
+  BillingWorkspaceQuery query,
+  AppPageRequest request,
+) {
+  return _withoutEmpty(<String, Object?>{
+    'page': request.pageIndex + 1,
+    'limit': request.pageSize,
+    'queue': query.queue == BillingQueueType.all
+        ? null
+        : query.queue.serverValue,
+    ..._billingFilterQueryParameters(query),
+  });
+}
+
+Map<String, Object?> _billingFilterQueryParameters(BillingWorkspaceQuery query) {
+  return <String, Object?>{
+    'search': query.search,
+    'patient_id': query.patientId,
+    'invoice_number': query.invoiceNumber,
+    'encounter_id': query.encounterId,
+    'source_module': query.sourceModule,
+    'billing_status': query.billingStatus,
+    'from': query.from?.toUtc().toIso8601String(),
+    'to': query.to?.toUtc().toIso8601String(),
+  };
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

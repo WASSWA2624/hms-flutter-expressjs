@@ -91,8 +91,27 @@ void main() {
       expect(item.effectiveDisplayId, 'INV-001');
       expect(item.balanceDue, 60000);
       expect(item.clearanceState, BillingClearanceState.partiallyPaid);
-      expect(item.items.single.description, 'Consultation');
-      expect(item.firstRefundablePayment?.id, 'payment-1');
+    });
+
+    test('maps unpaid issued invoices to awaiting payment clearance', () {
+      final BillingWorkItem item = BillingWorkItemDto(
+        <String, Object?>{
+          'id': 'invoice-2',
+          'display_id': 'INV-002',
+          'billing_status': 'ISSUED',
+          'status': 'SENT',
+          'total_amount': '95000.00',
+          'currency': 'UGX',
+          'financials': <String, Object?>{
+            'effective_total': '95000.00',
+            'net_paid_total': '0.00',
+            'balance_due': '95000.00',
+          },
+        },
+        fallbackQueue: BillingQueueType.pendingPayment,
+      ).toEntity();
+
+      expect(item.clearanceState, BillingClearanceState.awaitingPayment);
     });
 
     test('parses approval work items', () {

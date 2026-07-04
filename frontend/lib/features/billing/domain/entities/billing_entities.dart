@@ -44,6 +44,8 @@ enum BillingClearanceState {
   deferred,
   insured,
   pendingAuthorization,
+  awaitingPayment,
+  overdue,
   blocked,
 }
 
@@ -51,23 +53,64 @@ enum BillingClearanceState {
 final class BillingWorkspaceQuery {
   const BillingWorkspaceQuery({
     this.search = '',
-    this.queue = BillingQueueType.pendingPayment,
+    this.queue = BillingQueueType.all,
     this.pageRequest = const AppPageRequest(pageSize: 12),
+    this.patientId = '',
+    this.invoiceNumber = '',
+    this.encounterId = '',
+    this.sourceModule = '',
+    this.billingStatus = '',
+    this.from,
+    this.to,
   });
 
   final String search;
   final BillingQueueType queue;
   final AppPageRequest pageRequest;
+  final String patientId;
+  final String invoiceNumber;
+  final String encounterId;
+  final String sourceModule;
+  final String billingStatus;
+  final DateTime? from;
+  final DateTime? to;
+
+  bool get hasActiveFilters {
+    return queue != BillingQueueType.all ||
+        patientId.trim().isNotEmpty ||
+        invoiceNumber.trim().isNotEmpty ||
+        encounterId.trim().isNotEmpty ||
+        sourceModule.trim().isNotEmpty ||
+        billingStatus.trim().isNotEmpty ||
+        from != null ||
+        to != null;
+  }
 
   BillingWorkspaceQuery copyWith({
     String? search,
     BillingQueueType? queue,
     AppPageRequest? pageRequest,
+    String? patientId,
+    String? invoiceNumber,
+    String? encounterId,
+    String? sourceModule,
+    String? billingStatus,
+    DateTime? from,
+    DateTime? to,
+    bool clearFrom = false,
+    bool clearTo = false,
   }) {
     return BillingWorkspaceQuery(
       search: search ?? this.search,
       queue: queue ?? this.queue,
       pageRequest: pageRequest ?? this.pageRequest,
+      patientId: patientId ?? this.patientId,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      encounterId: encounterId ?? this.encounterId,
+      sourceModule: sourceModule ?? this.sourceModule,
+      billingStatus: billingStatus ?? this.billingStatus,
+      from: clearFrom ? null : from ?? this.from,
+      to: clearTo ? null : to ?? this.to,
     );
   }
 }
@@ -260,6 +303,7 @@ final class BillingWorkItem {
     this.approvedAt,
     this.encounterId,
     this.encounterDisplayId,
+    this.sourceModule,
     this.settlementAmount,
     this.decisionNotes,
   });
@@ -294,6 +338,7 @@ final class BillingWorkItem {
   final DateTime? approvedAt;
   final String? encounterId;
   final String? encounterDisplayId;
+  final String? sourceModule;
   final num? settlementAmount;
   final String? decisionNotes;
 
@@ -325,6 +370,24 @@ final class BillingWorkItem {
       return financials.balanceDue;
     }
     return effectiveTotal;
+  }
+
+  String? get invoiceSourceSummary {
+    final String? direct = sourceModule?.trim();
+    if (direct != null && direct.isNotEmpty) {
+      return direct;
+    }
+    final Set<String> modules = <String>{};
+    for (final BillingInvoiceItem item in items) {
+      final String? module = item.sourceModule?.trim();
+      if (module != null && module.isNotEmpty) {
+        modules.add(module);
+      }
+    }
+    if (modules.isEmpty) {
+      return null;
+    }
+    return modules.join(', ');
   }
 
   BillingPayment? get firstRefundablePayment {
@@ -416,6 +479,12 @@ final class BillingWorkItem {
     if (_normalizedBillingStatus == 'PARTIAL' || paidAmount > 0) {
       return BillingClearanceState.partiallyPaid;
     }
+    if (_normalizedStatus == 'OVERDUE' && balanceDue > 0) {
+      return BillingClearanceState.overdue;
+    }
+    if (balanceDue > 0 && !_isCancelled) {
+      return BillingClearanceState.awaitingPayment;
+    }
     return BillingClearanceState.blocked;
   }
 
@@ -459,6 +528,7 @@ final class BillingWorkItem {
     DateTime? approvedAt,
     String? encounterId,
     String? encounterDisplayId,
+    String? sourceModule,
     num? settlementAmount,
     String? decisionNotes,
   }) {
@@ -494,6 +564,7 @@ final class BillingWorkItem {
       approvedAt: approvedAt ?? this.approvedAt,
       encounterId: encounterId ?? this.encounterId,
       encounterDisplayId: encounterDisplayId ?? this.encounterDisplayId,
+      sourceModule: sourceModule ?? this.sourceModule,
       settlementAmount: settlementAmount ?? this.settlementAmount,
       decisionNotes: decisionNotes ?? this.decisionNotes,
     );

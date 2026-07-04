@@ -314,44 +314,205 @@ const toDate = (value) => {
  * @returns {Promise<Map<string, { encounter_id: string|null, encounter_display_id: string|null }>>}
  */
 const resolveClinicalInvoiceContexts = async (invoiceIds = []) => {
+  const contexts = await findClinicalOrdersForInvoices(invoiceIds);
+  const resolved = new Map();
+  for (const [invoiceId, context] of contexts.entries()) {
+    const modules = [...context.source_modules];
+    resolved.set(invoiceId, {
+      encounter_id: context.encounter_id || null,
+      encounter_display_id: context.encounter_display_id || null,
+      source_modules: modules,
+      source_module: modules[0] || null,
+    });
+  }
+  return resolved;
+};
+
+const CLINICAL_INVOICE_SOURCES = Object.freeze([
+  { model: 'lab_order', label: 'Laboratory' },
+  { model: 'radiology_order', label: 'Radiology' },
+  { model: 'pharmacy_order', label: 'Pharmacy' },
+]);
+
+const normalizeSourceModuleLabel = (value) => {
+  const token = String(value || '').trim();
+  if (!token) {
+    return null;
+  }
+  const normalized = token.toLowerCase();
+  if (normalized.includes('lab')) {
+    return 'Laboratory';
+  }
+  if (normalized.includes('radio')) {
+    return 'Radiology';
+  }
+  if (normalized.includes('pharm')) {
+    return 'Pharmacy';
+  }
+  return token.charAt(0).toUpperCase() + token.slice(1);
+};
+
+const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
   const prisma = require('@prisma/client');
   const uniqueIds = [...new Set((invoiceIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
   const contexts = new Map();
-  if (!uniqueIds.length || !prisma?.lab_order?.findMany) {
+  if (!uniqueIds.length) {
     return contexts;
   }
 
-  const labOrders = await prisma.lab_order.findMany({
-    where: {
-      deleted_at: null,
-      OR: uniqueIds.map((invoiceId) => ({
-        billing_snapshot: { path: '$.invoice_id', equals: invoiceId },
-      })),
-    },
-    select: {
-      billing_snapshot: true,
-      encounter_id: true,
-      encounter: { select: { id: true, human_friendly_id: true } },
-    },
-  });
-
-  for (const order of labOrders) {
-    const snapshot = extractStoredClinicalBilling(order);
-    const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
-    if (!invoiceId || contexts.has(invoiceId)) {
+  for (const source of CLINICAL_INVOICE_SOURCES) {
+    if (!prisma?.[source.model]?.findMany) {
       continue;
     }
-    contexts.set(invoiceId, {
-      encounter_id: order.encounter_id || snapshot?.encounter_id || null,
-      encounter_display_id:
-        order.encounter?.human_friendly_id ||
-        snapshot?.encounter_display_id ||
-        order.encounter_id ||
-        null,
+    const orders = await prisma[source.model].findMany({
+      where: {
+        deleted_at: null,
+        OR: uniqueIds.map((invoiceId) => ({
+          billing_snapshot: { path: '$.invoice_id', equals: invoiceId },
+        })),
+      },
+      select: {
+        billing_snapshot: true,
+        encounter_id: true,
+        encounter: { select: { id: true, human_friendly_id: true } },
+      },
     });
+
+    for (const order of orders) {
+      const snapshot = extractStoredClinicalBilling(order);
+      const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
+      if (!invoiceId) {
+        continue;
+      }
+      const existing = contexts.get(invoiceId) || {
+        encounter_id: null,
+        encounter_display_id: null,
+        source_modules: new Set(),
+      };
+      existing.source_modules.add(source.label);
+      if (!existing.encounter_id) {
+        existing.encounter_id = order.encounter_id || snapshot?.encounter_id || null;
+        existing.encounter_display_id =
+          order.encounter?.human_friendly_id ||
+          snapshot?.encounter_display_id ||
+          order.encounter_id ||
+          null;
+      }
+      contexts.set(invoiceId, existing);
+    }
   }
 
   return contexts;
+};
+
+const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
+  const prisma = require('@prisma/client');
+  const normalized = String(token || '').trim();
+  if (!normalized) {
+    return [];
+  }
+  const invoiceIds = new Set();
+  const upper = normalized.toUpperCase();
+  const encounterWhere = {
+    deleted_at: null,
+    tenant_id: scope.tenant_id,
+    ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+    OR: [{ human_friendly_id: { contains: upper } }, { id: normalized }],
+  };
+  const encounters = prisma?.encounter?.findMany
+    ? await prisma.encounter.findMany({
+        where: encounterWhere,
+        select: { id: true, human_friendly_id: true },
+        take: 50,
+      })
+    : [];
+  const encounterIds = encounters.map((entry) => entry.id).filter(Boolean);
+
+  if (encounterIds.length) {
+    for (const source of CLINICAL_INVOICE_SOURCES) {
+      if (!prisma?.[source.model]?.findMany) {
+        continue;
+      }
+      const orders = await prisma[source.model].findMany({
+        where: {
+          deleted_at: null,
+          encounter_id: { in: encounterIds },
+        },
+        select: {
+          billing_snapshot: true,
+          encounter_id: true,
+          encounter: { select: { human_friendly_id: true } },
+        },
+        take: 500,
+      });
+      for (const order of orders) {
+        const snapshot = extractStoredClinicalBilling(order);
+        const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
+        if (invoiceId) {
+          invoiceIds.add(invoiceId);
+        }
+      }
+    }
+    return [...invoiceIds];
+  }
+
+  for (const source of CLINICAL_INVOICE_SOURCES) {
+    if (!prisma?.[source.model]?.findMany) {
+      continue;
+    }
+    const orders = await prisma[source.model].findMany({
+      where: { deleted_at: null },
+      select: {
+        billing_snapshot: true,
+        encounter: { select: { human_friendly_id: true } },
+      },
+      take: 500,
+      orderBy: { ordered_at: 'desc' },
+    });
+    for (const order of orders) {
+      const snapshot = extractStoredClinicalBilling(order);
+      const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
+      if (!invoiceId) {
+        continue;
+      }
+      const encounterDisplayId = String(
+        order.encounter?.human_friendly_id || snapshot?.encounter_display_id || ''
+      ).toUpperCase();
+      if (encounterDisplayId.includes(upper)) {
+        invoiceIds.add(invoiceId);
+      }
+    }
+  }
+
+  return [...invoiceIds];
+};
+
+const resolveInvoiceIdsForSourceModule = async (scope, sourceModule) => {
+  const prisma = require('@prisma/client');
+  const label = normalizeSourceModuleLabel(sourceModule);
+  if (!label) {
+    return [];
+  }
+  const source = CLINICAL_INVOICE_SOURCES.find(
+    (entry) => entry.label.toLowerCase() === label.toLowerCase()
+  );
+  if (!source || !prisma?.[source.model]?.findMany) {
+    return [];
+  }
+  const orders = await prisma[source.model].findMany({
+    where: { deleted_at: null },
+    select: { billing_snapshot: true },
+    take: 1000,
+  });
+  const invoiceIds = new Set();
+  for (const order of orders) {
+    const snapshot = extractStoredClinicalBilling(order);
+    const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
+    if (invoiceId) {
+      invoiceIds.add(invoiceId);
+    }
+  }
+  return [...invoiceIds];
 };
 
 /**
@@ -985,6 +1146,8 @@ module.exports = {
   normalizeBillingOfficeClinicalBilling,
   buildLabOrderBillingFromRequest,
   resolveClinicalInvoiceContexts,
+  resolveInvoiceIdsForEncounterToken,
+  resolveInvoiceIdsForSourceModule,
   syncClinicalOrderBillingSnapshotsFromInvoiceTx,
   resolveInvoicePaymentStatus,
   extractStoredClinicalBilling,

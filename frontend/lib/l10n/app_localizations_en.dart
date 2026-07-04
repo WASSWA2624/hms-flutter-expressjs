@@ -735,7 +735,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingQueueLabel => 'Queue';
 
   @override
-  String get billingSearchHint => 'Invoice, patient, or reference';
+  String get billingSearchHint =>
+      'Patient, ID, invoice, encounter, email, or phone';
+
+  @override
+  String get billingPatientNameColumn => 'Patient name';
+
+  @override
+  String get billingPatientIdColumn => 'Patient ID';
+
+  @override
+  String get billingInvoiceColumn => 'Invoice';
+
+  @override
+  String get billingSourceColumn => 'Source';
+
+  @override
+  String get billingAmountDueColumn => 'Amount due';
+
+  @override
+  String get billingSourceFilterLabel => 'Source';
+
+  @override
+  String get billingAnySourceOption => 'Any source';
+
+  @override
+  String get billingStatusFilterLabel => 'Status';
+
+  @override
+  String get billingAnyStatusOption => 'Any status';
+
+  @override
+  String get billingSourceLaboratory => 'Laboratory';
+
+  @override
+  String get billingSourceRadiology => 'Radiology';
+
+  @override
+  String get billingSourcePharmacy => 'Pharmacy';
+
+  @override
+  String get billingStatusDraftOption => 'Draft';
+
+  @override
+  String get billingStatusIssuedOption => 'Issued';
+
+  @override
+  String get billingStatusPartialOption => 'Partially paid';
+
+  @override
+  String get billingStatusPaidOption => 'Paid';
+
+  @override
+  String get billingStatusOverdueOption => 'Overdue';
+
+  @override
+  String get billingIssuedDateFilterLabel => 'Issued date';
 
   @override
   String get billingSearchSemanticLabel => 'Search billing worklist';

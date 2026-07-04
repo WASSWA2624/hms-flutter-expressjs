@@ -121,6 +121,53 @@ final class BillingWorkspaceController
     return _refreshWorkspace();
   }
 
+  Future<AppFailure?> applyFilters(BillingWorkspaceQuery filters) async {
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          queue: filters.queue,
+          patientId: filters.patientId,
+          invoiceNumber: filters.invoiceNumber,
+          encounterId: filters.encounterId,
+          sourceModule: filters.sourceModule,
+          billingStatus: filters.billingStatus,
+          from: filters.from,
+          to: filters.to,
+          clearFrom: filters.from == null,
+          clearTo: filters.to == null,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearSelectedItem: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkspace();
+  }
+
+  Future<AppFailure?> clearFilters() async {
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(
+      current.copyWith(
+        query: BillingWorkspaceQuery(
+          search: current.query.search,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearSelectedItem: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkspace();
+  }
+
   Future<AppFailure?> changePage(AppPageRequest request) async {
     final BillingWorkspaceState? current = _currentState;
     if (current == null) {

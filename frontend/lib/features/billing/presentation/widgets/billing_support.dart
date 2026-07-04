@@ -49,6 +49,8 @@ String billingClearanceLabel(
     BillingClearanceState.insured => l10n.billingClearanceInsured,
     BillingClearanceState.pendingAuthorization =>
       l10n.billingClearancePendingAuth,
+    BillingClearanceState.awaitingPayment => l10n.billingAwaitingPayment,
+    BillingClearanceState.overdue => l10n.billingOverdue,
     BillingClearanceState.blocked => l10n.billingClearanceBlocked,
   };
 }
@@ -61,6 +63,8 @@ AppWorkspaceStatusTone billingClearanceTone(BillingClearanceState state) {
     BillingClearanceState.insured => AppWorkspaceStatusTone.info,
     BillingClearanceState.pendingAuthorization =>
       AppWorkspaceStatusTone.warning,
+    BillingClearanceState.awaitingPayment => AppWorkspaceStatusTone.warning,
+    BillingClearanceState.overdue => AppWorkspaceStatusTone.error,
     BillingClearanceState.blocked => AppWorkspaceStatusTone.error,
   };
 }
@@ -72,8 +76,18 @@ IconData billingClearanceIcon(BillingClearanceState state) {
     BillingClearanceState.deferred => Icons.schedule_outlined,
     BillingClearanceState.insured => Icons.health_and_safety_outlined,
     BillingClearanceState.pendingAuthorization => Icons.rule_outlined,
+    BillingClearanceState.awaitingPayment => Icons.payments_outlined,
+    BillingClearanceState.overdue => Icons.warning_amber_outlined,
     BillingClearanceState.blocked => Icons.lock_outline,
   };
+}
+
+String billingInvoiceSourceLabel(BuildContext context, BillingWorkItem item) {
+  final String? summary = item.invoiceSourceSummary;
+  if (summary == null || summary.trim().isEmpty) {
+    return context.l10n.profileUnknownValue;
+  }
+  return billingApiLabel(context, summary);
 }
 
 String billingQueueLabel(BuildContext context, BillingQueueType queue) {

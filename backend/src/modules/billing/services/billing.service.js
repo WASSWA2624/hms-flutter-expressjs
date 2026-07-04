@@ -17,6 +17,8 @@ const {
 const { generateInvoicePdfBuffer } = require('@lib/billing/pdf');
 const {
   resolveClinicalInvoiceContexts,
+  resolveInvoiceIdsForEncounterToken,
+  resolveInvoiceIdsForSourceModule,
   syncClinicalOrderBillingSnapshotsFromInvoiceTx,
 } = require('@lib/billing/clinical-request-billing');
 const { notifyLabOrdersBillingUpdated } = require('@services/lab-order/lab-order.service');
@@ -477,19 +479,96 @@ const timelineGroups = (items = []) => {
   ].filter((bucket) => bucket.items.length > 0);
 };
 
-const commonInvoiceWhere = (scope, search) => {
-  const where = { tenant_id: scope.tenant_id };
+const buildInvoiceWhere = async (scope, filters = {}) => {
+  const normalizedFilters = typeof filters === 'string' ? { search: filters } : filters;
+  const where = { tenant_id: scope.tenant_id, deleted_at: null };
   if (scope.facility_id) where.facility_id = scope.facility_id;
   if (scope.patient_id) where.patient_id = scope.patient_id;
-  const token = clean(search);
-  if (token) {
-    where.OR = [
-      { human_friendly_id: { contains: token.toUpperCase() } },
-      { patient: { human_friendly_id: { contains: token.toUpperCase() } } },
-      { patient: { first_name: { contains: token } } },
-      { patient: { last_name: { contains: token } } },
-    ];
+
+  const search = clean(normalizedFilters.search);
+  const patientFilter = clean(normalizedFilters.patient_id);
+  const invoiceNumber = clean(normalizedFilters.invoice_number);
+  const encounterFilter = clean(normalizedFilters.encounter_id);
+  const sourceModule = clean(normalizedFilters.source_module);
+  const billingStatus = clean(normalizedFilters.billing_status).toUpperCase();
+  const from = toDate(normalizedFilters.from);
+  const to = toDate(normalizedFilters.to);
+
+  if (patientFilter) {
+    where.patient = {
+      is: {
+        deleted_at: null,
+        tenant_id: scope.tenant_id,
+        OR: [
+          { human_friendly_id: { contains: patientFilter.toUpperCase() } },
+          { id: patientFilter },
+          { first_name: { contains: patientFilter, mode: 'insensitive' } },
+          { last_name: { contains: patientFilter, mode: 'insensitive' } },
+        ],
+      },
+    };
   }
+
+  if (invoiceNumber) {
+    where.human_friendly_id = { contains: invoiceNumber.toUpperCase() };
+  }
+
+  if (billingStatus) {
+    where.billing_status = billingStatus;
+  }
+
+  if (from || to) {
+    where.issued_at = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+  }
+
+  let structuredInvoiceIds = null;
+  if (encounterFilter) {
+    const encounterMatches = await resolveInvoiceIdsForEncounterToken(scope, encounterFilter);
+    structuredInvoiceIds = new Set(encounterMatches);
+  }
+  if (sourceModule) {
+    const sourceMatches = await resolveInvoiceIdsForSourceModule(scope, sourceModule);
+    const sourceSet = new Set(sourceMatches);
+    structuredInvoiceIds = structuredInvoiceIds
+      ? new Set([...structuredInvoiceIds].filter((invoiceId) => sourceSet.has(invoiceId)))
+      : sourceSet;
+  }
+  if (encounterFilter || sourceModule) {
+    const uniqueStructuredIds = structuredInvoiceIds ? [...structuredInvoiceIds] : [];
+    where.id = uniqueStructuredIds.length ? { in: uniqueStructuredIds } : { in: ['__no_match__'] };
+  }
+
+  if (search) {
+    const orConditions = [
+      { human_friendly_id: { contains: search.toUpperCase() } },
+      {
+        patient: {
+          is: {
+            deleted_at: null,
+            OR: [
+              { human_friendly_id: { contains: search.toUpperCase() } },
+              { first_name: { contains: search, mode: 'insensitive' } },
+              { last_name: { contains: search, mode: 'insensitive' } },
+              {
+                contacts: {
+                  some: {
+                    deleted_at: null,
+                    value: { contains: search, mode: 'insensitive' },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+    const encounterInvoiceIds = await resolveInvoiceIdsForEncounterToken(scope, search);
+    if (encounterInvoiceIds.length) {
+      orConditions.push({ id: { in: encounterInvoiceIds } });
+    }
+    where.AND = [...(where.AND || []), { OR: orConditions }];
+  }
+
   return where;
 };
 
@@ -510,17 +589,31 @@ const attachClinicalInvoiceContexts = async (items = []) => {
     if (!context) {
       return item;
     }
+    const sourceModule = context.source_module || null;
     return {
       ...item,
       encounter_id: context.encounter_id || item.encounter_id || null,
       encounter_display_id: context.encounter_display_id || item.encounter_display_id || null,
+      source_module: sourceModule,
+      source_modules: context.source_modules || (sourceModule ? [sourceModule] : []),
+      items: (item.items || []).map((lineItem) => ({
+        ...lineItem,
+        source_module: sourceModule,
+        metadata_json: {
+          ...(lineItem.metadata_json && typeof lineItem.metadata_json === 'object'
+            ? lineItem.metadata_json
+            : {}),
+          source_module: sourceModule,
+          encounter_display_id: context.encounter_display_id || null,
+        },
+      })),
     };
   });
 };
 
-const runQueue = async (queue, scope, page, limit, search) => {
+const runQueue = async (queue, scope, page, limit, filters = {}) => {
   const skip = (page - 1) * limit;
-  const invoiceWhere = commonInvoiceWhere(scope, search);
+  const invoiceWhere = await buildInvoiceWhere(scope, filters);
   if (queue === QUEUE_TYPES.NEEDS_ISSUE) {
     const where = { ...invoiceWhere, billing_status: 'DRAFT' };
     const [items, total] = await Promise.all([
@@ -590,7 +683,7 @@ const runQueue = async (queue, scope, page, limit, search) => {
 const getWorkspace = async (filters = {}, page = 1, limit = 20, user = {}) => {
   assertEnabled();
   const scope = await resolveScope(filters, user);
-  const invoiceWhere = commonInvoiceWhere(scope, filters.search);
+  const invoiceWhere = await buildInvoiceWhere(scope, filters);
   const paymentWhere = { tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}), ...(scope.patient_id ? { patient_id: scope.patient_id } : {}) };
   const approvalWhere = { tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) };
   const claimWhere = { invoice: { deleted_at: null, tenant_id: scope.tenant_id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}), ...(scope.patient_id ? { patient_id: scope.patient_id } : {}) } };
@@ -659,10 +752,12 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
   const scope = await resolveScope(filters, user);
   const queue = normalizeQueue(filters.queue);
   if (queue) {
-    const result = await runQueue(queue, scope, page, limit, filters.search);
+    const result = await runQueue(queue, scope, page, limit, filters);
     return { queue, items: result.items, pagination: pageMeta(page, limit, result.total) };
   }
-  const results = await Promise.all(Object.values(QUEUE_TYPES).map((key) => runQueue(key, scope, 1, Math.min(10, limit), filters.search)));
+  const results = await Promise.all(
+    Object.values(QUEUE_TYPES).map((key) => runQueue(key, scope, 1, Math.min(10, limit), filters))
+  );
   return { queues: results.map((entry) => ({ queue: entry.queue, items: entry.items, total: entry.total })) };
 };
 

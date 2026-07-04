@@ -21,6 +21,10 @@ const signedDecimalStringSchema = z
 const workspaceQuerySchema = listQuerySchema.extend({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  invoice_number: z.string().trim().optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
+  source_module: z.string().trim().optional(),
+  billing_status: z.enum(['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED']).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   search: z.string().trim().optional(),
@@ -29,6 +33,13 @@ const workspaceQuerySchema = listQuerySchema.extend({
 const workItemsQuerySchema = listQuerySchema.extend({
   queue: queueTypeSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  invoice_number: z.string().trim().optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
+  source_module: z.string().trim().optional(),
+  billing_status: z.enum(['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED']).optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
   search: z.string().trim().optional(),
 });
 

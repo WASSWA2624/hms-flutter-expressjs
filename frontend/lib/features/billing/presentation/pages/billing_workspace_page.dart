@@ -242,7 +242,6 @@ class _BillingQueuePanel extends ConsumerWidget {
 
     return AppWorkspaceDetailPanel(
       title: billingQueueLabel(context, state.query.queue),
-      description: l10n.billingWorklistDescription,
       child: AppListTable<BillingWorkItem>(
         page: state.workItems,
         isLoading: state.isRefreshing,
@@ -263,21 +262,21 @@ class _BillingQueuePanel extends ConsumerWidget {
           advancedFilterTitle: l10n.billingFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.billingClearFilters,
-          enableDateFilter: false,
+          dateFilterLabel: l10n.billingIssuedDateFilterLabel,
+          dateFromLabel: l10n.opdDateFromLabel,
+          dateToLabel: l10n.opdDateToLabel,
           allFieldsLabel: billingQueueLabel(context, BillingQueueType.all),
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _billingQueueFilterKey,
-              label: l10n.billingQueueLabel,
-              allLabel: billingQueueLabel(context, BillingQueueType.all),
-              choices: _billingQueueFilterChoices(context),
-            ),
-          ],
+          textFilters: _billingTextFilters(l10n),
+          filterGroups: _billingTableFilterGroups(context),
           filterValue: _billingFilterValue(state.query),
-          hasActiveFilters: state.query.queue != BillingQueueType.all,
+          hasActiveFilters: state.query.hasActiveFilters,
           onFilterChanged: (AppSearchBarFilterValue value) {
-            controller.applyQueue(
-              _billingQueueFromFilter(value.option(_billingQueueFilterKey)),
+            if (!value.isActive) {
+              unawaited(controller.clearFilters());
+              return;
+            }
+            unawaited(
+              controller.applyFilters(_billingQueryFromFilter(state.query, value)),
             );
           },
         ),
@@ -307,23 +306,55 @@ class _BillingQueuePanel extends ConsumerWidget {
         },
         columns: <AppListTableColumn<BillingWorkItem>>[
           AppListTableColumn<BillingWorkItem>(
-            label: l10n.billingPatientColumn,
+            id: 'patient_name',
+            label: l10n.billingPatientNameColumn,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
                 appListTableCompareText(
                   left.effectivePatientName,
                   right.effectivePatientName,
                 ),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return _TwoLineCell(
-                title: billingPatientName(context, item),
-                subtitle: billingJoinDisplay(<String?>[
-                  item.effectivePatientNumber,
-                  item.effectiveDisplayId,
-                ]),
+              return Text(
+                billingPatientName(context, item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               );
             },
           ),
           AppListTableColumn<BillingWorkItem>(
+            id: 'patient_id',
+            label: l10n.billingPatientIdColumn,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.effectivePatientNumber,
+                  right.effectivePatientNumber,
+                ),
+            cellBuilder: (BuildContext context, BillingWorkItem item) {
+              return Text(
+                item.effectivePatientNumber ?? l10n.profileUnknownValue,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
+          ),
+          AppListTableColumn<BillingWorkItem>(
+            id: 'invoice',
+            label: l10n.billingInvoiceColumn,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.effectiveDisplayId,
+                  right.effectiveDisplayId,
+                ),
+            cellBuilder: (BuildContext context, BillingWorkItem item) {
+              return Text(
+                item.effectiveDisplayId,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
+          ),
+          AppListTableColumn<BillingWorkItem>(
+            id: 'encounter',
             label: l10n.billingEncounterLabel,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
                 appListTableCompareText(
@@ -339,6 +370,23 @@ class _BillingQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<BillingWorkItem>(
+            id: 'source',
+            label: l10n.billingSourceColumn,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.invoiceSourceSummary,
+                  right.invoiceSourceSummary,
+                ),
+            cellBuilder: (BuildContext context, BillingWorkItem item) {
+              return Text(
+                billingInvoiceSourceLabel(context, item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
+          ),
+          AppListTableColumn<BillingWorkItem>(
+            id: 'status',
             label: l10n.billingStatusColumn,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
                 appListTableCompareText(
@@ -350,20 +398,19 @@ class _BillingQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: l10n.billingAmountColumn,
+            id: 'amount_due',
+            label: l10n.billingAmountDueColumn,
             numeric: true,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareNumber(
-                  left.effectiveTotal,
-                  right.effectiveTotal,
-                ),
+                appListTableCompareNumber(left.balanceDue, right.balanceDue),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(
-                billingMoney(context, item.effectiveTotal, item.currency),
+                billingMoney(context, item.balanceDue, item.currency),
               );
             },
           ),
           AppListTableColumn<BillingWorkItem>(
+            id: 'amount_paid',
             label: l10n.billingPaidColumn,
             numeric: true,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
@@ -374,7 +421,10 @@ class _BillingQueuePanel extends ConsumerWidget {
               );
             },
           ),
+        ],
+        columnChoices: <AppListTableColumn<BillingWorkItem>>[
           AppListTableColumn<BillingWorkItem>(
+            id: 'balance',
             label: l10n.billingBalanceColumn,
             numeric: true,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
@@ -386,6 +436,7 @@ class _BillingQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<BillingWorkItem>(
+            id: 'updated',
             label: l10n.billingUpdatedColumn,
             sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
                 appListTableCompareDateTime(left.timelineAt, right.timelineAt),
@@ -503,7 +554,10 @@ class _BillingMobileTile extends StatelessWidget {
                 SizedBox(height: theme.spacing.xs),
                 Text(
                   billingJoinDisplay(<String?>[
+                    item.effectivePatientNumber,
                     item.effectiveDisplayId,
+                    item.encounterDisplayId ?? item.encounterId,
+                    billingInvoiceSourceLabel(context, item),
                     billingMoney(context, item.balanceDue, item.currency),
                   ]),
                   style: theme.textTheme.bodySmall,
@@ -515,34 +569,6 @@ class _BillingMobileTile extends StatelessWidget {
           BillingGateBadge(state: item.clearanceState),
         ],
       ),
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        if (subtitle.trim().isNotEmpty)
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
     );
   }
 }
@@ -1616,14 +1642,158 @@ Future<void> _showFinalizeEncounterDialog(
 }
 
 const String _billingQueueFilterKey = 'queue';
+const String _billingSourceFilterKey = 'source_module';
+const String _billingStatusFilterKey = 'billing_status';
+const String _billingFilterPatientId = 'patient_id';
+const String _billingFilterInvoiceNumber = 'invoice_number';
+const String _billingFilterEncounterId = 'encounter_id';
 
 AppSearchBarFilterValue _billingFilterValue(BillingWorkspaceQuery query) {
-  if (query.queue == BillingQueueType.all) {
+  if (!query.hasActiveFilters) {
     return AppSearchBarFilterValue.empty;
   }
   return AppSearchBarFilterValue(
-    options: <String, String>{_billingQueueFilterKey: query.queue.name},
+    dateFrom: query.from,
+    dateTo: query.to,
+    texts: <String, String>{
+      if (query.patientId.trim().isNotEmpty)
+        _billingFilterPatientId: query.patientId.trim(),
+      if (query.invoiceNumber.trim().isNotEmpty)
+        _billingFilterInvoiceNumber: query.invoiceNumber.trim(),
+      if (query.encounterId.trim().isNotEmpty)
+        _billingFilterEncounterId: query.encounterId.trim(),
+    },
+    options: <String, String>{
+      if (query.queue != BillingQueueType.all)
+        _billingQueueFilterKey: query.queue.name,
+      if (query.sourceModule.trim().isNotEmpty)
+        _billingSourceFilterKey: query.sourceModule.trim(),
+      if (query.billingStatus.trim().isNotEmpty)
+        _billingStatusFilterKey: query.billingStatus.trim(),
+    },
   );
+}
+
+BillingWorkspaceQuery _billingQueryFromFilter(
+  BillingWorkspaceQuery current,
+  AppSearchBarFilterValue value,
+) {
+  return current.copyWith(
+    queue: _billingQueueFromFilter(value.option(_billingQueueFilterKey)),
+    patientId: value.text(_billingFilterPatientId) ?? '',
+    invoiceNumber: value.text(_billingFilterInvoiceNumber) ?? '',
+    encounterId: value.text(_billingFilterEncounterId) ?? '',
+    sourceModule: value.option(_billingSourceFilterKey) ?? '',
+    billingStatus: value.option(_billingStatusFilterKey) ?? '',
+    from: value.dateFrom,
+    to: value.dateTo,
+    clearFrom: value.dateFrom == null,
+    clearTo: value.dateTo == null,
+    pageRequest: current.pageRequest.first(),
+  );
+}
+
+List<AppSearchBarTextFilter> _billingTextFilters(AppLocalizations l10n) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: _billingFilterPatientId,
+      label: l10n.billingPatientIdColumn,
+      icon: Icons.badge_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _billingFilterInvoiceNumber,
+      label: l10n.billingInvoiceColumn,
+      icon: Icons.receipt_long_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _billingFilterEncounterId,
+      label: l10n.billingEncounterLabel,
+      icon: Icons.tag_outlined,
+      textInputAction: TextInputAction.done,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _billingTableFilterGroups(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _billingQueueFilterKey,
+      label: l10n.billingQueueLabel,
+      allLabel: billingQueueLabel(context, BillingQueueType.all),
+      choices: _billingQueueFilterChoices(context),
+    ),
+    AppSearchBarFilterGroup(
+      key: _billingSourceFilterKey,
+      label: l10n.billingSourceFilterLabel,
+      allLabel: l10n.billingAnySourceOption,
+      choices: _billingSourceFilterChoices(context),
+    ),
+    AppSearchBarFilterGroup(
+      key: _billingStatusFilterKey,
+      label: l10n.billingStatusFilterLabel,
+      allLabel: l10n.billingAnyStatusOption,
+      choices: _billingStatusFilterChoices(context),
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _billingSourceFilterChoices(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: 'Laboratory',
+      label: l10n.billingSourceLaboratory,
+      icon: Icons.science_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Radiology',
+      label: l10n.billingSourceRadiology,
+      icon: Icons.monitor_heart_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'Pharmacy',
+      label: l10n.billingSourcePharmacy,
+      icon: Icons.medication_outlined,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _billingStatusFilterChoices(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: 'DRAFT',
+      label: l10n.billingStatusDraftOption,
+      icon: Icons.edit_note_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'ISSUED',
+      label: l10n.billingStatusIssuedOption,
+      icon: Icons.payments_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'PARTIAL',
+      label: l10n.billingStatusPartialOption,
+      icon: Icons.pie_chart_outline,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'PAID',
+      label: l10n.billingStatusPaidOption,
+      icon: Icons.verified_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'OVERDUE',
+      label: l10n.billingStatusOverdueOption,
+      icon: Icons.warning_amber_outlined,
+    ),
+  ];
 }
 
 BillingQueueType _billingQueueFromFilter(String? value) {
