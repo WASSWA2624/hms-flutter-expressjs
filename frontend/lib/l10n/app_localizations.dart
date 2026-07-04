@@ -17524,6 +17524,30 @@ abstract class AppLocalizations {
   /// **'Patient'**
   String get labPatientColumnLabel;
 
+  /// Column header for patient identifier in the lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get labPatientIdColumnLabel;
+
+  /// Column header for clinical encounter in the lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get labEncounterColumnLabel;
+
+  /// Column header for lab order identifier in the lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab ID'**
+  String get labLabEncounterColumnLabel;
+
+  /// Column header for encounter source and location in the lab worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Source / location'**
+  String get labSourceLocationColumnLabel;
+
   /// Localized text for labOrderColumnLabel.
   ///
   /// In en, this message translates to:
@@ -30266,6 +30290,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Partially filled'**
   String get labStatusPartiallyFilled;
+
+  /// Lab status label for orders with some rejected items.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially rejected'**
+  String get labStatusPartiallyRejected;
+
+  /// Lab status label for orders with some verified items.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially verified'**
+  String get labStatusPartiallyVerified;
+
+  /// Sub-badge label for rejected lab order items.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 rejected} other {{count} rejected}}'**
+  String labRejectedItemCount(int count);
 
   /// Label for the lab report verification signature block.
   ///

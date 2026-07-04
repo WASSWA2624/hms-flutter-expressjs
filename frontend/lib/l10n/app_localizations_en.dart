@@ -9395,6 +9395,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPatientColumnLabel => 'Patient';
 
   @override
+  String get labPatientIdColumnLabel => 'Patient ID';
+
+  @override
+  String get labEncounterColumnLabel => 'Encounter';
+
+  @override
+  String get labLabEncounterColumnLabel => 'Lab ID';
+
+  @override
+  String get labSourceLocationColumnLabel => 'Source / location';
+
+  @override
   String get labOrderColumnLabel => 'Order';
 
   @override
@@ -16176,6 +16188,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labStatusPartiallyFilled => 'Partially filled';
+
+  @override
+  String get labStatusPartiallyRejected => 'Partially rejected';
+
+  @override
+  String get labStatusPartiallyVerified => 'Partially verified';
+
+  @override
+  String labRejectedItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rejected',
+      one: '1 rejected',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get labReportSignatureLabel => 'Signature / stamp';

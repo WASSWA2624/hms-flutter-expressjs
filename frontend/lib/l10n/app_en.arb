@@ -12100,6 +12100,22 @@
   "@labPatientColumnLabel": {
     "description": "Localized text for labPatientColumnLabel."
   },
+  "labPatientIdColumnLabel": "Patient ID",
+  "@labPatientIdColumnLabel": {
+    "description": "Column header for patient identifier in the lab worklist."
+  },
+  "labEncounterColumnLabel": "Encounter",
+  "@labEncounterColumnLabel": {
+    "description": "Column header for clinical encounter in the lab worklist."
+  },
+  "labLabEncounterColumnLabel": "Lab ID",
+  "@labLabEncounterColumnLabel": {
+    "description": "Column header for lab order identifier in the lab worklist."
+  },
+  "labSourceLocationColumnLabel": "Source / location",
+  "@labSourceLocationColumnLabel": {
+    "description": "Column header for encounter source and location in the lab worklist."
+  },
   "labOrderColumnLabel": "Order",
   "@labOrderColumnLabel": {
     "description": "Localized text for labOrderColumnLabel."
@@ -20836,6 +20852,24 @@
   "labStatusPartiallyFilled": "Partially filled",
   "@labStatusPartiallyFilled": {
     "description": "Lab status label for orders with some completed result items."
+  },
+  "labStatusPartiallyRejected": "Partially rejected",
+  "@labStatusPartiallyRejected": {
+    "description": "Lab status label for orders with some rejected items."
+  },
+  "labStatusPartiallyVerified": "Partially verified",
+  "@labStatusPartiallyVerified": {
+    "description": "Lab status label for orders with some verified items."
+  },
+  "labRejectedItemCount": "{count, plural, one {1 rejected} other {{count} rejected}}",
+  "@labRejectedItemCount": {
+    "description": "Sub-badge label for rejected lab order items.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
   },
   "labReportSignatureLabel": "Signature / stamp",
   "@labReportSignatureLabel": {

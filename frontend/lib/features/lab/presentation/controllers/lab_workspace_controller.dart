@@ -59,6 +59,7 @@ final class LabWorkspaceController
 
   Timer? _syncTimer;
   bool _isSyncing = false;
+  bool _refreshPending = false;
   int _workbenchRefreshSequence = 0;
 
   @override
@@ -67,6 +68,7 @@ final class LabWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.lab,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(
@@ -80,7 +82,20 @@ final class LabWorkspaceController
   }
 
   Future<void> _syncFromRealtime() async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _refreshPending = true;
+      return;
+    }
     await _syncVisibleData();
+    _drainPendingRefresh();
+  }
+
+  void _drainPendingRefresh() {
+    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+      return;
+    }
+    _refreshPending = false;
+    unawaited(_syncVisibleData());
   }
 
   Future<AppFailure?> refresh() async {
@@ -1005,6 +1020,7 @@ final class LabWorkspaceController
   }) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
+      _refreshPending = true;
       return null;
     }
 
@@ -1079,6 +1095,7 @@ final class LabWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      _drainPendingRefresh();
     }
   }
 
@@ -1114,7 +1131,7 @@ final class LabWorkspaceController
         _emit(
           latest.copyWith(
             summary: bundle.summary,
-            worklist: bundle.worklist,
+            worklist: _stableWorklistPage(bundle.worklist, latest.worklist),
             selectedWorkflow: selectedWorkflows.isNotEmpty
                 ? selectedWorkflows.first
                 : selected,
@@ -1527,6 +1544,78 @@ final class LabWorkspaceController
     state = AsyncData<Result<LabWorkspaceState>>(
       Result<LabWorkspaceState>.success(nextState),
     );
+  }
+
+  AppPage<LabOrderSummary> _stableWorklistPage(
+    AppPage<LabOrderSummary> next,
+    AppPage<LabOrderSummary> previous,
+  ) {
+    if (_worklistPageEquivalent(next, previous)) {
+      return previous;
+    }
+    return next;
+  }
+
+  bool _worklistPageEquivalent(
+    AppPage<LabOrderSummary> next,
+    AppPage<LabOrderSummary> previous,
+  ) {
+    if (next.request.pageIndex != previous.request.pageIndex ||
+        next.request.pageSize != previous.request.pageSize) {
+      return false;
+    }
+    if (next.totalItemCount != previous.totalItemCount) {
+      return false;
+    }
+    if (next.items.length != previous.items.length) {
+      return false;
+    }
+    for (int index = 0; index < next.items.length; index++) {
+      if (!_worklistRowEquivalent(next.items[index], previous.items[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _worklistRowEquivalent(
+    LabOrderSummary next,
+    LabOrderSummary previous,
+  ) {
+    return next.id == previous.id &&
+        next.displayId == previous.displayId &&
+        next.status == previous.status &&
+        next.patientDisplayName == previous.patientDisplayName &&
+        next.patientId == previous.patientId &&
+        next.encounterId == previous.encounterId &&
+        next.encounterSource == previous.encounterSource &&
+        next.encounterType == previous.encounterType &&
+        next.locationLabel == previous.locationLabel &&
+        next.wardName == previous.wardName &&
+        next.bedLabel == previous.bedLabel &&
+        next.isPatientGroup == previous.isPatientGroup &&
+        next.activeOrderCount == previous.activeOrderCount &&
+        next.orderCount == previous.orderCount &&
+        next.itemCount == previous.itemCount &&
+        next.completedItemCount == previous.completedItemCount &&
+        next.rejectedItemCount == previous.rejectedItemCount &&
+        next.inProcessItemCount == previous.inProcessItemCount &&
+        next.pendingItemCount == previous.pendingItemCount &&
+        next.testsSummary == previous.testsSummary &&
+        _stringListEquivalent(next.orderIds, previous.orderIds) &&
+        _stringListEquivalent(next.orderDisplayIds, previous.orderDisplayIds);
+  }
+
+  bool _stringListEquivalent(List<String> left, List<String> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (int index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 

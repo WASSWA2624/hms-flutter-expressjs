@@ -320,7 +320,7 @@ class _LabWorklistPanel extends ConsumerWidget {
           ? l10n.labPatientsWorklistTitle
           : l10n.labWorklistTitle,
       description: state.query.view == LabWorkbenchView.patients
-          ? l10n.labPatientsWorklistDescription
+          ? null
           : l10n.labWorklistDescription,
       child: Stack(
         children: <Widget>[
@@ -382,67 +382,10 @@ class _LabWorklistPanel extends ConsumerWidget {
                   : l10n.labNoOrdersBody,
               icon: Icons.science_outlined,
             ),
-            columns: <AppListTableColumn<LabOrderSummary>>[
-              if (state.query.view == LabWorkbenchView.orders)
-                _orderWorklistColumn(context, state.query.view)
-              else
-                _patientWorklistColumn(context),
-              if (state.query.view == LabWorkbenchView.orders)
-                _patientWorklistColumn(context)
-              else
-                _orderWorklistColumn(context, state.query.view),
-              AppListTableColumn<LabOrderSummary>(
-                id: 'entry_status',
-                label: l10n.labEntryStatusColumnLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareNumber(
-                      _enteredResultItemCount(left),
-                      _enteredResultItemCount(right),
-                    ),
-                cellBuilder: (BuildContext context, LabOrderSummary item) {
-                  return AppWorkspaceStatusBadge(
-                    status: _entryStatus(context, item),
-                  );
-                },
-              ),
-              AppListTableColumn<LabOrderSummary>(
-                id: 'result_status',
-                label: l10n.labResultStatusLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareNumber(
-                      _completedResultItemCount(left),
-                      _completedResultItemCount(right),
-                    ),
-                cellBuilder: (BuildContext context, LabOrderSummary item) {
-                  return AppWorkspaceStatusBadge(
-                    status: _resultStatus(context, item),
-                  );
-                },
-              ),
-            ],
-            columnChoices: <AppListTableColumn<LabOrderSummary>>[
-              AppListTableColumn<LabOrderSummary>(
-                id: 'tests',
-                label: l10n.labTestsColumnLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareText(left.testsLabel, right.testsLabel),
-                cellBuilder: (BuildContext context, LabOrderSummary item) {
-                  return Text(item.testsLabel ?? l10n.profileUnknownValue);
-                },
-              ),
-              AppListTableColumn<LabOrderSummary>(
-                id: 'next_action',
-                label: l10n.labNextActionColumnLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareText(
-                      _nextActionLabel(context, left),
-                      _nextActionLabel(context, right),
-                    ),
-                cellBuilder: (BuildContext context, LabOrderSummary item) {
-                  return Text(_nextActionLabel(context, item));
-                },
-              ),
-            ],
+            columns: state.query.view == LabWorkbenchView.patients
+                ? _patientViewWorklistColumns(context)
+                : _orderViewWorklistColumns(context),
+            columnChoices: _optionalWorklistColumns(context),
             mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
               return AppListItemRow(
                 title: item.displayTitle,
@@ -469,7 +412,69 @@ class _LabWorklistPanel extends ConsumerWidget {
   }
 }
 
-AppListTableColumn<LabOrderSummary> _patientWorklistColumn(
+List<AppListTableColumn<LabOrderSummary>> _patientViewWorklistColumns(
+  BuildContext context,
+) {
+  return <AppListTableColumn<LabOrderSummary>>[
+    _patientNameWorklistColumn(context),
+    _patientIdWorklistColumn(context),
+    _encounterWorklistColumn(context),
+    _labEncounterWorklistColumn(context),
+    _sourceLocationWorklistColumn(context),
+    _orderWorklistColumn(context, LabWorkbenchView.patients),
+    _entryStatusWorklistColumn(context),
+    _resultStatusWorklistColumn(context),
+  ];
+}
+
+List<AppListTableColumn<LabOrderSummary>> _orderViewWorklistColumns(
+  BuildContext context,
+) {
+  return <AppListTableColumn<LabOrderSummary>>[
+    _orderWorklistColumn(context, LabWorkbenchView.orders),
+    _patientNameWorklistColumn(context),
+    _entryStatusWorklistColumn(context),
+    _resultStatusWorklistColumn(context),
+  ];
+}
+
+List<AppListTableColumn<LabOrderSummary>> _optionalWorklistColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<LabOrderSummary>>[
+    _patientIdWorklistColumn(context),
+    _encounterWorklistColumn(context),
+    _labEncounterWorklistColumn(context),
+    _sourceLocationWorklistColumn(context),
+    AppListTableColumn<LabOrderSummary>(
+      id: 'tests',
+      label: l10n.labTestsColumnLabel,
+      sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+          appListTableCompareText(left.testsLabel, right.testsLabel),
+      cellBuilder: (BuildContext context, LabOrderSummary item) {
+        return _labWorklistTextCell(
+          context,
+          item.testsLabel ?? l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<LabOrderSummary>(
+      id: 'next_action',
+      label: l10n.labNextActionColumnLabel,
+      sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+          appListTableCompareText(
+            _nextActionLabel(context, left),
+            _nextActionLabel(context, right),
+          ),
+      cellBuilder: (BuildContext context, LabOrderSummary item) {
+        return _labWorklistTextCell(context, _nextActionLabel(context, item));
+      },
+    ),
+  ];
+}
+
+AppListTableColumn<LabOrderSummary> _patientNameWorklistColumn(
   BuildContext context,
 ) {
   final AppLocalizations l10n = context.l10n;
@@ -478,10 +483,156 @@ AppListTableColumn<LabOrderSummary> _patientWorklistColumn(
     label: l10n.labPatientColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(_patientSortKey(left), _patientSortKey(right)),
-    cellBuilder: (_, LabOrderSummary item) {
-      return _LabOrderIdentity(order: item);
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        item.patientDisplayName ?? item.displayTitle,
+      );
     },
   );
+}
+
+AppListTableColumn<LabOrderSummary> _patientIdWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'patient_id',
+    label: l10n.labPatientIdColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(left.patientId, right.patientId),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        item.patientId ?? l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _encounterWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'encounter',
+    label: l10n.labEncounterColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(left.encounterId, right.encounterId),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        item.encounterId ?? l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _labEncounterWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'lab_encounter',
+    label: l10n.labLabEncounterColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(
+          _labOrderEncounterLabel(left),
+          _labOrderEncounterLabel(right),
+        ),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        _labOrderEncounterLabel(item) ?? l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _sourceLocationWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'source_location',
+    label: l10n.labSourceLocationColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(
+          _sourceLocationLabel(left),
+          _sourceLocationLabel(right),
+        ),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        _sourceLocationLabel(item) ?? l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _entryStatusWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'entry_status',
+    label: l10n.labEntryStatusColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareNumber(
+          _enteredResultItemCount(left),
+          _enteredResultItemCount(right),
+        ),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return AppWorkspaceStatusBadge(status: _entryStatus(context, item));
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _resultStatusWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'result_status',
+    label: l10n.labResultStatusLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareNumber(
+          _completedResultItemCount(left),
+          _completedResultItemCount(right),
+        ),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return AppWorkspaceStatusBadge(status: _resultStatus(context, item));
+    },
+  );
+}
+
+Widget _labWorklistTextCell(BuildContext context, String value) {
+  final ThemeData theme = Theme.of(context);
+  return Text(
+    value,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: theme.textTheme.bodyMedium,
+  );
+}
+
+String? _labOrderEncounterLabel(LabOrderSummary order) {
+  if (order.isPatientGroup) {
+    if (order.orderDisplayIds.isNotEmpty) {
+      return order.orderDisplayIds.first;
+    }
+    if (order.orderIds.isNotEmpty) {
+      return order.orderIds.first;
+    }
+  }
+  return order.displayId ?? order.apiId;
+}
+
+String? _sourceLocationLabel(LabOrderSummary order) {
+  return _joinNonEmpty(<String?>[
+    order.encounterSourceLabel,
+    order.encounterLocationLabel,
+  ]);
 }
 
 AppListTableColumn<LabOrderSummary> _orderWorklistColumn(
@@ -528,7 +679,6 @@ class _LabOrderIdentifier extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     if (order.isPatientGroup) {
       final int activeOrders = order.activeOrderCount > 0
@@ -537,90 +687,13 @@ class _LabOrderIdentifier extends StatelessWidget {
       final List<String> ids = order.orderDisplayIds.isNotEmpty
           ? order.orderDisplayIds
           : order.orderIds;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            l10n.labActiveOrderCount(activeOrders),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (ids.isNotEmpty)
-            Text(
-              ids.take(3).join(', '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-        ],
-      );
+      final String summary = ids.isEmpty
+          ? l10n.labActiveOrderCount(activeOrders)
+          : '${l10n.labActiveOrderCount(activeOrders)} · ${ids.take(3).join(', ')}';
+      return _labWorklistTextCell(context, summary);
     }
 
-    return AppCopyableIdentifier(
-      value: order.apiId,
-      tooltip: l10n.copyIdentifierAction,
-      copiedMessage: l10n.identifierCopiedMessage,
-      textStyle: theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _LabOrderIdentity extends StatelessWidget {
-  const _LabOrderIdentity({required this.order});
-
-  final LabOrderSummary order;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String? subtitle = order.isPatientGroup
-        ? _joinNonEmpty(<String?>[
-            order.patientId,
-            order.encounterId,
-            context.l10n.labActiveOrderCount(
-              order.activeOrderCount > 0
-                  ? order.activeOrderCount
-                  : order.orderCount,
-            ),
-          ])
-        : order.displaySubtitle;
-    final String detailLine = _joinNonEmpty(<String?>[
-      subtitle,
-      order.encounterSourceLabel,
-      order.encounterLocationLabel,
-    ]);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          order.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        if (detailLine.isNotEmpty)
-          Text(
-            detailLine,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
+    return _labWorklistTextCell(context, order.displayId ?? order.apiId);
   }
 }
 
