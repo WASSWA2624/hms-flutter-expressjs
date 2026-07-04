@@ -12832,6 +12832,18 @@
   "@labReportPreviewTitle": {
     "description": "Localized text for labReportPreviewTitle."
   },
+  "labReportSearchLabel": "Search report tests",
+  "@labReportSearchLabel": {
+    "description": "Semantic label for searching tests in the lab report preview table."
+  },
+  "labReportSearchHint": "Search test, result, reference range, or flag",
+  "@labReportSearchHint": {
+    "description": "Hint text for searching tests in the lab report preview table."
+  },
+  "labReportTableColumnsTitle": "Report table columns",
+  "@labReportTableColumnsTitle": {
+    "description": "Title for configuring visible columns in the lab report preview table."
+  },
   "labReportTitle": "Laboratory result report",
   "@labReportTitle": {
     "description": "Localized text for labReportTitle."

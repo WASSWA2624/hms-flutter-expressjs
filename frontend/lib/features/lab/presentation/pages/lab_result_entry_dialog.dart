@@ -2601,22 +2601,45 @@ class _LabReportPreviewDialog extends ConsumerStatefulWidget {
 
 class _LabReportPreviewDialogState
     extends ConsumerState<_LabReportPreviewDialog> {
+  static const String _selectColumnKey = 'select';
+  static const String _testsColumnKey = 'tests';
+  static const String _referenceRangeColumnKey = 'reference_range';
+  static const String _resultColumnKey = 'result';
+  static const String _flagColumnKey = 'flag';
+
   late Set<String> _selectedOrderIds;
   late Set<String> _selectedItemIds;
-  bool _showOrderDetails = true;
+  late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<LabOrderItem>
+  _columnVisibilityController;
   bool _isPrinting = false;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<LabOrderItem>(
+          storageKey: 'lab_report_preview_columns',
+        );
     _resetSelection();
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    _columnVisibilityController.dispose();
+    super.dispose();
+  }
+
+  List<LabOrderItem> get _allReportItems => _reportItems(widget.workflows);
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<LabOrderWorkflow> selectedWorkflows =
-        _selectedWorkflowsForPreview();
+    final bool hasSelectedItems = _selectedItemIds.isNotEmpty;
+    final bool canPrint =
+        hasSelectedItems && _visibleReportColumnKeys().isNotEmpty;
     return AppDialog(
       title: Text(l10n.labReportPreviewTitle),
       icon: const Icon(Icons.print_outlined),
@@ -2624,30 +2647,24 @@ class _LabReportPreviewDialogState
       initialMaximized: true,
       maxWidth: 1040,
       closeEnabled: !_isPrinting,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _reportOptionsHeader(context),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppReportPreviewPanel(
-            title: l10n.labReportPreviewTitle,
-            selectable: true,
-            child: selectedWorkflows.isEmpty
-                ? AppWorkspaceStatePanel.empty(
-                    title: l10n.labReportNoSelectionLabel,
-                    body: l10n.labNoOrderItemsEntryBody,
-                    icon: Icons.print_disabled_outlined,
-                  )
-                : _LabReportPreview(
-                    workflows: selectedWorkflows,
-                    selectedItemIds: _selectedItemIds,
-                    showOrderDetails: _showOrderDetails,
-                    selectable: true,
-                    onToggleItem: _toggleReportItem,
-                    onToggleOrder: _toggleReportOrder,
-                  ),
-          ),
-        ],
+      content: AppReportPreviewPanel(
+        selectable: true,
+        child: _allReportItems.isEmpty
+            ? AppWorkspaceStatePanel.empty(
+                title: l10n.labNoOrderItemsEntryTitle,
+                body: l10n.labNoOrderItemsEntryBody,
+                icon: Icons.print_disabled_outlined,
+              )
+            : _LabReportPreview(
+                workflows: widget.workflows,
+                items: _allReportItems,
+                selectedItemIds: _selectedItemIds,
+                searchController: _searchController,
+                columnVisibilityController: _columnVisibilityController,
+                columns: _reportPreviewColumns(context),
+                columnChoices: _reportPreviewColumnChoices(context),
+                onToggleItem: _toggleReportItem,
+              ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -2655,142 +2672,194 @@ class _LabReportPreviewDialogState
           enabled: !_isPrinting,
           onPressed: () => setState(_resetSelection),
         ),
-        AppButton.tertiary(
-          label: l10n.commonCloseActionLabel,
-          enabled: !_isPrinting,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         AppReportActionButton.print(
           label: l10n.labPrintReportAction,
           isLoading: _isPrinting,
-          enabled: selectedWorkflows.isNotEmpty,
-          onPressed: selectedWorkflows.isEmpty
-              ? null
-              : () => _printSelectedReport(),
+          enabled: canPrint,
+          onPressed: canPrint ? () => _printSelectedReport() : null,
         ),
       ],
     );
   }
 
-  Widget _reportOptionsHeader(BuildContext context) {
+  List<AppListTableColumn<LabOrderItem>> _reportPreviewColumns(
+    BuildContext context,
+  ) {
+    return <AppListTableColumn<LabOrderItem>>[
+      _reportSelectionColumn(context),
+      ..._reportPreviewDataColumns(context),
+    ];
+  }
+
+  List<AppListTableColumn<LabOrderItem>> _reportPreviewColumnChoices(
+    BuildContext context,
+  ) {
+    return _reportPreviewDataColumns(context);
+  }
+
+  List<AppListTableColumn<LabOrderItem>> _reportPreviewDataColumns(
+    BuildContext context,
+  ) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final int selectedCount = _selectedItemIds.length;
-    final int totalCount = widget.workflows.fold<int>(
-      0,
-      (int count, LabOrderWorkflow workflow) =>
-          count + workflow.order.items.length,
+    return <AppListTableColumn<LabOrderItem>>[
+      AppListTableColumn<LabOrderItem>(
+        id: _testsColumnKey,
+        label: l10n.labTestsColumnLabel,
+        sortComparator: (LabOrderItem left, LabOrderItem right) {
+          return appListTableCompareText(
+            left.displayTitle,
+            right.displayTitle,
+          );
+        },
+        cellBuilder: (BuildContext context, LabOrderItem item) {
+          return Text(item.displayTitle);
+        },
+      ),
+      AppListTableColumn<LabOrderItem>(
+        id: _referenceRangeColumnKey,
+        label: l10n.labReferenceRangeLabel,
+        sortComparator: (LabOrderItem left, LabOrderItem right) {
+          return appListTableCompareText(
+            left.displayReferenceRange,
+            right.displayReferenceRange,
+          );
+        },
+        cellBuilder: (BuildContext context, LabOrderItem item) {
+          return Text(
+            item.displayReferenceRange ?? context.l10n.profileUnknownValue,
+          );
+        },
+      ),
+      AppListTableColumn<LabOrderItem>(
+        id: _resultColumnKey,
+        label: l10n.labReportResultLabel,
+        sortComparator: (LabOrderItem left, LabOrderItem right) {
+          return appListTableCompareText(
+            left.displayResultValue,
+            right.displayResultValue,
+          );
+        },
+        cellBuilder: (BuildContext context, LabOrderItem item) {
+          return _ReportPreviewResultCell(item: item);
+        },
+      ),
+      AppListTableColumn<LabOrderItem>(
+        id: _flagColumnKey,
+        label: l10n.labResultFlagLabel,
+        sortComparator: (LabOrderItem left, LabOrderItem right) {
+          return appListTableCompareText(
+            _resolveItemResultFlagLabel(context, left),
+            _resolveItemResultFlagLabel(context, right),
+          );
+        },
+        cellBuilder: (BuildContext context, LabOrderItem item) {
+          return _ReportPreviewFlagCell(item: item);
+        },
+      ),
+    ];
+  }
+
+  AppListTableColumn<LabOrderItem> _reportSelectionColumn(
+    BuildContext context,
+  ) {
+    return AppListTableColumn<LabOrderItem>(
+      id: _selectColumnKey,
+      label: '',
+      alwaysVisible: true,
+      headerBuilder: (BuildContext context) {
+        return ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _searchController,
+          builder: (BuildContext context, TextEditingValue value, Widget? _) {
+            final List<LabOrderItem> filteredItems = _filteredReportItems(
+              value.text,
+            );
+            final bool allSelected = filteredItems.isNotEmpty &&
+                filteredItems.every(
+                  (LabOrderItem item) =>
+                      _selectedItemIds.contains(_itemSelectionKey(item)),
+                );
+            final bool someSelected = filteredItems.any(
+              (LabOrderItem item) =>
+                  _selectedItemIds.contains(_itemSelectionKey(item)),
+            );
+            return Checkbox(
+              tristate: true,
+              value: allSelected
+                  ? true
+                  : someSelected
+                  ? null
+                  : false,
+              onChanged: filteredItems.isEmpty
+                  ? null
+                  : (bool? checked) {
+                      _toggleFilteredReportItems(
+                        filteredItems,
+                        selected: checked ?? false,
+                      );
+                    },
+              visualDensity: VisualDensity.compact,
+            );
+          },
+        );
+      },
+      cellBuilder: (BuildContext context, LabOrderItem item) {
+        return Checkbox(
+          value: _selectedItemIds.contains(_itemSelectionKey(item)),
+          onChanged: (bool? value) {
+            _toggleReportItem(item, selected: value ?? false);
+          },
+          visualDensity: VisualDensity.compact,
+        );
+      },
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.labReportSelectionTitle,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs / 2),
-        Text(
-          l10n.labReportSelectionHint,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Material(
-          color: theme.colorScheme.surfaceContainerLowest,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: SwitchListTile(
-            value: _showOrderDetails,
-            dense: true,
-            title: Text(l10n.labReportOrderDetailsToggleLabel),
-            subtitle: Text(l10n.labReportOrderDetailsToggleHint),
-            onChanged: (bool value) {
-              setState(() => _showOrderDetails = value);
-            },
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            Text(
-              l10n.labReportSelectedTestCount(selectedCount, totalCount),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            AppButton.tertiary(
-              label: l10n.labSelectAllTestsAction,
-              enabled: selectedCount < totalCount,
-              onPressed: () => setState(_resetSelection),
-            ),
-            AppButton.tertiary(
-              label: l10n.labClearSelectionAction,
-              enabled: selectedCount > 0,
-              onPressed: () => setState(() {
-                _selectedOrderIds.clear();
-                _selectedItemIds.clear();
-              }),
-            ),
-          ],
-        ),
-      ],
-    );
+  }
+
+  List<LabOrderItem> _filteredReportItems(String query) {
+    return _allReportItems
+        .where(
+          (LabOrderItem item) => _matchesReportItemSearch(context, item, query),
+        )
+        .toList(growable: false);
+  }
+
+  void _toggleFilteredReportItems(
+    List<LabOrderItem> items, {
+    required bool selected,
+  }) {
+    setState(() {
+      for (final LabOrderItem item in items) {
+        final String itemKey = _itemSelectionKey(item);
+        LabOrderWorkflow? owningWorkflow;
+        for (final LabOrderWorkflow workflow in widget.workflows) {
+          if (workflow.order.items.any(
+            (LabOrderItem orderItem) =>
+                _itemSelectionKey(orderItem) == itemKey,
+          )) {
+            owningWorkflow = workflow;
+            break;
+          }
+        }
+        if (selected) {
+          _selectedItemIds.add(itemKey);
+          if (owningWorkflow != null) {
+            _selectedOrderIds.add(owningWorkflow.order.apiId);
+          }
+        } else {
+          _selectedItemIds.remove(itemKey);
+          if (owningWorkflow != null &&
+              !owningWorkflow.order.items.any(
+                (LabOrderItem candidate) =>
+                    _selectedItemIds.contains(_itemSelectionKey(candidate)),
+              )) {
+            _selectedOrderIds.remove(owningWorkflow.order.apiId);
+          }
+        }
+      }
+    });
   }
 
   void _toggleReportItem(LabOrderItem item, {required bool selected}) {
-    setState(() {
-      final String itemKey = _itemSelectionKey(item);
-      LabOrderWorkflow? owningWorkflow;
-      for (final LabOrderWorkflow workflow in widget.workflows) {
-        if (workflow.order.items.any(
-          (LabOrderItem orderItem) => _itemSelectionKey(orderItem) == itemKey,
-        )) {
-          owningWorkflow = workflow;
-          break;
-        }
-      }
-      if (selected) {
-        _selectedItemIds.add(itemKey);
-        if (owningWorkflow != null) {
-          _selectedOrderIds.add(owningWorkflow.order.apiId);
-        }
-      } else {
-        _selectedItemIds.remove(itemKey);
-        if (owningWorkflow != null &&
-            !owningWorkflow.order.items.any(
-              (LabOrderItem candidate) =>
-                  _selectedItemIds.contains(_itemSelectionKey(candidate)),
-            )) {
-          _selectedOrderIds.remove(owningWorkflow.order.apiId);
-        }
-      }
-    });
-  }
-
-  void _toggleReportOrder(LabOrderWorkflow workflow, {required bool selected}) {
-    setState(() {
-      final String orderKey = workflow.order.apiId;
-      if (selected) {
-        _selectedOrderIds.add(orderKey);
-        for (final LabOrderItem item in workflow.order.items) {
-          _selectedItemIds.add(_itemSelectionKey(item));
-        }
-      } else {
-        _selectedOrderIds.remove(orderKey);
-        for (final LabOrderItem item in workflow.order.items) {
-          _selectedItemIds.remove(_itemSelectionKey(item));
-        }
-      }
-    });
+    _toggleFilteredReportItems(<LabOrderItem>[item], selected: selected);
   }
 
   void _resetSelection() {
@@ -2804,15 +2873,10 @@ class _LabReportPreviewDialogState
     };
   }
 
-  List<LabOrderWorkflow> _selectedWorkflowsForPreview() {
-    return widget.workflows
-        .where((LabOrderWorkflow workflow) {
-          return _selectedOrderIds.contains(workflow.order.apiId) &&
-              workflow.order.items.any(
-                (LabOrderItem item) =>
-                    _selectedItemIds.contains(_itemSelectionKey(item)),
-              );
-        })
+  List<String> _visibleReportColumnKeys() {
+    return _columnVisibilityController.visibleColumns
+        .map((AppListTableColumn<LabOrderItem> column) => column.key)
+        .where((String key) => key != _selectColumnKey)
         .toList(growable: false);
   }
 
@@ -2832,7 +2896,7 @@ class _LabReportPreviewDialogState
         context,
         workflows,
         _selectedItemIds,
-        showOrderDetails: _showOrderDetails,
+        _visibleReportColumnKeys(),
       ),
       footerNote: l10n.labReportFooter,
     );
@@ -2840,26 +2904,41 @@ class _LabReportPreviewDialogState
       setState(() => _isPrinting = false);
     }
   }
+
+  List<LabOrderWorkflow> _selectedWorkflowsForPreview() {
+    return widget.workflows
+        .where((LabOrderWorkflow workflow) {
+          return _selectedOrderIds.contains(workflow.order.apiId) &&
+              workflow.order.items.any(
+                (LabOrderItem item) =>
+                    _selectedItemIds.contains(_itemSelectionKey(item)),
+              );
+        })
+        .toList(growable: false);
+  }
 }
 
 class _LabReportPreview extends StatelessWidget {
   const _LabReportPreview({
     required this.workflows,
+    required this.items,
     required this.selectedItemIds,
-    required this.showOrderDetails,
-    this.selectable = false,
-    this.onToggleItem,
-    this.onToggleOrder,
+    required this.searchController,
+    required this.columnVisibilityController,
+    required this.columns,
+    required this.columnChoices,
+    required this.onToggleItem,
   });
 
   final List<LabOrderWorkflow> workflows;
+  final List<LabOrderItem> items;
   final Set<String> selectedItemIds;
-  final bool showOrderDetails;
-  final bool selectable;
-  final void Function(LabOrderItem item, {required bool selected})?
-  onToggleItem;
-  final void Function(LabOrderWorkflow workflow, {required bool selected})?
-  onToggleOrder;
+  final TextEditingController searchController;
+  final AppListTableColumnVisibilityController<LabOrderItem>
+  columnVisibilityController;
+  final List<AppListTableColumn<LabOrderItem>> columns;
+  final List<AppListTableColumn<LabOrderItem>> columnChoices;
+  final void Function(LabOrderItem item, {required bool selected}) onToggleItem;
 
   @override
   Widget build(BuildContext context) {
@@ -2892,42 +2971,57 @@ class _LabReportPreview extends StatelessWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        if (showOrderDetails)
-          for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
-            _PreviewOrderSectionHeader(
-              workflow: workflow,
-              selectable: selectable,
-              allItemsSelected: workflow.order.items.every(
-                (LabOrderItem item) =>
-                    selectedItemIds.contains(_itemSelectionKey(item)),
-              ),
-              someItemsSelected: workflow.order.items.any(
-                (LabOrderItem item) =>
-                    selectedItemIds.contains(_itemSelectionKey(item)),
-              ),
-              onToggleOrder: onToggleOrder == null
-                  ? null
-                  : (bool? value) =>
-                        onToggleOrder!(workflow, selected: value ?? false),
-            ),
-            SizedBox(height: theme.spacing.xs),
-            _PreviewResultsTable(
-              items: workflow.order.items,
-              selectable: selectable,
-              selectedItemIds: selectedItemIds,
-              onToggleItem: onToggleItem,
-            ),
-            SizedBox(height: theme.spacing.md),
-          ]
-        else ...<Widget>[
-          _PreviewResultsTable(
-            items: _selectedReportItems(workflows, selectedItemIds),
-            selectable: selectable,
-            selectedItemIds: selectedItemIds,
-            onToggleItem: onToggleItem,
+        AppListTable<LabOrderItem>(
+          items: items,
+          columns: columns,
+          columnChoices: columnChoices,
+          columnVisibilityController: columnVisibilityController,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          columnVisibilityTitle: l10n.labReportTableColumnsTitle,
+          columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+          columnVisibilityResetLabel: l10n.labResetColumnsAction,
+          displayMode: AppListTableDisplayMode.table,
+          shrinkWrap: true,
+          search: AppListTableSearch<LabOrderItem>(
+            controller: searchController,
+            semanticLabel: l10n.labReportSearchLabel,
+            hintText: l10n.labReportSearchHint,
+            matcher: (LabOrderItem item, String query) {
+              return _matchesReportItemSearch(context, item, query);
+            },
           ),
-          SizedBox(height: theme.spacing.md),
-        ],
+          rowColorBuilder: (BuildContext context, LabOrderItem item) {
+            final bool selected = selectedItemIds.contains(
+              _itemSelectionKey(item),
+            );
+            if (!selected) {
+              return theme.colorScheme.surfaceContainerLow.withValues(
+                alpha: 0.35,
+              );
+            }
+            if (_isAbnormalReportItem(item)) {
+              return theme.colorScheme.errorContainer.withValues(alpha: 0.28);
+            }
+            return null;
+          },
+          mobileItemBuilder: (BuildContext context, LabOrderItem item) {
+            return AppListItemRow(
+              title: item.displayTitle,
+              subtitle: item.displayResultValue ?? l10n.labStatusPendingResults,
+              details: <Widget>[
+                _ReportPreviewFlagCell(item: item),
+              ],
+              leading: Checkbox(
+                value: selectedItemIds.contains(_itemSelectionKey(item)),
+                onChanged: (bool? value) {
+                  onToggleItem(item, selected: value ?? false);
+                },
+                visualDensity: VisualDensity.compact,
+              ),
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.md),
         Text(
           l10n.labReportSignatureLabel,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -2939,74 +3033,53 @@ class _LabReportPreview extends StatelessWidget {
   }
 }
 
-class _PreviewOrderSectionHeader extends StatelessWidget {
-  const _PreviewOrderSectionHeader({
-    required this.workflow,
-    required this.selectable,
-    required this.allItemsSelected,
-    required this.someItemsSelected,
-    this.onToggleOrder,
-  });
+class _ReportPreviewResultCell extends StatelessWidget {
+  const _ReportPreviewResultCell({required this.item});
 
-  final LabOrderWorkflow workflow;
-  final bool selectable;
-  final bool allItemsSelected;
-  final bool someItemsSelected;
-  final ValueChanged<bool?>? onToggleOrder;
+  final LabOrderItem item;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final LabOrderSummary order = workflow.order;
-    final Widget title = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          '${l10n.labOrderFieldLabel} ${order.displayId ?? order.apiId}',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs / 2),
-        Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            if (_optionalDateTimeLabel(context, order.orderedAt) != null)
-              _PreviewMeta(
-                label: l10n.labOrderedAtFieldLabel,
-                value: _optionalDateTimeLabel(context, order.orderedAt)!,
-              ),
-            _PreviewMeta(
-              label: l10n.labOrderStatusFieldLabel,
-              value: _statusLabel(context, order.status),
-            ),
-          ],
-        ),
-      ],
-    );
+    final String? value = item.displayResultValue;
 
-    if (!selectable || onToggleOrder == null) {
-      return title;
+    if (value == null || value.trim().isEmpty) {
+      return Text(
+        l10n.labStatusPendingResults,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Checkbox(
-          tristate: true,
-          value: allItemsSelected
-              ? true
-              : someItemsSelected
-              ? null
-              : false,
-          onChanged: onToggleOrder,
-          visualDensity: VisualDensity.compact,
-        ),
-        SizedBox(width: theme.spacing.xs),
-        Expanded(child: title),
-      ],
+    final bool abnormal = _isAbnormalReportItem(item);
+    return Text(
+      value,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: abnormal ? theme.colorScheme.error : null,
+        fontWeight: abnormal ? FontWeight.w700 : null,
+      ),
+    );
+  }
+}
+
+class _ReportPreviewFlagCell extends StatelessWidget {
+  const _ReportPreviewFlagCell({required this.item});
+
+  final LabOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String label = _resolveItemResultFlagLabel(context, item);
+    final bool abnormal = _isAbnormalReportItem(item);
+    return Text(
+      label,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: abnormal ? theme.colorScheme.error : null,
+        fontWeight: abnormal ? FontWeight.w700 : null,
+      ),
     );
   }
 }
@@ -3023,131 +3096,6 @@ class _PreviewMeta extends StatelessWidget {
     return Text(
       '$label: $value',
       style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-    );
-  }
-}
-
-class _PreviewResultsTable extends StatelessWidget {
-  const _PreviewResultsTable({
-    required this.items,
-    this.selectable = false,
-    this.selectedItemIds = const <String>{},
-    this.onToggleItem,
-  });
-
-  final List<LabOrderItem> items;
-  final bool selectable;
-  final Set<String> selectedItemIds;
-  final void Function(LabOrderItem item, {required bool selected})?
-  onToggleItem;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    if (items.isEmpty) {
-      return AppWorkspaceStatePanel.empty(
-        title: l10n.labNoOrderItemsEntryTitle,
-        body: l10n.labNoOrderItemsEntryBody,
-        icon: Icons.science_outlined,
-      );
-    }
-    return Table(
-      border: TableBorder.all(color: theme.colorScheme.outlineVariant),
-      columnWidths: <int, TableColumnWidth>{
-        if (selectable) 0: const FixedColumnWidth(44),
-        if (selectable)
-          1: const FlexColumnWidth(2)
-        else
-          0: const FlexColumnWidth(2),
-        if (selectable)
-          2: const FlexColumnWidth(2)
-        else
-          1: const FlexColumnWidth(2),
-        if (selectable)
-          3: const FlexColumnWidth(2)
-        else
-          2: const FlexColumnWidth(2),
-        if (selectable)
-          4: const FlexColumnWidth(1.5)
-        else
-          3: const FlexColumnWidth(1.5),
-      },
-      children: <TableRow>[
-        TableRow(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
-          children: <Widget>[
-            if (selectable)
-              _PreviewCell(
-                text: l10n.labReportIncludeColumnLabel,
-                isHeader: true,
-              ),
-            _PreviewCell(text: l10n.labTestsColumnLabel, isHeader: true),
-            _PreviewCell(text: l10n.labReferenceRangeLabel, isHeader: true),
-            _PreviewCell(text: l10n.labReportResultLabel, isHeader: true),
-            _PreviewCell(text: l10n.labResultFlagLabel, isHeader: true),
-          ],
-        ),
-        for (final LabOrderItem item in items)
-          TableRow(
-            decoration: BoxDecoration(
-              color:
-                  selectable &&
-                      !selectedItemIds.contains(_itemSelectionKey(item))
-                  ? theme.colorScheme.surfaceContainerLow.withValues(
-                      alpha: 0.35,
-                    )
-                  : null,
-            ),
-            children: <Widget>[
-              if (selectable)
-                Padding(
-                  padding: EdgeInsets.all(theme.spacing.xs),
-                  child: Checkbox(
-                    value: selectedItemIds.contains(_itemSelectionKey(item)),
-                    onChanged: onToggleItem == null
-                        ? null
-                        : (bool? value) =>
-                              onToggleItem!(item, selected: value ?? false),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              _PreviewCell(text: item.displayTitle),
-              _PreviewCell(
-                text: item.displayReferenceRange ?? l10n.profileUnknownValue,
-              ),
-              _PreviewCell(
-                text: item.displayResultValue ?? l10n.labStatusPendingResults,
-              ),
-              _PreviewCell(
-                text: _resolveItemResultFlagLabel(context, item),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-}
-
-class _PreviewCell extends StatelessWidget {
-  const _PreviewCell({required this.text, this.isHeader = false});
-
-  final String text;
-  final bool isHeader;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.all(theme.spacing.xs),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: isHeader ? FontWeight.w800 : null,
-        ),
-      ),
     );
   }
 }
@@ -4476,9 +4424,9 @@ List<PrintFormMetadataItem> _reportMetadata(
 List<PrintFormPage> _reportPages(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
-  Set<String> selectedItemIds, {
-  required bool showOrderDetails,
-}) {
+  Set<String> selectedItemIds,
+  List<String> visibleColumnKeys,
+) {
   final AppLocalizations l10n = context.l10n;
   return <PrintFormPage>[
     PrintFormPage(
@@ -4487,7 +4435,7 @@ List<PrintFormPage> _reportPages(
         context,
         workflows,
         selectedItemIds,
-        showOrderDetails: showOrderDetails,
+        visibleColumnKeys,
       ),
     ),
   ];
@@ -4496,85 +4444,101 @@ List<PrintFormPage> _reportPages(
 String _labReportHtml(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
-  Set<String> selectedItemIds, {
-  required bool showOrderDetails,
-}) {
-  final String body = showOrderDetails
-      ? workflows.map((LabOrderWorkflow workflow) {
-          final List<LabOrderItem> items = workflow.order.items
-              .where(
-                (LabOrderItem item) =>
-                    selectedItemIds.contains(_itemSelectionKey(item)),
-              )
-              .toList(growable: false);
-          return _labReportOrderHtml(context, workflow, items);
-        }).join()
-      : _labReportTableHtml(
-          context,
-          _selectedReportItems(workflows, selectedItemIds),
-        );
+  Set<String> selectedItemIds,
+  List<String> visibleColumnKeys,
+) {
+  final String table = _labReportTableHtml(
+    context,
+    _selectedReportItems(workflows, selectedItemIds),
+    visibleColumnKeys,
+  );
   return '''
 ${_labReportPrintStyle()}
 <div class="lab-report-compact">
-  $body
+  $table
   ${_labReportSignatureHtml(context)}
 </div>
 ''';
 }
 
-String _labReportOrderHtml(
+String _labReportTableHtml(
   BuildContext context,
-  LabOrderWorkflow workflow,
   List<LabOrderItem> items,
+  List<String> visibleColumnKeys,
 ) {
   final AppLocalizations l10n = context.l10n;
-  final LabOrderSummary order = workflow.order;
-  final String details = PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.labReportOrderLabel,
-      value: order.displayId ?? order.apiId,
-    ),
-    if (_optionalDateTimeLabel(context, order.orderedAt) != null)
-      PrintFormMetadataItem(
-        label: l10n.labOrderedAtFieldLabel,
-        value: _optionalDateTimeLabel(context, order.orderedAt)!,
-      ),
-    PrintFormMetadataItem(
-      label: l10n.labOrderStatusFieldLabel,
-      value: _statusLabel(context, order.status),
-    ),
-  ]);
-  final String table = _labReportTableHtml(context, items);
+  if (visibleColumnKeys.isEmpty) {
+    return '<p class="print-template-empty">${PrintFormTemplate.escape(l10n.labNoOrderItemsEntryTitle)}</p>';
+  }
+  if (items.isEmpty) {
+    return '<p class="print-template-empty">${PrintFormTemplate.escape(l10n.labNoOrderItemsEntryTitle)}</p>';
+  }
+
+  final List<String> headers = <String>[
+    for (final String key in visibleColumnKeys)
+      _labReportColumnHeader(context, key),
+  ];
+  final List<List<String>> rows = <List<String>>[
+    for (final LabOrderItem item in items)
+      <String>[
+        for (final String key in visibleColumnKeys)
+          _labReportColumnValue(context, item, key),
+      ],
+  ];
+
+  final String table = PrintFormTemplate.table(
+    headers: headers,
+    rows: rows,
+    emptyText: l10n.labNoOrderItemsEntryTitle,
+  );
+
+  final String styledRows = items
+      .asMap()
+      .entries
+      .map((MapEntry<int, LabOrderItem> entry) {
+        if (!_isAbnormalReportItem(entry.value)) {
+          return '';
+        }
+        final int rowIndex = entry.key + 1;
+        return '''
+.lab-report-tests .print-template-table tbody tr:nth-child($rowIndex) td {
+  color: #b3261e;
+  font-weight: 700;
+}
+''';
+      })
+      .join();
+
   return '''
-<section class="lab-report-order">
-  <h2>${PrintFormTemplate.escape('${l10n.labOrderFieldLabel} ${order.displayId ?? order.apiId}')}</h2>
-  $details
-  $table
-</section>
+<style>$styledRows</style>
+<div class="lab-report-tests">$table</div>
 ''';
 }
 
-String _labReportTableHtml(BuildContext context, List<LabOrderItem> items) {
+String _labReportColumnHeader(BuildContext context, String key) {
   final AppLocalizations l10n = context.l10n;
-  final String table = PrintFormTemplate.table(
-    headers: <String>[
-      l10n.labTestsColumnLabel,
-      l10n.labReferenceRangeLabel,
-      l10n.labReportResultLabel,
-      l10n.labResultFlagLabel,
-    ],
-    rows: <List<String>>[
-      for (final LabOrderItem item in items)
-        <String>[
-          item.displayTitle,
-          item.displayReferenceRange ?? l10n.profileUnknownValue,
-          item.displayResultValue ?? l10n.labStatusPendingResults,
-          _resolveItemResultFlagLabel(context, item),
-        ],
-    ],
-    emptyText: l10n.labNoOrderItemsEntryTitle,
-  );
-  return '<div class="lab-report-tests">$table</div>';
+  return switch (key) {
+    'tests' => l10n.labTestsColumnLabel,
+    'reference_range' => l10n.labReferenceRangeLabel,
+    'result' => l10n.labReportResultLabel,
+    'flag' => l10n.labResultFlagLabel,
+    _ => key,
+  };
+}
+
+String _labReportColumnValue(
+  BuildContext context,
+  LabOrderItem item,
+  String key,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (key) {
+    'tests' => item.displayTitle,
+    'reference_range' => item.displayReferenceRange ?? l10n.profileUnknownValue,
+    'result' => item.displayResultValue ?? l10n.labStatusPendingResults,
+    'flag' => _resolveItemResultFlagLabel(context, item),
+    _ => '',
+  };
 }
 
 String _labReportSignatureHtml(BuildContext context) {
@@ -4597,14 +4561,6 @@ String _labReportPrintStyle() {
   }
   .lab-report-compact .print-template-kv-item {
     padding: 1.5mm;
-  }
-  .lab-report-order {
-    margin: 0 0 4mm;
-  }
-  .lab-report-order h2 {
-    font-size: 12px;
-    line-height: 1.2;
-    margin: 0 0 2mm;
   }
   .lab-report-tests .print-template-table th,
   .lab-report-tests .print-template-table td {
@@ -4633,6 +4589,40 @@ String _labReportPrintStyle() {
 
 String _itemSelectionKey(LabOrderItem item) {
   return _joinDisplay(<String?>[item.labOrderId, item.apiId]) ?? item.apiId;
+}
+
+List<LabOrderItem> _reportItems(List<LabOrderWorkflow> workflows) {
+  return <LabOrderItem>[
+    for (final LabOrderWorkflow workflow in workflows)
+      for (final LabOrderItem item in workflow.order.items)
+        item,
+  ];
+}
+
+bool _matchesReportItemSearch(
+  BuildContext context,
+  LabOrderItem item,
+  String query,
+) {
+  final String normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return true;
+  }
+  final Iterable<String> values = <String?>[
+    item.displayTitle,
+    item.displayReferenceRange,
+    item.displayResultValue,
+    _resolveItemResultFlagLabel(context, item),
+  ].map((String? value) => value?.trim().toLowerCase() ?? '');
+  return values.any((String value) => value.contains(normalized));
+}
+
+bool _isAbnormalReportItem(LabOrderItem item) {
+  final String? flagToken =
+      _computedNumericFlagToken(item, item.resultValue ?? '') ??
+      item.resultFlag ??
+      item.effectiveResultStatus;
+  return _isAbnormalStatus(flagToken);
 }
 
 List<LabOrderItem> _selectedReportItems(

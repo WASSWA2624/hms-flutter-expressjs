@@ -13,6 +13,8 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef AppListTableCellBuilder<T> =
     Widget Function(BuildContext context, T item);
+typedef AppListTableHeaderBuilder<T> =
+    Widget Function(BuildContext context);
 typedef AppListTableMobileItemBuilder<T> =
     Widget Function(BuildContext context, T item);
 typedef AppListTableItemKeyBuilder<T> = LocalKey Function(T item);
@@ -472,6 +474,7 @@ class AppListTableColumn<T> {
     this.alwaysVisible = false,
     this.tooltip,
     this.sortComparator,
+    this.headerBuilder,
   });
 
   final String? id;
@@ -481,6 +484,7 @@ class AppListTableColumn<T> {
   final bool alwaysVisible;
   final String? tooltip;
   final AppListTableSortComparator<T>? sortComparator;
+  final AppListTableHeaderBuilder<T>? headerBuilder;
 
   String get key => id ?? label;
 
@@ -1717,6 +1721,11 @@ class _DataColumnHeader<T> extends StatelessWidget {
     );
 
     if (!column.isSortable) {
+      final AppListTableHeaderBuilder<T>? headerBuilder =
+          column.headerBuilder;
+      if (headerBuilder != null) {
+        return headerBuilder(context);
+      }
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Text(

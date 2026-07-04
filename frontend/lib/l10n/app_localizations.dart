@@ -18490,6 +18490,24 @@ abstract class AppLocalizations {
   /// **'Result Report Preview'**
   String get labReportPreviewTitle;
 
+  /// Semantic label for searching tests in the lab report preview table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search report tests'**
+  String get labReportSearchLabel;
+
+  /// Hint text for searching tests in the lab report preview table.
+  ///
+  /// In en, this message translates to:
+  /// **'Search test, result, reference range, or flag'**
+  String get labReportSearchHint;
+
+  /// Title for configuring visible columns in the lab report preview table.
+  ///
+  /// In en, this message translates to:
+  /// **'Report table columns'**
+  String get labReportTableColumnsTitle;
+
   /// Localized text for labReportTitle.
   ///
   /// In en, this message translates to:

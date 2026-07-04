@@ -9927,6 +9927,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportPreviewTitle => 'Result Report Preview';
 
   @override
+  String get labReportSearchLabel => 'Search report tests';
+
+  @override
+  String get labReportSearchHint =>
+      'Search test, result, reference range, or flag';
+
+  @override
+  String get labReportTableColumnsTitle => 'Report table columns';
+
+  @override
   String get labReportTitle => 'Laboratory result report';
 
   @override
