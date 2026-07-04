@@ -19,6 +19,7 @@ jest.mock('@services/lab-workspace/lab.shared', () => {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
     resolveModelRecordOrThrow: jest.fn(),
+    resolveLabOrderEncounterId: jest.fn(),
   };
 });
 
@@ -27,6 +28,7 @@ const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
+  resolveLabOrderEncounterId,
 } = require('@services/lab-workspace/lab.shared');
 const labOrderService = require('@services/lab-order/lab-order.service');
 
@@ -158,9 +160,10 @@ describe('lab-order.service', () => {
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
         tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
       })
       .mockResolvedValueOnce({ id: 'lab-test-1' });
-    resolveModelIdOrThrow.mockResolvedValueOnce('encounter-internal-1');
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
     labOrderRepository.findById.mockResolvedValue(buildOrderRecord());
     const manualOrderedAt = '2026-01-19T12:00:00.000Z';
@@ -209,6 +212,41 @@ describe('lab-order.service', () => {
       expect.objectContaining({
         id: 'LAB0000001',
         patient_id: 'PAT0000001',
+      })
+    );
+  });
+
+  it('creates a lab order when encounter_id is a visit queue public id', async () => {
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce({
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+      })
+      .mockResolvedValueOnce({ id: 'lab-test-1' });
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
+    labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
+    labOrderRepository.findById.mockResolvedValue(buildOrderRecord());
+
+    await labOrderService.createLabOrder(
+      {
+        patient_id: 'PAT0000001',
+        encounter_id: 'VIS0000001',
+        requested_tests: [{ lab_test_id: 'LBT0000001' }],
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(resolveLabOrderEncounterId).toHaveBeenCalledWith({
+      identifier: 'VIS0000001',
+      patientId: 'patient-internal-1',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+    });
+    expect(labOrderRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        encounter_id: 'encounter-internal-1',
       })
     );
   });

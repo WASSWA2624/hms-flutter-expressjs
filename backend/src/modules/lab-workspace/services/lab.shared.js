@@ -1,4 +1,5 @@
 const { HttpError } = require('@lib/errors');
+const prisma = require('@prisma/client');
 const {
   normalizeIdentifier,
   resolveModelIdByIdentifier,
@@ -272,6 +273,98 @@ const applyDateRangeFilter = (where, field, fromValue, toValue) => {
   if (to) where[field].lte = to;
 };
 
+/**
+ * Resolve a clinical context identifier to an encounter id.
+ * Accepts encounter, visit queue (VIS…), or admission public ids.
+ *
+ * @param {Object} options
+ * @returns {Promise<string|null>}
+ */
+const resolveLabOrderEncounterId = async ({
+  identifier,
+  patientId = null,
+  tenantId = null,
+  facilityId = null,
+} = {}) => {
+  const normalized = normalizeIdentifier(identifier);
+  if (!normalized) {
+    return null;
+  }
+
+  const encounter = await resolveModelRecordByIdentifier({
+    identifier: normalized,
+    model: 'encounter',
+    where: { deleted_at: null },
+    select: { id: true },
+  });
+  if (encounter?.id) {
+    return encounter.id;
+  }
+
+  const visitQueue = await resolveModelRecordByIdentifier({
+    identifier: normalized,
+    model: 'visit_queue',
+    where: { deleted_at: null },
+    select: {
+      id: true,
+      patient_id: true,
+      tenant_id: true,
+      facility_id: true,
+    },
+  });
+  if (visitQueue) {
+    const scopedPatientId = patientId || visitQueue.patient_id;
+    const scopedTenantId = tenantId || visitQueue.tenant_id;
+    const scopedFacilityId = facilityId ?? visitQueue.facility_id ?? null;
+
+    const linkedEncounter = await prisma.encounter.findFirst({
+      where: {
+        deleted_at: null,
+        tenant_id: scopedTenantId,
+        patient_id: scopedPatientId,
+        extension_json: {
+          path: '$.opd_flow.visit_queue_id',
+          equals: visitQueue.id,
+        },
+      },
+      orderBy: { started_at: 'desc' },
+      select: { id: true },
+    });
+    if (linkedEncounter?.id) {
+      return linkedEncounter.id;
+    }
+
+    const openEncounter = await prisma.encounter.findFirst({
+      where: {
+        deleted_at: null,
+        tenant_id: scopedTenantId,
+        ...(scopedFacilityId ? { facility_id: scopedFacilityId } : {}),
+        patient_id: scopedPatientId,
+        status: 'OPEN',
+      },
+      orderBy: { started_at: 'desc' },
+      select: { id: true },
+    });
+    if (openEncounter?.id) {
+      return openEncounter.id;
+    }
+
+    return null;
+  }
+
+  const admission = await resolveModelRecordByIdentifier({
+    identifier: normalized,
+    model: 'admission',
+    where: { deleted_at: null },
+    select: { encounter_id: true },
+  });
+  if (admission?.encounter_id) {
+    return admission.encounter_id;
+  }
+
+  throw new HttpError('errors.encounter.not_found', 404);
+};
+
 module.exports = {
   PATIENT_PUBLIC_SELECT,
   ENCOUNTER_PUBLIC_SELECT,
@@ -291,5 +384,6 @@ module.exports = {
   toDateOrNull,
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
+  resolveLabOrderEncounterId,
   applyDateRangeFilter,
 };

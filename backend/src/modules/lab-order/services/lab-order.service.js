@@ -11,6 +11,7 @@ const {
   normalizeSearchTerm,
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
+  resolveLabOrderEncounterId,
   toDateOrNull
 } = require('@services/lab-workspace/lab.shared');
 const { mapLabOrderRecord } = require('@services/lab-workspace/lab.serializer');
@@ -46335,11 +46336,11 @@ const createLabOrder = async (data, userId, ipAddress) => {
     payload.patient_id = patientRecord.id;
 
     if (payload.encounter_id) {
-      payload.encounter_id = await resolveModelIdOrThrow({
+      payload.encounter_id = await resolveLabOrderEncounterId({
         identifier: payload.encounter_id,
-        model: 'encounter',
-        where: { deleted_at: null },
-        errorKey: 'errors.encounter.not_found'
+        patientId: patientRecord.id,
+        tenantId: patientRecord.tenant_id,
+        facilityId: patientRecord.facility_id || null,
       });
     } else {
       payload.encounter_id = null;
@@ -46440,11 +46441,11 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
 
     if (Object.prototype.hasOwnProperty.call(payload, 'encounter_id')) {
       payload.encounter_id = payload.encounter_id
-        ? await resolveModelIdOrThrow({
+        ? await resolveLabOrderEncounterId({
             identifier: payload.encounter_id,
-            model: 'encounter',
-            where: { deleted_at: null },
-            errorKey: 'errors.encounter.not_found'
+            patientId: before.patient_id,
+            tenantId: before.patient?.tenant_id || tenantId,
+            facilityId: before.patient?.facility_id || null,
           })
         : null;
     }
