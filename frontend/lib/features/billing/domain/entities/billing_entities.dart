@@ -281,6 +281,8 @@ final class BillingWorkItem {
     this.patientId,
     this.patientDisplayId,
     this.patientDisplayName,
+    this.patientGender,
+    this.patientDateOfBirth,
     this.invoiceDisplayId,
     this.coveragePlanDisplayId,
     this.status,
@@ -316,6 +318,8 @@ final class BillingWorkItem {
   final String? patientId;
   final String? patientDisplayId;
   final String? patientDisplayName;
+  final String? patientGender;
+  final DateTime? patientDateOfBirth;
   final String? invoiceDisplayId;
   final String? coveragePlanDisplayId;
   final String? status;
@@ -506,6 +510,8 @@ final class BillingWorkItem {
     String? patientId,
     String? patientDisplayId,
     String? patientDisplayName,
+    String? patientGender,
+    DateTime? patientDateOfBirth,
     String? invoiceDisplayId,
     String? coveragePlanDisplayId,
     String? status,
@@ -541,6 +547,8 @@ final class BillingWorkItem {
       patientId: patientId ?? this.patientId,
       patientDisplayId: patientDisplayId ?? this.patientDisplayId,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
+      patientGender: patientGender ?? this.patientGender,
+      patientDateOfBirth: patientDateOfBirth ?? this.patientDateOfBirth,
       invoiceDisplayId: invoiceDisplayId ?? this.invoiceDisplayId,
       coveragePlanDisplayId:
           coveragePlanDisplayId ?? this.coveragePlanDisplayId,

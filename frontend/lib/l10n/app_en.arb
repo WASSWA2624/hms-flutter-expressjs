@@ -1066,6 +1066,46 @@
   "@billingBalanceColumn": {
     "description": "Balance column label in billing table."
   },
+  "billingTotalAmountLabel": "Total amount",
+  "@billingTotalAmountLabel": {
+    "description": "Total invoice amount label in billing detail."
+  },
+  "billingAmountPaidLabel": "Amount paid",
+  "@billingAmountPaidLabel": {
+    "description": "Amount paid label in billing detail."
+  },
+  "billingPaymentStatusLabel": "Payment status",
+  "@billingPaymentStatusLabel": {
+    "description": "Payment clearance status label in billing detail."
+  },
+  "billingInvoiceStatusLabel": "Invoice status",
+  "@billingInvoiceStatusLabel": {
+    "description": "Invoice billing status label in billing detail."
+  },
+  "billingAgeLabel": "Age",
+  "@billingAgeLabel": {
+    "description": "Patient age label in billing detail."
+  },
+  "billingLineItemDescriptionColumn": "Description",
+  "@billingLineItemDescriptionColumn": {
+    "description": "Description column for invoice line items."
+  },
+  "billingLineItemQtyColumn": "Qty",
+  "@billingLineItemQtyColumn": {
+    "description": "Quantity column for invoice line items."
+  },
+  "billingLineItemUnitPriceColumn": "Unit price",
+  "@billingLineItemUnitPriceColumn": {
+    "description": "Unit price column for invoice line items."
+  },
+  "billingLineItemDepartmentColumn": "Department",
+  "@billingLineItemDepartmentColumn": {
+    "description": "Department column for invoice line items."
+  },
+  "billingLineItemAmountColumn": "Amount",
+  "@billingLineItemAmountColumn": {
+    "description": "Line total amount column for invoice line items."
+  },
   "billingUpdatedColumn": "Updated",
   "@billingUpdatedColumn": {
     "description": "Updated column label in billing table."

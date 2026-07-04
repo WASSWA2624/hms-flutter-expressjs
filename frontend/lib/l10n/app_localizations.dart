@@ -1642,6 +1642,66 @@ abstract class AppLocalizations {
   /// **'Balance'**
   String get billingBalanceColumn;
 
+  /// Total invoice amount label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Total amount'**
+  String get billingTotalAmountLabel;
+
+  /// Amount paid label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid'**
+  String get billingAmountPaidLabel;
+
+  /// Payment clearance status label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment status'**
+  String get billingPaymentStatusLabel;
+
+  /// Invoice billing status label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice status'**
+  String get billingInvoiceStatusLabel;
+
+  /// Patient age label in billing detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get billingAgeLabel;
+
+  /// Description column for invoice line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get billingLineItemDescriptionColumn;
+
+  /// Quantity column for invoice line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get billingLineItemQtyColumn;
+
+  /// Unit price column for invoice line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get billingLineItemUnitPriceColumn;
+
+  /// Department column for invoice line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get billingLineItemDepartmentColumn;
+
+  /// Line total amount column for invoice line items.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get billingLineItemAmountColumn;
+
   /// Updated column label in billing table.
   ///
   /// In en, this message translates to:

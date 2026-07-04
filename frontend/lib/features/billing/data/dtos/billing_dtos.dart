@@ -161,6 +161,8 @@ final class BillingWorkItemDto {
       patientDisplayName:
           _string(json['patient_display_name']) ??
           _patientName(_map(_map(json['invoice'])['patient'])),
+      patientGender: _patientGender(json),
+      patientDateOfBirth: _patientDateOfBirth(json),
       invoiceDisplayId:
           _string(json['invoice_display_id']) ??
           _string(_map(json['invoice'])['display_id']) ??
@@ -595,6 +597,16 @@ String? _patientName(BillingJsonMap patient) {
   final String last = _string(patient['last_name']) ?? '';
   final String combined = '$first $last'.trim();
   return combined.isEmpty ? null : combined;
+}
+
+String? _patientGender(BillingJsonMap json) {
+  return _string(json['patient_gender']) ??
+      _string(_map(_map(json['invoice'])['patient'])['gender']);
+}
+
+DateTime? _patientDateOfBirth(BillingJsonMap json) {
+  return _date(json['patient_date_of_birth']) ??
+      _date(_map(_map(json['invoice'])['patient'])['date_of_birth']);
 }
 
 BillingJsonMap _dataMap(Object? responseData) {

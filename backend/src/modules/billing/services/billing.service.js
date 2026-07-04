@@ -50,6 +50,8 @@ const INVOICE_INCLUDE = {
       human_friendly_id: true,
       first_name: true,
       last_name: true,
+      gender: true,
+      date_of_birth: true,
       contacts: {
         where: { deleted_at: null },
         select: { contact_type: true, value: true },
@@ -321,6 +323,8 @@ const mapInvoice = (invoice = {}, includeFinancials = false) => {
     facility_display_id: displayId(invoice.facility || {}),
     patient_display_id: displayId(invoice.patient || {}),
     patient_display_name: patientName(invoice.patient || {}),
+    patient_gender: invoice.patient?.gender ?? null,
+    patient_date_of_birth: invoice.patient?.date_of_birth ?? null,
     timeline_at: invoice.issued_at || invoice.created_at || null,
   };
   if (includeFinancials) mapped.financials = computeInvoiceFinancials(invoice);

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_detail_header.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -79,16 +80,15 @@ class BillingDetailBody extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
-          patientName: billingPatientName(context, item),
-          patientNumber:
-              item.effectivePatientNumber ??
-              item.displayId ??
-              item.invoiceDisplayId ??
-              '',
-          status: AppWorkspaceStatus(
-            label: billingClearanceLabel(context, item.clearanceState),
-            tone: billingClearanceTone(item.clearanceState),
-          ),
+          patientName: '',
+          showPatientName: false,
+          showAvatar: false,
+          patientNumber: '',
+          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+          fields: _patientContextFields(context, l10n),
+          secondaryFields: item.isInvoice
+              ? _invoiceContextFields(context, l10n)
+              : const <AppWorkspacePatientContextField>[],
           actions: onViewLedger == null
               ? const <Widget>[]
               : <Widget>[
@@ -98,7 +98,6 @@ class BillingDetailBody extends ConsumerWidget {
                     onPressed: onViewLedger,
                   ),
                 ],
-          fields: _contextFields(context, l10n),
         ),
         SizedBox(height: theme.spacing.md),
         if (canWrite) ...<Widget>[
@@ -136,7 +135,120 @@ class BillingDetailBody extends ConsumerWidget {
     );
   }
 
-  List<AppWorkspacePatientContextField> _contextFields(
+  List<AppWorkspacePatientContextField> _patientContextFields(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final List<AppWorkspacePatientContextField> fields =
+        <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: l10n.billingPatientNameColumn,
+            value: billingPatientName(context, item),
+            icon: Icons.person_outline,
+          ),
+        ];
+
+    final String? patientNumber = item.effectivePatientNumber;
+    if (patientNumber != null && patientNumber.isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.billingPatientIdColumn,
+          value: patientNumber,
+          icon: Icons.badge_outlined,
+          copyable: true,
+          copyTooltip: l10n.copyIdentifierAction,
+          copiedMessage: l10n.identifierCopiedMessage,
+        ),
+      );
+    }
+
+    fields.add(
+      AppWorkspacePatientContextField(
+        label: l10n.billingPaymentStatusLabel,
+        value: billingClearanceLabel(context, item.clearanceState),
+        icon: billingClearanceIcon(item.clearanceState),
+        tone: billingClearanceTone(item.clearanceState),
+      ),
+    );
+
+    final String? gender = item.patientGender?.trim();
+    if (gender != null && gender.isNotEmpty) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.patientsGenderLabel,
+          value: patientGenderLabel(l10n, gender),
+          icon: patientGenderIcon(gender) ?? Icons.wc_outlined,
+        ),
+      );
+    }
+
+    if (item.patientDateOfBirth != null) {
+      fields.add(
+        AppWorkspacePatientContextField(
+          label: l10n.billingAgeLabel,
+          value: formatPatientAge(l10n, item.patientDateOfBirth),
+          icon: Icons.cake_outlined,
+        ),
+      );
+    }
+
+    if (item.isInvoice) {
+      final String? encounterId =
+          item.encounterDisplayId ?? item.encounterId;
+      if (encounterId != null && encounterId.isNotEmpty) {
+        fields.add(
+          AppWorkspacePatientContextField(
+            label: l10n.billingEncounterLabel,
+            value: encounterId,
+            icon: Icons.local_hospital_outlined,
+          ),
+        );
+      }
+    }
+
+    if (!item.isInvoice) {
+      fields.addAll(_nonInvoiceContextFields(context, l10n));
+    }
+
+    return fields;
+  }
+
+  List<AppWorkspacePatientContextField> _invoiceContextFields(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return <AppWorkspacePatientContextField>[
+      AppWorkspacePatientContextField(
+        label: l10n.billingInvoiceLabel,
+        value: item.effectiveDisplayId,
+        icon: Icons.receipt_long_outlined,
+        copyable: true,
+        copyTooltip: l10n.copyIdentifierAction,
+        copiedMessage: l10n.identifierCopiedMessage,
+      ),
+      AppWorkspacePatientContextField(
+        label: l10n.billingInvoiceStatusLabel,
+        value: billingApiLabel(context, item.billingStatus ?? item.status),
+        icon: Icons.flag_outlined,
+      ),
+      AppWorkspacePatientContextField(
+        label: l10n.billingAmountPaidLabel,
+        value: billingMoney(context, item.paidAmount, item.currency),
+        icon: Icons.payments_outlined,
+        tone: AppWorkspaceStatusTone.success,
+      ),
+      AppWorkspacePatientContextField(
+        label: l10n.billingBalanceColumn,
+        value: billingMoney(context, item.balanceDue, item.currency),
+        icon: Icons.account_balance_wallet_outlined,
+        tone: item.balanceDue <= 0
+            ? AppWorkspaceStatusTone.success
+            : AppWorkspaceStatusTone.warning,
+      ),
+    ];
+  }
+
+  List<AppWorkspacePatientContextField> _nonInvoiceContextFields(
     BuildContext context,
     AppLocalizations l10n,
   ) {
@@ -158,25 +270,6 @@ class BillingDetailBody extends ConsumerWidget {
             icon: Icons.flag_outlined,
           ),
         ];
-
-    if (item.isInvoice) {
-      fields.addAll(<AppWorkspacePatientContextField>[
-        AppWorkspacePatientContextField(
-          label: l10n.billingPaidColumn,
-          value: billingMoney(context, item.paidAmount, item.currency),
-          icon: Icons.payments_outlined,
-          tone: AppWorkspaceStatusTone.success,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.billingBalanceColumn,
-          value: billingMoney(context, item.balanceDue, item.currency),
-          icon: Icons.account_balance_wallet_outlined,
-          tone: item.balanceDue <= 0
-              ? AppWorkspaceStatusTone.success
-              : AppWorkspaceStatusTone.warning,
-        ),
-      ]);
-    }
 
     if ((item.encounterDisplayId ?? item.encounterId)?.isNotEmpty ?? false) {
       fields.add(
@@ -389,7 +482,10 @@ class _BillingActionPanel extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return AppActionList(actions: actions);
+    return AppActionPanel(
+      title: context.l10n.patientsQuickActionsTitle,
+      actions: actions,
+    );
   }
 }
 
@@ -406,12 +502,12 @@ class _FinancialSummarySection extends StatelessWidget {
       child: AppReportSummaryGrid(
         records: <AppReportSummaryItem>[
           AppReportSummaryItem(
-            label: l10n.billingAmountColumn,
+            label: l10n.billingTotalAmountLabel,
             value: billingMoney(context, item.effectiveTotal, item.currency),
             icon: Icons.receipt_long_outlined,
           ),
           AppReportSummaryItem(
-            label: l10n.billingPaidColumn,
+            label: l10n.billingAmountPaidLabel,
             value: billingMoney(context, item.paidAmount, item.currency),
             icon: Icons.payments_outlined,
           ),
@@ -443,22 +539,73 @@ class _InvoiceLineItemsSection extends StatelessWidget {
 
     return _DetailSection(
       title: l10n.billingLineItemsTitle,
-      child: Column(
-        children: <Widget>[
-          for (final BillingInvoiceItem lineItem in item.items)
-            _DetailRow(
-              title: lineItem.description,
-              subtitle: billingJoinDisplay(<String?>[
-                l10n.billingQuantityLabel(lineItem.quantity),
-                lineItem.sourceContextLabel,
-              ]),
-              trailing: billingMoney(
-                context,
-                lineItem.totalPrice,
-                item.currency,
-              ),
-            ),
+      child: AppListTable<BillingInvoiceItem>(
+        items: item.items,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        displayMode: AppListTableDisplayMode.table,
+        itemKeyBuilder: (BillingInvoiceItem lineItem) =>
+            ValueKey<String>(lineItem.id),
+        columns: <AppListTableColumn<BillingInvoiceItem>>[
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingLineItemDescriptionColumn,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(lineItem.description);
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingLineItemQtyColumn,
+            numeric: true,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text('${lineItem.quantity}');
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingLineItemUnitPriceColumn,
+            numeric: true,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                billingMoney(context, lineItem.unitPrice, item.currency),
+              );
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingLineItemDepartmentColumn,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(lineItem.sourceModule ?? l10n.billingNotRecorded);
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingEncounterLabel,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                lineItem.encounterDisplayId ?? l10n.billingNotRecorded,
+              );
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingLineItemAmountColumn,
+            numeric: true,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                billingMoney(context, lineItem.totalPrice, item.currency),
+              );
+            },
+          ),
         ],
+        mobileItemBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+          return AppListItemRow(
+            title: lineItem.description,
+            subtitle: billingJoinDisplay(<String?>[
+              l10n.billingQuantityLabel(lineItem.quantity),
+              lineItem.sourceModule,
+              lineItem.encounterDisplayId,
+            ]),
+            trailing: Text(
+              billingMoney(context, lineItem.totalPrice, item.currency),
+            ),
+          );
+        },
       ),
     );
   }

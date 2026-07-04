@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dar
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive_payment_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -573,141 +574,6 @@ class _BillingMobileTile extends StatelessWidget {
   }
 }
 
-class _PaymentForm extends StatefulWidget {
-  const _PaymentForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.item,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final BillingWorkItem item;
-
-  @override
-  State<_PaymentForm> createState() => _PaymentFormState();
-}
-
-class _PaymentFormState extends State<_PaymentForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _amountController;
-  final TextEditingController _referenceController = TextEditingController();
-  final TextEditingController _payerController = TextEditingController();
-  String _method = 'CASH';
-  bool _issueReceipt = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController = TextEditingController(
-      text: widget.item.balanceDue.clamp(0, double.infinity).toStringAsFixed(2),
-    );
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _referenceController.dispose();
-    _payerController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      BillingPaymentDraft(
-        amount: _amountController.text,
-        method: _method,
-        reference: billingEmptyToNull(_referenceController.text),
-        payer: billingEmptyToNull(_payerController.text),
-        issueReceipt: _issueReceipt,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppReportSummaryGrid(
-            records: <AppReportSummaryItem>[
-              AppReportSummaryItem(
-                label: context.l10n.billingInvoiceLabel,
-                value: widget.item.effectiveDisplayId,
-                icon: Icons.receipt_long_outlined,
-              ),
-              AppReportSummaryItem(
-                label: context.l10n.billingDueLabel,
-                value: billingMoney(
-                  context,
-                  widget.item.balanceDue,
-                  widget.item.currency,
-                ),
-                icon: Icons.account_balance_wallet_outlined,
-              ),
-            ],
-          ),
-          AppCurrencyAmountField(
-            amountController: _amountController,
-            currency: widget.item.currency ?? appDefaultCurrencyCode,
-            onCurrencyChanged: (_) {},
-            amountLabelText: context.l10n.billingAmountReceivedLabel,
-            currencyLabelText: context.l10n.billingCurrencyLabel,
-            isRequired: true,
-            allowZero: false,
-            maxAmount: widget.item.balanceDue,
-          ),
-          AppSelectField<String>(
-            value: _method,
-            labelText: context.l10n.billingPaymentMethodLabel,
-            options: <AppSelectOption<String>>[
-              for (final String method in billingPaymentMethods)
-                AppSelectOption<String>(
-                  value: method,
-                  label: billingApiLabel(context, method),
-                ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _method = value);
-              }
-            },
-          ),
-          AppTextField(
-            controller: _referenceController,
-            labelText: context.l10n.billingReferenceLabel,
-            hintText: context.l10n.billingPaymentReferenceHint,
-          ),
-          AppTextField(
-            controller: _payerController,
-            labelText: context.l10n.billingPayerLabel,
-            hintText: context.l10n.billingPayerHint,
-          ),
-          AppCheckboxField(
-            title: context.l10n.billingGenerateReceiptLabel,
-            value: _issueReceipt,
-            onChanged: (bool value) => setState(() => _issueReceipt = value),
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: context.l10n.billingReceivePayment,
-        submitIcon: Icons.point_of_sale,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
 class _RefundForm extends StatefulWidget {
   const _RefundForm({
     required this.dialogTitle,
@@ -1187,14 +1053,9 @@ Future<void> _showPaymentDialog(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
-  final BillingPaymentDraft? draft = await showAppDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => _PaymentForm(
-      dialogTitle: Text(context.l10n.billingReceivePayment),
-      dialogIcon: const Icon(Icons.point_of_sale),
-      item: item,
-    ),
+  final BillingPaymentDraft? draft = await showBillingReceivePaymentDialog(
+    context,
+    item: item,
   );
   if (draft == null || !context.mounted) {
     return;

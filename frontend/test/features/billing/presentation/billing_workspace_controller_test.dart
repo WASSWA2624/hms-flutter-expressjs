@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
@@ -51,7 +53,7 @@ void main() {
       _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
 
@@ -106,7 +108,7 @@ void main() {
         });
 
         final ProviderContainer container = ProviderContainer(
-          overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+          overrides: _billingTestOverrides(repository).cast(),
         );
         addTearDown(container.dispose);
         await container.read(billingWorkspaceControllerProvider.future);
@@ -142,7 +144,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
       await container.read(billingWorkspaceControllerProvider.future);
@@ -176,7 +178,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
       await container.read(billingWorkspaceControllerProvider.future);
@@ -217,7 +219,7 @@ void main() {
       });
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
       await container.read(billingWorkspaceControllerProvider.future);
@@ -257,7 +259,7 @@ void main() {
         );
 
         final ProviderContainer container = ProviderContainer(
-          overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+          overrides: _billingTestOverrides(repository).cast(),
         );
         addTearDown(container.dispose);
         await container.read(billingWorkspaceControllerProvider.future);
@@ -300,7 +302,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
       await container.read(billingWorkspaceControllerProvider.future);
@@ -333,7 +335,7 @@ void main() {
       });
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [billingRepositoryProvider.overrideWithValue(repository)],
+        overrides: _billingTestOverrides(repository).cast(),
       );
       addTearDown(container.dispose);
       await container.read(billingWorkspaceControllerProvider.future);
@@ -347,6 +349,15 @@ void main() {
       verify(() => repository.closeShift(any())).called(1);
     });
   });
+}
+
+List<Object?> _billingTestOverrides(_MockBillingRepository repository) {
+  return <Object?>[
+    billingRepositoryProvider.overrideWithValue(repository),
+    initialSessionStateProvider.overrideWithValue(
+      const SessionState.unauthenticated(),
+    ),
+  ];
 }
 
 void _stubInitialLoad(

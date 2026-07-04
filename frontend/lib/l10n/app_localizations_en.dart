@@ -824,6 +824,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingBalanceColumn => 'Balance';
 
   @override
+  String get billingTotalAmountLabel => 'Total amount';
+
+  @override
+  String get billingAmountPaidLabel => 'Amount paid';
+
+  @override
+  String get billingPaymentStatusLabel => 'Payment status';
+
+  @override
+  String get billingInvoiceStatusLabel => 'Invoice status';
+
+  @override
+  String get billingAgeLabel => 'Age';
+
+  @override
+  String get billingLineItemDescriptionColumn => 'Description';
+
+  @override
+  String get billingLineItemQtyColumn => 'Qty';
+
+  @override
+  String get billingLineItemUnitPriceColumn => 'Unit price';
+
+  @override
+  String get billingLineItemDepartmentColumn => 'Department';
+
+  @override
+  String get billingLineItemAmountColumn => 'Amount';
+
+  @override
   String get billingUpdatedColumn => 'Updated';
 
   @override

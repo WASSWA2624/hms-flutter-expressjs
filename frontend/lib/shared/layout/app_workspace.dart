@@ -511,6 +511,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.status,
     this.alerts = const <AppWorkspaceStatus>[],
     this.fields = const <AppWorkspacePatientContextField>[],
+    this.secondaryFields = const <AppWorkspacePatientContextField>[],
     this.fieldStyle = AppWorkspacePatientContextFieldStyle.tiles,
     this.actions = const <Widget>[],
     this.onCopyPatientNumber,
@@ -532,6 +533,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final List<AppWorkspacePatientContextField> fields;
+  final List<AppWorkspacePatientContextField> secondaryFields;
   final AppWorkspacePatientContextFieldStyle fieldStyle;
   final List<Widget> actions;
   final VoidCallback? onCopyPatientNumber;
@@ -551,6 +553,18 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     final List<AppWorkspacePatientContextField> visibleFields = fields
         .where((AppWorkspacePatientContextField field) => field.hasValue)
         .toList(growable: false);
+    final List<AppWorkspacePatientContextField> visibleSecondaryFields =
+        secondaryFields
+            .where((AppWorkspacePatientContextField field) => field.hasValue)
+            .toList(growable: false);
+    final bool hasIdentityContent =
+        showPatientName ||
+        showAvatar ||
+        patientNumber.trim().isNotEmpty ||
+        (demographics?.trim().isNotEmpty ?? false) ||
+        demographicsWidget != null ||
+        status != null ||
+        alerts.isNotEmpty;
     Widget header = DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -580,33 +594,53 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             final Widget? actionBar = actions.isEmpty
                 ? null
                 : _WorkspaceHeaderActions(actions: actions);
-            final List<Widget> children = <Widget>[
-              compact || actionBar == null
-                  ? identity
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(child: identity),
-                        SizedBox(width: theme.spacing.md),
-                        Flexible(child: actionBar),
-                      ],
-                    ),
-            ];
+            final List<Widget> children = <Widget>[];
 
-            if (compact && actionBar != null) {
-              children
-                ..add(SizedBox(height: theme.spacing.md))
-                ..add(actionBar);
+            if (hasIdentityContent) {
+              children.add(
+                compact || actionBar == null
+                    ? identity
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(child: identity),
+                          SizedBox(width: theme.spacing.md),
+                          Flexible(child: actionBar),
+                        ],
+                      ),
+              );
+
+              if (compact && actionBar != null) {
+                children
+                  ..add(SizedBox(height: theme.spacing.md))
+                  ..add(actionBar);
+              }
+            } else if (actionBar != null) {
+              children.add(actionBar);
             }
 
             if (visibleFields.isNotEmpty) {
-              children
-                ..add(SizedBox(height: theme.spacing.md))
-                ..add(
-                  fieldStyle == AppWorkspacePatientContextFieldStyle.inline
-                      ? _PatientContextInlineFacts(fields: visibleFields)
-                      : _PatientContextFieldGrid(fields: visibleFields),
-                );
+              if (children.isNotEmpty) {
+                children.add(SizedBox(height: theme.spacing.md));
+              }
+              children.add(
+                fieldStyle == AppWorkspacePatientContextFieldStyle.inline
+                    ? _PatientContextInlineFacts(fields: visibleFields)
+                    : _PatientContextFieldGrid(fields: visibleFields),
+              );
+            }
+
+            if (visibleSecondaryFields.isNotEmpty) {
+              children.add(SizedBox(height: theme.spacing.sm));
+              children.add(
+                fieldStyle == AppWorkspacePatientContextFieldStyle.inline
+                    ? _PatientContextInlineFacts(
+                        fields: visibleSecondaryFields,
+                      )
+                    : _PatientContextFieldGrid(
+                        fields: visibleSecondaryFields,
+                      ),
+              );
             }
 
             return Column(

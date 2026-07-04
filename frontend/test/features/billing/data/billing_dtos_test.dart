@@ -45,7 +45,7 @@ void main() {
       expect(overview.timeline.single.kind, BillingWorkItemKind.payment);
     });
 
-    test('parses invoice work items with financials', () {
+    test('parses invoice work items with financials and patient demographics', () {
       final page = BillingWorkItemPageDto.fromResponse(<String, Object?>{
         'data': <String, Object?>{
           'queue': 'PENDING_PAYMENT',
@@ -55,6 +55,9 @@ void main() {
               'display_id': 'INV-001',
               'tenant_id': 'tenant-1',
               'patient_display_name': 'Jane Doe',
+              'patient_display_id': 'PAT-001',
+              'patient_gender': 'FEMALE',
+              'patient_date_of_birth': '1990-05-17T00:00:00.000Z',
               'billing_status': 'PARTIAL',
               'total_amount': '100000.00',
               'currency': 'UGX',
@@ -89,6 +92,8 @@ void main() {
       final BillingWorkItem item = page.items.single;
       expect(item.isInvoice, isTrue);
       expect(item.effectiveDisplayId, 'INV-001');
+      expect(item.patientGender, 'FEMALE');
+      expect(item.patientDateOfBirth, isNotNull);
       expect(item.balanceDue, 60000);
       expect(item.clearanceState, BillingClearanceState.partiallyPaid);
     });

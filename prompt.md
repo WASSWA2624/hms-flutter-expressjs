@@ -1,94 +1,113 @@
-# Billing worklist UX improvements
+# Refine Billing Invoice Detail Dialog
 
-## Context
+## Goal
 
-Refine the **Billing** cashier worklist (`/billing`) in HOSSPI. The page header and actions are acceptable as-is; focus on the worklist panel, table structure, status labeling, search, and filters.
+Improve the **Invoice Detail** dialog in the Billing workspace so patient and invoice context is scannable, metadata uses consistent **label:value** pairs, line items are tabular, and billing actions remain fully functional.
 
-**Keep unchanged**
-- Page title and icon
-- Primary action: **Close shift**
-- Overflow menu: **Close day**, **Refresh**, **Request maintenance**, **Report equipment fault**
+## Scope
 
-## Problems (current state)
+- Primary: `frontend/lib/features/billing/presentation/widgets/billing_detail_widgets.dart` (`BillingDetailBody` and related private sections)
+- Related: `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart` (payment/issue/refund/adjust/void/send dialogs)
+- Reuse existing shared components; do not introduce one-off styling
 
-1. The worklist panel shows redundant copy: title **“All billing work items”** plus subtitle **“Cashier worklist for invoices, payments, claims, and approvals.”** Remove the subtitle/description.
-2. The table stacks **patient ID** and **invoice number** under the patient name. Cashiers need each identifier in its own column for scanning and sorting.
-3. **Status** shows **“Blocked”** (red lock) for a normal unpaid invoice (e.g. UGX 95,000 due, UGX 0 paid). That label is misleading—this is pending payment, not a blocked clearance gate.
-4. There is no **source** column showing where charges originated (e.g. Laboratory, Pharmacy, OPD).
-5. **Billing filters** only expose queue selection. Cashiers need richer filter fields aligned with the table.
-6. Search is too narrow. It must support flexible lookup across common billing identifiers.
+## Reference patterns
 
-## Requirements
+- **Inline label:value facts:** `PatientDetailHeader` (`patient_detail_header.dart`) — `AppWorkspacePatientContextHeader` with `fieldStyle: AppWorkspacePatientContextFieldStyle.inline`, `showAvatar: false`
+- **Tables:** `AppListTable` (billing workspace list, lab workspace)
+- **Quick actions:** `AppActionList` / `AppActionItem` (already used in `_BillingActionPanel`)
+- **Financial cards:** `AppReportPreviewPanel` + `AppReportSummaryGrid` (keep card layout here only)
 
-### 1. Worklist panel header
-- Remove `billingWorklistDescription` from the panel (keep the queue title only, e.g. “All billing work items” or active queue name).
+---
 
-### 2. Table columns
-Restructure the default visible columns to:
+## 1. Patient & invoice context header
 
-| Column | Content |
-|--------|---------|
-| Patient name | Display name only (no stacked identifiers) |
-| Patient ID | e.g. `PAT0000001` |
-| Invoice | e.g. `INV0000004` |
-| Encounter | e.g. `ENC0000001` |
-| Source | Originating module/service (Lab, Pharmacy, Radiology, OPD, etc.) — use existing invoice line-item source metadata (`sourceModule` / `sourceContextLabel`) aggregated sensibly at invoice level |
-| Status | Clear, cashier-friendly billing state (see below) |
-| Amount due | Total outstanding |
-| Amount paid | Total paid to date |
+Replace the current tile/card layout in `AppWorkspacePatientContextHeader` with **inline label:value pairs** (`Label: Value`), each with an icon where appropriate. **Remove the patient avatar.**
 
-- Hide or de-emphasize less-critical columns (balance, last updated) via table settings by default if needed.
-- Update mobile tile layout to reflect the same fields.
+### Row 1 — Patient identity (single row; wrap only when width is insufficient)
 
-### 3. Status labeling
-Replace misleading **“Blocked”** for standard unpaid invoices.
+| Field | Example | Notes |
+|-------|---------|-------|
+| Patient name | `Patient name: Wilson Wasswa` | Move out of standalone title styling into inline fact |
+| Patient ID | `Patient ID: PAT0000001` | Copyable |
+| Payment status | `Status: Awaiting payment` | Clearance state (`BillingGateBadge` tone/icon) |
+| Gender | `Gender: Male` | Show when available |
+| Age | `Age: 32 yrs` | Use `formatPatientAge` pattern from patient module |
+| Encounter | `Encounter: ENC0000001` | **Move here** from the invoice-metadata row |
 
-- Map unpaid issued invoices to a label such as **“Awaiting payment”** or **“Unpaid”**, with a warning/neutral tone—not error/red lock.
-- Reserve **“Blocked”** (or equivalent) only for true clearance blocks (authorization holds, insurance gates, etc.).
-- Review `BillingClearanceState.blocked` usage in `billing_entities.dart` and `billing_support.dart`; align UI labels, icons, and tones with actual business meaning.
-- Prefer showing both **invoice status** (`ISSUED`, `PARTIAL`, `OVERDUE`) and **clearance state** where they differ, or pick the most actionable label for the worklist.
+> **Data:** `BillingWorkItem` currently lacks gender/age. Extend DTO/entity (`billing_dtos.dart`, `billing_entities.dart`) and map from API if fields exist; otherwise omit gracefully (do not show empty placeholders).
 
-### 4. Search
-Make the worklist search global and flexible. A single search box should match (partial, case-insensitive where appropriate):
+### Row 2 — Invoice metadata (inline facts, **no tile cards**)
 
-- Patient name (first/last/full)
-- Patient ID (`human_friendly_id`)
-- Patient email and phone (if available on patient record)
-- Invoice number
-- Encounter ID
+| Field | Example |
+|-------|---------|
+| Invoice | `Invoice: INV0000004` (copyable) |
+| Invoice status | `Status: Issued` |
+| Amount paid | `Amount paid: UGX 0` |
+| Balance | `Balance: UGX 95,000` |
 
-**Backend:** extend `commonInvoiceWhere` in `billing.service.js` beyond current invoice ID + patient name/ID filters.
+Use `AppWorkspacePatientContextFieldStyle.inline` for both rows. Preserve tone coloring for paid/balance where applicable.
 
-**Frontend:** update hint/semantic labels to reflect the expanded scope; ensure search is server-driven (not client-only filtering).
+---
 
-### 5. Billing filters dialog
-Expand **Billing filters** beyond queue type. Add filter fields for at least:
+## 2. Quick actions
 
-- Queue / work item type (existing)
-- Patient ID
-- Invoice number
-- Encounter ID
-- Source module
-- Status (awaiting payment, partial, overdue, draft, etc.)
-- Date range (issued / updated)
+Keep the existing action bar (`Receive payment`, `Issue`, `Refund`, `Adjust`, `Void`, `Send`) grouped under a clear **Quick actions** section using `AppActionList`.
 
-Wire filters to API query params; persist active filter state in `BillingWorkspaceQuery`.
+- **Receive payment:** Extract the payment form/dialog (`_PaymentForm` in `billing_workspace_page.dart`) into a **reusable shared widget** and use it wherever payment is received (invoice detail and any other billing entry points).
+- **Issue / Refund / Adjust / Void / Send:** Preserve current enablement rules (`canIssue`, `canRequestRefund`, etc.) and controller wiring; no behavior regressions.
+
+---
+
+## 3. Financial summary
+
+Keep the **card grid** (`AppReportPreviewPanel` + `AppReportSummaryGrid`) but ensure each card shows an explicit **label:value** presentation:
+
+| Card label | Maps to |
+|------------|---------|
+| **Total amount** | `item.effectiveTotal` (invoice opening balance) |
+| **Amount paid** | `item.paidAmount` |
+| **Balance** | `item.balanceDue` |
+
+Icons may remain. Wording must be unambiguous (avoid duplicating “Status” labels used elsewhere).
+
+---
+
+## 4. Line items → table
+
+Replace the current list rows (title + concatenated subtitle like `Qty 1 · Laboratory · ENC0000001`) with an **`AppListTable`** (or equivalent shared table) where **each datum occupies its own column** — no multi-value cells.
+
+Suggested columns:
+
+| Column | Source (`BillingInvoiceItem`) |
+|--------|-------------------------------|
+| Description | `description` |
+| Qty | `quantity` |
+| Unit price | `unitPrice` (formatted) |
+| Department | `sourceModule` |
+| Encounter | `encounterDisplayId` |
+| Amount | `totalPrice` (formatted with invoice currency) |
+
+Include empty-state text when `item.items` is empty. Match table density/styling used elsewhere in billing.
+
+---
+
+## 5. Payments & adjustments
+
+No layout change required unless applying the same one-value-per-column principle improves readability. Keep existing empty states.
+
+---
+
+## Constraints
+
+- Follow existing theme tokens, spacing, and l10n keys; add ARB entries only where labels are new.
+- Minimize diff scope — refactor header layout and line-items table; do not redesign unrelated billing flows.
+- All actions must continue to refresh invoice state after mutation.
 
 ## Acceptance criteria
 
-- [ ] Worklist panel has no subtitle/description under the queue title.
-- [ ] Table shows separate columns for patient name, patient ID, invoice number, encounter, source, status, amount due, and amount paid.
-- [ ] An unpaid invoice like `INV0000004` shows **Awaiting payment** (or equivalent)—not **Blocked**.
-- [ ] Source column shows where the invoice charges came from (e.g. Laboratory).
-- [ ] Search finds rows by patient name, patient ID, invoice number, encounter ID, email, or phone.
-- [ ] Billing filters dialog exposes the additional fields and correctly narrows the worklist.
-- [ ] Existing header actions (Close shift, Close day, Refresh, maintenance/fault reporting) remain unchanged.
-- [ ] Add/update l10n strings in `app_en.arb`; follow existing billing workspace patterns in `billing_workspace_page.dart`.
-
-## Key files
-
-- `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`
-- `frontend/lib/features/billing/presentation/widgets/billing_support.dart`
-- `frontend/lib/features/billing/domain/entities/billing_entities.dart`
-- `backend/src/modules/billing/services/billing.service.js`
-- `frontend/lib/l10n/app_en.arb`
+- [ ] Invoice detail opens with **no avatar**; patient + encounter facts on row 1, invoice facts on row 2, all as inline `Label: Value` pairs with icons.
+- [ ] Invoice metadata row uses **inline facts, not tile cards**.
+- [ ] Financial summary cards show **Total amount**, **Amount paid**, and **Balance** clearly.
+- [ ] Line items render in a **table with one value per column** (screenshot-style concatenation removed).
+- [ ] Quick actions visible and functional; **Receive payment** uses a shared reusable form component.
+- [ ] Existing billing widget tests updated or added where behavior changed.
