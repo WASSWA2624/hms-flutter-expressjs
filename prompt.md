@@ -1,93 +1,70 @@
-# Fix false “Sign-in required” on authenticated workspace routes
+# Fix Lab Configurations: catalog loading, enable flow, and role-based access
 
-## Goal
+## Context
 
-Authenticated users with valid permissions must be able to open every entitled workspace. The **Sign-in required** state must appear only when the session is genuinely unauthenticated or expired—not when bootstrap API calls fail or auth context is not yet ready.
+In **Laboratory → Lab Configurations** (`/lab`, overflow menu), admins manage the facility lab catalog: enable platform tests/panels for a facility, set prices, and customize reference ranges and result options. Enabled offerings must appear when clinicians create lab orders.
 
-## Problem
+**Observed behavior (super admin, authorized account):**
 
-After signing in as **Platform Administrator**, the shell shows an active session (profile: **Platform Demo**, `super.admin@hosspi.com`, **Super Admin**; header: **Subscribed**). The dashboard and several modules load correctly, but many workspace routes show:
-
-- **Title:** Sign-in required  
-- **Message:** Sign in again to continue.
-
-Logging out and signing back in does **not** fix the affected routes.
-
-### Affected routes (Platform Admin, local dev)
-
-| Route | Path |
-|-------|------|
-| Inpatient (IPD) | `/ipd` |
-| ICU | `/icu` |
-| Nursing | `/nursing` |
-| Clinical notes | `/clinical` |
-| Operating theater | `/theater` |
-| Laboratory | `/lab` |
-| Radiology | `/radiology` |
-| Pharmacy | `/pharmacy` |
-| Operations | `/operations` |
-| Biomedical | `/biomedical` |
-| Mortuary | `/mortuary` |
-| Human resources | `/hr` |
-
-### Working routes (same session)
-
-Dashboard (`/`), Patient registry (`/patients`), OPD (`/opd`), Emergency (`/emergency`), Rooms & beds (`/rooms-beds`), Physiotherapy (`/physiotherapy`), Claims (`/claims`), Subscriptions (`/subscriptions`), Housekeeping (`/housekeeping`), Communications (`/communications`), Integrations (`/integrations`), Reports (`/reports`), Settings (`/settings`), Tenant setup (`/admin/setup`).
-
-### Secondary issue: subscription header flash
-
-On initial load, the header briefly shows an incorrect subscription state (e.g. **Subscription expired**) before settling on **Subscribed**. Do not render a definitive subscription label until session/subscription data has finished loading.
+1. **Transient "Access denied" flash** — On opening Lab Configurations, an "Access denied / You do not have permission" banner appears briefly, then disappears once the dialog settles.
+2. **Empty catalog** — Tests and Panels tabs show **"No catalog items found"** even though no offerings have been configured for this facility.
+3. **Misleading enable dialog** — **Enable test** / **Enable panel** opens **Enable lab offering**, but shows *"All platform items are already offered at this facility"* despite the catalog being empty. No platform catalog items are selectable.
 
 ## Expected behavior
 
-- All workspace routes above load for users who are signed in **and** meet existing route permissions, roles, and active-module requirements.
-- Platform admin, tenant admin, facility admin, and role-specific staff retain access per current rules in `AppRoutes`.
-- **Sign-in required** is reserved for HTTP 401 / expired or missing sessions—not for forbidden access, missing module entitlements, or transient bootstrap failures.
-- The subscription badge shows a neutral loading state (or nothing) until `subscriptionSummary` is hydrated; no misleading **expired** default.
+### Catalog loading & UX
 
-## Reproduction
+- Do **not** show an access-denied (or other error) state to users who are authorized; avoid flashing stale failures while catalog data is loading.
+- Show a loading state until platform catalog + facility offering merge completes.
+- If the tenant has no master lab tests/panels, show an accurate empty state (not "all already offered").
+- Distinguish three states in the enable dialog:
+  - **Loading** — fetching catalog
+  - **No platform items** — tenant catalog is empty
+  - **All enabled** — every platform item already has an active facility offering
+  - **Selectable items** — list not-yet-offered tests/panels with facility price input
 
-1. Run the app locally at `http://127.0.0.1:5201` (backend + frontend dev).
-2. Sign in with the Platform Admin credentials below.
-3. Confirm dashboard loads and header shows **Subscribed**.
-4. Open each affected route from the sidebar (start with `/lab`).
-5. Observe **Sign-in required** despite an active session.
-6. (Optional) Log out, sign in again, repeat step 4—behavior unchanged.
+### Enable & configure flow
 
-## Investigation hints
+- Load the **tenant master catalog** (`lab_test`, `lab_panel`) merged with **facility offerings** via `GET /api/v1/facility-lab-catalog/tests` and `/panels`.
+- **Enable lab offering** must list platform items where `is_offered_at_facility === false`, let the admin set a facility price, and persist via `PUT /api/v1/facility-lab-catalog/tests/:id` or `/panels/:id`.
+- After enabling, items appear in the Lab Configurations table (with Offered status, price, configure actions) and in lab order catalog search (`offered_only=true`).
+- **Configure** existing offerings: reference ranges, result options, specimen, price, activate/deactivate.
 
-- Error copy maps to `errorUnauthorizedTitle` / `errorUnauthorizedMessage` (401 / `AppFailureCategory.unauthorized`), not the route-level auth gate (`route_guards.dart`). Likely a workspace bootstrap API failure misreported as sign-in required.
-- Affected pages use `runWorkspaceInitialLoad` in their workspace controllers (`workspace_session_guard.dart`). Compare failing vs working controllers and their first authenticated API calls.
-- Route guards require permissions, roles, and `requiredActiveModules` (e.g. `lab-workflows` for `/lab`). Super admin passes guards but still hits the error—focus on backend responses and frontend failure mapping after guards succeed.
-- Subscription flash: `TenantSubscriptionSummary` defaults `headerState` to `expired` when `subscriptionSummary` is null before hydration (`tenant_subscription_summary.dart`).
+### Role-based access & facility scope
+
+| Role | Scope | Enable test/panel | Configure offerings |
+|------|-------|-------------------|---------------------|
+| **Super admin** (platform) | Any tenant/facility | Yes | Yes |
+| **Tenant admin** | All facilities in tenant (support) | Yes | Yes |
+| **Facility admin** | Own facility only | No | Yes (own facility) |
+
+- **Enable test** / **Enable panel** actions: visible only to **super admin** and **tenant admin**.
+- **Facility admin**: read/configure offerings for their facility; no enable-from-platform action.
+- **Super admin** and **tenant admin** must **explicitly select the target facility** before enabling or configuring (visible facility selector + confirmation of active facility context). Facility admins are locked to their facility — show which facility is being configured, read-only.
+- Enforce scope on both frontend (hide/disable actions) and backend (`facility-lab-catalog` routes/service, `resolveFacilityId`).
+
+## Likely touchpoints
+
+**Frontend**
+- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_openLabConfigurationsDialog`, `_LabConfigurationsDialog`
+- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` — `LabEnableFacilityOfferingDialog` (`_availableItems`, empty-state copy)
+- `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart` — `loadFacilityCatalogConfig`
+
+**Backend**
+- `backend/src/modules/facility-lab-catalog/` — routes, service (`listFacilityLabTests`, `listFacilityLabPanels`, `upsert*Offering`), merge (`facility-lab-catalog.merge.js`)
 
 ## Acceptance criteria
 
-- [ ] Platform admin can open every affected route listed above and see the workspace UI.
-- [ ] Tenant admin, facility admin, and authorized staff retain access per existing permission rules.
-- [ ] Unauthorized messaging appears only for truly unauthenticated or expired sessions; forbidden/module errors use the correct copy.
-- [ ] No incorrect subscription label flash during app startup.
+- [ ] Super admin opening Lab Configurations never sees a momentary "Access denied" banner when authorized.
+- [ ] Lab Configurations lists tenant platform tests/panels with correct Offered / Not offered status for the selected facility.
+- [ ] Enable dialog lists not-yet-offered items when the platform catalog has entries; correct empty copy when catalog is truly empty.
+- [ ] Enabling a test/panel with a price creates an active facility offering visible in Lab Configurations and available in lab order creation.
+- [ ] Enable actions hidden for facility admin; facility selector shown for super/tenant admin.
+- [ ] Backend rejects out-of-scope facility access (403) without causing authorized users to see error flashes.
 
-## Test credentials
+## Verification
 
-**Password (all accounts):** `Hosspi@2624`
-
-| Role | Email |
-|------|-------|
-| Platform admin | `super.admin@hosspi.com` |
-| Tenant admin | `tenant.admin@hosspi.com` |
-| Facility admin | `facility.admin@hosspi.com` |
-| Doctor | `doctor@hosspi.com` |
-| Nurse | `nurse@hosspi.com` |
-| Lab | `lab@hosspi.com` |
-| Pharmacy | `pharmacy@hosspi.com` |
-| Reception | `reception@hosspi.com` |
-| Billing | `billing@hosspi.com` |
-| Operations | `operations@hosspi.com` |
-| HR | `hr@hosspi.com` |
-| Biomed | `biomed@hosspi.com` |
-| Housekeeping | `housekeeping@hosspi.com` |
-| Ambulance | `ambulance@hosspi.com` |
-| Patient portal | `patient.portal@hosspi.com` |
-
-Use Platform Admin for primary verification; spot-check at least one role-specific account on a representative failing route (e.g. `/lab` with `lab@hosspi.com`).
+1. Log in as super admin → open Lab Configurations → confirm no error flash, catalog loads.
+2. Enable a test and a panel with prices → confirm they appear in the table and in **Create Lab Order** catalog search.
+3. Log in as tenant admin → switch facility → enable/configure for a different facility.
+4. Log in as facility admin → confirm enable buttons hidden, configure works only for assigned facility.
