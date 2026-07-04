@@ -1,74 +1,122 @@
-# Refine the “Choose lab tests” catalog picker dialog
+# Clinical Lab Request → Billing Office Payment
 
-## Context
+## Objective
 
-The **Choose lab tests** modal (`ClinicalLabRequestCatalogDialog`) is opened from the clinical lab order flow when the user taps **Add items**. It lets clinicians browse and multi-select individual lab tests or lab panels from a searchable table before returning to the parent order dialog.
+When a clinician **submits a lab request**, the charge must immediately appear in the **Billing workspace** so billers can collect payment at the billing office. Payment is **never** handled at order submission — the clinician only requests tests; the billing desk owns payment and clearance.
 
-**Primary files**
+Once a biller marks a charge **paid / cleared**, that status must be **globally visible** across the system (billing, lab workbench, and any other module that shows the order) so all relevant staff know whether payment is pending or complete.
 
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart`
-- `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart` (caller)
-- `frontend/lib/l10n/app_en.arb` (+ generated l10n)
-- `frontend/test/shared/clinical_actions/clinical_lab_order_action_dialog_test.dart`
+## Workflow
 
-## Required changes
+```
+Clinician submits lab request
+        ↓
+Charge created → visible in Billing workspace (pending clearance)
+        ↓
+Patient pays at billing office
+        ↓
+Biller opens bill detail → marks as paid / cleared
+        ↓
+Clearance status updates everywhere (billing, lab, clinical views)
+```
 
-### 1. Dialog title
 
-Rename the title from **“Choose lab tests”** to **“Choose lab tests or panels”**.
 
-- Update l10n key `clinicalLabRequestCatalogPickerTitle` in `app_en.arb` and regenerate localizations.
+## Clinician side (order submission)
 
-### 2. Test type switcher: tabs → radio buttons
+- Clinician selects tests/panels and submits — **no payment step** in the lab order dialog.
+- Backend creates the lab order and linked billing charge via `applyClinicalRequestBilling` (`backend/src/lib/billing/clinical-request-billing.js`).
+- Initial clearance state: **pending** (awaiting payment at billing office).
 
-Replace the current `SegmentedButton` (**Individual tests** / **Lab panels**) with a horizontal **radio group** using the existing `AppRadioGroup` component (same pattern as elsewhere in the app).
 
-- Labels: **Individual tests**, **Lab panels**
-- Preserve current behavior: switching mode reloads the appropriate catalog and keeps checkbox multi-select within the active mode.
-- Icons are optional; prioritize clarity and consistency with `AppRadioGroup` usage elsewhere.
 
-### 3. Unit price column spacing
+## Billing workspace — worklist
 
-The **Unit price** column values sit too close to the right edge and appear clipped (see screenshot).
+Billers must see **every submitted lab-linked charge**, not only a subset.
 
-- Add sufficient right padding (or equivalent column/cell alignment) so currency values (e.g. `UGX 20,000`) are fully visible and visually balanced.
-- Apply only to the price column; do not alter other columns unnecessarily.
-- Verify at maximized dialog width and with long formatted prices.
+Each row shows:
 
-### 4. Primary action: confirm instead of “Done”
 
-Replace the footer **Done** button with a clearer confirm action:
+| Field            | Notes                                                   |
+| ---------------- | ------------------------------------------------------- |
+| Patient name     | Human-readable name                                     |
+| Patient ID       | Display ID / patient number — not raw UUID              |
+| Encounter        | Encounter the bill belongs to                           |
+| Amount           | Total charge for the request                            |
+| Clearance status | **Pending** or **Paid / cleared** — single global state |
 
-- Label: **Confirm selected tests or panels** (or a concise variant that names both item types).
-- Add an appropriate leading icon (e.g. `Icons.check_circle_outline` or `Icons.playlist_add_check`).
-- **Confirm** applies staged selections to the parent lab order and closes the dialog.
-- Add a **Cancel** tertiary button (reuse `commonCancelActionLabel`) that discards changes and closes—same behavior as the close (X) control.
 
-### 5. Close (X) must cancel, not commit
+Reuse `billing_workspace_page.dart`, `BillingWorkItem`, and existing clearance chips (`BillingClearanceState`).
 
-**Current problem:** selections are applied immediately via `onSelectionChanged` on the parent `_requests` list, so closing the dialog (X or backdrop) keeps whatever was checked—even if the user intended to abandon the session.
+Default queue filter: **Awaiting payment** (`PENDING_PAYMENT`).
 
-**Required behavior:**
+## Billing workspace — row detail (dialog)
 
-- Stage selections **inside** the catalog dialog while it is open.
-- Only commit to the parent when the user taps **Confirm selected tests or panels**.
-- **Cancel**, **Close (X)**, and equivalent dismiss paths must **discard** staged changes and leave the parent order unchanged.
-- On open, initialize the staging state from the parent’s current selection.
+Clicking a worklist row opens a **detail dialog** (modal — no new route) showing:
 
-## Implementation notes
+- Patient and encounter context
+- Line items (tests/panels) and total amount
+- Current clearance status
+- Payment method and reference (when recording payment)
+- Primary action: **Mark as paid / cleared** (via existing receive-payment flow, `billingWrite`)
 
-- Refactor `showClinicalLabRequestCatalogDialog` / `ClinicalLabRequestCatalogDialog` so selection mutations are local until confirm; return the final selection (or `null` on cancel) via `Navigator.pop`.
-- Update `ClinicalLabOrderActionDialog._openCatalogPicker` to apply the returned selection only on confirm.
-- Keep checkbox multi-select, search, filters, column settings, and selected-count display working with staged state.
-- Add new l10n keys for the confirm action label; do not hardcode strings.
-- Update widget tests: title text, radio group instead of segmented control, confirm/cancel actions, and that dismiss/cancel does not mutate parent selections.
+Billers may record payment and confirm clearance; they **must not** change the billed amount set at order submission.
+
+## Global clearance visibility
+
+Payment status is **one source of truth** on the linked invoice / billing snapshot (`billing_snapshot` on the lab order).
+
+
+| Role / module             | What they see                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| Billing                   | Worklist row + detail; can mark paid / cleared                                |
+| Lab personnel             | Order row/detail shows clearance badge (pending vs paid / cleared) and amount |
+| Clinical / OPD / IPD, etc | Same pending / cleared indicator where the order is referenced                |
+
+
+After a biller marks a charge cleared:
+
+- Billing work item moves out of **Awaiting payment** (or shows paid state).
+- Lab workbench reflects updated `payment_status` / clearance on the order without manual refresh beyond normal realtime sync (`RealtimeEventGroups.billingWorkspace`, billing domain events).
+- No module may show a conflicting payment state.
+
+
+
+## Permissions
+
+
+| Role                    | Can do                                             | Cannot do                             |
+| ----------------------- | -------------------------------------------------- | ------------------------------------- |
+| Clinician               | Submit lab request                                 | Collect payment or mark bills cleared |
+| Biller (`billingWrite`) | View charges, receive payment, mark paid / cleared | Override billed line-item amounts     |
+| Lab staff               | View clearance status on orders                    | Mark payment or change amounts        |
+
+
+
+
+## Out of scope
+
+- Point-of-care payment in the lab order dialog (remove or hide pay-now path for lab orders if still present).
+- Lab execution (sample collection, results entry).
+- Adjustments, refunds, or voids outside existing approval flows.
+
+
+
+## References
+
+- Billing: `frontend/lib/features/billing/`, `prompts/09-billing-module-prompt.md`
+- Lab orders: `clinical_lab_order_action_dialog.dart`, `lab_workspace_page.dart`, `prompts/16-lab-module-prompt.md`
+- Billing apply / snapshot: `backend/src/lib/billing/clinical-request-billing.js`
+- Order-time billing UI (to simplify): `clinical_request_billing_panel.dart`, `clinical_request_billing_state.dart`
+
+
 
 ## Acceptance criteria
 
-- [ ] Dialog title reads **Choose lab tests or panels**.
-- [ ] **Individual tests** / **Lab panels** are radio buttons, not segmented tabs.
-- [ ] Unit prices are fully visible with comfortable right padding.
-- [ ] Footer shows **Cancel** and **Confirm selected tests or panels** (with icon).
-- [ ] Confirm applies selections; Cancel and Close (X) revert without changing the parent order.
-- [ ] Existing catalog search, filter, and multi-select behavior still works.
-- [ ] Tests pass and cover confirm vs cancel/dismiss behavior.
+1. Clinician submits a lab request with no payment UI → charge appears in Billing workspace as **pending** within one refresh cycle.
+2. Worklist row shows patient name, patient ID, encounter, amount, and clearance status.
+3. Row click opens a detail dialog with line items; biller can **mark as paid / cleared**; billed total is unchanged.
+4. After clearance, billing queue and lab order both show **paid / cleared**; no stale pending state elsewhere.
+5. Realtime or refresh keeps billing and lab views in sync.
+6. Existing billing and lab tests pass; add tests for submit → billing visibility → global clearance if gaps exist.
+
