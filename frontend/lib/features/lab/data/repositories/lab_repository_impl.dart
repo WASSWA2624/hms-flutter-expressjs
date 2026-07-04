@@ -90,13 +90,20 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
-  Future<Result<List<LabCatalogItem>>> listTests({String? search}) {
+  Future<Result<List<LabCatalogItem>>> listTests({
+    String? search,
+    String? tenantId,
+    bool includeStandardCatalog = false,
+    int limit = 100,
+  }) {
     return _apiClient.get<List<LabCatalogItem>>(
       ApiEndpoints.collection(HmsApiResource.labTests),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': 1,
-        'limit': 100,
+        'limit': limit,
         'search': search,
+        'tenant_id': tenantId,
+        if (includeStandardCatalog) 'include_standard_catalog': 'true',
         'sort_by': 'name',
         'order': 'asc',
       }),
@@ -105,13 +112,20 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
-  Future<Result<List<LabCatalogItem>>> listPanels({String? search}) {
+  Future<Result<List<LabCatalogItem>>> listPanels({
+    String? search,
+    String? tenantId,
+    bool includeStandardCatalog = false,
+    int limit = 100,
+  }) {
     return _apiClient.get<List<LabCatalogItem>>(
       ApiEndpoints.collection(HmsApiResource.labPanels),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': 1,
-        'limit': 100,
+        'limit': limit,
         'search': search,
+        'tenant_id': tenantId,
+        if (includeStandardCatalog) 'include_standard_catalog': 'true',
         'sort_by': 'name',
         'order': 'asc',
       }),

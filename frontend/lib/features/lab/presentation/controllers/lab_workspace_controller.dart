@@ -1041,20 +1041,84 @@ final class LabWorkspaceController
     required LabCatalogScope scope,
     String? query,
     int limit = 100,
-  }) {
-    if (type == LabCatalogItemType.test) {
-      return _repository.listFacilityLabTests(
-        tenantId: scope.tenantId,
-        facilityId: scope.facilityId,
-        search: query,
-        limit: limit,
-      );
+  }) async {
+    if (!scope.isReady) {
+      return const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[]);
     }
-    return _repository.listFacilityLabPanels(
-      tenantId: scope.tenantId,
-      facilityId: scope.facilityId,
-      search: query,
-      limit: limit,
+
+    final Future<Result<List<LabCatalogItem>>> platformFuture =
+        type == LabCatalogItemType.test
+        ? _repository.listTests(
+            search: query,
+            tenantId: scope.tenantId,
+            includeStandardCatalog: true,
+            limit: limit,
+          )
+        : _repository.listPanels(
+            search: query,
+            tenantId: scope.tenantId,
+            includeStandardCatalog: true,
+            limit: limit,
+          );
+    final Future<Result<List<LabCatalogItem>>> offeredFuture =
+        type == LabCatalogItemType.test
+        ? _repository.listFacilityLabTests(
+            tenantId: scope.tenantId,
+            facilityId: scope.facilityId,
+            offeredOnly: true,
+            limit: limit,
+          )
+        : _repository.listFacilityLabPanels(
+            tenantId: scope.tenantId,
+            facilityId: scope.facilityId,
+            offeredOnly: true,
+            limit: limit,
+          );
+
+    final List<Result<List<LabCatalogItem>>> results = await Future.wait(
+      <Future<Result<List<LabCatalogItem>>>>[platformFuture, offeredFuture],
+    );
+    return _mergePlatformCatalogOfferingStatus(results[0], results[1]);
+  }
+
+  Result<List<LabCatalogItem>> _mergePlatformCatalogOfferingStatus(
+    Result<List<LabCatalogItem>> platformResult,
+    Result<List<LabCatalogItem>> offeredResult,
+  ) {
+    return platformResult.when(
+      success: (List<LabCatalogItem> platformItems) {
+        final Set<String> offeredIds = <String>{};
+        final Set<String> offeredCodes = <String>{};
+        offeredResult.when(
+          success: (List<LabCatalogItem> offeredItems) {
+            for (final LabCatalogItem item in offeredItems) {
+              offeredIds.add(item.apiId);
+              final String? code = item.code?.trim();
+              if (code != null && code.isNotEmpty) {
+                offeredCodes.add(code.toUpperCase());
+              }
+            }
+          },
+          failure: (_) {},
+        );
+        return Result<List<LabCatalogItem>>.success(
+          platformItems
+              .map((LabCatalogItem item) {
+                final String? code = item.code?.trim();
+                final bool isOffered =
+                    offeredIds.contains(item.apiId) ||
+                    (code != null &&
+                        code.isNotEmpty &&
+                        offeredCodes.contains(code.toUpperCase()));
+                return isOffered
+                    ? item.copyWith(isOfferedAtFacility: true)
+                    : item;
+              })
+              .toList(growable: false),
+        );
+      },
+      failure: (AppFailure failure) =>
+          Result<List<LabCatalogItem>>.failure(failure),
     );
   }
 

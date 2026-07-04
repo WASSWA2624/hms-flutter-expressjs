@@ -877,9 +877,10 @@ class _LabConfigurationsDialogState
     final String? tenantId = _showTenantSelector
         ? existingScope?.tenantId ?? policy.tenantId
         : policy.tenantId ?? existingScope?.tenantId;
+    final bool hasResolvedTenant = tenantId?.trim().isNotEmpty ?? false;
     final String? facilityId = _showFacilitySelector
         ? existingScope?.facilityId ??
-            (_showTenantSelector ? policy.facilityId : null)
+            (_showTenantSelector && hasResolvedTenant ? policy.facilityId : null)
         : policy.facilityId ?? existingScope?.facilityId;
 
     setState(() {
@@ -1042,6 +1043,7 @@ class _LabConfigurationsDialogState
               },
             )
           else if (_showScopeContextLabel &&
+              scopeReady &&
               facilityLabel != null &&
               facilityLabel.isNotEmpty)
             AppMutedText(l10n.labConfigurationsFacilityContextLabel(facilityLabel)),
@@ -1055,18 +1057,20 @@ class _LabConfigurationsDialogState
                 l10n.labConfigurationsFacilityContextLabel(facilityLabel),
               ),
             ),
-          SizedBox(height: theme.spacing.md),
-          _LabConfigurationTypeSelector(
-            value: _catalogType,
-            onChanged: (LabCatalogItemType value) {
-              setState(() {
-                _catalogType = value;
-                _filterValue = AppSearchBarFilterValue.empty;
-                _searchController.clear();
-              });
-            },
-          ),
-          SizedBox(height: theme.spacing.md),
+          if (scopeReady) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            _LabConfigurationTypeSelector(
+              value: _catalogType,
+              onChanged: (LabCatalogItemType value) {
+                setState(() {
+                  _catalogType = value;
+                  _filterValue = AppSearchBarFilterValue.empty;
+                  _searchController.clear();
+                });
+              },
+            ),
+            SizedBox(height: theme.spacing.md),
+          ],
           if (!scopeReady)
             AppMessagePanel(
               message: _scopePromptMessage(
@@ -1279,7 +1283,7 @@ class _LabConfigurationsDialogState
         return option.label;
       }
     }
-    return _facilityId;
+    return null;
   }
 
   String? _tenantLabel(List<HomeLookupOption> tenantOptions) {
@@ -1291,7 +1295,7 @@ class _LabConfigurationsDialogState
         return option.label;
       }
     }
-    return _tenantId;
+    return null;
   }
 
   String _scopePromptMessage(
@@ -1636,6 +1640,7 @@ class _LabConfigurationTypeSelector extends StatelessWidget {
               onChanged: onChanged,
             ),
           ),
+          SizedBox(width: theme.spacing.md),
           Expanded(
             child: _LabConfigurationTypeOption(
               value: LabCatalogItemType.panel,
@@ -1677,46 +1682,37 @@ class _LabConfigurationTypeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color foreground = _selected
-        ? colorScheme.onPrimaryContainer
+        ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
-    return Material(
-      color: _selected ? colorScheme.primaryContainer : colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        side: BorderSide(
-          color: _selected ? colorScheme.primary : colorScheme.outlineVariant,
+    return InkWell(
+      onTap: _selected ? null : () => onChanged(value),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
         ),
-      ),
-      child: InkWell(
-        onTap: _selected ? null : () => onChanged(value),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.md,
-            vertical: theme.spacing.sm,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Radio<LabCatalogItemType>(
-                value: value,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              Icon(icon, size: theme.appTokens.listIconSize, color: foreground),
-              SizedBox(width: theme.spacing.xs),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: foreground,
-                    fontWeight: FontWeight.w700,
-                  ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Radio<LabCatalogItemType>(
+              value: value,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            Icon(icon, size: theme.appTokens.listIconSize, color: foreground),
+            SizedBox(width: theme.spacing.xs),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: foreground,
+                  fontWeight: _selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

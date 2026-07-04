@@ -1331,14 +1331,10 @@ class _LabEnableFacilityOfferingDialogState
   static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
   static const int _searchLimit = 100;
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _priceController;
+  late final TextEditingController _searchController;
   Timer? _searchDebounce;
-  String? _selectedItemId;
-  late String _currency;
   List<LabCatalogItem> _catalogItems = const <LabCatalogItem>[];
   AppFailure? _failure;
-  bool _isSaving = false;
   bool _isSearching = true;
   int _searchRequest = 0;
 
@@ -1348,11 +1344,12 @@ class _LabEnableFacilityOfferingDialogState
         .toList(growable: false);
   }
 
+  bool get _showingTests => widget.kind == LabEnableOfferingKind.test;
+
   @override
   void initState() {
     super.initState();
-    _priceController = TextEditingController();
-    _currency = widget.defaultCurrency;
+    _searchController = TextEditingController();
     _searchRequest += 1;
     unawaited(_loadCatalog(query: null, requestId: _searchRequest));
   }
@@ -1360,7 +1357,7 @@ class _LabEnableFacilityOfferingDialogState
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _priceController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -1383,17 +1380,11 @@ class _LabEnableFacilityOfferingDialogState
         setState(() {
           _catalogItems = items;
           _isSearching = false;
-          final List<LabCatalogItem> available = _availableItems;
-          if (_selectedItemId == null ||
-              !available.any((LabCatalogItem item) => item.apiId == _selectedItemId)) {
-            _selectedItemId = available.isEmpty ? null : available.first.apiId;
-          }
         });
       },
       failure: (AppFailure value) {
         setState(() {
           _catalogItems = const <LabCatalogItem>[];
-          _selectedItemId = null;
           _isSearching = false;
           _failure = value;
         });
@@ -1413,18 +1404,33 @@ class _LabEnableFacilityOfferingDialogState
     });
   }
 
+  Future<void> _openPriceDialog(LabCatalogItem item) async {
+    if (item.isOfferedAtFacility) {
+      return;
+    }
+    final bool? enabled = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _LabEnableOfferingPriceDialog(
+        item: item,
+        kind: widget.kind,
+        defaultCurrency: widget.defaultCurrency,
+        onEnable: widget.onEnable,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (enabled == true) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<LabCatalogItem> available = _availableItems;
-    LabCatalogItem? selectedItem;
-    for (final LabCatalogItem item in _catalogItems) {
-      if (item.apiId == _selectedItemId) {
-        selectedItem = item;
-        break;
-      }
-    }
 
     return AppDialog(
       title: Text(l10n.labEnableOfferingDialogTitle),
@@ -1435,7 +1441,216 @@ class _LabEnableFacilityOfferingDialogState
       ),
       scrollable: true,
       initialMaximized: true,
-      maxWidth: 640,
+      maxWidth: 980,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.md),
+              child: AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            ),
+          Text(
+            l10n.labEnableOfferingDialogBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          if (_isSearching && _catalogItems.isEmpty)
+            AppWorkspaceStatePanel.loading(
+              title: l10n.labConfigurationsLoadingTitle,
+              body: l10n.labConfigurationsLoadingBody,
+              minHeight: 120,
+            )
+          else if (!_isSearching && _catalogItems.isEmpty)
+            AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
+          else if (!_isSearching && available.isEmpty)
+            AppMutedText(l10n.labEnableOfferingNoItemsLabel)
+          else
+            AppListTable<LabCatalogItem>(
+              items: _catalogItems,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              isLoading: _isSearching,
+              onRowSelected: (LabCatalogItem item) {
+                if (!item.isOfferedAtFacility) {
+                  unawaited(_openPriceDialog(item));
+                }
+              },
+              search: AppListTableSearch<LabCatalogItem>(
+                controller: _searchController,
+                semanticLabel: l10n.labCatalogSearchLabel,
+                hintText: l10n.labReferenceRangesSearchHint,
+                isLoading: _isSearching,
+                matcher: (LabCatalogItem item, String query) =>
+                    item.matchesSearch(query),
+                onChanged: _scheduleCatalogSearch,
+              ),
+              emptyBuilder: (_) => AppMutedText(
+                _showingTests
+                    ? l10n.labNoOfferedTestsLabel
+                    : l10n.labNoOfferedPanelsLabel,
+              ),
+              columns: _enableOfferingColumns(context),
+              mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
+                return ListTile(
+                  title: Text(item.displayTitle),
+                  subtitle: Text(
+                    _joinEnableOfferingSubtitle(l10n, item),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: item.isOfferedAtFacility
+                      ? AppMutedText(l10n.labEnableOfferingAlreadyOfferedLabel)
+                      : const Icon(Icons.chevron_right),
+                  enabled: !item.isOfferedAtFacility,
+                  onTap: item.isOfferedAtFacility
+                      ? null
+                      : () => unawaited(_openPriceDialog(item)),
+                );
+              },
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+
+  List<AppListTableColumn<LabCatalogItem>> _enableOfferingColumns(
+    BuildContext context,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    return <AppListTableColumn<LabCatalogItem>>[
+      AppListTableColumn<LabCatalogItem>(
+        id: 'name',
+        label: _showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+            appListTableCompareText(left.name, right.name),
+        cellBuilder: (_, LabCatalogItem item) => Text(
+          item.name ?? item.displayTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'code',
+        label: _showingTests ? l10n.labTestCodeLabel : l10n.labPanelCodeLabel,
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+            appListTableCompareText(left.code, right.code),
+        cellBuilder: (_, LabCatalogItem item) =>
+            Text(item.code ?? l10n.profileUnknownValue),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'category',
+        label: l10n.labCategoryLabel,
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+            appListTableCompareText(left.category, right.category),
+        cellBuilder: (_, LabCatalogItem item) =>
+            Text(item.category ?? l10n.profileUnknownValue),
+      ),
+      if (_showingTests)
+        AppListTableColumn<LabCatalogItem>(
+          id: 'specimen',
+          label: l10n.labSpecimenTypeLabel,
+          cellBuilder: (_, LabCatalogItem item) =>
+              Text(item.specimenType ?? l10n.profileUnknownValue),
+        ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'status',
+        label: l10n.labActionColumnLabel,
+        cellBuilder: (_, LabCatalogItem item) {
+          if (!item.isOfferedAtFacility) {
+            return const SizedBox.shrink();
+          }
+          return AppMutedText(l10n.labEnableOfferingAlreadyOfferedLabel);
+        },
+      ),
+    ];
+  }
+}
+
+String _joinEnableOfferingSubtitle(
+  AppLocalizations l10n,
+  LabCatalogItem item,
+) {
+  final List<String?> parts = <String?>[
+    item.category,
+    if (item.type == LabCatalogItemType.test) item.specimenType,
+    if (item.type == LabCatalogItemType.panel)
+      l10n.clinicalLabOrderItemCount(item.testCount),
+  ];
+  return parts
+      .map((String? value) => value?.trim())
+      .whereType<String>()
+      .where((String value) => value.isNotEmpty)
+      .join(' · ');
+}
+
+class _LabEnableOfferingPriceDialog extends StatefulWidget {
+  const _LabEnableOfferingPriceDialog({
+    required this.item,
+    required this.kind,
+    required this.onEnable,
+    required this.defaultCurrency,
+  });
+
+  final LabCatalogItem item;
+  final LabEnableOfferingKind kind;
+  final LabCatalogUpdateSubmit onEnable;
+  final String defaultCurrency;
+
+  @override
+  State<_LabEnableOfferingPriceDialog> createState() =>
+      _LabEnableOfferingPriceDialogState();
+}
+
+class _LabEnableOfferingPriceDialogState
+    extends State<_LabEnableOfferingPriceDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _priceController;
+  late String _currency;
+  AppFailure? _failure;
+  bool _isSaving = false;
+
+  bool get _showingTests => widget.kind == LabEnableOfferingKind.test;
+
+  @override
+  void initState() {
+    super.initState();
+    _priceController = TextEditingController();
+    _currency = widget.defaultCurrency;
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final LabCatalogItem item = widget.item;
+
+    return AppDialog(
+      title: Text(
+        _showingTests ? l10n.labEnableTestAction : l10n.labEnablePanelAction,
+      ),
+      icon: Icon(
+        _showingTests ? Icons.science_outlined : Icons.inventory_2_outlined,
+      ),
+      scrollable: true,
+      maxWidth: 520,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
@@ -1447,107 +1662,61 @@ class _LabEnableFacilityOfferingDialogState
                 failure: _failure!,
               ),
             Text(
-              l10n.labEnableOfferingDialogBody,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              item.displayTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-            if (_isSearching && _catalogItems.isEmpty)
-              AppWorkspaceStatePanel.loading(
-                title: l10n.labConfigurationsLoadingTitle,
-                body: l10n.labConfigurationsLoadingBody,
-                minHeight: 120,
-              )
-            else if (!_isSearching && _catalogItems.isEmpty)
-              AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
-            else if (!_isSearching && available.isEmpty)
-              AppMutedText(l10n.labEnableOfferingNoItemsLabel)
-            else ...<Widget>[
-              AppSelectField<String>.searchable(
-                value: _selectedItemId,
-                labelText: l10n.labEnableOfferingCatalogLabel,
-                enabled: !_isSaving,
-                isLoading: _isSearching,
-                isRequired: true,
-                validator: AppValidators.requiredValue(l10n.validationRequired),
-                onSearchTextChanged: _scheduleCatalogSearch,
-                options: <AppSelectOption<String>>[
-                  for (final LabCatalogItem item in _catalogItems)
-                    AppSelectOption<String>(
-                      value: item.apiId,
-                      label: item.isOfferedAtFacility
-                          ? '${item.displayTitle} (${l10n.labEnableOfferingAlreadyOfferedLabel})'
-                          : item.displayTitle,
-                      searchText: item.displaySubtitle,
-                      enabled: !item.isOfferedAtFacility,
-                      leadingIcon: Icon(
-                        widget.kind == LabEnableOfferingKind.test
-                            ? Icons.science_outlined
-                            : Icons.inventory_2_outlined,
-                      ),
-                    ),
-                ],
-                onChanged: (String? value) {
-                  setState(() => _selectedItemId = value);
-                },
-              ),
-              AppCurrencyAmountField(
-                amountController: _priceController,
-                currency: _currency,
-                amountLabelText: l10n.clinicalRequestUnitPriceLabel,
-                currencyLabelText: l10n.opdCurrencyLabel,
-                enabled: !_isSaving,
-                isRequired: true,
-                allowZero: false,
-                onCurrencyChanged: (String? value) {
-                  setState(() {
-                    _currency = value ?? appDefaultCurrencyCode;
-                  });
-                },
-                validator: (String? value) =>
-                    _positiveUnitPriceValidator(l10n, value),
-              ),
-              if (selectedItem != null &&
-                  selectedItem.displaySubtitle != null &&
-                  selectedItem.displaySubtitle!.isNotEmpty)
-                AppMutedText(selectedItem.displaySubtitle!),
-            ],
+            if (item.displaySubtitle != null &&
+                item.displaySubtitle!.isNotEmpty)
+              AppMutedText(item.displaySubtitle!),
+            AppCurrencyAmountField(
+              amountController: _priceController,
+              currency: _currency,
+              amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+              currencyLabelText: l10n.opdCurrencyLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              allowZero: false,
+              onCurrencyChanged: (String? value) {
+                setState(() {
+                  _currency = value ?? appDefaultCurrencyCode;
+                });
+              },
+              validator: (String? value) =>
+                  _positiveUnitPriceValidator(l10n, value),
+            ),
           ],
         ),
       ),
       actions: _dialogActions(
         context,
-        submitLabel: widget.kind == LabEnableOfferingKind.test
+        submitLabel: _showingTests
             ? l10n.labEnableTestAction
             : l10n.labEnablePanelAction,
         isSaving: _isSaving,
-        onSubmit: available.isEmpty ? null : _submit,
+        onSubmit: _submit,
       ),
     );
   }
 
   Future<void> _submit() async {
-    if (_availableItems.isEmpty) {
-      return;
-    }
     if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final String? itemId = _selectedItemId;
-    if (itemId == null || itemId.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onEnable(itemId, <String, Object?>{
-      'is_active': true,
-      'unit_price':
-          num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
-      'currency': _currency,
-    });
+    final AppFailure? failure = await widget.onEnable(
+      widget.item.apiId,
+      <String, Object?>{
+        'is_active': true,
+        'unit_price':
+            num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+        'currency': _currency,
+      },
+    );
     if (!mounted) {
       return;
     }

@@ -16,9 +16,19 @@ abstract interface class LabRepository {
     String patientId,
   );
 
-  Future<Result<List<LabCatalogItem>>> listTests({String? search});
+  Future<Result<List<LabCatalogItem>>> listTests({
+    String? search,
+    String? tenantId,
+    bool includeStandardCatalog = false,
+    int limit = 100,
+  });
 
-  Future<Result<List<LabCatalogItem>>> listPanels({String? search});
+  Future<Result<List<LabCatalogItem>>> listPanels({
+    String? search,
+    String? tenantId,
+    bool includeStandardCatalog = false,
+    int limit = 100,
+  });
 
   Future<Result<List<LabCatalogItem>>> listFacilityLabTests({
     String? tenantId,

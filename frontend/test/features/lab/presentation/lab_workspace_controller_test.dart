@@ -16,6 +16,15 @@ const LabCatalogItem _catalogTest = LabCatalogItem(
   id: 'LBT0000001',
   type: LabCatalogItemType.test,
   name: 'CBC',
+  code: 'CBC',
+);
+
+const LabCatalogItem _offeredTest = LabCatalogItem(
+  id: 'LBT0000002',
+  type: LabCatalogItemType.test,
+  name: 'LFT',
+  code: 'LFT',
+  isOfferedAtFacility: true,
 );
 
 LabWorkbenchBundle _emptyWorkbench() {
@@ -76,6 +85,30 @@ void main() {
         <LabCatalogItem>[],
       ),
     );
+    when(
+      () => repository.listTests(
+        search: any(named: 'search'),
+        tenantId: any(named: 'tenantId'),
+        includeStandardCatalog: any(named: 'includeStandardCatalog'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<LabCatalogItem>>.success(
+        <LabCatalogItem>[_catalogTest, _offeredTest],
+      ),
+    );
+    when(
+      () => repository.listPanels(
+        search: any(named: 'search'),
+        tenantId: any(named: 'tenantId'),
+        includeStandardCatalog: any(named: 'includeStandardCatalog'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<LabCatalogItem>>.success(
+        <LabCatalogItem>[],
+      ),
+    );
   });
 
   test(
@@ -128,7 +161,7 @@ void main() {
   );
 
   test(
-    'searchPlatformLabCatalogForOffering requests full platform catalog',
+    'searchPlatformLabCatalogForOffering loads platform catalog and marks offered items',
     () async {
       when(
         () => repository.listFacilityLabTests(
@@ -137,11 +170,11 @@ void main() {
           search: any(named: 'search'),
           page: any(named: 'page'),
           limit: any(named: 'limit'),
-          offeredOnly: any(named: 'offeredOnly'),
+          offeredOnly: true,
         ),
       ).thenAnswer(
         (_) async => const Result<List<LabCatalogItem>>.success(
-          <LabCatalogItem>[_catalogTest],
+          <LabCatalogItem>[_offeredTest],
         ),
       );
 
@@ -159,13 +192,6 @@ void main() {
 
       final LabWorkspaceController controller =
           container.read(labWorkspaceControllerProvider.notifier);
-      await controller.loadFacilityCatalogConfig(
-        const LabCatalogScope(
-          tenantId: 'TEN0000001',
-          facilityId: 'FAC0000001',
-        ),
-      );
-
       final Result<List<LabCatalogItem>> result =
           await controller.searchPlatformLabCatalogForOffering(
         type: LabCatalogItemType.test,
@@ -177,13 +203,68 @@ void main() {
       );
 
       expect(result, isA<ResultSuccess<List<LabCatalogItem>>>());
+      final List<LabCatalogItem> items =
+          (result as ResultSuccess<List<LabCatalogItem>>).value;
+      expect(items, hasLength(2));
+      expect(items.first.isOfferedAtFacility, isFalse);
+      expect(items.last.code, 'LFT');
+      expect(items.last.isOfferedAtFacility, isTrue);
+
+      verify(
+        () => repository.listTests(
+          search: 'LFT',
+          tenantId: 'TEN0000001',
+          includeStandardCatalog: true,
+          limit: any<int>(named: 'limit'),
+        ),
+      ).called(1);
       verify(
         () => repository.listFacilityLabTests(
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
-          search: 'LFT',
+          offeredOnly: true,
+          limit: any<int>(named: 'limit'),
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'searchPlatformLabCatalogForOffering returns empty list when scope is incomplete',
+    () async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          labRepositoryProvider.overrideWithValue(repository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(labWorkspaceControllerProvider.future);
+
+      final LabWorkspaceController controller =
+          container.read(labWorkspaceControllerProvider.notifier);
+      final Result<List<LabCatalogItem>> result =
+          await controller.searchPlatformLabCatalogForOffering(
+        type: LabCatalogItemType.test,
+        scope: const LabCatalogScope(tenantId: 'TEN0000001'),
+      );
+
+      expect(result, isA<ResultSuccess<List<LabCatalogItem>>>());
+      expect(
+        (result as ResultSuccess<List<LabCatalogItem>>).value,
+        isEmpty,
+      );
+      verifyNever(
+        () => repository.listTests(
+          search: any(named: 'search'),
+          tenantId: any(named: 'tenantId'),
+          includeStandardCatalog: any(named: 'includeStandardCatalog'),
+          limit: any(named: 'limit'),
+        ),
+      );
     },
   );
 }

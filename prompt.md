@@ -1,86 +1,89 @@
-# Lab Configurations UX refinement
+# Lab Configurations Dialog — UX & Enable-Offering Flow
 
-Refine the **Lab Configurations** dialog (`_LabConfigurationsDialog` in `lab_workspace_page.dart`) and the **Enable lab offering** flow (`LabEnableFacilityOfferingDialog` in `lab_catalog_dialogs.dart`) so scope selection, catalog listing, and offering creation are clear and match facility-admin expectations.
+Fix the **Lab Configurations** modal (`_LabConfigurationsDialog` in `lab_workspace_page.dart`) and the **Enable lab offering** flow (`LabEnableFacilityOfferingDialog` in `lab_catalog_dialogs.dart`). Screenshots show scope-selection bugs, toggle styling issues, and empty enable dialogs that should list searchable platform catalog items.
 
-## Problem
+## Scope
 
-The current flow is confusing:
+| Area | Primary files |
+|------|---------------|
+| Configurations modal | `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` |
+| Enable offering dialog | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` |
+| Catalog data | `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`, `lab_repository_impl.dart` |
+| Shared UI | `AppListTable`, `AppCurrencyAmountField` (`app_currency_amount_field.dart`) |
+| Strings | `frontend/lib/l10n/app_en.arb` |
 
-1. Empty-state copy is generic and does not reflect what the user has already selected.
-2. The Tests/Panels tables list the **entire platform catalog**, mostly marked **Not offered** — users expect to see only what the facility already offers.
-3. The **Enable test/panel** dialog should be the place to search and add catalog items; already-offered items need clear feedback.
-4. **Unit price** uses a plain text field instead of the shared amount+currency component.
-5. **Tenant** and **Facility context** selectors are fixed-width and not responsive; facility is selectable before a tenant is chosen.
-6. **QC logs** at the bottom of Lab Configurations has no explained purpose.
+---
 
-## Requirements
+## 1. Scope selection (tenant / facility)
 
-### 1. Context-aware empty states
+**Problem:** On first open, neither tenant nor facility is selected, yet misleading context text appears (e.g. *"Configuring lab catalog for `fbb67a68-…`"* — a raw UUID).
 
-Replace generic prompts with step-specific guidance:
+**Required behavior:**
 
-| State | Message intent |
-|-------|----------------|
-| No tenant, no facility | Ask user to select tenant and facility. |
-| Tenant selected, no facility | Ask user to select a facility; optionally name the selected tenant. |
-| Facility selected | Show configuring context (e.g. “Configuring lab catalog for {facilityName}.”). |
+- **Facility context** dropdown must be **disabled** until a tenant is selected. Show the existing tooltip/snackbar (`labConfigurationsSelectTenantFirstTooltip`) when the user interacts with the disabled field.
+- **Do not show** the *"Configuring lab catalog for …"* label until **both** tenant and facility are resolved to **human-readable names** from lookups. Never fall back to displaying a raw ID.
+- When tenant is set but facility is missing, show only the informational banner (*"Select a facility for {tenantName}…"*). Hide the catalog table, search bar, and enable actions until scope is ready.
 
-Use/update l10n keys: `labConfigurationsSelectScopeBody`, `labConfigurationsSelectFacilityOnlyBody`, `labConfigurationsFacilityContextLabel`.
+---
 
-### 2. Main catalog tables — offered items only
+## 2. Tests / Panels toggle styling
 
-- **Tests** and **Panels** tabs must list **only facility-offered** items (`isOfferedAtFacility == true`).
-- Load with `offeredOnly: true` via `loadFacilityCatalogConfig` / repository (`listFacilityLabTests`, `listFacilityLabPanels`).
-- Remove or repurpose the **Offered** column (all visible rows are offered).
-- Keep search, filters, edit, delete, and configure actions on offered items.
-- Empty state when nothing is offered: prompt user to use **Enable test** / **Enable panel**.
+**Problem:** `_LabConfigurationTypeSelector` renders two pill-shaped options that touch edge-to-edge on wide screens, with rounded corners, borders, and filled backgrounds.
 
-### 3. Enable lab offering dialog
+**Required styling:**
 
-- Searchable **Platform catalog item** picker (e.g. typing `LFT` finds “Liver Function Panel | LFT”).
-- Scope options to the active tab type (tests vs panels) and items **not yet offered** at the facility.
-- When a searched item is already offered, show explicit feedback (disabled option, badge, or helper text) — do not allow duplicate enable.
-- Support server-side search if needed (`searchFacilityLabCatalog` / `offered_only=false`) so large catalogs stay performant.
+- Add horizontal **gap** between Tests and Panels on large screens (do not let options touch).
+- Remove container **border**, **background fill**, and **rounded corners** from each option.
+- Each option should show only: **radio indicator**, **icon**, and **label** — minimal, flat appearance consistent with secondary segmented controls elsewhere in the app.
 
-### 4. Unit price input
+---
 
-- Replace `AppTextField` price input with **`AppCurrencyAmountField`** (`app_currency_amount_field.dart`).
-- Persist **amount and currency** together in the enable/configure payload (same pattern as billing, OPD, claims).
-- Default currency from tenant/facility context where available.
+## 3. Enable lab offering dialog (tests & panels)
 
-### 5. Tenant & facility selectors — layout and gating
+**Problem:** Clicking **Enable test** or **Enable panel** opens `LabEnableFacilityOfferingDialog`, which shows *"No platform lab catalog items are available for this tenant"* with no selectable items.
 
-- Make selectors **full-width** and **responsive** (stack on narrow viewports; side-by-side on wide).
-- **Disable** Facility context until a tenant is selected (multi-facility tenants).
-- On hover/focus of disabled facility field, show tooltip: **“Select a tenant first.”**
-- Clearing tenant clears facility and catalog state.
+**Required two-step flow:**
 
-### 6. QC logs placement and clarity
+### Step A — Browse & search platform catalog
 
-- Either move **QC logs** out of Lab Configurations into the main lab workspace toolbar, **or**
-- Keep it but add a short labeled section explaining purpose: *“Record quality-control runs for tests offered at this facility.”*
-- QC logs must continue to use **offered tests only**.
+Replace the single searchable dropdown with an **`AppListTable`** (same pattern as the main configurations list):
 
-## Key files
+- **Enable test** → searchable table of **platform tests** (CBC, LFT, etc.).
+- **Enable panel** → searchable table of **platform panels**.
+- Columns: at minimum name, code, category; match existing lab catalog table conventions.
+- Support live search/filter while typing.
+- Row click (`onRowSelected`) advances to Step B.
 
-- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`
-- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` — `LabEnableFacilityOfferingDialog`
-- `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart` — `loadFacilityCatalogConfig`
-- `frontend/lib/shared/components/app_currency_amount_field.dart`
-- `frontend/lib/l10n/app_en.arb`
-- `backend/src/modules/facility-lab-catalog/` — `offered_only` query support
+**Data source:** Load the **tenant platform master catalog**, not only items already offered at the facility. Use `LabRepository.listTests` / `listPanels` (or the correct platform-catalog API if facility-catalog endpoints return empty). `searchPlatformLabCatalogForOffering` currently calls `listFacilityLabTests` / `listFacilityLabPanels` — verify and fix if that is why the list is empty. Exclude or badge items already offered (`isOfferedAtFacility`).
+
+### Step B — Confirm selection & set price
+
+On row selection, open a **secondary modal** showing:
+
+- Selected test/panel summary (name, code, category, specimen/unit as applicable).
+- **Facility price** via existing **`AppCurrencyAmountField`** (currency + amount), required, `allowZero: false`.
+- Primary action: **Enable test** / **Enable panel** → calls existing `onEnable` / `upsertFacilityLabTestOffering` / `upsertFacilityLabPanelOffering` with `{ is_active: true, unit_price, currency }`.
+- Cancel returns to Step A without losing search state.
+
+### After enable
+
+- Close dialogs, show success snackbar (`labSavedMessage`).
+- Reload facility catalog for the current tenant + facility scope.
+- Reopening Lab Configurations with the same scope must show the newly enabled item in the Tests or Panels table.
+
+---
 
 ## Acceptance criteria
 
-- [ ] Empty-state copy updates as tenant/facility selection progresses.
-- [ ] Tests/Panels tables show only offered items; no long list of “Not offered” rows.
-- [ ] Enable dialog searches platform catalog; already-offered items are clearly indicated.
-- [ ] Unit price uses `AppCurrencyAmountField` with amount + currency.
-- [ ] Tenant/facility selectors span full width, respond to screen size, and facility is disabled until tenant is set.
-- [ ] QC logs purpose is obvious or entry point is relocated.
-- [ ] Existing lab configuration and catalog-scope tests updated; new behavior covered where practical.
+- [ ] Facility dropdown disabled until tenant is selected; no raw UUIDs shown anywhere in the dialog.
+- [ ] Tests/Panels toggle is flat (icon + label + radio only), spaced apart on wide screens.
+- [ ] Enable test/panel dialogs list searchable platform catalog items in a table.
+- [ ] Selecting a row opens a price-confirmation sub-dialog using `AppCurrencyAmountField`.
+- [ ] Enabling an item persists it; it appears in the facility catalog list after reload.
+- [ ] Empty states remain correct: no platform items for tenant, or all items already offered.
+- [ ] Existing tests pass; add/update widget tests for scope gating and enable flow if coverage exists (`lab_workspace_controller_test.dart`).
 
 ## Out of scope
 
-- Fixing malformed platform catalog seed data (e.g. corrupt test names).
-- Super-admin cross-tenant login behavior.
+- QC logs section behavior (unchanged).
+- Backend seeding of platform catalog data (unless API wiring is the root cause of empty lists).
