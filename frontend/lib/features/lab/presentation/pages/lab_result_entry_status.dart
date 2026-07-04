@@ -4,7 +4,7 @@ int _activeResultItemCount(LabOrderSummary order) {
   if (order.items.isEmpty) {
     return order.itemCount - order.rejectedItemCount;
   }
-  return order.items.where((LabOrderItem item) => !item.isRejected).length;
+  return order.items.where((item) => !item.isRejected).length;
 }
 
 int _enteredResultItemCount(LabOrderSummary order) {
@@ -12,7 +12,7 @@ int _enteredResultItemCount(LabOrderSummary order) {
     return order.completedItemCount;
   }
   return order.items
-      .where((LabOrderItem item) => !item.isRejected && item.hasResult)
+      .where((item) => !item.isRejected && item.hasResult)
       .length;
 }
 
@@ -21,53 +21,60 @@ int _completedResultItemCount(LabOrderSummary order) {
     return order.completedItemCount;
   }
   return order.items
-      .where((LabOrderItem item) => !item.isRejected && item.isCompleted)
+      .where((item) => !item.isRejected && item.isCompleted)
       .length;
 }
 
 bool _isVerifiedOrder(LabOrderSummary order) {
-  final int active = _activeResultItemCount(order);
+  final active = _activeResultItemCount(order);
   return active > 0 && _completedResultItemCount(order) >= active;
 }
 
 String _apiLabel(String value) {
-  final String normalized = value.trim().replaceAll('_', ' ').toLowerCase();
+  final normalized = value.trim().replaceAll('_', ' ').toLowerCase();
   if (normalized.isEmpty) {
     return value;
   }
   return normalized
       .split(RegExp(r'\s+'))
-      .map((String word) {
+      .map((word) {
         if (word.isEmpty) {
           return word;
         }
-        return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
+        return '${word[0].toUpperCase()}${word.substring(1)}';
       })
       .join(' ');
 }
 
 AppWorkspaceStatus _statusBadge(BuildContext context, String? value) {
-  final String status = (value ?? '').toUpperCase();
+  final status = (value ?? '').toUpperCase();
   return AppWorkspaceStatus(
     label: _statusLabel(context, value),
     tone: switch (status) {
       'COMPLETED' ||
       'NORMAL' ||
       'RECEIVED' ||
-      'VERIFIED' => AppWorkspaceStatusTone.success,
-      'CRITICAL' || 'CANCELLED' || 'REJECTED' => AppWorkspaceStatusTone.error,
+      'VERIFIED' =>
+        AppWorkspaceStatusTone.success,
+      'CRITICAL' ||
+      'CANCELLED' ||
+      'REJECTED' =>
+        AppWorkspaceStatusTone.error,
       'ABNORMAL' ||
       'ORDERED' ||
       'COLLECTED' ||
-      'PENDING' => AppWorkspaceStatusTone.warning,
-      'IN_PROCESS' => AppWorkspaceStatusTone.info,
-      _ => AppWorkspaceStatusTone.neutral,
+      'PENDING' =>
+        AppWorkspaceStatusTone.warning,
+      'IN_PROCESS' =>
+        AppWorkspaceStatusTone.info,
+      _ =>
+        AppWorkspaceStatusTone.neutral,
     },
   );
 }
 
 String _statusLabel(BuildContext context, String? value) {
-  final AppLocalizations l10n = context.l10n;
+  final l10n = context.l10n;
   return switch ((value ?? '').toUpperCase()) {
     'ORDERED' => l10n.labStatusOrdered,
     'COLLECTED' => l10n.labStatusCollected,
@@ -83,7 +90,7 @@ String _statusLabel(BuildContext context, String? value) {
     'VERIFIED' => l10n.labStatusVerified,
     'REJECTED' => l10n.labStatusRejected,
     'RECEIVED' => l10n.labStatusReceived,
-    final String status when status.trim().isNotEmpty => _apiLabel(status),
+    final status when status.trim().isNotEmpty => _apiLabel(status),
     _ => l10n.profileUnknownValue,
   };
 }
@@ -103,8 +110,8 @@ AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
       icon: Icons.block_outlined,
     );
   }
-  final int active = _activeResultItemCount(order);
-  final int entered = _enteredResultItemCount(order);
+  final active = _activeResultItemCount(order);
+  final entered = _enteredResultItemCount(order);
   if (active == 0) {
     return _statusBadge(context, order.status);
   }
@@ -133,10 +140,8 @@ AppWorkspaceStatus _aggregateOrderStatus(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
 ) {
-  final AppLocalizations l10n = context.l10n;
-  if (workflows.any(
-    (LabOrderWorkflow workflow) => workflow.order.hasCriticalResult,
-  )) {
+  final l10n = context.l10n;
+  if (workflows.any((workflow) => workflow.order.hasCriticalResult)) {
     return AppWorkspaceStatus(
       label: l10n.labStatusCritical,
       tone: AppWorkspaceStatusTone.error,
@@ -144,18 +149,11 @@ AppWorkspaceStatus _aggregateOrderStatus(
     );
   }
 
-  final bool anyRejected = workflows.any(
-    (LabOrderWorkflow workflow) => workflow.order.hasRejectedItem,
-  );
-  final bool allVerified = workflows.every(
-    (LabOrderWorkflow workflow) => _isVerifiedOrder(workflow.order),
-  );
-  final bool anyVerified = workflows.any(
-    (LabOrderWorkflow workflow) => _isVerifiedOrder(workflow.order),
-  );
-  final bool allCancelled = workflows.every(
-    (LabOrderWorkflow workflow) =>
-        (workflow.order.status ?? '').toUpperCase() == 'CANCELLED',
+  final anyRejected = workflows.any((workflow) => workflow.order.hasRejectedItem);
+  final allVerified = workflows.every((workflow) => _isVerifiedOrder(workflow.order));
+  final anyVerified = workflows.any((workflow) => _isVerifiedOrder(workflow.order));
+  final allCancelled = workflows.every(
+    (workflow) => (workflow.order.status ?? '').toUpperCase() == 'CANCELLED',
   );
 
   if (allCancelled) {
@@ -201,17 +199,16 @@ List<AppWorkspaceStatusBadge> _aggregateOrderSubBadges(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
 ) {
-  final AppLocalizations l10n = context.l10n;
-  final int rejectedCount = workflows.fold<int>(
+  final l10n = context.l10n;
+  final rejectedCount = workflows.fold<int>(
     0,
-    (int total, LabOrderWorkflow workflow) =>
-        total + workflow.order.rejectedItemCount,
+    (total, workflow) => total + workflow.order.rejectedItemCount,
   );
   if (rejectedCount <= 0) {
     return const <AppWorkspaceStatusBadge>[];
   }
 
-  final AppWorkspaceStatus primary = _aggregateOrderStatus(context, workflows);
+  final primary = _aggregateOrderStatus(context, workflows);
   if (primary.label == l10n.labStatusRejected ||
       primary.label == l10n.labStatusPartiallyRejected) {
     return const <AppWorkspaceStatusBadge>[];
@@ -232,7 +229,7 @@ AppWorkspaceStatus _orderSummaryStatus(
   BuildContext context,
   LabOrderSummary order,
 ) {
-  final AppLocalizations l10n = context.l10n;
+  final l10n = context.l10n;
   if (order.hasCriticalResult) {
     return AppWorkspaceStatus(
       label: l10n.labStatusCritical,
@@ -248,8 +245,8 @@ AppWorkspaceStatus _orderSummaryStatus(
     );
   }
 
-  final bool verified = _isVerifiedOrder(order);
-  final bool rejected = order.hasRejectedItem;
+  final verified = _isVerifiedOrder(order);
+  final rejected = order.hasRejectedItem;
   if (rejected && !verified) {
     return AppWorkspaceStatus(
       label: l10n.labStatusRejected,
@@ -279,12 +276,12 @@ List<AppWorkspaceStatusBadge> _orderSummarySubBadges(
   BuildContext context,
   LabOrderSummary order,
 ) {
-  final AppLocalizations l10n = context.l10n;
+  final l10n = context.l10n;
   if (order.rejectedItemCount <= 0) {
     return const <AppWorkspaceStatusBadge>[];
   }
 
-  final AppWorkspaceStatus primary = _orderSummaryStatus(context, order);
+  final primary = _orderSummaryStatus(context, order);
   if (primary.label == l10n.labStatusRejected ||
       primary.label == l10n.labStatusPartiallyRejected) {
     return const <AppWorkspaceStatusBadge>[];
@@ -304,19 +301,17 @@ List<AppWorkspaceStatusBadge> _orderSummarySubBadges(
 List<LabWorkflowTimelineItem> _deduplicatedTimeline(
   List<LabWorkflowTimelineItem> timeline,
 ) {
-  final Map<String, LabWorkflowTimelineItem> unique =
-      <String, LabWorkflowTimelineItem>{};
-  for (final LabWorkflowTimelineItem step in timeline) {
-    final String label = (step.label ?? step.type ?? step.id).trim();
-    final String key = '${(step.type ?? '').trim().toLowerCase()}|$label'
-        .toLowerCase();
-    final LabWorkflowTimelineItem? existing = unique[key];
+  final unique = <String, LabWorkflowTimelineItem>{};
+  for (final step in timeline) {
+    final label = (step.label ?? step.type ?? step.id).trim();
+    final key = '${(step.type ?? '').trim().toLowerCase()}|$label'.toLowerCase();
+    final existing = unique[key];
     if (existing == null) {
       unique[key] = step;
       continue;
     }
-    final DateTime? existingAt = existing.occurredAt;
-    final DateTime? nextAt = step.occurredAt;
+    final existingAt = existing.occurredAt;
+    final nextAt = step.occurredAt;
     if (nextAt != null && (existingAt == null || nextAt.isAfter(existingAt))) {
       unique[key] = step;
     }
