@@ -1,48 +1,102 @@
-## Bug: Enable lab offering fails with "Connection problem"
+# Lab configuration & table toolbar improvements
 
-### Context
-- **App:** HOSSPI Hospital Management (`http://127.0.0.1:5201/lab`)
-- **Role:** Super admin
-- **Feature:** Lab → Lab Configurations → **Enable lab offering** → select a platform catalog item → set unit price → **Enable test** / **Enable panel**
+## Objective
 
-### Observed behavior
-When enabling a platform lab test or panel at a facility, the price dialog shows:
+Improve the Lab **Configurations** dialog (tests/panels catalog table) and apply consistent, responsive toolbar labeling across all `AppListTable` search bars.
 
-> **Connection problem**  
-> Check your connection and try again.
+---
 
-Reproduced for at least:
-- **Test:** `1,3 beta glucan [Mass/volume] in Serum | 42176-8` — unit price `50,000 UGX`
-- **Panel:** `Abdominal Pain Panel | ABDP` — unit price `40,000 UGX`
+## 1. Responsive labels on table search toolbars (global)
 
-The catalog list loads and search works; the failure occurs only on submit.
+**Problem:** In table toolbars (search bar + attached actions), buttons such as **Filters**, **Table settings**, and trailing actions (e.g. **Enable test/panel**) always render as icon-only, even on large screens where space is available.
 
-### Prior / related symptoms
-- Earlier attempts returned an **invalid ID** error (frontend); the backend did not surface a corresponding error in logs.
-- One test (CBC) may already be enabled; other catalog items still fail on enable.
+**Requirement:** Apply the same breakpoint rule used by workspace toolbars (`AppBreakpoint.showsToolbarActionLabels` — labels visible at `lg` and above, icon-only below):
 
-### Expected behavior
-Submitting **Enable test** or **Enable panel** with a valid unit price and currency should create or update the facility offering and close the dialog successfully.
+| Breakpoint | Behavior |
+|---|---|
+| `xs` / `sm` / `md` (< 840px) | Icon only (keep current compact layout) |
+| `lg` / `xl` / `xxl` (≥ 840px) | Icon **and** text label visible |
 
-### Investigation scope
-Trace the full enable flow end to end and align frontend, API, and database:
+**Scope:** Implement centrally in shared components so **every** table using `AppListTable` / `AppSearchBar` benefits automatically. Do not patch individual pages.
 
-1. **Frontend**
-   - `LabEnableFacilityOfferingDialog` / `_LabEnableOfferingPriceDialog` in `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
-   - `LabWorkspaceController.updateLabTest` / `updateLabPanel` and `LabRepositoryImpl.upsertFacilityLabTestOffering` / `upsertFacilityLabPanelOffering`
-   - Confirm the ID sent in the request (`item.apiId`) matches what the backend expects
-   - Confirm failures are mapped correctly (`AppFailure.network` vs validation/server errors)
+**Affected controls:**
+- Advanced filter button (`_AttachedFilterButton`)
+- Table settings / column visibility action (`AppListTable._searchActions`)
+- Trailing search-bar actions (`_AttachedSearchBarActionButton`, e.g. Enable test/panel)
 
-2. **Backend**
-   - `PUT /api/v1/facility-lab-catalog/tests/:id` and `.../panels/:id`
-   - `facility-lab-catalog` service/repository upsert logic and validation schema
-   - Ensure errors (invalid ID, missing tenant/facility scope, validation) return actionable HTTP responses and are logged
+**Key files:**
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/core/responsive/app_breakpoints.dart` (reuse `showsToolbarActionLabels`)
 
-3. **Database**
-   - Verify `facility_lab_test_offering` / `facility_lab_panel_offering` rows are created/updated for the selected tenant, facility, and catalog item
+**Acceptance criteria:**
+- On a wide viewport, Filters / Table settings / trailing actions show icon + label.
+- On narrow viewports, they remain icon-only with tooltips unchanged.
+- No layout overflow or clipping in the search bar row.
+- Add/update widget tests for breakpoint behavior.
 
-### Acceptance criteria
-- Enable test/panel succeeds for catalog items not yet offered at the facility
-- Real API/validation errors show accurate messages (not a generic connection error when online)
-- Backend logs reflect failed requests with enough detail to diagnose ID/scope issues
-- Frontend catalog refreshes and shows the newly enabled item with the configured price
+---
+
+## 2. Lab configurations — tests table columns
+
+**Requirement:** In the configured **Tests** tab, the default visible columns must include:
+
+| Column | Source field | Notes |
+|---|---|---|
+| Test name | `LabCatalogItem.name` | Already shown |
+| Test code | `LabCatalogItem.code` | Already shown |
+| Category | `LabCatalogItem.category` | Show stored value as-is |
+| Unit price | `LabCatalogItem.unitPrice` + `LabCatalogItem.currency` | Format with currency, not raw number |
+
+**Unit price formatting:** Use `AppFormatters.currency` (with locale + `currency` from the item, falling back to app default currency) — same pattern as billing/subscriptions pages.
+
+**Key file:** `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` (`_defaultColumns` for `LabCatalogItem`).
+
+**Acceptance criteria:**
+- Default columns show name, code, category, and formatted unit price (e.g. `UGX 15,000` not `15000`).
+- Sorting on the price column still works numerically.
+
+---
+
+## 3. Verify test price edit persists (global price)
+
+**Context:** Editing a test’s unit price (e.g. “Free liter blue cap — mass by volume in serum”) updates the **global/platform price** and the change should reflect immediately in the configurations table.
+
+**Requirement:** Confirm the existing edit-price flow works end-to-end. Fix any gap where the table does not refresh or display the updated formatted price after save.
+
+**Key files:**
+- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` (edit/enable dialogs)
+- `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart` (`updateLabTest`, `loadFacilityCatalogConfig`)
+
+---
+
+## 4. Fix: enabling a panel does not appear in the panels list
+
+**Problem:** After **Enable panel** completes successfully, the newly enabled panel is not visible when switching to the **Panels** tab.
+
+**Requirement:** Diagnose and fix so that:
+1. Enabling a panel via `LabEnableFacilityOfferingDialog` adds/refreshes the item in `state.catalogPanels`.
+2. The panels table shows the enabled panel without requiring a full page reload.
+
+**Likely areas:**
+- `LabWorkspaceController.updateLabPanel` — new offerings call `loadFacilityCatalogConfig` when not already in local state; verify reload returns panels and UI re-renders.
+- Backend upsert/list endpoints for facility panel offerings (if frontend refresh is correct but API omits newly enabled panels).
+- `_reloadCatalogIfReady()` in `lab_workspace_page.dart` after enable dialog closes.
+
+**Acceptance criteria:**
+- Enable a panel → snackbar confirms save → switch to Panels tab → panel appears in the list with correct name, code, category, and price.
+
+---
+
+## Out of scope
+
+- Changing column visibility defaults for non-lab tables.
+- Redesigning the Lab Configurations dialog layout beyond the items above.
+
+## Test plan
+
+1. Resize browser: at ≥ 840px width, confirm table toolbar buttons show labels; below 840px, icon-only.
+2. Open Lab → Reference ranges / Configurations → Tests tab: verify four core columns and formatted prices.
+3. Edit a test price, save, confirm updated formatted price in the table.
+4. Enable a panel, confirm it appears on the Panels tab.
+5. Run affected Flutter tests (`app_breakpoints_test`, any new search-bar/table tests, lab workspace tests if touched).
