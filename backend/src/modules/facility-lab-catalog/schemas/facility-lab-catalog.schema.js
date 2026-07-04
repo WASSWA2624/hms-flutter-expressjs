@@ -5,6 +5,25 @@
 const { z } = require('zod');
 const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 
+const standardLabTestIdentifierSchema = z
+  .string()
+  .trim()
+  .regex(/^STD_LAB_TEST:[A-Za-z0-9_]+$/, 'Invalid standard lab test identifier')
+  .transform((value) => value.toUpperCase());
+const standardLabPanelIdentifierSchema = z
+  .string()
+  .trim()
+  .regex(/^STD_LAB_PANEL:[A-Za-z0-9_]+$/, 'Invalid standard lab panel identifier')
+  .transform((value) => value.toUpperCase());
+const facilityLabTestIdentifierSchema = z.union([
+  uuidOrFriendlyIdentifierSchema,
+  standardLabTestIdentifierSchema,
+]);
+const facilityLabPanelIdentifierSchema = z.union([
+  uuidOrFriendlyIdentifierSchema,
+  standardLabPanelIdentifierSchema,
+]);
+
 const optionalTrimmedString = (max) =>
   z.preprocess(
     (value) => (value == null || value === '' ? null : String(value).trim()),
@@ -56,7 +75,7 @@ const upsertFacilityLabTestOfferingSchema = z
   .object({
     tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
     facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-    lab_test_id: uuidOrFriendlyIdentifierSchema.optional(),
+    lab_test_id: facilityLabTestIdentifierSchema.optional(),
     is_active: z.boolean().optional().default(true),
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
     unit_price: z.coerce.number().min(0).optional(),
@@ -105,11 +124,11 @@ const disableFacilityLabOfferingSchema = z.object({
 });
 
 const facilityLabTestParamsSchema = z.object({
-  lab_test_id: uuidOrFriendlyIdentifierSchema,
+  lab_test_id: facilityLabTestIdentifierSchema,
 });
 
 const facilityLabPanelParamsSchema = z.object({
-  lab_panel_id: uuidOrFriendlyIdentifierSchema,
+  lab_panel_id: facilityLabPanelIdentifierSchema,
 });
 
 const listFacilityLabCatalogQuerySchema = listQuerySchema.extend({

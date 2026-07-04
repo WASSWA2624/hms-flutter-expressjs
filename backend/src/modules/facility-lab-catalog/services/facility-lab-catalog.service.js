@@ -2,12 +2,14 @@
  * Facility lab catalog service
  */
 
+const prisma = require('@prisma/client');
 const labTestRepository = require('@repositories/lab-test/lab-test.repository');
 const labPanelRepository = require('@repositories/lab-panel/lab-panel.repository');
 const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog/facility-lab-catalog.repository');
 const clinicalTermRepository = require('@repositories/clinical-term/clinical-term.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 const {
   LAB_TEST_WITH_RELATIONS_INCLUDE,
   LAB_PANEL_WITH_RELATIONS_INCLUDE,
@@ -34,6 +36,110 @@ const {
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 const normalizeText = (value) => String(value || '').trim();
 const isTrue = (value) => String(value || '').toLowerCase() === 'true';
+
+const standardCatalogCodeFromIdentifier = (identifier, prefix) => {
+  const normalized = normalizeText(identifier).toUpperCase();
+  if (!normalized.startsWith(`${prefix}:`)) {
+    return null;
+  }
+  return normalized.slice(prefix.length + 1);
+};
+
+const resolveOrCreateStandardLabTest = async ({
+  identifier,
+  tenantId,
+  userId,
+  ipAddress,
+}) => {
+  const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_TEST');
+  if (!catalogCode) {
+    return null;
+  }
+
+  const definition = STANDARD_LAB_TESTS[catalogCode];
+  if (!definition) {
+    return null;
+  }
+
+  const existing = await prisma.lab_test.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      code: definition.code,
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const labTest = await prisma.lab_test.create({
+    data: {
+      tenant_id: tenantId,
+      name: definition.name,
+      code: definition.code,
+      category: definition.category,
+      specimen_type: definition.specimen_type,
+      result_kind: definition.result_kind,
+      unit: definition.unit,
+      description: definition.description,
+      ...(definition.unit
+        ? {
+            unit_options: {
+              create: [
+                {
+                  label: null,
+                  unit: definition.unit,
+                  ucum_code: null,
+                  is_default: true,
+                  sort_order: 0,
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+    select: { id: true },
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId || null,
+    action: 'CREATE',
+    entity: 'lab_test',
+    entity_id: labTest.id,
+    diff: {
+      after: { ...definition, id: labTest.id, source: 'STANDARD_LAB_CATALOG' },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  return labTest;
+};
+
+const resolveLabTestIdOrThrow = async ({
+  identifier,
+  tenantId,
+  context = {},
+  errorKey = 'errors.lab_test.not_found',
+}) => {
+  const standardLabTest = await resolveOrCreateStandardLabTest({
+    identifier,
+    tenantId,
+    userId: context.user_id,
+    ipAddress: context.ip_address,
+  });
+  if (standardLabTest?.id) {
+    return standardLabTest.id;
+  }
+
+  return resolveModelIdOrThrow({
+    model: 'lab_test',
+    identifier,
+    tenantId,
+    errorKey,
+  });
+};
 
 const withoutChildIdentifier = (entry = {}) => {
   const { id, ...data } = entry;
@@ -323,10 +429,10 @@ const getFacilityLabTest = async (labTestIdentifier, context = {}, filters = {})
   const tenantId = context.tenant_id || filters.tenant_id;
   if (!tenantId) throw new HttpError('errors.auth.unauthorized', 401);
   const facilityId = await resolveFacilityId(context, filters);
-  const labTestId = await resolveModelIdOrThrow({
-    model: 'lab_test',
+  const labTestId = await resolveLabTestIdOrThrow({
     identifier: labTestIdentifier,
     tenantId,
+    context,
   });
   const masterTest = await resolveModelRecordOrThrow({
     model: 'lab_test',
@@ -371,10 +477,10 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
   if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
 
   const facilityId = await resolveFacilityId(context, payload);
-  const labTestId = await resolveModelIdOrThrow({
-    model: 'lab_test',
+  const labTestId = await resolveLabTestIdOrThrow({
     identifier: payload.lab_test_id,
     tenantId,
+    context,
   });
   const masterTest = await resolveModelRecordOrThrow({
     model: 'lab_test',
@@ -448,10 +554,10 @@ const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, c
   if (!tenantId || !userId) throw new HttpError('errors.auth.unauthorized', 401);
 
   const facilityId = await resolveFacilityId(context, payload);
-  const labTestId = await resolveModelIdOrThrow({
-    model: 'lab_test',
+  const labTestId = await resolveLabTestIdOrThrow({
     identifier: labTestIdentifier,
     tenantId,
+    context,
   });
   const offering = await facilityLabCatalogRepository.findTestOffering({
     tenant_id: tenantId,

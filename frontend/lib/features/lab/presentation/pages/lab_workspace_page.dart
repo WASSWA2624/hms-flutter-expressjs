@@ -875,13 +875,14 @@ class _LabConfigurationsDialogState
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final LabCatalogScope? existingScope = widget.state.catalogScope;
     final String? tenantId = _showTenantSelector
-        ? existingScope?.tenantId ?? policy.tenantId
+        ? existingScope?.tenantId
         : policy.tenantId ?? existingScope?.tenantId;
     final bool hasResolvedTenant = tenantId?.trim().isNotEmpty ?? false;
-    final String? facilityId = _showFacilitySelector
-        ? existingScope?.facilityId ??
-            (_showTenantSelector && hasResolvedTenant ? policy.facilityId : null)
-        : policy.facilityId ?? existingScope?.facilityId;
+    final String? facilityId = _resolveInitialFacilityId(
+      policy: policy,
+      existingScope: existingScope,
+      hasResolvedTenant: hasResolvedTenant,
+    );
 
     setState(() {
       _tenantId = tenantId;
@@ -889,6 +890,20 @@ class _LabConfigurationsDialogState
       _initializedScope = true;
     });
     await _reloadCatalogIfReady();
+  }
+
+  String? _resolveInitialFacilityId({
+    required AppAccessPolicy policy,
+    required LabCatalogScope? existingScope,
+    required bool hasResolvedTenant,
+  }) {
+    if (!_showFacilitySelector) {
+      return policy.facilityId ?? existingScope?.facilityId;
+    }
+    if (_showTenantSelector) {
+      return hasResolvedTenant ? existingScope?.facilityId : null;
+    }
+    return policy.facilityId ?? existingScope?.facilityId;
   }
 
   Future<void> _reloadCatalogIfReady() async {
@@ -931,7 +946,8 @@ class _LabConfigurationsDialogState
     final List<LabCatalogItem> items = _filteredItems(state);
     final bool showingTests = _catalogType == LabCatalogItemType.test;
     final bool scopeReady = _catalogScope.isReady;
-    final bool isLoading = !_initializedScope || state.isLoadingCatalog;
+    final bool isLoading =
+        scopeReady && (!_initializedScope || state.isLoadingCatalog);
     final AppFailure? loadFailure = state.catalogLoadFailure is AppFailure
         ? state.catalogLoadFailure as AppFailure
         : null;
@@ -952,18 +968,16 @@ class _LabConfigurationsDialogState
           failure: (_) => const <HomeLookupOption>[],
         ) ??
         const <HomeLookupOption>[];
-    final List<HomeLookupOption> facilityOptions =
-        lookupsAsync?.value?.when(
-          success: (HomeDashboardLookups value) =>
-              value.facilitiesForTenant(_tenantId),
-          failure: (_) => const <HomeLookupOption>[],
-        ) ??
-        const <HomeLookupOption>[];
+    final bool hasTenant = _tenantId?.trim().isNotEmpty ?? false;
+    final List<HomeLookupOption> facilityOptions = _facilityOptionsForScope(
+      lookupsAsync: lookupsAsync,
+      hasTenant: hasTenant,
+    );
     final String? facilityLabel = _facilityLabel(facilityOptions);
     final String? tenantLabel = _tenantLabel(tenantOptions);
-    final bool hasTenant = _tenantId?.trim().isNotEmpty ?? false;
-    final bool facilitySelectorEnabled =
-        hasTenant && facilityOptions.isNotEmpty;
+    final bool facilitySelectorEnabled = _showTenantSelector
+        ? hasTenant
+        : facilityOptions.isNotEmpty;
 
     return AppDialog(
       title: Text(l10n.labReferenceRangesDialogTitle),
@@ -1020,7 +1034,7 @@ class _LabConfigurationsDialogState
                       },
                     )
                   : _LabConfigurationsDisabledFacilityField(
-                      tooltipMessage:
+                      helperMessage:
                           l10n.labConfigurationsSelectTenantFirstTooltip,
                       labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
                     ),
@@ -1218,24 +1232,26 @@ class _LabConfigurationsDialogState
                 );
               },
             ),
-          const Divider(height: 24),
-          Text(
-            l10n.labQcLogsAction,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+          if (scopeReady) ...<Widget>[
+            const Divider(height: 24),
+            Text(
+              l10n.labQcLogsAction,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          AppMutedText(l10n.labQcLogsSectionBody),
-          SizedBox(height: theme.spacing.sm),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AppButton.tertiary(
-              label: l10n.labQcLogsAction,
-              leadingIcon: Icons.fact_check_outlined,
-              onPressed: () => _openQcDialog(context, state),
+            SizedBox(height: theme.spacing.xs),
+            AppMutedText(l10n.labQcLogsSectionBody),
+            SizedBox(height: theme.spacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.tertiary(
+                label: l10n.labQcLogsAction,
+                leadingIcon: Icons.fact_check_outlined,
+                onPressed: () => _openQcDialog(context, state),
+              ),
             ),
-          ),
+          ],
         ],
       ),
       actions: <Widget>[
@@ -1296,6 +1312,21 @@ class _LabConfigurationsDialogState
       }
     }
     return null;
+  }
+
+  List<HomeLookupOption> _facilityOptionsForScope({
+    required AsyncValue<Result<HomeDashboardLookups>>? lookupsAsync,
+    required bool hasTenant,
+  }) {
+    if (_showTenantSelector && !hasTenant) {
+      return const <HomeLookupOption>[];
+    }
+    return lookupsAsync?.value?.when(
+          success: (HomeDashboardLookups value) =>
+              value.facilitiesForTenant(_tenantId),
+          failure: (_) => const <HomeLookupOption>[],
+        ) ??
+        const <HomeLookupOption>[];
   }
 
   String _scopePromptMessage(
@@ -1576,11 +1607,11 @@ class _LabConfigurationsDialogState
 
 class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
   const _LabConfigurationsDisabledFacilityField({
-    required this.tooltipMessage,
+    required this.helperMessage,
     required this.labelText,
   });
 
-  final String tooltipMessage;
+  final String helperMessage;
   final String labelText;
 
   @override
@@ -1589,15 +1620,18 @@ class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tooltipMessage)),
+          SnackBar(content: Text(helperMessage)),
         );
       },
       child: Tooltip(
-        message: tooltipMessage,
+        message: helperMessage,
         child: AppSelectField<String>.searchable(
           labelText: labelText,
           isRequired: true,
           enabled: false,
+          allowClear: false,
+          helperText: helperMessage,
+          hintText: helperMessage,
           options: const <AppSelectOption<String>>[],
         ),
       ),

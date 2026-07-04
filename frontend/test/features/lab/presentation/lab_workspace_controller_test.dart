@@ -161,6 +161,46 @@ void main() {
   );
 
   test(
+    'loadFacilityCatalogConfig clears catalog when scope is incomplete',
+    () async {
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          labRepositoryProvider.overrideWithValue(repository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(labWorkspaceControllerProvider.future);
+
+      final LabWorkspaceController controller =
+          container.read(labWorkspaceControllerProvider.notifier);
+      await controller.loadFacilityCatalogConfig(
+        const LabCatalogScope(
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+        ),
+      );
+
+      await controller.loadFacilityCatalogConfig(
+        const LabCatalogScope(tenantId: 'TEN0000001'),
+      );
+
+      final LabWorkspaceState state =
+          (container.read(labWorkspaceControllerProvider).value
+                  as ResultSuccess<LabWorkspaceState>)
+              .value;
+      expect(state.catalogTests, isEmpty);
+      expect(state.catalogPanels, isEmpty);
+      expect(state.isLoadingCatalog, isFalse);
+      expect(state.catalogScope?.tenantId, 'TEN0000001');
+      expect(state.catalogScope?.facilityId, isNull);
+    },
+  );
+
+  test(
     'searchPlatformLabCatalogForOffering loads platform catalog and marks offered items',
     () async {
       when(

@@ -1,89 +1,59 @@
-# Lab Configurations Dialog — UX & Enable-Offering Flow
+# Lab Configurations — scope selection UX
 
-Fix the **Lab Configurations** modal (`_LabConfigurationsDialog` in `lab_workspace_page.dart`) and the **Enable lab offering** flow (`LabEnableFacilityOfferingDialog` in `lab_catalog_dialogs.dart`). Screenshots show scope-selection bugs, toggle styling issues, and empty enable dialogs that should list searchable platform catalog items.
+## Context
 
-## Scope
+In the **Lab Configurations** modal (`_LabConfigurationsDialog` in `lab_workspace_page.dart`), elevated users who manage multiple tenants and facilities must choose a **Tenant** and **Facility context** before the lab catalog can load.
 
-| Area | Primary files |
-|------|---------------|
-| Configurations modal | `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` |
-| Enable offering dialog | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` |
-| Catalog data | `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`, `lab_repository_impl.dart` |
-| Shared UI | `AppListTable`, `AppCurrencyAmountField` (`app_currency_amount_field.dart`) |
-| Strings | `frontend/lib/l10n/app_en.arb` |
+The dialog is opened from the Lab workspace and is used to enable platform tests/panels, set prices, and configure reference ranges for a specific facility.
 
----
+## Problem
 
-## 1. Scope selection (tenant / facility)
+When the dialog opens and **no tenant is selected**, the **Facility context** field still appears interactive (see attached screenshot). This is confusing for users with cross-tenant access: they can attempt to pick a facility before a tenant is known, and the main content area can show catalog UI or empty states instead of a clear scope-selection prompt.
 
-**Problem:** On first open, neither tenant nor facility is selected, yet misleading context text appears (e.g. *"Configuring lab catalog for `fbb67a68-…`"* — a raw UUID).
+## Goal
 
-**Required behavior:**
+Enforce a strict **tenant → facility** selection flow with clear, disabled UI and messaging until scope is complete.
 
-- **Facility context** dropdown must be **disabled** until a tenant is selected. Show the existing tooltip/snackbar (`labConfigurationsSelectTenantFirstTooltip`) when the user interacts with the disabled field.
-- **Do not show** the *"Configuring lab catalog for …"* label until **both** tenant and facility are resolved to **human-readable names** from lookups. Never fall back to displaying a raw ID.
-- When tenant is set but facility is missing, show only the informational banner (*"Select a facility for {tenantName}…"*). Hide the catalog table, search bar, and enable actions until scope is ready.
+## Requirements
 
----
+### 1. Facility selector gating
 
-## 2. Tests / Panels toggle styling
+- When `_showTenantSelector` is true and no tenant is selected:
+  - Render the **Facility context** field as **disabled** (not merely empty).
+  - Do **not** allow facility selection or clearing.
+  - Show an inline helper message such as: *"Select a tenant first"* (reuse or extend `labConfigurationsSelectTenantFirstTooltip`).
+- When a tenant **is** selected:
+  - Enable the facility selector and populate it with `facilitiesForTenant(_tenantId)`.
+  - Clear any previously selected facility when the tenant changes.
 
-**Problem:** `_LabConfigurationTypeSelector` renders two pill-shaped options that touch edge-to-edge on wide screens, with rounded corners, borders, and filled backgrounds.
+### 2. Scope-dependent content
 
-**Required styling:**
+- Until `LabCatalogScope.isReady` (both non-empty `tenantId` and `facilityId`):
+  - **Hide** Tests/Panels toggle, search bar, catalog table, and enable actions.
+  - **Show** `AppMessagePanel` with the appropriate scope prompt:
+    - No tenant: `labConfigurationsSelectScopeBody` — *"Select a tenant and facility to load and configure the lab catalog."*
+    - Tenant only: `labConfigurationsSelectFacilityOnlyBody(tenantName)` — *"Select a facility for {tenant} to load and configure the lab catalog."*
+- Do **not** call `loadFacilityCatalogConfig` or show catalog empty states (e.g. *"No tests are offered at this facility"*) until scope is ready.
 
-- Add horizontal **gap** between Tests and Panels on large screens (do not let options touch).
-- Remove container **border**, **background fill**, and **rounded corners** from each option.
-- Each option should show only: **radio indicator**, **icon**, and **label** — minimal, flat appearance consistent with secondary segmented controls elsewhere in the app.
+### 3. Visual affordance
 
----
+- The disabled facility field must be visually distinct from an active empty dropdown (muted styling, no misleading clear/action controls).
+- Optional: keep tooltip + tap-to-snackbar on the disabled field for accessibility.
 
-## 3. Enable lab offering dialog (tests & panels)
+## Files likely involved
 
-**Problem:** Clicking **Enable test** or **Enable panel** opens `LabEnableFacilityOfferingDialog`, which shows *"No platform lab catalog items are available for this tenant"* with no selectable items.
-
-**Required two-step flow:**
-
-### Step A — Browse & search platform catalog
-
-Replace the single searchable dropdown with an **`AppListTable`** (same pattern as the main configurations list):
-
-- **Enable test** → searchable table of **platform tests** (CBC, LFT, etc.).
-- **Enable panel** → searchable table of **platform panels**.
-- Columns: at minimum name, code, category; match existing lab catalog table conventions.
-- Support live search/filter while typing.
-- Row click (`onRowSelected`) advances to Step B.
-
-**Data source:** Load the **tenant platform master catalog**, not only items already offered at the facility. Use `LabRepository.listTests` / `listPanels` (or the correct platform-catalog API if facility-catalog endpoints return empty). `searchPlatformLabCatalogForOffering` currently calls `listFacilityLabTests` / `listFacilityLabPanels` — verify and fix if that is why the list is empty. Exclude or badge items already offered (`isOfferedAtFacility`).
-
-### Step B — Confirm selection & set price
-
-On row selection, open a **secondary modal** showing:
-
-- Selected test/panel summary (name, code, category, specimen/unit as applicable).
-- **Facility price** via existing **`AppCurrencyAmountField`** (currency + amount), required, `allowZero: false`.
-- Primary action: **Enable test** / **Enable panel** → calls existing `onEnable` / `upsertFacilityLabTestOffering` / `upsertFacilityLabPanelOffering` with `{ is_active: true, unit_price, currency }`.
-- Cancel returns to Step A without losing search state.
-
-### After enable
-
-- Close dialogs, show success snackbar (`labSavedMessage`).
-- Reload facility catalog for the current tenant + facility scope.
-- Reopening Lab Configurations with the same scope must show the newly enabled item in the Tests or Panels table.
-
----
+- `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` — `_LabConfigurationsDialog`, `_LabConfigurationsDisabledFacilityField`
+- `frontend/lib/l10n/app_en.arb` — scope prompt / helper strings if new copy is needed
+- `frontend/test/features/lab/...` — widget or controller tests for scope gating
 
 ## Acceptance criteria
 
-- [ ] Facility dropdown disabled until tenant is selected; no raw UUIDs shown anywhere in the dialog.
-- [ ] Tests/Panels toggle is flat (icon + label + radio only), spaced apart on wide screens.
-- [ ] Enable test/panel dialogs list searchable platform catalog items in a table.
-- [ ] Selecting a row opens a price-confirmation sub-dialog using `AppCurrencyAmountField`.
-- [ ] Enabling an item persists it; it appears in the facility catalog list after reload.
-- [ ] Empty states remain correct: no platform items for tenant, or all items already offered.
-- [ ] Existing tests pass; add/update widget tests for scope gating and enable flow if coverage exists (`lab_workspace_controller_test.dart`).
+- [ ] With tenant unselected, facility selector is disabled and shows a clear helper message.
+- [ ] With tenant selected but facility unselected, facility selector is enabled; main area shows facility-only scope prompt.
+- [ ] With both selected, catalog loads and Tests/Panels UI appears.
+- [ ] Changing tenant resets facility and does not retain stale catalog data.
+- [ ] No catalog empty/loading states appear before scope is ready.
 
-## Out of scope
+## Reference
 
-- QC logs section behavior (unchanged).
-- Backend seeding of platform catalog data (unless API wiring is the root cause of empty lists).
+Existing partial implementation: `facilitySelectorEnabled`, `_LabConfigurationsDisabledFacilityField`, and `_scopePromptMessage` in `_LabConfigurationsDialogState`.
