@@ -138,6 +138,38 @@ function Invoke-FlutterWebRun {
   return $LASTEXITCODE
 }
 
+function Start-WebServerBrowserOpener {
+  param(
+    [string]$Address,
+    [int]$ListenPort,
+    [string]$AppUrl
+  )
+
+  $null = Start-Job -Name "OpenHmsWebApp" -ScriptBlock {
+    param(
+      [string]$JobAddress,
+      [int]$JobPort,
+      [string]$JobUrl
+    )
+
+    $deadline = (Get-Date).AddMinutes(4)
+    while ((Get-Date) -lt $deadline) {
+      $listening = Get-NetTCPConnection `
+        -LocalPort $JobPort `
+        -State Listen `
+        -ErrorAction SilentlyContinue
+
+      if ($listening) {
+        Start-Sleep -Seconds 2
+        Start-Process $JobUrl
+        break
+      }
+
+      Start-Sleep -Milliseconds 500
+    }
+  } -ArgumentList $Address, $ListenPort, $AppUrl
+}
+
 function Release-WebPort {
   $listeners = Get-PortListeners -Address $HostName -ListenPort $Port
   foreach ($processId in ($listeners | Select-Object -ExpandProperty OwningProcess -Unique)) {
@@ -261,6 +293,10 @@ if ($useWebServer) {
   }
   $runDevice = 'web-server'
   $includeBrowserFlags = $false
+  $appUrl = "http://${HostName}:${Port}/"
+  Write-Host "The app will be served at $appUrl"
+  Write-Host 'Opening your default browser once the dev server is ready (first build may take 1-2 minutes)...'
+  Start-WebServerBrowserOpener -Address $HostName -ListenPort $Port -AppUrl $appUrl
 } else {
   $runDevice = $Device
   $includeBrowserFlags = $true

@@ -36,8 +36,9 @@ Use the port-specific script when running the Flutter web app locally:
 .\tool\run_web_5201.ps1
 ```
 
-On Windows the script defaults to `-d web-server` (open `http://127.0.0.1:5201/`
-in your browser). Pass `-ChromeDebug` when you need Chrome hot reload and the
+On Windows the script defaults to `-d web-server` and opens `http://127.0.0.1:5201/`
+in your default browser once the dev server is listening (the first compile can take
+1-2 minutes with little terminal output). Pass `-ChromeDebug` when you need Chrome hot reload and the
 debugger; the script still retries with a fresh profile and falls back to
 web-server if DWDS cannot attach.
 
