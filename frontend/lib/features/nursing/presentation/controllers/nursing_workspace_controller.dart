@@ -428,12 +428,16 @@ final class NursingWorkspaceController
     String? query,
     int limit = 80,
     String source = 'ALL',
+    String? facilityId,
   }) {
+    final String? resolvedFacilityId =
+        facilityId ?? ref.read(sessionStateProvider).session?.user?.facilityId;
     return _clinicalRepository.searchClinicalTerms(
       termType: termType,
       query: query,
       limit: limit,
       source: source,
+      facilityId: resolvedFacilityId,
     );
   }
 

@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -880,6 +881,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 query: query,
                 limit: limit ?? 80,
                 source: source,
+                facilityId:
+                    flow.facilityId ??
+                    ref.read(sessionStateProvider).session?.user?.facilityId,
               );
             },
         onRequest:

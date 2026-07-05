@@ -161,6 +161,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     String? query,
     int limit = 25,
     String source = 'ALL',
+    String? facilityId,
   }) {
     final bool offeredOnly = termType == 'LAB_TEST' || termType == 'LAB_PANEL';
     return searchClinicalCatalog(
@@ -169,6 +170,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       limit: limit,
       source: source,
       offeredOnly: offeredOnly,
+      facilityId: facilityId,
     );
   }
 
@@ -179,6 +181,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     int limit = 80,
     String source = 'ALL',
     bool offeredOnly = false,
+    String? facilityId,
   }) {
     return _apiClient.get<List<ClinicalCatalogOption>>(
       ApiEndpoints.apiV1(<String>[
@@ -191,6 +194,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
         'q': query,
         'limit': limit.clamp(1, 1000),
         if (offeredOnly) 'offered_only': 'true',
+        'facility_id': facilityId,
       }),
       decoder: decodeClinicalTermOptions,
     );

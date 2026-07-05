@@ -25,6 +25,7 @@ const {
   normalizeLabUnitOptions,
   toOptionalText,
 } = require('@services/lab-workspace/lab.configuration');
+const { resolveOperationalFacilityId } = require('@lib/facility-context');
 const {
   mapMergedLabPanelRecord,
   mapMergedLabTestRecord,
@@ -377,7 +378,11 @@ const copyMasterDefaults = (masterTest = {}) => ({
 });
 
 const resolveFacilityId = async (context = {}, payload = {}) => {
-  const facilityId = payload.facility_id || context.facility_id || null;
+  const facilityId = await resolveOperationalFacilityId({
+    facilityId: payload.facility_id || context.facility_id || null,
+    userId: context.user_id || null,
+    tenantId: context.tenant_id || payload.tenant_id || null,
+  });
   if (!facilityId) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'facility_id' }]);
   }

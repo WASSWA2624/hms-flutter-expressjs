@@ -9,8 +9,16 @@ const { sendSuccess, sendNoContent } = require('@lib/response');
 
 const buildContext = (req) => ({
   user_id: req.user?.id,
-  tenant_id: req.user?.tenant_id,
-  facility_id: req.user?.facility_id,
+  tenant_id:
+    req.user?.tenant_id ||
+    req.user?.tenantId ||
+    req.query?.tenant_id ||
+    req.body?.tenant_id,
+  facility_id:
+    req.user?.facility_id ||
+    req.user?.facilityId ||
+    req.query?.facility_id ||
+    req.body?.facility_id,
   roles: req.user?.roles || [],
   role: req.user?.role,
   ip_address: req.ip,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -133,6 +134,7 @@ class _ClinicalLabRequestCatalogDialogState
       const <ClinicalActionCatalogOption>[];
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   bool _isSearching = false;
+  AppFailure? _catalogFailure;
 
   bool get _showingTests =>
       _selectionKind == ClinicalLabRequestCatalogKind.tests;
@@ -192,6 +194,11 @@ class _ClinicalLabRequestCatalogDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          if (_catalogFailure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _catalogFailure!,
+            ),
           _CatalogKindRadioGroup(
             value: _selectionKind,
             testsLabel: l10n.clinicalLabRequestTestsModeLabel,
@@ -620,9 +627,15 @@ class _ClinicalLabRequestCatalogDialogState
     }
     setState(() {
       _isSearching = false;
-      _panelCatalogOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => const <ClinicalActionCatalogOption>[],
+      result.when(
+        success: (List<ClinicalActionCatalogOption> value) {
+          _catalogFailure = null;
+          _panelCatalogOptions = value;
+        },
+        failure: (AppFailure failure) {
+          _catalogFailure = failure;
+          _panelCatalogOptions = const <ClinicalActionCatalogOption>[];
+        },
       );
     });
   }
@@ -643,9 +656,15 @@ class _ClinicalLabRequestCatalogDialogState
     }
     setState(() {
       _isSearching = false;
-      _testCatalogOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => const <ClinicalActionCatalogOption>[],
+      result.when(
+        success: (List<ClinicalActionCatalogOption> value) {
+          _catalogFailure = null;
+          _testCatalogOptions = value;
+        },
+        failure: (AppFailure failure) {
+          _catalogFailure = failure;
+          _testCatalogOptions = const <ClinicalActionCatalogOption>[];
+        },
       );
     });
   }
@@ -661,9 +680,13 @@ class _ClinicalLabRequestCatalogDialogState
       return;
     }
     setState(() {
-      _favoriteTestOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
-        failure: (_) => const <ClinicalActionCatalogOption>[],
+      result.when(
+        success: (List<ClinicalActionCatalogOption> value) {
+          _favoriteTestOptions = value;
+        },
+        failure: (_) {
+          _favoriteTestOptions = const <ClinicalActionCatalogOption>[];
+        },
       );
     });
   }

@@ -2231,6 +2231,7 @@ Future<void> _openLabOrderActionDialog(
                     limit: limit ?? 80,
                     source: source,
                     offeredOnly: true,
+                    facilityId: state.catalogScope?.facilityId,
                   );
             },
         onRequest:

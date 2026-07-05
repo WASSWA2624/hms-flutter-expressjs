@@ -40,7 +40,7 @@ router.get(
   '/search',
   validateRequest({ query: searchFacilityLabCatalogQuerySchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
+  authorize([PERMISSIONS.CLINICAL_READ, PERMISSIONS.LAB_READ], 'permission'),
   facilityLabCatalogController.searchFacilityLabCatalog
 );
 

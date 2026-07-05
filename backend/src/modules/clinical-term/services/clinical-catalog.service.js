@@ -19,6 +19,7 @@ const {
 const {
   searchFacilityLabCatalog,
 } = require('@services/facility-lab-catalog/facility-lab-catalog.service');
+const { resolveOperationalFacilityId } = require('@lib/facility-context');
 
 const CATALOG_SOURCES = new Set(['FAVORITES', 'FACILITY', 'GLOBAL', 'ALL']);
 
@@ -446,10 +447,16 @@ const listClinicalCatalogSearch = async (filters = {}, context = {}) => {
   const q = normalizeText(filters.q);
   const limit = Number(filters.limit || 80);
   const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(1000, limit)) : 80;
-  const facilityId =
+  let facilityId =
     filters.facility_id !== undefined
       ? filters.facility_id || null
       : context.facility_id || null;
+  if (!facilityId) {
+    facilityId = await resolveOperationalFacilityId({
+      userId,
+      tenantId,
+    });
+  }
 
   if (termType === 'DIAGNOSIS' || termType === 'PROCEDURE') {
     if (source === 'ALL') {

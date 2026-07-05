@@ -22,6 +22,7 @@ abstract interface class ClinicalRepository {
     String? query,
     int limit = 25,
     String source = 'ALL',
+    String? facilityId,
   });
 
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalCatalog({
@@ -30,6 +31,7 @@ abstract interface class ClinicalRepository {
     int limit = 80,
     String source = 'ALL',
     bool offeredOnly = false,
+    String? facilityId,
   });
 
   Future<Result<void>> createClinicalTermFavorite(Map<String, Object?> payload);

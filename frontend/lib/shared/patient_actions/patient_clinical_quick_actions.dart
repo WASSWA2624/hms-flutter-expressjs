@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
@@ -80,6 +81,9 @@ Future<bool?> openPatientLabOrderDialog(
                   query: query,
                   limit: limit ?? 80,
                   source: source,
+                  facilityId:
+                      patient.facilityId ??
+                      ref.read(sessionStateProvider).session?.user?.facilityId,
                 );
           },
       onRequest:

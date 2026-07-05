@@ -291,15 +291,20 @@ final class ClinicalWorkspaceController
     String? query,
     int limit = 25,
     String source = 'ALL',
+    String? facilityId,
   }) {
     final bool offeredOnly =
         termType == 'LAB_TEST' || termType == 'LAB_PANEL';
+    final String? resolvedFacilityId = facilityId ??
+        _selectedEntry?.facilityId ??
+        ref.read(sessionStateProvider).session?.user?.facilityId;
     return _repository.searchClinicalCatalog(
       termType: termType,
       query: query,
       limit: limit,
       source: source,
       offeredOnly: offeredOnly,
+      facilityId: resolvedFacilityId,
     );
   }
 

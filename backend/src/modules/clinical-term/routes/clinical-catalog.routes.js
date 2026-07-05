@@ -19,7 +19,7 @@ router.get(
   '/search',
   validateRequest({ query: listClinicalCatalogSearchQuerySchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
+  authorize([PERMISSIONS.CLINICAL_READ, PERMISSIONS.LAB_READ], 'permission'),
   clinicalTermController.listClinicalCatalogSearch
 );
 

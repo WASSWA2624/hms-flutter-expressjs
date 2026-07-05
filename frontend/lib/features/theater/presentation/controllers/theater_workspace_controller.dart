@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -364,12 +365,16 @@ final class TheaterWorkspaceController
     String? query,
     int limit = 80,
     String source = 'ALL',
+    String? facilityId,
   }) {
+    final String? resolvedFacilityId = facilityId ??
+        ref.read(sessionStateProvider).session?.user?.facilityId;
     return _clinicalRepository.searchClinicalTerms(
       termType: termType,
       query: query,
       limit: limit,
       source: source,
+      facilityId: resolvedFacilityId,
     );
   }
 
