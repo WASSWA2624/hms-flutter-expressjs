@@ -1,132 +1,73 @@
-# Feature: Refine radiology request dialog flow
+# Fix: Request Radiology dialog — label + Choose Imaging Study performance
 
 ## Goal
 
-Modernize the **Request radiology** and **Choose imaging study** dialogs so they match the Lab request pattern: patient context in the toolbar, table-based selection, facility-scoped catalog browsing, and minimal instructional chrome. Apply this flow **everywhere** radiology is ordered (patients quick actions, OPD/IPD/ICU/nursing/clinical/radiology workspaces).
+Make the **Request radiology** flow fast and responsive on web. Clinicians must be able to open **Choose imaging study**, search/filter studies, and confirm selections without the browser freezing.
 
-## Problem (current UI)
+## Current state (keep)
 
-Screenshots show two friction points:
+The following already work—do not regress:
 
-1. **Request radiology** — redundant help text, a separate “No items / Price not set” summary bar, a dropdown for selected studies, and a Cancel button that duplicates the dialog close control.
-2. **Choose imaging study** — cramped filter layout, a single-select dropdown catalog, and an immediate “+ Add” pattern that does not scale for multi-study orders.
+- **Request radiology** dialog (`ClinicalRadiologyOrderActionDialog`): patient context strip, **Add study**, **Review billing**, selected-studies table, and **Request radiology** submit.
+- **Choose imaging study** dialog (`ClinicalRadiologyRequestCatalogDialog`): modality / laterality / priority / body region filters, clinical note, search, table with checkboxes, **Confirm selected studies**.
+- Entry points: patient registry quick actions, OPD flow, clinical / nursing / ICU / IPD workspaces, radiology workspace.
+
+## Problems (from QA)
+
+1. **Label:** Patient context shows **Name:** — should read **Patient name:** (screenshot).
+2. **Severe latency / freeze:** Clicking **Add study** takes a long time; the page can become unresponsive (`Page Unresponsive` in Chrome). After the catalog dialog opens, interaction feels frozen (no visible response to clicks, typing, or scrolling).
+3. **Likely root cause:** The catalog is loaded and rendered client-side from the **full tenant radiology test list** (~6,500 items via `clinical_repository_impl.dart` → `HmsApiResource.radiologyTests` with `include_standard_catalog: true`), not the **facility offerings** for the patient's facility. The catalog dialog then filters, sorts, and builds an `AppListTable` over the entire list on every build.
+
+## Expected behavior
+
+- Show only imaging studies **offered by the patient's facility** (same rule as lab ordering).
+- Open **Choose imaging study** within ~1 s on web with a normal facility catalog size.
+- Dialog remains interactive while loading (loading indicator / skeleton); search and filters debounce server requests instead of scanning thousands of rows synchronously on the UI thread.
+- Do **not** load the global radiology catalog up front for this flow.
 
 ## Reference implementation
 
-Mirror the Lab request flow:
+Mirror the **lab order** pattern:
 
-| Concern | Lab reference |
-|--------|----------------|
-| Main request dialog | `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart` |
-| Catalog picker | `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart` |
-| Shared toolbar / patient strip / selected table | `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart` (`ClinicalRequestFlowToolbar`, `ClinicalRequestPatientContextStrip`, `ClinicalRequestSelectedCatalogTable`) |
-| Table primitives | `frontend/lib/shared/components/app_list_table.dart`, `app_search_bar.dart` |
+| Concern | Lab (working) | Radiology (fix) |
+|--------|---------------|-----------------|
+| Catalog load | Server search via `onSearchLabTests` | Add `onSearchRadiologyTests` (or equivalent) |
+| Facility scope | `searchClinicalTerms(…, termType: 'LAB_TEST', facilityId: …)` with `offeredOnly` | `termType: 'RADIOLOGY_TEST'`, same `facilityId` |
+| Catalog dialog | `ClinicalLabRequestCatalogDialog` — async search | `ClinicalRadiologyRequestCatalogDialog` — async search |
+| Parent dialog | `ClinicalLabOrderActionDialog` passes search callback | `ClinicalRadiologyOrderActionDialog` passes search callback |
+| Patient quick action | `openPatientLabOrderDialog` wires `facilityId` from patient/session | `openPatientRadiologyOrderDialog` must wire the same |
 
-**Radiology files to update:**
+**Primary files:**
 
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart`
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_request_catalog_dialog.dart`
-- `frontend/lib/shared/clinical_actions/clinical_radiology_catalog_helpers.dart`
-- All call sites that open `ClinicalRadiologyOrderActionDialog` (patients, OPD, IPD, ICU, nursing, clinical, radiology workspaces)
+- `frontend/lib/shared/patient_actions/patient_clinical_quick_actions.dart` (`openPatientRadiologyOrderDialog`)
+- `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart` (`_openRadiologyOrderDialog`)
+- `frontend/lib/features/clinical/data/repositories/clinical_repository_impl.dart` (stop bulk-loading radiology for request flow)
+- `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart` and other workspace entry points that open the radiology dialog
+- Backend (if needed): `clinical-catalog` search with `offered_only` + `facility_id`; `facility-radiology-catalog` (`/search`, `/tests`)
 
-## Dialog 1 — Request radiology
+**Localization:**
 
-### Remove
-
-- Instructional body text (`clinicalRequestMainPanelHelp`).
-- `ClinicalRequestFlowSummaryBar` (“No items”, “Price not set”).
-- `ClinicalRequestSelectionManager` dropdown for selected studies.
-- Footer **Cancel** button (dialog **X** / backdrop dismiss is sufficient).
-
-### Add / change
-
-**Toolbar (single row)**
-
-- **Leading:** `ClinicalRequestPatientContextStrip` with patient name, patient ID, and encounter ID (pass `ClinicalRequestPatientContext` from every entry point, same as Lab). When the caller has encounter context (OPD, ED, IPD, etc.), surface the encounter identifier the order will be attached to.
-- **Trailing:** `+ Add study` and **Review billing** (keep existing billing dialog wiring).
-
-**Selected studies area**
-
-Replace the dropdown with `ClinicalRequestSelectedCatalogTable` (or an equivalent built on `AppListTable`):
-
-| Column | Content |
-|--------|---------|
-| Select | Row checkbox; support multi-select for bulk remove |
-| Name | Imaging test / procedure name |
-| Modality | Resolved modality label |
-| Price | Facility price from catalog option |
-| Actions | Per-row delete icon (`Icons.delete_outline`, error color) |
-
-- Toolbar **Remove selected** when one or more rows are checked (reuse `showClinicalRequestRemoveItemsConfirmationDialog`).
-- Empty state: centered muted text inside the table (no separate summary bar).
-- Table footer shows billing total when items exist (reuse existing catalog table footer pattern).
-
-**Footer**
-
-- Single primary **Request radiology** button with leading icon (`Icons.biotech_outlined` or equivalent).
-- Widen dialog (`maxWidth` ~880) and pin actions to bottom, matching Lab.
-
-## Dialog 2 — Choose imaging study
-
-### Filter layout
-
-Use consistent `theme.spacing` between fields (fix cramped rows in screenshot):
-
-| Row | Fields |
-|-----|--------|
-| 1 | **Modality** · **Laterality** |
-| 2 | **Priority** · **Body region** |
-| 3 | **Clinical note** (optional, full width) |
-
-### Filter behavior
-
-- **Modality** options must come only from modalities present in the **facility’s offered radiology catalog** (`clinicalRadiologyModalityOptions` on `referenceData.radiologyTests`). Do not show modalities the facility does not offer (e.g. hide Fluoroscopy when unsupported).
-- Changing modality narrows laterality, body region, and catalog rows.
-- **Laterality** shown when relevant to the filtered catalog (existing helper logic).
-- **Body region** uses chip picker when ≤16 options; searchable select when more (keep `_RadiologyBodyRegionPicker` behavior).
-- **Clinical note** is optional and applies to confirmed selections (same semantics as today).
-
-### Catalog area
-
-Remove `ClinicalCatalogSelectPanel` (dropdown + “+ Add”). Replace with an `AppListTable` of facility catalog items, modeled on the Lab catalog picker:
-
-- Built-in **search bar**, **filters** (at minimum modality; reuse `AppSearchBar` filter groups where practical), and **Table settings** for column visibility.
-- Default columns: **Select** (checkbox), **Name**, **Modality**, **Body region**, **Price** (optional columns via Table settings).
-- Table rows respect active filters: modality, priority, body region (and search tokens).
-- **Multi-select** via checkboxes; staged selections highlighted like Lab.
-- Selected rows that are already in the parent request (or staged duplicates) are disabled or show duplicate feedback—**no duplicate test IDs** in the final request.
-- Show selected count above the table.
-
-### Footer
-
-- Replace **Done** with primary **Confirm** + leading icon (`Icons.playlist_add_check`, matching Lab).
-- Dialog returns the staged selections (list of `ClinicalRadiologyCatalogSelection`) on Confirm; parent dialog merges them into the request table.
-- Support edit flow: when opened for a single existing row, pre-fill filters and selection.
-
-## Business rules
-
-- Catalog is **facility-scoped**: users only see radiology procedures offered by their facility (existing `referenceData.radiologyTests` / facility catalog APIs).
-- Selections are **unique by radiology test ID** across the request.
-- Per-study metadata (modality, laterality, body region, priority, clinical note) is preserved on each line item.
-- Billing review remains optional before submit; do not block submit solely on billing unless existing validation requires it.
+- `frontend/lib/l10n/app_en.arb` — change `clinicalRequestPatientNameLabel` from `Name` to `Patient name`.
 
 ## Implementation rules
 
-- **Reuse shared components** — do not fork table/search/toolbar markup; extend `ClinicalRequestSelectedCatalogTable` or shared column builders if Radiology needs a modality column instead of Lab’s type column.
-- **Pass `ClinicalRequestPatientContext`** at every `ClinicalRadiologyOrderActionDialog` call site (follow Lab call sites in `patient_clinical_quick_actions.dart`, `opd_flow_actions_dialog.dart`, etc.).
-- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` (Confirm label, empty table text, column titles, selected count).
-- **Tests:** update `frontend/test/shared/clinical_actions/clinical_radiology_order_action_dialog_test.dart` and add catalog dialog coverage for filter + multi-select behavior.
-- **Scope:** UX and dialog flow only; do not change backend order APIs unless required for duplicate prevention already enforced client-side.
+- **Reuse** existing clinical catalog search (`searchClinicalTerms` / `searchClinicalCatalog` with `termType: 'RADIOLOGY_TEST'`, `offeredOnly: true`, `facilityId`). Do not invent a parallel API unless the existing search cannot return required fields (modality, body region, price).
+- **Pass `facilityId`** from patient context (`patient.facilityId` or session facility) through every entry point that opens the radiology order dialog.
+- **Paginate or limit** server results; default page size should match lab (~80). Load more on search/filter, not on dialog open.
+- **Defer heavy work** off the build method: memoize filter option lists, debounce search, show loading state while fetching.
+- **Remove or narrow** `_largeRadiologyCatalogPageSize` radiology preload from `loadReferenceData()` if it exists only to feed this dialog.
+- **Scope:** request-radiology ordering UX only; radiology workspace configuration (`facility_catalog_config_panel`) is out of scope unless required for search wiring.
+- **Tests:** extend `frontend/test/shared/clinical_actions/clinical_radiology_order_action_dialog_test.dart` to cover async catalog search and the updated label.
 
 ## Acceptance criteria
 
-- [ ] Request radiology dialog shows patient name, patient ID, and encounter on the toolbar row with Add study / Review billing.
-- [ ] Help text, summary bar, selection dropdown, and Cancel button are removed.
-- [ ] Selected studies render in a searchable table with checkbox bulk-select, modality and price columns, and red delete actions.
-- [ ] Request radiology submit button includes a leading icon.
-- [ ] Choose imaging study uses the filter layout above with corrected spacing.
-- [ ] Modality dropdown lists only modalities supported by the facility catalog.
-- [ ] Catalog browse is table-based with search, filters, Table settings, and multi-select checkboxes.
-- [ ] Confirm returns staged selections; duplicates are prevented.
-- [ ] Flow works identically from all radiology entry points (patients, OPD, IPD, ICU, nursing, clinical, radiology workspace).
-- [ ] Lab request patterns and `frontend/lib/shared/` components are reused—not forked markup.
+- [ ] Patient context label reads **Patient name:** (not **Name:**).
+- [ ] **Add study** opens **Choose imaging study** quickly; no browser “Page Unresponsive” dialog under normal dev data.
+- [ ] Catalog lists **facility-offered studies only** for the patient's facility—not the full tenant/standard catalog.
+- [ ] Search, modality filter, and checkboxes respond immediately; loading state shown while fetching.
+- [ ] **Confirm selected studies** returns selections to the parent dialog unchanged.
+- [ ] Lab-order search/facility-scoping pattern is followed; no duplicate catalog-fetch logic.
+- [ ] All radiology order entry points (patients page, OPD, clinical, nursing, ICU, IPD, radiology workspace) pass `facilityId` and use the async catalog.
+- [ ] Existing widget tests pass; new test covers search callback wiring.
