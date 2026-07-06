@@ -1,76 +1,46 @@
-## Task
+# Task: Add viewport margins to maximized `AppDialog`
 
-Fix the remaining **single-tap selection** bug in `AppSelectField` globally at the shared-component layer. Clear (X) is working — do not regress it.
+## Goal
 
-Primary reproduction: any screen with `AppSelectField` or `AppSelectField.searchable`, including **Laboratory → Filters → Queue** (`/lab`).
-
-## Bug
-
-**Current behavior:** Opening the dropdown lists all options correctly. The **first click** on a menu item does not commit the selection or update the field label. A **second click** on the same item selects it and closes the menu.
-
-**Expected behavior:** The **first click** on any enabled menu item must:
-
-- Invoke `onChanged` / `onSelected` with that value immediately
-- Update the visible label in the field
-- Close the menu (unfocus)
-- Apply to both `AppSelectField` and `AppSelectField.searchable`, in dialogs and inline forms
-
-## Global application requirement
-
-- Fix **root cause** in shared components only — not in feature pages or individual call sites.
-- No lab-only or per-screen workarounds.
-- Any API change must default to correct behavior so all existing consumers inherit the fix.
+When a desktop dialog is **maximized**, it should expand to the largest practical size but **not** cover the entire viewport. Leave a visible margin on the **left, right, and bottom** so the underlying UI remains perceptible and users can tell the surface is a dialog layered above the app—not a full-screen view.
 
 ## Scope
 
-| File | Change |
-| --- | --- |
-| `frontend/lib/shared/components/app_select_field.dart` | First-tap menu selection (primary) |
-| `frontend/lib/shared/components/app_search_bar.dart` | Only if filter-dialog wiring contributes to the selection race |
+- **File:** `frontend/lib/shared/components/app_dialog.dart`
+- **Component:** `AppDialog` (desktop / non-compact viewports only; compact/mobile behavior unchanged)
+- **Out of scope:** Other dialog wrappers, routing, or unrelated UI changes
 
-**Preserve (regression guard):**
+## Current behavior
 
-- Clear (X) resets to empty/placeholder — never auto-selects a default option
-- Searchable fields show the **full option list** on menu open; filter only while the user types
-- Nullable filter binding with `hintText` in `_AppSearchBarFiltersDialog`
+When `_isMaximized` is `true`:
 
-**Out of scope:** Feature logic, `LabQueueScope`, per-page `setState` patches.
+- `insetPadding` is `EdgeInsets.zero`
+- Shell size is `Size(viewport.width, viewport.height)`
+- `_dragOffset` is reset to `Offset.zero`
 
-## Likely causes to investigate
+The dialog therefore fills the full viewport.
 
-- Menu rebuild or `dropdownMenuEntries` identity churn on focus/selection
-- `DropdownMenuFormField` / `FormFieldState` sync racing with `onSelected`
-- Focus handling (`_browseAllOptions`, `_handleFocusChanged`, `selectOnly`, `requestFocusOnTap`) consuming the first pointer event on web/desktop
-- `_SelectTrailingIcon` / `AppButton` intercepting or competing with menu item taps
+## Desired behavior
 
-Note: widget tests may pass while the running web app still double-taps — verify manually.
+1. **Maximized size** — Use the viewport minus consistent margins on left, right, and bottom. Top may remain flush (or use the same inset as the non-maximized top inset—pick whichever matches existing layout conventions).
+2. **Reuse existing spacing** — Prefer `theme.spacing` values already used in `_dialogInsetPadding` (e.g. `xl` on desktop) rather than hard-coded pixel literals. Keep `_snackBarClearance` in mind for the bottom margin if snackbars overlay the workspace.
+3. **Positioning** — Center or align the maximized dialog within the available area; reset drag offset appropriately so the shell sits in the inset frame.
+4. **Restore** — Toggling maximize off must still restore the pre-maximize size and drag offset (existing `_preMaximizeSize` / `_preMaximizeDragOffset` behavior).
+5. **Resize / drag** — Maximized dialogs remain non-resizable and non-draggable (current behavior). Resizing while maximized should still exit maximize mode as today.
+6. **`initialMaximized`** — Apply the same inset rules when the dialog opens already maximized.
 
 ## Acceptance criteria
 
-- [ ] First tap on a menu item selects it and closes the menu (non-searchable and searchable).
-- [ ] Clear (X) still resets to placeholder/empty — not a default option.
-- [ ] Searchable reopen still shows all options before typing.
-- [ ] Filter dialogs (`AppSearchBar`) behave the same as standalone selects.
-- [ ] Existing tests pass, especially:
-  - `AppSelectField selects an option with one tap`
-  - `AppSelectField.searchable selects an option with one tap`
-  - `AppSelectField clear button clears the selected value`
-  - `AppSelectField.searchable shows all options when menu reopens with a selection`
-  - `filter dialog clear leaves placeholder instead of All option`
-  - `filter dialog shows all options when reopening menu with a selection`
-- [ ] Add a test only if it reproduces the runtime failure not covered above.
+- [ ] Maximized dialog does **not** equal full viewport width or height on desktop (≥ 600 px wide).
+- [ ] Left, right, and bottom margins are visibly consistent and use theme spacing.
+- [ ] Background/scrim and content behind the dialog remain partially visible at the margins.
+- [ ] Maximize ↔ restore toggle preserves pre-maximize dimensions and position.
+- [ ] Compact viewports (< 600 px) are unaffected.
+- [ ] Update `frontend/test/shared/components/app_dialog_test.dart` (`desktop maximize toggles shell size and icon`) to assert inset dimensions instead of full viewport size.
+- [ ] `flutter test test/shared/components/app_dialog_test.dart` passes.
 
-## Verification
+## Implementation hints
 
-```bash
-cd frontend
-flutter test test/shared/components/app_form_components_test.dart
-flutter test test/shared/components/app_search_bar_test.dart
-dart analyze lib/shared/components/app_select_field.dart lib/shared/components/app_search_bar.dart
-```
-
-Manual smoke test on web:
-
-1. `/lab` → **Filters** → **Queue** → open menu → tap **Processing** once → label updates, menu closes.
-2. Tap **X** → placeholder only (not selected "All").
-3. Repeat on at least one non-lab `AppSelectField` screen.
+- Centralize maximized inset logic (e.g. a helper or shared `EdgeInsets`) so `build`, `_toggleMaximize`, and any size calculations stay in sync.
+- Apply insets via `Dialog.insetPadding` and/or reduced `shellWidth` / `shellHeight`—whichever keeps layout, constraints, and drag bounds correct.
+- Do not change maximize button labels, icons, or accessibility strings unless required by the new layout.
