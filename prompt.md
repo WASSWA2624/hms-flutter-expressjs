@@ -1,108 +1,134 @@
-# Refine: Add Drug dialog (`PharmacyDrugEditDialog`)
+# Feature: Pharmacy catalog dialog — tab UX, table actions, and maximized dialog
 
 ## Goal
 
-Polish the **Add drug** modal so formulation, stock, and storage fields are clearer, use shared select components consistently, and storage location is configurable before staff assign shelves.
+Improve the **Catalog and stock** dialog (`openPharmacyCatalogDialog`) so tab switching is clearer and faster, primary actions and tables are tab-aware, rows support edit/delete with bulk selection, and maximized dialogs use the full workspace below the app header.
 
-**Target:** `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`  
-**Catalog data:** `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart`  
-**Shared components:** `AppSelectField`, `AppFormSection`, `AppResponsiveFieldRow` (`frontend/lib/shared/`)
+## Current state (problem)
 
----
+| Gap | Detail |
+|-----|--------|
+| **Tab control** | `PharmacyCatalogPanel` uses a filled `SegmentedButton` for Drugs / Formulary / Inventory / Storage layout |
+| **Contextual actions** | Each tab embeds its own add button inside `AppWorkspaceDetailPanel`; there is no unified, tab-driven primary action |
+| **Formulary table** | Shows Drug + Active only — no edit, delete, or row selection (see screenshot) |
+| **Drugs table** | Has per-row edit/delete but no multi-select or bulk delete |
+| **Inventory table** | Adjust-stock action only; no edit/delete or bulk operations |
+| **Tab data refresh** | `setCatalogTab` lazy-loads empty lists but does not always re-fetch; switching can feel stale |
+| **Maximized dialog** | `AppDialog` + `AppDialogInsets` leave visible margins (6–16 px) on left, right, and bottom when maximized |
 
-## Keep as-is
+## Reference implementation
 
-| Section | Fields | Notes |
-|---------|--------|-------|
-| **Drug identity** | Drug name* · Drug code | Required name validation stays |
-| **Pricing** | Pharmacy price · Facility price | `AppCurrencyAmountField` + currency picker |
-| **Initial stock** | Initial stock · Inventory unit | Section layout and optional semantics |
-| **Batch and shelf life** | Batch number · Manufacturing date · Expiry date · Expiry alert lead | Existing helpers and validation |
+| Pattern | Where |
+|---------|--------|
+| Checkbox column + header tri-state + bulk delete toolbar action | `radiology_workspace_page.configurations.dart` (`_offeringSelectionColumn`, `AppSearchBarAction` with `destructive: true`) |
+| Per-row edit/delete icon buttons | `_DrugCatalogTab` in `pharmacy_catalog_panel.dart` |
+| Tab-scoped controller refresh | `PharmacyWorkspaceController.setCatalogTab` / `_refreshCatalogTabData` |
+| Dialog shell | `app_dialog.dart`, `app_dialog_insets.dart`, `showAppDialog` |
 
----
+## UI scope
 
-## Changes required
+### 1 — Replace segmented tabs with icon radio tabs
 
-### 1 — Formulation: use `AppSelectField`, not free text
+In `PharmacyCatalogPanel`, replace `SegmentedButton<PharmacyCatalogTab>` with a **flat, background-free** tab row:
 
-Replace `PharmacySearchableTextField` with **`AppSelectField<String>.searchable`** for both fields.
+| Tab | Icon (suggested) | Label |
+|-----|------------------|-------|
+| Drugs | `Icons.medication_outlined` | Existing l10n `pharmacyCatalogTabDrugs` |
+| Formulary | `Icons.list_alt_outlined` | `pharmacyCatalogTabFormulary` |
+| Inventory | `Icons.inventory_2_outlined` | `pharmacyCatalogTabInventory` |
+| Storage layout | `Icons.warehouse_outlined` | `pharmacyCatalogTabStorage` |
 
-| Field | Options source | Behaviour |
-|-------|----------------|-----------|
-| **Form** | `pharmacyDrugFormOptions` → `pharmacyFormDisplayLabels(l10n)` | On change, call `_applyFormDefaults` to auto-set inventory unit |
-| **Strength** | `pharmacyStrengthSuggestionsForForm(canonicalForm)` | Disabled or empty until a form is chosen; options are form-family presets (e.g. `500 mg`, `250 mg/5 mL`) |
+**Visual rules:**
 
-Store canonical values (`option.value` for form; strength string as entered) on submit—same as today.
+- No filled segment background; selected state = primary color + bottom border (and optional check/icon accent, matching screenshot).
+- Icons always visible; labels visible from `md` breakpoint up (icon-only on compact widths with tooltip).
+- Single selection only (radio behavior).
+- Reuse existing theme tokens (`colorScheme.primary`, `outlineVariant`) — do not introduce a one-off style.
 
-### 2 — Inventory unit: add icons
+Extract to a small shared widget (e.g. `AppIconTabBar<T>`) only if another module can reuse it; otherwise keep local to pharmacy.
 
-Extend `pharmacyInventoryUnitSelectOptions` so each `AppSelectOption` includes a **`leadingIcon`** (Material icon) for common units:
+### 2 — Tab-aware primary action
 
-| Unit | Suggested icon |
-|------|----------------|
-| tablet | `Icons.medication_outlined` |
-| capsule | `Icons.medication_liquid_outlined` |
-| strip | `Icons.view_week_outlined` |
-| box | `Icons.inventory_2_outlined` |
-| bottle | `Icons.local_drink_outlined` |
-| ampoule / vial | `Icons.science_outlined` |
-| tube / jar | `Icons.invert_colors_outlined` |
-| inhaler | `Icons.air_outlined` |
-| pack | `Icons.layers_outlined` |
-| mL / L / g | `Icons.scale_outlined` |
-| unit (fallback) | `Icons.category_outlined` |
+Hoist the panel **Add** action to one place (dialog header area or top of `PharmacyCatalogPanel`) that updates with the active tab:
 
-Icons appear in the dropdown and selected value chip.
+| Tab | Button label | Opens |
+|-----|--------------|-------|
+| Drugs | `pharmacyAddDrugAction` | `PharmacyDrugEditDialog` |
+| Formulary | `pharmacyAddFormularyAction` | `_FormularyCreateDialog` |
+| Inventory | *(none or “Receive stock” if a flow exists)* | Keep absent unless an add/receive dialog already exists |
+| Storage layout | `pharmacyAddStorageRoomAction` | `_StorageRoomDialog` |
 
-### 3 — Reorder alert: clarify the unit
+Remove duplicate add buttons from individual tab panels once the shared action is in place. Gate with existing `_writeRequirement` / `AppAccessActionGate`.
 
-**Problem:** “Reorder alert at” accepts a number but staff cannot tell whether it is tablets, bottles, strips, etc.
+### 3 — Tab-aware tables with instant switch
 
-**Fix:**
+On tab change:
 
-- Append a **dynamic suffix** to the field label or helper when an inventory unit is selected, e.g. *Reorder alert at (tablets)*.
-- Update helper text to state explicitly: *Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.*
-- If no inventory unit is chosen yet, show muted placeholder helper: *Select an inventory unit first.*
+- Swap table columns, search, filters, and empty states immediately (no blank flash).
+- Trigger fetch via `setCatalogTab` for the active dataset (formulary, inventory, storage; drugs if stale).
+- Prefer showing cached rows while refreshing (`isLoading` overlay on `AppListTable`, not a full-panel spinner).
+- Preserve each tab’s search/filter state in `PharmacyWorkspaceState` (already partially done).
 
-Localize new copy in `frontend/lib/l10n/app_en.arb`.
+### 4 — Row actions + bulk delete (all catalog tables)
 
-### 4 — Storage location: room → shelf cascade
+Apply consistently to **Drugs**, **Formulary**, and **Inventory** tables (Storage layout keeps its room/shelf CRUD pattern).
 
-Section **Storage location** already exists; complete the UX:
+**Selection column (leftmost):**
 
-| Field | Component | Rules |
-|-------|-----------|-------|
-| **Storage room** | `AppSelectField<String>` | Facility catalog from `state.storageLayout.rooms` |
-| **Shelf** | `AppSelectField<String>` | Filtered by selected room; disabled until room chosen; clearing room clears invalid shelf |
+- Per-row `Checkbox` + header tri-state checkbox (mirror radiology `_offeringSelectionColumn`).
+- Selection is per-tab local state; clear selection when switching tabs or after successful delete.
 
-- Helper: *Optional—helps staff find this drug on the floor.*
-- **Empty catalog:** show `pharmacyNoStorageRoomsBody` plus a compact action (e.g. *Configure storage*) that opens the storage management UI—do not leave staff with only static text.
+**Actions column (rightmost):**
 
-Shelf must exist in the selected room (validated server-side). See **`prompt1.md`** for data model, API, and catalog display.
+- **Edit** — icon-only `Icons.edit_outlined`; opens the existing edit dialog for that entity.
+- **Delete** — icon-only `Icons.delete_outline`, styled with `colorScheme.error` (destructive).
 
-### 5 — Pharmacy overflow menu: storage configuration entry
+**Bulk delete:**
 
-Add a **Storage layout** action to the pharmacy workspace toolbar overflow (`pharmacy_workspace_page.dart`) so master/pharmacist users can manage rooms and shelves **without** hunting through the catalog dialog.
+- When ≥1 row selected, show a destructive toolbar/search-bar action (red delete icon + count label).
+- Confirm via `AppDialog` before deleting.
+- Delete selected IDs sequentially or add a bulk API if one exists; show snackbar on success/failure.
+- Wire **formulary delete** through repository → controller (backend route exists: `DELETE /formulary-items/:id`).
 
-- Opens catalog panel on the **Storage** tab (`PharmacyCatalogTab.storage` → `PharmacyStoragePanel`), or a dedicated dialog—pick one entry point and use it consistently from the add-drug empty state.
-- CRUD: add/rename/deactivate rooms; per room, add shelf codes and optional labels.
-- Permissions: align with existing pharmacy write access.
+| Tab | Edit | Delete | Bulk delete |
+|-----|------|--------|-------------|
+| Drugs | `PharmacyDrugEditDialog` | `deleteDrug` (exists) | New — loop or bulk endpoint |
+| Formulary | Edit active flag / drug mapping dialog | `deleteFormularyItem` (wire frontend) | New |
+| Inventory | `_InventoryAdjustDialog` or dedicated edit | Only if backend supports stock removal | Optional — adjust if no hard delete |
 
----
+Formulary edit can reuse create dialog pre-filled, or a minimal inline toggle for `isActive` if full edit is out of scope — pick one and document in PR.
 
-## Out of scope (this prompt)
+### 5 — Global maximized dialog layout
 
-- Ward/inpatient `room` model (different domain).
-- Warehouse map visualization.
-- Full backend/storage schema—covered in **`prompt1.md`**.
+Update **`AppDialog`** / **`AppDialogInsets`** globally (all dialogs benefit):
 
----
+- When maximized, inset padding should account for **app shell header only** — dialog fills remaining viewport width and height.
+- Set maximized insets to **0** (or minimal safe-area only on mobile), not `dialogMaximizedInsetDesktop` (16 px).
+- Keep normal (non-maximized) insets unchanged.
+- Verify on pharmacy catalog dialog (`maxWidth: 1080`, `initialMaximized: true`) and at least one smaller confirm dialog so restore/size behavior is unchanged.
+
+## Backend parity
+
+| Item | Action |
+|------|--------|
+| Formulary delete | Add `deleteFormularyItem(String id)` to `PharmacyRepository` + impl + controller |
+| Formulary update | Already exists — use for edit flow |
+| Drug delete | Already wired |
+| Bulk delete | Client-side loop acceptable initially; add batch endpoint only if performance requires it |
+
+## Implementation rules
+
+- **Reuse** `AppListTable`, `AppSearchBarAction`, `AppButton`, `AppAccessActionGate`, and radiology selection patterns — do not fork table behavior.
+- **Localization:** new strings in `app_en.arb` (bulk delete label, confirm titles, tab tooltips if icon-only).
+- **Permissions:** respect `pharmacyWrite` / `operationsWrite`; disable selection and destructive actions when denied.
+- **Scope:** pharmacy catalog dialog + global dialog maximize fix. Do not refactor unrelated workspaces.
 
 ## Acceptance criteria
 
-- [ ] Form and Strength use `AppSelectField.searchable` with catalog presets; strength options react to selected form.
-- [ ] Inventory unit options show distinct icons in the select.
-- [ ] Reorder alert label/helper makes the inventory unit explicit.
-- [ ] Storage room and shelf cascade correctly; both optional on add.
-- [ ] Empty storage catalog offers a path to configure rooms/shelves (overflow menu + add-drug empty state).
-- [ ] No regression to pricing, batch, or identity sections.
+- [ ] Catalog tabs render as flat icon+label radio controls with no segment background; selected tab is visually distinct.
+- [ ] Primary add action label and handler change correctly for Drugs, Formulary, and Storage layout tabs.
+- [ ] Switching tabs updates title, description, table columns, and data immediately; stale tabs refresh in background.
+- [ ] Drugs, Formulary, and Inventory tables have checkbox selection, row edit/delete, and bulk delete with red destructive styling.
+- [ ] Formulary delete works end-to-end (API + UI + list refresh).
+- [ ] Maximized `AppDialog` occupies full space below the app header with no leftover side/bottom gutter on desktop.
+- [ ] Non-maximized dialogs and mobile layout behave as before.

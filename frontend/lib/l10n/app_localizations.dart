@@ -16750,6 +16750,108 @@ abstract class AppLocalizations {
   /// **'Remove this drug from the catalog?'**
   String get pharmacyDeleteDrugDialogBody;
 
+  /// Pharmacy edit formulary item action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit formulary item'**
+  String get pharmacyEditFormularyAction;
+
+  /// Pharmacy delete formulary item action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete formulary item'**
+  String get pharmacyDeleteFormularyAction;
+
+  /// Pharmacy delete formulary confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete formulary item'**
+  String get pharmacyDeleteFormularyDialogTitle;
+
+  /// Pharmacy delete formulary confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this drug from the facility formulary?'**
+  String get pharmacyDeleteFormularyDialogBody;
+
+  /// Pharmacy bulk delete drugs action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get pharmacyDeleteSelectedDrugsAction;
+
+  /// Pharmacy bulk delete drugs confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected drugs?'**
+  String get pharmacyDeleteSelectedDrugsDialogTitle;
+
+  /// Pharmacy bulk delete drugs confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count, plural, =1{1 drug} other{{count} drugs}} from the catalog?'**
+  String pharmacyDeleteSelectedDrugsDialogBody(int count);
+
+  /// Pharmacy bulk delete formulary items action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get pharmacyDeleteSelectedFormularyAction;
+
+  /// Pharmacy bulk delete formulary confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected formulary items?'**
+  String get pharmacyDeleteSelectedFormularyDialogTitle;
+
+  /// Pharmacy bulk delete formulary confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count, plural, =1{1 formulary item} other{{count} formulary items}}?'**
+  String pharmacyDeleteSelectedFormularyDialogBody(int count);
+
+  /// Pharmacy bulk clear inventory stock action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selected stock'**
+  String get pharmacyClearSelectedInventoryAction;
+
+  /// Pharmacy bulk clear inventory confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selected stock?'**
+  String get pharmacyClearSelectedInventoryDialogTitle;
+
+  /// Pharmacy bulk clear inventory confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Set quantity to zero for {count, plural, =1{1 stock row} other{{count} stock rows}}?'**
+  String pharmacyClearSelectedInventoryDialogBody(int count);
+
+  /// Pharmacy clear inventory stock row action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear stock'**
+  String get pharmacyDeleteInventoryStockAction;
+
+  /// Pharmacy clear inventory stock confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear stock'**
+  String get pharmacyDeleteInventoryStockDialogTitle;
+
+  /// Pharmacy clear inventory stock confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Set this stock quantity to zero?'**
+  String get pharmacyDeleteInventoryStockDialogBody;
+
+  /// Pharmacy catalog delete failure snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to complete delete.'**
+  String get pharmacyCatalogDeleteFailedMessage;
+
   /// Pharmacy dispense dialog body.
   ///
   /// In en, this message translates to:

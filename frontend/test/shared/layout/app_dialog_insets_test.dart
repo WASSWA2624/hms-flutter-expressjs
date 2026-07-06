@@ -27,14 +27,14 @@ void main() {
       );
     });
 
-    test('maximized padding is uniform on all sides per breakpoint', () {
+    test('maximized padding fills the viewport without outer gutter', () {
       expect(
         AppDialogInsets.paddingFor(
           AppBreakpoint.sm,
           designTokens: tokens,
           maximized: true,
         ),
-        const EdgeInsets.all(6),
+        EdgeInsets.zero,
       );
       expect(
         AppDialogInsets.paddingFor(
@@ -42,11 +42,11 @@ void main() {
           designTokens: tokens,
           maximized: true,
         ),
-        const EdgeInsets.all(16),
+        EdgeInsets.zero,
       );
     });
 
-    test('available size subtracts uniform maximized inset from viewport', () {
+    test('available size uses full viewport when maximized', () {
       final Size available = AppDialogInsets.availableSizeFor(
         const Size(1000, 700),
         AppBreakpoint.lg,
@@ -54,8 +54,8 @@ void main() {
         maximized: true,
       );
 
-      expect(available.width, 976);
-      expect(available.height, 676);
+      expect(available.width, 1000);
+      expect(available.height, 700);
     });
   });
 }

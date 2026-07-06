@@ -67,14 +67,7 @@ abstract final class AppDialogInsets {
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
   }) {
-    return switch (breakpoint) {
-      AppBreakpoint.xs ||
-      AppBreakpoint.sm => designTokens.dialogMaximizedInsetMobile,
-      AppBreakpoint.md ||
-      AppBreakpoint.lg => designTokens.dialogMaximizedInsetTablet,
-      AppBreakpoint.xl ||
-      AppBreakpoint.xxl => designTokens.dialogMaximizedInsetDesktop,
-    };
+    return 0;
   }
 
   static double _normalInsetFor(

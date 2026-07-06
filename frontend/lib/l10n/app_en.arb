@@ -11547,6 +11547,89 @@
   "@pharmacyDeleteDrugDialogBody": {
     "description": "Pharmacy delete drug confirmation body."
   },
+  "pharmacyEditFormularyAction": "Edit formulary item",
+  "@pharmacyEditFormularyAction": {
+    "description": "Pharmacy edit formulary item action label."
+  },
+  "pharmacyDeleteFormularyAction": "Delete formulary item",
+  "@pharmacyDeleteFormularyAction": {
+    "description": "Pharmacy delete formulary item action label."
+  },
+  "pharmacyDeleteFormularyDialogTitle": "Delete formulary item",
+  "@pharmacyDeleteFormularyDialogTitle": {
+    "description": "Pharmacy delete formulary confirmation title."
+  },
+  "pharmacyDeleteFormularyDialogBody": "Remove this drug from the facility formulary?",
+  "@pharmacyDeleteFormularyDialogBody": {
+    "description": "Pharmacy delete formulary confirmation body."
+  },
+  "pharmacyDeleteSelectedDrugsAction": "Delete selected",
+  "@pharmacyDeleteSelectedDrugsAction": {
+    "description": "Pharmacy bulk delete drugs action label."
+  },
+  "pharmacyDeleteSelectedDrugsDialogTitle": "Delete selected drugs?",
+  "@pharmacyDeleteSelectedDrugsDialogTitle": {
+    "description": "Pharmacy bulk delete drugs confirmation title."
+  },
+  "pharmacyDeleteSelectedDrugsDialogBody": "Remove {count, plural, =1{1 drug} other{{count} drugs}} from the catalog?",
+  "@pharmacyDeleteSelectedDrugsDialogBody": {
+    "description": "Pharmacy bulk delete drugs confirmation body.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyDeleteSelectedFormularyAction": "Delete selected",
+  "@pharmacyDeleteSelectedFormularyAction": {
+    "description": "Pharmacy bulk delete formulary items action label."
+  },
+  "pharmacyDeleteSelectedFormularyDialogTitle": "Delete selected formulary items?",
+  "@pharmacyDeleteSelectedFormularyDialogTitle": {
+    "description": "Pharmacy bulk delete formulary confirmation title."
+  },
+  "pharmacyDeleteSelectedFormularyDialogBody": "Remove {count, plural, =1{1 formulary item} other{{count} formulary items}}?",
+  "@pharmacyDeleteSelectedFormularyDialogBody": {
+    "description": "Pharmacy bulk delete formulary confirmation body.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyClearSelectedInventoryAction": "Clear selected stock",
+  "@pharmacyClearSelectedInventoryAction": {
+    "description": "Pharmacy bulk clear inventory stock action label."
+  },
+  "pharmacyClearSelectedInventoryDialogTitle": "Clear selected stock?",
+  "@pharmacyClearSelectedInventoryDialogTitle": {
+    "description": "Pharmacy bulk clear inventory confirmation title."
+  },
+  "pharmacyClearSelectedInventoryDialogBody": "Set quantity to zero for {count, plural, =1{1 stock row} other{{count} stock rows}}?",
+  "@pharmacyClearSelectedInventoryDialogBody": {
+    "description": "Pharmacy bulk clear inventory confirmation body.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pharmacyDeleteInventoryStockAction": "Clear stock",
+  "@pharmacyDeleteInventoryStockAction": {
+    "description": "Pharmacy clear inventory stock row action label."
+  },
+  "pharmacyDeleteInventoryStockDialogTitle": "Clear stock",
+  "@pharmacyDeleteInventoryStockDialogTitle": {
+    "description": "Pharmacy clear inventory stock confirmation title."
+  },
+  "pharmacyDeleteInventoryStockDialogBody": "Set this stock quantity to zero?",
+  "@pharmacyDeleteInventoryStockDialogBody": {
+    "description": "Pharmacy clear inventory stock confirmation body."
+  },
+  "pharmacyCatalogDeleteFailedMessage": "Unable to complete delete.",
+  "@pharmacyCatalogDeleteFailedMessage": {
+    "description": "Pharmacy catalog delete failure snackbar."
+  },
   "pharmacyDispenseDialogBody": "Enter dispense quantities and optional stock mapping for each medicine line.",
   "@pharmacyDispenseDialogBody": {
     "description": "Pharmacy dispense dialog body."

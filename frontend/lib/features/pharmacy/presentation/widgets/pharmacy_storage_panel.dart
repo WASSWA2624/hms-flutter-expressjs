@@ -13,15 +13,28 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
+Future<void> openPharmacyStorageRoomDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  PharmacyStorageRoom? room,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    builder: (_) => _StorageRoomDialog(room: room),
+  );
+}
+
 class PharmacyStoragePanel extends ConsumerWidget {
   const PharmacyStoragePanel({
     required this.state,
     required this.writeRequirement,
+    this.showHeaderActions = true,
     super.key,
   });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final bool showHeaderActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,27 +45,33 @@ class PharmacyStoragePanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyStoragePanelTitle,
       description: l10n.pharmacyStoragePanelDescription,
-      actions: <Widget>[
-        AppAccessActionGate(
-          requirement: writeRequirement,
-          builder: (BuildContext context, bool isAllowed) => AppButton.secondary(
-            label: l10n.pharmacyAddStorageRoomAction,
-            leadingIcon: Icons.add,
-            enabled: isAllowed,
-            onPressed: () => _openRoomDialog(context, ref),
-          ),
-        ),
-      ],
-      child: state.isRefreshingStorage
-          ? const Center(child: CircularProgressIndicator())
-          : rooms.isEmpty
-          ? AppWorkspaceStatePanel.state(
+      actions: showHeaderActions
+          ? <Widget>[
+              AppAccessActionGate(
+                requirement: writeRequirement,
+                builder: (BuildContext context, bool isAllowed) =>
+                    AppButton.secondary(
+                  label: l10n.pharmacyAddStorageRoomAction,
+                  leadingIcon: Icons.add,
+                  enabled: isAllowed,
+                  onPressed: () => openPharmacyStorageRoomDialog(context, ref),
+                ),
+              ),
+            ]
+          : const <Widget>[],
+      child: Stack(
+        children: <Widget>[
+          if (rooms.isEmpty && !state.isRefreshingStorage)
+            AppWorkspaceStatePanel.state(
               variant: AppStateViewVariant.empty,
               title: l10n.pharmacyNoStorageRoomsTitle,
               body: l10n.pharmacyNoStorageRoomsBody,
               icon: Icons.warehouse_outlined,
             )
-          : ListView.separated(
+          else if (rooms.isEmpty)
+            const SizedBox.shrink()
+          else
+            ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: rooms.length,
@@ -84,7 +103,8 @@ class PharmacyStoragePanel extends ConsumerWidget {
                             label: l10n.pharmacyAddStorageShelfAction,
                             semanticLabel: l10n.pharmacyAddStorageShelfAction,
                             enabled: isAllowed && room.isActive,
-                            onPressed: () => _openShelfDialog(context, ref, room),
+                            onPressed: () =>
+                                _openShelfDialog(context, ref, room),
                           ),
                           AppButton(
                             iconOnly: true,
@@ -92,7 +112,11 @@ class PharmacyStoragePanel extends ConsumerWidget {
                             label: l10n.pharmacyEditStorageRoomAction,
                             semanticLabel: l10n.pharmacyEditStorageRoomAction,
                             enabled: isAllowed,
-                            onPressed: () => _openRoomDialog(context, ref, room: room),
+                            onPressed: () => openPharmacyStorageRoomDialog(
+                              context,
+                              ref,
+                              room: room,
+                            ),
                           ),
                         ],
                       ),
@@ -126,17 +150,15 @@ class PharmacyStoragePanel extends ConsumerWidget {
                 );
               },
             ),
-    );
-  }
-
-  Future<void> _openRoomDialog(
-    BuildContext context,
-    WidgetRef ref, {
-    PharmacyStorageRoom? room,
-  }) {
-    return showAppDialog<bool>(
-      context: context,
-      builder: (_) => _StorageRoomDialog(room: room),
+          if (state.isRefreshingStorage)
+            Positioned.fill(
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

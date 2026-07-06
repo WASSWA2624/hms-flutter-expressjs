@@ -455,16 +455,25 @@ final class PharmacyWorkspaceController
     PharmacyCatalogTab tab,
     PharmacyWorkspaceState current,
   ) {
-    if (tab == PharmacyCatalogTab.formulary &&
-        current.formularyItems.items.isEmpty) {
-      unawaited(_refreshFormulary(showLoading: true));
-    }
-    if (tab == PharmacyCatalogTab.inventory &&
-        current.inventoryWorkbench.stocks.items.isEmpty) {
-      unawaited(_refreshInventory(showLoading: true));
-    }
-    if (tab == PharmacyCatalogTab.storage) {
-      unawaited(_refreshStorageLayout(showLoading: true));
+    switch (tab) {
+      case PharmacyCatalogTab.drugs:
+        unawaited(
+          _refreshDrugs(showLoading: current.drugs.items.isEmpty),
+        );
+      case PharmacyCatalogTab.formulary:
+        unawaited(
+          _refreshFormulary(showLoading: current.formularyItems.items.isEmpty),
+        );
+      case PharmacyCatalogTab.inventory:
+        unawaited(
+          _refreshInventory(
+            showLoading: current.inventoryWorkbench.stocks.items.isEmpty,
+          ),
+        );
+      case PharmacyCatalogTab.storage:
+        unawaited(
+          _refreshStorageLayout(showLoading: current.storageLayout.rooms.isEmpty),
+        );
     }
   }
 
@@ -697,6 +706,19 @@ final class PharmacyWorkspaceController
   }) async {
     final Result<PharmacyFormularyItem> result = await _repository
         .updateFormularyItem(formularyItemId, isActive: isActive);
+    return result.when(
+      success: (_) async {
+        await _refreshFormulary(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> deleteFormularyItem(String formularyItemId) async {
+    final Result<void> result = await _repository.deleteFormularyItem(
+      formularyItemId,
+    );
     return result.when(
       success: (_) async {
         await _refreshFormulary(showLoading: false);

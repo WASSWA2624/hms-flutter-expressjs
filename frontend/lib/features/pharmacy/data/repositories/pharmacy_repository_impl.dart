@@ -266,6 +266,14 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }
 
   @override
+  Future<Result<void>> deleteFormularyItem(String formularyItemId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.formularyItems, formularyItemId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<PharmacyOrderWorkflow>> recordOrderBilling(
     String orderId,
     Map<String, Object?> billing,

@@ -8980,6 +8980,85 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this drug from the catalog?';
 
   @override
+  String get pharmacyEditFormularyAction => 'Edit formulary item';
+
+  @override
+  String get pharmacyDeleteFormularyAction => 'Delete formulary item';
+
+  @override
+  String get pharmacyDeleteFormularyDialogTitle => 'Delete formulary item';
+
+  @override
+  String get pharmacyDeleteFormularyDialogBody =>
+      'Remove this drug from the facility formulary?';
+
+  @override
+  String get pharmacyDeleteSelectedDrugsAction => 'Delete selected';
+
+  @override
+  String get pharmacyDeleteSelectedDrugsDialogTitle => 'Delete selected drugs?';
+
+  @override
+  String pharmacyDeleteSelectedDrugsDialogBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count drugs',
+      one: '1 drug',
+    );
+    return 'Remove $_temp0 from the catalog?';
+  }
+
+  @override
+  String get pharmacyDeleteSelectedFormularyAction => 'Delete selected';
+
+  @override
+  String get pharmacyDeleteSelectedFormularyDialogTitle =>
+      'Delete selected formulary items?';
+
+  @override
+  String pharmacyDeleteSelectedFormularyDialogBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count formulary items',
+      one: '1 formulary item',
+    );
+    return 'Remove $_temp0?';
+  }
+
+  @override
+  String get pharmacyClearSelectedInventoryAction => 'Clear selected stock';
+
+  @override
+  String get pharmacyClearSelectedInventoryDialogTitle =>
+      'Clear selected stock?';
+
+  @override
+  String pharmacyClearSelectedInventoryDialogBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stock rows',
+      one: '1 stock row',
+    );
+    return 'Set quantity to zero for $_temp0?';
+  }
+
+  @override
+  String get pharmacyDeleteInventoryStockAction => 'Clear stock';
+
+  @override
+  String get pharmacyDeleteInventoryStockDialogTitle => 'Clear stock';
+
+  @override
+  String get pharmacyDeleteInventoryStockDialogBody =>
+      'Set this stock quantity to zero?';
+
+  @override
+  String get pharmacyCatalogDeleteFailedMessage => 'Unable to complete delete.';
+
+  @override
   String get pharmacyDispenseDialogBody =>
       'Enter dispense quantities and optional stock mapping for each medicine line.';
 

@@ -46,6 +46,8 @@ abstract interface class PharmacyRepository {
     bool? isActive,
   });
 
+  Future<Result<void>> deleteFormularyItem(String formularyItemId);
+
   Future<Result<PharmacyOrderWorkflow>> recordOrderBilling(
     String orderId,
     Map<String, Object?> billing,

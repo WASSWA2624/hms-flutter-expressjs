@@ -197,8 +197,8 @@ void main() {
       shellMaximized.size.height,
       closeTo(expectedMaximizedSize.height, 1),
     );
-    expect(shellMaximized.size.width, lessThan(viewport.width));
-    expect(shellMaximized.size.height, lessThan(viewport.height));
+    expect(shellMaximized.size.width, closeTo(viewport.width, 1));
+    expect(shellMaximized.size.height, closeTo(viewport.height, 1));
     expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
     expect(shellMaximized.size.height, greaterThan(heightBefore + 50));
 
@@ -299,7 +299,7 @@ void main() {
     expect(find.byIcon(Icons.fullscreen_exit), findsNothing);
   });
 
-  testWidgets('maximized dialog leaves theme insets on mobile and tablet', (
+  testWidgets('maximized dialog fills viewport on mobile and tablet', (
     WidgetTester tester,
   ) async {
     const AppDesignTokens designTokens = AppDesignTokens.standard;
@@ -348,8 +348,8 @@ void main() {
       final RenderBox shell = _dialogShellRenderBox(tester);
       expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
       expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
-      expect(shell.size.width, lessThan(config.viewport.width));
-      expect(shell.size.height, lessThan(config.viewport.height));
+      expect(shell.size.width, closeTo(config.viewport.width, 1));
+      expect(shell.size.height, closeTo(config.viewport.height, 1));
 
       await tester.binding.setSurfaceSize(null);
       await tester.pumpWidget(const SizedBox.shrink());
