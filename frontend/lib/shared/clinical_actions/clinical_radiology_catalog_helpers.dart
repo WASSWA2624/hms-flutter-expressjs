@@ -368,6 +368,28 @@ List<AppSelectOption<String>> clinicalRadiologyCatalogSelectOptions(
   );
 }
 
+List<ClinicalActionCatalogOption> orderClinicalRadiologyRequestCatalogItems(
+  List<ClinicalActionCatalogOption> catalog, {
+  required bool Function(ClinicalActionCatalogOption option) includeOption,
+  required bool Function(ClinicalActionCatalogOption option) isSelected,
+}) {
+  final List<ClinicalActionCatalogOption> selected =
+      <ClinicalActionCatalogOption>[];
+  final List<ClinicalActionCatalogOption> unselected =
+      <ClinicalActionCatalogOption>[];
+  for (final ClinicalActionCatalogOption option in catalog) {
+    if (!includeOption(option)) {
+      continue;
+    }
+    if (isSelected(option)) {
+      selected.add(option);
+    } else {
+      unselected.add(option);
+    }
+  }
+  return <ClinicalActionCatalogOption>[...selected, ...unselected];
+}
+
 class ClinicalRadiologyCatalogOptionLabel extends StatelessWidget {
   const ClinicalRadiologyCatalogOptionLabel({
     required this.l10n,

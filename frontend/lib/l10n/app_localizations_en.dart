@@ -16921,6 +16921,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRadiologyAddStudyAction => 'Add study';
 
   @override
+  String get clinicalRadiologyRequestSelectedTableEmptyLabel =>
+      'No radiology requests selected. Use Add study to choose imaging tests.';
+
+  @override
+  String get clinicalRadiologyRequestCatalogPickerConfirmAction =>
+      'Confirm selected studies';
+
+  @override
+  String get clinicalRadiologyRequestCatalogColumnsTitle =>
+      'Imaging catalog table columns';
+
+  @override
   String get clinicalProcedureCatalogPickerTitle => 'Choose procedures';
 
   @override

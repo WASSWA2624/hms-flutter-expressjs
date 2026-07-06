@@ -154,6 +154,11 @@ Future<bool?> openPatientRadiologyOrderDialog(
     barrierDismissible: false,
     builder: (_) => ClinicalRadiologyOrderActionDialog(
       referenceData: referenceData,
+      patientContext: ClinicalRequestPatientContext(
+        patientName: patient.effectiveDisplayName,
+        patientId: patientApiId(patient),
+        encounterId: resolvedEncounterId,
+      ),
       onSubmit:
           ({
             required List<ClinicalActionRadiologyRequest> requests,

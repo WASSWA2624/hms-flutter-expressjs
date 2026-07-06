@@ -944,6 +944,11 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
+        patientContext: ClinicalRequestPatientContext(
+          patientName: flow.patientDisplayName ?? flow.displayTitle,
+          patientId: flow.patientId ?? flow.patientIdentifier,
+          encounterId: flow.publicId,
+        ),
         onSubmit:
             ({
               required List<ClinicalActionRadiologyRequest> requests,

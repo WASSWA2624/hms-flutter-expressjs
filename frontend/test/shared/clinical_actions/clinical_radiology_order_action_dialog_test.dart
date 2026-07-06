@@ -6,6 +6,51 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 
 void main() {
+  testWidgets('radiology order dialog shows patient context and selected table', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(
+      tester,
+      ClinicalRadiologyOrderActionDialog(
+        referenceData: const ClinicalActionReferenceData(
+          radiologyTests: <ClinicalActionCatalogOption>[
+            ClinicalActionCatalogOption(
+              id: 'ct-chest',
+              publicId: 'RAD-CT-CHEST',
+              name: 'CT chest',
+              code: 'CT-CHEST',
+              category: 'CT',
+              searchText: 'ct chest thorax',
+              metadata: <String, Object?>{
+                'modality': 'CT',
+                'body_region': 'Chest',
+              },
+            ),
+          ],
+        ),
+        patientContext: const ClinicalRequestPatientContext(
+          patientName: 'Jane Doe',
+          patientId: 'PAT-001',
+          encounterId: 'ENC-42',
+        ),
+        onSubmit:
+            ({
+              required List<ClinicalActionRadiologyRequest> requests,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              return null;
+            },
+      ),
+    );
+
+    expect(find.textContaining('Jane Doe'), findsOneWidget);
+    expect(find.textContaining('PAT-001'), findsOneWidget);
+    expect(find.textContaining('ENC-42'), findsOneWidget);
+    expect(find.text('Add study'), findsOneWidget);
+    expect(find.text('Review billing'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
   testWidgets(
     'radiology catalog search remains editable when a query has no matches',
     (WidgetTester tester) async {
@@ -41,25 +86,31 @@ void main() {
       await tester.tap(find.text('Add study'));
       await tester.pumpAndSettle();
 
-      final Finder catalogField = find.byType(TextField).last;
+      final Finder searchField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText ==
+                'Search by test, intervention, modality, region, code, or priority',
+      );
 
-      await tester.tap(catalogField);
-      await tester.enterText(catalogField, 'not in catalog');
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(searchField);
+      await tester.enterText(searchField, 'not in catalog');
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
-      TextField textField = tester.widget<TextField>(catalogField);
+      TextField textField = tester.widget<TextField>(searchField);
       expect(textField.enabled, isTrue);
       expect(find.text('No matching radiology catalog items'), findsOneWidget);
 
-      await tester.enterText(catalogField, 'ct chest');
+      await tester.enterText(searchField, 'ct chest');
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.pumpAndSettle();
 
-      textField = tester.widget<TextField>(catalogField);
+      textField = tester.widget<TextField>(searchField);
       expect(textField.enabled, isTrue);
       expect(textField.controller?.text, 'ct chest');
       expect(find.text('No matching radiology catalog items'), findsNothing);
+      expect(find.text('CT chest'), findsOneWidget);
     },
   );
 }

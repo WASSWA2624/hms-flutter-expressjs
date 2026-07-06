@@ -31563,6 +31563,24 @@ abstract class AppLocalizations {
   /// **'Add study'**
   String get clinicalRadiologyAddStudyAction;
 
+  /// Empty state for the selected radiology requests table.
+  ///
+  /// In en, this message translates to:
+  /// **'No radiology requests selected. Use Add study to choose imaging tests.'**
+  String get clinicalRadiologyRequestSelectedTableEmptyLabel;
+
+  /// Primary action that applies staged radiology catalog selections.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm selected studies'**
+  String get clinicalRadiologyRequestCatalogPickerConfirmAction;
+
+  /// Title for configuring visible columns in the radiology request catalog picker table.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging catalog table columns'**
+  String get clinicalRadiologyRequestCatalogColumnsTitle;
+
   /// Nested procedure catalog picker dialog title.
   ///
   /// In en, this message translates to:

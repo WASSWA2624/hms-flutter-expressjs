@@ -21773,6 +21773,18 @@
   "@clinicalRadiologyAddStudyAction": {
     "description": "Open radiology catalog picker."
   },
+  "clinicalRadiologyRequestSelectedTableEmptyLabel": "No radiology requests selected. Use Add study to choose imaging tests.",
+  "@clinicalRadiologyRequestSelectedTableEmptyLabel": {
+    "description": "Empty state for the selected radiology requests table."
+  },
+  "clinicalRadiologyRequestCatalogPickerConfirmAction": "Confirm selected studies",
+  "@clinicalRadiologyRequestCatalogPickerConfirmAction": {
+    "description": "Primary action that applies staged radiology catalog selections."
+  },
+  "clinicalRadiologyRequestCatalogColumnsTitle": "Imaging catalog table columns",
+  "@clinicalRadiologyRequestCatalogColumnsTitle": {
+    "description": "Title for configuring visible columns in the radiology request catalog picker table."
+  },
   "clinicalProcedureCatalogPickerTitle": "Choose procedures",
   "@clinicalProcedureCatalogPickerTitle": {
     "description": "Nested procedure catalog picker dialog title."

@@ -87,11 +87,24 @@ Future<bool?> openIpdRadiologyOrderDialog(BuildContext context) async {
   if (!context.mounted) {
     return null;
   }
+  final IpdAdmissionDetail? admission =
+      ProviderScope.containerOf(context, listen: false)
+          .read(ipdWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (IpdWorkspaceState state) => state.selectedAdmission,
+            failure: (_) => null,
+          );
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => ClinicalRadiologyOrderActionDialog(
       referenceData: referenceData,
+      patientContext: ClinicalRequestPatientContext(
+        patientName: admission?.summary.patientDisplayName,
+        patientId: admission?.summary.patientId,
+        encounterId: admission?.summary.encounterId,
+      ),
       onSubmit: controller.orderRadiology,
     ),
   );

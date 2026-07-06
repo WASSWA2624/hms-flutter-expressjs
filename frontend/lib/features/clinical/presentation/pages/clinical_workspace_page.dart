@@ -2662,6 +2662,7 @@ Future<void> _openRadiologyDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
+        patientContext: _clinicalLabOrderPatientContext(context),
         onSubmit: controller.requestRadiology,
       ),
     ),

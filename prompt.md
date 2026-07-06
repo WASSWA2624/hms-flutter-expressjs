@@ -1,128 +1,132 @@
-# Feature: Polish Radiology facility catalog configurations
+# Feature: Refine radiology request dialog flow
 
 ## Goal
 
-Fix selection, scrolling, toolbar density, and destructive-action styling in the **Radiology configurations** dialog so facility admins can manage imaging offerings efficiently. Apply reusable improvements to shared table and dialog primitives where noted.
+Modernize the **Request radiology** and **Choose imaging study** dialogs so they match the Lab request pattern: patient context in the toolbar, table-based selection, facility-scoped catalog browsing, and minimal instructional chrome. Apply this flow **everywhere** radiology is ordered (patients quick actions, OPD/IPD/ICU/nursing/clinical/radiology workspaces).
 
-## Context (screenshots)
+## Problem (current UI)
 
-The **Radiology configurations** dialog (`RADIOLOGY CONFIGURATIONS`) lists facility imaging offerings with tenant/facility scope selectors, search, modality filters, row selection, and actions (edit price, remove). Supporting dialogs:
+Screenshots show two friction points:
 
-- **Edit facility offering** — unit price + currency; footer has Cancel + Save configuration.
-- **Remove procedure from facility?** — confirmation with required deletion reason; footer has Cancel + Delete imaging test.
+1. **Request radiology** — redundant help text, a separate “No items / Price not set” summary bar, a dropdown for selected studies, and a Cancel button that duplicates the dialog close control.
+2. **Choose imaging study** — cramped filter layout, a single-select dropdown catalog, and an immediate “+ Add” pattern that does not scale for multi-study orders.
 
-## Primary files
+## Reference implementation
 
-| Area | Path |
-|------|------|
-| Configurations dialog & table | `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.configurations.dart` |
-| Edit / enable dialogs | `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart` |
-| Delete-reason dialog (shared) | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` (`LabDeleteReasonDialog`) |
-| Controller / data load | `frontend/lib/features/radiology/presentation/controllers/radiology_workspace_controller.dart` |
-| Shared table | `frontend/lib/shared/components/app_list_table.dart` |
-| Shared search bar | `frontend/lib/shared/components/app_search_bar.dart` |
-| Toolbar overflow pattern | `frontend/lib/shared/layout/app_workspace_toolbar.dart`, `app_toolbar_overflow_resolver.dart` |
+Mirror the Lab request flow:
 
-**Reference:** Lab facility catalog config in `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` (similar `AppListTable` + `AppSearchBar` usage).
+| Concern | Lab reference |
+|--------|----------------|
+| Main request dialog | `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart` |
+| Catalog picker | `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart` |
+| Shared toolbar / patient strip / selected table | `frontend/lib/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart` (`ClinicalRequestFlowToolbar`, `ClinicalRequestPatientContextStrip`, `ClinicalRequestSelectedCatalogTable`) |
+| Table primitives | `frontend/lib/shared/components/app_list_table.dart`, `app_search_bar.dart` |
 
----
+**Radiology files to update:**
 
-## 1. Fix header select-all checkbox
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart`
+- `frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_request_catalog_dialog.dart`
+- `frontend/lib/shared/clinical_actions/clinical_radiology_catalog_helpers.dart`
+- All call sites that open `ClinicalRadiologyOrderActionDialog` (patients, OPD, IPD, ICU, nursing, clinical, radiology workspaces)
 
-**Bug:** The column header checkbox selects all visible rows, but clicking again does not clear the selection.
+## Dialog 1 — Request radiology
 
-**Location:** `_offeringSelectionColumn` / `_toggleAllOfferingSelections` in `radiology_workspace_page.configurations.dart`.
+### Remove
 
-**Expected behavior:**
+- Instructional body text (`clinicalRequestMainPanelHelp`).
+- `ClinicalRequestFlowSummaryBar` (“No items”, “Price not set”).
+- `ClinicalRequestSelectionManager` dropdown for selected studies.
+- Footer **Cancel** button (dialog **X** / backdrop dismiss is sufficient).
 
-- Unchecked → select all visible rows.
-- Checked (all selected) → clear selection for all visible rows.
-- Indeterminate (some selected) → select all visible rows (standard tri-state pattern).
+### Add / change
 
-**Note:** Tristate `Checkbox` may pass `null` when transitioning from all-selected; handle that case explicitly instead of relying on `checked ?? false` alone.
+**Toolbar (single row)**
 
----
+- **Leading:** `ClinicalRequestPatientContextStrip` with patient name, patient ID, and encounter ID (pass `ClinicalRequestPatientContext` from every entry point, same as Lab). When the caller has encounter context (OPD, ED, IPD, etc.), surface the encounter identifier the order will be attached to.
+- **Trailing:** `+ Add study` and **Review billing** (keep existing billing dialog wiring).
 
-## 2. Style delete actions as destructive
+**Selected studies area**
 
-Apply **danger color** (`theme.statusColors.danger` or `colorScheme.error`) to delete affordances in this feature:
+Replace the dropdown with `ClinicalRequestSelectedCatalogTable` (or an equivalent built on `AppListTable`):
 
-| Surface | Element |
-|---------|---------|
-| Configurations table — row actions | Delete icon button (`Icons.delete_outline`) |
-| Configurations toolbar | Delete selected action icon |
-| Remove procedure dialog | Submit button icon (`Icons.delete_outline`) |
+| Column | Content |
+|--------|---------|
+| Select | Row checkbox; support multi-select for bulk remove |
+| Name | Imaging test / procedure name |
+| Modality | Resolved modality label |
+| Price | Facility price from catalog option |
+| Actions | Per-row delete icon (`Icons.delete_outline`, error color) |
 
-Do **not** recolor non-delete actions (edit, enable, refresh, etc.). Match existing destructive styling elsewhere (e.g. `clinical_request_flow_dialogs.dart`).
+- Toolbar **Remove selected** when one or more rows are checked (reuse `showClinicalRequestRemoveItemsConfirmationDialog`).
+- Empty state: centered muted text inside the table (no separate summary bar).
+- Table footer shows billing total when items exist (reuse existing catalog table footer pattern).
 
----
+**Footer**
 
-## 3. Limit search-bar toolbar to three visible actions
+- Single primary **Request radiology** button with leading icon (`Icons.biotech_outlined` or equivalent).
+- Widen dialog (`maxWidth` ~880) and pin actions to bottom, matching Lab.
 
-**Problem:** The configurations search bar currently shows too many attached buttons (filters, delete selected, enable procedure, refresh, table settings).
+## Dialog 2 — Choose imaging study
 
-**Requirement:** Show a **maximum of three** icon/action buttons inline on the search bar. Move additional actions into an **overflow menu** (⋮ or equivalent), using the same interaction model as workspace toolbars (`AppWorkspaceToolbar` overflow / `PopupMenuButton`).
+### Filter layout
 
-**Suggested priority (inline, left to right after search + filters):**
+Use consistent `theme.spacing` between fields (fix cramped rows in screenshot):
 
-1. **Enable procedure** (when permitted)
-2. **Delete selected** (when rows are selected)
-3. **Refresh**
+| Row | Fields |
+|-----|--------|
+| 1 | **Modality** · **Laterality** |
+| 2 | **Priority** · **Body region** |
+| 3 | **Clinical note** (optional, full width) |
 
-**Overflow candidates:** Table settings, and any action that does not fit the inline cap. Filters remain as the existing attached filter control—not counted toward the three-action limit.
+### Filter behavior
 
-Implement overflow support in `AppSearchBar` (or a thin wrapper) so other screens can reuse it; do not hard-code radiology-only UI in the shared component.
+- **Modality** options must come only from modalities present in the **facility’s offered radiology catalog** (`clinicalRadiologyModalityOptions` on `referenceData.radiologyTests`). Do not show modalities the facility does not offer (e.g. hide Fluoroscopy when unsupported).
+- Changing modality narrows laterality, body region, and catalog rows.
+- **Laterality** shown when relevant to the filtered catalog (existing helper logic).
+- **Body region** uses chip picker when ≤16 options; searchable select when more (keep `_RadiologyBodyRegionPicker` behavior).
+- **Clinical note** is optional and applies to confirmed selections (same semantics as today).
 
----
+### Catalog area
 
-## 4. Enable scroll-to-reveal for capped tables (`AppListTable`)
+Remove `ClinicalCatalogSelectPanel` (dropdown + “+ Add”). Replace with an `AppListTable` of facility catalog items, modeled on the Lab catalog picker:
 
-**Problem:** Tables with `maxVisibleItems` (e.g. `_maxVisibleItems = 140` in radiology configurations) truncate the list. Scrolling stops with no way to see remaining rows.
+- Built-in **search bar**, **filters** (at minimum modality; reuse `AppSearchBar` filter groups where practical), and **Table settings** for column visibility.
+- Default columns: **Select** (checkbox), **Name**, **Modality**, **Body region**, **Price** (optional columns via Table settings).
+- Table rows respect active filters: modality, priority, body region (and search tokens).
+- **Multi-select** via checkboxes; staged selections highlighted like Lab.
+- Selected rows that are already in the parent request (or staged duplicates) are disabled or show duplicate feedback—**no duplicate test IDs** in the final request.
+- Show selected count above the table.
 
-**Requirement (global `AppListTable` change):**
+### Footer
 
-When `maxVisibleItems` is set and total items exceed the cap:
+- Replace **Done** with primary **Confirm** + leading icon (`Icons.playlist_add_check`, matching Lab).
+- Dialog returns the staged selections (list of `ClinicalRadiologyCatalogSelection`) on Confirm; parent dialog merges them into the request table.
+- Support edit flow: when opened for a single existing row, pre-fill filters and selection.
 
-- Make the table body scrollable (remove `NeverScrollableScrollPhysics` where it blocks scrolling in dialog contexts, or add an internal scroll controller).
-- As the user scrolls near the bottom, **expand the rendered window** (e.g. load the next batch of rows) until all in-memory items are shown.
-- Preserve sort, selection, and column visibility across expansion.
-- Show a subtle loading indicator only if a future `onLoadMore` callback is provided; for radiology configurations the full list is already client-side—windowing is sufficient.
+## Business rules
 
-**Radiology configurations:** After the shared fix, allow the configurations table to scroll inside the dialog and reveal offerings beyond the initial cap.
-
----
-
-## 5. Remove redundant Cancel buttons from dialogs
-
-The dialog header **close (X)** already dismisses without saving. Remove the footer **Cancel** button from:
-
-| Dialog | File |
-|--------|------|
-| Edit facility offering | `RadiologyEditFacilityOfferingDialog` |
-| Remove procedure from facility | `LabDeleteReasonDialog` when used from radiology configurations |
-
-Keep the primary action only (Save configuration / Delete imaging test). Ensure `closeEnabled` still respects in-flight saves.
-
-*Optional follow-up (out of scope unless trivial):* apply the same pattern to `RadiologyEditFacilityOfferingDialog`'s enable-flow sibling if it also has redundant Cancel.
-
----
+- Catalog is **facility-scoped**: users only see radiology procedures offered by their facility (existing `referenceData.radiologyTests` / facility catalog APIs).
+- Selections are **unique by radiology test ID** across the request.
+- Per-study metadata (modality, laterality, body region, priority, clinical note) is preserved on each line item.
+- Billing review remains optional before submit; do not block submit solely on billing unless existing validation requires it.
 
 ## Implementation rules
 
-- Reuse shared components; extend `AppListTable` / `AppSearchBar` rather than one-off radiology hacks.
-- Match Lab/workspace spacing, typography, and overflow-menu behavior.
-- Add or adjust l10n keys in `frontend/lib/l10n/app_en.arb` only for new overflow labels.
-- No backend changes unless scroll expansion later wires to server pagination (not required for this task).
-- **Scope:** Radiology configurations UX + shared table/search-bar primitives. Do not change the main radiology worklist (see `prompt1.md`).
-
----
+- **Reuse shared components** — do not fork table/search/toolbar markup; extend `ClinicalRequestSelectedCatalogTable` or shared column builders if Radiology needs a modality column instead of Lab’s type column.
+- **Pass `ClinicalRequestPatientContext`** at every `ClinicalRadiologyOrderActionDialog` call site (follow Lab call sites in `patient_clinical_quick_actions.dart`, `opd_flow_actions_dialog.dart`, etc.).
+- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` (Confirm label, empty table text, column titles, selected count).
+- **Tests:** update `frontend/test/shared/clinical_actions/clinical_radiology_order_action_dialog_test.dart` and add catalog dialog coverage for filter + multi-select behavior.
+- **Scope:** UX and dialog flow only; do not change backend order APIs unless required for duplicate prevention already enforced client-side.
 
 ## Acceptance criteria
 
-- [ ] Header select-all checkbox selects all visible rows and clears selection on second click.
-- [ ] Row delete, delete-selected toolbar action, and remove-dialog submit icon use danger styling.
-- [ ] Configurations search bar shows ≤ 3 inline action buttons; remaining actions accessible via overflow menu.
-- [ ] Scrolling the configurations table reveals rows beyond `maxVisibleItems` until all loaded items are visible.
-- [ ] `AppListTable` scroll expansion works for any consumer using `maxVisibleItems`, not only radiology.
-- [ ] Edit facility offering and remove procedure dialogs have no Cancel button; close (X) and primary action still work correctly.
-- [ ] Existing flows (enable procedure, edit price, batch delete, refresh, table settings, filters) continue to work.
+- [ ] Request radiology dialog shows patient name, patient ID, and encounter on the toolbar row with Add study / Review billing.
+- [ ] Help text, summary bar, selection dropdown, and Cancel button are removed.
+- [ ] Selected studies render in a searchable table with checkbox bulk-select, modality and price columns, and red delete actions.
+- [ ] Request radiology submit button includes a leading icon.
+- [ ] Choose imaging study uses the filter layout above with corrected spacing.
+- [ ] Modality dropdown lists only modalities supported by the facility catalog.
+- [ ] Catalog browse is table-based with search, filters, Table settings, and multi-select checkboxes.
+- [ ] Confirm returns staged selections; duplicates are prevented.
+- [ ] Flow works identically from all radiology entry points (patients, OPD, IPD, ICU, nursing, clinical, radiology workspace).
+- [ ] Lab request patterns and `frontend/lib/shared/` components are reused—not forked markup.

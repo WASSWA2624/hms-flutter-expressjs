@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
@@ -2615,11 +2616,36 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
     }
     List<ClinicalActionRadiologyRequest> selected =
         List<ClinicalActionRadiologyRequest>.of(_requests);
+    final RadiologyReferenceData references =
+        state?.references ?? RadiologyReferenceData.empty;
+    RadiologyReferenceOption? patientOption;
+    if (_patientId != null) {
+      for (final RadiologyReferenceOption option in references.patients) {
+        if (option.value == _patientId) {
+          patientOption = option;
+          break;
+        }
+      }
+    }
+    RadiologyReferenceOption? encounterOption;
+    if (_encounterId != null) {
+      for (final RadiologyReferenceOption option in references.encounters) {
+        if (option.value == _encounterId) {
+          encounterOption = option;
+          break;
+        }
+      }
+    }
     final bool? updated = await showAppDialog<bool>(
       context: context,
       builder: (_) => ClinicalRadiologyOrderActionDialog(
         referenceData: ClinicalActionReferenceData(radiologyTests: catalog),
         initialRequests: _requests,
+        patientContext: ClinicalRequestPatientContext(
+          patientName: patientOption?.displayLabel,
+          patientId: _patientId,
+          encounterId: encounterOption?.displayLabel ?? _encounterId,
+        ),
         onSubmit:
             ({
               required List<ClinicalActionRadiologyRequest> requests,
