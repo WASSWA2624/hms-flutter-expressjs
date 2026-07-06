@@ -927,6 +927,8 @@ model tenant {
   lab_panels                      lab_panel[]
   radiology_tests                 radiology_test[]
   drugs                           drug[]
+  pharmacy_storage_rooms          pharmacy_storage_room[]
+  pharmacy_storage_shelves        pharmacy_storage_shelf[]
   formulary_items                 formulary_item[]
   subscriptions                   subscription[]
   subscription_plans              subscription_plan[]
@@ -1072,6 +1074,8 @@ model facility {
   facility_lab_panel_offerings    facility_lab_panel_offering[]
   facility_radiology_test_offerings facility_radiology_test_offering[]
   facility_pharmacy_offerings     facility_pharmacy_offering[]
+  pharmacy_storage_rooms          pharmacy_storage_room[]
+  pharmacy_storage_shelves        pharmacy_storage_shelf[]
   shifts                          shift[]
   nurse_rosters                   nurse_roster[]
   shift_templates                 shift_template[]
@@ -3680,6 +3684,7 @@ model facility_pharmacy_offering {
   sort_order        Int       @default(0)
   unit_price        Decimal   @db.Decimal(12, 2)
   currency          String?   @db.VarChar(10)
+  default_storage_shelf_id String? @db.VarChar(36)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -3688,6 +3693,7 @@ model facility_pharmacy_offering {
   tenant   tenant   @relation(fields: [tenant_id], references: [id])
   facility facility @relation(fields: [facility_id], references: [id])
   drug     drug     @relation(fields: [drug_id], references: [id])
+  default_storage_shelf pharmacy_storage_shelf? @relation(fields: [default_storage_shelf_id], references: [id])
 
   @@unique([facility_id, drug_id], map: "fpo_facility_drug_key")
   @@index([tenant_id])
@@ -3700,22 +3706,84 @@ model facility_pharmacy_offering {
 }
 
 model drug_batch {
+  id                     String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id      String?   @db.VarChar(32)
+  drug_id                String    @db.VarChar(36)
+  batch_number           String    @db.VarChar(80)
+  manufactured_at        DateTime?
+  expiry_date            DateTime?
+  expiry_alert_lead_days Int?
+  storage_room_id        String?   @db.VarChar(36)
+  storage_shelf_id       String?   @db.VarChar(36)
+  quantity               Int       @default(0)
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  deleted_at             DateTime?
+  version                Int       @default(1)
+
+  drug          drug                   @relation(fields: [drug_id], references: [id])
+  storage_room  pharmacy_storage_room? @relation(fields: [storage_room_id], references: [id])
+  storage_shelf pharmacy_storage_shelf? @relation(fields: [storage_shelf_id], references: [id])
+
+  @@index([drug_id])
+  @@index([batch_number])
+  @@index([expiry_date])
+  @@index([storage_room_id])
+  @@index([storage_shelf_id])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model pharmacy_storage_room {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
-  drug_id           String    @db.VarChar(36)
-  batch_number      String    @db.VarChar(80)
-  expiry_date       DateTime?
-  quantity          Int       @default(0)
+  tenant_id         String    @db.VarChar(36)
+  facility_id       String    @db.VarChar(36)
+  name              String    @db.VarChar(255)
+  code              String?   @db.VarChar(80)
+  is_active         Boolean   @default(true)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
   version           Int       @default(1)
 
-  drug drug @relation(fields: [drug_id], references: [id])
+  tenant       tenant                   @relation(fields: [tenant_id], references: [id])
+  facility     facility                 @relation(fields: [facility_id], references: [id])
+  shelves      pharmacy_storage_shelf[]
+  drug_batches drug_batch[]
 
-  @@index([drug_id])
-  @@index([batch_number])
-  @@index([expiry_date])
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([is_active])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model pharmacy_storage_shelf {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?   @db.VarChar(32)
+  tenant_id         String    @db.VarChar(36)
+  facility_id       String    @db.VarChar(36)
+  storage_room_id   String    @db.VarChar(36)
+  shelf_code        String    @db.VarChar(80)
+  label             String?   @db.VarChar(120)
+  is_active         Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  deleted_at        DateTime?
+  version           Int       @default(1)
+
+  tenant                  tenant                     @relation(fields: [tenant_id], references: [id])
+  facility                facility                   @relation(fields: [facility_id], references: [id])
+  storage_room            pharmacy_storage_room      @relation(fields: [storage_room_id], references: [id])
+  drug_batches            drug_batch[]
+  default_for_offerings facility_pharmacy_offering[]
+
+  @@unique([storage_room_id, shelf_code])
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([storage_room_id])
+  @@index([is_active])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

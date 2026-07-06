@@ -65,6 +65,8 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'limit': request.pageSize,
         'search': query.search,
         'stock_status': query.stockStatus,
+        'storage_room_id': query.storageRoomId,
+        'storage_shelf_id': query.storageShelfId,
         'sort_by': 'name',
         'order': 'asc',
       }),
@@ -92,6 +94,8 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'stock_status': query.stockStatus,
         'expiring_within_days': query.expiringWithinDays,
         'expired_only': query.expiredOnly ? true : null,
+        'storage_room_id': query.storageRoomId,
+        'storage_shelf_id': query.storageShelfId,
         'sort_by': 'updated_at',
         'order': 'desc',
       }),
@@ -357,6 +361,97 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       orderId,
       action,
     ]);
+  }
+
+  @override
+  Future<Result<PharmacyStorageLayout>> loadStorageLayout({
+    bool includeInactive = false,
+  }) {
+    return _apiClient.get<PharmacyStorageLayout>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'storage', 'layout']),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'include_inactive': includeInactive ? true : null,
+      }),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageLayoutDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyStorageRoom>> createStorageRoom(
+    PharmacyStorageRoomInput input,
+  ) {
+    return _apiClient.post<PharmacyStorageRoom>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'storage', 'rooms']),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageRoomDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyStorageRoom>> updateStorageRoom(
+    String roomId,
+    PharmacyStorageRoomUpdateInput input,
+  ) {
+    return _apiClient.put<PharmacyStorageRoom>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+      ]),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageRoomDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyStorageShelf>> createStorageShelf(
+    String roomId,
+    PharmacyStorageShelfInput input,
+  ) {
+    return _apiClient.post<PharmacyStorageShelf>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+        'shelves',
+      ]),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageShelfDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyStorageShelf>> updateStorageShelf(
+    String shelfId,
+    PharmacyStorageShelfUpdateInput input,
+  ) {
+    return _apiClient.put<PharmacyStorageShelf>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'shelves',
+        shelfId,
+      ]),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyStorageShelfDto(_map(response['data'])).toEntity();
+      },
+    );
   }
 }
 

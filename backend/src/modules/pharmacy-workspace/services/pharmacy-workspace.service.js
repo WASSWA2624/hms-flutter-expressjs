@@ -6,6 +6,7 @@ const { normalizeIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const prisma = require('@prisma/client');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
+const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 const facilityPharmacyCatalogRepository = require('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository');
 const pharmacyOrderService = require('@services/pharmacy-order/pharmacy-order.service');
 const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websocket');
@@ -49,6 +50,15 @@ const {
   buildBatchMetaByInventoryItemId,
 } = require('@services/pharmacy-workspace/pharmacy.serializer');
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
+const {
+  resolveStorageAssignment,
+  attachDrugStorageSummaries,
+  getPharmacyStorageLayout,
+  createPharmacyStorageRoom,
+  updatePharmacyStorageRoom,
+  createPharmacyStorageShelf,
+  updatePharmacyStorageShelf,
+} = require('@services/pharmacy-workspace/pharmacy-storage.service');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 
@@ -164,7 +174,7 @@ const enrichInventoryStockRecords = async (records = [], expiringWithinDays = EX
     inventoryItemIds
   );
   const drugIds = Array.from(new Set(maps.map((row) => row.drug_id).filter(Boolean)));
-  const batches = await pharmacyWorkspaceRepository.findDrugBatchesByDrugIds(drugIds);
+  const batches = await pharmacyStorageRepository.findDrugBatchesWithStorageByDrugIds(drugIds);
   const batchMetaByItemId = buildBatchMetaByInventoryItemId(
     maps,
     batches,
@@ -180,7 +190,7 @@ const enrichInventoryStockRecords = async (records = [], expiringWithinDays = EX
 
 const upsertDrugBatchForReceipt = async (
   tx,
-  { drugId, batchNumber, expiryDate, quantityDelta }
+  { drugId, batchNumber, expiryDate, quantityDelta, storageRoomId = null, storageShelfId = null }
 ) => {
   if (!drugId || !batchNumber || quantityDelta <= 0) return null;
 
@@ -194,6 +204,8 @@ const upsertDrugBatchForReceipt = async (
     return pharmacyWorkspaceRepository.txUpdateDrugBatch(tx, batch.id, {
       quantity: Number(batch.quantity || 0) + quantityDelta,
       ...(expiryDate ? { expiry_date: expiryDate } : {}),
+      ...(storageRoomId ? { storage_room_id: storageRoomId } : {}),
+      ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {}),
     });
   }
 
@@ -202,6 +214,8 @@ const upsertDrugBatchForReceipt = async (
     batch_number: batchNumber,
     expiry_date: expiryDate,
     quantity: quantityDelta,
+    storage_room_id: storageRoomId,
+    storage_shelf_id: storageShelfId,
   });
 };
 
@@ -786,6 +800,28 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
     };
   }
 
+  if (filters.storage_room_id || filters.storage_shelf_id) {
+    const facilityId = where.facility_id || scope.facility_id;
+    const storageAssignment = await resolveStorageAssignment(
+      {
+        storage_room_id: filters.storage_room_id || null,
+        storage_shelf_id: filters.storage_shelf_id || null,
+      },
+      scope,
+      facilityId
+    );
+    const inventoryItemIds = await pharmacyStorageRepository.findInventoryItemIdsByStorageFilters(
+      scope.tenant_id,
+      {
+        storage_room_id: storageAssignment.storageRoomId,
+        storage_shelf_id: storageAssignment.storageShelfId,
+      }
+    );
+    where.inventory_item_id = {
+      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__'],
+    };
+  }
+
   const searchTerm = normalizeSearchTerm(filters.search);
   if (includeSearch && searchTerm) {
     appendAnd(where, {
@@ -984,6 +1020,33 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
     const orderBy = { [safeSortBy]: order || 'asc' };
     const where = buildDrugWhere(filters, scope, { includeSearch: true });
 
+    const facilityId =
+      scope.facility_id ||
+      (await resolveOperationalFacilityId({
+        facilityId: filters?.facility_id || null,
+        userId: scope.user_id || null,
+        tenantId: scope.tenant_id || null,
+      }));
+
+    if (filters.storage_room_id || filters.storage_shelf_id) {
+      const storageAssignment = await resolveStorageAssignment(
+        {
+          storage_room_id: filters.storage_room_id || null,
+          storage_shelf_id: filters.storage_shelf_id || null,
+        },
+        scope,
+        facilityId
+      );
+      const drugIds = await pharmacyStorageRepository.findDrugIdsByStorageFilters(
+        scope.tenant_id,
+        {
+          storage_room_id: storageAssignment.storageRoomId,
+          storage_shelf_id: storageAssignment.storageShelfId,
+        }
+      );
+      where.id = { in: drugIds?.length ? drugIds : ['__no_match__'] };
+    }
+
     const [records, total] = await Promise.all([
       pharmacyWorkspaceRepository.findManyDrugs(
         where,
@@ -996,15 +1059,9 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
     ]);
 
     let offeringByDrugId = new Map();
-    const facilityId =
-      scope.facility_id ||
-      (await resolveOperationalFacilityId({
-        facilityId: filters?.facility_id || null,
-        userId: scope.user_id || null,
-        tenantId: scope.tenant_id || null,
-      }));
+    const facilityIdForOfferings = facilityId;
 
-    if (facilityId && records.length) {
+    if (facilityIdForOfferings && records.length) {
       const offeringRows = await facilityPharmacyCatalogRepository.findDrugOfferings(
         {
           tenant_id: scope.tenant_id,
@@ -1019,10 +1076,12 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
     }
 
     const stockStatus = String(filters?.stock_status || '').trim().toUpperCase();
-    const drugs = records
-      .map((record) => mapMergedDrugRecord(record, offeringByDrugId.get(record.id) || null))
-      .filter(Boolean)
-      .filter((drug) => !stockStatus || drug.stock_status === stockStatus);
+    const drugs = await attachDrugStorageSummaries(
+      records
+        .map((record) => mapMergedDrugRecord(record, offeringByDrugId.get(record.id) || null))
+        .filter(Boolean)
+        .filter((drug) => !stockStatus || drug.stock_status === stockStatus)
+    );
 
     return {
       summary: {
@@ -1873,6 +1932,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
     const quantityDelta = Number(payload.quantity_delta || 0);
     const reorderLevel =
       payload.reorder_level !== undefined ? Number(payload.reorder_level) : undefined;
+    const storageAssignment = await resolveStorageAssignment(payload, scope, facilityId);
 
     const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
       let stock = await pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility(
@@ -1952,6 +2012,8 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
             batchNumber,
             expiryDate,
             quantityDelta,
+            storageRoomId: storageAssignment.storageRoomId,
+            storageShelfId: storageAssignment.storageShelfId,
           });
         }
       }
@@ -2045,10 +2107,16 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
     }
 
     const facilityId = await resolveScopedFacilityId(payload.facility_id || null, scope, true);
+    const storageAssignment = await resolveStorageAssignment(payload, scope, facilityId);
     const initialStock = Number(payload.initial_stock || 0);
     const reorderLevel = Number(payload.reorder_level || 0);
     const batchNumber = String(payload.batch_number || '').trim();
+    const manufacturedAt = toDateOrNull(payload.manufactured_at, null);
     const expiryDate = toDateOrNull(payload.expiry_date, null);
+    const expiryAlertLeadDays =
+      payload.expiry_alert_lead_days == null
+        ? null
+        : Number(payload.expiry_alert_lead_days);
 
     const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
       const drug = await pharmacyWorkspaceRepository.txCreateDrug(tx, {
@@ -2102,11 +2170,15 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         }
       }
 
-      if (batchNumber && initialStock > 0) {
+      if (batchNumber) {
         await pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
           drug_id: drug.id,
           batch_number: batchNumber,
+          manufactured_at: manufacturedAt,
           expiry_date: expiryDate,
+          expiry_alert_lead_days: expiryAlertLeadDays,
+          storage_room_id: storageAssignment.storageRoomId,
+          storage_shelf_id: storageAssignment.storageShelfId,
           quantity: initialStock,
         });
       }
@@ -2323,4 +2395,9 @@ module.exports = {
   adjustInventoryStock,
   recordOrderBilling,
   resolveLegacyRouteIdentifier,
+  getPharmacyStorageLayout,
+  createPharmacyStorageRoom,
+  updatePharmacyStorageRoom,
+  createPharmacyStorageShelf,
+  updatePharmacyStorageShelf,
 };

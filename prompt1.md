@@ -1,131 +1,135 @@
-# Feature: Refine Radiology workspace worklist (patients & orders views)
+# Feature: Pharmacy storage location (rooms & shelves)
 
 ## Goal
 
-Improve the **main Radiology workspace** so the worklist is scannable, radiology-focused, and consistent with the Lab workbench pattern. Each table column must represent **one parameter**; secondary identifiers and metadata move to optional columns or the order/patient detail dialog.
+Let pharmacies record **where drugs are physically stored** so staff can locate stock quickly. Facilities (or pharmacy admins) maintain a catalog of **storage rooms** and **shelf numbers**; when adding or receiving stock, staff optionally assign a shelf. Location should surface on the drug catalog and inventory views—not only in the add dialog.
 
-## Current state (keep)
+## Current state (problem)
 
-The following already work well—do not regress:
+| Gap | Detail |
+|-----|--------|
+| **No storage model** | `drug`, `drug_batch`, and `drug_inventory_map` have no room/shelf fields |
+| **No management UI** | Pharmacy workspace has no way to create rooms or shelves |
+| **Add drug dialog** | `PharmacyDrugEditDialog` covers identity, pricing, stock, and batch metadata—no storage location |
+| **Ward `room` is wrong domain** | Existing `room` model is for inpatient wards/beds (`rooms_beds` module)—do **not** reuse for pharmacy storage |
 
-- **Page title:** `Radiology` in the app bar.
-- **Toolbar summary chips** (green/warning/info tones): e.g. *Radiology patients*, *Patients waiting imaging*, *Reporting*, *Released*—clickable to apply stage filters.
-- **Worklist section header:** *Radiology patients* with description *Patients grouped by active imaging orders, reporting status, and next action.*
-- **Primary action:** `+ Request imaging`.
-- **Search bar**, **Radiology filters**, and **Table settings** affordances.
-- **Patients ↔ Orders** view toggle and **Configurations** entry (separate feature).
-
-## Problem
-
-The worklist table packs multiple values into single cells (see screenshot):
-
-| Column | Current content | Issue |
-|--------|-----------------|-------|
-| **Patient** | Name + patient ID + order ID | Three parameters in one column |
-| **Study** | Procedure name + modality / body region / laterality | Radiology anatomy split across subtitle |
-| **Next action** | Hidden behind Table settings | Core workflow signal not visible by default |
-
-Radiology staff need a fast queue view: **who**, **what study**, **how urgent**, **what to do next**—not administrative IDs.
+Pharmacy “location” elsewhere (`OUTPATIENT` / `INPATIENT` on orders) refers to **care setting**, not physical shelf location.
 
 ## Reference implementation
 
-Mirror the Lab workbench column model in `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`:
+Mirror the mortuary storage hierarchy (unit → slot → assignment):
 
-- **One column = one field** (`_patientNameWorklistColumn`, `_patientIdWorklistColumn`, `_orderWorklistColumn`, etc.).
-- **Default columns** show actionable worklist data; identifiers and context fields are **optional** via Table settings.
-- **Single-line text cells** for scalar values; status uses `AppWorkspaceStatusBadge`.
-- **Detail dialog** holds full order/patient context (encounter, billing, PACS, results, studies).
+| Concept | Mortuary reference |
+|---------|-------------------|
+| Storage area (room) | `mortuary_storage_unit` — facility-scoped, named, typed |
+| Position within area (shelf) | `mortuary_storage_slot` — `slot_code` + optional label, unique per unit |
+| Assignment to inventory | `mortuary_storage_assignment` — links case to unit + slot |
 
-**Primary references:**
+**UI patterns:** mortuary workspace lookups (`storage_units`, slot pickers), `AppSelectField` cascades (room → shelf), inline “Add room/shelf” affordance where appropriate.
 
-- Radiology: `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart`, `radiology_workspace_page.detail_cells.dart`
-- Entities: `frontend/lib/features/radiology/domain/entities/radiology_entities.dart` (`RadiologyOrder`, `RadiologyWorkspaceQuery`)
-- Shared UI: `frontend/lib/shared/components/app_list_table.dart`, `app_search_bar.dart`, `frontend/lib/shared/layout/app_workspace.dart`, `app_workspace_summary_notification.dart`
+**Drug dialog patterns:** extend `PharmacyDrugEditDialog` (`frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`) using existing `AppFormSection` / `AppResponsiveFieldRow.two` from the catalog refactor in `prompt.md`.
 
-## Table columns
+## Proposed data model
 
-### Patients view — default (visible without Table settings)
+Add **pharmacy-specific** tables (names illustrative—match project naming conventions):
 
-| Column | Source field | Notes |
-|--------|--------------|-------|
-| **Patient** | `patientDisplayName` | Name only—no subtitle IDs |
-| **Study** | `testDisplayName` / `testsSummary` | Procedure name only |
-| **Priority** | `priority` | Use `_radiologyPriorityDisplayLabel`; badge or plain text |
-| **Next action** | derived via `_nextActionLabel` | **Promote to default column** |
-| **Status** | `status` | `AppWorkspaceStatusBadge` via `_orderStatus` |
+### `pharmacy_storage_room`
 
-### Orders view — default
+| Field | Notes |
+|-------|-------|
+| `tenant_id`, `facility_id` | Scope to facility |
+| `name` | e.g. *Main store*, *Cold chain room* |
+| `code` | Optional short code for labels |
+| `is_active` | Soft-disable without deleting history |
 
-| Column | Source field |
-|--------|--------------|
-| **Order** | `effectiveDisplayId` (or active-order count for patient groups) |
-| **Patient** | `patientDisplayName` |
-| **Study** | `testDisplayName` / `testsSummary` |
-| **Priority** | `priority` |
-| **Next action** | `_nextActionLabel` |
-| **Status** | `status` badge |
+### `pharmacy_storage_shelf`
 
-### Optional columns (Table settings only)
+| Field | Notes |
+|-------|-------|
+| `storage_room_id` | Parent room |
+| `shelf_code` | Required identifier, e.g. `A-12`, `R3-S5` |
+| `label` | Optional friendly name |
+| `is_active` | Default true |
 
-Expose as separate togglable columns—never as subtitles in default cells:
+**Unique constraint:** `(storage_room_id, shelf_code)`.
 
-- Patient ID (`patientId`)
-- Order ID / Order(s) (`effectiveDisplayId`, `orderDisplayIds`)
-- Modality (`modality`)
-- Body region (`bodyRegion`)
-- Laterality (`laterality`)
-- Encounter (`encounterId`)
-- Payment / authorization (`paymentStatus`, `authorizationStatus` → `_billingGateLabel`)
-- Ordered at (`orderedAt`)
+### Location on inventory
 
-Refactor `_radiologyPatientColumn` and the Study column to remove `_TwoLineCell` stacking for default columns. Reuse Lab’s `_labWorklistTextCell` pattern or extract a shared single-line worklist cell helper under `frontend/lib/shared/` if duplication would otherwise grow.
+Store location at the **batch** level (batches can sit on different shelves). Optionally also persist a **default shelf** on the drug or `drug_inventory_map` for new receipts.
 
-## Detail dialog
+| Attach to | Fields | When |
+|-----------|--------|------|
+| `drug_batch` | `storage_room_id`, `storage_shelf_id` (nullable FKs) | Initial stock on add; editable on batch adjust |
+| `drug` or `facility_pharmacy_offering` | default `storage_shelf_id` (optional) | Pre-fill shelf on next receipt |
 
-Row click opens the existing radiology detail dialog. Ensure it surfaces everything removed from the table:
+Prefer nullable FKs over free-text shelf strings so labels stay consistent and searchable.
 
-- Patient ID, encounter, order ID(s)
-- Modality, body region, laterality, clinical note
-- Billing / authorization gate
-- Studies, results, PACS links, workflow actions
+## UI scope
 
-Do not duplicate table defaults in the dialog header; keep the dialog as the deep-dive surface.
+### 1 — Storage catalog management *(new, facility-scoped)*
 
-## Filters
+Minimal CRUD reachable from pharmacy settings or a “Storage layout” panel:
 
-Expand **Radiology filters** to cover all radiology-relevant query dimensions. Minimum set:
+- List rooms for the current facility; add / rename / deactivate.
+- Per room: list shelves; add shelf codes; deactivate unused shelves.
+- Do not block drug workflows if catalog is empty—location remains optional.
 
-| Filter | Query param | Notes |
-|--------|-------------|-------|
-| Stage | `stage` | Already wired to summary chips |
-| Order status | `status` | ORDERED, IN_PROCESS, COMPLETED, CANCELLED |
-| Modality | `modality` | Existing enum |
-| Order date | `from` / `to` | Existing date filter |
-| Priority | `priority` | STAT, URGENT, ROUTINE, etc.—add to schema/controller if missing |
-| Payment / billing gate | new or mapped | Filter orders awaiting billing confirmation |
+**Permissions:** facility admin or pharmacist role (align with existing pharmacy workspace auth).
 
-Wire new filters through `RadiologyWorkspaceQuery`, `radiology_workspace_controller.dart`, and backend `getRadiologyWorkbenchQuerySchema` / repository queries. Search placeholder already mentions patient, order, encounter, study, report, PACS—ensure server-side search matches.
+### 2 — Add / edit drug dialog *(extend existing dialog)*
 
-## Mobile list tile
+Add **Section — Storage location** *(add flow and batch receive; optional on edit if batch location is editable)*:
 
-Update `_RadiologyOrderListTile` to reflect the same information hierarchy: name, study, priority, next action, status badge—no ID stacking in the subtitle.
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Storage room | `AppSelectField` | No | Options from facility catalog; “None” clears shelf |
+| Shelf | `AppSelectField` | No | Filtered by selected room; disabled until room chosen |
+
+Row: **room** + **shelf**.
+
+- Changing room clears shelf if the current shelf is not in the new room.
+- Helper text (muted): *Optional—helps staff find this drug on the floor.*
+- If room catalog is empty, show a compact empty state with link/action to add rooms (or defer to settings—pick one consistent pattern).
+
+### 3 — Catalog & inventory display *(read-only surfacing)*
+
+- Drug catalog row / detail: show `Room / Shelf` when set (e.g. *Main store · A-12*).
+- Batch or stock views: show batch shelf; allow filter/search by room or shelf code.
+
+Keep scope tight: management CRUD + dialog fields + catalog column/filter. Full warehouse map visualization is out of scope.
+
+## Backend parity
+
+Extend end-to-end—no UI-only fields:
+
+| Layer | Changes |
+|-------|---------|
+| Prisma | New models + optional FKs on `drug_batch` (and default on drug/offering if adopted) |
+| Schemas | Zod create/update for rooms, shelves, and `setupPharmacyDrugSchema` / batch payloads |
+| Service | `pharmacy-workspace.service.js` — room/shelf CRUD, include lookups in workbench/catalog responses |
+| Serializer | Return `storage_room_id`, `storage_room_label`, `storage_shelf_id`, `storage_shelf_code` on drugs/batches |
+| Frontend entities | `PharmacyDrugInput`, batch DTOs, lookup options on workspace state |
+
+**Validation:**
+
+- Shelf must belong to the selected room.
+- Deactivating a room/shelf must not break historical batch records (soft-delete / `is_active` only).
+- Location fields remain optional on create.
 
 ## Implementation rules
 
-- **Reuse shared components** from `frontend/lib/shared/` (`AppListTable`, `AppSearchBar`, `AppWorkspaceDetailPanel`, `AppWorkspaceStatusBadge`, layout/toolbar primitives). Extract shared worklist column builders only when Lab and Radiology would duplicate identical patterns.
-- **No new visual language**—match Lab spacing, typography, and Table settings behavior.
-- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` for any new column or filter labels.
-- **Backend parity:** any new filter must be enforced server-side; do not client-filter paginated results.
-- **Scope:** this task is the worklist UX only; facility catalog configuration is out of scope.
+- **Do not reuse ward `room`** or mortuary tables—pharmacy storage is its own domain.
+- **Reuse shared components** (`AppSelectField`, `AppFormSection`, mortuary-style lookup wiring).
+- **Localization:** keys in `frontend/lib/l10n/app_en.arb` for section title, room/shelf labels, empty states, and catalog column header.
+- **Follow-on to `prompt.md`:** assume the grouped drug dialog already exists; add Section — Storage location without regressing batch/pricing work.
+- **Migration:** include seeder-friendly sample room/shelf for dev if other modules do.
 
 ## Acceptance criteria
 
-- [ ] Default patients-view columns: Patient (name only), Study (name only), Priority, Next action, Status—no multi-value cells.
-- [ ] Default orders-view columns follow the orders table above.
-- [ ] Patient ID, order ID, modality, body region, laterality, encounter, billing, and ordered-at are optional columns only.
-- [ ] Next action is visible by default without opening Table settings.
-- [ ] Row click detail dialog shows full radiology context removed from the table.
-- [ ] Filters cover stage, status, modality, order date, and priority (plus billing gate if applicable).
-- [ ] Mobile list tile matches desktop information hierarchy.
-- [ ] Lab worklist patterns and `frontend/lib/shared/` components are reused—not forked markup.
-- [ ] New filters work with pagination via backend query params.
+- [ ] Facility can create pharmacy storage rooms and shelf codes; shelves are unique per room.
+- [ ] Add-drug (initial stock) flow optionally assigns room + shelf; values persist on the created batch.
+- [ ] Room and shelf selects cascade correctly; both fields are optional.
+- [ ] Drug catalog or inventory list displays stored location when present.
+- [ ] API returns room/shelf labels for display without extra client joins.
+- [ ] Ward/inpatient `room` model and pharmacy order “location” filter are unchanged.
+- [ ] Deactivated rooms/shelves are hidden from pickers but retained on historical batches.

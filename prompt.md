@@ -1,100 +1,168 @@
-# Feature: Pharmacy stock monitoring, reorder alerts, and expiry tracking
+# Feature: Refine Pharmacy Add/Edit Drug dialog
 
 ## Goal
 
-Give pharmacy staff a single place to **monitor stock levels**, **receive restock alerts** when quantity falls at or below a configured threshold, and **track product expiry** by batch. Staff must be able to set the alert threshold when onboarding a drug or receiving stock—not only via seed data or admin APIs.
+Redesign the **Add drug** / **Edit drug** dialog in the Pharmacy catalog so it is scannable, supports any common medication type, and reuses existing shared form components. Guided selects should reduce free-text errors for form, strength, and inventory units; prices must persist with currency; stock fields should read as one logical group.
 
-## Current state (keep)
+## Current state (problem)
 
-The following already exist—extend them; do not regress:
+The dialog in `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (`_DrugEditDialog`) is a single vertical stack of plain `AppTextField`s (see screenshots):
 
-- **Data model:** `inventory_stock` (`quantity`, `reorder_level`, facility-scoped) linked to drugs via `drug_inventory_map`; `drug_batch` (`batch_number`, `expiry_date`, `quantity`).
-- **Stock status logic:** `resolveStockStatus` in `backend/src/modules/pharmacy-workspace/services/pharmacy-workspace.service.js` and `pharmacy.serializer.js` — `IN_STOCK`, `ALMOST_OUT_OF_STOCK` (≤ 2× reorder), `LOW_STOCK` (≤ reorder), `OUT_OF_STOCK`.
-- **Pharmacy workspace:** Orders queue, drug catalog panel (`PharmacyCatalogTab`: drugs / formulary / inventory), stock adjust dialog, drug-level stock status badges and filters.
-- **Inventory API:** `GET /api/v1/pharmacy/inventory/stock` with `low_stock_only`; `POST /api/v1/pharmacy/inventory/adjust`; summary counts (`low_stock_rows`, `almost_out_of_stock_rows`, etc.).
-- **Drug-batch API:** `GET/POST /api/v1/drug-batches` with `expired` filter (no Flutter client yet).
-- **Inventory-stock API:** `reorder_level` on create/update (`backend/src/modules/inventory-stock/schemas/inventory-stock.schema.js`).
-- **Seeder reference:** `backend/scripts/seeders/seed-clinical-catalog-pack.js` — drugs created with `initial_stock`, `reorder_level`, and inventory mapping.
+| Issue | Detail |
+|-------|--------|
+| **Layout** | 11+ full-width fields with no grouping; hard to scan on desktop |
+| **Free-text everywhere** | Form, strength, and inventory unit are unstructured text |
+| **Pricing** | Pharmacy and facility prices are raw number fields—no currency picker |
+| **Stock UX** | Inventory unit appears before quantity; unit and reorder are disconnected from form context |
+| **Labels** | Most fields render as “(optional)” via `AppFieldLabel` even when business rules require them |
+| **Dialog chrome** | No dialog icon; Cancel / Add drug actions have no leading icons |
+| **Edit parity** | Edit path updates identity/pricing only; add path includes stock—keep that split |
 
-## Gaps
+Backend already accepts `currency` on drug setup (`setupPharmacyDrugSchema`) and facility offering currency; the UI does not wire them yet.
 
-| Area | Today | Needed |
-|------|-------|--------|
-| **Reorder threshold** | Stored in DB; defaults to `0` on new stock rows | Captured and editable when adding a drug, receiving stock, or editing inventory |
-| **Alerts** | Status badge + optional `low_stock_only` filter; dashboard metric only | Visible **workspace alerts** (summary chips / notifications) when items cross threshold |
-| **Monitoring UI** | Inventory table shows item, facility, quantity, status | Also show **reorder level**, **next expiry**, and batch count; filter by stock status and expiry window |
-| **Expiry** | `drug_batch` API exists; dispense uses free-text batch ref | Batch + expiry captured on **stock receipt**; expiry surfaced in catalog/inventory; alerts for soon-to-expire / expired |
-| **Drug onboarding** | Add-drug dialog: name, code, form, strength, price only | Optional stock setup: unit, initial quantity, reorder level, first batch (number + expiry) |
+## Reference implementation
 
-## Scope
+Mirror patterns from catalog dialogs that already use structured forms:
 
-### 1. Reorder threshold (restock alert quantity)
+| Pattern | Reference |
+|---------|-----------|
+| Currency + amount | `AppCurrencyAmountField` in `frontend/lib/shared/components/app_currency_amount_field.dart`; used in `lab_catalog_dialogs.dart`, `radiology_catalog_dialogs.dart` |
+| Two-column rows | `AppResponsiveFieldRow.two` in `frontend/lib/shared/forms/app_responsive_field_row.dart` |
+| Grouped sections | `AppFormSection` in `frontend/lib/shared/forms/app_form_section.dart` |
+| Selects | `AppSelectField` (already used in `_FormularyCreateDialog` in the same file) |
+| Searchable catalog pick | `LabSearchableTextField` in `frontend/lib/shared/lab_catalog/` when a combobox-with-custom-entry is needed |
+| Dialog shell | `AppDialog` with `icon`, `maxWidth`, `scrollable`, action `leadingIcon`s |
 
-- Add **Reorder alert at** (`reorder_level`, non-negative integer) to:
-  - Add / edit drug flow when stock is initialized (`_DrugFormDialog` in `pharmacy_catalog_panel.dart`).
-  - Stock receive / adjust flow when creating a new `inventory_stock` row (`_InventoryAdjustDialog`).
-  - Inventory row edit (inline or dialog) for existing stock.
-- Wire through `PharmacyDrugInput` / adjust payloads → backend pharmacy-workspace or inventory-stock endpoints.
-- When `reorder_level` is `0`, treat as “no alert configured” (existing status logic already handles this).
+**Primary file to change:** `pharmacy_catalog_panel.dart` (`_DrugEditDialog`).
 
-### 2. Stock monitoring & alerts
+**Domain / API (wire through if extended):**
 
-- **Inventory tab** (`_InventoryCatalogTab`): add columns **Reorder level**, **Next expiry** (earliest non-expired batch for the drug, if any).
-- Add **summary notification chips** on the pharmacy workspace toolbar (mirror orders-queue chips in `pharmacy_workspace_page.dart`) for:
-  - Low stock (`LOW_STOCK` + `OUT_OF_STOCK`)
-  - Almost out of stock (`ALMOST_OUT_OF_STOCK`) — optional, lower priority tone
-  - Expiring soon (configurable window, e.g. 30 days)
-- Chips are **clickable** — apply the corresponding inventory filter.
-- Expose **stock status** and **low stock only** filters in the inventory panel (drugs tab already has `_stockStatusFilterChoices`; align inventory tab).
-- Show `reorder_level` and computed status in drug catalog rows where stock is mapped.
+- `PharmacyDrugInput`, `PharmacyDrugUpdateInput`, `PharmacyFacilityOfferingInput` — `pharmacy_entities.dart`
+- `setupPharmacyDrugSchema` — `backend/src/modules/pharmacy-workspace/schemas/pharmacy-workspace.schema.js`
+- Clinical drug examples — `backend/scripts/seeders/seed-clinical-catalog-pack.js` (forms, strengths, units)
 
-### 3. Expiry tracking (batch-level)
+## Form layout
 
-- On **stock receipt** (`reason: PURCHASE` or dedicated “Receive stock” action), capture:
-  - Batch number (required when expiry is provided)
-  - Expiry date (optional but encouraged for pharmacy products)
-  - Quantity received
-- Create or update `drug_batch` via existing drug-batch service; decrement batch quantity on dispense where batch is specified (FEFO preference when batch not chosen—document behavior).
-- **Inventory / drug detail:** list batches with expiry, quantity remaining, and expired flag.
-- **Filters:** `expiring_within_days`, `expired_only` on inventory/drug-batch queries (backend + controller).
-- **Alerts:** summary chip for batches expiring within threshold; badge on rows with expired or soon-to-expire stock.
+Use `AppFormSection` with short section titles. On wide viewports, place related fields on one row via `AppResponsiveFieldRow.two`; collapse to single column on narrow widths.
 
-## Primary references
+### Section 1 — Drug identity
 
-| Layer | Path |
-|-------|------|
-| Pharmacy UI | `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` |
-| Catalog & inventory | `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` |
-| Controller | `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` |
-| Entities / DTOs | `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart`, `data/dtos/pharmacy_dtos.dart` |
-| Repository | `frontend/lib/features/pharmacy/data/repositories/pharmacy_repository_impl.dart` |
-| Backend workspace | `backend/src/modules/pharmacy-workspace/` (service, serializer, schema, routes) |
-| Drug batches | `backend/src/modules/drug-batch/` |
-| Inventory stock | `backend/src/modules/inventory-stock/` |
-| Schema | `backend/prisma/schema.prisma` — `inventory_stock`, `drug_batch`, `drug_inventory_map` |
-| Shared UI | `frontend/lib/shared/layout/app_workspace.dart`, `app_workspace_summary_notification.dart`, `app_list_table.dart`, `app_workspace_status_badge.dart` |
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Drug name | `AppTextField` | Yes | Only required field on add |
+| Drug code | `AppTextField` | No | Optional internal/SKU code |
+
+Row: **name** (wider) + **code**.
+
+### Section 2 — Formulation
+
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Form | `AppSelectField` with searchable/custom entry | No | Predefined dosage forms; allow “Other” → free text |
+| Strength | `AppSelectField` or searchable combobox | No | Suggestions filtered by selected form |
+
+**Predefined forms** (store canonical value; display *Full name (short)* where a short form exists):
+
+Tablet, Capsule, Chewable Tablet, Syrup, Suspension, Injection, Ampoule, Vial, Cream, Ointment, Gel, Drops, Inhaler, Suppository, Patch, Powder, Solution, Lotion, Spray, Other.
+
+**Form → default inventory units** (suggest first; user can override):
+
+| Form family | Suggested units |
+|-------------|-----------------|
+| Solid oral (tablet, capsule, chewable) | tablet (`tab`), capsule (`cap`), strip, box |
+| Liquid oral (syrup, suspension, solution) | bottle (`btl`), millilitre (`mL`), litre (`L`) |
+| Injectable (injection, ampoule, vial) | ampoule (`amp`), vial, box |
+| Topical (cream, ointment, gel, lotion) | tube, jar, gram (`g`) |
+| Inhaler / drops / spray | inhaler, bottle (`btl`), pack |
+| Other | unit, box, pack |
+
+**Strength suggestions** (examples per form; include common clinical strengths from seeder data):
+
+- Tablet/Capsule: `250 mg`, `500 mg`, `5 mg`, `10 mg`, `20 mg`, `40 mg`, `81 mg`, `400 mg`, `625 mg`, etc.
+- Injection/Vial: `1 g`, `500 mg`, `75 mg/3 mL`, `10 mg/mL`, `100 IU/mL`, etc.
+- Syrup: `125 mg/5 mL`, `250 mg/5 mL`, `2 mg/5 mL`, etc.
+
+When the user picks a form, pre-select the most likely unit and refresh strength options. Changing form should not clear name/code.
+
+Row: **form** + **strength**.
+
+Extract form/unit/strength catalogs to a small shared module (e.g. `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart`) so the dialog and future prescription flows can reuse them.
+
+### Section 3 — Pricing
+
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Pharmacy price | `AppCurrencyAmountField` | No | Persist `unit_price` + `currency` |
+| Facility price | `AppCurrencyAmountField` | No | Persist via `PharmacyFacilityOfferingInput` with `currency` |
+
+Row: **pharmacy price** + **facility price** (side by side on desktop).
+
+Default currency: tenant/facility default or `appDefaultCurrencyCode` (`UGX`). Reuse `appCurrencyOptions` from the shared amount field.
+
+### Section 4 — Initial stock *(add flow only; hidden on edit)*
+
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Initial stock | `AppTextField` (digits only) | No | Quantity **before** unit |
+| Inventory unit | `AppSelectField` with full + short label | No | e.g. `Tablet (tab)`, `Bottle (btl)`, `Vial` |
+| Reorder alert at | `AppTextField` (digits only) | No | Quantity threshold in selected units |
+
+Row: **initial stock** + **inventory unit**; **reorder alert at** full width or paired with a helper caption explaining it is a quantity threshold.
+
+Helper text (muted): reorder alerts fire when on-hand quantity falls at or below this value.
+
+### Section 5 — Batch & shelf life *(add flow only)*
+
+| Field | Component | Required | Notes |
+|-------|-----------|----------|-------|
+| Batch number | `AppTextField` | Conditional | Required when expiry date is set (matches backend `superRefine`) |
+| Manufacturing date | `AppDateField` | No | New field—add to schema/API if not present |
+| Expiry date | `AppDateField` | No | Existing field |
+| Expiry alert lead | `AppSelectField` or numeric + unit | No | e.g. `90 days`, `3 months`, `6 months` before expiry |
+
+Row: **batch number** + **manufacturing date**; row: **expiry date** + **expiry alert lead**.
+
+**Expiry alert lead** drives proactive stock risk alongside quantity reorder: e.g. “alert 90 days before expiry” means the drug surfaces in expiring-soon filters even if quantity is healthy. Wire to backend if a per-drug or per-batch lead field does not exist yet; otherwise store on the initial batch metadata created during setup.
+
+## Dialog chrome
+
+- `AppDialog` `icon`: `Icons.medication_outlined`
+- `maxWidth`: ~720–860 (match lab catalog dialogs)
+- `scrollable: true`
+- Actions:
+  - **Cancel** — `AppButton.tertiary` with `leadingIcon: Icons.close`
+  - **Add drug** / **Save** — `AppButton.primary` with `leadingIcon: Icons.add` / `Icons.save_outlined`
+- Mark required fields with `isRequired: true` so labels do not show spurious “(optional)”
+
+## Backend parity
+
+- Send `currency` with pharmacy `unit_price` and facility offering `unit_price`.
+- If adding `manufactured_at` and `expiry_alert_lead_days` (or equivalent), extend:
+  - `setupPharmacyDrugSchema`
+  - `pharmacy-workspace.service.js` drug setup path
+  - `PharmacyDrugInput.toSetupJson()`
+  - DTO/entity mapping
+- Do not client-only invent fields the API cannot persist.
+- Keep existing rule: `expiry_date` without `batch_number` is rejected.
 
 ## Implementation rules
 
-- **Reuse existing stock status enums** — do not invent parallel status values; map to `AppWorkspaceStatusBadge` tones (warning for low/almost-out, error for out/expired).
-- **Facility scoping:** reorder level and stock rows remain facility-scoped per existing pharmacy-workspace scope rules.
-- **Backend parity:** filters (`low_stock_only`, stock status, expiry window) must be enforced server-side on paginated inventory/batch lists.
-- **Localization:** add keys to `frontend/lib/l10n/app_en.arb` for reorder level, expiry, batch labels, alert chip text, and filter names.
-- **No new visual language** — match pharmacy workspace and Lab/Radiology summary-chip patterns.
-- **Minimal schema changes** — prefer existing `reorder_level` and `drug_batch`; only migrate if batch–inventory linkage is required for dispense FEFO.
-
-## Out of scope
-
-- Purchase orders / supplier procurement workflow.
-- Push notifications, email, or SMS (in-app workspace alerts only for this task).
-- Non-pharmacy inventory modules (equipment, general supplies).
+- **Reuse shared components** from `frontend/lib/shared/`—do not fork raw `TextField` markup.
+- **No new visual language**—match Lab/Radiology catalog dialog spacing and `AppFormSection` density.
+- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` for section titles, unit labels (`{full} ({short})`), form labels, expiry lead options, and helper copy.
+- **Scope:** `_DrugEditDialog` and supporting constants/helpers only; drug worklist table and inventory adjust dialog are out of scope unless a tiny shared unit catalog is extracted.
+- **Validation:** name required on add; positive integers for stock/reorder; positive amounts for prices; batch required when expiry is set.
 
 ## Acceptance criteria
 
-- [ ] Staff can set **reorder alert quantity** when adding a drug (with initial stock) and when receiving or editing inventory stock.
-- [ ] Inventory table shows **quantity**, **reorder level**, **stock status**, and **next expiry** per row.
-- [ ] Pharmacy workspace toolbar shows **clickable alert chips** for low/out-of-stock and expiring-soon items; chips apply inventory filters.
-- [ ] Stock receipt flow captures **batch number** and **expiry date**; batches appear in drug/inventory detail.
-- [ ] Filters work for low stock, stock status, expired, and expiring-within-N-days via backend query params.
-- [ ] Existing dispense, return, and stock-adjust flows continue to work; status recomputes after quantity changes.
-- [ ] New UI strings are localized; shared workspace components are reused.
+- [ ] Add drug dialog uses grouped `AppFormSection`s with responsive two-column rows—not a flat 11-field stack.
+- [ ] Form, strength, and inventory unit use guided selects (with custom entry where needed); options show full name and short form where applicable.
+- [ ] Selecting a form updates suggested units and strength options without clearing other fields.
+- [ ] Pharmacy and facility prices use `AppCurrencyAmountField`; currency is saved with the price.
+- [ ] Initial stock appears before inventory unit; reorder alert follows as a quantity threshold in the chosen unit.
+- [ ] Batch, manufacturing date, expiry date, and expiry alert lead are grouped; batch is required when expiry is set.
+- [ ] Required vs optional labels are correct (drug name required; others optional unless conditional).
+- [ ] Dialog has a title icon; Cancel and primary action have leading icons.
+- [ ] Edit drug dialog still updates identity/pricing only (no stock section).
+- [ ] New or extended fields are persisted via backend schema/API—not UI-only.
+- [ ] Shared pharmacy drug catalog options are reusable outside this dialog.

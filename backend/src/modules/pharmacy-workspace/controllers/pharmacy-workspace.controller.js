@@ -217,6 +217,57 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.resolve_legacy.success', data);
 });
 
+const getPharmacyStorageLayout = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.getPharmacyStorageLayout(
+    req.query,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.layout.success', data);
+});
+
+const createPharmacyStorageRoom = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.createPharmacyStorageRoom(
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 201, 'messages.pharmacy_workspace.storage.room.create.success', data);
+});
+
+const updatePharmacyStorageRoom = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.updatePharmacyStorageRoom(
+    req.params.roomId,
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.room.update.success', data);
+});
+
+const createPharmacyStorageShelf = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.createPharmacyStorageShelf(
+    req.params.roomId,
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 201, 'messages.pharmacy_workspace.storage.shelf.create.success', data);
+});
+
+const updatePharmacyStorageShelf = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.updatePharmacyStorageShelf(
+    req.params.shelfId,
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.shelf.update.success', data);
+});
+
 module.exports = {
   getPharmacyWorkbench,
   getPharmacyOrderWorkflow,
@@ -231,4 +282,9 @@ module.exports = {
   adjustInventoryStock,
   setupPharmacyDrug,
   resolveLegacyRoute,
+  getPharmacyStorageLayout,
+  createPharmacyStorageRoom,
+  updatePharmacyStorageRoom,
+  createPharmacyStorageShelf,
+  updatePharmacyStorageShelf,
 };

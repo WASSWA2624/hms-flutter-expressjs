@@ -78,7 +78,7 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
   }
 }
 
-enum PharmacyCatalogTab { drugs, formulary, inventory }
+enum PharmacyCatalogTab { drugs, formulary, inventory, storage }
 
 enum PharmacyInventoryFilter {
   lowStock,
@@ -121,6 +121,8 @@ final class PharmacyInventoryStockQuery {
     this.stockStatus,
     this.expiringWithinDays,
     this.expiredOnly = false,
+    this.storageRoomId,
+    this.storageShelfId,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
@@ -129,6 +131,8 @@ final class PharmacyInventoryStockQuery {
   final String? stockStatus;
   final int? expiringWithinDays;
   final bool expiredOnly;
+  final String? storageRoomId;
+  final String? storageShelfId;
   final AppPageRequest pageRequest;
 
   PharmacyInventoryStockQuery copyWith({
@@ -137,9 +141,13 @@ final class PharmacyInventoryStockQuery {
     String? stockStatus,
     int? expiringWithinDays,
     bool? expiredOnly,
+    String? storageRoomId,
+    String? storageShelfId,
     AppPageRequest? pageRequest,
     bool clearStockStatus = false,
     bool clearExpiringWithinDays = false,
+    bool clearStorageRoomId = false,
+    bool clearStorageShelfId = false,
   }) {
     return PharmacyInventoryStockQuery(
       search: search ?? this.search,
@@ -149,6 +157,10 @@ final class PharmacyInventoryStockQuery {
           ? null
           : expiringWithinDays ?? this.expiringWithinDays,
       expiredOnly: expiredOnly ?? this.expiredOnly,
+      storageRoomId:
+          clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
+      storageShelfId:
+          clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -247,7 +259,11 @@ final class PharmacyDrugInput {
     this.initialStock,
     this.reorderLevel,
     this.batchNumber,
+    this.manufacturedAt,
     this.expiryDate,
+    this.expiryAlertLeadDays,
+    this.storageRoomId,
+    this.storageShelfId,
     this.facilityId,
   });
 
@@ -262,13 +278,19 @@ final class PharmacyDrugInput {
   final int? initialStock;
   final int? reorderLevel;
   final String? batchNumber;
+  final DateTime? manufacturedAt;
   final DateTime? expiryDate;
+  final int? expiryAlertLeadDays;
+  final String? storageRoomId;
+  final String? storageShelfId;
   final String? facilityId;
 
   bool get hasStockSetup =>
       (initialStock != null && initialStock! > 0) ||
       (reorderLevel != null && reorderLevel! > 0) ||
-      (batchNumber != null && batchNumber!.trim().isNotEmpty);
+      (batchNumber != null && batchNumber!.trim().isNotEmpty) ||
+      manufacturedAt != null ||
+      expiryDate != null;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -290,7 +312,13 @@ final class PharmacyDrugInput {
       if (reorderLevel != null) 'reorder_level': reorderLevel,
       if (batchNumber != null && batchNumber!.trim().isNotEmpty)
         'batch_number': batchNumber!.trim(),
+      if (manufacturedAt != null)
+        'manufactured_at': manufacturedAt!.toUtc().toIso8601String(),
       if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (expiryAlertLeadDays != null)
+        'expiry_alert_lead_days': expiryAlertLeadDays,
+      if (storageRoomId != null) 'storage_room_id': storageRoomId,
+      if (storageShelfId != null) 'storage_shelf_id': storageShelfId,
       if (facilityId != null) 'facility_id': facilityId,
     };
   }
@@ -383,6 +411,8 @@ final class PharmacyInventoryAdjustInput {
     this.batchNumber,
     this.expiryDate,
     this.drugId,
+    this.storageRoomId,
+    this.storageShelfId,
   });
 
   final String inventoryItemId;
@@ -394,6 +424,8 @@ final class PharmacyInventoryAdjustInput {
   final String? batchNumber;
   final DateTime? expiryDate;
   final String? drugId;
+  final String? storageRoomId;
+  final String? storageShelfId;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -407,6 +439,8 @@ final class PharmacyInventoryAdjustInput {
         'batch_number': batchNumber!.trim(),
       if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
       if (drugId != null) 'drug_id': drugId,
+      if (storageRoomId != null) 'storage_room_id': storageRoomId,
+      if (storageShelfId != null) 'storage_shelf_id': storageShelfId,
     };
   }
 }
@@ -532,22 +566,34 @@ final class PharmacyDrugQuery {
   const PharmacyDrugQuery({
     this.search = '',
     this.stockStatus,
+    this.storageRoomId,
+    this.storageShelfId,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
   final String search;
   final String? stockStatus;
+  final String? storageRoomId;
+  final String? storageShelfId;
   final AppPageRequest pageRequest;
 
   PharmacyDrugQuery copyWith({
     String? search,
     String? stockStatus,
+    String? storageRoomId,
+    String? storageShelfId,
     AppPageRequest? pageRequest,
     bool clearStockStatus = false,
+    bool clearStorageRoomId = false,
+    bool clearStorageShelfId = false,
   }) {
     return PharmacyDrugQuery(
       search: search ?? this.search,
       stockStatus: clearStockStatus ? null : stockStatus ?? this.stockStatus,
+      storageRoomId:
+          clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
+      storageShelfId:
+          clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -1122,6 +1168,11 @@ final class PharmacyDrug {
     this.pendingStock = false,
     this.stockMappings = const <PharmacyDrugStockMapping>[],
     this.stockRows = const <PharmacyInventoryStock>[],
+    this.storageRoomId,
+    this.storageRoomLabel,
+    this.storageShelfId,
+    this.storageShelfCode,
+    this.storageLocationLabel,
     this.tenantId,
     this.createdAt,
     this.updatedAt,
@@ -1148,6 +1199,11 @@ final class PharmacyDrug {
   final bool pendingStock;
   final List<PharmacyDrugStockMapping> stockMappings;
   final List<PharmacyInventoryStock> stockRows;
+  final String? storageRoomId;
+  final String? storageRoomLabel;
+  final String? storageShelfId;
+  final String? storageShelfCode;
+  final String? storageLocationLabel;
   final String? tenantId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -1197,6 +1253,11 @@ final class PharmacyInventoryStock {
     this.batchCount = 0,
     this.nextExpiry,
     this.expiryAlertStatus,
+    this.storageRoomId,
+    this.storageRoomLabel,
+    this.storageShelfId,
+    this.storageShelfCode,
+    this.storageLocationLabel,
     this.createdAt,
     this.updatedAt,
   });
@@ -1215,8 +1276,150 @@ final class PharmacyInventoryStock {
   final int batchCount;
   final DateTime? nextExpiry;
   final String? expiryAlertStatus;
+  final String? storageRoomId;
+  final String? storageRoomLabel;
+  final String? storageShelfId;
+  final String? storageShelfCode;
+  final String? storageLocationLabel;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+}
+
+@immutable
+final class PharmacyStorageShelf {
+  const PharmacyStorageShelf({
+    required this.id,
+    this.displayId,
+    this.storageRoomId,
+    this.shelfCode,
+    this.label,
+    this.isActive = true,
+    this.storageRoomLabel,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? storageRoomId;
+  final String? shelfCode;
+  final String? label;
+  final bool isActive;
+  final String? storageRoomLabel;
+
+  String get displayLabel {
+    final String code = (shelfCode ?? '').trim();
+    final String friendly = (label ?? '').trim();
+    if (friendly.isNotEmpty && friendly != code) {
+      return '$friendly ($code)';
+    }
+    return code.isNotEmpty ? code : id;
+  }
+}
+
+@immutable
+final class PharmacyStorageRoom {
+  const PharmacyStorageRoom({
+    required this.id,
+    this.displayId,
+    this.name,
+    this.code,
+    this.isActive = true,
+    this.shelves = const <PharmacyStorageShelf>[],
+  });
+
+  final String id;
+  final String? displayId;
+  final String? name;
+  final String? code;
+  final bool isActive;
+  final List<PharmacyStorageShelf> shelves;
+}
+
+@immutable
+final class PharmacyStorageLayout {
+  const PharmacyStorageLayout({
+    this.rooms = const <PharmacyStorageRoom>[],
+    this.roomCount = 0,
+    this.shelfCount = 0,
+  });
+
+  final List<PharmacyStorageRoom> rooms;
+  final int roomCount;
+  final int shelfCount;
+}
+
+@immutable
+final class PharmacyStorageRoomInput {
+  const PharmacyStorageRoomInput({
+    required this.name,
+    this.code,
+    this.facilityId,
+    this.isActive = true,
+  });
+
+  final String name;
+  final String? code;
+  final String? facilityId;
+  final bool isActive;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'name': name,
+    if (code != null) 'code': code,
+    if (facilityId != null) 'facility_id': facilityId,
+    'is_active': isActive,
+  };
+}
+
+@immutable
+final class PharmacyStorageRoomUpdateInput {
+  const PharmacyStorageRoomUpdateInput({this.name, this.code, this.isActive});
+
+  final String? name;
+  final String? code;
+  final bool? isActive;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    if (name != null) 'name': name,
+    if (code != null) 'code': code,
+    if (isActive != null) 'is_active': isActive,
+  };
+}
+
+@immutable
+final class PharmacyStorageShelfInput {
+  const PharmacyStorageShelfInput({
+    required this.shelfCode,
+    this.label,
+    this.isActive = true,
+  });
+
+  final String shelfCode;
+  final String? label;
+  final bool isActive;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'shelf_code': shelfCode,
+    if (label != null) 'label': label,
+    'is_active': isActive,
+  };
+}
+
+@immutable
+final class PharmacyStorageShelfUpdateInput {
+  const PharmacyStorageShelfUpdateInput({
+    this.shelfCode,
+    this.label,
+    this.isActive,
+  });
+
+  final String? shelfCode;
+  final String? label;
+  final bool? isActive;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    if (shelfCode != null) 'shelf_code': shelfCode,
+    if (label != null) 'label': label,
+    if (isActive != null) 'is_active': isActive,
+  };
 }
 
 @immutable
@@ -1297,6 +1500,8 @@ final class PharmacyWorkspaceState {
     this.isRefreshingInventory = false,
     this.isSaving = false,
     this.catalogTab = PharmacyCatalogTab.drugs,
+    this.storageLayout = const PharmacyStorageLayout(),
+    this.isRefreshingStorage = false,
   });
 
   final PharmacyWorkbenchQuery query;
@@ -1316,6 +1521,8 @@ final class PharmacyWorkspaceState {
   final bool isRefreshingInventory;
   final bool isSaving;
   final PharmacyCatalogTab catalogTab;
+  final PharmacyStorageLayout storageLayout;
+  final bool isRefreshingStorage;
 
   int get workloadCount {
     return workbench.summary.orderedQueue +
@@ -1341,6 +1548,8 @@ final class PharmacyWorkspaceState {
     bool? isRefreshingInventory,
     bool? isSaving,
     PharmacyCatalogTab? catalogTab,
+    PharmacyStorageLayout? storageLayout,
+    bool? isRefreshingStorage,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
   }) {
@@ -1366,6 +1575,8 @@ final class PharmacyWorkspaceState {
           isRefreshingInventory ?? this.isRefreshingInventory,
       isSaving: isSaving ?? this.isSaving,
       catalogTab: catalogTab ?? this.catalogTab,
+      storageLayout: storageLayout ?? this.storageLayout,
+      isRefreshingStorage: isRefreshingStorage ?? this.isRefreshingStorage,
     );
   }
 }

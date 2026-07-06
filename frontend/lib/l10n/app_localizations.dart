@@ -16264,6 +16264,12 @@ abstract class AppLocalizations {
   /// **'Inventory'**
   String get pharmacyCatalogTabInventory;
 
+  /// Pharmacy catalog storage layout tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage layout'**
+  String get pharmacyCatalogTabStorage;
+
   /// Pharmacy catalog panel dialog title.
   ///
   /// In en, this message translates to:
@@ -16312,6 +16318,84 @@ abstract class AppLocalizations {
   /// **'Strength'**
   String get pharmacyDrugStrengthLabel;
 
+  /// Pharmacy add drug dialog section for name and code.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug identity'**
+  String get pharmacyDrugIdentitySectionTitle;
+
+  /// Pharmacy add drug dialog section for form and strength.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulation'**
+  String get pharmacyDrugFormulationSectionTitle;
+
+  /// Pharmacy add drug dialog section for pharmacy and facility prices.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing'**
+  String get pharmacyDrugPricingSectionTitle;
+
+  /// Pharmacy add drug dialog section for opening stock quantities.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial stock'**
+  String get pharmacyDrugInitialStockSectionTitle;
+
+  /// Pharmacy add drug dialog section for batch metadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch and shelf life'**
+  String get pharmacyDrugBatchSectionTitle;
+
+  /// Pharmacy drug batch manufacturing date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturing date'**
+  String get pharmacyManufacturingDateLabel;
+
+  /// Pharmacy field for how early to alert before batch expiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry alert lead'**
+  String get pharmacyExpiryAlertLeadLabel;
+
+  /// Helper text for pharmacy expiry alert lead field.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts appear when a batch is within this window of its expiry date.'**
+  String get pharmacyExpiryAlertLeadHelper;
+
+  /// Helper text for pharmacy reorder threshold field.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts fire when on-hand quantity falls at or below this value.'**
+  String get pharmacyReorderLevelHelper;
+
+  /// Pharmacy dosage form label with short form in parentheses.
+  ///
+  /// In en, this message translates to:
+  /// **'{full} ({short})'**
+  String pharmacyDrugFormWithShortLabel(String full, String short);
+
+  /// Pharmacy inventory unit label with short form in parentheses.
+  ///
+  /// In en, this message translates to:
+  /// **'{full} ({short})'**
+  String pharmacyInventoryUnitWithShortLabel(String full, String short);
+
+  /// Pharmacy expiry alert lead option in days.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days'**
+  String pharmacyExpiryAlertLeadDays(int count);
+
+  /// Pharmacy expiry alert lead option in months.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} months'**
+  String pharmacyExpiryAlertLeadMonths(int count);
+
   /// Pharmacy add formulary item action label.
   ///
   /// In en, this message translates to:
@@ -16341,6 +16425,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Formulary entries linking drugs to prescribing will appear here.'**
   String get pharmacyNoFormularyBody;
+
+  /// Pharmacy storage layout panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage layout'**
+  String get pharmacyStoragePanelTitle;
+
+  /// Pharmacy storage layout panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain storage rooms and shelf codes for locating medication stock.'**
+  String get pharmacyStoragePanelDescription;
+
+  /// Pharmacy add storage room action.
+  ///
+  /// In en, this message translates to:
+  /// **'Add room'**
+  String get pharmacyAddStorageRoomAction;
+
+  /// Pharmacy edit storage room action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit room'**
+  String get pharmacyEditStorageRoomAction;
+
+  /// Pharmacy add storage shelf action.
+  ///
+  /// In en, this message translates to:
+  /// **'Add shelf'**
+  String get pharmacyAddStorageShelfAction;
+
+  /// Pharmacy edit storage shelf action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit shelf'**
+  String get pharmacyEditStorageShelfAction;
+
+  /// Pharmacy storage room name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room name'**
+  String get pharmacyStorageRoomNameLabel;
+
+  /// Pharmacy storage room code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room code'**
+  String get pharmacyStorageRoomCodeLabel;
+
+  /// Pharmacy storage shelf code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf code'**
+  String get pharmacyStorageShelfCodeLabel;
+
+  /// Pharmacy storage shelf friendly label field.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf label'**
+  String get pharmacyStorageShelfLabelField;
+
+  /// Pharmacy storage room select label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage room'**
+  String get pharmacyStorageRoomLabel;
+
+  /// Pharmacy storage shelf select label.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf'**
+  String get pharmacyStorageShelfLabel;
+
+  /// Pharmacy catalog storage location column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get pharmacyStorageLocationColumnLabel;
+
+  /// Pharmacy add drug dialog storage section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage location'**
+  String get pharmacyDrugStorageSectionTitle;
+
+  /// Pharmacy add drug dialog storage section helper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional—helps staff find this drug on the floor.'**
+  String get pharmacyDrugStorageSectionHelper;
+
+  /// Empty pharmacy storage rooms title.
+  ///
+  /// In en, this message translates to:
+  /// **'No storage rooms'**
+  String get pharmacyNoStorageRoomsTitle;
+
+  /// Empty pharmacy storage rooms body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a storage room to assign shelf locations when receiving stock.'**
+  String get pharmacyNoStorageRoomsBody;
+
+  /// Empty pharmacy storage shelves message.
+  ///
+  /// In en, this message translates to:
+  /// **'No shelves in this room yet.'**
+  String get pharmacyNoStorageShelvesBody;
+
+  /// Pharmacy storage active toggle label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get pharmacyStorageActiveLabel;
+
+  /// Pharmacy storage inactive status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get pharmacyStorageInactiveLabel;
 
   /// Pharmacy inventory panel title.
   ///

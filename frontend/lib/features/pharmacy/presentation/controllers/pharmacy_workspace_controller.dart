@@ -391,6 +391,96 @@ final class PharmacyWorkspaceController
         current.inventoryWorkbench.stocks.items.isEmpty) {
       unawaited(_refreshInventory(showLoading: true));
     }
+    if (tab == PharmacyCatalogTab.storage &&
+        current.storageLayout.rooms.isEmpty) {
+      unawaited(_refreshStorageLayout(showLoading: true));
+    }
+  }
+
+  Future<void> _refreshStorageLayout({bool showLoading = false}) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    if (showLoading) {
+      _emit(current.copyWith(isRefreshingStorage: true));
+    }
+    final Result<PharmacyStorageLayout> result =
+        await _repository.loadStorageLayout(includeInactive: true);
+    final PharmacyWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    result.when(
+      success: (PharmacyStorageLayout layout) {
+        _emit(
+          latest.copyWith(
+            storageLayout: layout,
+            isRefreshingStorage: false,
+          ),
+        );
+      },
+      failure: (_) {
+        _emit(latest.copyWith(isRefreshingStorage: false));
+      },
+    );
+  }
+
+  Future<AppFailure?> createStorageRoom(PharmacyStorageRoomInput input) async {
+    final Result<PharmacyStorageRoom> result =
+        await _repository.createStorageRoom(input);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> updateStorageRoom(
+    String roomId,
+    PharmacyStorageRoomUpdateInput input,
+  ) async {
+    final Result<PharmacyStorageRoom> result =
+        await _repository.updateStorageRoom(roomId, input);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> createStorageShelf(
+    String roomId,
+    PharmacyStorageShelfInput input,
+  ) async {
+    final Result<PharmacyStorageShelf> result =
+        await _repository.createStorageShelf(roomId, input);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> updateStorageShelf(
+    String shelfId,
+    PharmacyStorageShelfUpdateInput input,
+  ) async {
+    final Result<PharmacyStorageShelf> result =
+        await _repository.updateStorageShelf(shelfId, input);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
   }
 
   Future<AppFailure?> createDrug(
@@ -666,6 +756,12 @@ final class PharmacyWorkspaceController
           failure: (_) => null,
         ),
       ),
+      _repository.loadStorageLayout().then(
+        (Result<PharmacyStorageLayout> result) => result.when(
+          success: (PharmacyStorageLayout value) => value,
+          failure: (_) => null,
+        ),
+      ),
     ];
     final List<Object?> loadResults = await Future.wait(initialLoads);
     final AppPage<PharmacyDrug> drugs = loadResults[0]! as AppPage<PharmacyDrug>;
@@ -679,6 +775,8 @@ final class PharmacyWorkspaceController
             totalItemCount: 0,
           ),
         );
+    final PharmacyStorageLayout storageLayout =
+        loadResults[2] as PharmacyStorageLayout? ?? const PharmacyStorageLayout();
     return Result<PharmacyWorkspaceState>.success(
       PharmacyWorkspaceState(
         query: query,
@@ -693,6 +791,7 @@ final class PharmacyWorkspaceController
         ),
         inventoryQuery: inventoryQuery,
         inventoryWorkbench: inventoryWorkbench,
+        storageLayout: storageLayout,
       ),
     );
   }

@@ -22,7 +22,9 @@ const {
 const createDrugBatchSchema = z.object({
   drug_id: uuidSchema,
   batch_number: z.string().trim().min(1).max(80),
+  manufactured_at: z.string().datetime().optional().nullable(),
   expiry_date: z.string().datetime().optional().nullable(),
+  expiry_alert_lead_days: z.coerce.number().int().min(1).max(730).optional().nullable(),
   quantity: z.number().int().min(0).optional()
 });
 
@@ -33,7 +35,9 @@ const createDrugBatchSchema = z.object({
  */
 const updateDrugBatchSchema = z.object({
   batch_number: z.string().trim().min(1).max(80).optional(),
+  manufactured_at: z.string().datetime().optional().nullable(),
   expiry_date: z.string().datetime().optional().nullable(),
+  expiry_alert_lead_days: z.coerce.number().int().min(1).max(730).optional().nullable(),
   quantity: z.number().int().min(0).optional()
 });
 

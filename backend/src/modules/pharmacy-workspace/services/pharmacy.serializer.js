@@ -4,6 +4,7 @@ const {
   mapCatalogUnitPriceFields,
 } = require('@lib/billing/clinical-request-billing');
 const { resolveOrderLocation } = require('@services/pharmacy-workspace/pharmacy.shared');
+const { mapStorageLocationFields } = require('@services/pharmacy-workspace/pharmacy-storage.service');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -119,7 +120,11 @@ const buildBatchMetaByInventoryItemId = (maps = [], batches = [], expiringWithin
 
     let expiryAlertStatus = null;
     for (const batch of datedBatches) {
-      const status = resolveExpiryAlertStatus(batch.expiry_date, expiringWithinDays);
+      const leadDays =
+        batch.expiry_alert_lead_days != null
+          ? Number(batch.expiry_alert_lead_days)
+          : expiringWithinDays;
+      const status = resolveExpiryAlertStatus(batch.expiry_date, leadDays);
       if (status === 'EXPIRED') {
         expiryAlertStatus = 'EXPIRED';
         break;
@@ -129,10 +134,17 @@ const buildBatchMetaByInventoryItemId = (maps = [], batches = [], expiringWithin
       }
     }
 
+    const storageBatch =
+      activeBatches.find((batch) => batch.storage_shelf_id || batch.storage_room_id) ||
+      nextExpiryBatch ||
+      activeBatches[0] ||
+      null;
+
     metaByInventoryItemId.set(mapRow.inventory_item_id, {
       batch_count: activeBatches.length,
       next_expiry: nextExpiry,
       expiry_alert_status: expiryAlertStatus,
+      ...mapStorageLocationFields(storageBatch?.storage_room, storageBatch?.storage_shelf),
     });
   });
 
@@ -160,6 +172,11 @@ const mapInventoryStockRecord = (record, batchMeta = null) => {
     batch_count: Number(batchMeta?.batch_count || 0),
     next_expiry: batchMeta?.next_expiry || null,
     expiry_alert_status: batchMeta?.expiry_alert_status || null,
+    storage_room_id: batchMeta?.storage_room_id || null,
+    storage_room_label: batchMeta?.storage_room_label || null,
+    storage_shelf_id: batchMeta?.storage_shelf_id || null,
+    storage_shelf_code: batchMeta?.storage_shelf_code || null,
+    storage_location_label: batchMeta?.storage_location_label || null,
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
   };

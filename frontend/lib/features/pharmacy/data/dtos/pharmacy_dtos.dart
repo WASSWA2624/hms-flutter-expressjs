@@ -428,6 +428,11 @@ final class PharmacyDrugDto {
           .map((PharmacyInventoryStockDto dto) => dto.toEntity())
           .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
           .toList(growable: false),
+      storageRoomId: _string(json['storage_room_id']),
+      storageRoomLabel: _string(json['storage_room_label']),
+      storageShelfId: _string(json['storage_shelf_id']),
+      storageShelfCode: _string(json['storage_shelf_code']),
+      storageLocationLabel: _string(json['storage_location_label']),
       tenantId: _string(json['tenant_id']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
@@ -601,8 +606,71 @@ final class PharmacyInventoryStockDto {
       batchCount: _int(json['batch_count']) ?? 0,
       nextExpiry: _date(json['next_expiry']),
       expiryAlertStatus: _string(json['expiry_alert_status']),
+      storageRoomId: _string(json['storage_room_id']),
+      storageRoomLabel: _string(json['storage_room_label']),
+      storageShelfId: _string(json['storage_shelf_id']),
+      storageShelfCode: _string(json['storage_shelf_code']),
+      storageLocationLabel: _string(json['storage_location_label']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
+    );
+  }
+}
+
+final class PharmacyStorageShelfDto {
+  const PharmacyStorageShelfDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacyStorageShelf toEntity() {
+    return PharmacyStorageShelf(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId: _string(json['display_id']),
+      storageRoomId: _string(json['storage_room_id']),
+      shelfCode: _string(json['shelf_code']),
+      label: _string(json['label']),
+      isActive: _bool(json['is_active'], fallback: true),
+      storageRoomLabel: _string(json['storage_room_label']),
+    );
+  }
+}
+
+final class PharmacyStorageRoomDto {
+  const PharmacyStorageRoomDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacyStorageRoom toEntity() {
+    return PharmacyStorageRoom(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId: _string(json['display_id']),
+      name: _string(json['name']),
+      code: _string(json['code']),
+      isActive: _bool(json['is_active'], fallback: true),
+      shelves: _list(json['shelves'])
+          .map(PharmacyStorageShelfDto.new)
+          .map((PharmacyStorageShelfDto dto) => dto.toEntity())
+          .where((PharmacyStorageShelf item) => item.id.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
+}
+
+final class PharmacyStorageLayoutDto {
+  const PharmacyStorageLayoutDto(this.json);
+
+  final PharmacyJsonMap json;
+
+  PharmacyStorageLayout toEntity() {
+    final PharmacyJsonMap summary = _map(json['summary']);
+    return PharmacyStorageLayout(
+      rooms: _list(json['rooms'])
+          .map(PharmacyStorageRoomDto.new)
+          .map((PharmacyStorageRoomDto dto) => dto.toEntity())
+          .where((PharmacyStorageRoom item) => item.id.isNotEmpty)
+          .toList(growable: false),
+      roomCount: _int(summary['room_count']) ?? 0,
+      shelfCount: _int(summary['shelf_count']) ?? 0,
     );
   }
 }

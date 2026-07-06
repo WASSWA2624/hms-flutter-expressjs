@@ -53,6 +53,8 @@ const searchDrugsQuerySchema = listQuerySchema.extend({
   stock_status: z
     .enum(['IN_STOCK', 'ALMOST_OUT_OF_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'])
     .optional(),
+  storage_room_id: uuidOrFriendlyIdentifierSchema.optional(),
+  storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
 const prepareDispenseLineSchema = z.object({
@@ -103,6 +105,8 @@ const getInventoryStockQuerySchema = listQuerySchema.extend({
   stock_status: stockStatusSchema.optional(),
   expiring_within_days: z.coerce.number().int().min(1).max(365).optional(),
   expired_only: z.coerce.boolean().optional(),
+  storage_room_id: uuidOrFriendlyIdentifierSchema.optional(),
+  storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional(),
   search: z.string().trim().optional(),
 });
 
@@ -117,6 +121,8 @@ const adjustInventorySchema = z
     occurred_at: z.string().datetime().optional(),
     batch_number: z.string().trim().min(1).max(80).optional(),
     expiry_date: z.string().datetime().optional().nullable(),
+    storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     drug_id: uuidOrFriendlyIdentifierSchema.optional(),
   })
   .superRefine((data, ctx) => {
@@ -154,7 +160,12 @@ const setupPharmacyDrugSchema = z
     initial_stock: z.coerce.number().int().min(0).optional(),
     reorder_level: z.coerce.number().int().min(0).optional(),
     batch_number: z.string().trim().min(1).max(80).optional(),
+    manufactured_at: z.string().datetime().optional().nullable(),
     expiry_date: z.string().datetime().optional().nullable(),
+    expiry_alert_lead_days: z.coerce.number().int().min(1).max(730).optional().nullable(),
+    storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   })
   .superRefine((data, ctx) => {
@@ -184,6 +195,45 @@ const resolveLegacyRouteParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
 });
 
+const getPharmacyStorageLayoutQuerySchema = z.object({
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  include_inactive: z.coerce.boolean().optional(),
+});
+
+const createPharmacyStorageRoomSchema = z.object({
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  name: z.string().trim().min(1).max(255),
+  code: z.string().trim().max(80).optional().nullable(),
+  is_active: z.coerce.boolean().optional(),
+});
+
+const updatePharmacyStorageRoomSchema = z.object({
+  name: z.string().trim().min(1).max(255).optional(),
+  code: z.string().trim().max(80).optional().nullable(),
+  is_active: z.coerce.boolean().optional(),
+});
+
+const pharmacyStorageRoomParamsSchema = z.object({
+  roomId: uuidOrFriendlyIdentifierSchema,
+});
+
+const createPharmacyStorageShelfSchema = z.object({
+  shelf_code: z.string().trim().min(1).max(80),
+  label: z.string().trim().max(120).optional().nullable(),
+  is_active: z.coerce.boolean().optional(),
+});
+
+const updatePharmacyStorageShelfSchema = z.object({
+  shelf_code: z.string().trim().min(1).max(80).optional(),
+  label: z.string().trim().max(120).optional().nullable(),
+  is_active: z.coerce.boolean().optional(),
+});
+
+const pharmacyStorageShelfParamsSchema = z.object({
+  shelfId: uuidOrFriendlyIdentifierSchema,
+});
+
 module.exports = {
   pharmacyOrderStatusSchema,
   stockStatusSchema,
@@ -201,4 +251,11 @@ module.exports = {
   setupPharmacyDrugSchema,
   recordOrderBillingSchema,
   resolveLegacyRouteParamsSchema,
+  getPharmacyStorageLayoutQuerySchema,
+  createPharmacyStorageRoomSchema,
+  updatePharmacyStorageRoomSchema,
+  pharmacyStorageRoomParamsSchema,
+  createPharmacyStorageShelfSchema,
+  updatePharmacyStorageShelfSchema,
+  pharmacyStorageShelfParamsSchema,
 };

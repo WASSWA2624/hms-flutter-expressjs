@@ -17,6 +17,13 @@ const {
   adjustInventorySchema,
   setupPharmacyDrugSchema,
   resolveLegacyRouteParamsSchema,
+  getPharmacyStorageLayoutQuerySchema,
+  createPharmacyStorageRoomSchema,
+  updatePharmacyStorageRoomSchema,
+  pharmacyStorageRoomParamsSchema,
+  createPharmacyStorageShelfSchema,
+  updatePharmacyStorageShelfSchema,
+  pharmacyStorageShelfParamsSchema,
 } = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
 
 const router = express.Router();
@@ -127,6 +134,55 @@ router.post(
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.adjustInventoryStock
+);
+
+router.get(
+  '/storage/layout',
+  validateRequest({ query: getPharmacyStorageLayoutQuerySchema }),
+  authenticate(),
+  authorize(PHARMACY_WORKSPACE_READ_SCOPES, 'permission'),
+  pharmacyWorkspaceController.getPharmacyStorageLayout
+);
+
+router.post(
+  '/storage/rooms',
+  validateRequest({ body: createPharmacyStorageRoomSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.createPharmacyStorageRoom
+);
+
+router.put(
+  '/storage/rooms/:roomId',
+  validateRequest({
+    params: pharmacyStorageRoomParamsSchema,
+    body: updatePharmacyStorageRoomSchema,
+  }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.updatePharmacyStorageRoom
+);
+
+router.post(
+  '/storage/rooms/:roomId/shelves',
+  validateRequest({
+    params: pharmacyStorageRoomParamsSchema,
+    body: createPharmacyStorageShelfSchema,
+  }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.createPharmacyStorageShelf
+);
+
+router.put(
+  '/storage/shelves/:shelfId',
+  validateRequest({
+    params: pharmacyStorageShelfParamsSchema,
+    body: updatePharmacyStorageShelfSchema,
+  }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.updatePharmacyStorageShelf
 );
 
 module.exports = router;

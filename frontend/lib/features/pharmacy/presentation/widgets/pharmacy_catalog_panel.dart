@@ -12,6 +12,8 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -62,6 +64,10 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
               value: PharmacyCatalogTab.inventory,
               label: Text(l10n.pharmacyCatalogTabInventory),
             ),
+            ButtonSegment<PharmacyCatalogTab>(
+              value: PharmacyCatalogTab.storage,
+              label: Text(l10n.pharmacyCatalogTabStorage),
+            ),
           ],
           selected: <PharmacyCatalogTab>{tab},
           onSelectionChanged: (Set<PharmacyCatalogTab> selection) {
@@ -81,6 +87,10 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
             writeRequirement: _writeRequirement,
           ),
           PharmacyCatalogTab.inventory => _InventoryCatalogTab(
+            state: state,
+            writeRequirement: _writeRequirement,
+          ),
+          PharmacyCatalogTab.storage => PharmacyStoragePanel(
             state: state,
             writeRequirement: _writeRequirement,
           ),
@@ -177,6 +187,11 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                 Text(_priceText(item.facilityUnitPrice)),
           ),
           AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyStorageLocationColumnLabel,
+            cellBuilder: (_, PharmacyDrug item) =>
+                Text(item.storageLocationLabel ?? '—'),
+          ),
+          AppListTableColumn<PharmacyDrug>(
             label: l10n.pharmacyReorderLevelColumnLabel,
             numeric: true,
             cellBuilder: (_, PharmacyDrug item) {
@@ -239,7 +254,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
   Future<void> _openDrugDialog(BuildContext context, {PharmacyDrug? drug}) {
     return showAppDialog<bool>(
       context: context,
-      builder: (_) => _DrugEditDialog(drug: drug),
+      builder: (_) => PharmacyDrugEditDialog(drug: drug),
     );
   }
 
@@ -275,222 +290,6 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Unable to delete drug')));
     }
-  }
-}
-
-class _DrugEditDialog extends ConsumerStatefulWidget {
-  const _DrugEditDialog({this.drug});
-
-  final PharmacyDrug? drug;
-
-  @override
-  ConsumerState<_DrugEditDialog> createState() => _DrugEditDialogState();
-}
-
-class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _codeController;
-  late final TextEditingController _formController;
-  late final TextEditingController _strengthController;
-  late final TextEditingController _pharmacyPriceController;
-  late final TextEditingController _facilityPriceController;
-  late final TextEditingController _inventoryUnitController;
-  late final TextEditingController _initialStockController;
-  late final TextEditingController _reorderLevelController;
-  late final TextEditingController _batchNumberController;
-  DateTime? _expiryDate;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.drug?.name ?? '');
-    _codeController = TextEditingController(text: widget.drug?.code ?? '');
-    _formController = TextEditingController(text: widget.drug?.form ?? '');
-    _strengthController = TextEditingController(
-      text: widget.drug?.strength ?? '',
-    );
-    _pharmacyPriceController = TextEditingController(
-      text: _priceText(widget.drug?.pharmacyUnitPrice ?? widget.drug?.unitPrice),
-    );
-    _facilityPriceController = TextEditingController(
-      text: _priceText(widget.drug?.facilityUnitPrice),
-    );
-    _inventoryUnitController = TextEditingController();
-    _initialStockController = TextEditingController();
-    _reorderLevelController = TextEditingController();
-    _batchNumberController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _codeController.dispose();
-    _formController.dispose();
-    _strengthController.dispose();
-    _pharmacyPriceController.dispose();
-    _facilityPriceController.dispose();
-    _inventoryUnitController.dispose();
-    _initialStockController.dispose();
-    _reorderLevelController.dispose();
-    _batchNumberController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final bool isEdit = widget.drug != null;
-    return AppDialog(
-      title: Text(
-        isEdit ? l10n.pharmacyEditDrugAction : l10n.pharmacyAddDrugAction,
-      ),
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        children: <Widget>[
-          AppTextField(
-            controller: _nameController,
-            labelText: l10n.pharmacyDrugNameLabel,
-            validator: (String? value) =>
-                (value ?? '').trim().isEmpty ? 'Required' : null,
-          ),
-          AppTextField(
-            controller: _codeController,
-            labelText: l10n.pharmacyDrugCodeLabel,
-          ),
-          AppTextField(
-            controller: _formController,
-            labelText: l10n.pharmacyDrugFormLabel,
-          ),
-          AppTextField(
-            controller: _strengthController,
-            labelText: l10n.pharmacyDrugStrengthLabel,
-          ),
-          AppTextField(
-            controller: _pharmacyPriceController,
-            labelText: l10n.pharmacyPharmacyPriceLabel,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          AppTextField(
-            controller: _facilityPriceController,
-            labelText: l10n.pharmacyFacilityPriceLabel,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          if (!isEdit) ...<Widget>[
-            AppTextField(
-              controller: _inventoryUnitController,
-              labelText: l10n.pharmacyInventoryUnitLabel,
-            ),
-            AppTextField(
-              controller: _initialStockController,
-              labelText: l10n.pharmacyInitialStockLabel,
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-            ),
-            AppTextField(
-              controller: _reorderLevelController,
-              labelText: l10n.pharmacyReorderLevelLabel,
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-            ),
-            AppTextField(
-              controller: _batchNumberController,
-              labelText: l10n.pharmacyBatchNumberLabel,
-            ),
-            AppDateField(
-              labelText: l10n.pharmacyExpiryDateLabel,
-              value: _expiryDate,
-              pickerButtonLabel: l10n.housekeepingPickDateAction,
-              invalidDateMessage: l10n.pharmacyExpiryDateLabel,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-              onChanged: (DateTime? value) => setState(() => _expiryDate = value),
-            ),
-          ],
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: isEdit
-              ? l10n.commonSaveActionLabel
-              : l10n.pharmacyAddDrugAction,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() => _isSaving = true);
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
-    final num? pharmacyPrice = _parsePrice(_pharmacyPriceController.text);
-    final num? facilityPrice = _parsePrice(_facilityPriceController.text);
-    final PharmacyFacilityOfferingInput? facilityOffering =
-        facilityPrice == null
-        ? null
-        : PharmacyFacilityOfferingInput(unitPrice: facilityPrice);
-    final AppFailure? failure;
-    if (widget.drug == null) {
-      final String? tenantId = controller.resolveTenantId();
-      if (tenantId == null) {
-        failure = AppFailure.validation();
-      } else {
-        failure = await controller.createDrug(
-          PharmacyDrugInput(
-            tenantId: tenantId,
-            name: _nameController.text.trim(),
-            code: _emptyToNull(_codeController.text),
-            form: _emptyToNull(_formController.text),
-            strength: _emptyToNull(_strengthController.text),
-            unitPrice: pharmacyPrice,
-            inventoryUnit: _emptyToNull(_inventoryUnitController.text),
-            initialStock: int.tryParse(_initialStockController.text.trim()),
-            reorderLevel: int.tryParse(_reorderLevelController.text.trim()),
-            batchNumber: _emptyToNull(_batchNumberController.text),
-            expiryDate: _expiryDate,
-          ),
-          facilityOffering: facilityOffering,
-        );
-      }
-    } else {
-      failure = await controller.updateDrug(
-        widget.drug!.id,
-        PharmacyDrugUpdateInput(
-          name: _nameController.text.trim(),
-          code: _emptyToNull(_codeController.text),
-          form: _emptyToNull(_formController.text),
-          strength: _emptyToNull(_strengthController.text),
-          unitPrice: pharmacyPrice,
-        ),
-        facilityOffering: facilityOffering,
-      );
-    }
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() => _isSaving = false);
   }
 }
 
@@ -813,6 +612,11 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
                     Text(item.reorderLevel.toString()),
               ),
               AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyStorageLocationColumnLabel,
+                cellBuilder: (_, PharmacyInventoryStock item) =>
+                    Text(item.storageLocationLabel ?? '—'),
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
                 label: l10n.pharmacyNextExpiryColumnLabel,
                 cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
                   return _expiryCell(context, item);
@@ -1097,12 +901,4 @@ String _priceText(num? value) {
     return '';
   }
   return value.toString();
-}
-
-num? _parsePrice(String value) {
-  final String trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  return num.tryParse(trimmed);
 }

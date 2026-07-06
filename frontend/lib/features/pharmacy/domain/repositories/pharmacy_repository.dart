@@ -79,4 +79,27 @@ abstract interface class PharmacyRepository {
     String? reason,
     String? notes,
   });
+
+  Future<Result<PharmacyStorageLayout>> loadStorageLayout({
+    bool includeInactive = false,
+  });
+
+  Future<Result<PharmacyStorageRoom>> createStorageRoom(
+    PharmacyStorageRoomInput input,
+  );
+
+  Future<Result<PharmacyStorageRoom>> updateStorageRoom(
+    String roomId,
+    PharmacyStorageRoomUpdateInput input,
+  );
+
+  Future<Result<PharmacyStorageShelf>> createStorageShelf(
+    String roomId,
+    PharmacyStorageShelfInput input,
+  );
+
+  Future<Result<PharmacyStorageShelf>> updateStorageShelf(
+    String shelfId,
+    PharmacyStorageShelfUpdateInput input,
+  );
 }

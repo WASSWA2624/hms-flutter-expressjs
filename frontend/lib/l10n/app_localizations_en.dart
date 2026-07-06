@@ -8716,6 +8716,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyCatalogTabInventory => 'Inventory';
 
   @override
+  String get pharmacyCatalogTabStorage => 'Storage layout';
+
+  @override
   String get pharmacyCatalogPanelTitle => 'Catalog and stock';
 
   @override
@@ -8740,6 +8743,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugStrengthLabel => 'Strength';
 
   @override
+  String get pharmacyDrugIdentitySectionTitle => 'Drug identity';
+
+  @override
+  String get pharmacyDrugFormulationSectionTitle => 'Formulation';
+
+  @override
+  String get pharmacyDrugPricingSectionTitle => 'Pricing';
+
+  @override
+  String get pharmacyDrugInitialStockSectionTitle => 'Initial stock';
+
+  @override
+  String get pharmacyDrugBatchSectionTitle => 'Batch and shelf life';
+
+  @override
+  String get pharmacyManufacturingDateLabel => 'Manufacturing date';
+
+  @override
+  String get pharmacyExpiryAlertLeadLabel => 'Expiry alert lead';
+
+  @override
+  String get pharmacyExpiryAlertLeadHelper =>
+      'Alerts appear when a batch is within this window of its expiry date.';
+
+  @override
+  String get pharmacyReorderLevelHelper =>
+      'Alerts fire when on-hand quantity falls at or below this value.';
+
+  @override
+  String pharmacyDrugFormWithShortLabel(String full, String short) {
+    return '$full ($short)';
+  }
+
+  @override
+  String pharmacyInventoryUnitWithShortLabel(String full, String short) {
+    return '$full ($short)';
+  }
+
+  @override
+  String pharmacyExpiryAlertLeadDays(int count) {
+    return '$count days';
+  }
+
+  @override
+  String pharmacyExpiryAlertLeadMonths(int count) {
+    return '$count months';
+  }
+
+  @override
   String get pharmacyAddFormularyAction => 'Add formulary item';
 
   @override
@@ -8754,6 +8806,69 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyNoFormularyBody =>
       'Formulary entries linking drugs to prescribing will appear here.';
+
+  @override
+  String get pharmacyStoragePanelTitle => 'Storage layout';
+
+  @override
+  String get pharmacyStoragePanelDescription =>
+      'Maintain storage rooms and shelf codes for locating medication stock.';
+
+  @override
+  String get pharmacyAddStorageRoomAction => 'Add room';
+
+  @override
+  String get pharmacyEditStorageRoomAction => 'Edit room';
+
+  @override
+  String get pharmacyAddStorageShelfAction => 'Add shelf';
+
+  @override
+  String get pharmacyEditStorageShelfAction => 'Edit shelf';
+
+  @override
+  String get pharmacyStorageRoomNameLabel => 'Room name';
+
+  @override
+  String get pharmacyStorageRoomCodeLabel => 'Room code';
+
+  @override
+  String get pharmacyStorageShelfCodeLabel => 'Shelf code';
+
+  @override
+  String get pharmacyStorageShelfLabelField => 'Shelf label';
+
+  @override
+  String get pharmacyStorageRoomLabel => 'Storage room';
+
+  @override
+  String get pharmacyStorageShelfLabel => 'Shelf';
+
+  @override
+  String get pharmacyStorageLocationColumnLabel => 'Location';
+
+  @override
+  String get pharmacyDrugStorageSectionTitle => 'Storage location';
+
+  @override
+  String get pharmacyDrugStorageSectionHelper =>
+      'Optional—helps staff find this drug on the floor.';
+
+  @override
+  String get pharmacyNoStorageRoomsTitle => 'No storage rooms';
+
+  @override
+  String get pharmacyNoStorageRoomsBody =>
+      'Add a storage room to assign shelf locations when receiving stock.';
+
+  @override
+  String get pharmacyNoStorageShelvesBody => 'No shelves in this room yet.';
+
+  @override
+  String get pharmacyStorageActiveLabel => 'Active';
+
+  @override
+  String get pharmacyStorageInactiveLabel => 'Inactive';
 
   @override
   String get pharmacyInventoryPanelTitle => 'Inventory stock';

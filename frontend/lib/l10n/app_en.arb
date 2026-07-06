@@ -11206,6 +11206,10 @@
   "@pharmacyCatalogTabInventory": {
     "description": "Pharmacy catalog inventory tab label."
   },
+  "pharmacyCatalogTabStorage": "Storage layout",
+  "@pharmacyCatalogTabStorage": {
+    "description": "Pharmacy catalog storage layout tab label."
+  },
   "pharmacyCatalogPanelTitle": "Catalog and stock",
   "@pharmacyCatalogPanelTitle": {
     "description": "Pharmacy catalog panel dialog title."
@@ -11238,6 +11242,72 @@
   "@pharmacyDrugStrengthLabel": {
     "description": "Pharmacy drug strength field label."
   },
+  "pharmacyDrugIdentitySectionTitle": "Drug identity",
+  "@pharmacyDrugIdentitySectionTitle": {
+    "description": "Pharmacy add drug dialog section for name and code."
+  },
+  "pharmacyDrugFormulationSectionTitle": "Formulation",
+  "@pharmacyDrugFormulationSectionTitle": {
+    "description": "Pharmacy add drug dialog section for form and strength."
+  },
+  "pharmacyDrugPricingSectionTitle": "Pricing",
+  "@pharmacyDrugPricingSectionTitle": {
+    "description": "Pharmacy add drug dialog section for pharmacy and facility prices."
+  },
+  "pharmacyDrugInitialStockSectionTitle": "Initial stock",
+  "@pharmacyDrugInitialStockSectionTitle": {
+    "description": "Pharmacy add drug dialog section for opening stock quantities."
+  },
+  "pharmacyDrugBatchSectionTitle": "Batch and shelf life",
+  "@pharmacyDrugBatchSectionTitle": {
+    "description": "Pharmacy add drug dialog section for batch metadata."
+  },
+  "pharmacyManufacturingDateLabel": "Manufacturing date",
+  "@pharmacyManufacturingDateLabel": {
+    "description": "Pharmacy drug batch manufacturing date field label."
+  },
+  "pharmacyExpiryAlertLeadLabel": "Expiry alert lead",
+  "@pharmacyExpiryAlertLeadLabel": {
+    "description": "Pharmacy field for how early to alert before batch expiry."
+  },
+  "pharmacyExpiryAlertLeadHelper": "Alerts appear when a batch is within this window of its expiry date.",
+  "@pharmacyExpiryAlertLeadHelper": {
+    "description": "Helper text for pharmacy expiry alert lead field."
+  },
+  "pharmacyReorderLevelHelper": "Alerts fire when on-hand quantity falls at or below this value.",
+  "@pharmacyReorderLevelHelper": {
+    "description": "Helper text for pharmacy reorder threshold field."
+  },
+  "pharmacyDrugFormWithShortLabel": "{full} ({short})",
+  "@pharmacyDrugFormWithShortLabel": {
+    "description": "Pharmacy dosage form label with short form in parentheses.",
+    "placeholders": {
+      "full": { "type": "String" },
+      "short": { "type": "String" }
+    }
+  },
+  "pharmacyInventoryUnitWithShortLabel": "{full} ({short})",
+  "@pharmacyInventoryUnitWithShortLabel": {
+    "description": "Pharmacy inventory unit label with short form in parentheses.",
+    "placeholders": {
+      "full": { "type": "String" },
+      "short": { "type": "String" }
+    }
+  },
+  "pharmacyExpiryAlertLeadDays": "{count} days",
+  "@pharmacyExpiryAlertLeadDays": {
+    "description": "Pharmacy expiry alert lead option in days.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "pharmacyExpiryAlertLeadMonths": "{count} months",
+  "@pharmacyExpiryAlertLeadMonths": {
+    "description": "Pharmacy expiry alert lead option in months.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "pharmacyAddFormularyAction": "Add formulary item",
   "@pharmacyAddFormularyAction": {
     "description": "Pharmacy add formulary item action label."
@@ -11257,6 +11327,86 @@
   "pharmacyNoFormularyBody": "Formulary entries linking drugs to prescribing will appear here.",
   "@pharmacyNoFormularyBody": {
     "description": "Empty pharmacy formulary list body."
+  },
+  "pharmacyStoragePanelTitle": "Storage layout",
+  "@pharmacyStoragePanelTitle": {
+    "description": "Pharmacy storage layout panel title."
+  },
+  "pharmacyStoragePanelDescription": "Maintain storage rooms and shelf codes for locating medication stock.",
+  "@pharmacyStoragePanelDescription": {
+    "description": "Pharmacy storage layout panel description."
+  },
+  "pharmacyAddStorageRoomAction": "Add room",
+  "@pharmacyAddStorageRoomAction": {
+    "description": "Pharmacy add storage room action."
+  },
+  "pharmacyEditStorageRoomAction": "Edit room",
+  "@pharmacyEditStorageRoomAction": {
+    "description": "Pharmacy edit storage room action."
+  },
+  "pharmacyAddStorageShelfAction": "Add shelf",
+  "@pharmacyAddStorageShelfAction": {
+    "description": "Pharmacy add storage shelf action."
+  },
+  "pharmacyEditStorageShelfAction": "Edit shelf",
+  "@pharmacyEditStorageShelfAction": {
+    "description": "Pharmacy edit storage shelf action."
+  },
+  "pharmacyStorageRoomNameLabel": "Room name",
+  "@pharmacyStorageRoomNameLabel": {
+    "description": "Pharmacy storage room name field label."
+  },
+  "pharmacyStorageRoomCodeLabel": "Room code",
+  "@pharmacyStorageRoomCodeLabel": {
+    "description": "Pharmacy storage room code field label."
+  },
+  "pharmacyStorageShelfCodeLabel": "Shelf code",
+  "@pharmacyStorageShelfCodeLabel": {
+    "description": "Pharmacy storage shelf code field label."
+  },
+  "pharmacyStorageShelfLabelField": "Shelf label",
+  "@pharmacyStorageShelfLabelField": {
+    "description": "Pharmacy storage shelf friendly label field."
+  },
+  "pharmacyStorageRoomLabel": "Storage room",
+  "@pharmacyStorageRoomLabel": {
+    "description": "Pharmacy storage room select label."
+  },
+  "pharmacyStorageShelfLabel": "Shelf",
+  "@pharmacyStorageShelfLabel": {
+    "description": "Pharmacy storage shelf select label."
+  },
+  "pharmacyStorageLocationColumnLabel": "Location",
+  "@pharmacyStorageLocationColumnLabel": {
+    "description": "Pharmacy catalog storage location column label."
+  },
+  "pharmacyDrugStorageSectionTitle": "Storage location",
+  "@pharmacyDrugStorageSectionTitle": {
+    "description": "Pharmacy add drug dialog storage section title."
+  },
+  "pharmacyDrugStorageSectionHelper": "Optional—helps staff find this drug on the floor.",
+  "@pharmacyDrugStorageSectionHelper": {
+    "description": "Pharmacy add drug dialog storage section helper."
+  },
+  "pharmacyNoStorageRoomsTitle": "No storage rooms",
+  "@pharmacyNoStorageRoomsTitle": {
+    "description": "Empty pharmacy storage rooms title."
+  },
+  "pharmacyNoStorageRoomsBody": "Add a storage room to assign shelf locations when receiving stock.",
+  "@pharmacyNoStorageRoomsBody": {
+    "description": "Empty pharmacy storage rooms body."
+  },
+  "pharmacyNoStorageShelvesBody": "No shelves in this room yet.",
+  "@pharmacyNoStorageShelvesBody": {
+    "description": "Empty pharmacy storage shelves message."
+  },
+  "pharmacyStorageActiveLabel": "Active",
+  "@pharmacyStorageActiveLabel": {
+    "description": "Pharmacy storage active toggle label."
+  },
+  "pharmacyStorageInactiveLabel": "Inactive",
+  "@pharmacyStorageInactiveLabel": {
+    "description": "Pharmacy storage inactive status label."
   },
   "pharmacyInventoryPanelTitle": "Inventory stock",
   "@pharmacyInventoryPanelTitle": {
