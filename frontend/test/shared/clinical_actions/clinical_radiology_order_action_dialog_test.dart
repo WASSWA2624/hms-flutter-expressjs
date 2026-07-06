@@ -130,6 +130,42 @@ void main() {
       expect(find.text('CT chest'), findsOneWidget);
     },
   );
+
+  testWidgets('radiology catalog picker confirms without cancel action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(
+      tester,
+      ClinicalRadiologyOrderActionDialog(
+        referenceData: const ClinicalActionReferenceData(
+          radiologyTests: _radiologyCatalogFixtures,
+        ),
+        onSearchRadiologyTests: _mockSearchRadiologyTests,
+        onSubmit:
+            ({
+              required List<ClinicalActionRadiologyRequest> requests,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              return null;
+            },
+      ),
+    );
+
+    await tester.tap(find.text('Add study'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Confirm selected studies'), findsOneWidget);
+
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Confirm selected studies'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CT chest'), findsOneWidget);
+    expect(find.text('Choose imaging study'), findsNothing);
+  });
 }
 
 Future<void> _pumpDialog(WidgetTester tester, Widget dialog) async {

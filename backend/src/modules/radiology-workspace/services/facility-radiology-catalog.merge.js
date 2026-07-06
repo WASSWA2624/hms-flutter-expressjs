@@ -3,6 +3,7 @@
  */
 
 const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
+const { buildRadiologyCatalogMetadata } = require('@lib/radiology/radiology-catalog-metadata');
 const { mapRadiologyTestRecord } = require('@services/radiology-workspace/radiology.serializer');
 
 const toOptionalText = (value) => {
@@ -54,10 +55,9 @@ const mapClinicalCatalogRadiologyTestRow = (masterTest, offering = null) => {
     source: 'FACILITY',
     origin: 'FACILITY_RADIOLOGY_CATALOG',
     ...mapCatalogUnitPriceFields(merged),
-    metadata: {
-      modality: merged.modality || null,
+    metadata: buildRadiologyCatalogMetadata(merged, {
       facility_offering_id: offering.id,
-    },
+    }),
   };
 };
 

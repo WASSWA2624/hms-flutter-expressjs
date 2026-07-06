@@ -98,6 +98,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
   late final AppListTableColumnVisibilityController<ClinicalActionCatalogOption>
   _columnVisibilityController;
   late final List<ClinicalRadiologyCatalogSelection> _stagedSelections;
+  final List<String> _selectionOrder = <String>[];
   Timer? _searchDebounce;
   String? _modality;
   String? _bodyRegion;
@@ -122,12 +123,18 @@ class _ClinicalRadiologyRequestCatalogDialogState
     _stagedSelections = List<ClinicalRadiologyCatalogSelection>.from(
       widget.initialSelections,
     );
+    _selectionOrder.addAll(
+      widget.initialSelections.map(
+        (ClinicalRadiologyCatalogSelection selection) => selection.option.apiId,
+      ),
+    );
     _modality = editing?.modality;
     _bodyRegion = editing?.bodyRegion;
     _laterality = editing?.laterality;
     _priority = editing?.priority;
     if (editing != null && !_isStagedSelected(editing.option)) {
       _stagedSelections.add(editing);
+      _selectionOrder.insert(0, editing.option.apiId);
     }
     _searchRequest += 1;
     unawaited(_loadCatalog(_searchQuery, _searchRequest));
@@ -189,61 +196,82 @@ class _ClinicalRadiologyRequestCatalogDialogState
                 context: context,
                 failure: _catalogFailure!,
               ),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool compact = constraints.maxWidth < 640;
-                if (compact) {
-                  return Column(
-                    children: <Widget>[
-                      _modalityField(l10n, modalityOptions),
-                      SizedBox(height: theme.spacing.sm),
-                      _lateralityField(l10n),
-                      SizedBox(height: theme.spacing.sm),
-                      _priorityField(l10n),
-                      SizedBox(height: theme.spacing.sm),
-                      _bodyRegionField(l10n, bodyRegionOptions),
-                      SizedBox(height: theme.spacing.sm),
-                      _clinicalNoteField(l10n),
-                    ],
-                  );
-                }
-
-                return Column(
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(child: _modalityField(l10n, modalityOptions)),
-                        SizedBox(width: theme.spacing.sm),
-                        Expanded(child: _lateralityField(l10n)),
-                      ],
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    Row(
-                      children: <Widget>[
-                        SizedBox(width: 220, child: _priorityField(l10n)),
-                        SizedBox(width: theme.spacing.sm),
-                        Expanded(
-                          child: _bodyRegionField(l10n, bodyRegionOptions),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    _clinicalNoteField(l10n),
-                  ],
-                );
-              },
-            ),
-            if (bodyRegionOptions.isNotEmpty &&
-                bodyRegionOptions.length <= 16) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              _RadiologyBodyRegionChipPicker(
-                regions: bodyRegionOptions,
-                value: _bodyRegion,
-                onChanged: (String? value) {
-                  setState(() => _bodyRegion = value);
-                },
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: bodyHeight * 0.36,
               ),
-            ],
+              child: SingleChildScrollView(
+                primary: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        final bool compact = constraints.maxWidth < 640;
+                        if (compact) {
+                          return Column(
+                            children: <Widget>[
+                              _modalityField(l10n, modalityOptions),
+                              SizedBox(height: theme.spacing.sm),
+                              _lateralityField(l10n),
+                              SizedBox(height: theme.spacing.sm),
+                              _priorityField(l10n),
+                              SizedBox(height: theme.spacing.sm),
+                              _bodyRegionField(l10n, bodyRegionOptions),
+                              SizedBox(height: theme.spacing.sm),
+                              _clinicalNoteField(l10n),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: _modalityField(l10n, modalityOptions),
+                                ),
+                                SizedBox(width: theme.spacing.sm),
+                                Expanded(child: _lateralityField(l10n)),
+                              ],
+                            ),
+                            SizedBox(height: theme.spacing.sm),
+                            Row(
+                              children: <Widget>[
+                                SizedBox(
+                                  width: 220,
+                                  child: _priorityField(l10n),
+                                ),
+                                SizedBox(width: theme.spacing.sm),
+                                Expanded(
+                                  child: _bodyRegionField(
+                                    l10n,
+                                    bodyRegionOptions,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: theme.spacing.sm),
+                            _clinicalNoteField(l10n),
+                          ],
+                        );
+                      },
+                    ),
+                    if (bodyRegionOptions.isNotEmpty &&
+                        bodyRegionOptions.length <= 16) ...<Widget>[
+                      SizedBox(height: theme.spacing.sm),
+                      _RadiologyBodyRegionChipPicker(
+                        regions: bodyRegionOptions,
+                        value: _bodyRegion,
+                        onChanged: (String? value) {
+                          setState(() => _bodyRegion = value);
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
             SizedBox(height: theme.spacing.md),
             Align(
               alignment: AlignmentDirectional.centerStart,
@@ -331,10 +359,6 @@ class _ClinicalRadiologyRequestCatalogDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         AppButton.primary(
           label: l10n.clinicalRadiologyRequestCatalogPickerConfirmAction,
           leadingIcon: Icons.playlist_add_check,
@@ -639,6 +663,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
       includeOption: (ClinicalActionCatalogOption option) =>
           _matchesModalityFilter(option),
       isSelected: _isStagedSelected,
+      selectionOrder: _selectionOrder,
     );
   }
 
@@ -734,6 +759,15 @@ class _ClinicalRadiologyRequestCatalogDialogState
     );
   }
 
+  void _promoteSelectionOrder(String apiId) {
+    _selectionOrder.remove(apiId);
+    _selectionOrder.insert(0, apiId);
+  }
+
+  void _removeSelectionOrder(String apiId) {
+    _selectionOrder.remove(apiId);
+  }
+
   void _toggleSelection(
     ClinicalActionCatalogOption option, {
     required bool selected,
@@ -744,6 +778,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
     }
     setState(() {
       if (selected) {
+        _promoteSelectionOrder(option.apiId);
         _stagedSelections.add(
           ClinicalRadiologyCatalogSelection(
             option: option,
@@ -755,6 +790,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
         );
         return;
       }
+      _removeSelectionOrder(option.apiId);
       _stagedSelections.removeWhere(
         (ClinicalRadiologyCatalogSelection selection) =>
             selection.option.apiId == option.apiId,
@@ -773,6 +809,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
           continue;
         }
         if (selected) {
+          _promoteSelectionOrder(item.apiId);
           _stagedSelections.add(
             ClinicalRadiologyCatalogSelection(
               option: item,
@@ -784,6 +821,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
           );
           continue;
         }
+        _removeSelectionOrder(item.apiId);
         _stagedSelections.removeWhere(
           (ClinicalRadiologyCatalogSelection selection) =>
               selection.option.apiId == item.apiId,

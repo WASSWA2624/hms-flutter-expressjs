@@ -509,6 +509,10 @@ const resolveOrCreateStandardRadiologyTest = async ({
     name: definition.name,
     code: definition.code,
     modality: definition.modality,
+    body_region: definition.body_region || null,
+    laterality: definition.laterality || null,
+    equipment: definition.equipment || null,
+    procedure_type: definition.procedure_type || null,
   });
 
   createAuditLog({

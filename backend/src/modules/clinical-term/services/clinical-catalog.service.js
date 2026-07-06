@@ -10,6 +10,7 @@ const clinicalTermService = require('@services/clinical-term/clinical-term.servi
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
+const { buildRadiologyCatalogMetadata } = require('@lib/radiology/radiology-catalog-metadata');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
 const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog/facility-lab-catalog.repository');
 const {
@@ -107,9 +108,7 @@ const mapRadiologyTestRow = (row, source = 'GLOBAL') => ({
   source,
   origin: source === 'FACILITY' ? 'FACILITY_RADIOLOGY_CATALOG' : 'GLOBAL_RADIOLOGY_CATALOG',
   ...mapCatalogUnitPriceFields(row),
-  metadata: {
-    modality: row.modality || null,
-  },
+  metadata: buildRadiologyCatalogMetadata(row),
 });
 
 const mapDrugRow = (row, source = 'GLOBAL') => ({

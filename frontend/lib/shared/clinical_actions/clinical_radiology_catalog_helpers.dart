@@ -12,6 +12,28 @@ const List<String> clinicalRadiologyLateralityValues = <String>[
   'OBLIQUE',
 ];
 
+const Set<String> clinicalRadiologyNonBodyRegionTokens = <String>{
+  'FACILITY',
+  'GLOBAL',
+  'FAVORITES',
+  'ALL',
+  'STANDARD',
+  'STANDARD_RADIOLOGY_CATALOG',
+  'FACILITY_RADIOLOGY_CATALOG',
+  'GLOBAL_RADIOLOGY_CATALOG',
+  'UGANDA_CATALOG',
+};
+
+bool clinicalRadiologyIsValidBodyRegion(String? value) {
+  final String? normalized = clinicalActionTrimmedOrNull(value);
+  if (normalized == null) {
+    return false;
+  }
+  return !clinicalRadiologyNonBodyRegionTokens.contains(
+    clinicalActionNormalizedCatalogToken(normalized),
+  );
+}
+
 List<AppSelectOption<String>> clinicalRadiologyLateralityOptions(
   AppLocalizations l10n,
 ) {
@@ -168,20 +190,17 @@ String? clinicalRadiologyOptionModality(ClinicalActionCatalogOption option) {
 }
 
 String? clinicalRadiologyOptionBodyRegion(ClinicalActionCatalogOption option) {
-  return clinicalActionTrimmedOrNull(
+  final String? metadataValue =
+      clinicalActionTrimmedOrNull(
         clinicalRadiologyMetadataText(option, 'body_region'),
       ) ??
       clinicalActionTrimmedOrNull(
         clinicalRadiologyMetadataText(option, 'bodyRegion'),
-      ) ??
-      clinicalRadiologySecondaryFragment(
-        option,
-        exclude: <String?>[
-          clinicalRadiologyOptionModality(option),
-          clinicalRadiologyOptionLaterality(option),
-          option.status,
-        ],
       );
+  if (clinicalRadiologyIsValidBodyRegion(metadataValue)) {
+    return metadataValue;
+  }
+  return null;
 }
 
 String? clinicalRadiologyOptionLaterality(ClinicalActionCatalogOption option) {
@@ -219,35 +238,6 @@ String? clinicalRadiologyMetadataText(
 ) {
   final Object? value = option.metadata[key];
   return clinicalActionTrimmedOrNull(value?.toString());
-}
-
-String? clinicalRadiologySecondaryFragment(
-  ClinicalActionCatalogOption option, {
-  required Iterable<String?> exclude,
-}) {
-  final Set<String> excluded = exclude
-      .whereType<String>()
-      .map(clinicalActionNormalizedCatalogToken)
-      .where((String value) => value.isNotEmpty)
-      .toSet();
-  final List<String> fragments = <String>[
-    ...?clinicalActionTrimmedOrNull(
-      option.secondaryText,
-    )?.split(RegExp(r'[|,;/]+')),
-  ];
-  for (final String fragment in fragments) {
-    final String? normalized = clinicalActionTrimmedOrNull(fragment);
-    if (normalized == null) {
-      continue;
-    }
-    final String token = clinicalActionNormalizedCatalogToken(normalized);
-    if (excluded.contains(token) ||
-        clinicalRadiologyLateralityValues.contains(token)) {
-      continue;
-    }
-    return normalized;
-  }
-  return null;
 }
 
 List<String> clinicalRadiologySortedValues(Iterable<String?> values) {
@@ -372,7 +362,12 @@ List<ClinicalActionCatalogOption> orderClinicalRadiologyRequestCatalogItems(
   List<ClinicalActionCatalogOption> catalog, {
   required bool Function(ClinicalActionCatalogOption option) includeOption,
   required bool Function(ClinicalActionCatalogOption option) isSelected,
+  List<String> selectionOrder = const <String>[],
 }) {
+  final Map<String, int> selectionRank = <String, int>{
+    for (int index = 0; index < selectionOrder.length; index++)
+      selectionOrder[index]: index,
+  };
   final List<ClinicalActionCatalogOption> selected =
       <ClinicalActionCatalogOption>[];
   final List<ClinicalActionCatalogOption> unselected =
@@ -387,6 +382,11 @@ List<ClinicalActionCatalogOption> orderClinicalRadiologyRequestCatalogItems(
       unselected.add(option);
     }
   }
+  selected.sort((ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) {
+    final int leftRank = selectionRank[left.apiId] ?? selectionOrder.length;
+    final int rightRank = selectionRank[right.apiId] ?? selectionOrder.length;
+    return leftRank.compareTo(rightRank);
+  });
   return <ClinicalActionCatalogOption>[...selected, ...unselected];
 }
 

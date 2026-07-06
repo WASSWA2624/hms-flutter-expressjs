@@ -41,12 +41,23 @@ describe('facility-radiology-catalog.merge', () => {
   });
 
   it('maps clinical catalog row for active offering', () => {
-    const mapped = mapClinicalCatalogRadiologyTestRow(masterTest, offering);
+    const pelvicTest = {
+      ...masterTest,
+      name: 'Transvaginal Pelvic Ultrasound',
+      modality: 'ULTRASOUND',
+    };
+    const mapped = mapClinicalCatalogRadiologyTestRow(pelvicTest, offering);
     expect(mapped).toMatchObject({
       term_type: 'RADIOLOGY_TEST',
       source: 'FACILITY',
       origin: 'FACILITY_RADIOLOGY_CATALOG',
       unit_price: '25000.00',
+      metadata: {
+        modality: 'ULTRASOUND',
+        body_region: 'Pelvis',
+        facility_offering_id: 'offering-1',
+      },
     });
+    expect(mapped.metadata.body_region).not.toBe('FACILITY');
   });
 });

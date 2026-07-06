@@ -538,6 +538,7 @@ final class ClinicalTermOptionDto {
     final String? category =
         _string(json['category']) ?? _string(json['term_type']);
     final String? source = _string(json['source']) ?? _string(json['origin']);
+    final ClinicalJsonMap metadataJson = _map(json['metadata']);
     return ClinicalCatalogOption(
       id:
           _string(json['item_id']) ??
@@ -557,6 +558,9 @@ final class ClinicalTermOptionDto {
         code,
         category,
         source,
+        _string(metadataJson['body_region']),
+        _string(metadataJson['modality']),
+        _string(metadataJson['laterality']),
       ]),
       unitPrice: _num(json['unit_price']) ?? _num(json['price']),
       currency: _string(json['currency']),
@@ -566,8 +570,15 @@ final class ClinicalTermOptionDto {
         'term_type': _string(json['term_type']),
         'unit_price': _num(json['unit_price']) ?? _num(json['price']),
         'currency': _string(json['currency']),
-        if (_map(json['metadata'])['specimen_type'] != null)
-          'specimen_type': _string(_map(json['metadata'])['specimen_type']),
+        'modality': _string(metadataJson['modality']) ?? category,
+        'body_region': _string(metadataJson['body_region']),
+        'bodyRegion': _string(metadataJson['body_region']),
+        'laterality': _string(metadataJson['laterality']),
+        'priority': _string(metadataJson['priority']),
+        'equipment': _string(metadataJson['equipment']),
+        'procedure_type': _string(metadataJson['procedure_type']),
+        if (metadataJson['specimen_type'] != null)
+          'specimen_type': _string(metadataJson['specimen_type']),
       }),
     );
   }
