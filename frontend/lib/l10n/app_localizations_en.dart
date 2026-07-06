@@ -8871,6 +8871,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyStorageInactiveLabel => 'Inactive';
 
   @override
+  String get pharmacyStorageFilterAll => 'All locations';
+
+  @override
   String get pharmacyInventoryPanelTitle => 'Inventory stock';
 
   @override

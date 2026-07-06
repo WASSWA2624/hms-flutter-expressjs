@@ -80,6 +80,8 @@ const PUBLIC_ID_PREFIXES = Object.freeze({
   mortuary_storage_slot: 'MSS',
   mortuary_storage_assignment: 'MSA',
   mortuary_custody_event: 'MCE',
+  pharmacy_storage_room: 'PSR',
+  pharmacy_storage_shelf: 'PSS',
   mortuary_viewing: 'MVI',
   mortuary_post_mortem_request: 'MPR',
   mortuary_release_authorisation: 'MRA',

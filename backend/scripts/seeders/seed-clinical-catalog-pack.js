@@ -302,7 +302,53 @@ const seedPharmacyCatalogForTenant = async (
     drugBatches: {},
     inventoryStocks: {},
     stockMovements: {},
+    storageRooms: {},
+    storageShelves: {},
   };
+
+  const storageByFacility = {};
+  for (const facilityId of normalizedFacilityIds) {
+    const room = await ctx.upsert(
+      'pharmacy_storage_room',
+      `${seedKey}:pharmacy-storage-room:main:${facilityId}`,
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        name: 'Main store',
+        code: 'MAIN',
+        is_active: true,
+      },
+      {
+        tenantCode,
+        scenarioKey,
+        publicIdPrefix: 'PSR',
+      }
+    );
+    storageByFacility[facilityId] = { room };
+
+    const shelf = await ctx.upsert(
+      'pharmacy_storage_shelf',
+      `${seedKey}:pharmacy-storage-shelf:a01:${facilityId}`,
+      {
+        storage_room_id: room.id,
+        shelf_code: 'A-01',
+        label: 'Aisle A, shelf 1',
+        is_active: true,
+      },
+      {
+        tenantCode,
+        scenarioKey,
+        publicIdPrefix: 'PSS',
+      }
+    );
+    storageByFacility[facilityId].shelf = shelf;
+    result.storageRooms[facilityId] = room;
+    result.storageShelves[facilityId] = shelf;
+  }
+
+  const defaultStorage = normalizedFacilityIds.length
+    ? storageByFacility[normalizedFacilityIds[0]]
+    : null;
 
   for (const spec of DRUG_CATALOG) {
     const drug = await ctx.upsert(
@@ -387,6 +433,12 @@ const seedPharmacyCatalogForTenant = async (
         batch_number: `${String(spec.code || spec.key).replace(/[^A-Za-z0-9]/g, '').slice(0, 12).toUpperCase()}A`,
         expiry_date: ctx.date(540),
         quantity: batchQuantity,
+        ...(defaultStorage
+          ? {
+              storage_room_id: defaultStorage.room.id,
+              storage_shelf_id: defaultStorage.shelf.id,
+            }
+          : {}),
       },
       {
         tenantCode,

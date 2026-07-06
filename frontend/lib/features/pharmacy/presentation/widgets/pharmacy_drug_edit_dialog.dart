@@ -131,7 +131,7 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
         pharmacyExpiryAlertLeadOptions(l10n);
     final PharmacyStorageLayout storageLayout = ref
             .watch(pharmacyWorkspaceControllerProvider)
-            .valueOrNull
+            .value
             ?.when(
               success: (PharmacyWorkspaceState state) => state.storageLayout,
               failure: (_) => const PharmacyStorageLayout(),

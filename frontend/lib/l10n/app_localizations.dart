@@ -16546,6 +16546,12 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get pharmacyStorageInactiveLabel;
 
+  /// Pharmacy storage location filter option to show all items.
+  ///
+  /// In en, this message translates to:
+  /// **'All locations'**
+  String get pharmacyStorageFilterAll;
+
   /// Pharmacy inventory panel title.
   ///
   /// In en, this message translates to:

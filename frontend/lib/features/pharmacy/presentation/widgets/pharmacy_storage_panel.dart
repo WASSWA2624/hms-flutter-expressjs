@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -29,9 +27,6 @@ class PharmacyStoragePanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
     final List<PharmacyStorageRoom> rooms = state.storageLayout.rooms;
 
     return AppWorkspaceDetailPanel(
@@ -61,7 +56,7 @@ class PharmacyStoragePanel extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: rooms.length,
-              separatorBuilder: (_, __) => SizedBox(height: theme.spacing.sm),
+              separatorBuilder: (_, _) => SizedBox(height: theme.spacing.sm),
               itemBuilder: (BuildContext context, int index) {
                 final PharmacyStorageRoom room = rooms[index];
                 return Card(

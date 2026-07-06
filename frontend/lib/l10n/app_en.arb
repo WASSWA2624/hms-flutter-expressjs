@@ -11408,6 +11408,10 @@
   "@pharmacyStorageInactiveLabel": {
     "description": "Pharmacy storage inactive status label."
   },
+  "pharmacyStorageFilterAll": "All locations",
+  "@pharmacyStorageFilterAll": {
+    "description": "Pharmacy storage location filter option to show all items."
+  },
   "pharmacyInventoryPanelTitle": "Inventory stock",
   "@pharmacyInventoryPanelTitle": {
     "description": "Pharmacy inventory panel title."

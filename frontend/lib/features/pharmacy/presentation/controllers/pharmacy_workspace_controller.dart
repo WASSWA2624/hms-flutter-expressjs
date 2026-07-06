@@ -207,6 +207,33 @@ final class PharmacyWorkspaceController
     return _refreshDrugs(showLoading: true);
   }
 
+  Future<AppFailure?> applyDrugStorageFilter({
+    String? storageRoomId,
+    String? storageShelfId,
+    bool clearStorageRoomId = false,
+    bool clearStorageShelfId = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        drugQuery: current.drugQuery.copyWith(
+          storageRoomId: storageRoomId,
+          storageShelfId: storageShelfId,
+          clearStorageRoomId: clearStorageRoomId,
+          clearStorageShelfId: clearStorageShelfId,
+          pageRequest: current.drugQuery.pageRequest.first(),
+        ),
+        isRefreshingDrugs: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshDrugs(showLoading: true);
+  }
+
   Future<AppFailure?> changeDrugPage(AppPageRequest request) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -361,6 +388,33 @@ final class PharmacyWorkspaceController
     return _refreshInventory(showLoading: true);
   }
 
+  Future<AppFailure?> applyInventoryStorageFilter({
+    String? storageRoomId,
+    String? storageShelfId,
+    bool clearStorageRoomId = false,
+    bool clearStorageShelfId = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: current.inventoryQuery.copyWith(
+          storageRoomId: storageRoomId,
+          storageShelfId: storageShelfId,
+          clearStorageRoomId: clearStorageRoomId,
+          clearStorageShelfId: clearStorageShelfId,
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
   Future<AppFailure?> changeInventoryPage(AppPageRequest request) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -431,7 +485,7 @@ final class PharmacyWorkspaceController
         await _repository.createStorageRoom(input);
     return result.when(
       success: (_) async {
-        await _refreshStorageLayout(showLoading: false);
+        await _refreshStorageLayout();
         return null;
       },
       failure: (AppFailure failure) => failure,
@@ -446,7 +500,7 @@ final class PharmacyWorkspaceController
         await _repository.updateStorageRoom(roomId, input);
     return result.when(
       success: (_) async {
-        await _refreshStorageLayout(showLoading: false);
+        await _refreshStorageLayout();
         return null;
       },
       failure: (AppFailure failure) => failure,
@@ -461,7 +515,7 @@ final class PharmacyWorkspaceController
         await _repository.createStorageShelf(roomId, input);
     return result.when(
       success: (_) async {
-        await _refreshStorageLayout(showLoading: false);
+        await _refreshStorageLayout();
         return null;
       },
       failure: (AppFailure failure) => failure,
@@ -476,7 +530,7 @@ final class PharmacyWorkspaceController
         await _repository.updateStorageShelf(shelfId, input);
     return result.when(
       success: (_) async {
-        await _refreshStorageLayout(showLoading: false);
+        await _refreshStorageLayout();
         return null;
       },
       failure: (AppFailure failure) => failure,
