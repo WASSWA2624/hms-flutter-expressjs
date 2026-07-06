@@ -2312,6 +2312,20 @@ Future<void> _openRadiologyOrderDialog(BuildContext context) async {
           patientId: summary?.patientId,
           encounterId: summary?.encounterId,
         ),
+        onSearchRadiologyTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
         onSubmit: controller.orderRadiology,
       ),
     ),

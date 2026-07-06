@@ -16848,7 +16848,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestRemoveSelectedAction => 'Remove selected';
 
   @override
-  String get clinicalRequestPatientNameLabel => 'Name';
+  String get clinicalRequestPatientNameLabel => 'Patient name';
 
   @override
   String get clinicalRequestPatientIdLabel => 'Patient ID';

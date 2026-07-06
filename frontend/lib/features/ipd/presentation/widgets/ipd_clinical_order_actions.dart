@@ -105,6 +105,20 @@ Future<bool?> openIpdRadiologyOrderDialog(BuildContext context) async {
         patientId: admission?.summary.patientId,
         encounterId: admission?.summary.encounterId,
       ),
+      onSearchRadiologyTests:
+          ({
+            required String termType,
+            String? query,
+            int? limit,
+            String source = 'ALL',
+          }) {
+            return controller.searchClinicalTerms(
+              termType: termType,
+              query: query,
+              limit: limit ?? 80,
+              source: source,
+            );
+          },
       onSubmit: controller.orderRadiology,
     ),
   );

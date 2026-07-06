@@ -940,6 +940,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
+    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
     await _openNested(
       context,
       ClinicalRadiologyOrderActionDialog(
@@ -949,6 +950,23 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           patientId: flow.patientId ?? flow.patientIdentifier,
           encounterId: flow.publicId,
         ),
+        onSearchRadiologyTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return repository.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+                facilityId:
+                    flow.facilityId ??
+                    ref.read(sessionStateProvider).session?.user?.facilityId,
+              );
+            },
         onSubmit:
             ({
               required List<ClinicalActionRadiologyRequest> requests,

@@ -2,8 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+
+const List<ClinicalActionCatalogOption> _radiologyCatalogFixtures =
+    <ClinicalActionCatalogOption>[
+      ClinicalActionCatalogOption(
+        id: 'ct-chest',
+        publicId: 'RAD-CT-CHEST',
+        name: 'CT chest',
+        code: 'CT-CHEST',
+        category: 'CT',
+        searchText: 'ct chest thorax',
+        metadata: <String, Object?>{
+          'modality': 'CT',
+          'body_region': 'Chest',
+        },
+      ),
+    ];
+
+Future<Result<List<ClinicalActionCatalogOption>>>
+_mockSearchRadiologyTests({
+  required String termType,
+  String? query,
+  int? limit,
+  String source = 'ALL',
+}) async {
+  final String normalized = (query ?? '').trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return const Result<List<ClinicalActionCatalogOption>>.success(
+      _radiologyCatalogFixtures,
+    );
+  }
+  final List<ClinicalActionCatalogOption> matches = _radiologyCatalogFixtures
+      .where(
+        (ClinicalActionCatalogOption option) => (option.name ?? '')
+            .toLowerCase()
+            .contains(normalized),
+      )
+      .toList(growable: false);
+  return Result<List<ClinicalActionCatalogOption>>.success(matches);
+}
 
 void main() {
   testWidgets('radiology order dialog shows patient context and selected table', (
@@ -13,26 +53,14 @@ void main() {
       tester,
       ClinicalRadiologyOrderActionDialog(
         referenceData: const ClinicalActionReferenceData(
-          radiologyTests: <ClinicalActionCatalogOption>[
-            ClinicalActionCatalogOption(
-              id: 'ct-chest',
-              publicId: 'RAD-CT-CHEST',
-              name: 'CT chest',
-              code: 'CT-CHEST',
-              category: 'CT',
-              searchText: 'ct chest thorax',
-              metadata: <String, Object?>{
-                'modality': 'CT',
-                'body_region': 'Chest',
-              },
-            ),
-          ],
+          radiologyTests: _radiologyCatalogFixtures,
         ),
         patientContext: const ClinicalRequestPatientContext(
           patientName: 'Jane Doe',
           patientId: 'PAT-001',
           encounterId: 'ENC-42',
         ),
+        onSearchRadiologyTests: _mockSearchRadiologyTests,
         onSubmit:
             ({
               required List<ClinicalActionRadiologyRequest> requests,
@@ -43,6 +71,7 @@ void main() {
       ),
     );
 
+    expect(find.textContaining('Patient name:'), findsOneWidget);
     expect(find.textContaining('Jane Doe'), findsOneWidget);
     expect(find.textContaining('PAT-001'), findsOneWidget);
     expect(find.textContaining('ENC-42'), findsOneWidget);
@@ -58,21 +87,9 @@ void main() {
         tester,
         ClinicalRadiologyOrderActionDialog(
           referenceData: const ClinicalActionReferenceData(
-            radiologyTests: <ClinicalActionCatalogOption>[
-              ClinicalActionCatalogOption(
-                id: 'ct-chest',
-                publicId: 'RAD-CT-CHEST',
-                name: 'CT chest',
-                code: 'CT-CHEST',
-                category: 'CT',
-                searchText: 'ct chest thorax',
-                metadata: <String, Object?>{
-                  'modality': 'CT',
-                  'body_region': 'Chest',
-                },
-              ),
-            ],
+            radiologyTests: _radiologyCatalogFixtures,
           ),
+          onSearchRadiologyTests: _mockSearchRadiologyTests,
           onSubmit:
               ({
                 required List<ClinicalActionRadiologyRequest> requests,

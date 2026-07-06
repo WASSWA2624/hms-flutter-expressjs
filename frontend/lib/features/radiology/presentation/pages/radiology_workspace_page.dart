@@ -12,7 +12,9 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
@@ -2607,17 +2609,13 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
   Future<void> _openSharedRadiologySelector(
     RadiologyWorkspaceState? state,
   ) async {
-    final List<ClinicalActionCatalogOption> catalog = _radiologyCatalogOptions(
-      state,
-    );
-    if (catalog.isEmpty) {
-      setState(() => _selectionTouched = true);
-      return;
-    }
     List<ClinicalActionRadiologyRequest> selected =
         List<ClinicalActionRadiologyRequest>.of(_requests);
     final RadiologyReferenceData references =
         state?.references ?? RadiologyReferenceData.empty;
+    final String? facilityId =
+        state?.catalogScope?.facilityId ??
+        ref.read(sessionStateProvider).session?.user?.facilityId;
     RadiologyReferenceOption? patientOption;
     if (_patientId != null) {
       for (final RadiologyReferenceOption option in references.patients) {
@@ -2639,13 +2637,32 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
     final bool? updated = await showAppDialog<bool>(
       context: context,
       builder: (_) => ClinicalRadiologyOrderActionDialog(
-        referenceData: ClinicalActionReferenceData(radiologyTests: catalog),
+        referenceData: ClinicalActionReferenceData(
+          radiologyTests: _radiologyCatalogOptions(state),
+        ),
         initialRequests: _requests,
         patientContext: ClinicalRequestPatientContext(
           patientName: patientOption?.displayLabel,
           patientId: _patientId,
           encounterId: encounterOption?.displayLabel ?? _encounterId,
         ),
+        onSearchRadiologyTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return ref
+                  .read(clinicalRepositoryProvider)
+                  .searchClinicalTerms(
+                    termType: termType,
+                    query: query,
+                    limit: limit ?? 80,
+                    source: source,
+                    facilityId: facilityId,
+                  );
+            },
         onSubmit:
             ({
               required List<ClinicalActionRadiologyRequest> requests,

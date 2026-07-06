@@ -159,6 +159,25 @@ Future<bool?> openPatientRadiologyOrderDialog(
         patientId: patientApiId(patient),
         encounterId: resolvedEncounterId,
       ),
+      onSearchRadiologyTests:
+          ({
+            required String termType,
+            String? query,
+            int? limit,
+            String source = 'ALL',
+          }) {
+            return ref
+                .read(clinicalRepositoryProvider)
+                .searchClinicalTerms(
+                  termType: termType,
+                  query: query,
+                  limit: limit ?? 80,
+                  source: source,
+                  facilityId:
+                      patient.facilityId ??
+                      ref.read(sessionStateProvider).session?.user?.facilityId,
+                );
+          },
       onSubmit:
           ({
             required List<ClinicalActionRadiologyRequest> requests,

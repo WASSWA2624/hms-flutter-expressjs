@@ -21687,7 +21687,7 @@
   "@clinicalRequestRemoveSelectedAction": {
     "description": "Remove checked items from a clinical request selection table."
   },
-  "clinicalRequestPatientNameLabel": "Name",
+  "clinicalRequestPatientNameLabel": "Patient name",
   "@clinicalRequestPatientNameLabel": {
     "description": "Patient name label on clinical request toolbar context strip."
   },

@@ -2142,6 +2142,20 @@ Future<void> _openRadiologyOrderDialog(
           patientId: summary?.patientDisplayId ?? summary?.patientId,
           encounterId: summary?.encounterDisplayId,
         ),
+        onSearchRadiologyTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
         onSubmit: controller.orderRadiology,
       ),
     ),

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
@@ -32,14 +37,20 @@ final class ClinicalRadiologyCatalogSelection {
 Future<List<ClinicalRadiologyCatalogSelection>?>
 showClinicalRadiologyRequestCatalogDialog({
   required BuildContext context,
-  required ClinicalActionReferenceData referenceData,
+  required Future<Result<List<ClinicalActionCatalogOption>>> Function({
+    required String termType,
+    String? query,
+    int? limit,
+    String source,
+  })
+  onSearchRadiologyTests,
   required List<ClinicalRadiologyCatalogSelection> initialSelections,
   ClinicalRadiologyCatalogSelection? editingSelection,
 }) {
   return showAppDialog<List<ClinicalRadiologyCatalogSelection>>(
     context: context,
     builder: (BuildContext context) => ClinicalRadiologyRequestCatalogDialog(
-      referenceData: referenceData,
+      onSearchRadiologyTests: onSearchRadiologyTests,
       initialSelections: initialSelections,
       editingSelection: editingSelection,
     ),
@@ -48,13 +59,19 @@ showClinicalRadiologyRequestCatalogDialog({
 
 class ClinicalRadiologyRequestCatalogDialog extends StatefulWidget {
   const ClinicalRadiologyRequestCatalogDialog({
-    required this.referenceData,
+    required this.onSearchRadiologyTests,
     required this.initialSelections,
     this.editingSelection,
     super.key,
   });
 
-  final ClinicalActionReferenceData referenceData;
+  final Future<Result<List<ClinicalActionCatalogOption>>> Function({
+    required String termType,
+    String? query,
+    int? limit,
+    String source,
+  })
+  onSearchRadiologyTests;
   final List<ClinicalRadiologyCatalogSelection> initialSelections;
   final ClinicalRadiologyCatalogSelection? editingSelection;
 
@@ -65,6 +82,8 @@ class ClinicalRadiologyRequestCatalogDialog extends StatefulWidget {
 
 class _ClinicalRadiologyRequestCatalogDialogState
     extends State<ClinicalRadiologyRequestCatalogDialog> {
+  static const int _maxVisibleCatalogOptions = 100;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
   static const String _modalityFilterKey = 'modality';
   static const String _selectColumnKey = 'select';
   static const String _nameColumnKey = 'name';
@@ -79,11 +98,18 @@ class _ClinicalRadiologyRequestCatalogDialogState
   late final AppListTableColumnVisibilityController<ClinicalActionCatalogOption>
   _columnVisibilityController;
   late final List<ClinicalRadiologyCatalogSelection> _stagedSelections;
+  Timer? _searchDebounce;
   String? _modality;
   String? _bodyRegion;
   String? _laterality;
   String? _priority;
+  String _searchQuery = '';
+  int _searchRequest = 0;
+  List<ClinicalActionCatalogOption> _catalogOptions =
+      const <ClinicalActionCatalogOption>[];
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  bool _isSearching = false;
+  AppFailure? _catalogFailure;
 
   @override
   void initState() {
@@ -103,10 +129,13 @@ class _ClinicalRadiologyRequestCatalogDialogState
     if (editing != null && !_isStagedSelected(editing.option)) {
       _stagedSelections.add(editing);
     }
+    _searchRequest += 1;
+    unawaited(_loadCatalog(_searchQuery, _searchRequest));
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _noteController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -121,7 +150,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
         .clamp(480.0, 720.0)
         .toDouble();
     final List<ClinicalActionCatalogOption> catalog = _sortedCatalogItems(
-      _filteredCatalog(widget.referenceData.radiologyTests),
+      _filteredCatalog(_catalogOptions),
     );
     final List<AppListTableColumn<ClinicalActionCatalogOption>> columns =
         _catalogColumns(context);
@@ -135,11 +164,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
     final List<AppSelectOption<String>> modalityOptions =
         clinicalRadiologyModalityOptions(
           l10n,
-          widget.referenceData.radiologyTests,
+          _catalogOptions,
         );
     final List<AppSelectOption<String>> bodyRegionOptions =
         clinicalRadiologyBodyRegionOptions(
-          widget.referenceData.radiologyTests,
+          _catalogOptions,
           modality: _modality,
           laterality: _laterality,
           priority: _priority,
@@ -155,6 +184,11 @@ class _ClinicalRadiologyRequestCatalogDialogState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (_catalogFailure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _catalogFailure!,
+              ),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
                 final bool compact = constraints.maxWidth < 640;
@@ -238,6 +272,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
                 columnVisibilityResetLabel: l10n.labResetColumnsAction,
                 displayMode: AppListTableDisplayMode.table,
                 tableHorizontalMargin: 0,
+                isLoading: _isSearching,
                 rowColorBuilder:
                     (BuildContext context, ClinicalActionCatalogOption item) {
                       if (!_isStagedSelected(item)) {
@@ -251,7 +286,9 @@ class _ClinicalRadiologyRequestCatalogDialogState
                   controller: _searchController,
                   semanticLabel: l10n.clinicalRadiologyRequestSearchLabel,
                   hintText: l10n.clinicalRadiologyRequestSearchHint,
+                  isLoading: _isSearching,
                   matcher: _matchesCatalogSearch,
+                  onChanged: _scheduleSearch,
                   showAdvancedFilterButton: true,
                   advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
                   advancedFilterTitle: l10n.radiologyFiltersLabel,
@@ -517,7 +554,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
           valueListenable: _searchController,
           builder: (BuildContext context, TextEditingValue value, Widget? _) {
             final List<ClinicalActionCatalogOption> visibleItems = _sortedCatalogItems(
-              _filteredCatalog(widget.referenceData.radiologyTests),
+              _filteredCatalog(_catalogOptions),
             ).where((ClinicalActionCatalogOption item) {
               return _matchesCatalogSearch(item, value.text) &&
                   _matchesModalityFilter(item);
@@ -686,7 +723,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
       return true;
     }
     return clinicalRadiologyBodyRegionOptions(
-      widget.referenceData.radiologyTests,
+      _catalogOptions,
       modality: modality,
       laterality: _laterality,
       priority: _priority,
@@ -752,6 +789,42 @@ class _ClinicalRadiologyRequestCatalogDialogState
               selection.option.apiId == item.apiId,
         );
       }
+    });
+  }
+
+  Future<void> _loadCatalog(String query, int requestId) async {
+    setState(() => _isSearching = true);
+    final Result<List<ClinicalActionCatalogOption>> result = await widget
+        .onSearchRadiologyTests(
+          termType: ClinicalCatalogTermType.radiologyTest.apiValue,
+          query: query.trim().isEmpty ? null : query.trim(),
+          limit: _maxVisibleCatalogOptions,
+          source: ClinicalCatalogSource.facility.apiValue,
+        );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() {
+      _isSearching = false;
+      result.when(
+        success: (List<ClinicalActionCatalogOption> value) {
+          _catalogFailure = null;
+          _catalogOptions = value;
+        },
+        failure: (AppFailure failure) {
+          _catalogFailure = failure;
+          _catalogOptions = const <ClinicalActionCatalogOption>[];
+        },
+      );
+    });
+  }
+
+  void _scheduleSearch(String value) {
+    setState(() => _searchQuery = value.trim());
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      _searchRequest += 1;
+      unawaited(_loadCatalog(_searchQuery, _searchRequest));
     });
   }
 }

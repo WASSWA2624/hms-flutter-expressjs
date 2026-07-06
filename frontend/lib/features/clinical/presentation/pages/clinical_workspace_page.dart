@@ -2663,6 +2663,20 @@ Future<void> _openRadiologyDialog(
       builder: (_) => ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
         patientContext: _clinicalLabOrderPatientContext(context),
+        onSearchRadiologyTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
         onSubmit: controller.requestRadiology,
       ),
     ),

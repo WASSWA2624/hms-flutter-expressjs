@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
@@ -15,6 +16,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   const ClinicalRadiologyOrderActionDialog({
     required this.referenceData,
+    required this.onSearchRadiologyTests,
     required this.onSubmit,
     this.initialRequests = const <ClinicalActionRadiologyRequest>[],
     this.patientContext = const ClinicalRequestPatientContext(),
@@ -22,6 +24,13 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   });
 
   final ClinicalActionReferenceData referenceData;
+  final Future<Result<List<ClinicalActionCatalogOption>>> Function({
+    required String termType,
+    String? query,
+    int? limit,
+    String source,
+  })
+  onSearchRadiologyTests;
   final List<ClinicalActionRadiologyRequest> initialRequests;
   final ClinicalRequestPatientContext patientContext;
   final Future<AppFailure?> Function({
@@ -116,7 +125,17 @@ class _RadiologyOrderDialogState
         return option;
       }
     }
-    return null;
+    return ClinicalActionCatalogOption(
+      id: id,
+      publicId: id,
+      name: id,
+      metadata: <String, Object?>{
+        'modality': request.modality,
+        'body_region': request.bodyRegion,
+        'laterality': request.laterality,
+        'priority': request.priority,
+      },
+    );
   }
 
   @override
@@ -214,7 +233,7 @@ class _RadiologyOrderDialogState
     final List<ClinicalRadiologyCatalogSelection>? confirmed =
         await showClinicalRadiologyRequestCatalogDialog(
           context: context,
-          referenceData: widget.referenceData,
+          onSearchRadiologyTests: widget.onSearchRadiologyTests,
           initialSelections: _requests
               .map(
                 (_PendingRadiologyRequest request) => request.selection,

@@ -16,7 +16,6 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   const ClinicalRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
-  static const int _largeRadiologyCatalogPageSize = 6500;
   static const int _defaultCatalogPageSize = 100;
 
   final ApiClient _apiClient;
@@ -126,12 +125,8 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       Future<List<ClinicalCatalogOption>>.value(
         const <ClinicalCatalogOption>[],
       ),
-      _catalogOrEmpty(
-        HmsApiResource.radiologyTests,
-        limit: _largeRadiologyCatalogPageSize,
-        queryParameters: const <String, Object?>{
-          'include_standard_catalog': true,
-        },
+      Future<List<ClinicalCatalogOption>>.value(
+        const <ClinicalCatalogOption>[],
       ),
       _catalogOrEmpty(HmsApiResource.drugs),
       _catalogOrEmpty(
