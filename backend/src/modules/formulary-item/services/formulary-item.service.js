@@ -11,6 +11,19 @@ const formularyItemRepository = require('@repositories/formulary-item/formulary-
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 
+const FORMULARY_DRUG_INCLUDE = {
+  drug: {
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      form: true,
+      strength: true,
+      human_friendly_id: true,
+    },
+  },
+};
+
 /**
  * List formulary items with pagination and filtering
  *
@@ -36,8 +49,14 @@ const listFormularyItems = async (filters, page, limit, sortBy, order, userId, i
     if (filters.is_active !== undefined) whereClause.is_active = filters.is_active;
 
     const [formularyItems, total] = await Promise.all([
-      formularyItemRepository.findMany(whereClause, skip, limit, orderBy),
-      formularyItemRepository.count(whereClause)
+      formularyItemRepository.findMany(
+        whereClause,
+        skip,
+        limit,
+        orderBy,
+        FORMULARY_DRUG_INCLUDE
+      ),
+      formularyItemRepository.count(whereClause),
     ]);
 
     return {
@@ -67,7 +86,10 @@ const listFormularyItems = async (filters, page, limit, sortBy, order, userId, i
  */
 const getFormularyItemById = async (id, userId, ipAddress) => {
   try {
-    const formularyItem = await formularyItemRepository.findById(id);
+    const formularyItem = await formularyItemRepository.findById(
+      id,
+      FORMULARY_DRUG_INCLUDE
+    );
 
     if (!formularyItem) {
       throw new HttpError('errors.formulary_item.not_found', 404);
@@ -103,7 +125,7 @@ const createFormularyItem = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return formularyItem;
+    return formularyItemRepository.findById(formularyItem.id, FORMULARY_DRUG_INCLUDE);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -141,7 +163,7 @@ const updateFormularyItem = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return formularyItem;
+    return formularyItemRepository.findById(formularyItem.id, FORMULARY_DRUG_INCLUDE);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

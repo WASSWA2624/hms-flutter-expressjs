@@ -29,18 +29,146 @@ class PharmacyStoragePanel extends ConsumerWidget {
     required this.state,
     required this.writeRequirement,
     this.showHeaderActions = true,
+    this.compact = false,
     super.key,
   });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
   final bool showHeaderActions;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<PharmacyStorageRoom> rooms = state.storageLayout.rooms;
+    final Widget roomContent = Stack(
+      children: <Widget>[
+        if (rooms.isEmpty && !state.isRefreshingStorage)
+          AppWorkspaceStatePanel.state(
+            variant: AppStateViewVariant.empty,
+            title: l10n.pharmacyNoStorageRoomsTitle,
+            body: l10n.pharmacyNoStorageRoomsBody,
+            icon: Icons.warehouse_outlined,
+          )
+        else if (rooms.isEmpty)
+          const SizedBox.shrink()
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: rooms.length,
+            separatorBuilder: (_, _) => SizedBox(height: theme.spacing.sm),
+            itemBuilder: (BuildContext context, int index) {
+              final PharmacyStorageRoom room = rooms[index];
+              return Card(
+                child: ExpansionTile(
+                  title: Text(room.name ?? room.id),
+                  subtitle: room.code == null || room.code!.isEmpty
+                      ? null
+                      : Text(room.code!),
+                  trailing: AppAccessActionGate(
+                    requirement: writeRequirement,
+                    builder: (BuildContext context, bool isAllowed) => Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (!room.isActive)
+                          Padding(
+                            padding: EdgeInsets.only(right: theme.spacing.xs),
+                            child: Text(
+                              l10n.pharmacyStorageInactiveLabel,
+                              style: theme.textTheme.labelSmall,
+                            ),
+                          ),
+                        AppButton(
+                          iconOnly: true,
+                          leadingIcon: Icons.add,
+                          label: l10n.pharmacyAddStorageShelfAction,
+                          semanticLabel: l10n.pharmacyAddStorageShelfAction,
+                          enabled: isAllowed && room.isActive,
+                          onPressed: () => _openShelfDialog(context, ref, room),
+                        ),
+                        AppButton(
+                          iconOnly: true,
+                          leadingIcon: Icons.edit_outlined,
+                          label: l10n.pharmacyEditStorageRoomAction,
+                          semanticLabel: l10n.pharmacyEditStorageRoomAction,
+                          enabled: isAllowed,
+                          onPressed: () => openPharmacyStorageRoomDialog(
+                            context,
+                            ref,
+                            room: room,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  children: room.shelves.isEmpty
+                      ? <Widget>[
+                          Padding(
+                            padding: EdgeInsets.all(theme.spacing.md),
+                            child: Text(l10n.pharmacyNoStorageShelvesBody),
+                          ),
+                        ]
+                      : room.shelves
+                            .map(
+                              (PharmacyStorageShelf shelf) => ListTile(
+                                title: Text(shelf.displayLabel),
+                                subtitle: shelf.label == null ||
+                                        shelf.label!.trim().isEmpty
+                                    ? null
+                                    : Text(shelf.label!),
+                                trailing: shelf.isActive
+                                    ? null
+                                    : Text(l10n.pharmacyStorageInactiveLabel),
+                                onTap: writeRequirement.allows(ref)
+                                    ? () => _openShelfDialog(
+                                        context,
+                                        ref,
+                                        room,
+                                        shelf: shelf,
+                                      )
+                                    : null,
+                              ),
+                            )
+                            .toList(growable: false),
+                ),
+              );
+            },
+          ),
+        if (state.isRefreshingStorage)
+          Positioned.fill(
+            child: ColoredBox(
+              color: theme.colorScheme.surface.withValues(alpha: 0.6),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AppAccessActionGate(
+              requirement: writeRequirement,
+              builder: (BuildContext context, bool isAllowed) =>
+                  AppButton.secondary(
+                label: l10n.pharmacyAddStorageRoomAction,
+                leadingIcon: Icons.add,
+                enabled: isAllowed,
+                onPressed: () => openPharmacyStorageRoomDialog(context, ref),
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          roomContent,
+        ],
+      );
+    }
 
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyStoragePanelTitle,
@@ -59,106 +187,7 @@ class PharmacyStoragePanel extends ConsumerWidget {
               ),
             ]
           : const <Widget>[],
-      child: Stack(
-        children: <Widget>[
-          if (rooms.isEmpty && !state.isRefreshingStorage)
-            AppWorkspaceStatePanel.state(
-              variant: AppStateViewVariant.empty,
-              title: l10n.pharmacyNoStorageRoomsTitle,
-              body: l10n.pharmacyNoStorageRoomsBody,
-              icon: Icons.warehouse_outlined,
-            )
-          else if (rooms.isEmpty)
-            const SizedBox.shrink()
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: rooms.length,
-              separatorBuilder: (_, _) => SizedBox(height: theme.spacing.sm),
-              itemBuilder: (BuildContext context, int index) {
-                final PharmacyStorageRoom room = rooms[index];
-                return Card(
-                  child: ExpansionTile(
-                    title: Text(room.name ?? room.id),
-                    subtitle: room.code == null || room.code!.isEmpty
-                        ? null
-                        : Text(room.code!),
-                    trailing: AppAccessActionGate(
-                      requirement: writeRequirement,
-                      builder: (BuildContext context, bool isAllowed) => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (!room.isActive)
-                            Padding(
-                              padding: EdgeInsets.only(right: theme.spacing.xs),
-                              child: Text(
-                                l10n.pharmacyStorageInactiveLabel,
-                                style: theme.textTheme.labelSmall,
-                              ),
-                            ),
-                          AppButton(
-                            iconOnly: true,
-                            leadingIcon: Icons.add,
-                            label: l10n.pharmacyAddStorageShelfAction,
-                            semanticLabel: l10n.pharmacyAddStorageShelfAction,
-                            enabled: isAllowed && room.isActive,
-                            onPressed: () =>
-                                _openShelfDialog(context, ref, room),
-                          ),
-                          AppButton(
-                            iconOnly: true,
-                            leadingIcon: Icons.edit_outlined,
-                            label: l10n.pharmacyEditStorageRoomAction,
-                            semanticLabel: l10n.pharmacyEditStorageRoomAction,
-                            enabled: isAllowed,
-                            onPressed: () => openPharmacyStorageRoomDialog(
-                              context,
-                              ref,
-                              room: room,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    children: room.shelves.isEmpty
-                        ? <Widget>[
-                            Padding(
-                              padding: EdgeInsets.all(theme.spacing.md),
-                              child: Text(l10n.pharmacyNoStorageShelvesBody),
-                            ),
-                          ]
-                        : room.shelves
-                              .map(
-                                (PharmacyStorageShelf shelf) => ListTile(
-                                  title: Text(shelf.displayLabel),
-                                  trailing: shelf.isActive
-                                      ? null
-                                      : Text(l10n.pharmacyStorageInactiveLabel),
-                                  onTap: writeRequirement.allows(ref)
-                                      ? () => _openShelfDialog(
-                                          context,
-                                          ref,
-                                          room,
-                                          shelf: shelf,
-                                        )
-                                      : null,
-                                ),
-                              )
-                              .toList(growable: false),
-                  ),
-                );
-              },
-            ),
-          if (state.isRefreshingStorage)
-            Positioned.fill(
-              child: ColoredBox(
-                color: theme.colorScheme.surface.withValues(alpha: 0.6),
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-            ),
-        ],
-      ),
+      child: roomContent,
     );
   }
 

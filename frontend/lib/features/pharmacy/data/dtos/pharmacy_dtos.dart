@@ -550,7 +550,12 @@ final class PharmacyFormularyItemDto {
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       tenantId: _string(json['tenant_id']),
       drugId: _string(json['drug_id']) ?? _string(drug['id']),
-      drugDisplayName: _string(drug['name']),
+      drugDisplayName: _joinDrugDisplay(
+            _string(drug['name']),
+            _string(drug['strength']),
+            _string(drug['form']),
+          ) ??
+          _string(drug['name']),
       drugCode: _string(drug['code']),
       isActive: _bool(json['is_active'], fallback: true),
       createdAt: _date(json['created_at']),
@@ -749,4 +754,16 @@ bool _bool(Object? value, {bool fallback = false}) {
     return value != 0;
   }
   return fallback;
+}
+
+String? _joinDrugDisplay(String? name, String? strength, String? form) {
+  final List<String> parts = <String>[
+    if (name != null && name.trim().isNotEmpty) name.trim(),
+    if (strength != null && strength.trim().isNotEmpty) strength.trim(),
+    if (form != null && form.trim().isNotEmpty) form.trim(),
+  ];
+  if (parts.isEmpty) {
+    return null;
+  }
+  return parts.join(' | ');
 }

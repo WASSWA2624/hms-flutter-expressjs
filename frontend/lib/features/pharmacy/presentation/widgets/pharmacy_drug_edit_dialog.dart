@@ -62,7 +62,16 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     _pharmacyCurrency = drug?.pharmacyCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
     _facilityCurrency = drug?.facilityCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
     _initialStockController = TextEditingController();
-    _reorderLevelController = TextEditingController();
+    final num? existingReorderLevel = drug?.stockRows.isNotEmpty == true
+        ? drug!.stockRows.first.reorderLevel
+        : null;
+    _reorderLevelController = TextEditingController(
+      text: existingReorderLevel != null && existingReorderLevel > 0
+          ? existingReorderLevel.toString()
+          : '',
+    );
+    _storageRoomId = drug?.storageRoomId;
+    _storageShelfId = drug?.storageShelfId;
     _batchNumberController = TextEditingController();
   }
 
@@ -101,6 +110,126 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
       context,
       ref,
       initialTab: PharmacyCatalogTab.storage,
+    );
+  }
+
+  Widget _buildStorageLocationSection({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required List<PharmacyStorageRoom> activeRooms,
+    required List<PharmacyStorageShelf> shelfOptions,
+  }) {
+    return AppFormSection(
+      title: l10n.pharmacyDrugStorageSectionTitle,
+      description: l10n.pharmacyDrugStorageSectionHelper,
+      children: <Widget>[
+        if (activeRooms.isEmpty)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                l10n.pharmacyNoStorageRoomsBody,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppButton.tertiary(
+                label: l10n.pharmacyConfigureStorageAction,
+                leadingIcon: Icons.warehouse_outlined,
+                enabled: !_isSaving,
+                onPressed: _openStorageConfiguration,
+              ),
+            ],
+          )
+        else
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppSelectField<String>(
+              value: _storageRoomId,
+              labelText: l10n.pharmacyStorageRoomLabel,
+              enabled: !_isSaving,
+              options: activeRooms
+                  .map(
+                    (PharmacyStorageRoom room) => AppSelectOption<String>(
+                      value: room.id,
+                      label: room.name ?? room.id,
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (String? value) {
+                setState(() {
+                  _storageRoomId = value;
+                  final List<PharmacyStorageShelf> nextShelves = activeRooms
+                      .where((PharmacyStorageRoom room) => room.id == value)
+                      .expand((PharmacyStorageRoom room) => room.shelves)
+                      .where((PharmacyStorageShelf shelf) => shelf.isActive)
+                      .toList(growable: false);
+                  if (_storageShelfId != null &&
+                      !nextShelves.any(
+                        (PharmacyStorageShelf shelf) =>
+                            shelf.id == _storageShelfId,
+                      )) {
+                    _storageShelfId = null;
+                  }
+                });
+              },
+            ),
+            right: AppSelectField<String>(
+              value: _storageShelfId,
+              labelText: l10n.pharmacyStorageShelfLabel,
+              enabled: !_isSaving && _storageRoomId != null,
+              options: shelfOptions
+                  .map(
+                    (PharmacyStorageShelf shelf) => AppSelectOption<String>(
+                      value: shelf.id,
+                      label: shelf.displayLabel,
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (String? value) =>
+                  setState(() => _storageShelfId = value),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String? _resolveInventoryItemId(PharmacyDrug drug) {
+    for (final PharmacyDrugStockMapping mapping in drug.stockMappings) {
+      final String? inventoryItemId = mapping.inventoryItemId;
+      if (inventoryItemId != null && inventoryItemId.isNotEmpty) {
+        return inventoryItemId;
+      }
+    }
+    for (final PharmacyInventoryStock stock in drug.stockRows) {
+      final String? inventoryItemId = stock.inventoryItemId;
+      if (inventoryItemId != null && inventoryItemId.isNotEmpty) {
+        return inventoryItemId;
+      }
+    }
+    return null;
+  }
+
+  PharmacyFacilityOfferingInput? _buildFacilityOfferingInput(
+    PharmacyWorkspaceController controller,
+    num? facilityPrice,
+  ) {
+    final num? offeringPrice = facilityPrice ??
+        widget.drug?.facilityUnitPrice ??
+        widget.drug?.pharmacyUnitPrice ??
+        widget.drug?.unitPrice;
+    final bool shouldUpsertOffering = facilityPrice != null ||
+        _storageShelfId != null ||
+        widget.drug?.storageShelfId != null;
+    if (!shouldUpsertOffering || offeringPrice == null) {
+      return null;
+    }
+    return PharmacyFacilityOfferingInput(
+      unitPrice: offeringPrice,
+      currency: _facilityCurrency,
+      facilityId: controller.resolveFacilityId(),
+      defaultStorageShelfId: _storageShelfId,
     );
   }
 
@@ -226,6 +355,30 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
               ),
             ],
           ),
+          if (_isEdit) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppFormSection(
+              title: l10n.pharmacyDrugInitialStockSectionTitle,
+              children: <Widget>[
+                AppTextField(
+                  controller: _reorderLevelController,
+                  labelText: l10n.pharmacyReorderLevelLabel,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: _optionalNonNegativeIntegerValidator,
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            _buildStorageLocationSection(
+              l10n: l10n,
+              theme: theme,
+              activeRooms: activeRooms,
+              shelfOptions: shelfOptions,
+            ),
+          ],
           if (!_isEdit) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             AppFormSection(
@@ -330,89 +483,11 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
               ],
             ),
             SizedBox(height: theme.spacing.md),
-            AppFormSection(
-              title: l10n.pharmacyDrugStorageSectionTitle,
-              description: l10n.pharmacyDrugStorageSectionHelper,
-              children: <Widget>[
-                if (activeRooms.isEmpty)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        l10n.pharmacyNoStorageRoomsBody,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      SizedBox(height: theme.spacing.sm),
-                      AppButton.tertiary(
-                        label: l10n.pharmacyConfigureStorageAction,
-                        leadingIcon: Icons.warehouse_outlined,
-                        enabled: !_isSaving,
-                        onPressed: _openStorageConfiguration,
-                      ),
-                    ],
-                  )
-                else
-                  AppResponsiveFieldRow.two(
-                    gap: AppResponsiveFieldRowGap.form,
-                    left: AppSelectField<String>(
-                      value: _storageRoomId,
-                      labelText: l10n.pharmacyStorageRoomLabel,
-                      enabled: !_isSaving,
-                      options: activeRooms
-                          .map(
-                            (PharmacyStorageRoom room) => AppSelectOption<String>(
-                              value: room.id,
-                              label: room.name ?? room.id,
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: (String? value) {
-                        setState(() {
-                          _storageRoomId = value;
-                          final List<PharmacyStorageShelf> nextShelves =
-                              activeRooms
-                                  .where(
-                                    (PharmacyStorageRoom room) =>
-                                        room.id == value,
-                                  )
-                                  .expand(
-                                    (PharmacyStorageRoom room) => room.shelves,
-                                  )
-                                  .where(
-                                    (PharmacyStorageShelf shelf) =>
-                                        shelf.isActive,
-                                  )
-                                  .toList(growable: false);
-                          if (_storageShelfId != null &&
-                              !nextShelves.any(
-                                (PharmacyStorageShelf shelf) =>
-                                    shelf.id == _storageShelfId,
-                              )) {
-                            _storageShelfId = null;
-                          }
-                        });
-                      },
-                    ),
-                    right: AppSelectField<String>(
-                      value: _storageShelfId,
-                      labelText: l10n.pharmacyStorageShelfLabel,
-                      enabled: !_isSaving && _storageRoomId != null,
-                      options: shelfOptions
-                          .map(
-                            (PharmacyStorageShelf shelf) =>
-                                AppSelectOption<String>(
-                              value: shelf.id,
-                              label: shelf.displayLabel,
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: (String? value) =>
-                          setState(() => _storageShelfId = value),
-                    ),
-                  ),
-              ],
+            _buildStorageLocationSection(
+              l10n: l10n,
+              theme: theme,
+              activeRooms: activeRooms,
+              shelfOptions: shelfOptions,
             ),
           ],
         ],
@@ -449,15 +524,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     final String? pharmacyCurrency = pharmacyPrice == null
         ? null
         : _pharmacyCurrency;
-    final PharmacyFacilityOfferingInput? facilityOffering = facilityPrice == null
-        ? null
-        : PharmacyFacilityOfferingInput(
-            unitPrice: facilityPrice,
-            currency: _facilityCurrency,
-            facilityId: controller.resolveFacilityId(),
-            defaultStorageShelfId: _storageShelfId,
-          );
-    final AppFailure? failure;
+    final PharmacyFacilityOfferingInput? facilityOffering =
+        _buildFacilityOfferingInput(controller, facilityPrice);
+    AppFailure? failure;
     if (widget.drug == null) {
       final String? tenantId = controller.resolveTenantId();
       if (tenantId == null) {
@@ -497,15 +566,22 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
           unitPrice: pharmacyPrice,
           currency: pharmacyCurrency,
         ),
-        facilityOffering: facilityPrice == null
-            ? null
-            : PharmacyFacilityOfferingInput(
-                unitPrice: facilityPrice,
-                currency: _facilityCurrency,
-                facilityId: controller.resolveFacilityId(),
-                defaultStorageShelfId: _storageShelfId,
-              ),
+        facilityOffering: facilityOffering,
       );
+      if (failure == null) {
+        final int? reorderLevel = int.tryParse(_reorderLevelController.text.trim());
+        final String? inventoryItemId = _resolveInventoryItemId(widget.drug!);
+        if (reorderLevel != null && inventoryItemId != null) {
+          failure = await controller.adjustInventoryStock(
+            PharmacyInventoryAdjustInput(
+              inventoryItemId: inventoryItemId,
+              reorderLevel: reorderLevel,
+              reason: 'OTHER',
+              facilityId: controller.resolveFacilityId(),
+            ),
+          );
+        }
+      }
     }
     if (!mounted) {
       return;
