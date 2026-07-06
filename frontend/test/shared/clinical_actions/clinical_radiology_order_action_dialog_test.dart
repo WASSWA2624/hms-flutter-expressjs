@@ -155,6 +155,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cancel'), findsNothing);
+    expect(find.text('0 selected'), findsNothing);
     expect(find.text('Confirm selected studies'), findsOneWidget);
 
     await tester.tap(find.byType(Checkbox).last);

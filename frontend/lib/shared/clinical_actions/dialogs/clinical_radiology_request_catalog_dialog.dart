@@ -153,9 +153,6 @@ class _ClinicalRadiologyRequestCatalogDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.72)
-        .clamp(480.0, 720.0)
-        .toDouble();
     final List<ClinicalActionCatalogOption> catalog = _sortedCatalogItems(
       _filteredCatalog(_catalogOptions),
     );
@@ -186,177 +183,93 @@ class _ClinicalRadiologyRequestCatalogDialogState
       icon: const Icon(Icons.manage_search_outlined),
       maxWidth: 980,
       pinActionsToBottom: true,
-      content: SizedBox(
-        height: bodyHeight,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_catalogFailure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _catalogFailure!,
-              ),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: bodyHeight * 0.36,
-              ),
-              child: SingleChildScrollView(
-                primary: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    LayoutBuilder(
-                      builder: (BuildContext context, BoxConstraints constraints) {
-                        final bool compact = constraints.maxWidth < 640;
-                        if (compact) {
-                          return Column(
-                            children: <Widget>[
-                              _modalityField(l10n, modalityOptions),
-                              SizedBox(height: theme.spacing.sm),
-                              _lateralityField(l10n),
-                              SizedBox(height: theme.spacing.sm),
-                              _priorityField(l10n),
-                              SizedBox(height: theme.spacing.sm),
-                              _bodyRegionField(l10n, bodyRegionOptions),
-                              SizedBox(height: theme.spacing.sm),
-                              _clinicalNoteField(l10n),
-                            ],
-                          );
-                        }
-
-                        return Column(
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: _modalityField(l10n, modalityOptions),
-                                ),
-                                SizedBox(width: theme.spacing.sm),
-                                Expanded(child: _lateralityField(l10n)),
-                              ],
-                            ),
-                            SizedBox(height: theme.spacing.sm),
-                            Row(
-                              children: <Widget>[
-                                SizedBox(
-                                  width: 220,
-                                  child: _priorityField(l10n),
-                                ),
-                                SizedBox(width: theme.spacing.sm),
-                                Expanded(
-                                  child: _bodyRegionField(
-                                    l10n,
-                                    bodyRegionOptions,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: theme.spacing.sm),
-                            _clinicalNoteField(l10n),
-                          ],
+      scrollable: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_catalogFailure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _catalogFailure!,
+            ),
+          _orderMetadataSection(
+            l10n: l10n,
+            theme: theme,
+            modalityOptions: modalityOptions,
+            bodyRegionOptions: bodyRegionOptions,
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppListTable<ClinicalActionCatalogOption>(
+            items: catalog,
+            columns: columns,
+            columnChoices: columnChoices,
+            columnVisibilityController: _columnVisibilityController,
+            columnVisibilityStorageKey: _columnVisibilityStorageKey,
+            columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+            columnVisibilityTitle:
+                l10n.clinicalRadiologyRequestCatalogColumnsTitle,
+            columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+            columnVisibilityResetLabel: l10n.labResetColumnsAction,
+            displayMode: AppListTableDisplayMode.table,
+            tableHorizontalMargin: 0,
+            maxVisibleItems: _maxVisibleCatalogOptions,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            isLoading: _isSearching,
+            rowColorBuilder:
+                (BuildContext context, ClinicalActionCatalogOption item) {
+                  if (!_isStagedSelected(item)) {
+                    return null;
+                  }
+                  return colorScheme.primaryContainer.withValues(
+                    alpha: 0.35,
+                  );
+                },
+            search: AppListTableSearch<ClinicalActionCatalogOption>(
+              controller: _searchController,
+              semanticLabel: l10n.clinicalRadiologyRequestSearchLabel,
+              hintText: l10n.clinicalRadiologyRequestSearchHint,
+              isLoading: _isSearching,
+              matcher: _matchesCatalogSearch,
+              onChanged: _scheduleSearch,
+              showAdvancedFilterButton: true,
+              advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
+              advancedFilterTitle: l10n.radiologyFiltersLabel,
+              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+              advancedFilterResetLabel: l10n.opdClearFiltersAction,
+              enableDateFilter: false,
+              allFieldsLabel: l10n.labScopeAll,
+              filterGroups: _modalityFilterGroups(l10n, modalityOptions),
+              filterValue: _filterValue,
+              hasActiveFilters: _filterValue.isActive,
+              onFilterChanged: (AppSearchBarFilterValue value) {
+                setState(() => _filterValue = value);
+              },
+            ),
+            emptyBuilder: (_) =>
+                AppMutedText(l10n.clinicalRadiologyRequestNoCatalogOptions),
+            mobileItemBuilder:
+                (BuildContext context, ClinicalActionCatalogOption item) {
+                  return AppListItemRow(
+                    title: item.name ?? item.displayTitle,
+                    subtitle: clinicalActionJoinDisplay(<String?>[
+                      clinicalRadiologyOptionModality(item),
+                      clinicalRadiologyOptionBodyRegion(item),
+                    ]),
+                    trailing: Checkbox(
+                      value: _isStagedSelected(item),
+                      onChanged: (bool? value) {
+                        _toggleSelection(
+                          item,
+                          selected: value ?? false,
                         );
                       },
+                      visualDensity: VisualDensity.compact,
                     ),
-                    if (bodyRegionOptions.isNotEmpty &&
-                        bodyRegionOptions.length <= 16) ...<Widget>[
-                      SizedBox(height: theme.spacing.sm),
-                      _RadiologyBodyRegionChipPicker(
-                        regions: bodyRegionOptions,
-                        value: _bodyRegion,
-                        onChanged: (String? value) {
-                          setState(() => _bodyRegion = value);
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: theme.spacing.md),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                l10n.clinicalRadiologyRequestSelectedCount(
-                  _stagedSelections.length,
-                ),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Expanded(
-              child: AppListTable<ClinicalActionCatalogOption>(
-                items: catalog,
-                columns: columns,
-                columnChoices: columnChoices,
-                columnVisibilityController: _columnVisibilityController,
-                columnVisibilityStorageKey: _columnVisibilityStorageKey,
-                columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                columnVisibilityTitle:
-                    l10n.clinicalRadiologyRequestCatalogColumnsTitle,
-                columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
-                columnVisibilityResetLabel: l10n.labResetColumnsAction,
-                displayMode: AppListTableDisplayMode.table,
-                tableHorizontalMargin: 0,
-                isLoading: _isSearching,
-                rowColorBuilder:
-                    (BuildContext context, ClinicalActionCatalogOption item) {
-                      if (!_isStagedSelected(item)) {
-                        return null;
-                      }
-                      return colorScheme.primaryContainer.withValues(
-                        alpha: 0.35,
-                      );
-                    },
-                search: AppListTableSearch<ClinicalActionCatalogOption>(
-                  controller: _searchController,
-                  semanticLabel: l10n.clinicalRadiologyRequestSearchLabel,
-                  hintText: l10n.clinicalRadiologyRequestSearchHint,
-                  isLoading: _isSearching,
-                  matcher: _matchesCatalogSearch,
-                  onChanged: _scheduleSearch,
-                  showAdvancedFilterButton: true,
-                  advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
-                  advancedFilterTitle: l10n.radiologyFiltersLabel,
-                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                  advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                  enableDateFilter: false,
-                  allFieldsLabel: l10n.labScopeAll,
-                  filterGroups: _modalityFilterGroups(l10n, modalityOptions),
-                  filterValue: _filterValue,
-                  hasActiveFilters: _filterValue.isActive,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() => _filterValue = value);
-                  },
-                ),
-                emptyBuilder: (_) =>
-                    AppMutedText(l10n.clinicalRadiologyRequestNoCatalogOptions),
-                mobileItemBuilder:
-                    (BuildContext context, ClinicalActionCatalogOption item) {
-                      return AppListItemRow(
-                        title: item.name ?? item.displayTitle,
-                        subtitle: clinicalActionJoinDisplay(<String?>[
-                          clinicalRadiologyOptionModality(item),
-                          clinicalRadiologyOptionBodyRegion(item),
-                        ]),
-                        trailing: Checkbox(
-                          value: _isStagedSelected(item),
-                          onChanged: (bool? value) {
-                            _toggleSelection(
-                              item,
-                              selected: value ?? false,
-                            );
-                          },
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      );
-                    },
-              ),
-            ),
-          ],
-        ),
+                  );
+                },
+          ),
+        ],
       ),
       actions: <Widget>[
         AppButton.primary(
@@ -365,6 +278,56 @@ class _ClinicalRadiologyRequestCatalogDialogState
           onPressed: () => Navigator.of(context).pop(_confirmedSelections()),
         ),
       ],
+    );
+  }
+
+  Widget _orderMetadataSection({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required List<AppSelectOption<String>> modalityOptions,
+    required List<AppSelectOption<String>> bodyRegionOptions,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 640;
+        if (compact) {
+          return Column(
+            children: <Widget>[
+              _modalityField(l10n, modalityOptions),
+              SizedBox(height: theme.spacing.sm),
+              _lateralityField(l10n),
+              SizedBox(height: theme.spacing.sm),
+              _priorityField(l10n),
+              SizedBox(height: theme.spacing.sm),
+              _bodyRegionField(l10n, bodyRegionOptions),
+              SizedBox(height: theme.spacing.sm),
+              _clinicalNoteField(l10n),
+            ],
+          );
+        }
+
+        return Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(child: _modalityField(l10n, modalityOptions)),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(child: _lateralityField(l10n)),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Row(
+              children: <Widget>[
+                SizedBox(width: 220, child: _priorityField(l10n)),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(child: _bodyRegionField(l10n, bodyRegionOptions)),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            _clinicalNoteField(l10n),
+          ],
+        );
+      },
     );
   }
 
@@ -864,40 +827,5 @@ class _ClinicalRadiologyRequestCatalogDialogState
       _searchRequest += 1;
       unawaited(_loadCatalog(_searchQuery, _searchRequest));
     });
-  }
-}
-
-class _RadiologyBodyRegionChipPicker extends StatelessWidget {
-  const _RadiologyBodyRegionChipPicker({
-    required this.regions,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final List<AppSelectOption<String>> regions;
-  final String? value;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      children: <Widget>[
-        for (final AppSelectOption<String> region in regions)
-          FilterChip(
-            avatar: region.leadingIcon,
-            label: Text(region.label),
-            selected:
-                clinicalActionNormalizedCatalogToken(value ?? '') ==
-                clinicalActionNormalizedCatalogToken(region.value),
-            onSelected: (bool selected) {
-              onChanged(selected ? region.value : null);
-            },
-          ),
-      ],
-    );
   }
 }
