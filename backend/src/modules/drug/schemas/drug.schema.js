@@ -25,7 +25,9 @@ const createDrugSchema = z.object({
   name: z.string().trim().min(1).max(255),
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
-  strength: z.string().trim().max(80).optional().nullable()
+  strength: z.string().trim().max(80).optional().nullable(),
+  unit_price: z.coerce.number().min(0).optional().nullable(),
+  currency: z.string().trim().max(10).optional().nullable(),
 });
 
 /**
@@ -37,7 +39,9 @@ const updateDrugSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   code: z.string().trim().max(80).optional().nullable(),
   form: z.string().trim().max(80).optional().nullable(),
-  strength: z.string().trim().max(80).optional().nullable()
+  strength: z.string().trim().max(80).optional().nullable(),
+  unit_price: z.coerce.number().min(0).optional().nullable(),
+  currency: z.string().trim().max(10).optional().nullable(),
 });
 
 // ==================== URL Params ====================

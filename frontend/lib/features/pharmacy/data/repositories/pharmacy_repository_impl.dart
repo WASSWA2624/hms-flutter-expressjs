@@ -30,9 +30,14 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
         'search': query.search,
-        'status': query.filter.backendStatus,
-        'location': query.filter.backendLocation,
-        'pending_payment': query.filter.backendPendingPayment,
+        'status': query.status,
+        'location': query.location,
+        'pending_payment': query.pendingPayment == true ? true : null,
+        'partial_stock': query.partialStock == true ? true : null,
+        'urgent': query.urgent == true ? true : null,
+        'priority': query.priority,
+        'from': query.from?.toUtc().toIso8601String(),
+        'to': query.to?.toUtc().toIso8601String(),
         'sort_by': 'ordered_at',
         'order': 'desc',
       }),
@@ -142,6 +147,25 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   ) {
     return _apiClient.put<PharmacyDrug>(
       ApiEndpoints.byId(HmsApiResource.drugs, drugId),
+      data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyDrugDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrug>> upsertFacilityOffering(
+    String drugId,
+    PharmacyFacilityOfferingInput input,
+  ) {
+    return _apiClient.put<PharmacyDrug>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityPharmacyCatalog.path,
+        'drugs',
+        drugId,
+      ]),
       data: _withoutEmpty(input.toJson()),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);

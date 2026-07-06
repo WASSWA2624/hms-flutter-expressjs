@@ -84,14 +84,30 @@ final class PharmacyWorkspaceController
     if (current == null) {
       return refresh();
     }
-    if (!filter.isBackendBacked) {
-      return AppFailure.validation();
+
+    _emit(
+      current.copyWith(
+        query: PharmacyWorkbenchQuery.fromChip(filter).copyWith(
+          search: current.query.search,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshingOrders: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshOrders(showLoading: true);
+  }
+
+  Future<AppFailure?> applyAdvancedFilters(PharmacyWorkbenchQuery query) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
     }
 
     _emit(
       current.copyWith(
-        query: current.query.copyWith(
-          filter: filter,
+        query: query.copyWith(
+          search: current.query.search,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshingOrders: true,
@@ -312,10 +328,27 @@ final class PharmacyWorkspaceController
     }
   }
 
-  Future<AppFailure?> createDrug(PharmacyDrugInput input) async {
+  Future<AppFailure?> createDrug(
+    PharmacyDrugInput input, {
+    PharmacyFacilityOfferingInput? facilityOffering,
+  }) async {
     final Result<PharmacyDrug> result = await _repository.createDrug(input);
     return result.when(
-      success: (_) async {
+      success: (PharmacyDrug drug) async {
+        if (facilityOffering != null) {
+          final Result<PharmacyDrug> offeringResult =
+              await _repository.upsertFacilityOffering(
+            drug.id,
+            facilityOffering,
+          );
+          final AppFailure? offeringFailure = offeringResult.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+          if (offeringFailure != null) {
+            return offeringFailure;
+          }
+        }
         await _refreshDrugs(showLoading: false);
         return null;
       },
@@ -325,9 +358,41 @@ final class PharmacyWorkspaceController
 
   Future<AppFailure?> updateDrug(
     String drugId,
-    PharmacyDrugUpdateInput input,
-  ) async {
+    PharmacyDrugUpdateInput input, {
+    PharmacyFacilityOfferingInput? facilityOffering,
+  }) async {
     final Result<PharmacyDrug> result = await _repository.updateDrug(
+      drugId,
+      input,
+    );
+    return result.when(
+      success: (_) async {
+        if (facilityOffering != null) {
+          final Result<PharmacyDrug> offeringResult =
+              await _repository.upsertFacilityOffering(
+            drugId,
+            facilityOffering,
+          );
+          final AppFailure? offeringFailure = offeringResult.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+          if (offeringFailure != null) {
+            return offeringFailure;
+          }
+        }
+        await _refreshDrugs(showLoading: false);
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> upsertFacilityOffering(
+    String drugId,
+    PharmacyFacilityOfferingInput input,
+  ) async {
+    final Result<PharmacyDrug> result = await _repository.upsertFacilityOffering(
       drugId,
       input,
     );

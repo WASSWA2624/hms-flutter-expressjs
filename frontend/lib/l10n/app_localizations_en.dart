@@ -8864,6 +8864,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyLocationFieldLabel => 'Care location';
 
   @override
+  String get pharmacyStatusFilterLabel => 'Queue status';
+
+  @override
+  String get pharmacyOrderDateFilterLabel => 'Order date';
+
+  @override
+  String get pharmacyPickOrderDateAction => 'Pick order date';
+
+  @override
+  String get pharmacyOrderedAtColumnLabel => 'Ordered at';
+
+  @override
+  String get pharmacyPrescriberFieldLabel => 'Prescriber';
+
+  @override
+  String get pharmacyOrderSourceFieldLabel => 'Order source';
+
+  @override
+  String get pharmacyOrderSourceClinicalLabel => 'Clinical';
+
+  @override
+  String get pharmacyOrderSourcePharmacyLabel => 'Walk-in pharmacy';
+
+  @override
+  String get pharmacyRemainingQtyColumnLabel => 'Remaining qty';
+
+  @override
+  String get pharmacyPharmacyPriceLabel => 'Pharmacy price';
+
+  @override
+  String get pharmacyFacilityPriceLabel => 'Facility price';
+
+  @override
+  String get pharmacyPriceTierPharmacyLabel => 'Pharmacy retail';
+
+  @override
+  String get pharmacyPriceTierFacilityLabel => 'Facility billing';
+
+  @override
   String get pharmacyStockInStock => 'In stock';
 
   @override

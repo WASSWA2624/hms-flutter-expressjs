@@ -11399,6 +11399,58 @@
   "@pharmacyLocationFieldLabel": {
     "description": "Pharmacy order care location (outpatient vs ward) context field label."
   },
+  "pharmacyStatusFilterLabel": "Queue status",
+  "@pharmacyStatusFilterLabel": {
+    "description": "Pharmacy queue status filter group label."
+  },
+  "pharmacyOrderDateFilterLabel": "Order date",
+  "@pharmacyOrderDateFilterLabel": {
+    "description": "Pharmacy order date filter label."
+  },
+  "pharmacyPickOrderDateAction": "Pick order date",
+  "@pharmacyPickOrderDateAction": {
+    "description": "Pharmacy order date picker action label."
+  },
+  "pharmacyOrderedAtColumnLabel": "Ordered at",
+  "@pharmacyOrderedAtColumnLabel": {
+    "description": "Pharmacy ordered-at optional column label."
+  },
+  "pharmacyPrescriberFieldLabel": "Prescriber",
+  "@pharmacyPrescriberFieldLabel": {
+    "description": "Pharmacy prescriber field label."
+  },
+  "pharmacyOrderSourceFieldLabel": "Order source",
+  "@pharmacyOrderSourceFieldLabel": {
+    "description": "Pharmacy order source field label."
+  },
+  "pharmacyOrderSourceClinicalLabel": "Clinical",
+  "@pharmacyOrderSourceClinicalLabel": {
+    "description": "Pharmacy clinical order source label."
+  },
+  "pharmacyOrderSourcePharmacyLabel": "Walk-in pharmacy",
+  "@pharmacyOrderSourcePharmacyLabel": {
+    "description": "Pharmacy walk-in order source label."
+  },
+  "pharmacyRemainingQtyColumnLabel": "Remaining qty",
+  "@pharmacyRemainingQtyColumnLabel": {
+    "description": "Pharmacy remaining quantity optional column label."
+  },
+  "pharmacyPharmacyPriceLabel": "Pharmacy price",
+  "@pharmacyPharmacyPriceLabel": {
+    "description": "Retail pharmacy price label for catalog items."
+  },
+  "pharmacyFacilityPriceLabel": "Facility price",
+  "@pharmacyFacilityPriceLabel": {
+    "description": "Facility billing price label for catalog items."
+  },
+  "pharmacyPriceTierPharmacyLabel": "Pharmacy retail",
+  "@pharmacyPriceTierPharmacyLabel": {
+    "description": "Walk-in dispense price tier: pharmacy retail."
+  },
+  "pharmacyPriceTierFacilityLabel": "Facility billing",
+  "@pharmacyPriceTierFacilityLabel": {
+    "description": "Walk-in dispense price tier: facility billing."
+  },
   "pharmacyStockInStock": "In stock",
   "@pharmacyStockInStock": {
     "description": "Pharmacy in stock label."

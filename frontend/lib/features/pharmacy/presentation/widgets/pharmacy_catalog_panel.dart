@@ -166,6 +166,16 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
           ),
           AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyPharmacyPriceLabel,
+            cellBuilder: (_, PharmacyDrug item) =>
+                Text(_priceText(item.pharmacyUnitPrice ?? item.unitPrice)),
+          ),
+          AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyFacilityPriceLabel,
+            cellBuilder: (_, PharmacyDrug item) =>
+                Text(_priceText(item.facilityUnitPrice)),
+          ),
+          AppListTableColumn<PharmacyDrug>(
             label: l10n.pharmacyStockStatusFilterLabel,
             cellBuilder: (BuildContext context, PharmacyDrug item) {
               return AppWorkspaceStatusBadge(
@@ -272,6 +282,8 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
   late final TextEditingController _codeController;
   late final TextEditingController _formController;
   late final TextEditingController _strengthController;
+  late final TextEditingController _pharmacyPriceController;
+  late final TextEditingController _facilityPriceController;
   bool _isSaving = false;
 
   @override
@@ -283,6 +295,12 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
     _strengthController = TextEditingController(
       text: widget.drug?.strength ?? '',
     );
+    _pharmacyPriceController = TextEditingController(
+      text: _priceText(widget.drug?.pharmacyUnitPrice ?? widget.drug?.unitPrice),
+    );
+    _facilityPriceController = TextEditingController(
+      text: _priceText(widget.drug?.facilityUnitPrice),
+    );
   }
 
   @override
@@ -291,6 +309,8 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
     _codeController.dispose();
     _formController.dispose();
     _strengthController.dispose();
+    _pharmacyPriceController.dispose();
+    _facilityPriceController.dispose();
     super.dispose();
   }
 
@@ -325,6 +345,16 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
             controller: _strengthController,
             labelText: l10n.pharmacyDrugStrengthLabel,
           ),
+          AppTextField(
+            controller: _pharmacyPriceController,
+            labelText: l10n.pharmacyPharmacyPriceLabel,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          AppTextField(
+            controller: _facilityPriceController,
+            labelText: l10n.pharmacyFacilityPriceLabel,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
         ],
       ),
       actions: <Widget>[
@@ -352,6 +382,12 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    final num? pharmacyPrice = _parsePrice(_pharmacyPriceController.text);
+    final num? facilityPrice = _parsePrice(_facilityPriceController.text);
+    final PharmacyFacilityOfferingInput? facilityOffering =
+        facilityPrice == null
+        ? null
+        : PharmacyFacilityOfferingInput(unitPrice: facilityPrice);
     final AppFailure? failure;
     if (widget.drug == null) {
       final String? tenantId = controller.resolveTenantId();
@@ -365,7 +401,9 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
             code: _emptyToNull(_codeController.text),
             form: _emptyToNull(_formController.text),
             strength: _emptyToNull(_strengthController.text),
+            unitPrice: pharmacyPrice,
           ),
+          facilityOffering: facilityOffering,
         );
       }
     } else {
@@ -376,7 +414,9 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
           code: _emptyToNull(_codeController.text),
           form: _emptyToNull(_formController.text),
           strength: _emptyToNull(_strengthController.text),
+          unitPrice: pharmacyPrice,
         ),
+        facilityOffering: facilityOffering,
       );
     }
     if (!mounted) {
@@ -859,4 +899,19 @@ AppWorkspaceStatus _stockStatus(BuildContext context, String? value) {
 String? _emptyToNull(String value) {
   final String normalized = value.trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+String _priceText(num? value) {
+  if (value == null) {
+    return '';
+  }
+  return value.toString();
+}
+
+num? _parsePrice(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return num.tryParse(trimmed);
 }

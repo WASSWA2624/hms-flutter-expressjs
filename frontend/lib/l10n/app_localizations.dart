@@ -16546,6 +16546,84 @@ abstract class AppLocalizations {
   /// **'Care location'**
   String get pharmacyLocationFieldLabel;
 
+  /// Pharmacy queue status filter group label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue status'**
+  String get pharmacyStatusFilterLabel;
+
+  /// Pharmacy order date filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order date'**
+  String get pharmacyOrderDateFilterLabel;
+
+  /// Pharmacy order date picker action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick order date'**
+  String get pharmacyPickOrderDateAction;
+
+  /// Pharmacy ordered-at optional column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered at'**
+  String get pharmacyOrderedAtColumnLabel;
+
+  /// Pharmacy prescriber field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescriber'**
+  String get pharmacyPrescriberFieldLabel;
+
+  /// Pharmacy order source field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order source'**
+  String get pharmacyOrderSourceFieldLabel;
+
+  /// Pharmacy clinical order source label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get pharmacyOrderSourceClinicalLabel;
+
+  /// Pharmacy walk-in order source label.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk-in pharmacy'**
+  String get pharmacyOrderSourcePharmacyLabel;
+
+  /// Pharmacy remaining quantity optional column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining qty'**
+  String get pharmacyRemainingQtyColumnLabel;
+
+  /// Retail pharmacy price label for catalog items.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy price'**
+  String get pharmacyPharmacyPriceLabel;
+
+  /// Facility billing price label for catalog items.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility price'**
+  String get pharmacyFacilityPriceLabel;
+
+  /// Walk-in dispense price tier: pharmacy retail.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy retail'**
+  String get pharmacyPriceTierPharmacyLabel;
+
+  /// Walk-in dispense price tier: facility billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility billing'**
+  String get pharmacyPriceTierFacilityLabel;
+
   /// Pharmacy in stock label.
   ///
   /// In en, this message translates to:

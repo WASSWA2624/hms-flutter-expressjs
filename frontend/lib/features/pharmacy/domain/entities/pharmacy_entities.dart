@@ -59,8 +59,22 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
       PharmacyOrderFilter.outpatient ||
       PharmacyOrderFilter.ward ||
       PharmacyOrderFilter.discharge => true,
-      PharmacyOrderFilter.partialStock || PharmacyOrderFilter.urgent => false,
+      PharmacyOrderFilter.partialStock || PharmacyOrderFilter.urgent => true,
     };
+  }
+
+  bool? get backendPartialStock {
+    if (this == PharmacyOrderFilter.partialStock) {
+      return true;
+    }
+    return null;
+  }
+
+  bool? get backendUrgent {
+    if (this == PharmacyOrderFilter.urgent) {
+      return true;
+    }
+    return null;
   }
 }
 
@@ -183,6 +197,8 @@ final class PharmacyDrugInput {
     this.code,
     this.form,
     this.strength,
+    this.unitPrice,
+    this.currency,
   });
 
   final String tenantId;
@@ -190,6 +206,8 @@ final class PharmacyDrugInput {
   final String? code;
   final String? form;
   final String? strength;
+  final num? unitPrice;
+  final String? currency;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -198,6 +216,8 @@ final class PharmacyDrugInput {
       'code': code,
       'form': form,
       'strength': strength,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (currency != null) 'currency': currency,
     };
   }
 }
@@ -209,12 +229,16 @@ final class PharmacyDrugUpdateInput {
     this.code,
     this.form,
     this.strength,
+    this.unitPrice,
+    this.currency,
   });
 
   final String? name;
   final String? code;
   final String? form;
   final String? strength;
+  final num? unitPrice;
+  final String? currency;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -222,6 +246,32 @@ final class PharmacyDrugUpdateInput {
       if (code != null) 'code': code,
       if (form != null) 'form': form,
       if (strength != null) 'strength': strength,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (currency != null) 'currency': currency,
+    };
+  }
+}
+
+@immutable
+final class PharmacyFacilityOfferingInput {
+  const PharmacyFacilityOfferingInput({
+    required this.unitPrice,
+    this.currency,
+    this.isActive = true,
+    this.facilityId,
+  });
+
+  final num unitPrice;
+  final String? currency;
+  final bool isActive;
+  final String? facilityId;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'unit_price': unitPrice,
+      if (currency != null) 'currency': currency,
+      'is_active': isActive,
+      if (facilityId != null) 'facility_id': facilityId,
     };
   }
 }
@@ -278,24 +328,115 @@ final class PharmacyInventoryAdjustInput {
 final class PharmacyWorkbenchQuery {
   const PharmacyWorkbenchQuery({
     this.search = '',
-    this.filter = PharmacyOrderFilter.ready,
+    this.status = 'ORDERED',
+    this.location,
+    this.pendingPayment,
+    this.partialStock,
+    this.urgent,
+    this.priority,
+    this.from,
+    this.to,
     this.pageRequest = const AppPageRequest(),
   });
 
   final String search;
-  final PharmacyOrderFilter filter;
+  final String? status;
+  final String? location;
+  final bool? pendingPayment;
+  final bool? partialStock;
+  final bool? urgent;
+  final String? priority;
+  final DateTime? from;
+  final DateTime? to;
   final AppPageRequest pageRequest;
+
+  bool get isDefaultFilters {
+    return status == 'ORDERED' &&
+        location == null &&
+        pendingPayment != true &&
+        partialStock != true &&
+        urgent != true &&
+        priority == null &&
+        from == null &&
+        to == null;
+  }
 
   PharmacyWorkbenchQuery copyWith({
     String? search,
-    PharmacyOrderFilter? filter,
+    String? status,
+    String? location,
+    bool? pendingPayment,
+    bool? partialStock,
+    bool? urgent,
+    String? priority,
+    DateTime? from,
+    DateTime? to,
     AppPageRequest? pageRequest,
+    bool clearStatus = false,
+    bool clearLocation = false,
+    bool clearPendingPayment = false,
+    bool clearPartialStock = false,
+    bool clearUrgent = false,
+    bool clearPriority = false,
+    bool clearFrom = false,
+    bool clearTo = false,
   }) {
     return PharmacyWorkbenchQuery(
       search: search ?? this.search,
-      filter: filter ?? this.filter,
+      status: clearStatus ? null : status ?? this.status,
+      location: clearLocation ? null : location ?? this.location,
+      pendingPayment: clearPendingPayment
+          ? null
+          : pendingPayment ?? this.pendingPayment,
+      partialStock: clearPartialStock ? null : partialStock ?? this.partialStock,
+      urgent: clearUrgent ? null : urgent ?? this.urgent,
+      priority: clearPriority ? null : priority ?? this.priority,
+      from: clearFrom ? null : from ?? this.from,
+      to: clearTo ? null : to ?? this.to,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+
+  static PharmacyWorkbenchQuery fromChip(PharmacyOrderFilter filter) {
+    return switch (filter) {
+      PharmacyOrderFilter.all => const PharmacyWorkbenchQuery(
+        status: null,
+      ),
+      PharmacyOrderFilter.ready => const PharmacyWorkbenchQuery(),
+      PharmacyOrderFilter.partial => const PharmacyWorkbenchQuery(
+        status: 'PARTIALLY_DISPENSED',
+      ),
+      PharmacyOrderFilter.completed => const PharmacyWorkbenchQuery(
+        status: 'DISPENSED',
+      ),
+      PharmacyOrderFilter.cancelled => const PharmacyWorkbenchQuery(
+        status: 'CANCELLED',
+      ),
+      PharmacyOrderFilter.pendingPayment => const PharmacyWorkbenchQuery(
+        status: null,
+        pendingPayment: true,
+      ),
+      PharmacyOrderFilter.outpatient => const PharmacyWorkbenchQuery(
+        status: null,
+        location: 'OUTPATIENT',
+      ),
+      PharmacyOrderFilter.ward => const PharmacyWorkbenchQuery(
+        status: null,
+        location: 'INPATIENT',
+      ),
+      PharmacyOrderFilter.discharge => const PharmacyWorkbenchQuery(
+        status: null,
+        location: 'DISCHARGE',
+      ),
+      PharmacyOrderFilter.partialStock => const PharmacyWorkbenchQuery(
+        status: null,
+        partialStock: true,
+      ),
+      PharmacyOrderFilter.urgent => const PharmacyWorkbenchQuery(
+        status: null,
+        urgent: true,
+      ),
+    };
   }
 }
 
@@ -879,6 +1020,13 @@ final class PharmacyDrug {
     this.code,
     this.form,
     this.strength,
+    this.unitPrice,
+    this.pharmacyUnitPrice,
+    this.facilityUnitPrice,
+    this.currency,
+    this.pharmacyCurrency,
+    this.facilityCurrency,
+    this.isOfferedAtFacility = false,
     this.quantityOnHand = 0,
     this.availableQuantity = 0,
     this.stockLevel = 0,
@@ -898,6 +1046,13 @@ final class PharmacyDrug {
   final String? code;
   final String? form;
   final String? strength;
+  final num? unitPrice;
+  final num? pharmacyUnitPrice;
+  final num? facilityUnitPrice;
+  final String? currency;
+  final String? pharmacyCurrency;
+  final String? facilityCurrency;
+  final bool isOfferedAtFacility;
   final num quantityOnHand;
   final num availableQuantity;
   final num stockLevel;

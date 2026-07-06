@@ -24,6 +24,11 @@ abstract interface class PharmacyRepository {
     PharmacyDrugUpdateInput input,
   );
 
+  Future<Result<PharmacyDrug>> upsertFacilityOffering(
+    String drugId,
+    PharmacyFacilityOfferingInput input,
+  );
+
   Future<Result<void>> deleteDrug(String drugId);
 
   Future<Result<AppPage<PharmacyFormularyItem>>> listFormularyItems(

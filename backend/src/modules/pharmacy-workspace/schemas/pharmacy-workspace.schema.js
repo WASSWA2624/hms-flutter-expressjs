@@ -10,6 +10,8 @@ const pharmacyOrderStatusSchema = z.enum([
   'CANCELLED',
 ]);
 
+const pharmacyOrderPrioritySchema = z.enum(['STAT', 'URGENT', 'ROUTINE', 'NORMAL']);
+
 const stockReasonSchema = z.enum(['PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXPIRY', 'OTHER']);
 
 const panelSchema = z.enum(['orders', 'inventory']);
@@ -25,6 +27,9 @@ const getPharmacyWorkbenchQuerySchema = listQuerySchema.extend({
   status: pharmacyOrderStatusSchema.optional(),
   location: orderLocationSchema.optional(),
   pending_payment: z.coerce.boolean().optional(),
+  partial_stock: z.coerce.boolean().optional(),
+  urgent: z.coerce.boolean().optional(),
+  priority: pharmacyOrderPrioritySchema.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),

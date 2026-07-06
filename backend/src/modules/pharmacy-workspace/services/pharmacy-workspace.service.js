@@ -6,6 +6,7 @@ const { normalizeIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const prisma = require('@prisma/client');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
+const facilityPharmacyCatalogRepository = require('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository');
 const pharmacyOrderService = require('@services/pharmacy-order/pharmacy-order.service');
 const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websocket');
 const {
@@ -46,6 +47,8 @@ const {
   mapInventoryStockRecord,
   mapDrugRecord,
 } = require('@services/pharmacy-workspace/pharmacy.serializer');
+const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
+const { resolveOperationalFacilityId } = require('@lib/facility-context');
 
 const PHARMACY_RECIPIENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -580,6 +583,74 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
 
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
 
+  if (filters.partial_stock === true) {
+    appendAnd(where, {
+      OR: [
+        { status: 'PARTIALLY_DISPENSED' },
+        {
+          status: { in: PHARMACY_OPEN_ORDER_STATUSES },
+          items: {
+            some: {
+              deleted_at: null,
+              status: 'ACTIVE',
+              drug: {
+                inventory_maps: {
+                  some: {
+                    deleted_at: null,
+                    inventory_item: {
+                      stocks: {
+                        some: {
+                          deleted_at: null,
+                          quantity: { lte: 0 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  if (filters.urgent === true) {
+    appendAnd(where, {
+      items: {
+        some: {
+          deleted_at: null,
+          frequency: 'STAT',
+        },
+      },
+    });
+  }
+
+  if (filters.priority) {
+    const normalizedPriority = String(filters.priority).trim().toUpperCase();
+    if (normalizedPriority === 'STAT' || normalizedPriority === 'URGENT') {
+      appendAnd(where, {
+        items: {
+          some: {
+            deleted_at: null,
+            frequency: 'STAT',
+          },
+        },
+      });
+    } else if (normalizedPriority === 'ROUTINE' || normalizedPriority === 'NORMAL') {
+      appendAnd(where, {
+        NOT: {
+          items: {
+            some: {
+              deleted_at: null,
+              frequency: 'STAT',
+            },
+          },
+        },
+      });
+    }
+  }
+
   const searchTerm = normalizeSearchTerm(filters.search);
   if (includeSearch && searchTerm) {
     appendAnd(where, {
@@ -831,9 +902,32 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
       pharmacyWorkspaceRepository.countDrugs(where),
     ]);
 
+    let offeringByDrugId = new Map();
+    const facilityId =
+      scope.facility_id ||
+      (await resolveOperationalFacilityId({
+        facilityId: filters?.facility_id || null,
+        userId: scope.user_id || null,
+        tenantId: scope.tenant_id || null,
+      }));
+
+    if (facilityId && records.length) {
+      const offeringRows = await facilityPharmacyCatalogRepository.findDrugOfferings(
+        {
+          tenant_id: scope.tenant_id,
+          facility_id: facilityId,
+          drug_id: { in: records.map((row) => row.id) },
+          is_active: true,
+        },
+        0,
+        records.length
+      );
+      offeringByDrugId = new Map(offeringRows.map((row) => [row.drug_id, row]));
+    }
+
     const stockStatus = String(filters?.stock_status || '').trim().toUpperCase();
     const drugs = records
-      .map((record) => mapDrugRecord(record))
+      .map((record) => mapMergedDrugRecord(record, offeringByDrugId.get(record.id) || null))
       .filter(Boolean)
       .filter((drug) => !stockStatus || drug.stock_status === stockStatus);
 

@@ -178,6 +178,10 @@ enum HmsApiResource {
     'facility-radiology-catalog',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
+  facilityPharmacyCatalog(
+    'facility-pharmacy-catalog',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   labOrders('lab-orders', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   labOrderItems(
     'lab-order-items',

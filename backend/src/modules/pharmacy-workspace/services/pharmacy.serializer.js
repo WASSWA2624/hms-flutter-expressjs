@@ -59,6 +59,12 @@ const resolveAggregateStockStatus = (statuses = []) => {
   }, 'IN_STOCK');
 };
 
+const resolveOrderPriority = (items = []) => {
+  const hasStat = items.some((item) => toText(item?.frequency).toUpperCase() === 'STAT');
+  if (hasStat) return 'STAT';
+  return 'ROUTINE';
+};
+
 const mapInventoryItemRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
@@ -157,7 +163,22 @@ const mapDrugRecord = (record) => {
     code: toText(record.code) || null,
     form: toText(record.form) || null,
     strength: toText(record.strength) || null,
-    ...mapCatalogUnitPriceFields(record),
+    ...mapCatalogUnitPriceFields({
+      unit_price: record.pharmacy_unit_price ?? record.unit_price,
+      currency: record.pharmacy_currency ?? record.currency,
+    }),
+    pharmacy_unit_price:
+      mapCatalogUnitPriceFields({
+        unit_price: record.pharmacy_unit_price ?? record.unit_price,
+        currency: record.pharmacy_currency ?? record.currency,
+      }).unit_price || null,
+    pharmacy_currency: toText(record.pharmacy_currency ?? record.currency).toUpperCase() || null,
+    facility_unit_price:
+      mapCatalogUnitPriceFields({
+        unit_price: record.facility_unit_price,
+        currency: record.facility_currency,
+      }).unit_price || null,
+    facility_currency: toText(record.facility_currency).toUpperCase() || null,
     quantity_on_hand: quantityOnHand,
     available_quantity: quantityOnHand,
     stock_level: quantityOnHand,
@@ -364,7 +385,7 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
     patient_id: toPublicIdentifier(record.patient?.human_friendly_id, record.patient_id),
     patient_display_name: toDisplayName(record.patient?.first_name, record.patient?.last_name),
     order_source: record.encounter_id ? 'CLINICAL' : 'PHARMACY',
-    priority: 'NORMAL',
+    priority: resolveOrderPriority(record.items || []),
     status: toText(record.status).toUpperCase() || null,
     ordered_at: toIsoDateTime(record.ordered_at),
     created_at: toIsoDateTime(record.created_at),
