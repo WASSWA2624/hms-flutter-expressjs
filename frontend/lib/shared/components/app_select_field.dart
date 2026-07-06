@@ -142,8 +142,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
 
     if (oldWidget.options != widget.options) {
-      _dropdownEntriesCacheToken = null;
-      _cachedDropdownEntries = null;
+      _invalidateDropdownEntriesCache();
     }
 
     final bool selectionChanged = oldWidget.value != widget.value;
@@ -220,14 +219,19 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         final bool useNativeFilter = widget.filterCallback != null;
         final bool useNativeSearch = widget.searchCallback != null;
         final bool menuIsOpen = _focusNode.hasFocus;
-        final _SelectMenuChrome chrome = _selectMenuChrome(
+        final _SelectMenuChrome menuChrome = _selectMenuChrome(
           theme,
           colorScheme,
           menuIsOpen: menuIsOpen,
         );
-        final MenuStyle menuStyle = _selectMenuStyle(theme, chrome);
+        final _SelectMenuChrome entryChrome = _selectMenuChrome(
+          theme,
+          colorScheme,
+          menuIsOpen: false,
+        );
+        final MenuStyle menuStyle = _selectMenuStyle(theme, menuChrome);
         final List<DropdownMenuEntry<T>> dropdownMenuEntries =
-            _cachedDropdownMenuEntries(theme, colorScheme, chrome, menuIsOpen);
+            _cachedDropdownMenuEntries(theme, colorScheme, entryChrome);
 
         return DropdownMenuFormField<T>(
           key: _formFieldKey,
@@ -238,7 +242,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           width: width,
           menuHeight: effectiveMenuHeight,
           menuStyle: menuStyle,
-          alignmentOffset: Offset(0, -chrome.borderWidth),
+          alignmentOffset: Offset(0, -menuChrome.borderWidth),
           label: appFieldLabelWidget(
             context,
             widget.labelText,
@@ -266,19 +270,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               : null,
           requestFocusOnTap: widget.searchable,
           selectOnly: !widget.searchable,
+          closeBehavior: DropdownMenuCloseBehavior.self,
           focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
           validator: widget.validator,
           onSaved: widget.onSaved,
           forceErrorText: widget.errorText,
-          onSelected: (T? value) {
-            _browseAllOptions = false;
-            _syncControllerForSelection(value);
-            widget.onChanged?.call(value);
-            if (_focusNode.hasFocus) {
-              _focusNode.unfocus();
-            }
-          },
+          onSelected: _commitSelection,
           dropdownMenuEntries: dropdownMenuEntries,
         );
       },
@@ -294,6 +292,23 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
 
     return field;
+  }
+
+  void _commitSelection(T? value) {
+    _browseAllOptions = false;
+    _invalidateDropdownEntriesCache();
+    _syncControllerForSelection(value);
+    widget.onChanged?.call(value);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasFocus) {
+        _focusNode.unfocus();
+      }
+    });
+  }
+
+  void _invalidateDropdownEntriesCache() {
+    _dropdownEntriesCacheToken = null;
+    _cachedDropdownEntries = null;
   }
 
   void _clearSelection() {
@@ -327,17 +342,14 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     if (widget.searchable) {
       if (hasFocus && !_hadFocus) {
         _browseAllOptions = true;
-        _dropdownEntriesCacheToken = null;
-        _cachedDropdownEntries = null;
       } else if (!hasFocus && _hadFocus) {
         _browseAllOptions = false;
-        _dropdownEntriesCacheToken = null;
-        _cachedDropdownEntries = null;
         _syncControllerForSelection(widget.value);
       }
     }
+    final bool shouldRebuild = _hadFocus != hasFocus;
     _hadFocus = hasFocus;
-    if (mounted) {
+    if (shouldRebuild && mounted) {
       setState(() {});
     }
   }
@@ -351,8 +363,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         _focusNode.hasFocus &&
         _browseAllOptions) {
       _browseAllOptions = false;
-      _dropdownEntriesCacheToken = null;
-      _cachedDropdownEntries = null;
+      _invalidateDropdownEntriesCache();
     }
     if (hasText != _hasControllerText || shouldRefreshSearchEntries) {
       void updateControllerState() {
@@ -548,35 +559,40 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     );
   }
 
-  Object _computeDropdownEntriesCacheKey(bool menuIsOpen) {
+  Object _computeDropdownEntriesCacheKey() {
+    final bool filterByQuery = widget.searchable &&
+        _focusNode.hasFocus &&
+        !_browseAllOptions &&
+        _queryTokens(_controller.text).isNotEmpty;
     return Object.hash(
-      menuIsOpen,
       widget.options,
-      _browseAllOptions,
-      widget.searchable && !_browseAllOptions ? _controller.text : null,
+      filterByQuery ? _controller.text : null,
     );
   }
 
   List<DropdownMenuEntry<T>> _cachedDropdownMenuEntries(
     ThemeData theme,
     ColorScheme colorScheme,
-    _SelectMenuChrome chrome,
-    bool menuIsOpen,
+    _SelectMenuChrome entryChrome,
   ) {
-    final Object cacheKey = _computeDropdownEntriesCacheKey(menuIsOpen);
+    final Object cacheKey = _computeDropdownEntriesCacheKey();
     if (_cachedDropdownEntries != null && _dropdownEntriesCacheToken == cacheKey) {
       return _cachedDropdownEntries!;
     }
 
     _dropdownEntriesCacheToken = cacheKey;
-    _cachedDropdownEntries = _dropdownMenuEntries(theme, colorScheme, chrome);
+    _cachedDropdownEntries = _dropdownMenuEntries(
+      theme,
+      colorScheme,
+      entryChrome,
+    );
     return _cachedDropdownEntries!;
   }
 
   List<DropdownMenuEntry<T>> _dropdownMenuEntries(
     ThemeData theme,
     ColorScheme colorScheme,
-    _SelectMenuChrome chrome,
+    _SelectMenuChrome entryChrome,
   ) {
     final Iterable<AppSelectOption<T>> options = _menuOptions();
     final List<AppSelectOption<T>> optionList = options.toList(growable: false);
@@ -588,12 +604,12 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           labelWidget: _menuEntryLabel(
             theme,
             colorScheme,
-            chrome,
+            entryChrome,
             optionList[index],
             showDivider: index < optionList.length - 1,
           ),
           enabled: optionList[index].enabled,
-          style: _menuItemStyle(theme, chrome),
+          style: _menuItemStyle(theme, entryChrome),
         ),
     ];
   }
@@ -614,7 +630,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       return widget.options;
     }
 
-    if (_browseAllOptions) {
+    if (!_focusNode.hasFocus || _browseAllOptions) {
       return widget.options.take(_maxFilteredOptions);
     }
 

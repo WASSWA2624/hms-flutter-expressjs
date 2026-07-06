@@ -413,6 +413,49 @@ void main() {
   );
 
   testWidgets(
+    'AppSelectField.searchable selects on first tap immediately after menu opens',
+    (WidgetTester tester) async {
+      String? selected = 'draft';
+
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AppSelectField<String>.searchable(
+              labelText: 'Status',
+              value: selected,
+              options: const <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'draft', label: 'Draft'),
+                AppSelectOption<String>(value: 'live', label: 'Live'),
+                AppSelectOption<String>(value: 'archived', label: 'Archived'),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  selected = value;
+                });
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.byType(EditableText));
+      await tester.pump();
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Archived'),
+            )
+            .hitTestable(),
+      );
+      await tester.pump();
+
+      expect(selected, 'archived');
+    },
+  );
+
+  testWidgets(
     'AppSelectField saves a selection without an onChanged callback',
     (WidgetTester tester) async {
       final formKey = GlobalKey<FormState>();
