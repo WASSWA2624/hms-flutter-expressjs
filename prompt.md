@@ -1,119 +1,66 @@
-# Feature: Facility-scoped radiology configuration (mirror lab flow)
+# Fix: Enable Radiology Offering dialog — performance, responsiveness, and UX
 
 ## Goal
 
-Implement a **radiology configuration flow that matches the existing lab configuration pattern** (see attached screenshots). Users who configure radiology for a facility should work from a **platform catalog** and enable only the procedures relevant to that facility—with facility-specific pricing—rather than rebuilding the catalog from scratch.
+Make the **Enable radiology offering** dialog open quickly, stay responsive, and allow clinicians/admins to select platform catalog procedures without browser freezes. Remove redundant chrome.
+
+## Problem (observed)
+
+Opening the dialog from Radiology → Configurations shows a prolonged loading state (“Loading radiology catalog”), then Chrome reports **Page Unresponsive**. After waiting, a small subset of procedures may render, but row actions (**Select**) are unresponsive.
+
+Likely causes (verify in code):
+
+1. **Oversized initial fetch** — `searchPlatformRadiologyCatalogForOffering` calls `listRadiologyCatalogTests` without honoring the dialog `limit`; the repository hardcodes `limit: 7500`. Lab’s equivalent passes `limit` to the platform catalog query.
+2. **Heavy client work** — merging thousands of platform rows with facility offerings, building filter choices, and rendering `AppListTable` with client-side `matcher` on the full result set blocks the UI isolate.
+3. **Redundant dismiss control** — footer **Close** duplicates the dialog header **X**.
 
 ## Reference implementation
 
-Use the lab configuration UX and architecture as the template:
+Mirror the Lab enable-offering pattern, which is fast and stable:
 
-1. **Lab Configurations** — tenant/facility scope selectors, facility offerings table (search, filters, edit/delete), **Enable test** action.
-2. **Enable Lab Offering** — browse the platform catalog; items already offered show **Already offered**.
-3. **Enable Test** — confirm selection and set **unit price** + currency before saving.
+| Layer | Lab (working) | Radiology (broken) |
+|-------|---------------|-------------------|
+| Dialog | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` → `LabEnableFacilityOfferingDialog` | `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart` → `RadiologyEnableFacilityOfferingDialog` |
+| Controller | `lab_workspace_controller.dart` → `searchPlatformLabCatalogForOffering` (passes `limit` to platform + offered fetches) | `radiology_workspace_controller.dart` → `searchPlatformRadiologyCatalogForOffering` |
+| Repository | `listTests` / `listPanels` accept `limit` | `radiology_repository_impl.dart` → `listRadiologyCatalogTests` uses `limit: 7500` |
 
-Mirror this three-step pattern for radiology procedures/tests.
+**Entry point:** `radiology_workspace_page.configurations.dart` → `_openEnableProcedureDialog`.
 
-**Primary references:**
+## Required changes
 
-- Frontend: `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` (`_LabConfigurationsScopeSection`, scope init via `AppAccessPolicy`)
-- Permissions: `frontend/lib/core/permissions/access_policy.dart`
-- Shared UI: `frontend/lib/shared/components/app_select_field.dart`, `app_section_panel.dart`, `app_responsive_field_row.dart`
+### 1. Efficient catalog loading (primary)
 
-## Entry point
+- **Respect `limit`** end-to-end: dialog (`_searchLimit = 100`) → controller → repository → API. Do not load the full platform catalog on open.
+- **Server-side search**: debounced search (already 200 ms) must drive the backend query (`search` / `q` param), not client-filter thousands of rows. Initial open may load the first page only; empty search should not imply “fetch everything.”
+- **Offering status merge** must stay correct but operate on the bounded result set only. Consider fetching offered IDs/codes separately (small payload) rather than re-querying large lists.
+- Evaluate `searchFacilityRadiologyCatalog` (`GET …/facility-radiology-catalog/search`) or extend backend search if needed so platform + offering status can be resolved in one paginated call.
 
-From the radiology workspace overflow menu, **Configurations** opens the radiology configuration dialog (same placement and behavior as lab).
+### 2. Responsive table
 
-## Scope selection (first screen in dialog)
+- Render only rows the user can act on (not-yet-offered procedures), or clearly disable offered rows without blocking interaction on selectable ones.
+- Avoid synchronous work in `build` over large lists (filter choice derivation, repeated `.where` on every frame). Memoize or derive from the current page.
+- Ensure `isLoading` clears so `onRowSelected` / **Select** handlers are active once data is shown.
+- Keep `shrinkWrap: true` + `NeverScrollableScrollPhysics` only if row count stays bounded; otherwise use normal scroll/pagination consistent with `AppListTable` elsewhere.
 
-Resolve **tenant** and **facility** from the user’s access profile. UI visibility follows a strict three-tier model; scope is always fully resolved before data loads, even when selectors are hidden.
+### 3. Dialog UX cleanup
 
-| User access | Tenant selector | Facility selector | Scope resolution |
-|-------------|-----------------|-------------------|------------------|
-| **Platform admin** (all tenants, e.g. superadmin / elevated) | **Shown** — user must pick tenant | **Shown after tenant** — disabled until tenant is selected; enabled once tenant is chosen | `tenantId` from selection → `facilityId` from selection |
-| **Tenant admin** (single tenant) | **Hidden** — tenant auto-selected from session/policy | **Shown** — user picks facility within their tenant | `tenantId` from `AppAccessPolicy.tenantId` (session) → `facilityId` from selection |
-| **Facility user** (single facility, no tenant choice) | **Hidden** | **Hidden** — facility (and tenant) known from session | `tenantId` + `facilityId` from `AppAccessPolicy` / session; show read-only context label only |
+- **Remove the footer Close button**; header **X** (and backdrop policy via `showAppDialog`) is sufficient—match other single-purpose picker dialogs in the app.
+- Preserve instructional body text, search bar, modality filter, and the price sub-dialog flow (`RadiologyEnableOfferingPriceDialog`).
 
-### Scope UX rules
+## Implementation rules
 
-- **Platform admins:** Tenant dropdown first. Facility dropdown stays disabled with a “select tenant first” hint until a tenant is chosen. Changing tenant clears facility and reloads facility options for that tenant.
-- **Tenant admins:** No tenant dropdown. Facility dropdown lists only facilities in their tenant.
-- **Facility users:** No selectors. Show a compact context label such as *“Configuring radiology catalog for {facility}.”*
-- Do **not** load facility offerings until `tenantId` and `facilityId` are both resolved (explicitly or implicitly).
-- Reload the facility catalog whenever tenant or facility changes.
-
-### Scope logic (reuse, do not duplicate)
-
-Mirror lab’s `_showTenantSelector`, `_showFacilitySelector`, `_showScopeContextLabel`, and `_initializeScope` patterns. Prefer extracting or reusing a **shared scope widget/helper** (e.g. generalize `_LabConfigurationsScopeSection` into `frontend/lib/shared/`) rather than copying scope UI into radiology.
-
-## Main dialog: Radiology Configurations
-
-Once scope is ready, display the **facility’s enabled radiology procedures** in a searchable, filterable table.
-
-**Required capabilities:**
-
-- Search across procedure name, code, modality/category, and related metadata.
-- **Laboratory-style filters** (adapted for radiology: modality, category, etc.).
-- Table column settings (visibility).
-- Row actions: **Edit** and **Delete** (remove from facility offerings).
-- Primary action: **Enable procedure** (or equivalent label)—opens the platform catalog picker.
-
-Columns should include at minimum: procedure name, code, category/modality, and **unit price** (facility currency).
-
-## Enable offering flow (two dialogs)
-
-### 1. Enable radiology offering (catalog picker)
-
-- Lists **platform-level radiology catalog** items the user is allowed to configure.
-- Same search + filter affordances as the main table.
-- Rows already enabled for the selected facility show **Already offered** and are not selectable again.
-- Selecting an available item opens the enable dialog.
-
-### 2. Enable procedure (price confirmation)
-
-- Show selected procedure summary (name, code, modality/category, units if applicable).
-- Required **Unit price** field with currency selector (default facility/tenant currency).
-- **Cancel** and **Enable procedure** actions.
-- On success: close dialogs, refresh facility offerings, show success feedback.
-
-## Edit existing offering
-
-Editing a facility offering should allow updating facility-specific fields (at minimum **unit price** and offered/enabled state), consistent with lab’s configure/edit dialog—not re-creating the platform catalog item.
-
-## Frontend implementation
-
-- Implement radiology configuration in the radiology feature module, **reusing shared components** from `frontend/lib/shared/` wherever they exist (`AppDialog`, `AppSelectField`, `AppSearchBar`, `AppListTable`, form shells, section panels).
-- If lab scope UI is generalized, radiology must consume the shared scope component—**do not fork** tenant/facility selector markup.
-- Scope visibility must derive from `AppAccessPolicy` (`isElevated`, `canManageTenant()`, `hasFacilityContext`, `tenantId`, `facilityId`)—same rules as lab.
-- Introduce a `RadiologyCatalogScope` (or shared `FacilityCatalogScope`) value type mirroring `LabCatalogScope` with `isReady` when both IDs are set.
-- All API calls include resolved `tenantId` and `facilityId`; hidden selectors must still send correct scope on every request.
-
-## Backend implementation
-
-- Add or extend radiology catalog/offering endpoints to mirror lab facility-catalog APIs (list offerings, browse platform catalog, enable, update, delete).
-- **Enforce scope server-side** on every mutation and read:
-  - Platform admins: accept `tenant_id` / `facility_id` from request when authorized; validate facility belongs to tenant.
-  - Tenant admins: default or constrain `tenant_id` to session tenant; validate facility is in that tenant.
-  - Facility users: ignore client-supplied scope overrides; bind to session `tenant_id` + `facility_id`.
-- Reuse existing authorization middleware (RBAC/ABAC + tenant/facility guards) and lab catalog service patterns where applicable.
-- Apply Prisma migrations for any new radiology offering tables or columns; keep API contracts aligned with schema.
-
-## Business rules
-
-- **Ordering scope:** Clinicians and request workflows must only see radiology procedures **enabled for their facility**, with the configured facility price.
-- **Catalog source:** Configurers browse the **platform catalog**; they do not author new global procedures in this flow.
-- **Permissions:** Only users who can configure radiology for a facility may access the platform catalog picker and mutate facility offerings.
-- **Parity:** Reuse lab patterns for scope resolution, API shape, loading/empty/error states, and dialog structure wherever possible.
+- **Reuse shared components** — `AppDialog`, `AppListTable`, `AppSearchBar`, `AppWorkspaceStatePanel`; do not fork table/dialog primitives.
+- **Follow Lab parity** for enable-offering data flow unless radiology backend constraints require a documented deviation.
+- **Backend parity** — any search/limit/filter must be enforced server-side; do not client-filter paginated catalog results.
+- **Localization** — adjust `app_en.arb` only if copy changes (e.g. empty-state hint to “search to find procedures”).
+- **Scope** — this task is the enable-offering dialog and its catalog search path only; radiology worklist columns are out of scope.
 
 ## Acceptance criteria
 
-- [ ] Scope selectors follow the three-tier model (platform admin → tenant then facility; tenant admin → facility only; facility user → hidden, auto-resolved).
-- [ ] Facility selector is disabled until tenant is selected for platform admins.
-- [ ] Configurations opens scope resolution before showing data; no offerings load until scope is ready.
-- [ ] Facility offerings table lists only procedures enabled for the selected facility.
-- [ ] **Enable procedure** opens platform catalog picker with search, filters, and “Already offered” state.
-- [ ] Enabling a procedure requires a valid unit price; saved price appears in the main table.
-- [ ] Edit updates facility offering; delete removes it from the facility (not from platform catalog).
-- [ ] Radiology ordering/request flows surface only the selected facility’s enabled procedures and prices.
-- [ ] Backend rejects out-of-scope tenant/facility access regardless of client UI.
-- [ ] Shared scope/catalog components are reused or extracted—not duplicated per module.
+- [ ] Dialog opens to interactive UI within a normal network round-trip (no “Page Unresponsive” on a typical catalog size).
+- [ ] Initial load requests a bounded page (≤ 100 items), not the full platform catalog.
+- [ ] Typing in search triggers debounced server search; results update without UI freeze.
+- [ ] **Select** on an available procedure opens the price dialog; offered procedures are non-selectable or hidden.
+- [ ] Footer **Close** button removed; header **X** still dismisses the dialog.
+- [ ] Lab enable-offering patterns reused; no regression to facility offering upsert (`upsertRadiologyTestOffering`).
+- [ ] Controller/repository tests updated if search/limit contract changes.

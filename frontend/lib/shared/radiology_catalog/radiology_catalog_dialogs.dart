@@ -53,22 +53,38 @@ class _RadiologyEnableFacilityOfferingDialogState
   bool _isSearching = true;
   int _searchRequest = 0;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  List<AppSearchBarFilterChoice> _modalityFilterChoices =
+      const <AppSearchBarFilterChoice>[];
 
   List<RadiologyCatalogTest> get _filteredCatalogItems {
     final String? modality = _filterValue.option(_modalityFilterKey);
+    if (modality == null) {
+      return _catalogItems;
+    }
     return _catalogItems
-        .where((RadiologyCatalogTest item) {
-          if (modality != null && item.modality != modality) {
-            return false;
-          }
-          return true;
-        })
+        .where((RadiologyCatalogTest item) => item.modality == modality)
         .toList(growable: false);
   }
 
   List<RadiologyCatalogTest> get _availableItems {
     return _filteredCatalogItems
         .where((RadiologyCatalogTest item) => !item.isOfferedAtFacility)
+        .toList(growable: false);
+  }
+
+  void _syncModalityFilterChoices() {
+    final Set<String> values = <String>{};
+    for (final RadiologyCatalogTest item in _catalogItems) {
+      final String? modality = item.modality?.trim();
+      if (modality != null && modality.isNotEmpty) {
+        values.add(modality);
+      }
+    }
+    _modalityFilterChoices = values
+        .map(
+          (String value) =>
+              AppSearchBarFilterChoice(value: value, label: value),
+        )
         .toList(growable: false);
   }
 
@@ -109,12 +125,14 @@ class _RadiologyEnableFacilityOfferingDialogState
         setState(() {
           _catalogItems = items;
           _isSearching = false;
+          _syncModalityFilterChoices();
         });
       },
       failure: (AppFailure value) {
         setState(() {
           _catalogItems = const <RadiologyCatalogTest>[];
           _isSearching = false;
+          _modalityFilterChoices = const <AppSearchBarFilterChoice>[];
           _failure = value;
         });
       },
@@ -158,8 +176,6 @@ class _RadiologyEnableFacilityOfferingDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<RadiologyCatalogTest> available = _availableItems;
-
     return AppDialog(
       title: Text(l10n.radiologyEnableOfferingDialogTitle),
       icon: const Icon(Icons.add_circle_outline),
@@ -191,29 +207,22 @@ class _RadiologyEnableFacilityOfferingDialogState
             )
           else if (!_isSearching && _catalogItems.isEmpty)
             AppMutedText(l10n.radiologyEnableOfferingNoPlatformItemsLabel)
-          else if (!_isSearching && _filteredCatalogItems.isEmpty)
-            AppMutedText(l10n.radiologyEnableOfferingNoItemsLabel)
-          else if (!_isSearching && available.isEmpty)
-            AppMutedText(l10n.radiologyEnableOfferingNoItemsLabel)
           else
             AppListTable<RadiologyCatalogTest>(
-              items: _filteredCatalogItems,
+              items: _availableItems,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               tableHorizontalMargin: 0,
               isLoading: _isSearching,
               onRowSelected: (RadiologyCatalogTest item) {
-                if (!item.isOfferedAtFacility) {
-                  unawaited(_openPriceDialog(item));
-                }
+                unawaited(_openPriceDialog(item));
               },
               search: AppListTableSearch<RadiologyCatalogTest>(
                 controller: _searchController,
                 semanticLabel: l10n.radiologyConfigurationSearchLabel,
                 hintText: l10n.radiologyConfigurationSearchHint,
                 isLoading: _isSearching,
-                matcher: (RadiologyCatalogTest item, String query) =>
-                    item.matchesSearch(query),
+                matcher: (RadiologyCatalogTest item, String query) => true,
                 onChanged: _scheduleCatalogSearch,
                 showAdvancedFilterButton: true,
                 advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
@@ -227,13 +236,17 @@ class _RadiologyEnableFacilityOfferingDialogState
                     key: _modalityFilterKey,
                     label: l10n.radiologyModalityLabel,
                     allLabel: l10n.labScopeAll,
-                    choices: _modalityFilterChoices(_catalogItems),
+                    choices: _modalityFilterChoices,
                   ),
                 ],
                 filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
                 onFilterChanged: (AppSearchBarFilterValue value) {
                   setState(() => _filterValue = value);
                 },
+              ),
+              emptyBuilder: (_) => AppMutedText(
+                l10n.radiologyEnableOfferingNoItemsLabel,
               ),
               columns: <AppListTableColumn<RadiologyCatalogTest>>[
                 AppListTableColumn<RadiologyCatalogTest>(
@@ -256,55 +269,22 @@ class _RadiologyEnableFacilityOfferingDialogState
                 AppListTableColumn<RadiologyCatalogTest>(
                   id: 'status',
                   label: l10n.radiologyActionColumnLabel,
-                  cellBuilder: (_, RadiologyCatalogTest item) => Text(
-                    item.isOfferedAtFacility
-                        ? l10n.radiologyEnableOfferingAlreadyOfferedLabel
-                        : l10n.commonSelectActionLabel,
-                  ),
+                  cellBuilder: (_, RadiologyCatalogTest item) =>
+                      Text(l10n.commonSelectActionLabel),
                 ),
               ],
               mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
                 return ListTile(
                   title: Text(item.name),
                   subtitle: Text(item.code ?? l10n.profileUnknownValue),
-                  trailing: Text(
-                    item.isOfferedAtFacility
-                        ? l10n.radiologyEnableOfferingAlreadyOfferedLabel
-                        : l10n.commonSelectActionLabel,
-                  ),
-                  onTap: item.isOfferedAtFacility
-                      ? null
-                      : () => unawaited(_openPriceDialog(item)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => unawaited(_openPriceDialog(item)),
                 );
               },
             ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
     );
-  }
-
-  List<AppSearchBarFilterChoice> _modalityFilterChoices(
-    List<RadiologyCatalogTest> items,
-  ) {
-    final Set<String> values = <String>{};
-    for (final RadiologyCatalogTest item in items) {
-      final String? modality = item.modality?.trim();
-      if (modality != null && modality.isNotEmpty) {
-        values.add(modality);
-      }
-    }
-    return values
-        .map(
-          (String value) =>
-              AppSearchBarFilterChoice(value: value, label: value),
-        )
-        .toList(growable: false);
   }
 }
 

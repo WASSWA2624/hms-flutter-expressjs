@@ -73,13 +73,15 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
     String? search,
     bool includeStandardCatalog = true,
+    int limit = 100,
   }) {
     return _apiClient.get<List<RadiologyCatalogTest>>(
       ApiEndpoints.collection(HmsApiResource.radiologyTests),
       queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
         'search': search,
         'include_standard_catalog': includeStandardCatalog,
-        'limit': 7500,
+        'limit': limit,
         'sort_by': 'name',
         'order': 'asc',
       }),

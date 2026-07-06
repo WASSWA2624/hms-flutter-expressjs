@@ -379,7 +379,10 @@ final class RadiologyWorkspaceController
     }
 
     final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
-        _repository.listRadiologyCatalogTests(search: query);
+        _repository.listRadiologyCatalogTests(
+          search: query,
+          limit: limit,
+        );
     final Future<Result<List<RadiologyCatalogTest>>> offeredFuture =
         _repository.listFacilityRadiologyTests(
           tenantId: scope.tenantId,

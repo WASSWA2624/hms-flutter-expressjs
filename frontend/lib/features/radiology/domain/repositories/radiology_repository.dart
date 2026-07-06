@@ -17,6 +17,7 @@ abstract interface class RadiologyRepository {
   Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
     String? search,
     bool includeStandardCatalog = true,
+    int limit = 100,
   });
 
   Future<Result<List<RadiologyCatalogTest>>> listFacilityRadiologyTests({
