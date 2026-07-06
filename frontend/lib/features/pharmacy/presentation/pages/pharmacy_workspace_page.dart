@@ -17,7 +17,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -109,11 +109,14 @@ class _PharmacyWorkspaceContentState
       return;
     }
     _showFailureIfNeeded(context, failure);
-    final PharmacyWorkspaceState? latest = _readPharmacyState(ref);
-    if (latest == null) {
+    if (_readPharmacyState(ref) == null) {
       return;
     }
-    await _openCatalogDialog(context, latest);
+    await openPharmacyCatalogDialog(
+      context,
+      ref,
+      initialTab: PharmacyCatalogTab.inventory,
+    );
   }
 
   @override
@@ -258,7 +261,20 @@ class _PharmacyWorkspaceContentState
                 label: l10n.pharmacyCatalogPanelTitle,
                 leadingIcon: Icons.inventory_2_outlined,
                 onPressed: () {
-                  unawaited(_openCatalogDialog(context, state));
+                  unawaited(openPharmacyCatalogDialog(context, ref));
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.pharmacyStoragePanelTitle,
+                leadingIcon: Icons.warehouse_outlined,
+                onPressed: () {
+                  unawaited(
+                    openPharmacyCatalogDialog(
+                      context,
+                      ref,
+                      initialTab: PharmacyCatalogTab.storage,
+                    ),
+                  );
                 },
               ),
             ],
@@ -660,22 +676,6 @@ Future<void> _openPharmacyDetailDialog(
         state: state,
         writeRequirement: writeRequirement,
       ),
-    ),
-  );
-}
-
-Future<void> _openCatalogDialog(
-  BuildContext context,
-  PharmacyWorkspaceState state,
-) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.pharmacyCatalogPanelTitle),
-      icon: const Icon(Icons.inventory_2_outlined),
-      scrollable: true,
-      maxWidth: 1080,
-      content: PharmacyCatalogPanel(state: state),
     ),
   );
 }

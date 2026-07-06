@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -25,8 +26,6 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
-  late final TextEditingController _formController;
-  late final TextEditingController _strengthController;
   late final TextEditingController _pharmacyPriceController;
   late final TextEditingController _facilityPriceController;
   late final TextEditingController _initialStockController;
@@ -34,6 +33,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
   late final TextEditingController _batchNumberController;
   late String _pharmacyCurrency;
   late String _facilityCurrency;
+  String? _form;
+  String? _strength;
   String? _inventoryUnit;
   String? _storageRoomId;
   String? _storageShelfId;
@@ -41,7 +42,6 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
   DateTime? _manufacturedAt;
   DateTime? _expiryDate;
   bool _isSaving = false;
-  bool _initializedEditLabels = false;
 
   bool get _isEdit => widget.drug != null;
 
@@ -51,8 +51,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     final PharmacyDrug? drug = widget.drug;
     _nameController = TextEditingController(text: drug?.name ?? '');
     _codeController = TextEditingController(text: drug?.code ?? '');
-    _formController = TextEditingController(text: drug?.form ?? '');
-    _strengthController = TextEditingController(text: drug?.strength ?? '');
+    _form = _emptyToNull(drug?.form ?? '');
+    _strength = _emptyToNull(drug?.strength ?? '');
     _pharmacyPriceController = TextEditingController(
       text: _priceText(drug?.pharmacyUnitPrice ?? drug?.unitPrice),
     );
@@ -67,26 +67,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initializedEditLabels || widget.drug == null) {
-      return;
-    }
-    _initializedEditLabels = true;
-    final AppLocalizations l10n = context.l10n;
-    final String formLabel = pharmacyFormLabelForValue(l10n, widget.drug!.form);
-    if (formLabel.isNotEmpty) {
-      _formController.text = formLabel;
-    }
-    _trackedForm = pharmacyCanonicalFormFromLabel(l10n, formLabel);
-  }
-
-  @override
   void dispose() {
     _nameController.dispose();
     _codeController.dispose();
-    _formController.dispose();
-    _strengthController.dispose();
     _pharmacyPriceController.dispose();
     _facilityPriceController.dispose();
     _initialStockController.dispose();
@@ -95,38 +78,46 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     super.dispose();
   }
 
-  void _applyFormDefaults(AppLocalizations l10n) {
-    final String? form = pharmacyCanonicalFormFromLabel(l10n, _formController.text);
-    if (form == _trackedForm) {
-      return;
-    }
-    _trackedForm = form;
-    if (form == null) {
-      return;
-    }
-    final String? defaultUnit = pharmacyDefaultInventoryUnitForForm(form);
-    if (defaultUnit != null) {
-      _inventoryUnit = defaultUnit;
-    }
-    setState(() {});
+  void _onFormChanged(String? value) {
+    setState(() {
+      _form = value;
+      if (_form == null) {
+        _strength = null;
+        return;
+      }
+      final String? defaultUnit = pharmacyDefaultInventoryUnitForForm(_form);
+      if (defaultUnit != null) {
+        _inventoryUnit = defaultUnit;
+      }
+      if (_strength != null &&
+          !pharmacyStrengthSuggestionsForForm(_form).contains(_strength)) {
+        _strength = null;
+      }
+    });
   }
 
-  String? _trackedForm;
+  Future<void> _openStorageConfiguration() async {
+    await openPharmacyCatalogDialog(
+      context,
+      ref,
+      initialTab: PharmacyCatalogTab.storage,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<String> formLabels = pharmacyFormDisplayLabels(l10n);
-    final String? canonicalForm = pharmacyCanonicalFormFromLabel(
-      l10n,
-      _formController.text,
-    );
-    final List<String> strengthOptions = pharmacyStrengthSuggestionsForForm(
-      canonicalForm,
-    );
+    final List<AppSelectOption<String>> formOptions =
+        pharmacyDrugFormSelectOptions(l10n);
+    final List<AppSelectOption<String>> strengthOptions =
+        pharmacyStrengthSelectOptions(_form);
     final List<AppSelectOption<String>> unitOptions =
-        pharmacyInventoryUnitSelectOptions(l10n, form: canonicalForm);
+        pharmacyInventoryUnitSelectOptions(l10n, form: _form);
+    final String? inventoryUnitLabel = pharmacyInventoryUnitDisplayLabel(
+      l10n,
+      _inventoryUnit,
+    );
     final List<PharmacyExpiryAlertLeadOption> expiryLeadOptions =
         pharmacyExpiryAlertLeadOptions(l10n);
     final PharmacyStorageLayout storageLayout = ref
@@ -182,20 +173,20 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
             children: <Widget>[
               AppResponsiveFieldRow.two(
                 gap: AppResponsiveFieldRowGap.form,
-                left: PharmacySearchableTextField(
-                  controller: _formController,
+                left: AppSelectField<String>.searchable(
+                  value: _form,
                   labelText: l10n.pharmacyDrugFormLabel,
                   enabled: !_isSaving,
-                  prefixIcon: const Icon(Icons.medication_liquid_outlined),
-                  options: formLabels,
-                  onFieldSubmitted: (_) => _applyFormDefaults(l10n),
+                  options: formOptions,
+                  onChanged: _onFormChanged,
                 ),
-                right: PharmacySearchableTextField(
-                  controller: _strengthController,
+                right: AppSelectField<String>.searchable(
+                  value: _strength,
                   labelText: l10n.pharmacyDrugStrengthLabel,
-                  enabled: !_isSaving,
-                  prefixIcon: const Icon(Icons.scale_outlined),
+                  enabled: !_isSaving && _form != null,
                   options: strengthOptions,
+                  onChanged: (String? value) =>
+                      setState(() => _strength = value),
                 ),
               ),
             ],
@@ -262,8 +253,12 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
                 ),
                 AppTextField(
                   controller: _reorderLevelController,
-                  labelText: l10n.pharmacyReorderLevelLabel,
-                  helperText: l10n.pharmacyReorderLevelHelper,
+                  labelText: inventoryUnitLabel == null
+                      ? l10n.pharmacyReorderLevelLabel
+                      : l10n.pharmacyReorderLevelLabelWithUnit(inventoryUnitLabel),
+                  helperText: inventoryUnitLabel == null
+                      ? l10n.pharmacyReorderLevelSelectUnitHelper
+                      : l10n.pharmacyReorderLevelHelperWithUnit,
                   keyboardType: TextInputType.number,
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.digitsOnly,
@@ -340,11 +335,23 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
               description: l10n.pharmacyDrugStorageSectionHelper,
               children: <Widget>[
                 if (activeRooms.isEmpty)
-                  Text(
-                    l10n.pharmacyNoStorageRoomsBody,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.pharmacyNoStorageRoomsBody,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: theme.spacing.sm),
+                      AppButton.tertiary(
+                        label: l10n.pharmacyConfigureStorageAction,
+                        leadingIcon: Icons.warehouse_outlined,
+                        enabled: !_isSaving,
+                        onPressed: _openStorageConfiguration,
+                      ),
+                    ],
                   )
                 else
                   AppResponsiveFieldRow.two(
@@ -434,7 +441,6 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
       return;
     }
     setState(() => _isSaving = true);
-    final AppLocalizations l10n = context.l10n;
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
@@ -462,8 +468,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
             tenantId: tenantId,
             name: _nameController.text.trim(),
             code: _emptyToNull(_codeController.text),
-            form: pharmacyCanonicalFormFromLabel(l10n, _formController.text),
-            strength: _emptyToNull(_strengthController.text),
+            form: _form,
+            strength: _strength,
             unitPrice: pharmacyPrice,
             currency: pharmacyCurrency,
             inventoryUnit: _inventoryUnit,
@@ -486,8 +492,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
         PharmacyDrugUpdateInput(
           name: _nameController.text.trim(),
           code: _emptyToNull(_codeController.text),
-          form: pharmacyCanonicalFormFromLabel(l10n, _formController.text),
-          strength: _emptyToNull(_strengthController.text),
+          form: _form,
+          strength: _strength,
           unitPrice: pharmacyPrice,
           currency: pharmacyCurrency,
         ),

@@ -1,168 +1,108 @@
-# Feature: Refine Pharmacy Add/Edit Drug dialog
+# Refine: Add Drug dialog (`PharmacyDrugEditDialog`)
 
 ## Goal
 
-Redesign the **Add drug** / **Edit drug** dialog in the Pharmacy catalog so it is scannable, supports any common medication type, and reuses existing shared form components. Guided selects should reduce free-text errors for form, strength, and inventory units; prices must persist with currency; stock fields should read as one logical group.
+Polish the **Add drug** modal so formulation, stock, and storage fields are clearer, use shared select components consistently, and storage location is configurable before staff assign shelves.
 
-## Current state (problem)
+**Target:** `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`  
+**Catalog data:** `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart`  
+**Shared components:** `AppSelectField`, `AppFormSection`, `AppResponsiveFieldRow` (`frontend/lib/shared/`)
 
-The dialog in `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` (`_DrugEditDialog`) is a single vertical stack of plain `AppTextField`s (see screenshots):
+---
 
-| Issue | Detail |
-|-------|--------|
-| **Layout** | 11+ full-width fields with no grouping; hard to scan on desktop |
-| **Free-text everywhere** | Form, strength, and inventory unit are unstructured text |
-| **Pricing** | Pharmacy and facility prices are raw number fields—no currency picker |
-| **Stock UX** | Inventory unit appears before quantity; unit and reorder are disconnected from form context |
-| **Labels** | Most fields render as “(optional)” via `AppFieldLabel` even when business rules require them |
-| **Dialog chrome** | No dialog icon; Cancel / Add drug actions have no leading icons |
-| **Edit parity** | Edit path updates identity/pricing only; add path includes stock—keep that split |
+## Keep as-is
 
-Backend already accepts `currency` on drug setup (`setupPharmacyDrugSchema`) and facility offering currency; the UI does not wire them yet.
+| Section | Fields | Notes |
+|---------|--------|-------|
+| **Drug identity** | Drug name* · Drug code | Required name validation stays |
+| **Pricing** | Pharmacy price · Facility price | `AppCurrencyAmountField` + currency picker |
+| **Initial stock** | Initial stock · Inventory unit | Section layout and optional semantics |
+| **Batch and shelf life** | Batch number · Manufacturing date · Expiry date · Expiry alert lead | Existing helpers and validation |
 
-## Reference implementation
+---
 
-Mirror patterns from catalog dialogs that already use structured forms:
+## Changes required
 
-| Pattern | Reference |
-|---------|-----------|
-| Currency + amount | `AppCurrencyAmountField` in `frontend/lib/shared/components/app_currency_amount_field.dart`; used in `lab_catalog_dialogs.dart`, `radiology_catalog_dialogs.dart` |
-| Two-column rows | `AppResponsiveFieldRow.two` in `frontend/lib/shared/forms/app_responsive_field_row.dart` |
-| Grouped sections | `AppFormSection` in `frontend/lib/shared/forms/app_form_section.dart` |
-| Selects | `AppSelectField` (already used in `_FormularyCreateDialog` in the same file) |
-| Searchable catalog pick | `LabSearchableTextField` in `frontend/lib/shared/lab_catalog/` when a combobox-with-custom-entry is needed |
-| Dialog shell | `AppDialog` with `icon`, `maxWidth`, `scrollable`, action `leadingIcon`s |
+### 1 — Formulation: use `AppSelectField`, not free text
 
-**Primary file to change:** `pharmacy_catalog_panel.dart` (`_DrugEditDialog`).
+Replace `PharmacySearchableTextField` with **`AppSelectField<String>.searchable`** for both fields.
 
-**Domain / API (wire through if extended):**
+| Field | Options source | Behaviour |
+|-------|----------------|-----------|
+| **Form** | `pharmacyDrugFormOptions` → `pharmacyFormDisplayLabels(l10n)` | On change, call `_applyFormDefaults` to auto-set inventory unit |
+| **Strength** | `pharmacyStrengthSuggestionsForForm(canonicalForm)` | Disabled or empty until a form is chosen; options are form-family presets (e.g. `500 mg`, `250 mg/5 mL`) |
 
-- `PharmacyDrugInput`, `PharmacyDrugUpdateInput`, `PharmacyFacilityOfferingInput` — `pharmacy_entities.dart`
-- `setupPharmacyDrugSchema` — `backend/src/modules/pharmacy-workspace/schemas/pharmacy-workspace.schema.js`
-- Clinical drug examples — `backend/scripts/seeders/seed-clinical-catalog-pack.js` (forms, strengths, units)
+Store canonical values (`option.value` for form; strength string as entered) on submit—same as today.
 
-## Form layout
+### 2 — Inventory unit: add icons
 
-Use `AppFormSection` with short section titles. On wide viewports, place related fields on one row via `AppResponsiveFieldRow.two`; collapse to single column on narrow widths.
+Extend `pharmacyInventoryUnitSelectOptions` so each `AppSelectOption` includes a **`leadingIcon`** (Material icon) for common units:
 
-### Section 1 — Drug identity
+| Unit | Suggested icon |
+|------|----------------|
+| tablet | `Icons.medication_outlined` |
+| capsule | `Icons.medication_liquid_outlined` |
+| strip | `Icons.view_week_outlined` |
+| box | `Icons.inventory_2_outlined` |
+| bottle | `Icons.local_drink_outlined` |
+| ampoule / vial | `Icons.science_outlined` |
+| tube / jar | `Icons.invert_colors_outlined` |
+| inhaler | `Icons.air_outlined` |
+| pack | `Icons.layers_outlined` |
+| mL / L / g | `Icons.scale_outlined` |
+| unit (fallback) | `Icons.category_outlined` |
 
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Drug name | `AppTextField` | Yes | Only required field on add |
-| Drug code | `AppTextField` | No | Optional internal/SKU code |
+Icons appear in the dropdown and selected value chip.
 
-Row: **name** (wider) + **code**.
+### 3 — Reorder alert: clarify the unit
 
-### Section 2 — Formulation
+**Problem:** “Reorder alert at” accepts a number but staff cannot tell whether it is tablets, bottles, strips, etc.
 
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Form | `AppSelectField` with searchable/custom entry | No | Predefined dosage forms; allow “Other” → free text |
-| Strength | `AppSelectField` or searchable combobox | No | Suggestions filtered by selected form |
+**Fix:**
 
-**Predefined forms** (store canonical value; display *Full name (short)* where a short form exists):
+- Append a **dynamic suffix** to the field label or helper when an inventory unit is selected, e.g. *Reorder alert at (tablets)*.
+- Update helper text to state explicitly: *Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.*
+- If no inventory unit is chosen yet, show muted placeholder helper: *Select an inventory unit first.*
 
-Tablet, Capsule, Chewable Tablet, Syrup, Suspension, Injection, Ampoule, Vial, Cream, Ointment, Gel, Drops, Inhaler, Suppository, Patch, Powder, Solution, Lotion, Spray, Other.
+Localize new copy in `frontend/lib/l10n/app_en.arb`.
 
-**Form → default inventory units** (suggest first; user can override):
+### 4 — Storage location: room → shelf cascade
 
-| Form family | Suggested units |
-|-------------|-----------------|
-| Solid oral (tablet, capsule, chewable) | tablet (`tab`), capsule (`cap`), strip, box |
-| Liquid oral (syrup, suspension, solution) | bottle (`btl`), millilitre (`mL`), litre (`L`) |
-| Injectable (injection, ampoule, vial) | ampoule (`amp`), vial, box |
-| Topical (cream, ointment, gel, lotion) | tube, jar, gram (`g`) |
-| Inhaler / drops / spray | inhaler, bottle (`btl`), pack |
-| Other | unit, box, pack |
+Section **Storage location** already exists; complete the UX:
 
-**Strength suggestions** (examples per form; include common clinical strengths from seeder data):
+| Field | Component | Rules |
+|-------|-----------|-------|
+| **Storage room** | `AppSelectField<String>` | Facility catalog from `state.storageLayout.rooms` |
+| **Shelf** | `AppSelectField<String>` | Filtered by selected room; disabled until room chosen; clearing room clears invalid shelf |
 
-- Tablet/Capsule: `250 mg`, `500 mg`, `5 mg`, `10 mg`, `20 mg`, `40 mg`, `81 mg`, `400 mg`, `625 mg`, etc.
-- Injection/Vial: `1 g`, `500 mg`, `75 mg/3 mL`, `10 mg/mL`, `100 IU/mL`, etc.
-- Syrup: `125 mg/5 mL`, `250 mg/5 mL`, `2 mg/5 mL`, etc.
+- Helper: *Optional—helps staff find this drug on the floor.*
+- **Empty catalog:** show `pharmacyNoStorageRoomsBody` plus a compact action (e.g. *Configure storage*) that opens the storage management UI—do not leave staff with only static text.
 
-When the user picks a form, pre-select the most likely unit and refresh strength options. Changing form should not clear name/code.
+Shelf must exist in the selected room (validated server-side). See **`prompt1.md`** for data model, API, and catalog display.
 
-Row: **form** + **strength**.
+### 5 — Pharmacy overflow menu: storage configuration entry
 
-Extract form/unit/strength catalogs to a small shared module (e.g. `frontend/lib/features/pharmacy/presentation/pharmacy_drug_catalog_options.dart`) so the dialog and future prescription flows can reuse them.
+Add a **Storage layout** action to the pharmacy workspace toolbar overflow (`pharmacy_workspace_page.dart`) so master/pharmacist users can manage rooms and shelves **without** hunting through the catalog dialog.
 
-### Section 3 — Pricing
+- Opens catalog panel on the **Storage** tab (`PharmacyCatalogTab.storage` → `PharmacyStoragePanel`), or a dedicated dialog—pick one entry point and use it consistently from the add-drug empty state.
+- CRUD: add/rename/deactivate rooms; per room, add shelf codes and optional labels.
+- Permissions: align with existing pharmacy write access.
 
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Pharmacy price | `AppCurrencyAmountField` | No | Persist `unit_price` + `currency` |
-| Facility price | `AppCurrencyAmountField` | No | Persist via `PharmacyFacilityOfferingInput` with `currency` |
+---
 
-Row: **pharmacy price** + **facility price** (side by side on desktop).
+## Out of scope (this prompt)
 
-Default currency: tenant/facility default or `appDefaultCurrencyCode` (`UGX`). Reuse `appCurrencyOptions` from the shared amount field.
+- Ward/inpatient `room` model (different domain).
+- Warehouse map visualization.
+- Full backend/storage schema—covered in **`prompt1.md`**.
 
-### Section 4 — Initial stock *(add flow only; hidden on edit)*
-
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Initial stock | `AppTextField` (digits only) | No | Quantity **before** unit |
-| Inventory unit | `AppSelectField` with full + short label | No | e.g. `Tablet (tab)`, `Bottle (btl)`, `Vial` |
-| Reorder alert at | `AppTextField` (digits only) | No | Quantity threshold in selected units |
-
-Row: **initial stock** + **inventory unit**; **reorder alert at** full width or paired with a helper caption explaining it is a quantity threshold.
-
-Helper text (muted): reorder alerts fire when on-hand quantity falls at or below this value.
-
-### Section 5 — Batch & shelf life *(add flow only)*
-
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Batch number | `AppTextField` | Conditional | Required when expiry date is set (matches backend `superRefine`) |
-| Manufacturing date | `AppDateField` | No | New field—add to schema/API if not present |
-| Expiry date | `AppDateField` | No | Existing field |
-| Expiry alert lead | `AppSelectField` or numeric + unit | No | e.g. `90 days`, `3 months`, `6 months` before expiry |
-
-Row: **batch number** + **manufacturing date**; row: **expiry date** + **expiry alert lead**.
-
-**Expiry alert lead** drives proactive stock risk alongside quantity reorder: e.g. “alert 90 days before expiry” means the drug surfaces in expiring-soon filters even if quantity is healthy. Wire to backend if a per-drug or per-batch lead field does not exist yet; otherwise store on the initial batch metadata created during setup.
-
-## Dialog chrome
-
-- `AppDialog` `icon`: `Icons.medication_outlined`
-- `maxWidth`: ~720–860 (match lab catalog dialogs)
-- `scrollable: true`
-- Actions:
-  - **Cancel** — `AppButton.tertiary` with `leadingIcon: Icons.close`
-  - **Add drug** / **Save** — `AppButton.primary` with `leadingIcon: Icons.add` / `Icons.save_outlined`
-- Mark required fields with `isRequired: true` so labels do not show spurious “(optional)”
-
-## Backend parity
-
-- Send `currency` with pharmacy `unit_price` and facility offering `unit_price`.
-- If adding `manufactured_at` and `expiry_alert_lead_days` (or equivalent), extend:
-  - `setupPharmacyDrugSchema`
-  - `pharmacy-workspace.service.js` drug setup path
-  - `PharmacyDrugInput.toSetupJson()`
-  - DTO/entity mapping
-- Do not client-only invent fields the API cannot persist.
-- Keep existing rule: `expiry_date` without `batch_number` is rejected.
-
-## Implementation rules
-
-- **Reuse shared components** from `frontend/lib/shared/`—do not fork raw `TextField` markup.
-- **No new visual language**—match Lab/Radiology catalog dialog spacing and `AppFormSection` density.
-- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` for section titles, unit labels (`{full} ({short})`), form labels, expiry lead options, and helper copy.
-- **Scope:** `_DrugEditDialog` and supporting constants/helpers only; drug worklist table and inventory adjust dialog are out of scope unless a tiny shared unit catalog is extracted.
-- **Validation:** name required on add; positive integers for stock/reorder; positive amounts for prices; batch required when expiry is set.
+---
 
 ## Acceptance criteria
 
-- [ ] Add drug dialog uses grouped `AppFormSection`s with responsive two-column rows—not a flat 11-field stack.
-- [ ] Form, strength, and inventory unit use guided selects (with custom entry where needed); options show full name and short form where applicable.
-- [ ] Selecting a form updates suggested units and strength options without clearing other fields.
-- [ ] Pharmacy and facility prices use `AppCurrencyAmountField`; currency is saved with the price.
-- [ ] Initial stock appears before inventory unit; reorder alert follows as a quantity threshold in the chosen unit.
-- [ ] Batch, manufacturing date, expiry date, and expiry alert lead are grouped; batch is required when expiry is set.
-- [ ] Required vs optional labels are correct (drug name required; others optional unless conditional).
-- [ ] Dialog has a title icon; Cancel and primary action have leading icons.
-- [ ] Edit drug dialog still updates identity/pricing only (no stock section).
-- [ ] New or extended fields are persisted via backend schema/API—not UI-only.
-- [ ] Shared pharmacy drug catalog options are reusable outside this dialog.
+- [ ] Form and Strength use `AppSelectField.searchable` with catalog presets; strength options react to selected form.
+- [ ] Inventory unit options show distinct icons in the select.
+- [ ] Reorder alert label/helper makes the inventory unit explicit.
+- [ ] Storage room and shelf cascade correctly; both optional on add.
+- [ ] Empty storage catalog offers a path to configure rooms/shelves (overflow menu + add-drug empty state).
+- [ ] No regression to pricing, batch, or identity sections.

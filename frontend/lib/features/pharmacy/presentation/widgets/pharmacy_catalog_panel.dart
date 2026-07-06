@@ -41,7 +41,14 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final PharmacyWorkspaceState state = widget.state;
+    final PharmacyWorkspaceState state = ref
+            .watch(pharmacyWorkspaceControllerProvider)
+            .value
+            ?.when(
+              success: (PharmacyWorkspaceState value) => value,
+              failure: (_) => widget.state,
+            ) ??
+        widget.state;
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );

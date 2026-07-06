@@ -16372,6 +16372,30 @@ abstract class AppLocalizations {
   /// **'Alerts fire when on-hand quantity falls at or below this value.'**
   String get pharmacyReorderLevelHelper;
 
+  /// Helper text for pharmacy reorder threshold when inventory unit is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.'**
+  String get pharmacyReorderLevelHelperWithUnit;
+
+  /// Placeholder helper for pharmacy reorder threshold before inventory unit is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an inventory unit first.'**
+  String get pharmacyReorderLevelSelectUnitHelper;
+
+  /// Pharmacy reorder threshold label including the selected inventory unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder alert at ({unit})'**
+  String pharmacyReorderLevelLabelWithUnit(String unit);
+
+  /// Action to open pharmacy storage layout configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure storage'**
+  String get pharmacyConfigureStorageAction;
+
   /// Pharmacy dosage form label with short form in parentheses.
   ///
   /// In en, this message translates to:

@@ -8772,6 +8772,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Alerts fire when on-hand quantity falls at or below this value.';
 
   @override
+  String get pharmacyReorderLevelHelperWithUnit =>
+      'Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.';
+
+  @override
+  String get pharmacyReorderLevelSelectUnitHelper =>
+      'Select an inventory unit first.';
+
+  @override
+  String pharmacyReorderLevelLabelWithUnit(String unit) {
+    return 'Reorder alert at ($unit)';
+  }
+
+  @override
+  String get pharmacyConfigureStorageAction => 'Configure storage';
+
+  @override
   String pharmacyDrugFormWithShortLabel(String full, String short) {
     return '$full ($short)';
   }

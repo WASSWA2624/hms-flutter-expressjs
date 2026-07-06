@@ -437,6 +437,24 @@ final class PharmacyWorkspaceController
       return;
     }
     _emit(current.copyWith(catalogTab: tab));
+    _refreshCatalogTabData(tab, current);
+  }
+
+  void prepareCatalogTab(PharmacyCatalogTab tab) {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    if (current.catalogTab != tab) {
+      _emit(current.copyWith(catalogTab: tab));
+    }
+    _refreshCatalogTabData(tab, current);
+  }
+
+  void _refreshCatalogTabData(
+    PharmacyCatalogTab tab,
+    PharmacyWorkspaceState current,
+  ) {
     if (tab == PharmacyCatalogTab.formulary &&
         current.formularyItems.items.isEmpty) {
       unawaited(_refreshFormulary(showLoading: true));
@@ -445,8 +463,7 @@ final class PharmacyWorkspaceController
         current.inventoryWorkbench.stocks.items.isEmpty) {
       unawaited(_refreshInventory(showLoading: true));
     }
-    if (tab == PharmacyCatalogTab.storage &&
-        current.storageLayout.rooms.isEmpty) {
+    if (tab == PharmacyCatalogTab.storage) {
       unawaited(_refreshStorageLayout(showLoading: true));
     }
   }

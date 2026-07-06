@@ -11278,6 +11278,25 @@
   "@pharmacyReorderLevelHelper": {
     "description": "Helper text for pharmacy reorder threshold field."
   },
+  "pharmacyReorderLevelHelperWithUnit": "Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.",
+  "@pharmacyReorderLevelHelperWithUnit": {
+    "description": "Helper text for pharmacy reorder threshold when inventory unit is selected."
+  },
+  "pharmacyReorderLevelSelectUnitHelper": "Select an inventory unit first.",
+  "@pharmacyReorderLevelSelectUnitHelper": {
+    "description": "Placeholder helper for pharmacy reorder threshold before inventory unit is chosen."
+  },
+  "pharmacyReorderLevelLabelWithUnit": "Reorder alert at ({unit})",
+  "@pharmacyReorderLevelLabelWithUnit": {
+    "description": "Pharmacy reorder threshold label including the selected inventory unit.",
+    "placeholders": {
+      "unit": { "type": "String" }
+    }
+  },
+  "pharmacyConfigureStorageAction": "Configure storage",
+  "@pharmacyConfigureStorageAction": {
+    "description": "Action to open pharmacy storage layout configuration."
+  },
   "pharmacyDrugFormWithShortLabel": "{full} ({short})",
   "@pharmacyDrugFormWithShortLabel": {
     "description": "Pharmacy dosage form label with short form in parentheses.",

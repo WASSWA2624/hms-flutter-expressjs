@@ -165,36 +165,29 @@ List<String> pharmacyStrengthSuggestionsForForm(String? form) {
   );
 }
 
-List<String> pharmacyFormDisplayLabels(AppLocalizations l10n) {
+List<AppSelectOption<String>> pharmacyDrugFormSelectOptions(
+  AppLocalizations l10n,
+) {
   return pharmacyDrugFormOptions
-      .map((PharmacyDrugFormOption option) => option.displayLabel(l10n))
+      .map(
+        (PharmacyDrugFormOption option) => AppSelectOption<String>(
+          value: option.value,
+          label: option.displayLabel(l10n),
+          searchText: '${option.value} ${option.shortLabel ?? ''}',
+        ),
+      )
       .toList(growable: false);
 }
 
-String? pharmacyCanonicalFormFromLabel(AppLocalizations l10n, String label) {
-  final String trimmed = label.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  for (final PharmacyDrugFormOption option in pharmacyDrugFormOptions) {
-    if (option.displayLabel(l10n) == trimmed || option.value == trimmed) {
-      return option.value;
-    }
-  }
-  return trimmed;
-}
-
-String pharmacyFormLabelForValue(AppLocalizations l10n, String? value) {
-  final String trimmed = (value ?? '').trim();
-  if (trimmed.isEmpty) {
-    return '';
-  }
-  for (final PharmacyDrugFormOption option in pharmacyDrugFormOptions) {
-    if (option.value.toLowerCase() == trimmed.toLowerCase()) {
-      return option.displayLabel(l10n);
-    }
-  }
-  return trimmed;
+List<AppSelectOption<String>> pharmacyStrengthSelectOptions(String? form) {
+  return pharmacyStrengthSuggestionsForForm(form)
+      .map(
+        (String strength) => AppSelectOption<String>(
+          value: strength,
+          label: strength,
+        ),
+      )
+      .toList(growable: false);
 }
 
 List<PharmacyInventoryUnitOption> pharmacyInventoryUnitsForForm(String? form) {
@@ -222,6 +215,52 @@ List<PharmacyInventoryUnitOption> pharmacyInventoryUnitsForForm(String? form) {
   return <PharmacyInventoryUnitOption>[...prioritized, ...remainder];
 }
 
+IconData pharmacyInventoryUnitIcon(String value) {
+  switch (value) {
+    case 'tablet':
+      return Icons.medication_outlined;
+    case 'capsule':
+      return Icons.medication_liquid_outlined;
+    case 'strip':
+      return Icons.view_week_outlined;
+    case 'box':
+      return Icons.inventory_2_outlined;
+    case 'bottle':
+      return Icons.local_drink_outlined;
+    case 'ampoule':
+    case 'vial':
+      return Icons.science_outlined;
+    case 'tube':
+    case 'jar':
+      return Icons.invert_colors_outlined;
+    case 'inhaler':
+      return Icons.air_outlined;
+    case 'pack':
+      return Icons.layers_outlined;
+    case 'mL':
+    case 'L':
+    case 'g':
+      return Icons.scale_outlined;
+    default:
+      return Icons.category_outlined;
+  }
+}
+
+String? pharmacyInventoryUnitDisplayLabel(
+  AppLocalizations l10n,
+  String? unit,
+) {
+  if (unit == null || unit.trim().isEmpty) {
+    return null;
+  }
+  for (final PharmacyInventoryUnitOption option in pharmacyInventoryUnitCatalog) {
+    if (option.value == unit) {
+      return option.displayLabel(l10n);
+    }
+  }
+  return unit;
+}
+
 List<AppSelectOption<String>> pharmacyInventoryUnitSelectOptions(
   AppLocalizations l10n, {
   String? form,
@@ -231,6 +270,7 @@ List<AppSelectOption<String>> pharmacyInventoryUnitSelectOptions(
         (PharmacyInventoryUnitOption option) => AppSelectOption<String>(
           value: option.value,
           label: option.displayLabel(l10n),
+          leadingIcon: Icon(pharmacyInventoryUnitIcon(option.value)),
           searchText: '${option.label} ${option.shortLabel ?? ''} ${option.value}',
         ),
       )
@@ -276,135 +316,4 @@ List<PharmacyExpiryAlertLeadOption> pharmacyExpiryAlertLeadOptions(
       label: l10n.pharmacyExpiryAlertLeadMonths(6),
     ),
   ];
-}
-
-class PharmacySearchableTextField extends StatefulWidget {
-  const PharmacySearchableTextField({
-    required this.controller,
-    required this.labelText,
-    required this.options,
-    this.enabled = true,
-    this.isRequired = false,
-    this.hintText,
-    this.prefixIcon,
-    this.validator,
-    this.onFieldSubmitted,
-    super.key,
-  });
-
-  final TextEditingController controller;
-  final String labelText;
-  final List<String> options;
-  final bool enabled;
-  final bool isRequired;
-  final String? hintText;
-  final Widget? prefixIcon;
-  final FormFieldValidator<String>? validator;
-  final ValueChanged<String>? onFieldSubmitted;
-
-  @override
-  State<PharmacySearchableTextField> createState() =>
-      _PharmacySearchableTextFieldState();
-}
-
-class _PharmacySearchableTextFieldState extends State<PharmacySearchableTextField> {
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RawAutocomplete<String>(
-      textEditingController: widget.controller,
-      focusNode: _focusNode,
-      optionsBuilder: (TextEditingValue value) {
-        final String query = value.text.trim().toLowerCase();
-        final List<String> matches = widget.options
-            .where(
-              (String option) =>
-                  query.isEmpty || option.toLowerCase().contains(query),
-            )
-            .take(12)
-            .toList(growable: false);
-        if (query.isEmpty ||
-            matches.any((String option) => option.toLowerCase() == query)) {
-          return matches;
-        }
-        return <String>[value.text.trim(), ...matches];
-      },
-      onSelected: (String value) {
-        widget.controller.text = value;
-      },
-      fieldViewBuilder:
-          (
-            BuildContext context,
-            TextEditingController controller,
-            FocusNode focusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            return AppTextField(
-              controller: controller,
-              focusNode: focusNode,
-              labelText: widget.labelText,
-              hintText: widget.hintText,
-              prefixIcon: widget.prefixIcon,
-              enabled: widget.enabled,
-              isRequired: widget.isRequired,
-              validator: widget.validator,
-              onFieldSubmitted: (String value) {
-                onFieldSubmitted();
-                widget.onFieldSubmitted?.call(value);
-              },
-            );
-          },
-      optionsViewBuilder:
-          (
-            BuildContext context,
-            AutocompleteOnSelected<String> onSelected,
-            Iterable<String> options,
-          ) {
-            final ThemeData theme = Theme.of(context);
-            final List<String> visibleOptions = options.toList(growable: false);
-            if (visibleOptions.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Align(
-              alignment: AlignmentDirectional.topStart,
-              child: Material(
-                elevation: 4,
-                color: theme.colorScheme.surface,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 240,
-                    maxWidth: 420,
-                  ),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: visibleOptions.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final String option = visibleOptions[index];
-                      return ListTile(
-                        dense: true,
-                        title: Text(option),
-                        onTap: () => onSelected(option),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
-          },
-    );
-  }
 }
