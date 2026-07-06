@@ -20,6 +20,7 @@ const upsertFacilityPharmacyOfferingSchema = z
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
     unit_price: z.coerce.number().min(0).optional(),
     currency: optionalTrimmedString(10),
+    default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {

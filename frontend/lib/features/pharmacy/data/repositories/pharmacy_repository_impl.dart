@@ -64,7 +64,12 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
         'search': query.search,
+        'name': query.name,
+        'code': query.code,
+        'form': query.form,
+        'strength': query.strength,
         'stock_status': query.stockStatus,
+        'facility_id': query.facilityId,
         'storage_room_id': query.storageRoomId,
         'storage_shelf_id': query.storageShelfId,
         'sort_by': 'name',
@@ -90,6 +95,8 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
         'search': query.search,
+        'facility_id': query.facilityId,
+        'inventory_item_id': query.inventoryItemId,
         'low_stock_only': query.lowStockOnly ? true : null,
         'stock_status': query.stockStatus,
         'expiring_within_days': query.expiringWithinDays,
@@ -366,11 +373,13 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   @override
   Future<Result<PharmacyStorageLayout>> loadStorageLayout({
     bool includeInactive = false,
+    String? facilityId,
   }) {
     return _apiClient.get<PharmacyStorageLayout>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'storage', 'layout']),
       queryParameters: _withoutEmpty(<String, Object?>{
         'include_inactive': includeInactive ? true : null,
+        'facility_id': facilityId,
       }),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);

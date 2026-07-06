@@ -52,6 +52,7 @@ const {
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
 const {
   resolveStorageAssignment,
+  resolveDefaultStorageShelfId,
   attachDrugStorageSummaries,
   getPharmacyStorageLayout,
   createPharmacyStorageRoom,
@@ -190,7 +191,16 @@ const enrichInventoryStockRecords = async (records = [], expiringWithinDays = EX
 
 const upsertDrugBatchForReceipt = async (
   tx,
-  { drugId, batchNumber, expiryDate, quantityDelta, storageRoomId = null, storageShelfId = null }
+  {
+    drugId,
+    batchNumber,
+    manufacturedAt = null,
+    expiryDate,
+    expiryAlertLeadDays = null,
+    quantityDelta,
+    storageRoomId = null,
+    storageShelfId = null,
+  }
 ) => {
   if (!drugId || !batchNumber || quantityDelta <= 0) return null;
 
@@ -203,7 +213,9 @@ const upsertDrugBatchForReceipt = async (
   if (batch) {
     return pharmacyWorkspaceRepository.txUpdateDrugBatch(tx, batch.id, {
       quantity: Number(batch.quantity || 0) + quantityDelta,
+      ...(manufacturedAt ? { manufactured_at: manufacturedAt } : {}),
       ...(expiryDate ? { expiry_date: expiryDate } : {}),
+      ...(expiryAlertLeadDays != null ? { expiry_alert_lead_days: expiryAlertLeadDays } : {}),
       ...(storageRoomId ? { storage_room_id: storageRoomId } : {}),
       ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {}),
     });
@@ -212,7 +224,9 @@ const upsertDrugBatchForReceipt = async (
   return pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
     drug_id: drugId,
     batch_number: batchNumber,
+    manufactured_at: manufacturedAt,
     expiry_date: expiryDate,
+    expiry_alert_lead_days: expiryAlertLeadDays,
     quantity: quantityDelta,
     storage_room_id: storageRoomId,
     storage_shelf_id: storageShelfId,
@@ -1987,7 +2001,12 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
 
       const reason = String(payload.reason || 'OTHER').trim().toUpperCase();
       const batchNumber = String(payload.batch_number || '').trim();
+      const manufacturedAt = toDateOrNull(payload.manufactured_at, null);
       const expiryDate = toDateOrNull(payload.expiry_date, null);
+      const expiryAlertLeadDays =
+        payload.expiry_alert_lead_days == null
+          ? null
+          : Number(payload.expiry_alert_lead_days);
       if (quantityDelta > 0 && reason === 'PURCHASE' && batchNumber) {
         let drugId = null;
         if (payload.drug_id) {
@@ -2010,7 +2029,9 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           await upsertDrugBatchForReceipt(tx, {
             drugId,
             batchNumber,
+            manufacturedAt,
             expiryDate,
+            expiryAlertLeadDays,
             quantityDelta,
             storageRoomId: storageAssignment.storageRoomId,
             storageShelfId: storageAssignment.storageShelfId,
@@ -2185,6 +2206,37 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
 
       return drug;
     });
+
+    const defaultShelfIdentifier =
+      payload.default_storage_shelf_id || payload.storage_shelf_id || null;
+    if (defaultShelfIdentifier && facilityId) {
+      const defaultStorageShelfId = await resolveDefaultStorageShelfId(
+        defaultShelfIdentifier,
+        scope,
+        facilityId
+      );
+      const existingOffering = await facilityPharmacyCatalogRepository.findDrugOffering({
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        drug_id: mutation.id,
+      });
+      if (existingOffering) {
+        await facilityPharmacyCatalogRepository.updateDrugOffering(existingOffering.id, {
+          default_storage_shelf_id: defaultStorageShelfId,
+        });
+      } else {
+        await facilityPharmacyCatalogRepository.createDrugOffering({
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          drug_id: mutation.id,
+          is_active: false,
+          sort_order: 0,
+          unit_price: payload.unit_price ?? 0,
+          currency: payload.currency || null,
+          default_storage_shelf_id: defaultStorageShelfId,
+        });
+      }
+    }
 
     createAuditLog({
       tenant_id: tenantId,

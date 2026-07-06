@@ -448,6 +448,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
         : PharmacyFacilityOfferingInput(
             unitPrice: facilityPrice,
             currency: _facilityCurrency,
+            facilityId: controller.resolveFacilityId(),
+            defaultStorageShelfId: _storageShelfId,
           );
     final AppFailure? failure;
     if (widget.drug == null) {
@@ -473,6 +475,7 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
             expiryAlertLeadDays: _expiryAlertLeadDays,
             storageRoomId: _storageRoomId,
             storageShelfId: _storageShelfId,
+            facilityId: controller.resolveFacilityId(),
           ),
           facilityOffering: facilityOffering,
         );
@@ -488,7 +491,14 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
           unitPrice: pharmacyPrice,
           currency: pharmacyCurrency,
         ),
-        facilityOffering: facilityOffering,
+        facilityOffering: facilityPrice == null
+            ? null
+            : PharmacyFacilityOfferingInput(
+                unitPrice: facilityPrice,
+                currency: _facilityCurrency,
+                facilityId: controller.resolveFacilityId(),
+                defaultStorageShelfId: _storageShelfId,
+              ),
       );
     }
     if (!mounted) {

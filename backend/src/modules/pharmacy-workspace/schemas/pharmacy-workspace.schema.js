@@ -53,6 +53,7 @@ const searchDrugsQuerySchema = listQuerySchema.extend({
   stock_status: z
     .enum(['IN_STOCK', 'ALMOST_OUT_OF_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'])
     .optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   storage_room_id: uuidOrFriendlyIdentifierSchema.optional(),
   storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
@@ -120,7 +121,9 @@ const adjustInventorySchema = z
     notes: z.string().trim().max(255).optional().nullable(),
     occurred_at: z.string().datetime().optional(),
     batch_number: z.string().trim().min(1).max(80).optional(),
+    manufactured_at: z.string().datetime().optional().nullable(),
     expiry_date: z.string().datetime().optional().nullable(),
+    expiry_alert_lead_days: z.coerce.number().int().min(1).max(730).optional().nullable(),
     storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     drug_id: uuidOrFriendlyIdentifierSchema.optional(),

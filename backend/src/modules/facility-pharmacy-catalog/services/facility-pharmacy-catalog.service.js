@@ -14,6 +14,7 @@ const {
   resolveModelRecordOrThrow,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
+const { resolveDefaultStorageShelfId } = require('@services/pharmacy-workspace/pharmacy-storage.service');
 
 const normalizeText = (value) => String(value || '').trim();
 const isTrue = (value) => String(value || '').toLowerCase() === 'true';
@@ -172,6 +173,15 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     drug_id: drugId,
   });
 
+  let defaultStorageShelfId = null;
+  if (payload.default_storage_shelf_id) {
+    defaultStorageShelfId = await resolveDefaultStorageShelfId(
+      payload.default_storage_shelf_id,
+      { tenant_id: tenantId, user_id: userId, facility_id: facilityId },
+      facilityId
+    );
+  }
+
   const writePayload = {
     tenant_id: tenantId,
     facility_id: facilityId,
@@ -180,6 +190,7 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     sort_order: Number(payload.sort_order || 0),
     unit_price: payload.unit_price,
     currency: toOptionalText(payload.currency) || masterDrug.currency || null,
+    ...(defaultStorageShelfId ? { default_storage_shelf_id: defaultStorageShelfId } : {}),
   };
 
   const offering = existing

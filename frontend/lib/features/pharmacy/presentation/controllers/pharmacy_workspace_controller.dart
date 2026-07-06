@@ -460,7 +460,10 @@ final class PharmacyWorkspaceController
       _emit(current.copyWith(isRefreshingStorage: true));
     }
     final Result<PharmacyStorageLayout> result =
-        await _repository.loadStorageLayout(includeInactive: true);
+        await _repository.loadStorageLayout(
+      includeInactive: true,
+      facilityId: resolveFacilityId(),
+    );
     final PharmacyWorkspaceState? latest = _currentState;
     if (latest == null) {
       return;
@@ -548,7 +551,15 @@ final class PharmacyWorkspaceController
           final Result<PharmacyDrug> offeringResult =
               await _repository.upsertFacilityOffering(
             drug.id,
-            facilityOffering,
+            PharmacyFacilityOfferingInput(
+              unitPrice: facilityOffering.unitPrice,
+              currency: facilityOffering.currency,
+              isActive: facilityOffering.isActive,
+              facilityId:
+                  facilityOffering.facilityId ?? input.facilityId ?? resolveFacilityId(),
+              defaultStorageShelfId:
+                  facilityOffering.defaultStorageShelfId ?? input.storageShelfId,
+            ),
           );
           final AppFailure? offeringFailure = offeringResult.when(
             success: (_) => null,
@@ -556,6 +567,27 @@ final class PharmacyWorkspaceController
           );
           if (offeringFailure != null) {
             return offeringFailure;
+          }
+        } else if (input.storageShelfId != null) {
+          final String? facilityId = input.facilityId ?? resolveFacilityId();
+          if (facilityId != null) {
+            final Result<PharmacyDrug> offeringResult =
+                await _repository.upsertFacilityOffering(
+              drug.id,
+              PharmacyFacilityOfferingInput(
+                unitPrice: 0,
+                isActive: false,
+                facilityId: facilityId,
+                defaultStorageShelfId: input.storageShelfId,
+              ),
+            );
+            final AppFailure? offeringFailure = offeringResult.when(
+              success: (_) => null,
+              failure: (AppFailure failure) => failure,
+            );
+            if (offeringFailure != null) {
+              return offeringFailure;
+            }
           }
         }
         await _refreshDrugs(showLoading: false);
@@ -727,6 +759,29 @@ final class PharmacyWorkspaceController
     return sessionState.session?.user?.tenantId;
   }
 
+  String? resolveFacilityId() {
+    final SessionState sessionState = ref.read(sessionStateProvider);
+    return sessionState.session?.user?.facilityId;
+  }
+
+  PharmacyDrugQuery _scopedDrugQuery(PharmacyDrugQuery query) {
+    final String? facilityId = resolveFacilityId();
+    if (facilityId == null || query.facilityId != null) {
+      return query;
+    }
+    return query.copyWith(facilityId: facilityId);
+  }
+
+  PharmacyInventoryStockQuery _scopedInventoryQuery(
+    PharmacyInventoryStockQuery query,
+  ) {
+    final String? facilityId = resolveFacilityId();
+    if (facilityId == null || query.facilityId != null) {
+      return query;
+    }
+    return query.copyWith(facilityId: facilityId);
+  }
+
   Future<AppFailure?> prepareDispense({
     required List<PharmacyDispenseLineInput> items,
     String? dispenseBatchRef,
@@ -789,10 +844,11 @@ final class PharmacyWorkspaceController
 
   Future<Result<PharmacyWorkspaceState>> _loadInitialState() async {
     const PharmacyWorkbenchQuery query = PharmacyWorkbenchQuery();
-    const PharmacyDrugQuery drugQuery = PharmacyDrugQuery();
+    final String? facilityId = resolveFacilityId();
+    final PharmacyDrugQuery drugQuery = PharmacyDrugQuery(facilityId: facilityId);
     const PharmacyFormularyQuery formularyQuery = PharmacyFormularyQuery();
-    const PharmacyInventoryStockQuery inventoryQuery =
-        PharmacyInventoryStockQuery();
+    final PharmacyInventoryStockQuery inventoryQuery =
+        PharmacyInventoryStockQuery(facilityId: facilityId);
     final Result<PharmacyWorkbench> workbenchResult = await _repository
         .loadWorkbench(query);
     final PharmacyWorkbench? workbench = _successOrNull(workbenchResult);
@@ -810,7 +866,7 @@ final class PharmacyWorkspaceController
           failure: (_) => null,
         ),
       ),
-      _repository.loadStorageLayout().then(
+      _repository.loadStorageLayout(facilityId: facilityId).then(
         (Result<PharmacyStorageLayout> result) => result.when(
           success: (PharmacyStorageLayout value) => value,
           failure: (_) => null,
@@ -972,7 +1028,7 @@ final class PharmacyWorkspaceController
     }
 
     final Result<AppPage<PharmacyDrug>> result = await _repository.searchDrugs(
-      current.drugQuery,
+      _scopedDrugQuery(current.drugQuery),
     );
     return result.when(
       success: (AppPage<PharmacyDrug> drugs) {
@@ -1041,7 +1097,7 @@ final class PharmacyWorkspaceController
     }
 
     final Result<PharmacyInventoryWorkbench> result = await _repository
-        .getInventoryStock(current.inventoryQuery);
+        .getInventoryStock(_scopedInventoryQuery(current.inventoryQuery));
     return result.when(
       success: (PharmacyInventoryWorkbench workbench) {
         final PharmacyWorkspaceState? latest = _currentState;
@@ -1070,7 +1126,7 @@ final class PharmacyWorkspaceController
 
   Future<AppPage<PharmacyDrug>> _loadDrugPage(PharmacyDrugQuery query) async {
     final Result<AppPage<PharmacyDrug>> result = await _repository.searchDrugs(
-      query,
+      _scopedDrugQuery(query),
     );
     return result.when(
       success: (AppPage<PharmacyDrug> drugs) => drugs,

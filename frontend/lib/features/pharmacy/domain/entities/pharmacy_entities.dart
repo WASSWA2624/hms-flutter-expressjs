@@ -123,6 +123,8 @@ final class PharmacyInventoryStockQuery {
     this.expiredOnly = false,
     this.storageRoomId,
     this.storageShelfId,
+    this.facilityId,
+    this.inventoryItemId,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
@@ -133,6 +135,8 @@ final class PharmacyInventoryStockQuery {
   final bool expiredOnly;
   final String? storageRoomId;
   final String? storageShelfId;
+  final String? facilityId;
+  final String? inventoryItemId;
   final AppPageRequest pageRequest;
 
   PharmacyInventoryStockQuery copyWith({
@@ -143,11 +147,15 @@ final class PharmacyInventoryStockQuery {
     bool? expiredOnly,
     String? storageRoomId,
     String? storageShelfId,
+    String? facilityId,
+    String? inventoryItemId,
     AppPageRequest? pageRequest,
     bool clearStockStatus = false,
     bool clearExpiringWithinDays = false,
     bool clearStorageRoomId = false,
     bool clearStorageShelfId = false,
+    bool clearFacilityId = false,
+    bool clearInventoryItemId = false,
   }) {
     return PharmacyInventoryStockQuery(
       search: search ?? this.search,
@@ -161,6 +169,10 @@ final class PharmacyInventoryStockQuery {
           clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
       storageShelfId:
           clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
+      facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
+      inventoryItemId: clearInventoryItemId
+          ? null
+          : inventoryItemId ?? this.inventoryItemId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -264,6 +276,7 @@ final class PharmacyDrugInput {
     this.expiryAlertLeadDays,
     this.storageRoomId,
     this.storageShelfId,
+    this.defaultStorageShelfId,
     this.facilityId,
   });
 
@@ -283,6 +296,7 @@ final class PharmacyDrugInput {
   final int? expiryAlertLeadDays;
   final String? storageRoomId;
   final String? storageShelfId;
+  final String? defaultStorageShelfId;
   final String? facilityId;
 
   bool get hasStockSetup =>
@@ -319,6 +333,8 @@ final class PharmacyDrugInput {
         'expiry_alert_lead_days': expiryAlertLeadDays,
       if (storageRoomId != null) 'storage_room_id': storageRoomId,
       if (storageShelfId != null) 'storage_shelf_id': storageShelfId,
+      if (defaultStorageShelfId != null || storageShelfId != null)
+        'default_storage_shelf_id': defaultStorageShelfId ?? storageShelfId,
       if (facilityId != null) 'facility_id': facilityId,
     };
   }
@@ -361,12 +377,14 @@ final class PharmacyFacilityOfferingInput {
     this.currency,
     this.isActive = true,
     this.facilityId,
+    this.defaultStorageShelfId,
   });
 
   final num unitPrice;
   final String? currency;
   final bool isActive;
   final String? facilityId;
+  final String? defaultStorageShelfId;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -374,6 +392,8 @@ final class PharmacyFacilityOfferingInput {
       if (currency != null) 'currency': currency,
       'is_active': isActive,
       if (facilityId != null) 'facility_id': facilityId,
+      if (defaultStorageShelfId != null)
+        'default_storage_shelf_id': defaultStorageShelfId,
     };
   }
 }
@@ -409,7 +429,9 @@ final class PharmacyInventoryAdjustInput {
     this.notes,
     this.facilityId,
     this.batchNumber,
+    this.manufacturedAt,
     this.expiryDate,
+    this.expiryAlertLeadDays,
     this.drugId,
     this.storageRoomId,
     this.storageShelfId,
@@ -422,7 +444,9 @@ final class PharmacyInventoryAdjustInput {
   final String? notes;
   final String? facilityId;
   final String? batchNumber;
+  final DateTime? manufacturedAt;
   final DateTime? expiryDate;
+  final int? expiryAlertLeadDays;
   final String? drugId;
   final String? storageRoomId;
   final String? storageShelfId;
@@ -437,7 +461,11 @@ final class PharmacyInventoryAdjustInput {
       'facility_id': facilityId,
       if (batchNumber != null && batchNumber!.trim().isNotEmpty)
         'batch_number': batchNumber!.trim(),
+      if (manufacturedAt != null)
+        'manufactured_at': manufacturedAt!.toUtc().toIso8601String(),
       if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (expiryAlertLeadDays != null)
+        'expiry_alert_lead_days': expiryAlertLeadDays,
       if (drugId != null) 'drug_id': drugId,
       if (storageRoomId != null) 'storage_room_id': storageRoomId,
       if (storageShelfId != null) 'storage_shelf_id': storageShelfId,
@@ -565,35 +593,60 @@ final class PharmacyWorkbenchQuery {
 final class PharmacyDrugQuery {
   const PharmacyDrugQuery({
     this.search = '',
+    this.name,
+    this.code,
+    this.form,
+    this.strength,
     this.stockStatus,
     this.storageRoomId,
     this.storageShelfId,
+    this.facilityId,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
   final String search;
+  final String? name;
+  final String? code;
+  final String? form;
+  final String? strength;
   final String? stockStatus;
   final String? storageRoomId;
   final String? storageShelfId;
+  final String? facilityId;
   final AppPageRequest pageRequest;
 
   PharmacyDrugQuery copyWith({
     String? search,
+    String? name,
+    String? code,
+    String? form,
+    String? strength,
     String? stockStatus,
     String? storageRoomId,
     String? storageShelfId,
+    String? facilityId,
     AppPageRequest? pageRequest,
     bool clearStockStatus = false,
     bool clearStorageRoomId = false,
     bool clearStorageShelfId = false,
+    bool clearName = false,
+    bool clearCode = false,
+    bool clearForm = false,
+    bool clearStrength = false,
+    bool clearFacilityId = false,
   }) {
     return PharmacyDrugQuery(
       search: search ?? this.search,
+      name: clearName ? null : name ?? this.name,
+      code: clearCode ? null : code ?? this.code,
+      form: clearForm ? null : form ?? this.form,
+      strength: clearStrength ? null : strength ?? this.strength,
       stockStatus: clearStockStatus ? null : stockStatus ?? this.stockStatus,
       storageRoomId:
           clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
       storageShelfId:
           clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
+      facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }

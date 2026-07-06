@@ -249,6 +249,7 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
         PharmacyStorageRoomInput(
           name: _nameController.text.trim(),
           code: _emptyToNull(_codeController.text),
+          facilityId: controller.resolveFacilityId(),
         ),
       );
     } else {

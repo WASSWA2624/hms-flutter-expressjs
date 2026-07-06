@@ -120,6 +120,16 @@ const resolveStorageAssignment = async (payload = {}, scope, facilityId) => {
   return { storageRoomId, storageShelfId, room, shelf };
 };
 
+const resolveDefaultStorageShelfId = async (identifier, scope, facilityId) => {
+  if (!identifier) return null;
+  const storageShelfId = await resolveStorageShelfId(identifier, scope, facilityId);
+  const shelf = await pharmacyStorageRepository.findStorageShelfById(storageShelfId, true);
+  if (!shelf || shelf.storage_room?.facility_id !== facilityId) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'default_storage_shelf_id' }]);
+  }
+  return storageShelfId;
+};
+
 const buildPrimaryBatchStorageSummary = (batches = []) => {
   const active = (batches || []).filter((batch) => Number(batch.quantity || 0) > 0);
   const withShelf = active.find((batch) => batch.storage_shelf_id || batch.storage_room_id);
@@ -342,6 +352,7 @@ module.exports = {
   mapStorageShelfRecord,
   mapStorageLocationFields,
   resolveStorageAssignment,
+  resolveDefaultStorageShelfId,
   buildPrimaryBatchStorageSummary,
   attachDrugStorageSummaries,
   getPharmacyStorageLayout,

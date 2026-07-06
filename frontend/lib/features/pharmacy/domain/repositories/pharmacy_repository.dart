@@ -82,6 +82,7 @@ abstract interface class PharmacyRepository {
 
   Future<Result<PharmacyStorageLayout>> loadStorageLayout({
     bool includeInactive = false,
+    String? facilityId,
   });
 
   Future<Result<PharmacyStorageRoom>> createStorageRoom(
