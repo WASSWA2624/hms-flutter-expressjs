@@ -31452,7 +31452,7 @@ abstract class AppLocalizations {
   /// Patient name label on clinical request toolbar context strip.
   ///
   /// In en, this message translates to:
-  /// **'Name'**
+  /// **'Patient name'**
   String get clinicalRequestPatientNameLabel;
 
   /// Patient ID label on clinical request toolbar context strip.
