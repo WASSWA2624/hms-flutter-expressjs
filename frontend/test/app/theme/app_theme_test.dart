@@ -51,6 +51,15 @@ void main() {
       expect(theme.appTokens.pagePaddingMobile, 12);
       expect(theme.appTokens.pagePaddingTablet, 16);
       expect(theme.appTokens.pagePaddingDesktop, 24);
+      expect(theme.appTokens.dialogInsetMobile, 12);
+      expect(theme.appTokens.dialogInsetTablet, 24);
+      expect(theme.appTokens.dialogInsetDesktop, 24);
+      expect(theme.appTokens.dialogMaximizedInsetMobile, 8);
+      expect(theme.appTokens.dialogMaximizedInsetTablet, 16);
+      expect(theme.appTokens.dialogMaximizedInsetDesktop, 24);
+      expect(theme.appTokens.dialogSnackBarClearance, 88);
+      expect(theme.appTokens.dialogMinWidth, 360);
+      expect(theme.appTokens.dialogMinHeight, 280);
       expect(theme.appTokens.listIconSize, 20);
       expect(
         theme.statusColors.success,

@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_dialog_title.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
 
 class AppDialog extends StatefulWidget {
   const AppDialog({
@@ -26,6 +28,8 @@ class AppDialog extends StatefulWidget {
   });
 
   static const double _defaultMaxWidth = 600;
+  @visibleForTesting
+  static const Key shellKey = ValueKey<String>('appDialogShell');
 
   final Widget? title;
   final Widget? content;
@@ -46,11 +50,6 @@ class AppDialog extends StatefulWidget {
 }
 
 class _AppDialogState extends State<AppDialog> {
-  static const double _desktopMinWidth = 360;
-  static const double _desktopMinHeight = 280;
-  static const double _snackBarClearance = 88;
-  static const double _resizeHandleThickness = 6;
-
   final GlobalKey _dialogShellKey = GlobalKey(debugLabel: 'appDialogShell');
 
   Offset _dragOffset = Offset.zero;
@@ -71,34 +70,37 @@ class _AppDialogState extends State<AppDialog> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppDesignTokens designTokens = theme.appTokens;
     final Size viewport = MediaQuery.sizeOf(context);
-    final bool compact = viewport.width < 600;
-    final bool desktopInteractive = !compact;
-    final EdgeInsets insetPadding = _isMaximized
-        ? EdgeInsets.zero
-        : _dialogInsetPadding(theme, compact);
-    final double maxHeight = _isMaximized
-        ? viewport.height
-        : math.max(theme.spacing.none, viewport.height - insetPadding.vertical);
-    final double availableWidth = _isMaximized
-        ? viewport.width
-        : math.max(
-            theme.spacing.none,
-            viewport.width - insetPadding.horizontal,
-          );
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool compact = breakpoint.index < AppBreakpoint.md.index;
+    final bool desktopInteractive = breakpoint.index >= AppBreakpoint.md.index;
+    final EdgeInsets insetPadding = AppDialogInsets.paddingFor(
+      breakpoint,
+      designTokens: designTokens,
+      maximized: _isMaximized,
+    );
+    final double maxHeight = math.max(
+      theme.spacing.none,
+      viewport.height - insetPadding.vertical,
+    );
+    final double availableWidth = math.max(
+      theme.spacing.none,
+      viewport.width - insetPadding.horizontal,
+    );
     final double defaultWidth = widget.maxWidth.isFinite
         ? math.min(widget.maxWidth, availableWidth)
         : availableWidth;
     final Size? desktopSize = _desktopSize;
     final double shellWidth = _isMaximized
-        ? viewport.width
+        ? availableWidth
         : (desktopSize?.width ?? defaultWidth);
     final double shellHeight = _isMaximized
-        ? viewport.height
+        ? maxHeight
         : (desktopSize?.height ?? maxHeight);
     final BoxConstraints dialogConstraints = BoxConstraints(
-      maxWidth: desktopInteractive ? shellWidth : defaultWidth,
-      maxHeight: desktopInteractive ? shellHeight : maxHeight,
+      maxWidth: _isMaximized || desktopInteractive ? shellWidth : defaultWidth,
+      maxHeight: shellHeight,
     );
     final bool resizeEnabled =
         desktopInteractive && !_isMaximized && widget.resizable;
@@ -106,7 +108,8 @@ class _AppDialogState extends State<AppDialog> {
         widget.pinActionsToBottom && widget.actions.isNotEmpty;
     final bool fillShellHeight =
         pinFooter ||
-        (desktopInteractive && (desktopSize != null || _isMaximized));
+        _isMaximized ||
+        (desktopInteractive && desktopSize != null);
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -151,12 +154,17 @@ class _AppDialogState extends State<AppDialog> {
       ),
     );
 
-    if (desktopInteractive || pinFooter) {
+    if (desktopInteractive || pinFooter || _isMaximized) {
       dialogBody = SizedBox(
-        key: desktopInteractive ? _dialogShellKey : null,
-        width: desktopInteractive ? dialogConstraints.maxWidth : null,
+        key: desktopInteractive || _isMaximized ? AppDialog.shellKey : null,
+        width: _isMaximized || desktopInteractive
+            ? dialogConstraints.maxWidth
+            : null,
         height: fillShellHeight ? dialogConstraints.maxHeight : null,
-        child: dialogBody,
+        child: KeyedSubtree(
+          key: desktopInteractive || _isMaximized ? _dialogShellKey : null,
+          child: dialogBody,
+        ),
       );
     }
 
@@ -168,8 +176,8 @@ class _AppDialogState extends State<AppDialog> {
           PositionedDirectional(
             top: 0,
             end: 0,
-            bottom: _resizeHandleThickness,
-            width: _resizeHandleThickness,
+            bottom: designTokens.dialogResizeHandleThickness,
+            width: designTokens.dialogResizeHandleThickness,
             child: _DialogResizeHandle(
               axis: Axis.horizontal,
               tooltip: 'Resize width',
@@ -186,9 +194,9 @@ class _AppDialogState extends State<AppDialog> {
           ),
           Positioned(
             left: 0,
-            right: _resizeHandleThickness,
+            right: designTokens.dialogResizeHandleThickness,
             bottom: 0,
-            height: _resizeHandleThickness,
+            height: designTokens.dialogResizeHandleThickness,
             child: _DialogResizeHandle(
               axis: Axis.vertical,
               tooltip: 'Resize height',
@@ -267,30 +275,23 @@ class _AppDialogState extends State<AppDialog> {
     });
   }
 
-  EdgeInsets _dialogInsetPadding(ThemeData theme, bool compact) {
-    final double horizontalInset = compact
-        ? theme.spacing.md
-        : theme.spacing.xl;
-    final double topInset = compact ? theme.spacing.md : theme.spacing.xl;
-    return EdgeInsets.only(
-      left: horizontalInset,
-      top: topInset,
-      right: horizontalInset,
-      bottom: topInset + _snackBarClearance,
-    );
-  }
-
   void _toggleMaximize() {
     final Size viewport = MediaQuery.sizeOf(context);
     final ThemeData theme = Theme.of(context);
-    final EdgeInsets insetPadding = _dialogInsetPadding(theme, false);
+    final AppDesignTokens designTokens = theme.appTokens;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final EdgeInsets normalInsetPadding = AppDialogInsets.paddingFor(
+      breakpoint,
+      designTokens: designTokens,
+      maximized: false,
+    );
     final double insetAvailableWidth = math.max(
-      _desktopMinWidth,
-      viewport.width - insetPadding.horizontal,
+      designTokens.dialogMinWidth,
+      viewport.width - normalInsetPadding.horizontal,
     );
     final double insetAvailableHeight = math.max(
-      _desktopMinHeight,
-      viewport.height - insetPadding.vertical,
+      designTokens.dialogMinHeight,
+      viewport.height - normalInsetPadding.vertical,
     );
     final double defaultWidth = widget.maxWidth.isFinite
         ? math.min(widget.maxWidth, insetAvailableWidth)
@@ -310,15 +311,22 @@ class _AppDialogState extends State<AppDialog> {
     final Size currentSize =
         _desktopSize ??
         _measuredShellSize(
+          designTokens,
           defaultWidth,
           insetAvailableWidth,
           insetAvailableHeight,
         );
+    final Size maximizedSize = AppDialogInsets.availableSizeFor(
+      viewport,
+      breakpoint,
+      designTokens: designTokens,
+      maximized: true,
+    );
     setState(() {
       _preMaximizeSize = currentSize;
       _preMaximizeDragOffset = _dragOffset;
       _isMaximized = true;
-      _desktopSize = Size(viewport.width, viewport.height);
+      _desktopSize = maximizedSize;
       _dragOffset = Offset.zero;
     });
   }
@@ -330,6 +338,9 @@ class _AppDialogState extends State<AppDialog> {
     double defaultWidth, {
     Axis? axis,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final AppDesignTokens designTokens = theme.appTokens;
+
     if (_isMaximized) {
       setState(() {
         _isMaximized = false;
@@ -339,34 +350,46 @@ class _AppDialogState extends State<AppDialog> {
     }
 
     final double availableWidth = math.max(
-      _desktopMinWidth,
+      designTokens.dialogMinWidth,
       viewport.width - insetPadding.horizontal,
     );
     final double availableHeight = math.max(
-      _desktopMinHeight,
+      designTokens.dialogMinHeight,
       viewport.height - insetPadding.vertical,
     );
     final Size current =
         _desktopSize ??
-        _measuredShellSize(defaultWidth, availableWidth, availableHeight);
+        _measuredShellSize(
+          designTokens,
+          defaultWidth,
+          availableWidth,
+          availableHeight,
+        );
     setState(() {
       final double nextWidth = axis == Axis.vertical
           ? current.width
           : math.min(
               availableWidth,
-              math.max(_desktopMinWidth, current.width + details.delta.dx),
+              math.max(
+                designTokens.dialogMinWidth,
+                current.width + details.delta.dx,
+              ),
             );
       final double nextHeight = axis == Axis.horizontal
           ? current.height
           : math.min(
               availableHeight,
-              math.max(_desktopMinHeight, current.height + details.delta.dy),
+              math.max(
+                designTokens.dialogMinHeight,
+                current.height + details.delta.dy,
+              ),
             );
       _desktopSize = Size(nextWidth, nextHeight);
     });
   }
 
   Size _measuredShellSize(
+    AppDesignTokens designTokens,
     double defaultWidth,
     double availableWidth,
     double availableHeight,
@@ -374,8 +397,8 @@ class _AppDialogState extends State<AppDialog> {
     final Size? measured = _dialogShellKey.currentContext?.size;
     if (measured != null) {
       return Size(
-        math.max(_desktopMinWidth, measured.width),
-        math.max(_desktopMinHeight, measured.height),
+        math.max(designTokens.dialogMinWidth, measured.width),
+        math.max(designTokens.dialogMinHeight, measured.height),
       );
     }
     return Size(defaultWidth, availableHeight);

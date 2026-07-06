@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
 
 import 'component_test_app.dart';
 
@@ -136,6 +139,15 @@ void main() {
   testWidgets('desktop maximize toggles shell size and icon', (
     WidgetTester tester,
   ) async {
+    const Size viewport = Size(1000, 700);
+    const AppDesignTokens designTokens = AppDesignTokens.standard;
+    final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
+      viewport,
+      AppBreakpoint.lg,
+      designTokens: designTokens,
+      maximized: true,
+    );
+
     await pumpComponent(
       tester,
       Builder(
@@ -161,7 +173,7 @@ void main() {
           );
         },
       ),
-      size: const Size(1000, 700),
+      size: viewport,
     );
 
     await tester.tap(find.text('Open dialog'));
@@ -178,8 +190,10 @@ void main() {
 
     expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
     final RenderBox shellMaximized = _dialogShellRenderBox(tester);
-    expect(shellMaximized.size.width, closeTo(1000, 1));
-    expect(shellMaximized.size.height, closeTo(700, 1));
+    expect(shellMaximized.size.width, closeTo(expectedMaximizedSize.width, 1));
+    expect(shellMaximized.size.height, closeTo(expectedMaximizedSize.height, 1));
+    expect(shellMaximized.size.width, lessThan(viewport.width));
+    expect(shellMaximized.size.height, lessThan(viewport.height));
     expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
     expect(shellMaximized.size.height, greaterThan(heightBefore + 50));
 
@@ -190,6 +204,65 @@ void main() {
     final RenderBox shellRestored = _dialogShellRenderBox(tester);
     expect(shellRestored.size.width, closeTo(widthBefore, 2));
     expect(shellRestored.size.height, closeTo(heightBefore, 2));
+  });
+
+  testWidgets('maximized dialog leaves theme insets on mobile and tablet', (
+    WidgetTester tester,
+  ) async {
+    const AppDesignTokens designTokens = AppDesignTokens.standard;
+
+    for (final ({Size viewport, AppBreakpoint breakpoint}) config
+        in <({Size viewport, AppBreakpoint breakpoint})>[
+      (viewport: const Size(400, 700), breakpoint: AppBreakpoint.sm),
+      (viewport: const Size(800, 700), breakpoint: AppBreakpoint.md),
+    ]) {
+      final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
+        config.viewport,
+        config.breakpoint,
+        designTokens: designTokens,
+        maximized: true,
+      );
+
+      await pumpComponent(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return TextButton(
+              onPressed: () {
+                unawaited(
+                  showAppDialog<void>(
+                    context: context,
+                    builder: (_) => const AppDialog(
+                      initialMaximized: true,
+                      title: Text('Maximized form'),
+                      content: SizedBox(
+                        height: 120,
+                        child: Text('Dialog body'),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open dialog'),
+            );
+          },
+        ),
+        size: config.viewport,
+      );
+
+      await tester.tap(find.text('Open dialog'));
+      await tester.pumpAndSettle();
+
+      final RenderBox shell = _dialogShellRenderBox(tester);
+      expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
+      expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
+      expect(shell.size.width, lessThan(config.viewport.width));
+      expect(shell.size.height, lessThan(config.viewport.height));
+
+      await tester.binding.setSurfaceSize(null);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 
   testWidgets('desktop corner resize updates shell size', (
@@ -281,9 +354,5 @@ void main() {
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {
-  final Finder sizedBoxes = find.descendant(
-    of: find.byType(Dialog),
-    matching: find.byType(SizedBox),
-  );
-  return tester.renderObject<RenderBox>(sizedBoxes.first);
+  return tester.renderObject<RenderBox>(find.byKey(AppDialog.shellKey));
 }

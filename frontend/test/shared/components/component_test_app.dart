@@ -7,6 +7,12 @@ Future<void> pumpComponent(
   WidgetTester tester,
   Widget child, {
   Size size = const Size(800, 600),
+  EdgeInsetsGeometry? padding,
 }) async {
-  await pumpLocalizedWidget(tester, child, size: size);
+  await pumpLocalizedWidget(
+    tester,
+    child,
+    size: size,
+    padding: padding ?? const EdgeInsets.all(24),
+  );
 }

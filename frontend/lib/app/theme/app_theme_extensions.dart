@@ -276,6 +276,16 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     required this.pagePaddingMobile,
     required this.pagePaddingTablet,
     required this.pagePaddingDesktop,
+    required this.dialogInsetMobile,
+    required this.dialogInsetTablet,
+    required this.dialogInsetDesktop,
+    required this.dialogMaximizedInsetMobile,
+    required this.dialogMaximizedInsetTablet,
+    required this.dialogMaximizedInsetDesktop,
+    required this.dialogSnackBarClearance,
+    required this.dialogMinWidth,
+    required this.dialogMinHeight,
+    required this.dialogResizeHandleThickness,
     required this.formGapCompact,
     required this.formGapRegular,
     required this.formGapSpacious,
@@ -289,6 +299,16 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     pagePaddingMobile: 12,
     pagePaddingTablet: 16,
     pagePaddingDesktop: 24,
+    dialogInsetMobile: 12,
+    dialogInsetTablet: 24,
+    dialogInsetDesktop: 24,
+    dialogMaximizedInsetMobile: 8,
+    dialogMaximizedInsetTablet: 16,
+    dialogMaximizedInsetDesktop: 24,
+    dialogSnackBarClearance: 88,
+    dialogMinWidth: 360,
+    dialogMinHeight: 280,
+    dialogResizeHandleThickness: 6,
     formGapCompact: 8,
     formGapRegular: 12,
     formGapSpacious: 16,
@@ -301,6 +321,16 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   final double pagePaddingMobile;
   final double pagePaddingTablet;
   final double pagePaddingDesktop;
+  final double dialogInsetMobile;
+  final double dialogInsetTablet;
+  final double dialogInsetDesktop;
+  final double dialogMaximizedInsetMobile;
+  final double dialogMaximizedInsetTablet;
+  final double dialogMaximizedInsetDesktop;
+  final double dialogSnackBarClearance;
+  final double dialogMinWidth;
+  final double dialogMinHeight;
+  final double dialogResizeHandleThickness;
   final double formGapCompact;
   final double formGapRegular;
   final double formGapSpacious;
@@ -314,6 +344,16 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     double? pagePaddingMobile,
     double? pagePaddingTablet,
     double? pagePaddingDesktop,
+    double? dialogInsetMobile,
+    double? dialogInsetTablet,
+    double? dialogInsetDesktop,
+    double? dialogMaximizedInsetMobile,
+    double? dialogMaximizedInsetTablet,
+    double? dialogMaximizedInsetDesktop,
+    double? dialogSnackBarClearance,
+    double? dialogMinWidth,
+    double? dialogMinHeight,
+    double? dialogResizeHandleThickness,
     double? formGapCompact,
     double? formGapRegular,
     double? formGapSpacious,
@@ -326,6 +366,21 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
       pagePaddingMobile: pagePaddingMobile ?? this.pagePaddingMobile,
       pagePaddingTablet: pagePaddingTablet ?? this.pagePaddingTablet,
       pagePaddingDesktop: pagePaddingDesktop ?? this.pagePaddingDesktop,
+      dialogInsetMobile: dialogInsetMobile ?? this.dialogInsetMobile,
+      dialogInsetTablet: dialogInsetTablet ?? this.dialogInsetTablet,
+      dialogInsetDesktop: dialogInsetDesktop ?? this.dialogInsetDesktop,
+      dialogMaximizedInsetMobile:
+          dialogMaximizedInsetMobile ?? this.dialogMaximizedInsetMobile,
+      dialogMaximizedInsetTablet:
+          dialogMaximizedInsetTablet ?? this.dialogMaximizedInsetTablet,
+      dialogMaximizedInsetDesktop:
+          dialogMaximizedInsetDesktop ?? this.dialogMaximizedInsetDesktop,
+      dialogSnackBarClearance:
+          dialogSnackBarClearance ?? this.dialogSnackBarClearance,
+      dialogMinWidth: dialogMinWidth ?? this.dialogMinWidth,
+      dialogMinHeight: dialogMinHeight ?? this.dialogMinHeight,
+      dialogResizeHandleThickness:
+          dialogResizeHandleThickness ?? this.dialogResizeHandleThickness,
       formGapCompact: formGapCompact ?? this.formGapCompact,
       formGapRegular: formGapRegular ?? this.formGapRegular,
       formGapSpacious: formGapSpacious ?? this.formGapSpacious,
@@ -357,6 +412,48 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
       pagePaddingDesktop: _lerpDouble(
         pagePaddingDesktop,
         other.pagePaddingDesktop,
+        t,
+      ),
+      dialogInsetMobile: _lerpDouble(
+        dialogInsetMobile,
+        other.dialogInsetMobile,
+        t,
+      ),
+      dialogInsetTablet: _lerpDouble(
+        dialogInsetTablet,
+        other.dialogInsetTablet,
+        t,
+      ),
+      dialogInsetDesktop: _lerpDouble(
+        dialogInsetDesktop,
+        other.dialogInsetDesktop,
+        t,
+      ),
+      dialogMaximizedInsetMobile: _lerpDouble(
+        dialogMaximizedInsetMobile,
+        other.dialogMaximizedInsetMobile,
+        t,
+      ),
+      dialogMaximizedInsetTablet: _lerpDouble(
+        dialogMaximizedInsetTablet,
+        other.dialogMaximizedInsetTablet,
+        t,
+      ),
+      dialogMaximizedInsetDesktop: _lerpDouble(
+        dialogMaximizedInsetDesktop,
+        other.dialogMaximizedInsetDesktop,
+        t,
+      ),
+      dialogSnackBarClearance: _lerpDouble(
+        dialogSnackBarClearance,
+        other.dialogSnackBarClearance,
+        t,
+      ),
+      dialogMinWidth: _lerpDouble(dialogMinWidth, other.dialogMinWidth, t),
+      dialogMinHeight: _lerpDouble(dialogMinHeight, other.dialogMinHeight, t),
+      dialogResizeHandleThickness: _lerpDouble(
+        dialogResizeHandleThickness,
+        other.dialogResizeHandleThickness,
         t,
       ),
       formGapCompact: _lerpDouble(formGapCompact, other.formGapCompact, t),
