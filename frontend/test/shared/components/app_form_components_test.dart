@@ -215,6 +215,39 @@ void main() {
     );
   });
 
+  testWidgets('AppSelectField selects an option with one tap', (
+    WidgetTester tester,
+  ) async {
+    String? selected;
+
+    await pumpComponent(
+      tester,
+      AppSelectField<String>(
+        labelText: 'Status',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'draft', label: 'Draft'),
+          AppSelectOption<String>(value: 'live', label: 'Live'),
+        ],
+        onChanged: (String? value) {
+          selected = value;
+        },
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Live'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(selected, 'live');
+    expect(find.text('Live'), findsOneWidget);
+  });
+
   testWidgets('AppSelectField.searchable selects an option with one tap', (
     WidgetTester tester,
   ) async {

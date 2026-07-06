@@ -112,11 +112,15 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const double _menuItemDividerThickness = 0.5;
   static const double _menuItemDividerEndInsetFactor = 1;
 
+  final GlobalKey<FormFieldState<T>> _formFieldKey = GlobalKey<FormFieldState<T>>();
+
   late final TextEditingController _controller;
   late FocusNode _focusNode;
   late bool _ownsFocusNode;
   bool _hasControllerText = false;
   bool _isSyncingControllerText = false;
+  Object? _dropdownEntriesCacheToken;
+  List<DropdownMenuEntry<T>>? _cachedDropdownEntries;
 
   @override
   void initState() {
@@ -133,6 +137,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     if (oldWidget.focusNode != widget.focusNode) {
       _detachFocusNode();
       _attachFocusNode();
+    }
+
+    if (oldWidget.options != widget.options) {
+      _dropdownEntriesCacheToken = null;
+      _cachedDropdownEntries = null;
     }
 
     final bool selectionChanged = oldWidget.value != widget.value;
@@ -216,9 +225,10 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         );
         final MenuStyle menuStyle = _selectMenuStyle(theme, chrome);
         final List<DropdownMenuEntry<T>> dropdownMenuEntries =
-            _dropdownMenuEntries(theme, colorScheme, chrome);
+            _cachedDropdownMenuEntries(theme, colorScheme, chrome, menuIsOpen);
 
         return DropdownMenuFormField<T>(
+          key: _formFieldKey,
           restorationId: widget.restorationId,
           controller: _controller,
           initialSelection: widget.value,
@@ -253,25 +263,14 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               ? widget.searchCallback ?? _searchEntries
               : null,
           requestFocusOnTap: widget.searchable,
+          selectOnly: !widget.searchable,
           focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
           validator: widget.validator,
           onSaved: widget.onSaved,
           forceErrorText: widget.errorText,
           onSelected: (T? value) {
-            if (value == null) {
-              _controller.clear();
-            } else {
-              final String label = _labelForValue(value);
-              if (_controller.text != label) {
-                _isSyncingControllerText = true;
-                try {
-                  _controller.value = TextEditingValue(text: label);
-                } finally {
-                  _isSyncingControllerText = false;
-                }
-              }
-            }
+            _syncControllerForSelection(value);
             widget.onChanged?.call(value);
             if (_focusNode.hasFocus) {
               _focusNode.unfocus();
@@ -295,8 +294,28 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   void _clearSelection() {
-    _controller.clear();
-    widget.onChanged?.call(null);
+    if (_focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
+    _syncControllerForSelection(null);
+    _formFieldKey.currentState?.didChange(null);
+  }
+
+  void _syncControllerForSelection(T? value) {
+    final String label = _labelForValue(value);
+    if (_controller.text == label) {
+      return;
+    }
+    _isSyncingControllerText = true;
+    try {
+      if (label.isEmpty) {
+        _controller.clear();
+      } else {
+        _controller.value = TextEditingValue(text: label);
+      }
+    } finally {
+      _isSyncingControllerText = false;
+    }
   }
 
   void _handleFocusChanged() {
@@ -501,6 +520,30 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         ],
       ),
     );
+  }
+
+  Object _computeDropdownEntriesCacheKey(bool menuIsOpen) {
+    return Object.hash(
+      menuIsOpen,
+      widget.options,
+      widget.searchable ? _controller.text : null,
+    );
+  }
+
+  List<DropdownMenuEntry<T>> _cachedDropdownMenuEntries(
+    ThemeData theme,
+    ColorScheme colorScheme,
+    _SelectMenuChrome chrome,
+    bool menuIsOpen,
+  ) {
+    final Object cacheKey = _computeDropdownEntriesCacheKey(menuIsOpen);
+    if (_cachedDropdownEntries != null && _dropdownEntriesCacheToken == cacheKey) {
+      return _cachedDropdownEntries!;
+    }
+
+    _dropdownEntriesCacheToken = cacheKey;
+    _cachedDropdownEntries = _dropdownMenuEntries(theme, colorScheme, chrome);
+    return _cachedDropdownEntries!;
   }
 
   List<DropdownMenuEntry<T>> _dropdownMenuEntries(
