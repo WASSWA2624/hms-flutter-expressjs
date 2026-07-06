@@ -252,9 +252,10 @@ final class PharmacyFormularyItem {
   final DateTime? updatedAt;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[drugDisplayName, drugCode, displayId]) ??
-        id;
+    return _firstNonEmpty(<String?>[drugDisplayName, drugCode]) ?? id;
   }
+
+  String? get drugNameLabel => drugDisplayName;
 }
 
 @immutable

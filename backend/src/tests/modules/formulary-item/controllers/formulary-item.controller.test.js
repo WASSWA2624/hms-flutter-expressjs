@@ -1,5 +1,6 @@
 const formularyItemController = require('@controllers/formulary-item/formulary-item.controller');
 const formularyItemService = require('@services/formulary-item/formulary-item.service');
+const { mapFormularyItemRecord } = require('@services/formulary-item/formulary-item.serializer');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 
 jest.mock('@services/formulary-item/formulary-item.service');
@@ -21,7 +22,12 @@ describe('Formulary Item Controller', () => {
       formularyItemService.listFormularyItems.mockResolvedValue(mockResult);
 
       await formularyItemController.listFormularyItems(mockReq, mockRes);
-      expect(sendPaginated).toHaveBeenCalledWith(mockRes, 'messages.formulary_item.list.success', mockResult.formularyItems, mockResult.pagination);
+      expect(sendPaginated).toHaveBeenCalledWith(
+        mockRes,
+        'messages.formulary_item.list.success',
+        mockResult.formularyItems.map(mapFormularyItemRecord).filter(Boolean),
+        mockResult.pagination
+      );
     });
   });
 
@@ -32,7 +38,12 @@ describe('Formulary Item Controller', () => {
       formularyItemService.getFormularyItemById.mockResolvedValue(mock);
 
       await formularyItemController.getFormularyItemById(mockReq, mockRes);
-      expect(sendSuccess).toHaveBeenCalledWith(mockRes, 200, 'messages.formulary_item.get.success', mock);
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.formulary_item.get.success',
+        mapFormularyItemRecord(mock)
+      );
     });
   });
 
@@ -44,7 +55,12 @@ describe('Formulary Item Controller', () => {
       formularyItemService.createFormularyItem.mockResolvedValue(mock);
 
       await formularyItemController.createFormularyItem(mockReq, mockRes);
-      expect(sendSuccess).toHaveBeenCalledWith(mockRes, 201, 'messages.formulary_item.create.success', mock);
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        201,
+        'messages.formulary_item.create.success',
+        mapFormularyItemRecord(mock)
+      );
     });
   });
 
@@ -57,7 +73,12 @@ describe('Formulary Item Controller', () => {
       formularyItemService.updateFormularyItem.mockResolvedValue(mock);
 
       await formularyItemController.updateFormularyItem(mockReq, mockRes);
-      expect(sendSuccess).toHaveBeenCalledWith(mockRes, 200, 'messages.formulary_item.update.success', mock);
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.formulary_item.update.success',
+        mapFormularyItemRecord(mock)
+      );
     });
   });
 

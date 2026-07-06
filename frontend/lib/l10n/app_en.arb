@@ -11339,6 +11339,10 @@
   "@pharmacyFormularyActiveLabel": {
     "description": "Pharmacy formulary active status label."
   },
+  "pharmacyFormularyIdLabel": "Formulary ID",
+  "@pharmacyFormularyIdLabel": {
+    "description": "Pharmacy formulary item identifier column label."
+  },
   "pharmacyNoFormularyTitle": "No formulary items",
   "@pharmacyNoFormularyTitle": {
     "description": "Empty pharmacy formulary list title."

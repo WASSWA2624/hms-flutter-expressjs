@@ -8817,6 +8817,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyFormularyActiveLabel => 'Active';
 
   @override
+  String get pharmacyFormularyIdLabel => 'Formulary ID';
+
+  @override
   String get pharmacyNoFormularyTitle => 'No formulary items';
 
   @override

@@ -16438,6 +16438,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get pharmacyFormularyActiveLabel;
 
+  /// Pharmacy formulary item identifier column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulary ID'**
+  String get pharmacyFormularyIdLabel;
+
   /// Empty pharmacy formulary list title.
   ///
   /// In en, this message translates to:

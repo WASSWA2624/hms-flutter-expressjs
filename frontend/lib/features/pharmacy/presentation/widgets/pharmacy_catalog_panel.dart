@@ -24,6 +24,10 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 const String _inventoryStockStatusFilterKey = 'stock_status';
+const String _storageRoomFilterKey = 'storage_room';
+const String _storageShelfFilterKey = 'storage_shelf';
+const String _formularyActiveFilterKey = 'is_active';
+const String _drugStockStatusFilterKey = 'stock_status';
 
 class PharmacyCatalogPanel extends ConsumerStatefulWidget {
   const PharmacyCatalogPanel({required this.state, super.key});
@@ -130,42 +134,36 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
       pharmacyWorkspaceControllerProvider.notifier,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (_activeStorageRooms(widget.state.storageLayout).isNotEmpty) ...<Widget>[
-          _StorageLocationFilters(
-            layout: widget.state.storageLayout,
-            storageRoomId: widget.state.drugQuery.storageRoomId,
-            storageShelfId: widget.state.drugQuery.storageShelfId,
-            onRoomChanged: (String? roomId) => unawaited(
-              controller.applyDrugStorageFilter(
-                storageRoomId: roomId,
-                clearStorageRoomId: roomId == null,
-                clearStorageShelfId: true,
-              ),
-            ),
-            onShelfChanged: (String? shelfId) => unawaited(
-              controller.applyDrugStorageFilter(
-                storageRoomId: widget.state.drugQuery.storageRoomId,
-                storageShelfId: shelfId,
-                clearStorageShelfId: shelfId == null,
-              ),
-            ),
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-        ],
-        AppListTable<PharmacyDrug>(
-          page: widget.state.drugs,
-          isLoading: widget.state.isRefreshingDrugs,
-          search: AppListTableSearch<PharmacyDrug>(
-            controller: _searchController,
-            semanticLabel: l10n.pharmacyDrugSearchLabel,
-            hintText: l10n.pharmacyDrugSearchHint,
-            matcher: (_, _) => true,
-            onSubmitted: controller.applyDrugSearch,
-            onClear: () => unawaited(controller.applyDrugSearch('')),
-            trailingActions: _catalogSearchTrailingActions(
+    final PharmacyDrugQuery drugQuery = widget.state.drugQuery;
+
+    return AppListTable<PharmacyDrug>(
+      page: widget.state.drugs,
+      isLoading: widget.state.isRefreshingDrugs,
+      search: AppListTableSearch<PharmacyDrug>(
+        controller: _searchController,
+        semanticLabel: l10n.pharmacyDrugSearchLabel,
+        hintText: l10n.pharmacyDrugSearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applyDrugSearch,
+        onClear: () => unawaited(controller.applyDrugSearch('')),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        filterGroups: _drugCatalogFilterGroups(
+          l10n: l10n,
+          layout: widget.state.storageLayout,
+          storageRoomId: drugQuery.storageRoomId,
+        ),
+        filterValue: _drugCatalogFilterValue(drugQuery),
+        hasActiveFilters: _hasDrugCatalogFilters(drugQuery),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          unawaited(_applyDrugCatalogFilter(controller, value));
+        },
+        trailingActions: _catalogSearchTrailingActions(
               ref: ref,
               writeRequirement: widget.writeRequirement,
               isBusy: widget.state.isRefreshingDrugs,
@@ -301,8 +299,6 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             subtitle: Text(item.code ?? ''),
           );
         },
-        ),
-      ],
     );
   }
 
@@ -447,6 +443,8 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
     );
     final bool isBusy = widget.state.isRefreshingFormulary;
 
+    final PharmacyFormularyQuery formularyQuery = widget.state.formularyQuery;
+
     return AppListTable<PharmacyFormularyItem>(
       page: widget.state.formularyItems,
       isLoading: isBusy,
@@ -458,6 +456,19 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         matcher: (_, _) => true,
         onSubmitted: controller.applyFormularySearch,
         onClear: () => unawaited(controller.applyFormularySearch('')),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        filterGroups: _formularyCatalogFilterGroups(l10n),
+        filterValue: _formularyCatalogFilterValue(formularyQuery),
+        hasActiveFilters: _hasFormularyCatalogFilters(formularyQuery),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          unawaited(_applyFormularyCatalogFilter(controller, value));
+        },
         trailingActions: _catalogSearchTrailingActions(
           ref: ref,
           writeRequirement: widget.writeRequirement,
@@ -516,9 +527,14 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
             },
           ),
           AppListTableColumn<PharmacyFormularyItem>(
-            label: l10n.pharmacyFormularyDrugLabel,
+            label: l10n.pharmacyDrugNameLabel,
             cellBuilder: (_, PharmacyFormularyItem item) =>
-                Text(item.displayTitle),
+                Text(item.drugNameLabel ?? '—'),
+          ),
+          AppListTableColumn<PharmacyFormularyItem>(
+            label: l10n.pharmacyFormularyIdLabel,
+            cellBuilder: (_, PharmacyFormularyItem item) =>
+                Text(item.displayId ?? item.id),
           ),
           AppListTableColumn<PharmacyFormularyItem>(
             label: l10n.pharmacyFormularyActiveLabel,
@@ -568,7 +584,8 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
                     },
               visualDensity: VisualDensity.compact,
             ),
-            title: Text(item.displayTitle),
+            title: Text(item.drugNameLabel ?? item.displayId ?? item.id),
+            subtitle: item.drugCode == null ? null : Text(item.drugCode!),
           );
         },
     );
@@ -935,55 +952,34 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
 
     final PharmacyInventoryStockQuery inventoryQuery = widget.state.inventoryQuery;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (_activeStorageRooms(widget.state.storageLayout).isNotEmpty) ...<Widget>[
-          _StorageLocationFilters(
-            layout: widget.state.storageLayout,
-            storageRoomId: inventoryQuery.storageRoomId,
-            storageShelfId: inventoryQuery.storageShelfId,
-            onRoomChanged: (String? roomId) => unawaited(
-              controller.applyInventoryStorageFilter(
-                storageRoomId: roomId,
-                clearStorageRoomId: roomId == null,
-                clearStorageShelfId: true,
-              ),
-            ),
-            onShelfChanged: (String? shelfId) => unawaited(
-              controller.applyInventoryStorageFilter(
-                storageRoomId: inventoryQuery.storageRoomId,
-                storageShelfId: shelfId,
-                clearStorageShelfId: shelfId == null,
-              ),
-            ),
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-        ],
-        AppListTable<PharmacyInventoryStock>(
-          page: widget.state.inventoryWorkbench.stocks,
-          isLoading: isBusy,
-          search: AppListTableSearch<PharmacyInventoryStock>(
-            controller: _searchController,
-            semanticLabel: l10n.pharmacySearchLabel,
-            hintText: l10n.pharmacySearchHint,
-            matcher: (_, _) => true,
-            onSubmitted: controller.applyInventorySearch,
-            onClear: () => unawaited(controller.applyInventorySearch('')),
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
-            advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            enableDateFilter: false,
-            allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-            filterGroups: _inventoryStockFilterGroups(l10n),
-            filterValue: _inventoryFilterValue(inventoryQuery),
-            hasActiveFilters: _hasInventoryStockStatusFilter(inventoryQuery),
-            onFilterChanged: (AppSearchBarFilterValue value) {
-              unawaited(_applyInventoryStockStatusFilter(controller, value));
-            },
-            trailingActions: _selectedInventoryIds.isEmpty
+    return AppListTable<PharmacyInventoryStock>(
+      page: widget.state.inventoryWorkbench.stocks,
+      isLoading: isBusy,
+      search: AppListTableSearch<PharmacyInventoryStock>(
+        controller: _searchController,
+        semanticLabel: l10n.pharmacySearchLabel,
+        hintText: l10n.pharmacySearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applyInventorySearch,
+        onClear: () => unawaited(controller.applyInventorySearch('')),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        filterGroups: _inventoryCatalogFilterGroups(
+          l10n: l10n,
+          layout: widget.state.storageLayout,
+          storageRoomId: inventoryQuery.storageRoomId,
+        ),
+        filterValue: _inventoryCatalogFilterValue(inventoryQuery),
+        hasActiveFilters: _hasInventoryCatalogFilters(inventoryQuery),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          unawaited(_applyInventoryCatalogFilter(controller, value));
+        },
+        trailingActions: _selectedInventoryIds.isEmpty
                 ? const <AppSearchBarAction>[]
                 : <AppSearchBarAction>[
                     AppSearchBarAction(
@@ -1042,11 +1038,6 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
                     item.inventoryItem?.displayTitle ?? item.displayId ?? '',
                   );
                 },
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyInventoryFacilityColumnLabel,
-                cellBuilder: (_, PharmacyInventoryStock item) =>
-                    Text(item.facilityName ?? ''),
               ),
               AppListTableColumn<PharmacyInventoryStock>(
                 label: l10n.pharmacyInventoryQuantityColumnLabel,
@@ -1126,8 +1117,6 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
                 trailing: _expiryCell(context, item),
               );
             },
-          ),
-      ],
     );
   }
 
@@ -1497,7 +1486,7 @@ class _InventoryAdjustDialogState
       Navigator.of(context).pop(true);
       return;
     }
-    setState(() => _isSaving = false    );
+    setState(() => _isSaving = false);
   }
 }
 
@@ -1564,7 +1553,6 @@ Widget _catalogRowActions({
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         AppButton(
-          iconOnly: true,
           leadingIcon: Icons.edit_outlined,
           label: editLabel,
           semanticLabel: editLabel,
@@ -1573,7 +1561,6 @@ Widget _catalogRowActions({
           onPressed: isAllowed && !isBusy ? onEdit : null,
         ),
         AppButton(
-          iconOnly: true,
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
           semanticLabel: deleteLabel,
@@ -1694,10 +1681,135 @@ List<AppSearchBarAction> _catalogSearchTrailingActions({
   ];
 }
 
-List<AppSearchBarFilterGroup> _inventoryStockFilterGroups(
+List<AppSearchBarFilterGroup> _storageLocationFilterGroups({
+  required AppLocalizations l10n,
+  required PharmacyStorageLayout layout,
+  required String? storageRoomId,
+}) {
+  final List<PharmacyStorageRoom> activeRooms = _activeStorageRooms(layout);
+  if (activeRooms.isEmpty) {
+    return const <AppSearchBarFilterGroup>[];
+  }
+
+  final List<AppSearchBarFilterGroup> groups = <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _storageRoomFilterKey,
+      label: l10n.pharmacyStorageRoomLabel,
+      allLabel: l10n.pharmacyStorageFilterAll,
+      choices: activeRooms
+          .map(
+            (PharmacyStorageRoom room) => AppSearchBarFilterChoice(
+              value: room.id,
+              label: room.name ?? room.id,
+              icon: Icons.warehouse_outlined,
+            ),
+          )
+          .toList(growable: false),
+    ),
+  ];
+
+  if (storageRoomId != null) {
+    final List<PharmacyStorageShelf> shelves =
+        _shelfOptionsForRoom(layout, storageRoomId);
+    if (shelves.isNotEmpty) {
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: _storageShelfFilterKey,
+          label: l10n.pharmacyStorageShelfLabel,
+          allLabel: l10n.pharmacyStorageFilterAll,
+          choices: shelves
+              .map(
+                (PharmacyStorageShelf shelf) => AppSearchBarFilterChoice(
+                  value: shelf.id,
+                  label: shelf.displayLabel,
+                  icon: Icons.view_week_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
+    }
+  }
+
+  return groups;
+}
+
+List<AppSearchBarFilterGroup> _drugCatalogFilterGroups({
+  required AppLocalizations l10n,
+  required PharmacyStorageLayout layout,
+  required String? storageRoomId,
+}) {
+  return <AppSearchBarFilterGroup>[
+    ..._storageLocationFilterGroups(
+      l10n: l10n,
+      layout: layout,
+      storageRoomId: storageRoomId,
+    ),
+    AppSearchBarFilterGroup(
+      key: _drugStockStatusFilterKey,
+      label: l10n.pharmacyStockStatusFilterLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'IN_STOCK',
+          label: l10n.pharmacyStockInStock,
+          icon: Icons.check_circle_outline,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'ALMOST_OUT_OF_STOCK',
+          label: l10n.pharmacyStockAlmostOut,
+          icon: Icons.warning_amber_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'LOW_STOCK',
+          label: l10n.pharmacyStockLow,
+          icon: Icons.trending_down,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'OUT_OF_STOCK',
+          label: l10n.pharmacyStockOut,
+          icon: Icons.remove_shopping_cart_outlined,
+        ),
+      ],
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _formularyCatalogFilterGroups(
   AppLocalizations l10n,
 ) {
   return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _formularyActiveFilterKey,
+      label: l10n.pharmacyFormularyActiveLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'true',
+          label: l10n.commonYesLabel,
+          icon: Icons.check_circle_outline,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'false',
+          label: l10n.commonNoLabel,
+          icon: Icons.cancel_outlined,
+        ),
+      ],
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _inventoryCatalogFilterGroups({
+  required AppLocalizations l10n,
+  required PharmacyStorageLayout layout,
+  required String? storageRoomId,
+}) {
+  return <AppSearchBarFilterGroup>[
+    ..._storageLocationFilterGroups(
+      l10n: l10n,
+      layout: layout,
+      storageRoomId: storageRoomId,
+    ),
     AppSearchBarFilterGroup(
       key: _inventoryStockStatusFilterKey,
       label: l10n.pharmacyStockStatusFilterLabel,
@@ -1723,117 +1835,152 @@ List<AppSearchBarFilterGroup> _inventoryStockFilterGroups(
   ];
 }
 
-AppSearchBarFilterValue _inventoryFilterValue(
-  PharmacyInventoryStockQuery query,
-) {
-  final String? choice;
-  if (query.lowStockOnly) {
-    choice = 'LOW_STOCK';
-  } else if (query.expiredOnly) {
-    choice = 'EXPIRED';
-  } else if (query.expiringWithinDays != null) {
-    choice = 'EXPIRING_SOON';
-  } else {
-    choice = null;
+AppSearchBarFilterValue _catalogStorageFilterValue({
+  String? storageRoomId,
+  String? storageShelfId,
+}) {
+  final Map<String, String> options = <String, String>{};
+  if (storageRoomId != null) {
+    options[_storageRoomFilterKey] = storageRoomId;
   }
-  if (choice == null) {
+  if (storageShelfId != null) {
+    options[_storageShelfFilterKey] = storageShelfId;
+  }
+  if (options.isEmpty) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(options: options);
+}
+
+AppSearchBarFilterValue _drugCatalogFilterValue(PharmacyDrugQuery query) {
+  final Map<String, String> options =
+      Map<String, String>.from(_catalogStorageFilterValue(
+    storageRoomId: query.storageRoomId,
+    storageShelfId: query.storageShelfId,
+  ).options);
+  if (query.stockStatus != null && query.stockStatus!.isNotEmpty) {
+    options[_drugStockStatusFilterKey] = query.stockStatus!;
+  }
+  if (options.isEmpty) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(options: options);
+}
+
+AppSearchBarFilterValue _formularyCatalogFilterValue(
+  PharmacyFormularyQuery query,
+) {
+  if (query.isActive == null) {
     return AppSearchBarFilterValue.empty;
   }
   return AppSearchBarFilterValue(
-    options: <String, String>{_inventoryStockStatusFilterKey: choice},
+    options: <String, String>{
+      _formularyActiveFilterKey: query.isActive! ? 'true' : 'false',
+    },
   );
 }
 
-bool _hasInventoryStockStatusFilter(PharmacyInventoryStockQuery query) {
-  return query.lowStockOnly ||
+AppSearchBarFilterValue _inventoryCatalogFilterValue(
+  PharmacyInventoryStockQuery query,
+) {
+  final Map<String, String> options =
+      Map<String, String>.from(_catalogStorageFilterValue(
+    storageRoomId: query.storageRoomId,
+    storageShelfId: query.storageShelfId,
+  ).options);
+
+  final String? stockChoice;
+  if (query.lowStockOnly) {
+    stockChoice = 'LOW_STOCK';
+  } else if (query.expiredOnly) {
+    stockChoice = 'EXPIRED';
+  } else if (query.expiringWithinDays != null) {
+    stockChoice = 'EXPIRING_SOON';
+  } else {
+    stockChoice = null;
+  }
+  if (stockChoice != null) {
+    options[_inventoryStockStatusFilterKey] = stockChoice;
+  }
+
+  if (options.isEmpty) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(options: options);
+}
+
+bool _hasDrugCatalogFilters(PharmacyDrugQuery query) {
+  return query.storageRoomId != null ||
+      query.storageShelfId != null ||
+      (query.stockStatus != null && query.stockStatus!.isNotEmpty);
+}
+
+bool _hasFormularyCatalogFilters(PharmacyFormularyQuery query) {
+  return query.isActive != null;
+}
+
+bool _hasInventoryCatalogFilters(PharmacyInventoryStockQuery query) {
+  return query.storageRoomId != null ||
+      query.storageShelfId != null ||
+      query.lowStockOnly ||
       query.expiredOnly ||
       query.expiringWithinDays != null;
 }
 
-Future<void> _applyInventoryStockStatusFilter(
+Future<void> _applyDrugCatalogFilter(
   PharmacyWorkspaceController controller,
   AppSearchBarFilterValue value,
 ) async {
-  final String? choice = value.option(_inventoryStockStatusFilterKey);
-  switch (choice) {
-    case 'LOW_STOCK':
-      await controller.applyInventoryLowStockOnly(true);
-    case 'EXPIRING_SOON':
-      await controller.applyInventoryFilter(PharmacyInventoryFilter.expiringSoon);
-    case 'EXPIRED':
-      await controller.applyInventoryFilter(PharmacyInventoryFilter.expired);
-    default:
-      await controller.clearInventoryFilters();
+  if (!value.isActive) {
+    await controller.applyDrugCatalogFilters(clearAll: true);
+    return;
   }
+
+  await controller.applyDrugCatalogFilters(
+    stockStatus: value.option(_drugStockStatusFilterKey),
+    storageRoomId: value.option(_storageRoomFilterKey),
+    storageShelfId: value.option(_storageShelfFilterKey),
+  );
+}
+
+Future<void> _applyFormularyCatalogFilter(
+  PharmacyWorkspaceController controller,
+  AppSearchBarFilterValue value,
+) async {
+  if (!value.isActive) {
+    await controller.clearFormularyFilters();
+    return;
+  }
+
+  final String? activeChoice = value.option(_formularyActiveFilterKey);
+  await controller.applyFormularyActiveFilter(
+    isActive: switch (activeChoice) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    },
+    clearIsActive: activeChoice == null,
+  );
+}
+
+Future<void> _applyInventoryCatalogFilter(
+  PharmacyWorkspaceController controller,
+  AppSearchBarFilterValue value,
+) async {
+  if (!value.isActive) {
+    await controller.applyInventoryCatalogFilters(clearAll: true);
+    return;
+  }
+
+  await controller.applyInventoryCatalogFilters(
+    stockStatusChoice: value.option(_inventoryStockStatusFilterKey),
+    storageRoomId: value.option(_storageRoomFilterKey),
+    storageShelfId: value.option(_storageShelfFilterKey),
+  );
 }
 
 extension _CatalogAccessRequirement on AccessRequirement {
   bool allows(WidgetRef ref) {
     return isAllowed(ref.read(appAccessPolicyProvider));
-  }
-}
-
-class _StorageLocationFilters extends StatelessWidget {
-  const _StorageLocationFilters({
-    required this.layout,
-    required this.storageRoomId,
-    required this.storageShelfId,
-    required this.onRoomChanged,
-    required this.onShelfChanged,
-  });
-
-  final PharmacyStorageLayout layout;
-  final String? storageRoomId;
-  final String? storageShelfId;
-  final ValueChanged<String?> onRoomChanged;
-  final ValueChanged<String?> onShelfChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<PharmacyStorageRoom> activeRooms = _activeStorageRooms(layout);
-    final List<PharmacyStorageShelf> shelfOptions = _shelfOptionsForRoom(
-      layout,
-      storageRoomId,
-    );
-
-    return AppResponsiveFieldRow.two(
-      gap: AppResponsiveFieldRowGap.form,
-      left: AppSelectField<String?>(
-        value: storageRoomId,
-        labelText: l10n.pharmacyStorageRoomLabel,
-        options: <AppSelectOption<String?>>[
-          AppSelectOption<String?>(
-            value: null,
-            label: l10n.pharmacyStorageFilterAll,
-          ),
-          ...activeRooms.map(
-            (PharmacyStorageRoom room) => AppSelectOption<String?>(
-              value: room.id,
-              label: room.name ?? room.id,
-            ),
-          ),
-        ],
-        onChanged: onRoomChanged,
-      ),
-      right: AppSelectField<String?>(
-        value: storageShelfId,
-        labelText: l10n.pharmacyStorageShelfLabel,
-        enabled: storageRoomId != null,
-        options: <AppSelectOption<String?>>[
-          AppSelectOption<String?>(
-            value: null,
-            label: l10n.pharmacyStorageFilterAll,
-          ),
-          ...shelfOptions.map(
-            (PharmacyStorageShelf shelf) => AppSelectOption<String?>(
-              value: shelf.id,
-              label: shelf.displayLabel,
-            ),
-          ),
-        ],
-        onChanged: onShelfChanged,
-      ),
-    );
   }
 }

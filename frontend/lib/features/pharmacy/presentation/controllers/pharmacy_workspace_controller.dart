@@ -285,6 +285,162 @@ final class PharmacyWorkspaceController
     return _refreshFormulary(showLoading: true);
   }
 
+  Future<AppFailure?> applyFormularyActiveFilter({
+    bool? isActive,
+    bool clearIsActive = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        formularyQuery: current.formularyQuery.copyWith(
+          isActive: isActive,
+          clearIsActive: clearIsActive,
+          pageRequest: current.formularyQuery.pageRequest.first(),
+        ),
+        isRefreshingFormulary: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshFormulary(showLoading: true);
+  }
+
+  Future<AppFailure?> clearFormularyFilters() async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        formularyQuery: PharmacyFormularyQuery(
+          search: current.formularyQuery.search,
+          pageRequest: current.formularyQuery.pageRequest.first(),
+        ),
+        isRefreshingFormulary: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshFormulary(showLoading: true);
+  }
+
+  Future<AppFailure?> applyDrugCatalogFilters({
+    String? stockStatus,
+    String? storageRoomId,
+    String? storageShelfId,
+    bool clearAll = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    if (clearAll) {
+      _emit(
+        current.copyWith(
+          drugQuery: PharmacyDrugQuery(
+            search: current.drugQuery.search,
+            pageRequest: current.drugQuery.pageRequest.first(),
+          ),
+          isRefreshingDrugs: true,
+          clearLastFailure: true,
+        ),
+      );
+      return _refreshDrugs(showLoading: true);
+    }
+
+    String? resolvedShelfId = storageShelfId;
+    if (storageRoomId != null &&
+        storageShelfId != null &&
+        !_shelfBelongsToRoom(
+          current.storageLayout,
+          storageRoomId,
+          storageShelfId,
+        )) {
+      resolvedShelfId = null;
+    }
+
+    _emit(
+      current.copyWith(
+        drugQuery: current.drugQuery.copyWith(
+          stockStatus: stockStatus,
+          clearStockStatus: stockStatus == null,
+          storageRoomId: storageRoomId,
+          storageShelfId: resolvedShelfId,
+          clearStorageRoomId: storageRoomId == null,
+          clearStorageShelfId: resolvedShelfId == null,
+          pageRequest: current.drugQuery.pageRequest.first(),
+        ),
+        isRefreshingDrugs: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshDrugs(showLoading: true);
+  }
+
+  Future<AppFailure?> applyInventoryCatalogFilters({
+    String? stockStatusChoice,
+    String? storageRoomId,
+    String? storageShelfId,
+    bool clearAll = false,
+  }) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    if (clearAll) {
+      return clearInventoryFilters();
+    }
+
+    String? resolvedShelfId = storageShelfId;
+    if (storageRoomId != null &&
+        storageShelfId != null &&
+        !_shelfBelongsToRoom(
+          current.storageLayout,
+          storageRoomId,
+          storageShelfId,
+        )) {
+      resolvedShelfId = null;
+    }
+
+    final PharmacyInventoryStockQuery nextQuery = current.inventoryQuery.copyWith(
+      storageRoomId: storageRoomId,
+      storageShelfId: resolvedShelfId,
+      clearStorageRoomId: storageRoomId == null,
+      clearStorageShelfId: resolvedShelfId == null,
+      lowStockOnly: stockStatusChoice == 'LOW_STOCK',
+      expiredOnly: stockStatusChoice == 'EXPIRED',
+      expiringWithinDays: stockStatusChoice == 'EXPIRING_SOON' ? 30 : null,
+      clearStockStatus: stockStatusChoice == null,
+      clearExpiringWithinDays: stockStatusChoice != 'EXPIRING_SOON',
+      pageRequest: current.inventoryQuery.pageRequest.first(),
+    );
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: nextQuery,
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  bool _shelfBelongsToRoom(
+    PharmacyStorageLayout layout,
+    String roomId,
+    String shelfId,
+  ) {
+    return layout.rooms
+        .where((PharmacyStorageRoom room) => room.id == roomId)
+        .expand((PharmacyStorageRoom room) => room.shelves)
+        .any((PharmacyStorageShelf shelf) => shelf.id == shelfId);
+  }
+
   Future<AppFailure?> applyInventorySearch(String search) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {

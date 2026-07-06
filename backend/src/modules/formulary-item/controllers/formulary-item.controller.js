@@ -8,6 +8,7 @@
  */
 
 const formularyItemService = require('@services/formulary-item/formulary-item.service');
+const { mapFormularyItemRecord } = require('@services/formulary-item/formulary-item.serializer');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
@@ -49,7 +50,12 @@ const listFormularyItems = asyncHandler(async (req, res) => {
     ipAddress
   );
 
-  sendPaginated(res, 'messages.formulary_item.list.success', result.formularyItems, result.pagination);
+  sendPaginated(
+    res,
+    'messages.formulary_item.list.success',
+    result.formularyItems.map(mapFormularyItemRecord).filter(Boolean),
+    result.pagination
+  );
 });
 
 /**
@@ -66,7 +72,7 @@ const getFormularyItemById = asyncHandler(async (req, res) => {
 
   const formularyItem = await formularyItemService.getFormularyItemById(id, userId, ipAddress);
 
-  sendSuccess(res, 200, 'messages.formulary_item.get.success', formularyItem);
+  sendSuccess(res, 200, 'messages.formulary_item.get.success', mapFormularyItemRecord(formularyItem));
 });
 
 /**
@@ -82,7 +88,7 @@ const createFormularyItem = asyncHandler(async (req, res) => {
 
   const formularyItem = await formularyItemService.createFormularyItem(req.body, userId, ipAddress);
 
-  sendSuccess(res, 201, 'messages.formulary_item.create.success', formularyItem);
+  sendSuccess(res, 201, 'messages.formulary_item.create.success', mapFormularyItemRecord(formularyItem));
 });
 
 /**
@@ -99,7 +105,7 @@ const updateFormularyItem = asyncHandler(async (req, res) => {
 
   const formularyItem = await formularyItemService.updateFormularyItem(id, req.body, userId, ipAddress);
 
-  sendSuccess(res, 200, 'messages.formulary_item.update.success', formularyItem);
+  sendSuccess(res, 200, 'messages.formulary_item.update.success', mapFormularyItemRecord(formularyItem));
 });
 
 /**
