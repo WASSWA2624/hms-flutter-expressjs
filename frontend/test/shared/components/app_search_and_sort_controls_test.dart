@@ -88,7 +88,7 @@ void main() {
     await tester.tap(find.byTooltip('Advanced filters'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Search in'), findsOneWidget);
     expect(find.text('Name'), findsOneWidget);
     expect(find.text('Date'), findsOneWidget);

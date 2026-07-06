@@ -119,6 +119,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   late bool _ownsFocusNode;
   bool _hasControllerText = false;
   bool _isSyncingControllerText = false;
+  bool _hadFocus = false;
+  bool _browseAllOptions = false;
   Object? _dropdownEntriesCacheToken;
   List<DropdownMenuEntry<T>>? _cachedDropdownEntries;
 
@@ -270,6 +272,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           onSaved: widget.onSaved,
           forceErrorText: widget.errorText,
           onSelected: (T? value) {
+            _browseAllOptions = false;
             _syncControllerForSelection(value);
             widget.onChanged?.call(value);
             if (_focusNode.hasFocus) {
@@ -297,6 +300,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     if (_focusNode.hasFocus) {
       _focusNode.unfocus();
     }
+    _browseAllOptions = false;
     _syncControllerForSelection(null);
     _formFieldKey.currentState?.didChange(null);
   }
@@ -319,6 +323,20 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   void _handleFocusChanged() {
+    final bool hasFocus = _focusNode.hasFocus;
+    if (widget.searchable) {
+      if (hasFocus && !_hadFocus) {
+        _browseAllOptions = true;
+        _dropdownEntriesCacheToken = null;
+        _cachedDropdownEntries = null;
+      } else if (!hasFocus && _hadFocus) {
+        _browseAllOptions = false;
+        _dropdownEntriesCacheToken = null;
+        _cachedDropdownEntries = null;
+        _syncControllerForSelection(widget.value);
+      }
+    }
+    _hadFocus = hasFocus;
     if (mounted) {
       setState(() {});
     }
@@ -328,6 +346,14 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     final bool hasText = _controller.text.isNotEmpty;
     final bool shouldRefreshSearchEntries =
         !_isSyncingControllerText && widget.searchable;
+    if (!_isSyncingControllerText &&
+        widget.searchable &&
+        _focusNode.hasFocus &&
+        _browseAllOptions) {
+      _browseAllOptions = false;
+      _dropdownEntriesCacheToken = null;
+      _cachedDropdownEntries = null;
+    }
     if (hasText != _hasControllerText || shouldRefreshSearchEntries) {
       void updateControllerState() {
         if (!mounted) {
@@ -526,7 +552,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     return Object.hash(
       menuIsOpen,
       widget.options,
-      widget.searchable ? _controller.text : null,
+      _browseAllOptions,
+      widget.searchable && !_browseAllOptions ? _controller.text : null,
     );
   }
 
@@ -585,6 +612,10 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   Iterable<AppSelectOption<T>> _menuOptions() {
     if (!widget.searchable || widget.filterCallback != null) {
       return widget.options;
+    }
+
+    if (_browseAllOptions) {
+      return widget.options.take(_maxFilteredOptions);
     }
 
     final List<String> tokens = _queryTokens(_controller.text);

@@ -320,6 +320,99 @@ void main() {
   });
 
   testWidgets(
+    'AppSelectField.searchable clear leaves placeholder instead of a default option',
+    (WidgetTester tester) async {
+      String? selected = 'live';
+      const String hint = 'Choose status';
+
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AppSelectField<String>.searchable(
+              labelText: 'Status',
+              hintText: hint,
+              value: selected,
+              options: const <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'draft', label: 'Draft'),
+                AppSelectOption<String>(value: 'live', label: 'Live'),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  selected = value;
+                });
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(selected, isNull);
+      expect(find.text('Live'), findsNothing);
+      expect(find.text(hint), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppSelectField.searchable shows all options when menu reopens with a selection',
+    (WidgetTester tester) async {
+      String? selected;
+
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AppSelectField<String>.searchable(
+              labelText: 'Status',
+              value: selected,
+              options: const <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'draft', label: 'Draft'),
+                AppSelectOption<String>(value: 'live', label: 'Live'),
+                AppSelectOption<String>(value: 'archived', label: 'Archived'),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  selected = value;
+                });
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.byType(EditableText));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Live').hitTestable());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(EditableText));
+      await tester.pumpAndSettle();
+
+      expect(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Draft'),
+            )
+            .hitTestable(),
+        findsOneWidget,
+      );
+      expect(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Archived'),
+            )
+            .hitTestable(),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'AppSelectField saves a selection without an onChanged callback',
     (WidgetTester tester) async {
       final formKey = GlobalKey<FormState>();

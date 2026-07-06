@@ -766,8 +766,9 @@ class _AppSearchBarFiltersDialogState
               if (widget.searchFields.isNotEmpty) ...<Widget>[
                 _FilterControlShell(
                   child: AppSelectField<String>.searchable(
-                    value: _field ?? _allValue,
+                    value: _field,
                     labelText: widget.searchFieldLabel,
+                    hintText: widget.allFieldsLabel,
                     options: <AppSelectOption<String>>[
                       AppSelectOption<String>(
                         value: _allValue,
@@ -859,8 +860,9 @@ class _AppSearchBarFiltersDialogState
                         in widget.filterGroups)
                       if (group.choices.isNotEmpty)
                         AppSelectField<String>.searchable(
-                          value: _options[group.key] ?? _allValue,
+                          value: _options[group.key],
                           labelText: group.label,
+                          hintText: group.allLabel ?? widget.allFieldsLabel,
                           options: <AppSelectOption<String>>[
                             AppSelectOption<String>(
                               value: _allValue,
