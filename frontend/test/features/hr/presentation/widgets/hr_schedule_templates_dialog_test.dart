@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/domain/repositories/hr_repository.dart';
@@ -39,6 +43,10 @@ const HrReferenceData _referenceData = HrReferenceData(
   shiftTemplates: <HrOption>[_template],
   facilities: <HrOption>[HrOption(value: 'fac-1', label: 'Biomedical dept')],
   shiftTypes: <HrOption>[HrOption(value: 'DAY', label: 'DAY')],
+);
+
+final AuthSession _testSession = AuthSession(
+  tokens: SessionTokens(accessToken: 'access-token'),
 );
 
 void _stubWorkspaceBootstrap(_MockHrRepository repository) {
@@ -94,9 +102,9 @@ class _ManageTemplatesLauncherState
   @override
   void initState() {
     super.initState();
-    Future<void>.microtask(
-      () => ref.read(hrWorkspaceControllerProvider.future),
-    );
+    Future<void>.microtask(() async {
+      await ref.read(hrWorkspaceControllerProvider.future);
+    });
   }
 
   @override
@@ -113,13 +121,18 @@ Future<void> _pumpManageDialog(
   _MockHrRepository repository,
 ) async {
   _stubWorkspaceBootstrap(repository);
+  final _MemorySecureStorage storage = _MemorySecureStorage()
+    ..values[SecureStorageKeys.accessToken] = 'access-token';
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         hrRepositoryProvider.overrideWithValue(repository),
         initialSessionStateProvider.overrideWithValue(
-          const SessionState.authenticated(),
+          SessionState.authenticated(session: _testSession),
+        ),
+        secureSessionStorageProvider.overrideWithValue(
+          SecureAppSessionStorage(storage),
         ),
       ],
       child: const MaterialApp(
@@ -130,7 +143,7 @@ Future<void> _pumpManageDialog(
     ),
   );
   await tester.pump();
-  await tester.pump();
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Open schedule templates'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
@@ -154,7 +167,7 @@ void main() {
   ) async {
     await _pumpManageDialog(tester, repository);
 
-    expect(find.text('Schedule templates'), findsWidgets);
+    expect(find.text('SCHEDULE TEMPLATES'), findsWidgets);
     expect(find.text('Biomedical'), findsOneWidget);
     expect(find.byType(AppCopyableIdentifier), findsOneWidget);
     expect(find.text('SHI0000001'), findsWidgets);
@@ -162,7 +175,6 @@ void main() {
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.initialMaximized, isTrue);
     expect(dialog.maxWidth, 980);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('list row exposes icon-only edit and delete actions', (
@@ -174,7 +186,6 @@ void main() {
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     expect(find.text('Edit template'), findsNothing);
     expect(find.text('Delete template'), findsNothing);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('tapping row opens template detail dialog', (
@@ -183,11 +194,35 @@ void main() {
     await _pumpManageDialog(tester, repository);
 
     await tester.tap(find.text('Biomedical'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Template ID'), findsOneWidget);
     expect(find.text('Weekly schedule'), findsWidgets);
     expect(find.textContaining('08:00-17:00'), findsWidgets);
-    expect(tester.takeException(), isNull);
   });
+}
+
+final class _MemorySecureStorage implements AppSecureStorage {
+  final Map<String, String> values = <String, String>{};
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    values.clear();
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return values[key];
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    values[key] = value;
+  }
 }

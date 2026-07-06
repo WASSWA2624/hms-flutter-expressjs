@@ -1,58 +1,82 @@
-# App Dialog — Maximized by Default
+# Feature: Facility-scoped radiology configuration (mirror lab flow)
 
-## Objective
+## Goal
 
-Change the default presentation of `AppDialog` so dialogs open **maximized on desktop** (breakpoint `md` and above). Apply this globally so callers do not need to pass `initialMaximized: true` unless they want a smaller initial size.
+Implement a **radiology configuration flow that matches the existing lab configuration pattern** (see attached screenshots). Users who configure radiology for a facility should work from a **platform catalog** and enable only the procedures relevant to that facility—with facility-specific pricing—rather than rebuilding the catalog from scratch.
 
-## Context
+## Reference implementation
 
-- Shared dialog: `frontend/lib/shared/components/app_dialog.dart`
-- `AppDialog` already supports maximize/restore, drag, and resize on desktop via `initialMaximized`, `showMaximizeButton`, and `resizable`.
-- Today `initialMaximized` defaults to `false`. Many call sites already opt in with `initialMaximized: true`.
-- Key wrappers that forward the flag:
-  - `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart` (`showAppWorkspaceMutationDialog`)
-  - `frontend/lib/shared/components/app_patient_detail_dialog.dart`
-  - `frontend/lib/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart`
-  - `frontend/lib/features/discharge/presentation/widgets/discharge_planning_dialog.dart`
+Use the lab configuration UX and architecture as the template:
 
-## Requirements
+1. **Lab Configurations** — tenant/facility scope selectors, facility offerings table (search, filters, edit/delete), **Enable test** action.
+2. **Enable Lab Offering** — browse the platform catalog; items already offered show **Already offered**.
+3. **Enable Test** — confirm selection and set **unit price** + currency before saving.
 
-1. **Default behavior** — On desktop (`AppBreakpoint.md+`), new dialogs open maximized unless explicitly overridden.
-2. **Mobile / compact** — Keep current compact behavior unchanged; maximize controls remain desktop-only.
-3. **Preserve restore** — Users can still restore, resize, and drag after opening; toggle behavior must remain correct.
-4. **Global consistency** — Update defaults in `AppDialog` and any dialog wrappers that expose `initialMaximized`, so the app behaves consistently without per-call-site duplication.
-5. **Explicit opt-out** — Call sites that need a smaller initial dialog (e.g. confirmations, simple prompts) may pass `initialMaximized: false`; audit and retain only where justified.
-6. **Cleanup** — Remove redundant `initialMaximized: true` at call sites once the default is `true`.
-7. **Tests** — Update `frontend/test/shared/components/app_dialog_test.dart` and any affected wrapper tests; add coverage for the new default and for explicit opt-out.
+Mirror this three-step pattern for radiology procedures/tests.
 
-## Implementation notes
+## Entry point
 
-- Prefer changing constructor defaults over scattering logic at call sites.
-- When `initialMaximized` is `true` at open, `_isMaximized` should initialize correctly and `_desktopSize` should reflect the maximized viewport (see existing `initState` and `_toggleMaximize` logic).
-- Do not change dialog insets, theming, or unrelated dialog APIs.
+From the radiology workspace overflow menu, **Configurations** opens the radiology configuration dialog (same placement and behavior as lab).
 
-## Out of scope
+## Scope selection (first screen in dialog)
 
-- Replacing `AppDialog` with a different component
-- Changing mobile bottom-sheet or full-screen patterns
-- Altering `showAppDialog` focus-restoration behavior
+Behavior must match lab account/scope rules:
 
-## Quality gate
+| User access | Behavior |
+|-------------|----------|
+| **Multi-tenant** (e.g. superadmin) | Show **Tenant** dropdown first; after tenant is selected, show **Facility** dropdown. |
+| **Single-tenant** | Show **Facility** selector only (or pre-select when unambiguous). |
 
-From `frontend/`:
+- Do not load or show facility offerings until both required scope fields are set.
+- Show a context label such as: *“Configuring radiology catalog for {facility}.”*
+- Reload the facility catalog whenever tenant or facility changes.
 
-```bash
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/shared/components/app_dialog_test.dart
-```
+## Main dialog: Radiology Configurations
 
-Run broader `flutter test` if wrapper defaults or widespread call-site cleanup changes behavior.
+Once scope is ready, display the **facility’s enabled radiology procedures** in a searchable, filterable table.
 
-## Done when
+**Required capabilities:**
 
-- Desktop dialogs open maximized by default across the app
-- Restore/maximize toggle, resize, drag, and close still work
-- Redundant `initialMaximized: true` usages are removed; justified `false` overrides remain
-- Tests pass and reflect the new default
+- Search across procedure name, code, modality/category, and related metadata.
+- **Laboratory-style filters** (adapted for radiology: modality, category, etc.).
+- Table column settings (visibility).
+- Row actions: **Edit** and **Delete** (remove from facility offerings).
+- Primary action: **Enable procedure** (or equivalent label)—opens the platform catalog picker.
+
+Columns should include at minimum: procedure name, code, category/modality, and **unit price** (facility currency).
+
+## Enable offering flow (two dialogs)
+
+### 1. Enable radiology offering (catalog picker)
+
+- Lists **platform-level radiology catalog** items the user is allowed to configure.
+- Same search + filter affordances as the main table.
+- Rows already enabled for the selected facility show **Already offered** and are not selectable again.
+- Selecting an available item opens the enable dialog.
+
+### 2. Enable procedure (price confirmation)
+
+- Show selected procedure summary (name, code, modality/category, units if applicable).
+- Required **Unit price** field with currency selector (default facility/tenant currency).
+- **Cancel** and **Enable procedure** actions.
+- On success: close dialogs, refresh facility offerings, show success feedback.
+
+## Edit existing offering
+
+Editing a facility offering should allow updating facility-specific fields (at minimum **unit price** and offered/enabled state), consistent with lab’s configure/edit dialog—not re-creating the platform catalog item.
+
+## Business rules
+
+- **Ordering scope:** Clinicians and request workflows must only see radiology procedures **enabled for their facility**, with the configured facility price.
+- **Catalog source:** Configurers browse the **platform catalog**; they do not author new global procedures in this flow.
+- **Permissions:** Only users who can configure radiology for a facility may access the platform catalog picker and mutate facility offerings.
+- **Parity:** Reuse lab patterns for scope resolution, API shape, loading/empty/error states, and dialog structure wherever possible.
+
+## Acceptance criteria
+
+- [ ] Configurations opens scope selectors before showing data (tenant → facility when applicable).
+- [ ] Facility offerings table lists only procedures enabled for the selected facility.
+- [ ] **Enable procedure** opens platform catalog picker with search, filters, and “Already offered” state.
+- [ ] Enabling a procedure requires a valid unit price; saved price appears in the main table.
+- [ ] Edit updates facility offering; delete removes it from the facility (not from platform catalog).
+- [ ] Radiology ordering/request flows surface only the selected facility’s enabled procedures and prices.

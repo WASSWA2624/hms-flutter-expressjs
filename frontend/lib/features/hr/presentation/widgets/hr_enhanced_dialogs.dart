@@ -618,25 +618,18 @@ Future<void> showHrScheduleTemplateDetailDialog(
   WidgetRef ref,
   HrOption template,
 ) async {
+  final HrWorkspaceState? workspaceState = readHrWorkspaceState(ref);
+  final HrReferenceData referenceData =
+      workspaceState?.referenceData ?? const HrReferenceData();
+  final HrWorkspaceController controller = ref.read(
+    hrWorkspaceControllerProvider.notifier,
+  );
+
   await showAppDialog<void>(
     context: context,
-    builder: (BuildContext dialogContext) => Consumer(
-      builder: (BuildContext context, WidgetRef dialogRef, _) {
-        final AppLocalizations l10n = context.l10n;
-        final ThemeData theme = Theme.of(context);
-        final HrWorkspaceState? state = dialogRef
-            .watch(hrWorkspaceControllerProvider)
-            .asData
-            ?.value
-            .when(
-              success: (HrWorkspaceState value) => value,
-              failure: (_) => null,
-            );
-        final HrReferenceData referenceData =
-            state?.referenceData ?? const HrReferenceData();
-        final HrWorkspaceController controller = dialogRef.read(
-          hrWorkspaceControllerProvider.notifier,
-        );
+    builder: (BuildContext dialogContext) {
+      final AppLocalizations l10n = dialogContext.l10n;
+      final ThemeData theme = Theme.of(dialogContext);
         final HrWeeklyScheduleDraft schedule =
             HrWeeklyScheduleDraft.fromTemplateExtra(template.extra);
         final String? facilityId = template.extra['facility_id']?.toString();
@@ -694,7 +687,7 @@ Future<void> showHrScheduleTemplateDetailDialog(
                       label: l10n.hrCreatedAtLabel,
                       value: AppFormatters.dateTime(
                         createdAt,
-                        Localizations.localeOf(context),
+                        Localizations.localeOf(dialogContext),
                       ),
                       icon: Icons.event_outlined,
                     ),
@@ -703,7 +696,7 @@ Future<void> showHrScheduleTemplateDetailDialog(
                       label: l10n.hrUpdatedAtLabel,
                       value: AppFormatters.dateTime(
                         updatedAt,
-                        Localizations.localeOf(context),
+                        Localizations.localeOf(dialogContext),
                       ),
                       icon: Icons.update_outlined,
                     ),
@@ -723,7 +716,7 @@ Future<void> showHrScheduleTemplateDetailDialog(
               leadingIcon: Icons.edit_outlined,
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                await showHrShiftTemplateDialog(context, dialogRef, template);
+                await showHrShiftTemplateDialog(context, ref, template);
               },
             ),
             AppButton(
@@ -742,8 +735,7 @@ Future<void> showHrScheduleTemplateDetailDialog(
             ),
           ],
         );
-      },
-    ),
+    },
   );
 }
 
