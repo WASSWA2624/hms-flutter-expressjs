@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
 const List<ClinicalActionCatalogOption> _radiologyCatalogFixtures =
     <ClinicalActionCatalogOption>[
@@ -75,6 +77,7 @@ void main() {
     expect(find.textContaining('Jane Doe'), findsOneWidget);
     expect(find.textContaining('PAT-001'), findsOneWidget);
     expect(find.textContaining('ENC-42'), findsOneWidget);
+    expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
     expect(find.text('Add study'), findsOneWidget);
     expect(find.text('Review billing'), findsOneWidget);
     expect(find.text('Cancel'), findsNothing);
@@ -130,6 +133,62 @@ void main() {
       expect(find.text('CT chest'), findsOneWidget);
     },
   );
+
+  testWidgets('radiology order dialog copies patient and encounter ids', (
+    WidgetTester tester,
+  ) async {
+    final List<String> copiedValues = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'Clipboard.setData') {
+          final Map<Object?, Object?> arguments = Map<Object?, Object?>.from(
+            methodCall.arguments as Map,
+          );
+          copiedValues.add(arguments['text']! as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await _pumpDialog(
+      tester,
+      ClinicalRadiologyOrderActionDialog(
+        referenceData: const ClinicalActionReferenceData(
+          radiologyTests: _radiologyCatalogFixtures,
+        ),
+        patientContext: const ClinicalRequestPatientContext(
+          patientName: 'Jane Doe',
+          patientId: 'PAT-001',
+          encounterId: 'ENC-42',
+        ),
+        onSearchRadiologyTests: _mockSearchRadiologyTests,
+        onSubmit:
+            ({
+              required List<ClinicalActionRadiologyRequest> requests,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              return null;
+            },
+      ),
+    );
+
+    await tester.tap(find.byType(AppCopyableIdentifier).at(0));
+    await tester.pump();
+    expect(copiedValues, <String>['PAT-001']);
+    expect(find.text('Patient ID copied.'), findsOneWidget);
+
+    await tester.tap(find.byType(AppCopyableIdentifier).at(1));
+    await tester.pump();
+    expect(copiedValues, <String>['PAT-001', 'ENC-42']);
+    expect(find.text('Encounter ID copied.'), findsOneWidget);
+  });
 
   testWidgets('radiology catalog picker confirms without cancel action', (
     WidgetTester tester,

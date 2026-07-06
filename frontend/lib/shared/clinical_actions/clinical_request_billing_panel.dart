@@ -317,28 +317,16 @@ class _ClinicalRequestBillingPanelState
             ),
             if (canRecordPayment) ...<Widget>[
               SizedBox(height: theme.spacing.md),
-              SegmentedButton<ClinicalRequestPaymentMode>(
-                segments: <ButtonSegment<ClinicalRequestPaymentMode>>[
-                  ButtonSegment<ClinicalRequestPaymentMode>(
-                    value: ClinicalRequestPaymentMode.billLater,
-                    icon: const Icon(Icons.schedule_outlined),
-                    label: Text(l10n.clinicalRequestBillLaterAction),
-                  ),
-                  ButtonSegment<ClinicalRequestPaymentMode>(
-                    value: ClinicalRequestPaymentMode.payNow,
-                    icon: const Icon(Icons.payments_outlined),
-                    label: Text(l10n.clinicalRequestPayNowAction),
-                  ),
-                ],
-                selected: <ClinicalRequestPaymentMode>{_mode},
-                showSelectedIcon: false,
-                onSelectionChanged: widget.enabled
-                    ? (Set<ClinicalRequestPaymentMode> values) {
-                        setState(() => _mode = values.first);
-                        _maybeSyncAmountToTotal();
-                        _notifyChanged();
-                      }
-                    : null,
+              _PaymentModeRadioGroup(
+                value: _mode,
+                enabled: widget.enabled,
+                billLaterLabel: l10n.clinicalRequestBillLaterAction,
+                payNowLabel: l10n.clinicalRequestPayNowAction,
+                onChanged: (ClinicalRequestPaymentMode value) {
+                  setState(() => _mode = value);
+                  _maybeSyncAmountToTotal();
+                  _notifyChanged();
+                },
               ),
               if (_mode == ClinicalRequestPaymentMode.payNow) ...<Widget>[
                 SizedBox(height: theme.spacing.md),
@@ -744,4 +732,113 @@ AppWorkspaceStatusTone _paymentStatusTone(ClinicalRequestPaymentStatus status) {
     ClinicalRequestPaymentStatus.unpaid => AppWorkspaceStatusTone.warning,
     ClinicalRequestPaymentStatus.notBilled => AppWorkspaceStatusTone.neutral,
   };
+}
+
+class _PaymentModeRadioGroup extends StatelessWidget {
+  const _PaymentModeRadioGroup({
+    required this.value,
+    required this.enabled,
+    required this.billLaterLabel,
+    required this.payNowLabel,
+    required this.onChanged,
+  });
+
+  final ClinicalRequestPaymentMode value;
+  final bool enabled;
+  final String billLaterLabel;
+  final String payNowLabel;
+  final ValueChanged<ClinicalRequestPaymentMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return RadioGroup<ClinicalRequestPaymentMode>(
+      groupValue: value,
+      onChanged: enabled
+          ? (ClinicalRequestPaymentMode? selected) {
+              if (selected != null) {
+                onChanged(selected);
+              }
+            }
+          : (_) {},
+      child: Wrap(
+        spacing: theme.spacing.xl,
+        runSpacing: theme.spacing.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          _PaymentModeRadioOption(
+            value: ClinicalRequestPaymentMode.billLater,
+            icon: Icons.schedule_outlined,
+            label: billLaterLabel,
+            enabled: enabled,
+            onSelected: enabled
+                ? () => onChanged(ClinicalRequestPaymentMode.billLater)
+                : null,
+          ),
+          _PaymentModeRadioOption(
+            value: ClinicalRequestPaymentMode.payNow,
+            icon: Icons.payments_outlined,
+            label: payNowLabel,
+            enabled: enabled,
+            onSelected: enabled
+                ? () => onChanged(ClinicalRequestPaymentMode.payNow)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentModeRadioOption extends StatelessWidget {
+  const _PaymentModeRadioOption({
+    required this.value,
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    this.onSelected,
+  });
+
+  final ClinicalRequestPaymentMode value;
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final VoidCallback? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Semantics(
+      button: true,
+      enabled: onSelected != null,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSelected,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Radio<ClinicalRequestPaymentMode>(
+              value: value,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            Icon(
+              icon,
+              size: theme.appTokens.listIconSize,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -190,10 +190,11 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('Name: Jane Doe   Patient ID: P-1001   Encounter ID: ENC-42'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Patient name:'), findsOneWidget);
+      expect(find.textContaining('Jane Doe'), findsOneWidget);
+      expect(find.textContaining('P-1001'), findsOneWidget);
+      expect(find.textContaining('ENC-42'), findsOneWidget);
+      expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);
 
       await tester.tap(find.widgetWithText(AppButton, 'Add items'));

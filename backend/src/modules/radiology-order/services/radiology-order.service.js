@@ -33,6 +33,7 @@ const {
 const {
   resolveOrCreateStandardRadiologyTest,
 } = require('@services/radiology-test/radiology-test.service');
+const { resolveLabOrderEncounterId } = require('@services/lab-workspace/lab.shared');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -63,6 +64,25 @@ const fetchSerializedRadiologyOrderById = async (id) => {
 };
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const resolveRadiologyOrderEncounterId = async ({
+  identifier,
+  patientId,
+  tenantId,
+  facilityId,
+}) => {
+  const normalized = sanitizeString(identifier);
+  if (!normalized) {
+    return null;
+  }
+
+  return resolveLabOrderEncounterId({
+    identifier: normalized,
+    patientId,
+    tenantId,
+    facilityId,
+  });
+};
 
 const resolveResourceId = async (model, identifier) => {
   const normalized = normalizeIdentifier(identifier);
@@ -348,13 +368,6 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
     const requestedTests = Array.isArray(data.requested_tests)
       ? data.requested_tests
       : [];
-    const encounterId = await resolveIdentifierForPayload({
-        value: data.encounter_id,
-        field: 'encounter_id',
-        model: 'encounter',
-        where: { deleted_at: null },
-        nullable: true,
-      });
     const patientId = await resolveIdentifierForPayload({
         value: data.patient_id,
         field: 'patient_id',
@@ -367,6 +380,15 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
     });
     if (!patient) {
       throw new HttpError('errors.patient.not_found', 404);
+    }
+    let encounterId = null;
+    if (data.encounter_id !== undefined && data.encounter_id !== null) {
+      encounterId = await resolveRadiologyOrderEncounterId({
+        identifier: data.encounter_id,
+        patientId,
+        tenantId: patient.tenant_id,
+        facilityId: patient.facility_id || null,
+      });
     }
 
     const baseOrderData = {
@@ -489,13 +511,24 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
       ...data,
     };
     if (Object.prototype.hasOwnProperty.call(data, 'encounter_id')) {
-      normalizedData.encounter_id = await resolveIdentifierForPayload({
-        value: data.encounter_id,
-        field: 'encounter_id',
-        model: 'encounter',
-        where: { deleted_at: null },
-        nullable: true,
-      });
+      if (data.encounter_id === null) {
+        normalizedData.encounter_id = null;
+      } else {
+        const patientId = normalizedData.patient_id ?? before.patient_id;
+        const patient = await prisma.patient.findFirst({
+          where: { id: patientId, deleted_at: null },
+          select: { tenant_id: true, facility_id: true },
+        });
+        if (!patient) {
+          throw new HttpError('errors.patient.not_found', 404);
+        }
+        normalizedData.encounter_id = await resolveRadiologyOrderEncounterId({
+          identifier: data.encounter_id,
+          patientId,
+          tenantId: patient.tenant_id,
+          facilityId: patient.facility_id || null,
+        });
+      }
     }
     if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
       normalizedData.patient_id = await resolveIdentifierForPayload({

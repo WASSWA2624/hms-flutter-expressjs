@@ -241,62 +241,87 @@ class ClinicalRequestPatientContextStrip extends StatelessWidget {
     final TextStyle labelStyle = valueStyle.copyWith(
       fontWeight: FontWeight.w700,
     );
-    final List<InlineSpan> segments = <InlineSpan>[
+    final List<Widget> facts = <Widget>[
       if (!ClinicalRequestPatientContext._isBlank(patientContext.patientName))
-        _patientContextSegment(
-          l10n.clinicalRequestPatientNameLabel,
-          patientContext.patientName!.trim(),
-          labelStyle,
-          valueStyle,
+        _ClinicalRequestPatientContextFact(
+          label: l10n.clinicalRequestPatientNameLabel,
+          value: patientContext.patientName!.trim(),
+          labelStyle: labelStyle,
+          valueStyle: valueStyle,
         ),
       if (!ClinicalRequestPatientContext._isBlank(patientContext.patientId))
-        _patientContextSegment(
-          l10n.clinicalRequestPatientIdLabel,
-          patientContext.patientId!.trim(),
-          labelStyle,
-          valueStyle,
+        _ClinicalRequestPatientContextFact(
+          label: l10n.clinicalRequestPatientIdLabel,
+          value: patientContext.patientId!.trim(),
+          labelStyle: labelStyle,
+          valueStyle: valueStyle,
+          copyable: true,
+          copyTooltip: l10n.opdCopyPatientIdAction,
+          copiedMessage: l10n.clinicalPatientIdCopiedMessage,
         ),
       if (!ClinicalRequestPatientContext._isBlank(patientContext.encounterId))
-        _patientContextSegment(
-          l10n.clinicalRequestPatientEncounterIdLabel,
-          patientContext.encounterId!.trim(),
-          labelStyle,
-          valueStyle,
+        _ClinicalRequestPatientContextFact(
+          label: l10n.clinicalRequestPatientEncounterIdLabel,
+          value: patientContext.encounterId!.trim(),
+          labelStyle: labelStyle,
+          valueStyle: valueStyle,
+          copyable: true,
+          copyTooltip: l10n.opdCopyEncounterIdAction,
+          copiedMessage: l10n.opdEncounterIdCopiedMessage,
         ),
     ];
 
-    return Text.rich(
-      TextSpan(
-        style: valueStyle,
-        children: <InlineSpan>[
-          for (
-            int index = 0;
-            index < segments.length;
-            index += 1
-          ) ...<InlineSpan>[
-            if (index > 0) const TextSpan(text: '   '),
-            segments[index],
-          ],
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return Wrap(
+      spacing: theme.spacing.lg,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: facts,
     );
   }
 }
 
-InlineSpan _patientContextSegment(
-  String label,
-  String value,
-  TextStyle labelStyle,
-  TextStyle valueStyle,
-) {
-  return TextSpan(
-    children: <InlineSpan>[
-      TextSpan(text: '$label: ', style: labelStyle),
-      TextSpan(text: value, style: valueStyle),
-    ],
-  );
+class _ClinicalRequestPatientContextFact extends StatelessWidget {
+  const _ClinicalRequestPatientContextFact({
+    required this.label,
+    required this.value,
+    required this.labelStyle,
+    required this.valueStyle,
+    this.copyable = false,
+    this.copyTooltip,
+    this.copiedMessage,
+  });
+
+  final String label;
+  final String value;
+  final TextStyle labelStyle;
+  final TextStyle valueStyle;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text('$label: ', style: labelStyle),
+        if (copyable)
+          AppCopyableIdentifier(
+            value: value,
+            tooltip: copyTooltip,
+            copiedMessage: copiedMessage,
+            textStyle: valueStyle,
+          )
+        else
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: valueStyle,
+          ),
+      ],
+    );
+  }
 }
 
 /// Toolbar with actions to open nested catalog and billing dialogs.
