@@ -74,28 +74,26 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
           onTabSelected: controller.setCatalogTab,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        Expanded(
-          child: switch (tab) {
-            PharmacyCatalogTab.drugs => _DrugCatalogTab(
-              state: state,
-              writeRequirement: _writeRequirement,
-            ),
-            PharmacyCatalogTab.formulary => _FormularyCatalogTab(
-              state: state,
-              writeRequirement: _writeRequirement,
-            ),
-            PharmacyCatalogTab.inventory => _InventoryCatalogTab(
-              state: state,
-              writeRequirement: _writeRequirement,
-            ),
-            PharmacyCatalogTab.storage => PharmacyStoragePanel(
-              state: state,
-              writeRequirement: _writeRequirement,
-              showHeaderActions: false,
-              compact: true,
-            ),
-          },
-        ),
+        switch (tab) {
+          PharmacyCatalogTab.drugs => _DrugCatalogTab(
+            state: state,
+            writeRequirement: _writeRequirement,
+          ),
+          PharmacyCatalogTab.formulary => _FormularyCatalogTab(
+            state: state,
+            writeRequirement: _writeRequirement,
+          ),
+          PharmacyCatalogTab.inventory => _InventoryCatalogTab(
+            state: state,
+            writeRequirement: _writeRequirement,
+          ),
+          PharmacyCatalogTab.storage => PharmacyStoragePanel(
+            state: state,
+            writeRequirement: _writeRequirement,
+            showHeaderActions: false,
+            compact: true,
+          ),
+        },
       ],
     );
   }
@@ -1554,7 +1552,7 @@ Widget _catalogRowActions({
     builder: (BuildContext context, bool isAllowed) => Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        AppButton(
+        AppButton.tertiary(
           leadingIcon: Icons.edit_outlined,
           label: editLabel,
           semanticLabel: editLabel,
@@ -1562,7 +1560,7 @@ Widget _catalogRowActions({
           enabled: isAllowed && !isBusy,
           onPressed: isAllowed && !isBusy ? onEdit : null,
         ),
-        AppButton(
+        AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
           semanticLabel: deleteLabel,

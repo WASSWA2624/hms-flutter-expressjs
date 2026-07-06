@@ -56,6 +56,8 @@ class PharmacyStoragePanel extends ConsumerWidget {
           const SizedBox.shrink()
         else
           ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: rooms.length,
             separatorBuilder: (_, _) => SizedBox(height: theme.spacing.sm),
             itemBuilder: (BuildContext context, int index) {
@@ -163,7 +165,7 @@ class PharmacyStoragePanel extends ConsumerWidget {
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          Expanded(child: roomContent),
+          roomContent,
         ],
       );
     }

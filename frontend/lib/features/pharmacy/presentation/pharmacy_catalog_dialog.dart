@@ -31,8 +31,9 @@ Future<void> openPharmacyCatalogDialog(
           return AppDialog(
             title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
             icon: const Icon(Icons.inventory_2_outlined),
+            scrollable: true,
             content: const SizedBox(
-              height: 240,
+              height: 160,
               child: Center(child: CircularProgressIndicator()),
             ),
           );
@@ -40,11 +41,10 @@ Future<void> openPharmacyCatalogDialog(
         return AppDialog(
           title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
           icon: const Icon(Icons.inventory_2_outlined),
+          initialMaximized: false,
+          scrollable: true,
           maxWidth: 1080,
-          content: SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.72,
-            child: PharmacyCatalogPanel(state: state),
-          ),
+          content: PharmacyCatalogPanel(state: state),
         );
       },
     ),
