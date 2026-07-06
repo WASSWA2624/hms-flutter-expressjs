@@ -1405,18 +1405,21 @@ final class PharmacyStorageRoomInput {
   const PharmacyStorageRoomInput({
     required this.name,
     this.code,
+    this.tenantId,
     this.facilityId,
     this.isActive = true,
   });
 
   final String name;
   final String? code;
+  final String? tenantId;
   final String? facilityId;
   final bool isActive;
 
   Map<String, Object?> toJson() => <String, Object?>{
     'name': name,
     if (code != null) 'code': code,
+    if (tenantId != null) 'tenant_id': tenantId,
     if (facilityId != null) 'facility_id': facilityId,
     'is_active': isActive,
   };

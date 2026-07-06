@@ -7,6 +7,7 @@ const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/ph
 const {
   resolveScopedUserContext,
   buildTenantScopeWhere,
+  resolveModelRecordOrThrow,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
@@ -222,8 +223,15 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
 
 const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user = {}) => {
   const scope = resolveScopedUserContext(user);
+  const facilityId = await resolveIdentifierForPayload({
+    value: payload.facility_id || scope.facility_id,
+    field: 'facility_id',
+    model: 'facility',
+    where: { deleted_at: null, ...buildTenantScopeWhere(scope) },
+  });
+
   let tenantId = scope.tenant_id;
-  if (scope.can_manage_all_tenants) {
+  if (scope.can_manage_all_tenants && payload.tenant_id) {
     tenantId = await resolveIdentifierForPayload({
       value: payload.tenant_id,
       field: 'tenant_id',
@@ -231,12 +239,21 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
       where: { deleted_at: null },
     });
   }
-  const facilityId = await resolveIdentifierForPayload({
-    value: payload.facility_id || scope.facility_id,
-    field: 'facility_id',
-    model: 'facility',
-    where: { deleted_at: null, ...buildTenantScopeWhere(scope) },
-  });
+
+  if (!tenantId) {
+    const facility = await resolveModelRecordOrThrow({
+      identifier: facilityId,
+      model: 'facility',
+      where: { deleted_at: null },
+      select: { id: true, tenant_id: true },
+      errorKey: 'errors.facility.not_found',
+    });
+    tenantId = facility.tenant_id;
+  }
+
+  if (!tenantId) {
+    throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
+  }
 
   const room = await pharmacyWorkspaceRepository.withTransaction((tx) =>
     pharmacyStorageRepository.txCreateStorageRoom(tx, {
