@@ -74,26 +74,28 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
           onTabSelected: controller.setCatalogTab,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        switch (tab) {
-          PharmacyCatalogTab.drugs => _DrugCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.formulary => _FormularyCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.inventory => _InventoryCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.storage => PharmacyStoragePanel(
-            state: state,
-            writeRequirement: _writeRequirement,
-            showHeaderActions: false,
-            compact: true,
-          ),
-        },
+        Expanded(
+          child: switch (tab) {
+            PharmacyCatalogTab.drugs => _DrugCatalogTab(
+              state: state,
+              writeRequirement: _writeRequirement,
+            ),
+            PharmacyCatalogTab.formulary => _FormularyCatalogTab(
+              state: state,
+              writeRequirement: _writeRequirement,
+            ),
+            PharmacyCatalogTab.inventory => _InventoryCatalogTab(
+              state: state,
+              writeRequirement: _writeRequirement,
+            ),
+            PharmacyCatalogTab.storage => PharmacyStoragePanel(
+              state: state,
+              writeRequirement: _writeRequirement,
+              showHeaderActions: false,
+              compact: true,
+            ),
+          },
+        ),
       ],
     );
   }

@@ -31,15 +31,20 @@ Future<void> openPharmacyCatalogDialog(
           return AppDialog(
             title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
             icon: const Icon(Icons.inventory_2_outlined),
-            content: const SizedBox.shrink(),
+            content: const SizedBox(
+              height: 240,
+              child: Center(child: CircularProgressIndicator()),
+            ),
           );
         }
         return AppDialog(
           title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
           icon: const Icon(Icons.inventory_2_outlined),
-          scrollable: true,
           maxWidth: 1080,
-          content: PharmacyCatalogPanel(state: state),
+          content: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: PharmacyCatalogPanel(state: state),
+          ),
         );
       },
     ),
