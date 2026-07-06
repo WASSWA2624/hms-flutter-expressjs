@@ -30711,12 +30711,6 @@ abstract class AppLocalizations {
   /// **'Radiology configurations'**
   String get radiologyConfigurationsDialogTitle;
 
-  /// Radiology configuration dialog body.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.'**
-  String get radiologyConfigurationsDialogBody;
-
   /// Radiology configuration loading title.
   ///
   /// In en, this message translates to:

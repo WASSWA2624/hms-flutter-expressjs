@@ -1,66 +1,88 @@
-# Fix: Enable Radiology Offering dialog — performance, responsiveness, and UX
+# Feature: Refine Radiology facility catalog configuration dialogs
 
 ## Goal
 
-Make the **Enable radiology offering** dialog open quickly, stay responsive, and allow clinicians/admins to select platform catalog procedures without browser freezes. Remove redundant chrome.
+Polish the **Radiology configurations** flow (opened from the Radiology workspace toolbar) so admins can enable, review, and manage facility offerings with immediate feedback, less redundant copy, and a picker UX consistent with Lab.
 
-## Problem (observed)
+## Current state (keep)
 
-Opening the dialog from Radiology → Configurations shows a prolonged loading state (“Loading radiology catalog”), then Chrome reports **Page Unresponsive**. After waiting, a small subset of procedures may render, but row actions (**Select**) are unresponsive.
+The following already work well—do not regress:
 
-Likely causes (verify in code):
+- **Radiology configurations** dialog: tenant/facility scope selectors, search, modality filters, table with Name / Code / Modality / Unit price, **Enable procedure**, **Refresh**, and **Table settings**.
+- **Enable radiology offering** picker: platform catalog search, modality filter, row select → price step.
+- **Enable procedure** price dialog: procedure name, code · modality subtitle, required unit price + currency, Cancel / **Enable procedure** (see screenshot—keep this dialog as-is).
 
-1. **Oversized initial fetch** — `searchPlatformRadiologyCatalogForOffering` calls `listRadiologyCatalogTests` without honoring the dialog `limit`; the repository hardcodes `limit: 7500`. Lab’s equivalent passes `limit` to the platform catalog query.
-2. **Heavy client work** — merging thousands of platform rows with facility offerings, building filter choices, and rendering `AppListTable` with client-side `matcher` on the full result set blocks the UI isolate.
-3. **Redundant dismiss control** — footer **Close** duplicates the dialog header **X**.
+## Problems
+
+| Area | Issue |
+|------|-------|
+| **Configurations dialog copy** | Redundant guidance text clutters the header: dialog body (*"Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing."*) and scope subtitle (*"Configuring radiology catalog for {facility}"*). |
+| **Stale list after enable** | Newly enabled procedures (e.g. Abdomen MR angiography, transvaginal ultrasound) do not appear in the configurations table immediately; users must wait or refresh manually. |
+| **Enable offering loading UX** | Initial load uses a full `AppWorkspaceStatePanel.loading` block. Prefer the slim **linear progress** pattern used elsewhere (e.g. `clinical_procedure_catalog_dialog.dart`, workspace loading bars). |
+| **Enable offering table** | **Action** column shows *Select* for every row. Users need a clear **enabled vs available** indicator instead. Already-enabled procedures should appear **at the top** of the list. |
+| **Catalog visibility** | Enable-offering search should show the **merged platform + facility status** view for the logged-in facility scope—not a filtered subset that hides enabled items. Clinicians configuring offerings must see what is already enabled without guessing. |
 
 ## Reference implementation
 
-Mirror the Lab enable-offering pattern, which is fast and stable:
+Mirror the Lab enable-offering pattern in `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` (`LabEnableFacilityOfferingDialog`):
 
-| Layer | Lab (working) | Radiology (broken) |
-|-------|---------------|-------------------|
-| Dialog | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` → `LabEnableFacilityOfferingDialog` | `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart` → `RadiologyEnableFacilityOfferingDialog` |
-| Controller | `lab_workspace_controller.dart` → `searchPlatformLabCatalogForOffering` (passes `limit` to platform + offered fetches) | `radiology_workspace_controller.dart` → `searchPlatformRadiologyCatalogForOffering` |
-| Repository | `listTests` / `listPanels` accept `limit` | `radiology_repository_impl.dart` → `listRadiologyCatalogTests` uses `limit: 7500` |
+- Show **all** catalog rows (`_filteredCatalogItems`), not only not-yet-offered rows.
+- **Status column** (reuse `radiologyEnableOfferingAlreadyOfferedLabel` / Lab equivalent): muted *Already offered* for enabled rows; empty or selectable affordance for available rows.
+- Disable row tap / selection when `isOfferedAtFacility`.
+- Sort or comparator: **offered items first**, then name.
+- Table `isLoading` + `AppListTableSearch.isLoading` for in-table refresh; **linear progress** on first load instead of blocking panel when possible.
 
-**Entry point:** `radiology_workspace_page.configurations.dart` → `_openEnableProcedureDialog`.
+**Primary files:**
+
+- Configurations dialog: `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.configurations.dart`
+- Enable / edit dialogs: `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart`
+- Controller & merge logic: `frontend/lib/features/radiology/presentation/controllers/radiology_workspace_controller.dart` (`searchPlatformRadiologyCatalogForOffering`, `upsertRadiologyTestOffering`, `loadFacilityCatalogConfig`)
+- Shared scope UI: `frontend/lib/shared/facility_catalog/facility_catalog_scope_section.dart`
+- Localization: `frontend/lib/l10n/app_en.arb` (`radiologyConfigurationsDialogBody`, `radiologyConfigurationsFacilityContextLabel`, `radiologyEnableOfferingAlreadyOfferedLabel`, etc.)
 
 ## Required changes
 
-### 1. Efficient catalog loading (primary)
+### 1. Remove redundant configurations copy
 
-- **Respect `limit`** end-to-end: dialog (`_searchLimit = 100`) → controller → repository → API. Do not load the full platform catalog on open.
-- **Server-side search**: debounced search (already 200 ms) must drive the backend query (`search` / `q` param), not client-filter thousands of rows. Initial open may load the first page only; empty search should not imply “fetch everything.”
-- **Offering status merge** must stay correct but operate on the bounded result set only. Consider fetching offered IDs/codes separately (small payload) rather than re-querying large lists.
-- Evaluate `searchFacilityRadiologyCatalog` (`GET …/facility-radiology-catalog/search`) or extend backend search if needed so platform + offering status can be resolved in one paginated call.
+- Remove the dialog body paragraph (`radiologyConfigurationsDialogBody`) from `_RadiologyConfigurationsDialog`.
+- Suppress the post-selection scope guidance line from `FacilityCatalogScopeSection` for radiology (the *"Configuring radiology catalog for …"* muted text when scope is ready). Keep tenant/facility selectors and pre-scope prompts (*select tenant/facility first*) intact.
 
-### 2. Responsive table
+### 2. Immediate configurations table refresh
 
-- Render only rows the user can act on (not-yet-offered procedures), or clearly disable offered rows without blocking interaction on selectable ones.
-- Avoid synchronous work in `build` over large lists (filter choice derivation, repeated `.where` on every frame). Memoize or derive from the current page.
-- Ensure `isLoading` clears so `onRowSelected` / **Select** handlers are active once data is shown.
-- Keep `shrinkWrap: true` + `NeverScrollableScrollPhysics` only if row count stays bounded; otherwise use normal scroll/pagination consistent with `AppListTable` elsewhere.
+After a successful enable (and edit/delete if applicable):
 
-### 3. Dialog UX cleanup
+- Optimistically append/update `catalogTests` in `RadiologyWorkspaceController` from the upsert response, **or** await `loadFacilityCatalogConfig` and sync dialog state before closing nested dialogs.
+- Ensure `_RadiologyConfigurationsDialog` listener (`ref.listen` + `_shouldSyncCatalogState`) reflects new offerings without requiring manual **Refresh**.
+- Avoid leaving `isMutating` / `isLoadingCatalog` true long enough to block the table after success.
 
-- **Remove the footer Close button**; header **X** (and backdrop policy via `showAppDialog`) is sufficient—match other single-purpose picker dialogs in the app.
-- Preserve instructional body text, search bar, modality filter, and the price sub-dialog flow (`RadiologyEnableOfferingPriceDialog`).
+### 3. Enable radiology offering picker
+
+In `RadiologyEnableFacilityOfferingDialog`:
+
+- Replace initial `AppWorkspaceStatePanel.loading` with `LinearProgressIndicator(minHeight: 2)` (or equivalent shared loading bar) while keeping existing data visible on subsequent searches.
+- Bind `AppListTable.isLoading` and search `isLoading` to `_isSearching` (Lab pattern).
+- List `_filteredCatalogItems` (all rows with facility status), not `_availableItems`.
+- Replace **Action / Select** column with **Status**: *Already offered* when `isOfferedAtFacility`; otherwise leave cell empty and keep row selectable.
+- Sort: `isOfferedAtFacility` descending, then name.
+- On successful enable from price dialog: update local `_catalogItems` status immediately so the parent configurations table and picker stay in sync.
+
+### 4. Enable procedure price dialog
+
+No layout changes. Only ensure successful submit triggers the refresh behavior in §2.
 
 ## Implementation rules
 
-- **Reuse shared components** — `AppDialog`, `AppListTable`, `AppSearchBar`, `AppWorkspaceStatePanel`; do not fork table/dialog primitives.
-- **Follow Lab parity** for enable-offering data flow unless radiology backend constraints require a documented deviation.
-- **Backend parity** — any search/limit/filter must be enforced server-side; do not client-filter paginated catalog results.
-- **Localization** — adjust `app_en.arb` only if copy changes (e.g. empty-state hint to “search to find procedures”).
-- **Scope** — this task is the enable-offering dialog and its catalog search path only; radiology worklist columns are out of scope.
+- Reuse shared components (`AppDialog`, `AppListTable`, `AppSearchBar`, `FacilityCatalogScopeSection`, `LinearProgressIndicator`)—match Lab catalog dialogs, do not fork new patterns.
+- Localization: add/adjust ARB keys only if new labels are needed; remove unused strings if body copy is deleted.
+- Scope: radiology facility catalog configuration dialogs only; do not change the main Radiology worklist (see `prompt1.md`).
 
 ## Acceptance criteria
 
-- [ ] Dialog opens to interactive UI within a normal network round-trip (no “Page Unresponsive” on a typical catalog size).
-- [ ] Initial load requests a bounded page (≤ 100 items), not the full platform catalog.
-- [ ] Typing in search triggers debounced server search; results update without UI freeze.
-- [ ] **Select** on an available procedure opens the price dialog; offered procedures are non-selectable or hidden.
-- [ ] Footer **Close** button removed; header **X** still dismisses the dialog.
-- [ ] Lab enable-offering patterns reused; no regression to facility offering upsert (`upsertRadiologyTestOffering`).
-- [ ] Controller/repository tests updated if search/limit contract changes.
+- [ ] Radiology configurations dialog shows tenant/facility selectors without redundant body or *"Configuring radiology catalog for …"* subtitle when scope is ready.
+- [ ] Enabling a procedure updates the configurations table immediately (no manual refresh required).
+- [ ] Enable radiology offering uses a linear progress indicator for loading; table remains visible during search refresh when data already loaded.
+- [ ] Enable offering table shows **Status** (already offered vs available), not a **Select** action column.
+- [ ] Already-enabled procedures appear at the top of the enable-offering list.
+- [ ] Already-enabled rows are not selectable; available rows open the existing **Enable procedure** price dialog unchanged.
+- [ ] Behavior and sorting align with `LabEnableFacilityOfferingDialog`.
+- [ ] Edit and delete offering still work; list stays consistent after mutations.

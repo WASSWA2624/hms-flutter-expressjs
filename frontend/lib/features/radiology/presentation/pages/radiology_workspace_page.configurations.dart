@@ -143,9 +143,10 @@ class _RadiologyConfigurationsDialogState
         })
         .toList(growable: false);
     final bool scopeReady = _catalogScope.isReady;
-    final bool isBusy =
-        state.isMutating ||
-        (scopeReady && (!_initializedScope || state.isLoadingCatalog));
+    final bool isLoadingCatalog =
+        scopeReady && (!_initializedScope || state.isLoadingCatalog);
+    final bool showCatalogLoadingPanel =
+        isLoadingCatalog && state.catalogTests.isEmpty;
     final AppFailure? loadFailure = state.catalogLoadFailure is AppFailure
         ? state.catalogLoadFailure as AppFailure
         : null;
@@ -185,13 +186,6 @@ class _RadiologyConfigurationsDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            l10n.radiologyConfigurationsDialogBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
           FacilityCatalogScopeSection(
             labels: FacilityCatalogScopeLabels(
               facilityContextLabel:
@@ -205,6 +199,7 @@ class _RadiologyConfigurationsDialogState
             showTenantSelector: _showTenantSelector,
             showFacilitySelector: _showFacilitySelector,
             showScopeContextLabel: _showScopeContextLabel,
+            showScopeGuidanceWhenReady: false,
             tenantOptions: tenantOptions,
             facilityOptions: facilityOptions,
             tenantId: _tenantId,
@@ -229,7 +224,7 @@ class _RadiologyConfigurationsDialogState
           ),
           if (scopeReady) ...<Widget>[
             SizedBox(height: theme.spacing.md),
-            if (isBusy)
+            if (showCatalogLoadingPanel)
               AppWorkspaceStatePanel.loading(
                 title: l10n.radiologyConfigurationsLoadingTitle,
                 body: l10n.radiologyConfigurationsLoadingBody,
@@ -241,14 +236,21 @@ class _RadiologyConfigurationsDialogState
                 failure: loadFailure,
               )
             else
-              _buildTestsTable(context, tests, isBusy),
+              _buildTestsTable(
+                context,
+                tests,
+                isLoadingCatalog: isLoadingCatalog,
+                isMutating: state.isMutating,
+              ),
           ],
         ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
-          onPressed: isBusy ? null : () => Navigator.of(context).pop(),
+          onPressed: showCatalogLoadingPanel
+              ? null
+              : () => Navigator.of(context).pop(),
         ),
       ],
     );
@@ -256,14 +258,16 @@ class _RadiologyConfigurationsDialogState
 
   Widget _buildTestsTable(
     BuildContext context,
-    List<RadiologyCatalogTest> tests,
-    bool isBusy,
-  ) {
+    List<RadiologyCatalogTest> tests, {
+    required bool isLoadingCatalog,
+    required bool isMutating,
+  }) {
+    final bool tableBusy = isLoadingCatalog || isMutating;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return AppListTable<RadiologyCatalogTest>(
       items: tests,
-      isLoading: isBusy,
+      isLoading: tableBusy,
       maxVisibleItems: _maxVisibleItems,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -304,15 +308,15 @@ class _RadiologyConfigurationsDialogState
               icon: Icons.add_circle_outline,
               label: l10n.radiologyEnableProcedureAction,
               tooltip: l10n.radiologyEnableProcedureAction,
-              enabled: !isBusy,
-              onPressed: isBusy ? null : () => _openEnableProcedureDialog(context),
+              enabled: !tableBusy,
+              onPressed: tableBusy ? null : () => _openEnableProcedureDialog(context),
             ),
           AppSearchBarAction(
             icon: Icons.refresh_outlined,
             label: l10n.commonRefreshActionLabel,
             tooltip: l10n.commonRefreshActionLabel,
-            enabled: !isBusy,
-            onPressed: isBusy ? null : () => _refreshConfigurations(context),
+            enabled: !tableBusy,
+            onPressed: tableBusy ? null : () => _refreshConfigurations(context),
           ),
         ],
       ),
@@ -362,7 +366,7 @@ class _RadiologyConfigurationsDialogState
           cellBuilder: (BuildContext context, RadiologyCatalogTest item) =>
               Text(_formatRadiologyCatalogUnitPrice(context, item, l10n)),
         ),
-        _testActionsColumn(context, isBusy),
+        _testActionsColumn(context, tableBusy),
       ],
       columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
         AppListTableColumn<RadiologyCatalogTest>(
@@ -394,7 +398,7 @@ class _RadiologyConfigurationsDialogState
                 ]),
               ),
               SizedBox(height: theme.spacing.xs),
-              _testActionButtons(context, item, isBusy),
+              _testActionButtons(context, item, tableBusy),
             ],
           ),
         );
@@ -494,7 +498,6 @@ class _RadiologyConfigurationsDialogState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.radiologySaveConfigurationAction)),
       );
-      await _reloadCatalogIfReady();
     }
   }
 
@@ -502,10 +505,11 @@ class _RadiologyConfigurationsDialogState
     BuildContext context,
     RadiologyCatalogTest item,
   ) async {
+    final AppLocalizations l10n = context.l10n;
     final RadiologyWorkspaceController controller = ref.read(
       radiologyWorkspaceControllerProvider.notifier,
     );
-    await showAppDialog<bool>(
+    final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyEditFacilityOfferingDialog(
@@ -517,6 +521,12 @@ class _RadiologyConfigurationsDialogState
               scope: _catalogScope,
             ),
       ),
+    );
+    if (!context.mounted || saved != true) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.radiologySaveConfigurationAction)),
     );
   }
 

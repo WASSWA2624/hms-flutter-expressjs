@@ -21150,10 +21150,6 @@
   "@radiologyConfigurationsDialogTitle": {
     "description": "Radiology configuration dialog title."
   },
-  "radiologyConfigurationsDialogBody": "Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.",
-  "@radiologyConfigurationsDialogBody": {
-    "description": "Radiology configuration dialog body."
-  },
   "radiologyConfigurationsLoadingTitle": "Loading radiology catalog",
   "@radiologyConfigurationsLoadingTitle": {
     "description": "Radiology configuration loading title."

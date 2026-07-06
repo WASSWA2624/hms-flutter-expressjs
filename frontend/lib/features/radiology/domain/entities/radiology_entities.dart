@@ -305,6 +305,48 @@ final class RadiologyCatalogTest {
         .where((String token) => token.isNotEmpty)
         .every(haystack.contains);
   }
+
+  RadiologyCatalogTest copyWith({
+    String? id,
+    String? name,
+    String? displayId,
+    String? code,
+    String? modality,
+    String? bodyRegion,
+    String? laterality,
+    String? procedureType,
+    String? equipment,
+    String? status,
+    String? source,
+    String? searchText,
+    num? unitPrice,
+    String? currency,
+    bool? isOfferedAtFacility,
+    String? facilityOfferingId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return RadiologyCatalogTest(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      displayId: displayId ?? this.displayId,
+      code: code ?? this.code,
+      modality: modality ?? this.modality,
+      bodyRegion: bodyRegion ?? this.bodyRegion,
+      laterality: laterality ?? this.laterality,
+      procedureType: procedureType ?? this.procedureType,
+      equipment: equipment ?? this.equipment,
+      status: status ?? this.status,
+      source: source ?? this.source,
+      searchText: searchText ?? this.searchText,
+      unitPrice: unitPrice ?? this.unitPrice,
+      currency: currency ?? this.currency,
+      isOfferedAtFacility: isOfferedAtFacility ?? this.isOfferedAtFacility,
+      facilityOfferingId: facilityOfferingId ?? this.facilityOfferingId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 @immutable

@@ -16423,10 +16423,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyConfigurationsDialogTitle => 'Radiology configurations';
 
   @override
-  String get radiologyConfigurationsDialogBody =>
-      'Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.';
-
-  @override
   String get radiologyConfigurationsLoadingTitle => 'Loading radiology catalog';
 
   @override

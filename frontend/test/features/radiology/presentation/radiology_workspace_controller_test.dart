@@ -218,10 +218,18 @@ void main() {
   );
 
   test(
-    'createRadiologyTest submits payload and refreshes the catalog',
+    'upsertRadiologyTestOffering merges the offering into catalogTests immediately',
     () async {
       final _MockRadiologyRepository repository = _MockRadiologyRepository();
       stubInitialLoad(repository);
+      const RadiologyCatalogTest enabledTest = RadiologyCatalogTest(
+        id: 'RT-1',
+        name: 'Chest X-ray',
+        code: 'RAD-00001',
+        modality: 'XRAY',
+        unitPrice: 25000,
+        currency: 'UGX',
+      );
       when(
         () => repository.upsertFacilityRadiologyTestOffering(
           any(),
@@ -230,9 +238,7 @@ void main() {
           facilityId: any(named: 'facilityId'),
         ),
       ).thenAnswer(
-        (_) async => const Result<RadiologyCatalogTest>.success(
-          RadiologyCatalogTest(id: 'RT-1', name: 'Chest X-ray'),
-        ),
+        (_) async => const Result<RadiologyCatalogTest>.success(enabledTest),
       );
       final ProviderContainer container = buildContainer(repository);
 
@@ -241,29 +247,47 @@ void main() {
         radiologyWorkspaceControllerProvider.notifier,
       );
 
-      final AppFailure? failure = await controller.createRadiologyTest(
-        <String, Object?>{'name': 'Chest X-ray', 'modality': 'XRAY'},
+      final AppFailure? failure = await controller.upsertRadiologyTestOffering(
+        'RT-1',
+        <String, Object?>{
+          'is_active': true,
+          'unit_price': 25000,
+          'currency': 'UGX',
+        },
+        scope: const RadiologyCatalogScope(
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+        ),
       );
       expect(failure, isNull);
 
-      final List<Object?> captured = verify(
+      final RadiologyWorkspaceState state =
+          (container.read(radiologyWorkspaceControllerProvider).value!
+                  as ResultSuccess<RadiologyWorkspaceState>)
+              .value;
+      expect(state.catalogTests, hasLength(1));
+      expect(state.catalogTests.single.name, 'Chest X-ray');
+      expect(state.catalogTests.single.isOfferedAtFacility, isTrue);
+      expect(state.isMutating, isFalse);
+
+      verify(
         () => repository.upsertFacilityRadiologyTestOffering(
-          captureAny(),
-          captureAny(),
+          'RT-1',
+          any(),
+          tenantId: 'TEN0000001',
+          facilityId: 'FAC0000001',
+        ),
+      ).called(1);
+      verifyNever(
+        () => repository.listFacilityRadiologyTests(
           tenantId: any(named: 'tenantId'),
           facilityId: any(named: 'facilityId'),
-        ),
-      ).captured;
-      final Map<String, Object?> payload =
-          captured[1] as Map<String, Object?>;
-      expect(payload['name'], 'Chest X-ray');
-      verify(
-        () => repository.getReferenceData(
           search: any(named: 'search'),
-          patientId: any(named: 'patientId'),
+          page: any(named: 'page'),
           limit: any(named: 'limit'),
+          offeredOnly: any(named: 'offeredOnly'),
         ),
-      ).called(greaterThanOrEqualTo(2));
+      );
     },
   );
 

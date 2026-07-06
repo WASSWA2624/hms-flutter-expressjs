@@ -481,14 +481,23 @@ final class RadiologyWorkspaceController
         );
     return result.when(
       success: (RadiologyCatalogTest updated) async {
-        await loadFacilityCatalogConfig(
-          effectiveScope ?? const RadiologyCatalogScope(),
-        );
         final RadiologyWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+        if (latest == null) {
+          return null;
         }
-        await searchReferences();
+        final List<RadiologyCatalogTest> tests = _mergeCatalogOfferingUpdate(
+          latest.catalogTests,
+          updated,
+          testId,
+        );
+        _emit(
+          latest.copyWith(
+            catalogTests: tests,
+            isMutating: false,
+            clearLastFailure: true,
+          ),
+        );
+        unawaited(searchReferences());
         return null;
       },
       failure: (AppFailure failure) {
@@ -520,14 +529,22 @@ final class RadiologyWorkspaceController
         );
     return result.when(
       success: (_) async {
-        await loadFacilityCatalogConfig(
-          scope ?? const RadiologyCatalogScope(),
-        );
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+          _emit(
+            latest.copyWith(
+              catalogTests: latest.catalogTests
+                  .where(
+                    (RadiologyCatalogTest item) =>
+                        item.apiId != testId && item.id != testId,
+                  )
+                  .toList(growable: false),
+              isMutating: false,
+              clearLastFailure: true,
+            ),
+          );
         }
-        await searchReferences();
+        unawaited(searchReferences());
         return null;
       },
       failure: (AppFailure failure) {
@@ -1070,5 +1087,38 @@ final class RadiologyWorkspaceController
     state = AsyncData<Result<RadiologyWorkspaceState>>(
       Result<RadiologyWorkspaceState>.success(nextState),
     );
+  }
+
+  List<RadiologyCatalogTest> _mergeCatalogOfferingUpdate(
+    List<RadiologyCatalogTest> items,
+    RadiologyCatalogTest updated,
+    String requestId,
+  ) {
+    final String normalizedRequestId = requestId.trim();
+    var replaced = false;
+    final List<RadiologyCatalogTest> merged = <RadiologyCatalogTest>[];
+    for (final RadiologyCatalogTest item in items) {
+      if (_catalogItemMatchesRequest(item, updated, normalizedRequestId)) {
+        replaced = true;
+        merged.add(updated.copyWith(isOfferedAtFacility: true));
+      } else {
+        merged.add(item);
+      }
+    }
+    if (!replaced) {
+      merged.add(updated.copyWith(isOfferedAtFacility: true));
+    }
+    return merged;
+  }
+
+  bool _catalogItemMatchesRequest(
+    RadiologyCatalogTest item,
+    RadiologyCatalogTest updated,
+    String requestId,
+  ) {
+    return item.id == updated.id ||
+        item.apiId == updated.apiId ||
+        item.apiId == requestId ||
+        item.id == requestId;
   }
 }

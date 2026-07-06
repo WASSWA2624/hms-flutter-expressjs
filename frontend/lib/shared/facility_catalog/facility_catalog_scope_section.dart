@@ -36,6 +36,7 @@ class FacilityCatalogScopeSection extends StatelessWidget {
     required this.scopePromptMessage,
     required this.onTenantChanged,
     required this.onFacilityChanged,
+    this.showScopeGuidanceWhenReady = true,
     super.key,
   });
 
@@ -53,6 +54,7 @@ class FacilityCatalogScopeSection extends StatelessWidget {
   final String scopePromptMessage;
   final ValueChanged<String?> onTenantChanged;
   final ValueChanged<String?> onFacilityChanged;
+  final bool showScopeGuidanceWhenReady;
 
   @override
   Widget build(BuildContext context) {
@@ -86,10 +88,13 @@ class FacilityCatalogScopeSection extends StatelessWidget {
       return AppMutedText(labels.facilityContextLabel(facilityLabel!));
     }
 
-    final String? guidanceMessage =
-        scopeReady && facilityLabel != null && facilityLabel!.isNotEmpty
+    final String? guidanceMessage = !scopeReady
+        ? scopePromptMessage
+        : showScopeGuidanceWhenReady &&
+              facilityLabel != null &&
+              facilityLabel!.isNotEmpty
         ? labels.facilityContextLabel(facilityLabel!)
-        : (!scopeReady ? scopePromptMessage : null);
+        : null;
 
     return AppSectionPanel(
       tone: scopeReady
