@@ -54,9 +54,9 @@ void main() {
       expect(theme.appTokens.dialogInsetMobile, 12);
       expect(theme.appTokens.dialogInsetTablet, 24);
       expect(theme.appTokens.dialogInsetDesktop, 24);
-      expect(theme.appTokens.dialogMaximizedInsetMobile, 8);
-      expect(theme.appTokens.dialogMaximizedInsetTablet, 16);
-      expect(theme.appTokens.dialogMaximizedInsetDesktop, 24);
+      expect(theme.appTokens.dialogMaximizedInsetMobile, 6);
+      expect(theme.appTokens.dialogMaximizedInsetTablet, 12);
+      expect(theme.appTokens.dialogMaximizedInsetDesktop, 16);
       expect(theme.appTokens.dialogSnackBarClearance, 88);
       expect(theme.appTokens.dialogMinWidth, 360);
       expect(theme.appTokens.dialogMinHeight, 280);

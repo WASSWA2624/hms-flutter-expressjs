@@ -8,20 +8,24 @@ abstract final class AppDialogInsets {
     required AppDesignTokens designTokens,
     required bool maximized,
   }) {
-    final double horizontalInset = _horizontalInsetFor(
+    if (maximized) {
+      final double inset = _maximizedInsetFor(
+        breakpoint,
+        designTokens: designTokens,
+      );
+      return EdgeInsets.all(inset);
+    }
+
+    final double inset = _normalInsetFor(
       breakpoint,
       designTokens: designTokens,
-      maximized: maximized,
     );
-    final double topInset = maximized
-        ? horizontalInset
-        : _normalTopInsetFor(breakpoint, designTokens: designTokens);
 
     return EdgeInsets.only(
-      left: horizontalInset,
-      top: topInset,
-      right: horizontalInset,
-      bottom: horizontalInset + designTokens.dialogSnackBarClearance,
+      left: inset,
+      top: inset,
+      right: inset,
+      bottom: inset + designTokens.dialogSnackBarClearance,
     );
   }
 
@@ -59,26 +63,21 @@ abstract final class AppDialogInsets {
     );
   }
 
-  static double _horizontalInsetFor(
+  static double _maximizedInsetFor(
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
-    required bool maximized,
   }) {
-    if (maximized) {
-      return switch (breakpoint) {
-        AppBreakpoint.xs || AppBreakpoint.sm =>
-          designTokens.dialogMaximizedInsetMobile,
-        AppBreakpoint.md || AppBreakpoint.lg =>
-          designTokens.dialogMaximizedInsetTablet,
-        AppBreakpoint.xl || AppBreakpoint.xxl =>
-          designTokens.dialogMaximizedInsetDesktop,
-      };
-    }
-
-    return _normalTopInsetFor(breakpoint, designTokens: designTokens);
+    return switch (breakpoint) {
+      AppBreakpoint.xs || AppBreakpoint.sm =>
+        designTokens.dialogMaximizedInsetMobile,
+      AppBreakpoint.md || AppBreakpoint.lg =>
+        designTokens.dialogMaximizedInsetTablet,
+      AppBreakpoint.xl || AppBreakpoint.xxl =>
+        designTokens.dialogMaximizedInsetDesktop,
+    };
   }
 
-  static double _normalTopInsetFor(
+  static double _normalInsetFor(
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
   }) {

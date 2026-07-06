@@ -27,14 +27,14 @@ void main() {
       );
     });
 
-    test('maximized padding uses maximized inset tokens per breakpoint', () {
+    test('maximized padding is uniform on all sides per breakpoint', () {
       expect(
         AppDialogInsets.paddingFor(
           AppBreakpoint.sm,
           designTokens: tokens,
           maximized: true,
         ),
-        const EdgeInsets.only(left: 8, top: 8, right: 8, bottom: 96),
+        const EdgeInsets.all(6),
       );
       expect(
         AppDialogInsets.paddingFor(
@@ -42,11 +42,11 @@ void main() {
           designTokens: tokens,
           maximized: true,
         ),
-        const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 112),
+        const EdgeInsets.all(16),
       );
     });
 
-    test('available size subtracts inset padding from viewport', () {
+    test('available size subtracts uniform maximized inset from viewport', () {
       final Size available = AppDialogInsets.availableSizeFor(
         const Size(1000, 700),
         AppBreakpoint.lg,
@@ -54,8 +54,8 @@ void main() {
         maximized: true,
       );
 
-      expect(available.width, 968);
-      expect(available.height, 580);
+      expect(available.width, 976);
+      expect(available.height, 676);
     });
   });
 }
