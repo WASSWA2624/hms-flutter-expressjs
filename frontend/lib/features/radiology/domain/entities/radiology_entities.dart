@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 
 const List<String> radiologyStageFilters = <String>[
   'ALL',
@@ -104,12 +105,15 @@ final class RadiologyWorkspaceQuery {
 
 enum RadiologyDetailViewMode { imagingFloor, reporting }
 
+typedef RadiologyCatalogScope = FacilityCatalogScope;
+
 final class RadiologyWorkspaceState {
   const RadiologyWorkspaceState({
     required this.orders,
     required this.summary,
     required this.references,
     required this.query,
+    this.catalogScope,
     this.catalogTests = const <RadiologyCatalogTest>[],
     this.equipmentRecords = const <RadiologyEquipmentRecord>[],
     this.selectedWorkflow,
@@ -117,6 +121,8 @@ final class RadiologyWorkspaceState {
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
     this.isMutating = false,
+    this.isLoadingCatalog = false,
+    this.catalogLoadFailure,
     this.lastFailure,
   });
 
@@ -124,6 +130,7 @@ final class RadiologyWorkspaceState {
   final RadiologySummary summary;
   final RadiologyReferenceData references;
   final RadiologyWorkspaceQuery query;
+  final RadiologyCatalogScope? catalogScope;
   final List<RadiologyCatalogTest> catalogTests;
   final List<RadiologyEquipmentRecord> equipmentRecords;
   final RadiologyWorkflow? selectedWorkflow;
@@ -131,6 +138,8 @@ final class RadiologyWorkspaceState {
   final bool isRefreshing;
   final bool isRefreshingDetail;
   final bool isMutating;
+  final bool isLoadingCatalog;
+  final Object? catalogLoadFailure;
   final AppFailure? lastFailure;
 
   int get workloadCount {
@@ -159,6 +168,7 @@ final class RadiologyWorkspaceState {
     RadiologySummary? summary,
     RadiologyReferenceData? references,
     RadiologyWorkspaceQuery? query,
+    RadiologyCatalogScope? catalogScope,
     List<RadiologyCatalogTest>? catalogTests,
     List<RadiologyEquipmentRecord>? equipmentRecords,
     RadiologyWorkflow? selectedWorkflow,
@@ -166,15 +176,19 @@ final class RadiologyWorkspaceState {
     bool? isRefreshing,
     bool? isRefreshingDetail,
     bool? isMutating,
+    bool? isLoadingCatalog,
+    Object? catalogLoadFailure,
     AppFailure? lastFailure,
     bool clearSelectedWorkflow = false,
     bool clearLastFailure = false,
+    bool clearCatalogLoadFailure = false,
   }) {
     return RadiologyWorkspaceState(
       orders: orders ?? this.orders,
       summary: summary ?? this.summary,
       references: references ?? this.references,
       query: query ?? this.query,
+      catalogScope: catalogScope ?? this.catalogScope,
       catalogTests: catalogTests ?? this.catalogTests,
       equipmentRecords: equipmentRecords ?? this.equipmentRecords,
       selectedWorkflow: clearSelectedWorkflow
@@ -184,6 +198,10 @@ final class RadiologyWorkspaceState {
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isMutating: isMutating ?? this.isMutating,
+      isLoadingCatalog: isLoadingCatalog ?? this.isLoadingCatalog,
+      catalogLoadFailure: clearCatalogLoadFailure
+          ? null
+          : catalogLoadFailure ?? this.catalogLoadFailure,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
     );
   }
@@ -206,6 +224,8 @@ final class RadiologyCatalogTest {
     this.searchText,
     this.unitPrice,
     this.currency,
+    this.isOfferedAtFacility = false,
+    this.facilityOfferingId,
     this.createdAt,
     this.updatedAt,
   });
@@ -224,10 +244,13 @@ final class RadiologyCatalogTest {
   final String? searchText;
   final num? unitPrice;
   final String? currency;
+  final bool isOfferedAtFacility;
+  final String? facilityOfferingId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   String get effectiveId => displayId ?? id;
+  String get apiId => id;
 
   bool get isStandard {
     final String sourceKey = (source ?? status ?? '').trim().toUpperCase();

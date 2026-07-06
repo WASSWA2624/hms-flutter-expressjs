@@ -245,13 +245,17 @@ final class RadiologyWorkspaceController
   }
 
   Future<AppFailure?> refreshConfigurations({String? search}) async {
+    final RadiologyCatalogScope? scope = _currentState?.catalogScope;
+    if (scope?.isReady == true) {
+      return loadFacilityCatalogConfig(scope!);
+    }
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
     }
 
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
-    final AppFailure? failure = await _refreshConfigurations(search: search);
+    final AppFailure? failure = await _refreshEquipmentRecords(search: search);
     final RadiologyWorkspaceState? latest = _currentState;
     if (latest != null) {
       _emit(
@@ -265,9 +269,241 @@ final class RadiologyWorkspaceController
     return failure;
   }
 
+  Future<AppFailure?> loadFacilityCatalogConfig(
+    RadiologyCatalogScope scope, {
+    String? search,
+  }) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    if (!scope.isReady) {
+      _emit(
+        current.copyWith(
+          catalogScope: scope,
+          catalogTests: const <RadiologyCatalogTest>[],
+          isLoadingCatalog: false,
+          clearCatalogLoadFailure: true,
+        ),
+      );
+      return null;
+    }
+
+    _emit(
+      current.copyWith(
+        catalogScope: scope,
+        isLoadingCatalog: true,
+        clearCatalogLoadFailure: true,
+      ),
+    );
+    final Result<List<RadiologyCatalogTest>> testsResult = await _repository
+        .listFacilityRadiologyTests(
+          tenantId: scope.tenantId,
+          facilityId: scope.facilityId,
+          search: search,
+          offeredOnly: true,
+        );
+
+    AppFailure? failure;
+    final List<RadiologyCatalogTest> tests = testsResult.when(
+      success: (List<RadiologyCatalogTest> value) => value,
+      failure: (AppFailure value) {
+        failure ??= value;
+        return const <RadiologyCatalogTest>[];
+      },
+    );
+    final RadiologyWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          catalogTests: tests,
+          catalogScope: scope,
+          isLoadingCatalog: false,
+          catalogLoadFailure: failure,
+          clearCatalogLoadFailure: failure == null,
+        ),
+      );
+    }
+    return failure;
+  }
+
+  Future<Result<List<RadiologyCatalogTest>>> searchPlatformRadiologyCatalogForOffering({
+    required RadiologyCatalogScope scope,
+    String? query,
+    int limit = 100,
+  }) async {
+    if (!scope.isReady) {
+      return const Result<List<RadiologyCatalogTest>>.success(
+        <RadiologyCatalogTest>[],
+      );
+    }
+
+    final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
+        _repository.listRadiologyCatalogTests(
+          search: query,
+          includeStandardCatalog: true,
+        );
+    final Future<Result<List<RadiologyCatalogTest>>> offeredFuture =
+        _repository.listFacilityRadiologyTests(
+          tenantId: scope.tenantId,
+          facilityId: scope.facilityId,
+          offeredOnly: true,
+          limit: limit,
+        );
+
+    final List<Result<List<RadiologyCatalogTest>>> results = await Future.wait(
+      <Future<Result<List<RadiologyCatalogTest>>>>[
+        platformFuture,
+        offeredFuture,
+      ],
+    );
+    return _mergePlatformRadiologyOfferingStatus(results[0], results[1]);
+  }
+
+  Result<List<RadiologyCatalogTest>> _mergePlatformRadiologyOfferingStatus(
+    Result<List<RadiologyCatalogTest>> platformResult,
+    Result<List<RadiologyCatalogTest>> offeredResult,
+  ) {
+    return platformResult.when(
+      success: (List<RadiologyCatalogTest> platformItems) {
+        final Set<String> offeredIds = <String>{};
+        final Set<String> offeredCodes = <String>{};
+        offeredResult.when(
+          success: (List<RadiologyCatalogTest> offeredItems) {
+            for (final RadiologyCatalogTest item in offeredItems) {
+              offeredIds.add(item.apiId);
+              final String? code = item.code?.trim();
+              if (code != null && code.isNotEmpty) {
+                offeredCodes.add(code.toUpperCase());
+              }
+            }
+          },
+          failure: (_) {},
+        );
+        return Result<List<RadiologyCatalogTest>>.success(
+          platformItems
+              .map((RadiologyCatalogTest item) {
+                final String? code = item.code?.trim();
+                final bool isOffered =
+                    offeredIds.contains(item.apiId) ||
+                    (code != null &&
+                        code.isNotEmpty &&
+                        offeredCodes.contains(code.toUpperCase()));
+                if (!isOffered) {
+                  return item;
+                }
+                return RadiologyCatalogTest(
+                  id: item.id,
+                  name: item.name,
+                  displayId: item.displayId,
+                  code: item.code,
+                  modality: item.modality,
+                  bodyRegion: item.bodyRegion,
+                  laterality: item.laterality,
+                  procedureType: item.procedureType,
+                  equipment: item.equipment,
+                  status: item.status,
+                  source: item.source,
+                  searchText: item.searchText,
+                  unitPrice: item.unitPrice,
+                  currency: item.currency,
+                  isOfferedAtFacility: true,
+                  facilityOfferingId: item.facilityOfferingId,
+                  createdAt: item.createdAt,
+                  updatedAt: item.updatedAt,
+                );
+              })
+              .toList(growable: false),
+        );
+      },
+      failure: (AppFailure failure) =>
+          Result<List<RadiologyCatalogTest>>.failure(failure),
+    );
+  }
+
+  Future<AppFailure?> upsertRadiologyTestOffering(
+    String testId,
+    Map<String, Object?> payload, {
+    RadiologyCatalogScope? scope,
+  }) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final RadiologyCatalogScope? effectiveScope = scope ?? current.catalogScope;
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<RadiologyCatalogTest> result = await _repository
+        .upsertFacilityRadiologyTestOffering(
+          testId,
+          payload,
+          tenantId: effectiveScope?.tenantId,
+          facilityId: effectiveScope?.facilityId,
+        );
+    return result.when(
+      success: (RadiologyCatalogTest updated) async {
+        await loadFacilityCatalogConfig(
+          effectiveScope ?? const RadiologyCatalogScope(),
+        );
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+        }
+        await searchReferences();
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> disableRadiologyTestOffering(
+    String testId,
+    String reason,
+  ) async {
+    final RadiologyCatalogScope? scope = _currentState?.catalogScope;
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<void> result = await _repository
+        .disableFacilityRadiologyTestOffering(
+          testId,
+          reason,
+          tenantId: scope?.tenantId,
+          facilityId: scope?.facilityId,
+        );
+    return result.when(
+      success: (_) async {
+        await loadFacilityCatalogConfig(
+          scope ?? const RadiologyCatalogScope(),
+        );
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
+        }
+        await searchReferences();
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
   Future<AppFailure?> createRadiologyTest(Map<String, Object?> payload) {
-    return _mutateConfiguration(
-      () => _repository.createRadiologyCatalogTest(payload),
+    return upsertRadiologyTestOffering(
+      payload['radiology_test_id']?.toString() ?? '',
+      payload,
     );
   }
 
@@ -275,15 +511,11 @@ final class RadiologyWorkspaceController
     String testId,
     Map<String, Object?> payload,
   ) {
-    return _mutateConfiguration(
-      () => _repository.updateRadiologyCatalogTest(testId, payload),
-    );
+    return upsertRadiologyTestOffering(testId, payload);
   }
 
   Future<AppFailure?> deleteRadiologyTest(String testId) {
-    return _mutateConfiguration(
-      () => _repository.deleteRadiologyCatalogTest(testId),
-    );
+    return disableRadiologyTestOffering(testId, 'Removed from facility catalog');
   }
 
   Future<AppFailure?> selectOrder(RadiologyOrder order) async {
@@ -524,8 +756,6 @@ final class RadiologyWorkspaceController
         .getReferenceData();
     final Result<RadiologyWorkbench> workbenchResult = await _repository
         .getWorkbench(query);
-    final Result<List<RadiologyCatalogTest>> catalogResult = await _repository
-        .listRadiologyCatalogTests();
     final Result<List<RadiologyEquipmentRecord>> equipmentResult =
         await _repository.listEquipmentRecords();
 
@@ -552,10 +782,6 @@ final class RadiologyWorkspaceController
               failure: (_) => RadiologyReferenceData.empty,
             ),
             query: query,
-            catalogTests: catalogResult.when(
-              success: (List<RadiologyCatalogTest> tests) => tests,
-              failure: (_) => const <RadiologyCatalogTest>[],
-            ),
             equipmentRecords: equipmentResult.when(
               success: (List<RadiologyEquipmentRecord> records) => records,
               failure: (_) => const <RadiologyEquipmentRecord>[],
@@ -671,19 +897,12 @@ final class RadiologyWorkspaceController
     );
   }
 
-  Future<AppFailure?> _refreshConfigurations({String? search}) async {
-    final Result<List<RadiologyCatalogTest>> testsResult = await _repository
-        .listRadiologyCatalogTests(search: search);
+  Future<AppFailure?> _refreshEquipmentRecords({String? search}) async {
     final Result<List<RadiologyEquipmentRecord>> equipmentResult =
         await _repository.listEquipmentRecords(search: search);
     AppFailure? failure;
-    List<RadiologyCatalogTest>? tests;
     List<RadiologyEquipmentRecord>? equipment;
 
-    testsResult.when(
-      success: (List<RadiologyCatalogTest> value) => tests = value,
-      failure: (AppFailure value) => failure ??= value,
-    );
     equipmentResult.when(
       success: (List<RadiologyEquipmentRecord> value) => equipment = value,
       failure: (AppFailure value) => failure ??= value,
@@ -693,7 +912,6 @@ final class RadiologyWorkspaceController
     if (latest != null) {
       _emit(
         latest.copyWith(
-          catalogTests: tests ?? latest.catalogTests,
           equipmentRecords: equipment ?? latest.equipmentRecords,
           lastFailure: failure,
           clearLastFailure: failure == null,
@@ -701,6 +919,14 @@ final class RadiologyWorkspaceController
       );
     }
     return failure;
+  }
+
+  Future<AppFailure?> _refreshConfigurations({String? search}) async {
+    final RadiologyCatalogScope? scope = _currentState?.catalogScope;
+    if (scope?.isReady == true) {
+      return loadFacilityCatalogConfig(scope!, search: search);
+    }
+    return _refreshEquipmentRecords(search: search);
   }
 
   Future<AppFailure?> _mutateConfiguration<T>(

@@ -13,6 +13,9 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -24,6 +27,9 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_or
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
+import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/print_form_template.dart';
 
@@ -2768,15 +2774,20 @@ Future<void> _showRadiologyConfigurationsDialog(
   WidgetRef ref, {
   String? tenantId,
 }) async {
-  await ref
-      .read(radiologyWorkspaceControllerProvider.notifier)
-      .refreshConfigurations();
-  if (!context.mounted) {
+  final RadiologyWorkspaceState? state = ref
+      .read(radiologyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (RadiologyWorkspaceState value) => value,
+        failure: (_) => null,
+      );
+  if (state == null || !context.mounted) {
     return;
   }
   await showAppDialog<void>(
     context: context,
-    builder: (_) => _RadiologyConfigurationsDialog(tenantId: tenantId),
+    builder: (_) => _RadiologyConfigurationsDialog(state: state),
   );
 }
 

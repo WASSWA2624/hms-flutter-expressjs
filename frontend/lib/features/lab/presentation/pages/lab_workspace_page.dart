@@ -25,6 +25,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -1007,8 +1008,14 @@ class _LabConfigurationsDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          _LabConfigurationsScopeSection(
-            l10n: l10n,
+          FacilityCatalogScopeSection(
+            labels: FacilityCatalogScopeLabels(
+              facilityContextLabel: l10n.labConfigurationsFacilityContextLabel,
+              selectTenantFirstTooltip:
+                  l10n.labConfigurationsSelectTenantFirstTooltip,
+              tenantLabel: l10n.settingsWorkspaceTenantLabel,
+              facilityLabel: l10n.settingsWorkspaceFacilitySelectorLabel,
+            ),
             scopeReady: scopeReady,
             showTenantSelector: _showTenantSelector,
             showFacilitySelector: _showFacilitySelector,
@@ -1550,212 +1557,6 @@ class _LabConfigurationsDialogState
           ],
         );
       },
-    );
-  }
-}
-
-class _LabConfigurationsScopeSection extends StatelessWidget {
-  const _LabConfigurationsScopeSection({
-    required this.l10n,
-    required this.scopeReady,
-    required this.showTenantSelector,
-    required this.showFacilitySelector,
-    required this.showScopeContextLabel,
-    required this.tenantOptions,
-    required this.facilityOptions,
-    required this.tenantId,
-    required this.facilityId,
-    required this.facilitySelectorEnabled,
-    required this.facilityLabel,
-    required this.scopePromptMessage,
-    required this.onTenantChanged,
-    required this.onFacilityChanged,
-  });
-
-  final AppLocalizations l10n;
-  final bool scopeReady;
-  final bool showTenantSelector;
-  final bool showFacilitySelector;
-  final bool showScopeContextLabel;
-  final List<HomeLookupOption> tenantOptions;
-  final List<HomeLookupOption> facilityOptions;
-  final String? tenantId;
-  final String? facilityId;
-  final bool facilitySelectorEnabled;
-  final String? facilityLabel;
-  final String scopePromptMessage;
-  final ValueChanged<String?> onTenantChanged;
-  final ValueChanged<String?> onFacilityChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasTenantRow = showTenantSelector && tenantOptions.isNotEmpty;
-    final bool hasFacilityOnlyRow =
-        !hasTenantRow && showFacilitySelector && facilityOptions.isNotEmpty;
-    final bool hasFixedContextLabel =
-        showScopeContextLabel &&
-        scopeReady &&
-        facilityLabel != null &&
-        facilityLabel!.isNotEmpty;
-
-    if (!hasTenantRow && !hasFacilityOnlyRow && !hasFixedContextLabel) {
-      if (!scopeReady) {
-        return AppSectionPanel(
-          tone: AppWorkspaceStatusTone.info,
-          density: AppContentPanelDensity.compact,
-          leadingIcon: Icons.domain_outlined,
-          children: <Widget>[
-            Text(
-              scopePromptMessage,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        );
-      }
-      return const SizedBox.shrink();
-    }
-
-    if (hasFixedContextLabel && !hasTenantRow && !hasFacilityOnlyRow) {
-      return AppMutedText(
-        l10n.labConfigurationsFacilityContextLabel(facilityLabel!),
-      );
-    }
-
-    final String? guidanceMessage =
-        scopeReady && facilityLabel != null && facilityLabel!.isNotEmpty
-        ? l10n.labConfigurationsFacilityContextLabel(facilityLabel!)
-        : (!scopeReady ? scopePromptMessage : null);
-
-    return AppSectionPanel(
-      tone: scopeReady
-          ? AppWorkspaceStatusTone.neutral
-          : AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (hasTenantRow)
-          AppResponsiveFieldRow.two(
-            gap: AppResponsiveFieldRowGap.form,
-            left: AppSelectField<String>.searchable(
-              value: tenantId,
-              labelText: l10n.settingsWorkspaceTenantLabel,
-              options: <AppSelectOption<String>>[
-                for (final HomeLookupOption tenant in tenantOptions)
-                  AppSelectOption<String>(
-                    value: tenant.id,
-                    label: tenant.label,
-                  ),
-              ],
-              onChanged: onTenantChanged,
-            ),
-            right: facilitySelectorEnabled
-                ? AppSelectField<String>.searchable(
-                    value: facilityId,
-                    labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                    isRequired: true,
-                    options: <AppSelectOption<String>>[
-                      for (final HomeLookupOption facility in facilityOptions)
-                        AppSelectOption<String>(
-                          value: facility.id,
-                          label: facility.label,
-                        ),
-                    ],
-                    onChanged: onFacilityChanged,
-                  )
-                : _LabConfigurationsDisabledFacilityField(
-                    tooltipMessage:
-                        l10n.labConfigurationsSelectTenantFirstTooltip,
-                    labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-                  ),
-          )
-        else if (hasFacilityOnlyRow)
-          AppSelectField<String>.searchable(
-            value: facilityId,
-            labelText: l10n.settingsWorkspaceFacilitySelectorLabel,
-            isRequired: true,
-            options: <AppSelectOption<String>>[
-              for (final HomeLookupOption facility in facilityOptions)
-                AppSelectOption<String>(
-                  value: facility.id,
-                  label: facility.label,
-                ),
-            ],
-            onChanged: onFacilityChanged,
-          ),
-        if (guidanceMessage != null)
-          _LabConfigurationsScopeGuidance(
-            message: guidanceMessage,
-            showIcon: !scopeReady,
-          ),
-      ],
-    );
-  }
-}
-
-class _LabConfigurationsScopeGuidance extends StatelessWidget {
-  const _LabConfigurationsScopeGuidance({
-    required this.message,
-    required this.showIcon,
-  });
-
-  final String message;
-  final bool showIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? textStyle = showIcon
-        ? theme.textTheme.bodyMedium
-        : theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          );
-
-    if (!showIcon) {
-      return Text(message, style: textStyle);
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          Icons.domain_outlined,
-          color: theme.colorScheme.primary,
-          size: theme.appTokens.listIconSize,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(child: Text(message, style: textStyle)),
-      ],
-    );
-  }
-}
-
-class _LabConfigurationsDisabledFacilityField extends StatelessWidget {
-  const _LabConfigurationsDisabledFacilityField({
-    required this.tooltipMessage,
-    required this.labelText,
-  });
-
-  final String tooltipMessage;
-  final String labelText;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(tooltipMessage)));
-      },
-      child: Tooltip(
-        message: tooltipMessage,
-        child: AppSelectField<String>.searchable(
-          labelText: labelText,
-          isRequired: true,
-          enabled: false,
-          allowClear: false,
-          options: const <AppSelectOption<String>>[],
-        ),
-      ),
     );
   }
 }

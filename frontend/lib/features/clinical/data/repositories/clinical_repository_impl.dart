@@ -163,7 +163,10 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     String source = 'ALL',
     String? facilityId,
   }) {
-    final bool offeredOnly = termType == 'LAB_TEST' || termType == 'LAB_PANEL';
+    final bool offeredOnly =
+        termType == 'LAB_TEST' ||
+        termType == 'LAB_PANEL' ||
+        termType == 'RADIOLOGY_TEST';
     return searchClinicalCatalog(
       termType: termType,
       query: query,

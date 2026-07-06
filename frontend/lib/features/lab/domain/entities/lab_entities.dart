@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 
 enum LabQueueScope {
   all,
@@ -1078,46 +1079,7 @@ final class LabOrderWorkflow {
 /// Maximum page size accepted by facility lab catalog list endpoints.
 const int labFacilityCatalogPageLimit = 100;
 
-@immutable
-final class LabCatalogScope {
-  const LabCatalogScope({this.tenantId, this.facilityId});
-
-  final String? tenantId;
-  final String? facilityId;
-
-  bool get isReady {
-    final String? tenant = tenantId?.trim();
-    final String? facility = facilityId?.trim();
-    return tenant != null &&
-        tenant.isNotEmpty &&
-        facility != null &&
-        facility.isNotEmpty;
-  }
-
-  Map<String, Object?> get apiParams {
-    final Map<String, Object?> params = <String, Object?>{};
-    final String? tenant = tenantId?.trim();
-    final String? facility = facilityId?.trim();
-    if (tenant != null && tenant.isNotEmpty) {
-      params['tenant_id'] = tenant;
-    }
-    if (facility != null && facility.isNotEmpty) {
-      params['facility_id'] = facility;
-    }
-    return params;
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        other is LabCatalogScope &&
-            tenantId == other.tenantId &&
-            facilityId == other.facilityId;
-  }
-
-  @override
-  int get hashCode => Object.hash(tenantId, facilityId);
-}
+typedef LabCatalogScope = FacilityCatalogScope;
 
 @immutable
 final class LabWorkspaceState {

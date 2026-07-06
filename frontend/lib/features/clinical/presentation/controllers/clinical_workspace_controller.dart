@@ -293,7 +293,10 @@ final class ClinicalWorkspaceController
     String source = 'ALL',
     String? facilityId,
   }) {
-    final bool offeredOnly = termType == 'LAB_TEST' || termType == 'LAB_PANEL';
+    final bool offeredOnly =
+        termType == 'LAB_TEST' ||
+        termType == 'LAB_PANEL' ||
+        termType == 'RADIOLOGY_TEST';
     final String? resolvedFacilityId =
         facilityId ??
         _selectedEntry?.facilityId ??

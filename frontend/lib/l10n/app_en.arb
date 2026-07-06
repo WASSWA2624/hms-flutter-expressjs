@@ -21130,17 +21130,71 @@
   "@radiologyConfigurationsDialogTitle": {
     "description": "Radiology configuration dialog title."
   },
-  "radiologyConfigurationsDialogBody": "Manage persisted imaging tests and customize standard catalog tests for radiology workflows.",
+  "radiologyConfigurationsDialogBody": "Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.",
   "@radiologyConfigurationsDialogBody": {
     "description": "Radiology configuration dialog body."
   },
-  "radiologyConfigurationsLoadingTitle": "Loading configurations",
+  "radiologyConfigurationsLoadingTitle": "Loading radiology catalog",
   "@radiologyConfigurationsLoadingTitle": {
     "description": "Radiology configuration loading title."
   },
-  "radiologyConfigurationsLoadingBody": "Loading imaging tests and standard catalog entries.",
+  "radiologyConfigurationsLoadingBody": "Loading facility radiology offerings.",
   "@radiologyConfigurationsLoadingBody": {
     "description": "Radiology configuration loading body."
+  },
+  "radiologyConfigurationsSelectScopeBody": "Select a tenant and facility to load and configure the radiology catalog.",
+  "@radiologyConfigurationsSelectScopeBody": {
+    "description": "Radiology configuration scope prompt for platform admins."
+  },
+  "radiologyConfigurationsSelectFacilityOnlyBody": "Select a facility for {tenantName} to load and configure the radiology catalog.",
+  "@radiologyConfigurationsSelectFacilityOnlyBody": {
+    "description": "Radiology configuration scope prompt for tenant admins.",
+    "placeholders": {
+      "tenantName": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyConfigurationsSelectTenantFirstTooltip": "Select a tenant first",
+  "@radiologyConfigurationsSelectTenantFirstTooltip": {
+    "description": "Tooltip when facility selector is disabled until tenant is chosen."
+  },
+  "radiologyConfigurationsFacilityContextLabel": "Configuring radiology catalog for {facilityName}.",
+  "@radiologyConfigurationsFacilityContextLabel": {
+    "description": "Radiology configuration context label for fixed facility users.",
+    "placeholders": {
+      "facilityName": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyEnableOfferingDialogTitle": "Enable Radiology Offering",
+  "@radiologyEnableOfferingDialogTitle": {
+    "description": "Radiology enable offering catalog picker dialog title."
+  },
+  "radiologyEnableOfferingDialogBody": "Select a platform catalog procedure and set the facility price clinicians will use when ordering.",
+  "@radiologyEnableOfferingDialogBody": {
+    "description": "Radiology enable offering catalog picker dialog body."
+  },
+  "radiologyEnableOfferingNoItemsLabel": "All platform procedures are already offered at this facility.",
+  "@radiologyEnableOfferingNoItemsLabel": {
+    "description": "Radiology enable offering empty state when all items are offered."
+  },
+  "radiologyEnableOfferingNoPlatformItemsLabel": "No platform radiology catalog items are available for this tenant.",
+  "@radiologyEnableOfferingNoPlatformItemsLabel": {
+    "description": "Radiology enable offering empty state when platform catalog is empty."
+  },
+  "radiologyEnableOfferingAlreadyOfferedLabel": "Already offered",
+  "@radiologyEnableOfferingAlreadyOfferedLabel": {
+    "description": "Radiology catalog row label when procedure is already offered."
+  },
+  "radiologyEnableProcedureAction": "Enable procedure",
+  "@radiologyEnableProcedureAction": {
+    "description": "Radiology action to enable a facility procedure offering."
+  },
+  "radiologyEditOfferingDialogTitle": "Edit facility offering",
+  "@radiologyEditOfferingDialogTitle": {
+    "description": "Radiology edit facility offering dialog title."
   },
   "radiologyPatientsSummaryLabel": "Radiology patients",
   "@radiologyPatientsSummaryLabel": {

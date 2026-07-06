@@ -19,6 +19,36 @@ abstract interface class RadiologyRepository {
     bool includeStandardCatalog = true,
   });
 
+  Future<Result<List<RadiologyCatalogTest>>> listFacilityRadiologyTests({
+    String? tenantId,
+    String? facilityId,
+    String? search,
+    int page = 1,
+    int limit = 100,
+    bool offeredOnly = false,
+  });
+
+  Future<Result<List<RadiologyCatalogTest>>> searchFacilityRadiologyCatalog({
+    String? tenantId,
+    String? facilityId,
+    String? query,
+    int limit = 25,
+  });
+
+  Future<Result<RadiologyCatalogTest>> upsertFacilityRadiologyTestOffering(
+    String testId,
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  });
+
+  Future<Result<void>> disableFacilityRadiologyTestOffering(
+    String testId,
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  });
+
   Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
     Map<String, Object?> payload,
   );

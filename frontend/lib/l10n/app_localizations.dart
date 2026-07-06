@@ -30684,20 +30684,86 @@ abstract class AppLocalizations {
   /// Radiology configuration dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Manage persisted imaging tests and customize standard catalog tests for radiology workflows.'**
+  /// **'Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.'**
   String get radiologyConfigurationsDialogBody;
 
   /// Radiology configuration loading title.
   ///
   /// In en, this message translates to:
-  /// **'Loading configurations'**
+  /// **'Loading radiology catalog'**
   String get radiologyConfigurationsLoadingTitle;
 
   /// Radiology configuration loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading imaging tests and standard catalog entries.'**
+  /// **'Loading facility radiology offerings.'**
   String get radiologyConfigurationsLoadingBody;
+
+  /// Radiology configuration scope prompt for platform admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant and facility to load and configure the radiology catalog.'**
+  String get radiologyConfigurationsSelectScopeBody;
+
+  /// Radiology configuration scope prompt for tenant admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility for {tenantName} to load and configure the radiology catalog.'**
+  String radiologyConfigurationsSelectFacilityOnlyBody(String tenantName);
+
+  /// Tooltip when facility selector is disabled until tenant is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant first'**
+  String get radiologyConfigurationsSelectTenantFirstTooltip;
+
+  /// Radiology configuration context label for fixed facility users.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuring radiology catalog for {facilityName}.'**
+  String radiologyConfigurationsFacilityContextLabel(String facilityName);
+
+  /// Radiology enable offering catalog picker dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Radiology Offering'**
+  String get radiologyEnableOfferingDialogTitle;
+
+  /// Radiology enable offering catalog picker dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a platform catalog procedure and set the facility price clinicians will use when ordering.'**
+  String get radiologyEnableOfferingDialogBody;
+
+  /// Radiology enable offering empty state when all items are offered.
+  ///
+  /// In en, this message translates to:
+  /// **'All platform procedures are already offered at this facility.'**
+  String get radiologyEnableOfferingNoItemsLabel;
+
+  /// Radiology enable offering empty state when platform catalog is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No platform radiology catalog items are available for this tenant.'**
+  String get radiologyEnableOfferingNoPlatformItemsLabel;
+
+  /// Radiology catalog row label when procedure is already offered.
+  ///
+  /// In en, this message translates to:
+  /// **'Already offered'**
+  String get radiologyEnableOfferingAlreadyOfferedLabel;
+
+  /// Radiology action to enable a facility procedure offering.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable procedure'**
+  String get radiologyEnableProcedureAction;
+
+  /// Radiology edit facility offering dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit facility offering'**
+  String get radiologyEditOfferingDialogTitle;
 
   /// Radiology patients summary card label.
   ///

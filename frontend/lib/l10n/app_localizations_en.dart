@@ -16409,14 +16409,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyConfigurationsDialogBody =>
-      'Manage persisted imaging tests and customize standard catalog tests for radiology workflows.';
+      'Select a tenant and facility, then enable platform radiology procedures with facility-specific pricing.';
 
   @override
-  String get radiologyConfigurationsLoadingTitle => 'Loading configurations';
+  String get radiologyConfigurationsLoadingTitle => 'Loading radiology catalog';
 
   @override
   String get radiologyConfigurationsLoadingBody =>
-      'Loading imaging tests and standard catalog entries.';
+      'Loading facility radiology offerings.';
+
+  @override
+  String get radiologyConfigurationsSelectScopeBody =>
+      'Select a tenant and facility to load and configure the radiology catalog.';
+
+  @override
+  String radiologyConfigurationsSelectFacilityOnlyBody(String tenantName) {
+    return 'Select a facility for $tenantName to load and configure the radiology catalog.';
+  }
+
+  @override
+  String get radiologyConfigurationsSelectTenantFirstTooltip =>
+      'Select a tenant first';
+
+  @override
+  String radiologyConfigurationsFacilityContextLabel(String facilityName) {
+    return 'Configuring radiology catalog for $facilityName.';
+  }
+
+  @override
+  String get radiologyEnableOfferingDialogTitle => 'Enable Radiology Offering';
+
+  @override
+  String get radiologyEnableOfferingDialogBody =>
+      'Select a platform catalog procedure and set the facility price clinicians will use when ordering.';
+
+  @override
+  String get radiologyEnableOfferingNoItemsLabel =>
+      'All platform procedures are already offered at this facility.';
+
+  @override
+  String get radiologyEnableOfferingNoPlatformItemsLabel =>
+      'No platform radiology catalog items are available for this tenant.';
+
+  @override
+  String get radiologyEnableOfferingAlreadyOfferedLabel => 'Already offered';
+
+  @override
+  String get radiologyEnableProcedureAction => 'Enable procedure';
+
+  @override
+  String get radiologyEditOfferingDialogTitle => 'Edit facility offering';
 
   @override
   String get radiologyPatientsSummaryLabel => 'Radiology patients';

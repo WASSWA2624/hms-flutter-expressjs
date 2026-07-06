@@ -130,6 +130,10 @@ final class RadiologyCatalogTestDto {
       searchText: _string(json['search_text']),
       unitPrice: _num(json['unit_price']) ?? _num(json['price']),
       currency: _string(json['currency']),
+      isOfferedAtFacility:
+          json['is_offered_at_facility'] == true ||
+          json['offering_is_active'] == true,
+      facilityOfferingId: _string(json['facility_offering_id']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );

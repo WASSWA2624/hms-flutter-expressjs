@@ -86,6 +86,98 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
+  Future<Result<List<RadiologyCatalogTest>>> listFacilityRadiologyTests({
+    String? tenantId,
+    String? facilityId,
+    String? search,
+    int page = 1,
+    int limit = 100,
+    bool offeredOnly = false,
+  }) {
+    return _apiClient.get<List<RadiologyCatalogTest>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityRadiologyCatalog.path,
+        'tests',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+        'page': page,
+        'limit': limit,
+        'search': search,
+        'offered_only': offeredOnly ? 'true' : 'false',
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: RadiologyCatalogTestDto.listFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<List<RadiologyCatalogTest>>> searchFacilityRadiologyCatalog({
+    String? tenantId,
+    String? facilityId,
+    String? query,
+    int limit = 25,
+  }) {
+    return _apiClient.get<List<RadiologyCatalogTest>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityRadiologyCatalog.path,
+        'search',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+        'term_type': 'RADIOLOGY_TEST',
+        'q': query,
+        'limit': limit,
+        'offered_only': 'false',
+      }),
+      decoder: RadiologyCatalogTestDto.listFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<RadiologyCatalogTest>> upsertFacilityRadiologyTestOffering(
+    String testId,
+    Map<String, Object?> payload, {
+    String? tenantId,
+    String? facilityId,
+  }) {
+    return _apiClient.put<RadiologyCatalogTest>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityRadiologyCatalog.path,
+        'tests',
+        testId,
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        ...payload,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
+      decoder: radiologyCatalogTestFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<void>> disableFacilityRadiologyTestOffering(
+    String testId,
+    String reason, {
+    String? tenantId,
+    String? facilityId,
+  }) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.facilityRadiologyCatalog.path,
+        'tests',
+        testId,
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'reason': reason,
+        ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
+      }),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
     Map<String, Object?> payload,
   ) {
@@ -353,6 +445,17 @@ Uri _radiologyEndpoint(List<String> segments) {
 
 String? _iso(DateTime? value) {
   return value?.toUtc().toIso8601String();
+}
+
+Map<String, Object?> _catalogScopeParams({
+  String? tenantId,
+  String? facilityId,
+}) {
+  return <String, Object?>{
+    if (tenantId != null && tenantId.trim().isNotEmpty) 'tenant_id': tenantId,
+    if (facilityId != null && facilityId.trim().isNotEmpty)
+      'facility_id': facilityId,
+  };
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {
