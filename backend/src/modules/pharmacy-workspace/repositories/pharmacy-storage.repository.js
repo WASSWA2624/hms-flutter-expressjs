@@ -1,5 +1,16 @@
-const { prisma } = require('@lib/prisma');
-const { withDbErrorHandling } = require('@lib/db');
+const prisma = require('@prisma/client');
+const { HttpError } = require('@lib/errors');
+
+const withDbErrorHandling = async (operation) => {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
 
 const ACTIVE_STORAGE_WHERE = {
   deleted_at: null,

@@ -1,6 +1,6 @@
 const { HttpError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
-const { toPublicIdentifier, toText } = require('@lib/identifiers');
+const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
@@ -8,6 +8,18 @@ const {
   resolveScopedUserContext,
   buildTenantScopeWhere,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
+
+const toText = (value) => (value == null ? '' : String(value).trim());
+
+const toPublicIdentifier = (...candidates) => {
+  for (const candidate of candidates) {
+    const normalized = toText(candidate);
+    if (!normalized) continue;
+    if (isUuidLike(normalized)) continue;
+    return normalized;
+  }
+  return null;
+};
 
 const mapStorageRoomRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
