@@ -302,6 +302,7 @@ class _RadiologyEnableFacilityOfferingDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ],
@@ -341,12 +342,12 @@ class _RadiologyEnableFacilityOfferingDialogState
       ),
       AppListTableColumn<RadiologyCatalogTest>(
         id: 'status',
-        label: l10n.radiologyActionColumnLabel,
+        label: l10n.radiologyStatusColumnLabel,
         cellBuilder: (_, RadiologyCatalogTest item) {
-          if (!item.isOfferedAtFacility) {
-            return const SizedBox.shrink();
+          if (item.isOfferedAtFacility) {
+            return AppMutedText(l10n.radiologyEnableOfferingAlreadyOfferedLabel);
           }
-          return AppMutedText(l10n.radiologyEnableOfferingAlreadyOfferedLabel);
+          return AppMutedText(l10n.radiologyEnableOfferingAvailableLabel);
         },
       ),
     ];
@@ -469,6 +470,7 @@ class _RadiologyEnableOfferingPriceDialogState
     final AppFailure? failure = await widget.onEnable(
       widget.item.apiId,
       <String, Object?>{
+        'radiology_test_id': widget.item.apiId,
         'is_active': true,
         'unit_price':
             num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
@@ -600,6 +602,7 @@ class _RadiologyEditFacilityOfferingDialogState
     final AppFailure? failure = await widget.onUpdate(
       widget.item.apiId,
       <String, Object?>{
+        'radiology_test_id': widget.item.apiId,
         'is_active': true,
         'unit_price':
             num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,

@@ -152,9 +152,18 @@ const listFacilityRadiologyTests = async (filters, page, limit, sortBy, order, c
       limit,
       { sort_order: 'asc' }
     );
-    const items = offerings
-      .map((offering) => mapMergedRadiologyTestRecord(offering.radiology_test, offering))
-      .filter(Boolean);
+    const items = (
+      await Promise.all(
+        offerings.map(async (offering) => {
+          const masterTest =
+            offering.radiology_test ||
+            (offering.radiology_test_id
+              ? await radiologyTestRepository.findById(offering.radiology_test_id)
+              : null);
+          return mapMergedRadiologyTestRecord(masterTest, offering);
+        })
+      )
+    ).filter(Boolean);
     const total = await facilityRadiologyCatalogRepository.countTestOfferings(offeringWhere);
     return { items, pagination: buildPagination(page, limit, total) };
   }

@@ -21202,7 +21202,45 @@
   },
   "radiologyEnableOfferingAlreadyOfferedLabel": "Already offered",
   "@radiologyEnableOfferingAlreadyOfferedLabel": {
-    "description": "Radiology catalog row label when procedure is already offered."
+    "description": "Radiology enable offering status when the procedure is already configured at the facility."
+  },
+  "radiologyEnableOfferingAvailableLabel": "Available",
+  "@radiologyEnableOfferingAvailableLabel": {
+    "description": "Radiology enable offering status when the procedure can still be enabled at the facility."
+  },
+  "radiologyDeleteSelectedOfferingsAction": "Delete selected",
+  "@radiologyDeleteSelectedOfferingsAction": {
+    "description": "Batch delete action for selected radiology facility offerings."
+  },
+  "radiologyDeleteSelectedOfferingsDialogTitle": "Remove selected procedures?",
+  "@radiologyDeleteSelectedOfferingsDialogTitle": {
+    "description": "Title for batch removal of radiology facility offerings."
+  },
+  "radiologyDeleteSelectedOfferingsDialogBody": "Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this facility catalog? Clinicians will no longer be able to order them here.",
+  "@radiologyDeleteSelectedOfferingsDialogBody": {
+    "description": "Body for batch removal of radiology facility offerings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyOfferingDisabledMessage": "Radiology procedure removed from facility catalog.",
+  "@radiologyOfferingDisabledMessage": {
+    "description": "Snack bar shown after a radiology facility offering is disabled."
+  },
+  "radiologyDisableOfferingDialogTitle": "Remove procedure from facility?",
+  "@radiologyDisableOfferingDialogTitle": {
+    "description": "Title for disabling a single radiology facility offering."
+  },
+  "radiologyDisableOfferingDialogBody": "Remove {name} from this facility catalog? Clinicians will no longer be able to order it here.",
+  "@radiologyDisableOfferingDialogBody": {
+    "description": "Body for disabling a single radiology facility offering.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "radiologyEnableProcedureAction": "Enable procedure",
   "@radiologyEnableProcedureAction": {

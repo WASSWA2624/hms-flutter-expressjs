@@ -30771,11 +30771,53 @@ abstract class AppLocalizations {
   /// **'No platform radiology catalog items are available for this tenant.'**
   String get radiologyEnableOfferingNoPlatformItemsLabel;
 
-  /// Radiology catalog row label when procedure is already offered.
+  /// Radiology enable offering status when the procedure is already configured at the facility.
   ///
   /// In en, this message translates to:
   /// **'Already offered'**
   String get radiologyEnableOfferingAlreadyOfferedLabel;
+
+  /// Radiology enable offering status when the procedure can still be enabled at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get radiologyEnableOfferingAvailableLabel;
+
+  /// Batch delete action for selected radiology facility offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get radiologyDeleteSelectedOfferingsAction;
+
+  /// Title for batch removal of radiology facility offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected procedures?'**
+  String get radiologyDeleteSelectedOfferingsDialogTitle;
+
+  /// Body for batch removal of radiology facility offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this facility catalog? Clinicians will no longer be able to order them here.'**
+  String radiologyDeleteSelectedOfferingsDialogBody(int count);
+
+  /// Snack bar shown after a radiology facility offering is disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology procedure removed from facility catalog.'**
+  String get radiologyOfferingDisabledMessage;
+
+  /// Title for disabling a single radiology facility offering.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove procedure from facility?'**
+  String get radiologyDisableOfferingDialogTitle;
+
+  /// Body for disabling a single radiology facility offering.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from this facility catalog? Clinicians will no longer be able to order it here.'**
+  String radiologyDisableOfferingDialogBody(String name);
 
   /// Radiology action to enable a facility procedure offering.
   ///

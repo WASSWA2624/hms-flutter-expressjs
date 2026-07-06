@@ -498,7 +498,7 @@ final class RadiologyWorkspaceController
           ),
         );
         unawaited(searchReferences());
-        return null;
+        return _reloadCatalogConfigAfterMutation(effectiveScope);
       },
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
@@ -512,9 +512,11 @@ final class RadiologyWorkspaceController
 
   Future<AppFailure?> disableRadiologyTestOffering(
     String testId,
-    String reason,
-  ) async {
-    final RadiologyCatalogScope? scope = _currentState?.catalogScope;
+    String reason, {
+    RadiologyCatalogScope? scope,
+  }) async {
+    final RadiologyCatalogScope? effectiveScope =
+        scope ?? _currentState?.catalogScope;
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -524,8 +526,8 @@ final class RadiologyWorkspaceController
         .disableFacilityRadiologyTestOffering(
           testId,
           reason,
-          tenantId: scope?.tenantId,
-          facilityId: scope?.facilityId,
+          tenantId: effectiveScope?.tenantId,
+          facilityId: effectiveScope?.facilityId,
         );
     return result.when(
       success: (_) async {
@@ -545,7 +547,7 @@ final class RadiologyWorkspaceController
           );
         }
         unawaited(searchReferences());
-        return null;
+        return _reloadCatalogConfigAfterMutation(effectiveScope);
       },
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
@@ -555,6 +557,75 @@ final class RadiologyWorkspaceController
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> disableRadiologyTestOfferings(
+    List<String> testIds,
+    String reason, {
+    RadiologyCatalogScope? scope,
+  }) async {
+    final RadiologyCatalogScope? effectiveScope =
+        scope ?? _currentState?.catalogScope;
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final List<String> normalizedIds = testIds
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (normalizedIds.isEmpty) {
+      return null;
+    }
+
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    AppFailure? failure;
+    final Set<String> removedIds = <String>{};
+    for (final String testId in normalizedIds) {
+      final Result<void> result = await _repository
+          .disableFacilityRadiologyTestOffering(
+            testId,
+            reason,
+            tenantId: effectiveScope?.tenantId,
+            facilityId: effectiveScope?.facilityId,
+          );
+      result.when(
+        success: (_) => removedIds.add(testId),
+        failure: (AppFailure value) => failure ??= value,
+      );
+    }
+
+    final RadiologyWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          catalogTests: latest.catalogTests
+              .where(
+                (RadiologyCatalogTest item) =>
+                    !removedIds.contains(item.apiId) &&
+                    !removedIds.contains(item.id),
+              )
+              .toList(growable: false),
+          isMutating: false,
+          lastFailure: failure,
+          clearLastFailure: failure == null,
+        ),
+      );
+    }
+    unawaited(searchReferences());
+    final AppFailure? reloadFailure = await _reloadCatalogConfigAfterMutation(
+      effectiveScope,
+    );
+    return failure ?? reloadFailure;
+  }
+
+  Future<AppFailure?> _reloadCatalogConfigAfterMutation(
+    RadiologyCatalogScope? scope,
+  ) async {
+    if (scope?.isReady ?? false) {
+      return loadFacilityCatalogConfig(scope!);
+    }
+    return null;
   }
 
   Future<AppFailure?> createRadiologyTest(Map<String, Object?> payload) {
@@ -1116,9 +1187,15 @@ final class RadiologyWorkspaceController
     RadiologyCatalogTest updated,
     String requestId,
   ) {
+    final String normalizedRequestId = requestId.trim();
+    final String? itemCode = item.code?.trim().toUpperCase();
+    final String? updatedCode = updated.code?.trim().toUpperCase();
     return item.id == updated.id ||
         item.apiId == updated.apiId ||
-        item.apiId == requestId ||
-        item.id == requestId;
+        item.apiId == normalizedRequestId ||
+        item.id == normalizedRequestId ||
+        (itemCode != null &&
+            itemCode.isNotEmpty &&
+            itemCode == updatedCode);
   }
 }

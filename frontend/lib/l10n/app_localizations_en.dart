@@ -16466,6 +16466,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyEnableOfferingAlreadyOfferedLabel => 'Already offered';
 
   @override
+  String get radiologyEnableOfferingAvailableLabel => 'Available';
+
+  @override
+  String get radiologyDeleteSelectedOfferingsAction => 'Delete selected';
+
+  @override
+  String get radiologyDeleteSelectedOfferingsDialogTitle =>
+      'Remove selected procedures?';
+
+  @override
+  String radiologyDeleteSelectedOfferingsDialogBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count procedures',
+      one: '1 procedure',
+    );
+    return 'Remove $_temp0 from this facility catalog? Clinicians will no longer be able to order them here.';
+  }
+
+  @override
+  String get radiologyOfferingDisabledMessage =>
+      'Radiology procedure removed from facility catalog.';
+
+  @override
+  String get radiologyDisableOfferingDialogTitle =>
+      'Remove procedure from facility?';
+
+  @override
+  String radiologyDisableOfferingDialogBody(String name) {
+    return 'Remove $name from this facility catalog? Clinicians will no longer be able to order it here.';
+  }
+
+  @override
   String get radiologyEnableProcedureAction => 'Enable procedure';
 
   @override

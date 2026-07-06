@@ -23,6 +23,7 @@ class _RadiologyConfigurationsDialogState
   String? _tenantId;
   String? _facilityId;
   bool _initializedScope = false;
+  final Set<String> _selectedOfferingIds = <String>{};
 
   RadiologyCatalogScope get _catalogScope =>
       RadiologyCatalogScope(tenantId: _tenantId, facilityId: _facilityId);
@@ -127,7 +128,10 @@ class _RadiologyConfigurationsDialogState
             !_shouldSyncCatalogState(_dialogState, nextState)) {
           return;
         }
-        setState(() => _dialogState = nextState);
+        setState(() {
+          _dialogState = nextState;
+          _pruneOfferingSelection(nextState.catalogTests);
+        });
       },
     );
     final RadiologyWorkspaceState state = _dialogState;
@@ -248,6 +252,7 @@ class _RadiologyConfigurationsDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: showCatalogLoadingPanel
               ? null
               : () => Navigator.of(context).pop(),
@@ -303,6 +308,16 @@ class _RadiologyConfigurationsDialogState
           setState(() => _filterValue = value);
         },
         trailingActions: <AppSearchBarAction>[
+          if (_selectedOfferingIds.isNotEmpty)
+            AppSearchBarAction(
+              icon: Icons.delete_outline,
+              label: l10n.radiologyDeleteSelectedOfferingsAction,
+              tooltip: l10n.radiologyDeleteSelectedOfferingsAction,
+              enabled: !tableBusy,
+              onPressed: tableBusy
+                  ? null
+                  : () => _openDeleteSelectedOfferingsDialog(context, tests),
+            ),
           if (_canEnableOfferings)
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
@@ -327,6 +342,7 @@ class _RadiologyConfigurationsDialogState
         minHeight: 180,
       ),
       columns: <AppListTableColumn<RadiologyCatalogTest>>[
+        _offeringSelectionColumn(context, tests, tableBusy),
         AppListTableColumn<RadiologyCatalogTest>(
           id: 'name',
           label: l10n.radiologyTestNameLabel,
@@ -388,14 +404,31 @@ class _RadiologyConfigurationsDialogState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _IconTwoLineCell(
-                icon: _radiologyModalityIcon(item.modality),
-                title: item.name,
-                subtitle: _joinDisplay(<String?>[
-                  item.code,
-                  _modalityLabelOrNull(l10n, item.modality),
-                  _formatRadiologyCatalogUnitPrice(context, item, l10n),
-                ]),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Checkbox(
+                    value: _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+                    onChanged: tableBusy
+                        ? null
+                        : (bool? value) => _toggleOfferingSelection(
+                            item,
+                            selected: value ?? false,
+                          ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Expanded(
+                    child: _IconTwoLineCell(
+                      icon: _radiologyModalityIcon(item.modality),
+                      title: item.name,
+                      subtitle: _joinDisplay(<String?>[
+                        item.code,
+                        _modalityLabelOrNull(l10n, item.modality),
+                        _formatRadiologyCatalogUnitPrice(context, item, l10n),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: theme.spacing.xs),
               _testActionButtons(context, item, tableBusy),
@@ -495,6 +528,10 @@ class _RadiologyConfigurationsDialogState
       return;
     }
     if (saved == true) {
+      await _reloadCatalogIfReady();
+      if (!context.mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.radiologySaveConfigurationAction)),
       );
@@ -525,6 +562,10 @@ class _RadiologyConfigurationsDialogState
     if (!context.mounted || saved != true) {
       return;
     }
+    await _reloadCatalogIfReady();
+    if (!context.mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.radiologySaveConfigurationAction)),
     );
@@ -538,16 +579,171 @@ class _RadiologyConfigurationsDialogState
     final RadiologyWorkspaceController controller = ref.read(
       radiologyWorkspaceControllerProvider.notifier,
     );
-    await showAppDialog<bool>(
+    final bool? deleted = await showAppDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => LabDeleteReasonDialog(
-        title: l10n.radiologyDeleteImagingTestDialogTitle,
-        body: l10n.radiologyDeleteImagingTestDialogBody(test.name),
+        title: l10n.radiologyDisableOfferingDialogTitle,
+        body: l10n.radiologyDisableOfferingDialogBody(test.name),
         submitLabel: l10n.radiologyDeleteImagingTestAction,
-        onDelete: (String reason) =>
-            controller.disableRadiologyTestOffering(test.apiId, reason),
+        onDelete: (String reason) => controller.disableRadiologyTestOffering(
+          test.apiId,
+          reason,
+          scope: _catalogScope,
+        ),
       ),
     );
+    if (!context.mounted) {
+      return;
+    }
+    if (deleted == true) {
+      setState(() {
+        _selectedOfferingIds.remove(_offeringSelectionKey(test));
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.radiologyOfferingDisabledMessage)),
+      );
+    }
+  }
+
+  Future<void> _openDeleteSelectedOfferingsDialog(
+    BuildContext context,
+    List<RadiologyCatalogTest> visibleTests,
+  ) async {
+    if (_selectedOfferingIds.isEmpty) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final RadiologyWorkspaceController controller = ref.read(
+      radiologyWorkspaceControllerProvider.notifier,
+    );
+    final List<String> selectedIds = visibleTests
+        .where(
+          (RadiologyCatalogTest item) =>
+              _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+        )
+        .map((RadiologyCatalogTest item) => item.apiId)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) {
+      return;
+    }
+    final bool? deleted = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LabDeleteReasonDialog(
+        title: l10n.radiologyDeleteSelectedOfferingsDialogTitle,
+        body: l10n.radiologyDeleteSelectedOfferingsDialogBody(
+          selectedIds.length,
+        ),
+        submitLabel: l10n.radiologyDeleteSelectedOfferingsAction,
+        onDelete: (String reason) => controller.disableRadiologyTestOfferings(
+          selectedIds,
+          reason,
+          scope: _catalogScope,
+        ),
+      ),
+    );
+    if (!context.mounted) {
+      return;
+    }
+    if (deleted == true) {
+      setState(() => _selectedOfferingIds.clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.radiologyOfferingDisabledMessage)),
+      );
+    }
+  }
+
+  AppListTableColumn<RadiologyCatalogTest> _offeringSelectionColumn(
+    BuildContext context,
+    List<RadiologyCatalogTest> visibleTests,
+    bool isBusy,
+  ) {
+    final bool allSelected =
+        visibleTests.isNotEmpty &&
+        visibleTests.every(
+          (RadiologyCatalogTest item) =>
+              _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+        );
+    final bool someSelected = visibleTests.any(
+      (RadiologyCatalogTest item) =>
+          _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+    );
+
+    return AppListTableColumn<RadiologyCatalogTest>(
+      id: 'select',
+      label: '',
+      alwaysVisible: true,
+      headerBuilder: (BuildContext context) {
+        return Checkbox(
+          tristate: true,
+          value: allSelected
+              ? true
+              : someSelected
+              ? null
+              : false,
+          onChanged: !isBusy && visibleTests.isNotEmpty
+              ? (bool? checked) => _toggleAllOfferingSelections(
+                  visibleTests,
+                  selected: checked ?? false,
+                )
+              : null,
+          visualDensity: VisualDensity.compact,
+        );
+      },
+      cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
+        return Checkbox(
+          value: _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+          onChanged: isBusy
+              ? null
+              : (bool? value) => _toggleOfferingSelection(
+                  item,
+                  selected: value ?? false,
+                ),
+          visualDensity: VisualDensity.compact,
+        );
+      },
+    );
+  }
+
+  String _offeringSelectionKey(RadiologyCatalogTest item) => item.apiId;
+
+  void _toggleOfferingSelection(
+    RadiologyCatalogTest item, {
+    required bool selected,
+  }) {
+    final String key = _offeringSelectionKey(item);
+    setState(() {
+      if (selected) {
+        _selectedOfferingIds.add(key);
+      } else {
+        _selectedOfferingIds.remove(key);
+      }
+    });
+  }
+
+  void _toggleAllOfferingSelections(
+    List<RadiologyCatalogTest> visibleTests, {
+    required bool selected,
+  }) {
+    setState(() {
+      if (!selected) {
+        for (final RadiologyCatalogTest item in visibleTests) {
+          _selectedOfferingIds.remove(_offeringSelectionKey(item));
+        }
+        return;
+      }
+      for (final RadiologyCatalogTest item in visibleTests) {
+        _selectedOfferingIds.add(_offeringSelectionKey(item));
+      }
+    });
+  }
+
+  void _pruneOfferingSelection(List<RadiologyCatalogTest> catalogTests) {
+    final Set<String> validKeys = catalogTests
+        .map(_offeringSelectionKey)
+        .toSet();
+    _selectedOfferingIds.removeWhere((String key) => !validKeys.contains(key));
   }
 
   RadiologyWorkspaceState? _stateFromAsync(
