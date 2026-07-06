@@ -498,7 +498,7 @@ final class RadiologyWorkspaceController
           ),
         );
         unawaited(searchReferences());
-        return _reloadCatalogConfigAfterMutation(effectiveScope);
+        return null;
       },
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
@@ -547,7 +547,7 @@ final class RadiologyWorkspaceController
           );
         }
         unawaited(searchReferences());
-        return _reloadCatalogConfigAfterMutation(effectiveScope);
+        return null;
       },
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
@@ -613,19 +613,7 @@ final class RadiologyWorkspaceController
       );
     }
     unawaited(searchReferences());
-    final AppFailure? reloadFailure = await _reloadCatalogConfigAfterMutation(
-      effectiveScope,
-    );
-    return failure ?? reloadFailure;
-  }
-
-  Future<AppFailure?> _reloadCatalogConfigAfterMutation(
-    RadiologyCatalogScope? scope,
-  ) async {
-    if (scope?.isReady ?? false) {
-      return loadFacilityCatalogConfig(scope!);
-    }
-    return null;
+    return failure;
   }
 
   Future<AppFailure?> createRadiologyTest(Map<String, Object?> payload) {

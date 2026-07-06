@@ -167,6 +167,7 @@ final class AppSearchBarAction {
     this.tooltip,
     this.enabled = true,
     this.active = false,
+    this.destructive = false,
   });
 
   final IconData icon;
@@ -175,6 +176,7 @@ final class AppSearchBarAction {
   final String? tooltip;
   final bool enabled;
   final bool active;
+  final bool destructive;
 }
 
 class AppSearchBar extends StatefulWidget {
@@ -215,6 +217,8 @@ class AppSearchBar extends StatefulWidget {
     this.onFilterChanged,
     this.hasActiveFilters = false,
     this.trailingActions = const <AppSearchBarAction>[],
+    this.maxTrailingActions,
+    this.trailingActionsOverflowLabel = 'More actions',
     super.key,
   });
 
@@ -254,6 +258,8 @@ class AppSearchBar extends StatefulWidget {
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
   final List<AppSearchBarAction> trailingActions;
+  final int? maxTrailingActions;
+  final String trailingActionsOverflowLabel;
 
   @override
   State<AppSearchBar> createState() => _AppSearchBarState();
@@ -326,6 +332,21 @@ class _AppSearchBarState extends State<AppSearchBar> {
               constraints,
             );
             final bool showActionLabels = breakpoint.showsToolbarActionLabels;
+            final List<AppSearchBarAction> inlineTrailingActions;
+            final List<AppSearchBarAction> overflowTrailingActions;
+            final int? maxTrailingActions = widget.maxTrailingActions;
+            if (maxTrailingActions != null &&
+                widget.trailingActions.length > maxTrailingActions) {
+              inlineTrailingActions = widget.trailingActions
+                  .take(maxTrailingActions)
+                  .toList(growable: false);
+              overflowTrailingActions = widget.trailingActions
+                  .skip(maxTrailingActions)
+                  .toList(growable: false);
+            } else {
+              inlineTrailingActions = widget.trailingActions;
+              overflowTrailingActions = const <AppSearchBarAction>[];
+            }
 
             return AppActionLabelScope(
               showLabels: showActionLabels,
@@ -392,7 +413,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           onPressed: _openAdvancedFilters,
                         ),
                       for (final AppSearchBarAction action
-                          in widget.trailingActions)
+                          in inlineTrailingActions)
                         _AttachedSearchBarActionButton(
                           borderColor: borderSide.color,
                           action: action,
@@ -402,6 +423,14 @@ class _AppSearchBarState extends State<AppSearchBar> {
                               !widget.isLoading &&
                               action.enabled &&
                               action.onPressed != null,
+                        ),
+                      if (overflowTrailingActions.isNotEmpty)
+                        _AttachedSearchBarOverflowMenu(
+                          borderColor: borderSide.color,
+                          actions: overflowTrailingActions,
+                          label: widget.trailingActionsOverflowLabel,
+                          showLabel: showActionLabels,
+                          enabled: widget.enabled && !widget.isLoading,
                         ),
                     ],
                   ),
@@ -560,6 +589,7 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return _AttachedSearchBarButton(
       borderColor: borderColor,
       enabled: enabled,
@@ -569,6 +599,72 @@ class _AttachedSearchBarActionButton extends StatelessWidget {
       label: action.label,
       tooltip: action.tooltip,
       onPressed: action.onPressed,
+      foregroundColor: action.destructive ? colorScheme.error : null,
+    );
+  }
+}
+
+class _AttachedSearchBarOverflowMenu extends StatelessWidget {
+  const _AttachedSearchBarOverflowMenu({
+    required this.borderColor,
+    required this.actions,
+    required this.label,
+    required this.showLabel,
+    required this.enabled,
+  });
+
+  final Color borderColor;
+  final List<AppSearchBarAction> actions;
+  final String label;
+  final bool showLabel;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return MenuAnchor(
+      style: MenuStyle(
+        visualDensity: VisualDensity.compact,
+        alignment: AlignmentDirectional.bottomEnd,
+        padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+          EdgeInsets.all(theme.spacing.xs),
+        ),
+      ),
+      builder: (BuildContext context, MenuController controller, Widget? child) {
+        return _AttachedSearchBarButton(
+          borderColor: borderColor,
+          enabled: enabled,
+          active: controller.isOpen,
+          showLabel: showLabel,
+          icon: Icons.more_vert,
+          label: label,
+          tooltip: label,
+          onPressed: enabled
+              ? () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                }
+              : null,
+        );
+      },
+      menuChildren: <Widget>[
+        for (final AppSearchBarAction action in actions)
+          MenuItemButton(
+            onPressed: enabled && action.enabled && action.onPressed != null
+                ? action.onPressed
+                : null,
+            leadingIcon: Icon(
+              action.icon,
+              color: action.destructive ? colorScheme.error : null,
+            ),
+            child: Text(action.label),
+          ),
+      ],
     );
   }
 }
@@ -614,6 +710,7 @@ class _AttachedSearchBarButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.tooltip,
+    this.foregroundColor,
   });
 
   final Color borderColor;
@@ -624,14 +721,14 @@ class _AttachedSearchBarButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final String? tooltip;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = active
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
+    final Color foreground = foregroundColor ??
+        (active ? colorScheme.primary : colorScheme.onSurfaceVariant);
     final Color background = active
         ? colorScheme.primaryContainer.withValues(alpha: 0.54)
         : Colors.transparent;

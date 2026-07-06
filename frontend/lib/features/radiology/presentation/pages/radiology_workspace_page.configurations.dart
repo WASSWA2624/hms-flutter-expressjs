@@ -274,8 +274,9 @@ class _RadiologyConfigurationsDialogState
       items: tests,
       isLoading: tableBusy,
       maxVisibleItems: _maxVisibleItems,
+      maxTrailingActions: 3,
+      trailingActionsOverflowLabel: l10n.workspaceToolbarOverflowLabel,
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: _testColumnController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
@@ -308,16 +309,6 @@ class _RadiologyConfigurationsDialogState
           setState(() => _filterValue = value);
         },
         trailingActions: <AppSearchBarAction>[
-          if (_selectedOfferingIds.isNotEmpty)
-            AppSearchBarAction(
-              icon: Icons.delete_outline,
-              label: l10n.radiologyDeleteSelectedOfferingsAction,
-              tooltip: l10n.radiologyDeleteSelectedOfferingsAction,
-              enabled: !tableBusy,
-              onPressed: tableBusy
-                  ? null
-                  : () => _openDeleteSelectedOfferingsDialog(context, tests),
-            ),
           if (_canEnableOfferings)
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
@@ -325,6 +316,17 @@ class _RadiologyConfigurationsDialogState
               tooltip: l10n.radiologyEnableProcedureAction,
               enabled: !tableBusy,
               onPressed: tableBusy ? null : () => _openEnableProcedureDialog(context),
+            ),
+          if (_selectedOfferingIds.isNotEmpty)
+            AppSearchBarAction(
+              icon: Icons.delete_outline,
+              label: l10n.radiologyDeleteSelectedOfferingsAction,
+              tooltip: l10n.radiologyDeleteSelectedOfferingsAction,
+              enabled: !tableBusy,
+              destructive: true,
+              onPressed: tableBusy
+                  ? null
+                  : () => _openDeleteSelectedOfferingsDialog(context, tests),
             ),
           AppSearchBarAction(
             icon: Icons.refresh_outlined,
@@ -460,6 +462,7 @@ class _RadiologyConfigurationsDialogState
     bool isBusy,
   ) {
     final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: Theme.of(context).spacing.xs,
       runSpacing: Theme.of(context).spacing.xs,
@@ -480,6 +483,7 @@ class _RadiologyConfigurationsDialogState
           label: l10n.radiologyDeleteImagingTestAction,
           semanticLabel: l10n.radiologyDeleteImagingTestAction,
           tooltip: l10n.radiologyDeleteImagingTestAction,
+          color: colorScheme.error,
           onPressed: isBusy
               ? null
               : () => _openDeleteOfferingDialog(context, item),
@@ -586,6 +590,7 @@ class _RadiologyConfigurationsDialogState
         title: l10n.radiologyDisableOfferingDialogTitle,
         body: l10n.radiologyDisableOfferingDialogBody(test.name),
         submitLabel: l10n.radiologyDeleteImagingTestAction,
+        destructiveSubmit: true,
         onDelete: (String reason) => controller.disableRadiologyTestOffering(
           test.apiId,
           reason,
@@ -636,6 +641,7 @@ class _RadiologyConfigurationsDialogState
           selectedIds.length,
         ),
         submitLabel: l10n.radiologyDeleteSelectedOfferingsAction,
+        destructiveSubmit: true,
         onDelete: (String reason) => controller.disableRadiologyTestOfferings(
           selectedIds,
           reason,
@@ -683,9 +689,9 @@ class _RadiologyConfigurationsDialogState
               ? null
               : false,
           onChanged: !isBusy && visibleTests.isNotEmpty
-              ? (bool? checked) => _toggleAllOfferingSelections(
+              ? (_) => _toggleAllOfferingSelections(
                   visibleTests,
-                  selected: checked ?? false,
+                  selected: !allSelected,
                 )
               : null,
           visualDensity: VisualDensity.compact,

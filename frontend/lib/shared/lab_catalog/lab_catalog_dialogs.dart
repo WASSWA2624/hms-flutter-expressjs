@@ -1808,6 +1808,8 @@ class LabDeleteReasonDialog extends StatefulWidget {
     required this.submitLabel,
     required this.onDelete,
     this.icon = const Icon(Icons.delete_outline),
+    this.showCancelButton = false,
+    this.destructiveSubmit = false,
     super.key,
   });
 
@@ -1815,6 +1817,8 @@ class LabDeleteReasonDialog extends StatefulWidget {
   final String body;
   final String submitLabel;
   final Widget icon;
+  final bool showCancelButton;
+  final bool destructiveSubmit;
   final Future<AppFailure?> Function(String reason) onDelete;
 
   @override
@@ -1846,6 +1850,7 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
@@ -1881,14 +1886,16 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
+        if (widget.showCancelButton)
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            enabled: !_isSaving,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
         AppButton.primary(
           label: widget.submitLabel,
           leadingIcon: Icons.delete_outline,
+          color: widget.destructiveSubmit ? colorScheme.error : null,
           isLoading: _isSaving,
           enabled: !_isSaving && _canSubmit,
           onPressed: _submit,

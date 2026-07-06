@@ -444,11 +444,6 @@ class _RadiologyEnableOfferingPriceDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.radiologyEnableProcedureAction,
           leadingIcon: Icons.check_circle_outline,
@@ -576,11 +571,6 @@ class _RadiologyEditFacilityOfferingDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.radiologySaveConfigurationAction,
           leadingIcon: Icons.save_outlined,

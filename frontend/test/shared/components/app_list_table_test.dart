@@ -717,6 +717,40 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
     expect(find.text('Beta'), findsOneWidget);
   });
+
+  testWidgets('AppListTable caps rendered rows with maxVisibleItems', (
+    WidgetTester tester,
+  ) async {
+    final List<_RowItem> manyItems = List<_RowItem>.generate(
+      10,
+      (int index) => _RowItem(
+        id: 'item-$index',
+        title: 'Item $index',
+        status: 'Active',
+      ),
+    );
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        width: 960,
+        child: AppListTable<_RowItem>(
+          items: manyItems,
+          columns: _columns,
+          maxVisibleItems: 3,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return ListTile(title: Text(item.title));
+          },
+        ),
+      ),
+      size: const Size(960, 600),
+    );
+
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(find.text('Item 2'), findsOneWidget);
+    expect(find.text('Item 3'), findsNothing);
+  });
 }
 
 const List<AppListTableColumn<_RowItem>> _columns =

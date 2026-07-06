@@ -376,6 +376,8 @@ final class AppListTableSearch<T> {
     this.onFilterChanged,
     this.hasActiveFilters = false,
     this.trailingActions = const <AppSearchBarAction>[],
+    this.maxTrailingActions,
+    this.trailingActionsOverflowLabel = 'More actions',
   });
 
   final TextEditingController controller;
@@ -415,10 +417,14 @@ final class AppListTableSearch<T> {
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
   final List<AppSearchBarAction> trailingActions;
+  final int? maxTrailingActions;
+  final String trailingActionsOverflowLabel;
 
   Widget buildSearchBar(
     BuildContext context, {
     List<AppSearchBarAction> trailingActions = const <AppSearchBarAction>[],
+    int? maxTrailingActions,
+    String? trailingActionsOverflowLabel,
   }) {
     return AppSearchBar(
       controller: controller,
@@ -460,6 +466,9 @@ final class AppListTableSearch<T> {
         ...this.trailingActions,
         ...trailingActions,
       ],
+      maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
+      trailingActionsOverflowLabel:
+          trailingActionsOverflowLabel ?? this.trailingActionsOverflowLabel,
     );
   }
 }
@@ -532,6 +541,8 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityController,
     this.columnVisibilityStorageKey,
     this.tableHorizontalMargin,
+    this.maxTrailingActions,
+    this.trailingActionsOverflowLabel = 'More actions',
     super.key,
   }) : assert(
          items != null || page != null,
@@ -576,6 +587,8 @@ class AppListTable<T> extends StatefulWidget {
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
   final String? columnVisibilityStorageKey;
   final double? tableHorizontalMargin;
+  final int? maxTrailingActions;
+  final String trailingActionsOverflowLabel;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -585,6 +598,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   Set<String> _visibleColumnKeys = <String>{};
   String? _sortColumnKey;
   bool _sortAscending = true;
+  int? _renderLimit;
+  String _trackedQuery = '';
+  int _trackedSortedItemCount = 0;
 
   @override
   void initState() {
@@ -664,6 +680,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final Widget searchBar = resolvedSearch.buildSearchBar(
       context,
       trailingActions: _searchActions(),
+      maxTrailingActions: widget.maxTrailingActions,
+      trailingActionsOverflowLabel: widget.trailingActionsOverflowLabel,
     );
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: resolvedSearch.controller,
@@ -679,12 +697,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     required Widget? searchBar,
     bool usesExternalSearchListenable = false,
   }) {
-    final ({bool disablePagination, List<T> items, AppPage<T>? page}) data =
+    final ({bool disablePagination, List<T> items, int totalSortedCount, AppPage<T>? page}) data =
         _visibleData(
           query,
           usesExternalSearchListenable: usesExternalSearchListenable,
         );
-    final Widget content = _buildForItems(context, data.items);
+    final Widget content = _wrapIncrementalScroll(
+      context,
+      totalSortedCount: data.totalSortedCount,
+      child: _buildForItems(context, data.items),
+    );
     final Widget? footer = _footerForPage(
       context,
       data.page,
@@ -729,7 +751,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     );
   }
 
-  ({bool disablePagination, List<T> items, AppPage<T>? page}) _visibleData(
+  ({bool disablePagination, List<T> items, int totalSortedCount, AppPage<T>? page})
+  _visibleData(
     String query, {
     required bool usesExternalSearchListenable,
   }) {
@@ -748,6 +771,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     }
 
     final List<T> sortedItems = _sortedItems(visibleItems);
+    _syncRenderLimit(query, sortedItems.length);
     final List<T> renderedItems = _limitedVisibleItems(sortedItems);
     if (usesExternalSearchListenable &&
         normalizedQuery.isNotEmpty &&
@@ -755,6 +779,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return (
         disablePagination: true,
         items: renderedItems,
+        totalSortedCount: sortedItems.length,
         page: AppPage<T>(
           items: renderedItems,
           request: page.request.first(),
@@ -763,7 +788,25 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       );
     }
 
-    return (disablePagination: false, items: renderedItems, page: page);
+    return (
+      disablePagination: false,
+      items: renderedItems,
+      totalSortedCount: sortedItems.length,
+      page: page,
+    );
+  }
+
+  void _syncRenderLimit(String query, int sortedItemCount) {
+    final int? cap = widget.maxVisibleItems;
+    if (cap == null || cap <= 0) {
+      _renderLimit = null;
+      return;
+    }
+    if (query != _trackedQuery || sortedItemCount != _trackedSortedItemCount) {
+      _trackedQuery = query;
+      _trackedSortedItemCount = sortedItemCount;
+      _renderLimit = cap;
+    }
   }
 
   List<T> _limitedVisibleItems(List<T> items) {
@@ -771,7 +814,62 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (limit == null || limit <= 0 || items.length <= limit) {
       return items;
     }
-    return items.take(limit).toList(growable: false);
+    final int renderCount = math.min(_renderLimit ?? limit, items.length);
+    return items.take(renderCount).toList(growable: false);
+  }
+
+  bool _canRevealMoreItems(int totalSortedCount) {
+    final int? limit = widget.maxVisibleItems;
+    if (limit == null || limit <= 0 || totalSortedCount <= limit) {
+      return false;
+    }
+    return (_renderLimit ?? limit) < totalSortedCount;
+  }
+
+  void _revealMoreItems(int totalSortedCount) {
+    final int? batch = widget.maxVisibleItems;
+    if (batch == null || batch <= 0) {
+      return;
+    }
+    final int current = _renderLimit ?? batch;
+    if (current >= totalSortedCount) {
+      return;
+    }
+    setState(() {
+      _renderLimit = math.min(current + batch, totalSortedCount);
+    });
+  }
+
+  Widget _wrapIncrementalScroll(
+    BuildContext context, {
+    required int totalSortedCount,
+    required Widget child,
+  }) {
+    if (!_canRevealMoreItems(totalSortedCount)) {
+      return child;
+    }
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        if (notification is! ScrollUpdateNotification) {
+          return false;
+        }
+        final double? delta = notification.scrollDelta;
+        if (delta == null || delta == 0) {
+          return false;
+        }
+        final ScrollMetrics metrics = notification.metrics;
+        if (metrics.maxScrollExtent <= 0) {
+          return false;
+        }
+        if (metrics.pixels < metrics.maxScrollExtent - 240) {
+          return false;
+        }
+        _revealMoreItems(totalSortedCount);
+        return false;
+      },
+      child: child,
+    );
   }
 
   Widget _buildForItems(BuildContext context, List<T> visibleItems) {

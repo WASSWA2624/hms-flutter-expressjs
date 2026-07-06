@@ -1,115 +1,128 @@
-# Feature: Fix Radiology facility catalog configuration (Configurations + Enable Offering)
+# Feature: Polish Radiology facility catalog configurations
 
 ## Goal
 
-Make **Radiology configurations** reliable for facility admins: enable platform procedures with a price, see them immediately in the list with complete metadata, edit unit price, and remove offerings (single or batch). This is **facility-level offering configuration only**—not platform catalog authoring.
+Fix selection, scrolling, toolbar density, and destructive-action styling in the **Radiology configurations** dialog so facility admins can manage imaging offerings efficiently. Apply reusable improvements to shared table and dialog primitives where noted.
 
-## Current state (screenshots)
+## Context (screenshots)
 
-Two dialogs in the Radiology workspace **Configurations** flow:
+The **Radiology configurations** dialog (`RADIOLOGY CONFIGURATIONS`) lists facility imaging offerings with tenant/facility scope selectors, search, modality filters, row selection, and actions (edit price, remove). Supporting dialogs:
 
-| Dialog | Purpose |
-|--------|---------|
-| **Radiology configurations** | Lists procedures already enabled for the selected tenant/facility (name, code, modality, unit price, actions). |
-| **Enable Radiology Offering** | Searchable platform catalog picker; user sets facility price to enable a procedure. |
+- **Edit facility offering** — unit price + currency; footer has Cancel + Save configuration.
+- **Remove procedure from facility?** — confirmation with required deletion reason; footer has Cancel + Delete imaging test.
 
-What already works (keep):
+## Primary files
 
-- Tenant / facility context selectors and scope gating.
-- Search, **Radiology filters**, **Table settings**, **Refresh**, and **Enable procedure** toolbar actions.
-- Row click on non-offered catalog items opens the price dialog.
-- Edit and delete affordances exist in the configurations table (icon buttons).
+| Area | Path |
+|------|------|
+| Configurations dialog & table | `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.configurations.dart` |
+| Edit / enable dialogs | `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart` |
+| Delete-reason dialog (shared) | `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` (`LabDeleteReasonDialog`) |
+| Controller / data load | `frontend/lib/features/radiology/presentation/controllers/radiology_workspace_controller.dart` |
+| Shared table | `frontend/lib/shared/components/app_list_table.dart` |
+| Shared search bar | `frontend/lib/shared/components/app_search_bar.dart` |
+| Toolbar overflow pattern | `frontend/lib/shared/layout/app_workspace_toolbar.dart`, `app_toolbar_overflow_resolver.dart` |
 
-## Problems
+**Reference:** Lab facility catalog config in `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` (similar `AppListTable` + `AppSearchBar` usage).
 
-### 1. Enable Offering — misleading empty Action column
+---
 
-The last column is labeled **Action** but is blank for procedures not yet enabled at the facility. Only already-offered rows show “Already offered.”
+## 1. Fix header select-all checkbox
 
-**Expected:** Rename the column to **Status** and show a clear state for every row, e.g.:
+**Bug:** The column header checkbox selects all visible rows, but clicking again does not clear the selection.
 
-| State | Display |
-|-------|---------|
-| Not yet enabled | “Available” / “Not enabled” (muted) |
-| Already at facility | “Already offered” (existing label) |
+**Location:** `_offeringSelectionColumn` / `_toggleAllOfferingSelections` in `radiology_workspace_page.configurations.dart`.
 
-Do not leave cells empty. Match the intent of the Lab enable-offering dialog but use a **Status** label (not Action).
+**Expected behavior:**
 
-### 2. Enable / list sync — offerings missing or incomplete after save
+- Unchecked → select all visible rows.
+- Checked (all selected) → clear selection for all visible rows.
+- Indeterminate (some selected) → select all visible rows (standard tri-state pattern).
 
-Observed failures:
+**Note:** Tristate `Checkbox` may pass `null` when transitioning from all-selected; handle that case explicitly instead of relying on `checked ?? false` alone.
 
-- Enabling a procedure sometimes does not appear in **Radiology configurations** after save.
-- One offering persisted with **unit price only**—name, code, and modality showed “Not available”; the row vanished after closing and reopening the dialog.
-- Frontend and backend are out of sync.
+---
 
-**Expected:** After a successful enable (or edit/delete):
+## 2. Style delete actions as destructive
 
-1. **Backend:** `PUT /facility-radiology-catalog/tests/:radiology_test_id` persists the offering; list/search responses return merged master + offering fields (`name`, `code`, `modality`, `unit_price`, `currency`).
-2. **Frontend:** Configurations table updates immediately (optimistic merge **and** reload from server). No ghost rows with missing catalog metadata.
-3. **Enable dialog close:** Parent configurations dialog refreshes facility catalog (`loadFacilityCatalogConfig`) so new items are visible without manual refresh.
+Apply **danger color** (`theme.statusColors.danger` or `colorScheme.error`) to delete affordances in this feature:
 
-Investigate end-to-end: `RadiologyEnableFacilityOfferingDialog` → `upsertRadiologyTestOffering` → `mapMergedRadiologyTestRecord` → `RadiologyCatalogTestDto.toEntity()`.
+| Surface | Element |
+|---------|---------|
+| Configurations table — row actions | Delete icon button (`Icons.delete_outline`) |
+| Configurations toolbar | Delete selected action icon |
+| Remove procedure dialog | Submit button icon (`Icons.delete_outline`) |
 
-### 3. Edit and delete actions inactive
+Do **not** recolor non-delete actions (edit, enable, refresh, etc.). Match existing destructive styling elsewhere (e.g. `clinical_request_flow_dialogs.dart`).
 
-In **Radiology configurations**, edit (pencil) and delete (trash) icons appear but do not work reliably.
+---
 
-**Expected:**
+## 3. Limit search-bar toolbar to three visible actions
 
-- **Edit** opens `RadiologyEditFacilityOfferingDialog` and updates unit price/currency only (facility offering—not platform test fields).
-- **Delete** opens the existing reason dialog and calls `disableRadiologyTestOffering` (soft-disable facility offering).
-- Buttons are enabled when scope is ready and not blocked by a stuck `isMutating` / `isLoadingCatalog` state. Surface API failures via snackbar or inline banner.
+**Problem:** The configurations search bar currently shows too many attached buttons (filters, delete selected, enable procedure, refresh, table settings).
 
-### 4. Batch delete for facility offerings
+**Requirement:** Show a **maximum of three** icon/action buttons inline on the search bar. Move additional actions into an **overflow menu** (⋮ or equivalent), using the same interaction model as workspace toolbars (`AppWorkspaceToolbar` overflow / `PopupMenuButton`).
 
-Add multi-select removal for configured procedures:
+**Suggested priority (inline, left to right after search + filters):**
 
-- **Selection column** as the leftmost column (checkbox per row + header select-all for current page/filter).
-- Toolbar action **Delete selected** (enabled when ≥1 row selected).
-- Confirm once (reuse `LabDeleteReasonDialog` pattern); disable each selected offering via existing delete API; refresh list and clear selection on success.
+1. **Enable procedure** (when permitted)
+2. **Delete selected** (when rows are selected)
+3. **Refresh**
 
-Scope: remove **facility offerings** only—never delete platform `radiology_test` records.
+**Overflow candidates:** Table settings, and any action that does not fit the inline cap. Filters remain as the existing attached filter control—not counted toward the three-action limit.
 
-### 5. Dialog footer polish
+Implement overflow support in `AppSearchBar` (or a thin wrapper) so other screens can reuse it; do not hard-code radiology-only UI in the shared component.
 
-If the footer **Close** button remains, add a leading icon (e.g. `Icons.close`) for consistency with other dialogs.
+---
 
-## Reference implementation
+## 4. Enable scroll-to-reveal for capped tables (`AppListTable`)
 
-**Primary files:**
+**Problem:** Tables with `maxVisibleItems` (e.g. `_maxVisibleItems = 140` in radiology configurations) truncate the list. Scrolling stops with no way to see remaining rows.
 
-| Layer | Path |
-|-------|------|
-| Configurations dialog | `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.configurations.dart` |
-| Enable / edit dialogs | `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart` |
-| Controller | `frontend/lib/features/radiology/presentation/controllers/radiology_workspace_controller.dart` |
-| DTO / entity | `frontend/lib/features/radiology/data/dtos/radiology_dtos.dart`, `radiology_entities.dart` |
-| Backend routes | `backend/src/modules/facility-radiology-catalog/routes/facility-radiology-catalog.routes.js` |
-| Backend service / merge | `backend/src/modules/facility-radiology-catalog/services/facility-radiology-catalog.service.js`, `facility-radiology-catalog.merge.js` |
+**Requirement (global `AppListTable` change):**
 
-**Patterns to mirror:**
+When `maxVisibleItems` is set and total items exceed the cap:
 
-- Lab enable-offering status column: `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart` (`_enableOfferingColumns`)—but use **Status** label for radiology.
-- Delete reason dialog: `LabDeleteReasonDialog` (already used for single delete).
-- Shared table/search: `AppListTable`, `AppSearchBar`, `FacilityCatalogScopeSection`.
+- Make the table body scrollable (remove `NeverScrollableScrollPhysics` where it blocks scrolling in dialog contexts, or add an internal scroll controller).
+- As the user scrolls near the bottom, **expand the rendered window** (e.g. load the next batch of rows) until all in-memory items are shown.
+- Preserve sort, selection, and column visibility across expansion.
+- Show a subtle loading indicator only if a future `onLoadMore` callback is provided; for radiology configurations the full list is already client-side—windowing is sufficient.
+
+**Radiology configurations:** After the shared fix, allow the configurations table to scroll inside the dialog and reveal offerings beyond the initial cap.
+
+---
+
+## 5. Remove redundant Cancel buttons from dialogs
+
+The dialog header **close (X)** already dismisses without saving. Remove the footer **Cancel** button from:
+
+| Dialog | File |
+|--------|------|
+| Edit facility offering | `RadiologyEditFacilityOfferingDialog` |
+| Remove procedure from facility | `LabDeleteReasonDialog` when used from radiology configurations |
+
+Keep the primary action only (Save configuration / Delete imaging test). Ensure `closeEnabled` still respects in-flight saves.
+
+*Optional follow-up (out of scope unless trivial):* apply the same pattern to `RadiologyEditFacilityOfferingDialog`'s enable-flow sibling if it also has redundant Cancel.
+
+---
 
 ## Implementation rules
 
-- **Facility scope only:** upsert/disable offerings; no create/update/delete of platform radiology catalog tests.
-- **Reload after mutations:** call `loadFacilityCatalogConfig` after enable dialog closes with success, and after batch delete completes.
-- **Merged API responses:** list and upsert must always include master test fields; fix mapping if upsert returns offering-only payloads.
-- **Localization:** add keys in `frontend/lib/l10n/app_en.arb` (e.g. status labels, batch delete action, selection column).
-- **No new visual language**—match Lab catalog configuration spacing, badges, and dialog patterns.
-- **Error visibility:** failed enable/edit/delete must show user-visible errors; do not fail silently.
+- Reuse shared components; extend `AppListTable` / `AppSearchBar` rather than one-off radiology hacks.
+- Match Lab/workspace spacing, typography, and overflow-menu behavior.
+- Add or adjust l10n keys in `frontend/lib/l10n/app_en.arb` only for new overflow labels.
+- No backend changes unless scroll expansion later wires to server pagination (not required for this task).
+- **Scope:** Radiology configurations UX + shared table/search-bar primitives. Do not change the main radiology worklist (see `prompt1.md`).
+
+---
 
 ## Acceptance criteria
 
-- [ ] Enable Offering table column is **Status**; every row shows Available or Already offered—no empty cells.
-- [ ] Enabling a procedure adds it to configurations with correct name, code, modality, and price without requiring a manual refresh.
-- [ ] Reopening configurations shows the same data persisted in the database (no disappearing or partial rows).
-- [ ] Edit updates unit price/currency and reflects immediately in the table.
-- [ ] Single delete removes the facility offering and updates the table.
-- [ ] Checkbox selection + **Delete selected** removes multiple offerings in one confirmed action.
-- [ ] Close button includes an icon when shown in dialog footers.
-- [ ] All mutations surface errors on failure; `isMutating` does not leave actions permanently disabled.
+- [ ] Header select-all checkbox selects all visible rows and clears selection on second click.
+- [ ] Row delete, delete-selected toolbar action, and remove-dialog submit icon use danger styling.
+- [ ] Configurations search bar shows ≤ 3 inline action buttons; remaining actions accessible via overflow menu.
+- [ ] Scrolling the configurations table reveals rows beyond `maxVisibleItems` until all loaded items are visible.
+- [ ] `AppListTable` scroll expansion works for any consumer using `maxVisibleItems`, not only radiology.
+- [ ] Edit facility offering and remove procedure dialogs have no Cancel button; close (X) and primary action still work correctly.
+- [ ] Existing flows (enable procedure, edit price, batch delete, refresh, table settings, filters) continue to work.
