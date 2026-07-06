@@ -523,6 +523,8 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.showAvatar = true,
     this.demographicsWidget,
     this.semanticLabel,
+    this.showActionLabels = false,
+    this.mergeFieldsIntoMetaLine = false,
     super.key,
   });
 
@@ -545,6 +547,8 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final bool showAvatar;
   final Widget? demographicsWidget;
   final String? semanticLabel;
+  final bool showActionLabels;
+  final bool mergeFieldsIntoMetaLine;
 
   @override
   Widget build(BuildContext context) {
@@ -557,6 +561,10 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
         secondaryFields
             .where((AppWorkspacePatientContextField field) => field.hasValue)
             .toList(growable: false);
+    final List<AppWorkspacePatientContextField> metaInlineFields =
+        mergeFieldsIntoMetaLine ? visibleFields : const <AppWorkspacePatientContextField>[];
+    final List<AppWorkspacePatientContextField> separateFields =
+        mergeFieldsIntoMetaLine ? const <AppWorkspacePatientContextField>[] : visibleFields;
     final bool hasIdentityContent =
         showPatientName ||
         showAvatar ||
@@ -590,10 +598,14 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
               copyPatientNumberMessage: copyPatientNumberMessage,
               copyPatientNumberSemanticLabel: copyPatientNumberSemanticLabel,
               showPatientNumberCopyIcon: showPatientNumberCopyIcon,
+              metaInlineFields: metaInlineFields,
             );
             final Widget? actionBar = actions.isEmpty
                 ? null
-                : _WorkspaceHeaderActions(actions: actions);
+                : _WorkspaceHeaderActions(
+                    actions: actions,
+                    showLabels: showActionLabels,
+                  );
             final List<Widget> children = <Widget>[];
 
             if (hasIdentityContent) {
@@ -619,14 +631,14 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
               children.add(actionBar);
             }
 
-            if (visibleFields.isNotEmpty) {
+            if (separateFields.isNotEmpty) {
               if (children.isNotEmpty) {
                 children.add(SizedBox(height: theme.spacing.md));
               }
               children.add(
                 fieldStyle == AppWorkspacePatientContextFieldStyle.inline
-                    ? _PatientContextInlineFacts(fields: visibleFields)
-                    : _PatientContextFieldGrid(fields: visibleFields),
+                    ? _PatientContextInlineFacts(fields: separateFields)
+                    : _PatientContextFieldGrid(fields: separateFields),
               );
             }
 
@@ -1053,6 +1065,7 @@ class _PatientContextIdentity extends StatelessWidget {
     required this.copyPatientNumberMessage,
     required this.copyPatientNumberSemanticLabel,
     required this.showPatientNumberCopyIcon,
+    this.metaInlineFields = const <AppWorkspacePatientContextField>[],
   });
 
   final String patientName;
@@ -1069,6 +1082,7 @@ class _PatientContextIdentity extends StatelessWidget {
   final String? copyPatientNumberMessage;
   final String? copyPatientNumberSemanticLabel;
   final bool showPatientNumberCopyIcon;
+  final List<AppWorkspacePatientContextField> metaInlineFields;
 
   @override
   Widget build(BuildContext context) {
@@ -1122,6 +1136,7 @@ class _PatientContextIdentity extends StatelessWidget {
                 copyPatientNumberMessage: copyPatientNumberMessage,
                 copyPatientNumberSemanticLabel: copyPatientNumberSemanticLabel,
                 showPatientNumberCopyIcon: showPatientNumberCopyIcon,
+                inlineFields: metaInlineFields,
               ),
               if (alerts.isNotEmpty) ...<Widget>[
                 SizedBox(height: theme.spacing.sm),
@@ -1147,6 +1162,7 @@ class _PatientContextMetaLine extends StatelessWidget {
     required this.copyPatientNumberMessage,
     required this.copyPatientNumberSemanticLabel,
     required this.showPatientNumberCopyIcon,
+    this.inlineFields = const <AppWorkspacePatientContextField>[],
   });
 
   final String patientNumber;
@@ -1159,6 +1175,7 @@ class _PatientContextMetaLine extends StatelessWidget {
   final String? copyPatientNumberMessage;
   final String? copyPatientNumberSemanticLabel;
   final bool showPatientNumberCopyIcon;
+  final List<AppWorkspacePatientContextField> inlineFields;
 
   @override
   Widget build(BuildContext context) {
@@ -1187,6 +1204,8 @@ class _PatientContextMetaLine extends StatelessWidget {
           ),
         ),
       if (status != null) AppWorkspaceStatusBadge(status: status!),
+      for (final AppWorkspacePatientContextField field in inlineFields)
+        _PatientContextInlineFact(field: field),
     ];
 
     return Wrap(
@@ -1669,9 +1688,13 @@ class _WorkspaceHeaderTitle extends StatelessWidget {
 }
 
 class _WorkspaceHeaderActions extends StatelessWidget {
-  const _WorkspaceHeaderActions({required this.actions});
+  const _WorkspaceHeaderActions({
+    required this.actions,
+    this.showLabels = false,
+  });
 
   final List<Widget> actions;
+  final bool showLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -1684,8 +1707,8 @@ class _WorkspaceHeaderActions extends StatelessWidget {
       children: <Widget>[
         for (final Widget action in actions)
           AppActionLabelScope(
-            showLabels: false,
-            forceIconOnly: true,
+            showLabels: showLabels,
+            forceIconOnly: !showLabels,
             child: action,
           ),
       ],

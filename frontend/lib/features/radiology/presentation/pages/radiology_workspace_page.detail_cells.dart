@@ -545,6 +545,19 @@ String _billingGateLabel(BuildContext context, RadiologyOrder order) {
   ]).ifEmpty(l10n.profileUnknownValue);
 }
 
+AppWorkspaceStatusTone _billingGateTone(RadiologyOrder order) {
+  if (!order.hasBillingGate) {
+    return AppWorkspaceStatusTone.warning;
+  }
+
+  final String payment = (order.effectivePaymentStatus ?? '').trim().toUpperCase();
+  return switch (payment) {
+    'PAID' || 'CONFIRMED' => AppWorkspaceStatusTone.success,
+    'PARTIAL' || 'UNPAID' || 'AWAITING' => AppWorkspaceStatusTone.warning,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
 AppWorkspaceStatusTone _orderStatusTone(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
     'COMPLETED' => AppWorkspaceStatusTone.success,

@@ -295,6 +295,54 @@ void main() {
     expect(wideLocationTop.dx, greaterThan(wideEncounterTop.dx));
   });
 
+  testWidgets(
+    'AppWorkspacePatientContextHeader merges fields into meta line and shows action labels',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppWorkspacePatientContextHeader(
+          patientName: 'Amina Kato',
+          patientNumber: 'MRN-10024',
+          patientNumberLabel: 'Patient ID',
+          status: const AppWorkspaceStatus(
+            label: 'Ordered',
+            tone: AppWorkspaceStatusTone.warning,
+          ),
+          mergeFieldsIntoMetaLine: true,
+          showActionLabels: true,
+          fields: const <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: 'Study',
+              value: 'Chest X-ray',
+            ),
+            AppWorkspacePatientContextField(
+              label: 'Payment',
+              value: 'Billing gate unavailable',
+              tone: AppWorkspaceStatusTone.warning,
+            ),
+          ],
+          actions: <Widget>[
+            AppButton.secondary(
+              label: 'Assign',
+              leadingIcon: Icons.person_add_alt_outlined,
+              onPressed: () {},
+            ),
+          ],
+        ),
+        size: const Size(1400, 500),
+      );
+
+      final Offset patientIdTop = tester.getTopLeft(find.text('Patient ID:'));
+      final Offset studyTop = tester.getTopLeft(find.textContaining('Study'));
+      final Offset paymentTop = tester.getTopLeft(find.textContaining('Payment'));
+
+      expect(studyTop.dy - patientIdTop.dy, lessThan(50));
+      expect(paymentTop.dy - patientIdTop.dy, lessThan(50));
+      expect(find.text('Assign'), findsOneWidget);
+      expect(find.text('Billing gate unavailable'), findsOneWidget);
+    },
+  );
+
   testWidgets('showAppWorkspaceActionDialog opens a standard modal action', (
     WidgetTester tester,
   ) async {

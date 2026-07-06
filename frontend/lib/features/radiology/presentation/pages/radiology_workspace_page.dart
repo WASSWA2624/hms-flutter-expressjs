@@ -686,7 +686,8 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           copyPatientNumberMessage: l10n.identifierCopiedMessage,
           semanticLabel: l10n.radiologyPatientContextLabel,
           showAvatar: false,
-          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+          showActionLabels: true,
+          mergeFieldsIntoMetaLine: true,
           status: _orderStatus(context, order),
           fields: <AppWorkspacePatientContextField>[
             if ((order.testDisplayName ?? '').trim().isNotEmpty)
@@ -694,14 +695,14 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
                 label: l10n.radiologyStudyLabel,
                 value: order.testDisplayName!,
               ),
+            AppWorkspacePatientContextField(
+              label: l10n.radiologyPaymentLabel,
+              value: _billingGateLabel(context, order),
+              icon: Icons.receipt_long_outlined,
+              tone: _billingGateTone(order),
+            ),
           ],
           alerts: <AppWorkspaceStatus>[
-            if (!order.hasBillingGate)
-              AppWorkspaceStatus(
-                label: l10n.radiologyBillingGateUnavailable,
-                tone: AppWorkspaceStatusTone.warning,
-                icon: Icons.receipt_long_outlined,
-              ),
             if (order.hasFinalResult)
               AppWorkspaceStatus(
                 label: l10n.radiologyDoctorReviewReadyLabel,
@@ -918,26 +919,33 @@ class _RadiologyViewModeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: SegmentedButton<RadiologyDetailViewMode>(
-            segments: <ButtonSegment<RadiologyDetailViewMode>>[
-              ButtonSegment<RadiologyDetailViewMode>(
+        RadioGroup<RadiologyDetailViewMode>(
+          groupValue: viewMode,
+          onChanged: (RadiologyDetailViewMode? selected) {
+            if (selected != null) {
+              onViewModeChanged(selected);
+            }
+          },
+          child: Wrap(
+            spacing: theme.spacing.xl,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              _RadiologyViewModeRadioOption(
                 value: RadiologyDetailViewMode.imagingFloor,
-                icon: const Icon(Icons.medical_services_outlined),
-                label: Text(l10n.radiologyViewModeImagingFloorLabel),
+                icon: Icons.medical_services_outlined,
+                label: l10n.radiologyViewModeImagingFloorLabel,
+                onSelected: () =>
+                    onViewModeChanged(RadiologyDetailViewMode.imagingFloor),
               ),
-              ButtonSegment<RadiologyDetailViewMode>(
+              _RadiologyViewModeRadioOption(
                 value: RadiologyDetailViewMode.reporting,
-                icon: const Icon(Icons.description_outlined),
-                label: Text(l10n.radiologyViewModeReportingLabel),
+                icon: Icons.description_outlined,
+                label: l10n.radiologyViewModeReportingLabel,
+                onSelected: () =>
+                    onViewModeChanged(RadiologyDetailViewMode.reporting),
               ),
             ],
-            selected: <RadiologyDetailViewMode>{viewMode},
-            showSelectedIcon: false,
-            onSelectionChanged: (Set<RadiologyDetailViewMode> values) {
-              onViewModeChanged(values.first);
-            },
           ),
         ),
         SizedBox(height: theme.spacing.xs),
@@ -950,6 +958,52 @@ class _RadiologyViewModeSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RadiologyViewModeRadioOption extends StatelessWidget {
+  const _RadiologyViewModeRadioOption({
+    required this.value,
+    required this.icon,
+    required this.label,
+    required this.onSelected,
+  });
+
+  final RadiologyDetailViewMode value;
+  final IconData icon;
+  final String label;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSelected,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Radio<RadiologyDetailViewMode>(
+              value: value,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            Icon(icon, size: theme.appTokens.listIconSize),
+            SizedBox(width: theme.spacing.xs),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
