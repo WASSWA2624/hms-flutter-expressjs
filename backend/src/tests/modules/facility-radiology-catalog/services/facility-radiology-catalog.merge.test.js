@@ -35,7 +35,7 @@ describe('facility-radiology-catalog.merge', () => {
       code: 'CXR',
       is_offered_at_facility: true,
       facility_offering_id: 'offering-1',
-      unit_price: 25000,
+      unit_price: '25000.00',
       currency: 'UGX',
     });
   });
@@ -46,7 +46,7 @@ describe('facility-radiology-catalog.merge', () => {
       term_type: 'RADIOLOGY_TEST',
       source: 'FACILITY',
       origin: 'FACILITY_RADIOLOGY_CATALOG',
-      unit_price: 25000,
+      unit_price: '25000.00',
     });
   });
 });

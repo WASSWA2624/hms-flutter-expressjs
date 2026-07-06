@@ -42,6 +42,17 @@ const List<String> radiologyResultStatuses = <String>[
   'AMENDED',
 ];
 
+const List<String> radiologyPriorities = <String>[
+  'ROUTINE',
+  'URGENT',
+  'STAT',
+];
+
+const List<String> radiologyBillingGateFilters = <String>[
+  'AWAITING',
+  'CONFIRMED',
+];
+
 enum RadiologyWorkbenchView { patients, orders }
 
 @immutable
@@ -52,6 +63,8 @@ final class RadiologyWorkspaceQuery {
     this.view = RadiologyWorkbenchView.patients,
     this.status,
     this.modality,
+    this.priority,
+    this.billingGate,
     this.from,
     this.to,
     this.patientId,
@@ -64,6 +77,8 @@ final class RadiologyWorkspaceQuery {
   final RadiologyWorkbenchView view;
   final String? status;
   final String? modality;
+  final String? priority;
+  final String? billingGate;
   final DateTime? from;
   final DateTime? to;
   final String? patientId;
@@ -76,6 +91,8 @@ final class RadiologyWorkspaceQuery {
     RadiologyWorkbenchView? view,
     String? status,
     String? modality,
+    String? priority,
+    String? billingGate,
     DateTime? from,
     DateTime? to,
     String? patientId,
@@ -83,6 +100,8 @@ final class RadiologyWorkspaceQuery {
     AppPageRequest? pageRequest,
     bool clearStatus = false,
     bool clearModality = false,
+    bool clearPriority = false,
+    bool clearBillingGate = false,
     bool clearFrom = false,
     bool clearTo = false,
     bool clearPatientId = false,
@@ -94,6 +113,8 @@ final class RadiologyWorkspaceQuery {
       view: view ?? this.view,
       status: clearStatus ? null : status ?? this.status,
       modality: clearModality ? null : modality ?? this.modality,
+      priority: clearPriority ? null : priority ?? this.priority,
+      billingGate: clearBillingGate ? null : billingGate ?? this.billingGate,
       from: clearFrom ? null : from ?? this.from,
       to: clearTo ? null : to ?? this.to,
       patientId: clearPatientId ? null : patientId ?? this.patientId,

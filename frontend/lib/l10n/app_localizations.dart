@@ -14734,6 +14734,36 @@ abstract class AppLocalizations {
   /// **'Modality'**
   String get radiologyModalityFilterLabel;
 
+  /// Localized text for radiologyPriorityFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get radiologyPriorityFilterLabel;
+
+  /// Localized text for radiologyBillingGateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing gate'**
+  String get radiologyBillingGateFilterLabel;
+
+  /// Localized text for radiologyBillingGateAwaitingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting confirmation'**
+  String get radiologyBillingGateAwaitingLabel;
+
+  /// Localized text for radiologyBillingGateConfirmedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing confirmed'**
+  String get radiologyBillingGateConfirmedLabel;
+
+  /// Localized text for radiologyEncounterColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get radiologyEncounterColumnLabel;
+
   /// Localized text for radiologyClearFiltersAction.
   ///
   /// In en, this message translates to:

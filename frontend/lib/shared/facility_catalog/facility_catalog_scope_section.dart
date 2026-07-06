@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 @immutable
@@ -213,7 +214,6 @@ class _FacilityCatalogDisabledFacilityField extends StatelessWidget {
         message: tooltipMessage,
         child: AbsorbPointer(
           child: AppSelectField<String>(
-            value: null,
             labelText: labelText,
             options: const <AppSelectOption<String>>[],
           ),

@@ -10167,6 +10167,26 @@
   "@radiologyModalityFilterLabel": {
     "description": "Localized text for radiologyModalityFilterLabel."
   },
+  "radiologyPriorityFilterLabel": "Priority",
+  "@radiologyPriorityFilterLabel": {
+    "description": "Localized text for radiologyPriorityFilterLabel."
+  },
+  "radiologyBillingGateFilterLabel": "Billing gate",
+  "@radiologyBillingGateFilterLabel": {
+    "description": "Localized text for radiologyBillingGateFilterLabel."
+  },
+  "radiologyBillingGateAwaitingLabel": "Awaiting confirmation",
+  "@radiologyBillingGateAwaitingLabel": {
+    "description": "Localized text for radiologyBillingGateAwaitingLabel."
+  },
+  "radiologyBillingGateConfirmedLabel": "Billing confirmed",
+  "@radiologyBillingGateConfirmedLabel": {
+    "description": "Localized text for radiologyBillingGateConfirmedLabel."
+  },
+  "radiologyEncounterColumnLabel": "Encounter",
+  "@radiologyEncounterColumnLabel": {
+    "description": "Localized text for radiologyEncounterColumnLabel."
+  },
   "radiologyClearFiltersAction": "Clear filters",
   "@radiologyClearFiltersAction": {
     "description": "Localized text for radiologyClearFiltersAction."

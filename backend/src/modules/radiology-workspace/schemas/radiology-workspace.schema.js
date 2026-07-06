@@ -45,6 +45,8 @@ const getRadiologyWorkbenchQuerySchema = listQuerySchema.extend({
   status: z.enum(['ORDERED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']).optional(),
   view: workbenchViewSchema.optional(),
   modality: imagingModalitySchema.optional(),
+  priority: z.enum(['ROUTINE', 'URGENT', 'STAT']).optional(),
+  billing_gate: z.enum(['AWAITING', 'CONFIRMED']).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),

@@ -7902,6 +7902,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyModalityFilterLabel => 'Modality';
 
   @override
+  String get radiologyPriorityFilterLabel => 'Priority';
+
+  @override
+  String get radiologyBillingGateFilterLabel => 'Billing gate';
+
+  @override
+  String get radiologyBillingGateAwaitingLabel => 'Awaiting confirmation';
+
+  @override
+  String get radiologyBillingGateConfirmedLabel => 'Billing confirmed';
+
+  @override
+  String get radiologyEncounterColumnLabel => 'Encounter';
+
+  @override
   String get radiologyClearFiltersAction => 'Clear filters';
 
   @override

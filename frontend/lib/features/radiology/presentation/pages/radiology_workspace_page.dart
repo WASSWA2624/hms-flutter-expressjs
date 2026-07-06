@@ -26,12 +26,12 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_stat
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
-import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/print_form_template.dart';
+import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 
 part 'radiology_workspace_page.configurations.dart';
 part 'radiology_workspace_page.detail_cells.dart';
@@ -348,6 +348,18 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               allLabel: l10n.opdAllFieldsFilterLabel,
               choices: _radiologyModalityFilterChoices(l10n),
             ),
+            AppSearchBarFilterGroup(
+              key: _radiologyPriorityFilterKey,
+              label: l10n.radiologyPriorityFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _radiologyPriorityFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _radiologyBillingGateFilterKey,
+              label: l10n.radiologyBillingGateFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _radiologyBillingGateFilterChoices(l10n),
+            ),
           ],
           filterValue: _radiologyFilterValue(state.query),
           hasActiveFilters: _hasRadiologyFilters(state.query),
@@ -357,6 +369,12 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             final String? nextStatus = value.option(_radiologyStatusFilterKey);
             final String? nextModality = value.option(
               _radiologyModalityFilterKey,
+            );
+            final String? nextPriority = value.option(
+              _radiologyPriorityFilterKey,
+            );
+            final String? nextBillingGate = value.option(
+              _radiologyBillingGateFilterKey,
             );
             final DateTime? nextDate = value.dateFrom;
             AppFailure? failure;
@@ -368,6 +386,12 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             }
             if (nextModality != state.query.modality) {
               failure ??= await controller.applyModality(nextModality);
+            }
+            if (nextPriority != state.query.priority) {
+              failure ??= await controller.applyPriority(nextPriority);
+            }
+            if (nextBillingGate != state.query.billingGate) {
+              failure ??= await controller.applyBillingGate(nextBillingGate);
             }
             if (!_isSameFilterDate(nextDate, state.query.from)) {
               failure ??= await controller.applyOrderedDate(nextDate);
@@ -415,109 +439,10 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             icon: Icons.inbox_outlined,
           );
         },
-        columns: <AppListTableColumn<RadiologyOrder>>[
-          if (state.query.view == RadiologyWorkbenchView.orders)
-            _radiologyOrderIdentifierColumn(l10n, state.query.view),
-          _radiologyPatientColumn(l10n),
-          if (state.query.view == RadiologyWorkbenchView.patients)
-            _radiologyOrderIdentifierColumn(l10n, state.query.view),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'study',
-            label: l10n.radiologyStudyColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(
-                  left.testDisplayName ?? left.radiologyTestId,
-                  right.testDisplayName ?? right.radiologyTestId,
-                ),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return _TwoLineCell(
-                title:
-                    item.testsSummary ??
-                    item.testDisplayName ??
-                    l10n.profileUnknownValue,
-                subtitle: _joinDisplay(<String?>[
-                  _modalityLabelOrNull(l10n, item.modality),
-                  item.bodyRegion,
-                  item.laterality,
-                ]),
-              );
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'priority',
-            label: l10n.radiologyPriorityColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(left.priority, right.priority),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return Text(_valueOrUnknown(context, item.priority));
-            },
-          ),
-        ],
-        columnChoices: <AppListTableColumn<RadiologyOrder>>[
-          AppListTableColumn<RadiologyOrder>(
-            id: 'billing',
-            label: l10n.radiologyPaymentAuthColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(
-                  _billingGateLabel(context, left),
-                  _billingGateLabel(context, right),
-                ),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return Text(_billingGateLabel(context, item));
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'status',
-            label: l10n.radiologyStatusColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(left.status, right.status),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return AppWorkspaceStatusBadge(
-                status: _orderStatus(context, item),
-              );
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'modality',
-            label: l10n.radiologyModalityLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(left.modality, right.modality),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return Text(
-                _valueOrUnknown(
-                  context,
-                  _modalityLabelOrNull(l10n, item.modality),
-                ),
-              );
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'ordered_at',
-            label: l10n.radiologyOrderedAtLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareDateTime(left.orderedAt, right.orderedAt),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return Text(
-                _valueOrUnknown(
-                  context,
-                  _formatDateTimeOrNull(context, item.orderedAt),
-                ),
-              );
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'next_action',
-            label: l10n.radiologyNextActionColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(
-                  _nextActionLabel(context, left),
-                  _nextActionLabel(context, right),
-                ),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return Text(_nextActionLabel(context, item));
-            },
-          ),
-        ],
+        columns: state.query.view == RadiologyWorkbenchView.patients
+            ? _patientViewWorklistColumns(context)
+            : _orderViewWorklistColumns(context),
+        columnChoices: _optionalRadiologyWorklistColumns(context),
         mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
           return _RadiologyOrderListTile(order: item);
         },
@@ -558,11 +483,8 @@ class _RadiologyOrderListTile extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(
             _joinDisplay(<String?>[
-              order.isPatientGroup
-                  ? _activeOrderCountLabel(l10n, order.activeOrderCount)
-                  : order.effectiveDisplayId,
-              order.testsSummary ?? order.testDisplayName,
-              _modalityLabelOrNull(l10n, order.modality),
+              _radiologyStudyLabel(order, l10n),
+              _radiologyPriorityDisplayLabel(l10n, order.priority),
             ]),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1025,6 +947,10 @@ class _WorkflowSummarySection extends StatelessWidget {
       _DetailLine(
         label: l10n.radiologyOrderedAtLabel,
         value: _formatDateTimeOrNull(context, order.orderedAt),
+      ),
+      _DetailLine(
+        label: l10n.radiologyEncounterLabel,
+        value: order.encounterId,
       ),
       _DetailLine(
         label: l10n.radiologyModalityLabel,
@@ -3842,9 +3768,50 @@ RadiologyWorkspaceState? _watchState(WidgetRef ref) {
   };
 }
 
-AppListTableColumn<RadiologyOrder> _radiologyPatientColumn(
-  AppLocalizations l10n,
+List<AppListTableColumn<RadiologyOrder>> _patientViewWorklistColumns(
+  BuildContext context,
 ) {
+  return <AppListTableColumn<RadiologyOrder>>[
+    _radiologyPatientNameColumn(context),
+    _radiologyStudyColumn(context),
+    _radiologyPriorityColumn(context),
+    _radiologyNextActionColumn(context),
+    _radiologyStatusColumn(context),
+  ];
+}
+
+List<AppListTableColumn<RadiologyOrder>> _orderViewWorklistColumns(
+  BuildContext context,
+) {
+  return <AppListTableColumn<RadiologyOrder>>[
+    _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.orders),
+    _radiologyPatientNameColumn(context),
+    _radiologyStudyColumn(context),
+    _radiologyPriorityColumn(context),
+    _radiologyNextActionColumn(context),
+    _radiologyStatusColumn(context),
+  ];
+}
+
+List<AppListTableColumn<RadiologyOrder>> _optionalRadiologyWorklistColumns(
+  BuildContext context,
+) {
+  return <AppListTableColumn<RadiologyOrder>>[
+    _radiologyPatientIdColumn(context),
+    _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.patients),
+    _radiologyModalityColumn(context),
+    _radiologyBodyRegionColumn(context),
+    _radiologyLateralityColumn(context),
+    _radiologyEncounterColumn(context),
+    _radiologyBillingColumn(context),
+    _radiologyOrderedAtColumn(context),
+  ];
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyPatientNameColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<RadiologyOrder>(
     id: 'patient',
     label: l10n.radiologyPatientColumnLabel,
@@ -3854,24 +3821,204 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientColumn(
           right.patientDisplayName,
         ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
-      return _TwoLineCell(
-        title: item.patientDisplayName ?? l10n.profileUnknownValue,
-        subtitle: _joinDisplay(<String?>[
-          item.patientId,
-          if (item.isPatientGroup)
-            _activeOrderCountLabel(l10n, item.activeOrderCount)
-          else
-            item.displayId,
-        ]),
+      return _radiologyWorklistTextCell(context, item.patientDisplayName);
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyPatientIdColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'patient_id',
+    label: l10n.radiologyPatientIdLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.patientId, right.patientId),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(context, item.patientId);
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyStudyColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'study',
+    label: l10n.radiologyStudyColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(
+          _radiologyStudyLabel(left, l10n),
+          _radiologyStudyLabel(right, l10n),
+        ),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        item.testsSummary ?? item.testDisplayName,
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyPriorityColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'priority',
+    label: l10n.radiologyPriorityColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.priority, right.priority),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        _radiologyPriorityDisplayLabel(l10n, item.priority),
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyNextActionColumn(
+  BuildContext context,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'next_action',
+    label: context.l10n.radiologyNextActionColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(
+          _nextActionLabel(context, left),
+          _nextActionLabel(context, right),
+        ),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        _nextActionLabel(context, item),
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyStatusColumn(
+  BuildContext context,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'status',
+    label: context.l10n.radiologyStatusColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.status, right.status),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyModalityColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'modality',
+    label: l10n.radiologyModalityLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.modality, right.modality),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        _modalityLabelOrNull(l10n, item.modality),
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyBodyRegionColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'body_region',
+    label: l10n.radiologyBodyRegionLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.bodyRegion, right.bodyRegion),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(context, item.bodyRegion);
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyLateralityColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'laterality',
+    label: l10n.radiologyLateralityLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.laterality, right.laterality),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(context, item.laterality);
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyEncounterColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'encounter',
+    label: l10n.radiologyEncounterColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.encounterId, right.encounterId),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(context, item.encounterId);
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyBillingColumn(
+  BuildContext context,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'billing',
+    label: context.l10n.radiologyPaymentAuthColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(
+          _billingGateLabel(context, left),
+          _billingGateLabel(context, right),
+        ),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        _billingGateLabel(context, item),
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyOrderedAtColumn(
+  BuildContext context,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'ordered_at',
+    label: context.l10n.radiologyOrderedAtLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareDateTime(left.orderedAt, right.orderedAt),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _radiologyWorklistTextCell(
+        context,
+        _formatDateTimeOrNull(context, item.orderedAt),
       );
     },
   );
 }
 
 AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
-  AppLocalizations l10n,
+  BuildContext context,
   RadiologyWorkbenchView view,
 ) {
+  final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<RadiologyOrder>(
     id: 'orders',
     label: view == RadiologyWorkbenchView.patients
@@ -3887,9 +4034,12 @@ AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
         final int activeOrders = item.activeOrderCount > 0
             ? item.activeOrderCount
             : item.orderCount;
-        return Text(_activeOrderCountLabel(l10n, activeOrders));
+        return _radiologyWorklistTextCell(
+          context,
+          _activeOrderCountLabel(l10n, activeOrders),
+        );
       }
-      return Text(item.effectiveDisplayId);
+      return _radiologyWorklistTextCell(context, item.effectiveDisplayId);
     },
   );
 }

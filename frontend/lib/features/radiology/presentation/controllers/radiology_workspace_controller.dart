@@ -153,6 +153,46 @@ final class RadiologyWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<AppFailure?> applyPriority(String? priority) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          priority: priority,
+          clearPriority: priority == null,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
+  Future<AppFailure?> applyBillingGate(String? billingGate) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          billingGate: billingGate,
+          clearBillingGate: billingGate == null,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
   Future<AppFailure?> applyOrderedDate(DateTime? date) async {
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -339,10 +379,7 @@ final class RadiologyWorkspaceController
     }
 
     final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
-        _repository.listRadiologyCatalogTests(
-          search: query,
-          includeStandardCatalog: true,
-        );
+        _repository.listRadiologyCatalogTests(search: query);
     final Future<Result<List<RadiologyCatalogTest>>> offeredFuture =
         _repository.listFacilityRadiologyTests(
           tenantId: scope.tenantId,
@@ -919,14 +956,6 @@ final class RadiologyWorkspaceController
       );
     }
     return failure;
-  }
-
-  Future<AppFailure?> _refreshConfigurations({String? search}) async {
-    final RadiologyCatalogScope? scope = _currentState?.catalogScope;
-    if (scope?.isReady == true) {
-      return loadFacilityCatalogConfig(scope!, search: search);
-    }
-    return _refreshEquipmentRecords(search: search);
   }
 
   Future<AppFailure?> _mutateSelected(

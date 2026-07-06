@@ -34,6 +34,8 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
             : 'ORDERS',
         'status': query.status,
         'modality': query.modality,
+        'priority': query.priority,
+        'billing_gate': query.billingGate,
         'from': _iso(query.from),
         'to': _iso(query.to),
         'patient_id': query.patientId,

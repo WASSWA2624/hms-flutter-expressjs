@@ -424,6 +424,56 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
     });
   }
 
+  if (filters.priority) {
+    appendAnd(where, {
+      request_details: {
+        path: ['priority'],
+        equals: filters.priority,
+      },
+    });
+  }
+
+  const billingGate = normalizeEnumFilter(filters.billing_gate, null);
+  if (billingGate === 'CONFIRMED') {
+    appendAnd(where, {
+      OR: [
+        {
+          request_details: {
+            path: ['billing', 'payment_status'],
+            not: null,
+          },
+        },
+        {
+          request_details: {
+            path: ['billing', 'authorization_status'],
+            not: null,
+          },
+        },
+      ],
+    });
+  } else if (billingGate === 'AWAITING') {
+    appendAnd(where, {
+      AND: [
+        {
+          NOT: {
+            request_details: {
+              path: ['billing', 'payment_status'],
+              not: null,
+            },
+          },
+        },
+        {
+          NOT: {
+            request_details: {
+              path: ['billing', 'authorization_status'],
+              not: null,
+            },
+          },
+        },
+      ],
+    });
+  }
+
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
 
   const stage = normalizeEnumFilter(filters.stage, 'ALL');

@@ -386,6 +386,24 @@ List<ClinicalActionCatalogOption> _radiologyCatalogOptions(
 const String _radiologyStageFilterKey = 'stage';
 const String _radiologyStatusFilterKey = 'status';
 const String _radiologyModalityFilterKey = 'modality';
+const String _radiologyPriorityFilterKey = 'priority';
+const String _radiologyBillingGateFilterKey = 'billing_gate';
+
+Widget _radiologyWorklistTextCell(BuildContext context, String? value) {
+  final ThemeData theme = Theme.of(context);
+  return Text(
+    _valueOrUnknown(context, value),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: theme.textTheme.bodyMedium,
+  );
+}
+
+String _radiologyStudyLabel(RadiologyOrder item, AppLocalizations l10n) {
+  return item.testsSummary ??
+      item.testDisplayName ??
+      l10n.profileUnknownValue;
+}
 
 AppSearchBarFilterValue _radiologyFilterValue(RadiologyWorkspaceQuery query) {
   return AppSearchBarFilterValue(
@@ -394,6 +412,9 @@ AppSearchBarFilterValue _radiologyFilterValue(RadiologyWorkspaceQuery query) {
       if (query.stage != 'ALL') _radiologyStageFilterKey: query.stage,
       if (query.status != null) _radiologyStatusFilterKey: query.status!,
       if (query.modality != null) _radiologyModalityFilterKey: query.modality!,
+      if (query.priority != null) _radiologyPriorityFilterKey: query.priority!,
+      if (query.billingGate != null)
+        _radiologyBillingGateFilterKey: query.billingGate!,
     },
   );
 }
@@ -402,6 +423,8 @@ bool _hasRadiologyFilters(RadiologyWorkspaceQuery query) {
   return query.stage != 'ALL' ||
       query.status != null ||
       query.modality != null ||
+      query.priority != null ||
+      query.billingGate != null ||
       query.from != null;
 }
 
@@ -442,6 +465,36 @@ List<AppSearchBarFilterChoice> _radiologyModalityFilterChoices(
         label: _modalityLabel(l10n, modality),
         icon: _radiologyModalityIcon(modality),
       ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _radiologyPriorityFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String priority in radiologyPriorities)
+      AppSearchBarFilterChoice(
+        value: priority,
+        label: _radiologyPriorityDisplayLabel(l10n, priority) ?? priority,
+        icon: Icons.priority_high_outlined,
+      ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _radiologyBillingGateFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: 'AWAITING',
+      label: l10n.radiologyBillingGateAwaitingLabel,
+      icon: Icons.receipt_long_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: 'CONFIRMED',
+      label: l10n.radiologyBillingGateConfirmedLabel,
+      icon: Icons.verified_outlined,
+    ),
   ];
 }
 
