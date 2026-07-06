@@ -89,6 +89,9 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'limit': request.pageSize,
         'search': query.search,
         'low_stock_only': query.lowStockOnly ? true : null,
+        'stock_status': query.stockStatus,
+        'expiring_within_days': query.expiringWithinDays,
+        'expired_only': query.expiredOnly ? true : null,
         'sort_by': 'updated_at',
         'order': 'desc',
       }),
@@ -111,13 +114,18 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         final PharmacyJsonMap payload = _map(response['data']);
-        final List<PharmacyInventoryStock> stocks = _list(payload['stocks'])
-            .map(PharmacyInventoryStockDto.new)
-            .map((PharmacyInventoryStockDto dto) => dto.toEntity())
-            .where((PharmacyInventoryStock item) => item.id.isNotEmpty)
-            .toList(growable: false);
+        final PharmacyInventoryStockSummary summary =
+            PharmacyInventoryStockSummaryDto(
+              _map(payload['stock_summary']),
+            ).toEntity();
+        final PharmacyInventoryStock? stock = _map(payload['stock']).isEmpty
+            ? null
+            : PharmacyInventoryStockDto(_map(payload['stock'])).toEntity();
+        final List<PharmacyInventoryStock> stocks = stock == null
+            ? const <PharmacyInventoryStock>[]
+            : <PharmacyInventoryStock>[stock];
         return PharmacyInventoryWorkbench(
-          summary: const PharmacyInventoryStockSummary(),
+          summary: summary,
           stocks: AppPage<PharmacyInventoryStock>(
             items: stocks,
             request: const AppPageRequest(pageSize: 10),
@@ -130,9 +138,24 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
 
   @override
   Future<Result<PharmacyDrug>> createDrug(PharmacyDrugInput input) {
+    if (input.hasStockSetup) {
+      return setupDrug(input);
+    }
     return _apiClient.post<PharmacyDrug>(
       ApiEndpoints.collection(HmsApiResource.drugs),
       data: _withoutEmpty(input.toJson()),
+      decoder: (Object? data) {
+        final PharmacyJsonMap response = _expectMap(data);
+        return PharmacyDrugDto(_map(response['data'])).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrug>> setupDrug(PharmacyDrugInput input) {
+    return _apiClient.post<PharmacyDrug>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'drugs', 'setup']),
+      data: _withoutEmpty(input.toSetupJson()),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyDrugDto(_map(response['data'])).toEntity();
@@ -346,13 +369,6 @@ PharmacyJsonMap _expectMap(Object? value) {
 
 PharmacyJsonMap _map(Object? value) {
   return value is PharmacyJsonMap ? value : <String, Object?>{};
-}
-
-List<PharmacyJsonMap> _list(Object? value) {
-  if (value is! List) {
-    return const <PharmacyJsonMap>[];
-  }
-  return value.whereType<PharmacyJsonMap>().toList(growable: false);
 }
 
 Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

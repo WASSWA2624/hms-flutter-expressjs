@@ -8791,6 +8791,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyLowStockOnlyFilterLabel => 'Low stock only';
 
   @override
+  String get pharmacyExpiredOnlyFilterLabel => 'Expired batches';
+
+  @override
+  String get pharmacyExpiringSoonFilterLabel => 'Expiring soon';
+
+  @override
+  String get pharmacyInventoryFiltersSemanticLabel => 'Inventory stock filters';
+
+  @override
+  String get pharmacyReorderLevelLabel => 'Reorder alert at';
+
+  @override
+  String get pharmacyReorderLevelColumnLabel => 'Reorder at';
+
+  @override
+  String get pharmacyNextExpiryColumnLabel => 'Next expiry';
+
+  @override
+  String get pharmacyBatchCountColumnLabel => 'Batches';
+
+  @override
+  String get pharmacyBatchNumberLabel => 'Batch number';
+
+  @override
+  String get pharmacyExpiryDateLabel => 'Expiry date';
+
+  @override
+  String get pharmacyInventoryUnitLabel => 'Inventory unit';
+
+  @override
+  String get pharmacyInitialStockLabel => 'Initial stock';
+
+  @override
+  String get pharmacySummaryLowStockLabel => 'Low stock';
+
+  @override
+  String get pharmacySummaryAlmostOutLabel => 'Almost out';
+
+  @override
+  String get pharmacySummaryExpiringSoonLabel => 'Expiring soon';
+
+  @override
+  String get pharmacyStockExpiredLabel => 'Expired';
+
+  @override
+  String get pharmacyStockExpiringSoonLabel => 'Expiring soon';
+
+  @override
   String get pharmacyDeleteDrugDialogTitle => 'Delete drug';
 
   @override

@@ -11302,6 +11302,70 @@
   "@pharmacyLowStockOnlyFilterLabel": {
     "description": "Pharmacy inventory low stock filter label."
   },
+  "pharmacyExpiredOnlyFilterLabel": "Expired batches",
+  "@pharmacyExpiredOnlyFilterLabel": {
+    "description": "Pharmacy inventory expired batch filter label."
+  },
+  "pharmacyExpiringSoonFilterLabel": "Expiring soon",
+  "@pharmacyExpiringSoonFilterLabel": {
+    "description": "Pharmacy inventory expiring soon filter label."
+  },
+  "pharmacyInventoryFiltersSemanticLabel": "Inventory stock filters",
+  "@pharmacyInventoryFiltersSemanticLabel": {
+    "description": "Semantic label for pharmacy inventory filters."
+  },
+  "pharmacyReorderLevelLabel": "Reorder alert at",
+  "@pharmacyReorderLevelLabel": {
+    "description": "Pharmacy reorder threshold field label."
+  },
+  "pharmacyReorderLevelColumnLabel": "Reorder at",
+  "@pharmacyReorderLevelColumnLabel": {
+    "description": "Pharmacy inventory reorder level column label."
+  },
+  "pharmacyNextExpiryColumnLabel": "Next expiry",
+  "@pharmacyNextExpiryColumnLabel": {
+    "description": "Pharmacy inventory next expiry column label."
+  },
+  "pharmacyBatchCountColumnLabel": "Batches",
+  "@pharmacyBatchCountColumnLabel": {
+    "description": "Pharmacy inventory batch count column label."
+  },
+  "pharmacyBatchNumberLabel": "Batch number",
+  "@pharmacyBatchNumberLabel": {
+    "description": "Pharmacy stock batch number field label."
+  },
+  "pharmacyExpiryDateLabel": "Expiry date",
+  "@pharmacyExpiryDateLabel": {
+    "description": "Pharmacy stock expiry date field label."
+  },
+  "pharmacyInventoryUnitLabel": "Inventory unit",
+  "@pharmacyInventoryUnitLabel": {
+    "description": "Pharmacy drug inventory unit field label."
+  },
+  "pharmacyInitialStockLabel": "Initial stock",
+  "@pharmacyInitialStockLabel": {
+    "description": "Pharmacy drug initial stock field label."
+  },
+  "pharmacySummaryLowStockLabel": "Low stock",
+  "@pharmacySummaryLowStockLabel": {
+    "description": "Pharmacy workspace low stock summary chip label."
+  },
+  "pharmacySummaryAlmostOutLabel": "Almost out",
+  "@pharmacySummaryAlmostOutLabel": {
+    "description": "Pharmacy workspace almost out of stock summary chip label."
+  },
+  "pharmacySummaryExpiringSoonLabel": "Expiring soon",
+  "@pharmacySummaryExpiringSoonLabel": {
+    "description": "Pharmacy workspace expiring soon summary chip label."
+  },
+  "pharmacyStockExpiredLabel": "Expired",
+  "@pharmacyStockExpiredLabel": {
+    "description": "Pharmacy expired batch status label."
+  },
+  "pharmacyStockExpiringSoonLabel": "Expiring soon",
+  "@pharmacyStockExpiringSoonLabel": {
+    "description": "Pharmacy expiring soon batch status label."
+  },
   "pharmacyDeleteDrugDialogTitle": "Delete drug",
   "@pharmacyDeleteDrugDialogTitle": {
     "description": "Pharmacy delete drug confirmation title."

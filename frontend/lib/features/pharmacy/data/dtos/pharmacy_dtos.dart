@@ -479,6 +479,7 @@ final class PharmacyInventoryStockSummaryDto {
       almostOutOfStockRows: _int(json['almost_out_of_stock_rows']) ?? 0,
       outOfStockRows: _int(json['out_of_stock_rows']) ?? 0,
       pendingStockRows: _int(json['pending_stock_rows']) ?? 0,
+      expiringSoonRows: _int(json['expiring_soon_rows']) ?? 0,
     );
   }
 }
@@ -597,6 +598,9 @@ final class PharmacyInventoryStockDto {
       pendingStock: _bool(json['pending_stock']),
       stockStatus: _string(json['stock_status']),
       lowStock: _bool(json['low_stock']),
+      batchCount: _int(json['batch_count']) ?? 0,
+      nextExpiry: _date(json['next_expiry']),
+      expiryAlertStatus: _string(json['expiry_alert_status']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );

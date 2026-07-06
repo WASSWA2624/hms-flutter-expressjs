@@ -82,7 +82,64 @@ const mapInventoryItemRecord = (record) => {
   };
 };
 
-const mapInventoryStockRecord = (record) => {
+const resolveExpiryAlertStatus = (expiryDate, expiringWithinDays = 30) => {
+  if (!expiryDate) return null;
+  const parsed = expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const now = new Date();
+  if (parsed.getTime() < now.getTime()) return 'EXPIRED';
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + Number(expiringWithinDays || 30));
+  if (parsed.getTime() <= horizon.getTime()) return 'EXPIRING_SOON';
+  return null;
+};
+
+const buildBatchMetaByInventoryItemId = (maps = [], batches = [], expiringWithinDays = 30) => {
+  const batchesByDrugId = batches.reduce((acc, batch) => {
+    if (!batch?.drug_id) return acc;
+    if (!acc.has(batch.drug_id)) acc.set(batch.drug_id, []);
+    acc.get(batch.drug_id).push(batch);
+    return acc;
+  }, new Map());
+
+  const metaByInventoryItemId = new Map();
+  maps.forEach((mapRow) => {
+    const drugBatches = batchesByDrugId.get(mapRow.drug_id) || [];
+    if (!drugBatches.length) return;
+
+    const activeBatches = drugBatches.filter((batch) => Number(batch.quantity || 0) > 0);
+    const datedBatches = activeBatches
+      .filter((batch) => batch.expiry_date)
+      .sort((left, right) => new Date(left.expiry_date) - new Date(right.expiry_date));
+
+    const nextExpiryBatch = datedBatches[0] || null;
+    const nextExpiry = nextExpiryBatch?.expiry_date
+      ? toIsoDateTime(nextExpiryBatch.expiry_date)
+      : null;
+
+    let expiryAlertStatus = null;
+    for (const batch of datedBatches) {
+      const status = resolveExpiryAlertStatus(batch.expiry_date, expiringWithinDays);
+      if (status === 'EXPIRED') {
+        expiryAlertStatus = 'EXPIRED';
+        break;
+      }
+      if (status === 'EXPIRING_SOON') {
+        expiryAlertStatus = 'EXPIRING_SOON';
+      }
+    }
+
+    metaByInventoryItemId.set(mapRow.inventory_item_id, {
+      batch_count: activeBatches.length,
+      next_expiry: nextExpiry,
+      expiry_alert_status: expiryAlertStatus,
+    });
+  });
+
+  return metaByInventoryItemId;
+};
+
+const mapInventoryStockRecord = (record, batchMeta = null) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
   const inventoryItem = mapInventoryItemRecord(record.inventory_item);
@@ -100,6 +157,9 @@ const mapInventoryStockRecord = (record) => {
     stock_status: resolveStockStatus(record.quantity, record.reorder_level),
     low_stock:
       Number.isFinite(Number(record.reorder_level)) && Number(record.quantity) <= Number(record.reorder_level),
+    batch_count: Number(batchMeta?.batch_count || 0),
+    next_expiry: batchMeta?.next_expiry || null,
+    expiry_alert_status: batchMeta?.expiry_alert_status || null,
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
   };
@@ -475,6 +535,9 @@ const mapPharmacyOrderWorkflowRecord = (record) => {
 module.exports = {
   toPublicIdentifier,
   toIsoDateTime,
+  resolveStockStatus,
+  resolveExpiryAlertStatus,
+  buildBatchMetaByInventoryItemId,
   mapInventoryItemRecord,
   mapInventoryStockRecord,
   mapDrugRecord,

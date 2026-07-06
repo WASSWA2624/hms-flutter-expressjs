@@ -56,7 +56,7 @@ final class PharmacyWorkspaceController
       showLoading: true,
       refreshDrugs: refreshCatalog,
       refreshFormulary: refreshCatalog,
-      refreshInventory: refreshInventory,
+      refreshInventory: refreshInventory || refreshCatalog,
     );
   }
 
@@ -287,6 +287,71 @@ final class PharmacyWorkspaceController
       current.copyWith(
         inventoryQuery: current.inventoryQuery.copyWith(
           lowStockOnly: lowStockOnly,
+          clearStockStatus: !lowStockOnly,
+          clearExpiringWithinDays: true,
+          expiredOnly: false,
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  Future<AppFailure?> applyInventoryFilter(PharmacyInventoryFilter filter) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        catalogTab: PharmacyCatalogTab.inventory,
+        inventoryQuery: PharmacyInventoryStockQuery.forFilter(filter).copyWith(
+          search: current.inventoryQuery.search,
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  Future<AppFailure?> applyInventoryStockStatus(String? stockStatus) async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: current.inventoryQuery.copyWith(
+          stockStatus: stockStatus,
+          clearStockStatus: stockStatus == null,
+          lowStockOnly: false,
+          clearExpiringWithinDays: true,
+          expiredOnly: false,
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        ),
+        isRefreshingInventory: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshInventory(showLoading: true);
+  }
+
+  Future<AppFailure?> clearInventoryFilters() async {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        inventoryQuery: PharmacyInventoryStockQuery(
+          search: current.inventoryQuery.search,
           pageRequest: current.inventoryQuery.pageRequest.first(),
         ),
         isRefreshingInventory: true,
@@ -350,6 +415,9 @@ final class PharmacyWorkspaceController
           }
         }
         await _refreshDrugs(showLoading: false);
+        if (input.hasStockSetup) {
+          await _refreshInventory(showLoading: false);
+        }
         return null;
       },
       failure: (AppFailure failure) => failure,
@@ -590,7 +658,27 @@ final class PharmacyWorkspaceController
       );
     }
 
-    final AppPage<PharmacyDrug> drugs = await _loadDrugPage(drugQuery);
+    final List<Future<Object?>> initialLoads = <Future<Object?>>[
+      _loadDrugPage(drugQuery),
+      _repository.getInventoryStock(inventoryQuery).then(
+        (Result<PharmacyInventoryWorkbench> result) => result.when(
+          success: (PharmacyInventoryWorkbench value) => value,
+          failure: (_) => null,
+        ),
+      ),
+    ];
+    final List<Object?> loadResults = await Future.wait(initialLoads);
+    final AppPage<PharmacyDrug> drugs = loadResults[0]! as AppPage<PharmacyDrug>;
+    final PharmacyInventoryWorkbench inventoryWorkbench =
+        loadResults[1] as PharmacyInventoryWorkbench? ??
+        PharmacyInventoryWorkbench(
+          summary: const PharmacyInventoryStockSummary(),
+          stocks: AppPage<PharmacyInventoryStock>(
+            items: const <PharmacyInventoryStock>[],
+            request: inventoryQuery.pageRequest,
+            totalItemCount: 0,
+          ),
+        );
     return Result<PharmacyWorkspaceState>.success(
       PharmacyWorkspaceState(
         query: query,
@@ -604,21 +692,14 @@ final class PharmacyWorkspaceController
           totalItemCount: 0,
         ),
         inventoryQuery: inventoryQuery,
-        inventoryWorkbench: PharmacyInventoryWorkbench(
-          summary: const PharmacyInventoryStockSummary(),
-          stocks: AppPage<PharmacyInventoryStock>(
-            items: const <PharmacyInventoryStock>[],
-            request: inventoryQuery.pageRequest,
-            totalItemCount: 0,
-          ),
-        ),
+        inventoryWorkbench: inventoryWorkbench,
       ),
     );
   }
 
   void _startSync() {
     _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
+      unawaited(_syncVisibleData(refreshInventory: true));
     });
   }
 

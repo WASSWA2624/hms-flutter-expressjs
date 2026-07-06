@@ -155,6 +155,9 @@ const getInventoryStock = asyncHandler(async (req, res) => {
     facility_id,
     inventory_item_id,
     low_stock_only,
+    stock_status,
+    expiring_within_days,
+    expired_only,
     search,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -167,6 +170,9 @@ const getInventoryStock = asyncHandler(async (req, res) => {
       facility_id,
       inventory_item_id,
       low_stock_only,
+      stock_status,
+      expiring_within_days,
+      expired_only,
       search,
     },
     Number(page),
@@ -191,6 +197,17 @@ const adjustInventoryStock = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.inventory.adjust.success', data);
 });
 
+const setupPharmacyDrug = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.setupPharmacyDrug(
+    req.body,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+
+  return sendSuccess(res, 201, 'messages.pharmacy_workspace.drug.setup.success', data);
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.resolveLegacyRouteIdentifier(
     req.params.resource,
@@ -212,5 +229,6 @@ module.exports = {
   recordOrderBilling,
   getInventoryStock,
   adjustInventoryStock,
+  setupPharmacyDrug,
   resolveLegacyRoute,
 };

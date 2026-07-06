@@ -16408,6 +16408,102 @@ abstract class AppLocalizations {
   /// **'Low stock only'**
   String get pharmacyLowStockOnlyFilterLabel;
 
+  /// Pharmacy inventory expired batch filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired batches'**
+  String get pharmacyExpiredOnlyFilterLabel;
+
+  /// Pharmacy inventory expiring soon filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get pharmacyExpiringSoonFilterLabel;
+
+  /// Semantic label for pharmacy inventory filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory stock filters'**
+  String get pharmacyInventoryFiltersSemanticLabel;
+
+  /// Pharmacy reorder threshold field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder alert at'**
+  String get pharmacyReorderLevelLabel;
+
+  /// Pharmacy inventory reorder level column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder at'**
+  String get pharmacyReorderLevelColumnLabel;
+
+  /// Pharmacy inventory next expiry column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next expiry'**
+  String get pharmacyNextExpiryColumnLabel;
+
+  /// Pharmacy inventory batch count column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Batches'**
+  String get pharmacyBatchCountColumnLabel;
+
+  /// Pharmacy stock batch number field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch number'**
+  String get pharmacyBatchNumberLabel;
+
+  /// Pharmacy stock expiry date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry date'**
+  String get pharmacyExpiryDateLabel;
+
+  /// Pharmacy drug inventory unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory unit'**
+  String get pharmacyInventoryUnitLabel;
+
+  /// Pharmacy drug initial stock field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial stock'**
+  String get pharmacyInitialStockLabel;
+
+  /// Pharmacy workspace low stock summary chip label.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get pharmacySummaryLowStockLabel;
+
+  /// Pharmacy workspace almost out of stock summary chip label.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost out'**
+  String get pharmacySummaryAlmostOutLabel;
+
+  /// Pharmacy workspace expiring soon summary chip label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get pharmacySummaryExpiringSoonLabel;
+
+  /// Pharmacy expired batch status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get pharmacyStockExpiredLabel;
+
+  /// Pharmacy expiring soon batch status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get pharmacyStockExpiringSoonLabel;
+
   /// Pharmacy delete drug confirmation title.
   ///
   /// In en, this message translates to:

@@ -99,6 +99,23 @@ class _PharmacyWorkspaceContentState
     super.dispose();
   }
 
+  Future<void> _openCatalogForInventoryAlert(
+    PharmacyInventoryFilter filter,
+  ) async {
+    final AppFailure? failure = await ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .applyInventoryFilter(filter);
+    if (!mounted) {
+      return;
+    }
+    _showFailureIfNeeded(context, failure);
+    final PharmacyWorkspaceState? latest = _readPharmacyState(ref);
+    if (latest == null) {
+      return;
+    }
+    await _openCatalogDialog(context, latest);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -191,6 +208,40 @@ class _PharmacyWorkspaceContentState
               tone: AppWorkspaceStatusTone.warning,
               onSelected: () =>
                   controller.applyFilter(PharmacyOrderFilter.partial),
+            ),
+          if (state.inventoryWorkbench.summary.criticalStockRows > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryLowStockLabel,
+              count: state.inventoryWorkbench.summary.criticalStockRows,
+              icon: Icons.warning_amber_outlined,
+              tone: AppWorkspaceStatusTone.error,
+              onSelected: () => unawaited(
+                _openCatalogForInventoryAlert(PharmacyInventoryFilter.lowStock),
+              ),
+            ),
+          if (state.inventoryWorkbench.summary.almostOutOfStockRows > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryAlmostOutLabel,
+              count: state.inventoryWorkbench.summary.almostOutOfStockRows,
+              icon: Icons.inventory_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () => unawaited(
+                _openCatalogForInventoryAlert(
+                  PharmacyInventoryFilter.almostOutOfStock,
+                ),
+              ),
+            ),
+          if (state.inventoryWorkbench.summary.expiringSoonRows > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.pharmacySummaryExpiringSoonLabel,
+              count: state.inventoryWorkbench.summary.expiringSoonRows,
+              icon: Icons.event_busy_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () => unawaited(
+                _openCatalogForInventoryAlert(
+                  PharmacyInventoryFilter.expiringSoon,
+                ),
+              ),
             ),
         ],
         maxVisibleScreenActions: 1,

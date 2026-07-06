@@ -19,6 +19,8 @@ abstract interface class PharmacyRepository {
 
   Future<Result<PharmacyDrug>> createDrug(PharmacyDrugInput input);
 
+  Future<Result<PharmacyDrug>> setupDrug(PharmacyDrugInput input);
+
   Future<Result<PharmacyDrug>> updateDrug(
     String drugId,
     PharmacyDrugUpdateInput input,

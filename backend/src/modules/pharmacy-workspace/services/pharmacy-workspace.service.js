@@ -46,8 +46,10 @@ const {
   mapPharmacyOrderWorkflowRecord,
   mapInventoryStockRecord,
   mapDrugRecord,
+  buildBatchMetaByInventoryItemId,
 } = require('@services/pharmacy-workspace/pharmacy.serializer');
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
+const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 
 const PHARMACY_RECIPIENT_ROLES = [
@@ -113,6 +115,8 @@ const STOCK_STATUS = Object.freeze({
   OUT_OF_STOCK: 'OUT_OF_STOCK',
 });
 
+const EXPIRING_SOON_DAYS = 30;
+
 const resolveStockStatus = (quantityValue, reorderValue) => {
   const quantity = Number(quantityValue || 0);
   const reorderLevel = Number(reorderValue || 0);
@@ -125,7 +129,7 @@ const resolveStockStatus = (quantityValue, reorderValue) => {
   return STOCK_STATUS.IN_STOCK;
 };
 
-const summarizeStockMetrics = (records = []) =>
+const summarizeStockMetrics = (records = [], extra = {}) =>
   records.reduce(
     (summary, record) => {
       const status = resolveStockStatus(record?.quantity, record?.reorder_level);
@@ -141,8 +145,65 @@ const summarizeStockMetrics = (records = []) =>
       almost_out_of_stock_rows: 0,
       pending_stock_rows: 0,
       out_of_stock_rows: 0,
+      expiring_soon_rows: Number(extra.expiring_soon_rows || 0),
     }
   );
+
+const needsPostStockStatusFilter = (filters = {}) => {
+  const status = String(filters.stock_status || '').trim().toUpperCase();
+  return (
+    status === STOCK_STATUS.IN_STOCK || status === STOCK_STATUS.ALMOST_OUT_OF_STOCK
+  );
+};
+
+const enrichInventoryStockRecords = async (records = [], expiringWithinDays = EXPIRING_SOON_DAYS) => {
+  const inventoryItemIds = records
+    .map((record) => record?.inventory_item_id)
+    .filter((value) => Boolean(value));
+  const maps = await pharmacyWorkspaceRepository.findDrugInventoryMapsByInventoryItemIds(
+    inventoryItemIds
+  );
+  const drugIds = Array.from(new Set(maps.map((row) => row.drug_id).filter(Boolean)));
+  const batches = await pharmacyWorkspaceRepository.findDrugBatchesByDrugIds(drugIds);
+  const batchMetaByItemId = buildBatchMetaByInventoryItemId(
+    maps,
+    batches,
+    expiringWithinDays
+  );
+
+  return records
+    .map((record) =>
+      mapInventoryStockRecord(record, batchMetaByItemId.get(record.inventory_item_id) || null)
+    )
+    .filter(Boolean);
+};
+
+const upsertDrugBatchForReceipt = async (
+  tx,
+  { drugId, batchNumber, expiryDate, quantityDelta }
+) => {
+  if (!drugId || !batchNumber || quantityDelta <= 0) return null;
+
+  let batch = await pharmacyWorkspaceRepository.txFindDrugBatchByDrugAndNumber(
+    tx,
+    drugId,
+    batchNumber
+  );
+
+  if (batch) {
+    return pharmacyWorkspaceRepository.txUpdateDrugBatch(tx, batch.id, {
+      quantity: Number(batch.quantity || 0) + quantityDelta,
+      ...(expiryDate ? { expiry_date: expiryDate } : {}),
+    });
+  }
+
+  return pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
+    drug_id: drugId,
+    batch_number: batchNumber,
+    expiry_date: expiryDate,
+    quantity: quantityDelta,
+  });
+};
 
 const buildDrugStockInclude = (scope = {}) => ({
   inventory_maps: {
@@ -689,8 +750,39 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
   }
 
   if (filters.low_stock_only === true) {
-    where.quantity = {
-      lte: prisma.inventory_stock.fields.reorder_level,
+    appendAnd(where, {
+      OR: [
+        { quantity: { lte: 0 } },
+        {
+          AND: [
+            { reorder_level: { gt: 0 } },
+            { quantity: { lte: prisma.inventory_stock.fields.reorder_level } },
+          ],
+        },
+      ],
+    });
+  }
+
+  const stockStatus = String(filters.stock_status || '').trim().toUpperCase();
+  if (stockStatus === STOCK_STATUS.OUT_OF_STOCK) {
+    appendAnd(where, { quantity: { lte: 0 } });
+  } else if (stockStatus === STOCK_STATUS.LOW_STOCK) {
+    appendAnd(where, {
+      AND: [
+        { quantity: { gt: 0 } },
+        { reorder_level: { gt: 0 } },
+        { quantity: { lte: prisma.inventory_stock.fields.reorder_level } },
+      ],
+    });
+  }
+
+  if (filters.expired_only === true || filters.expiring_within_days) {
+    const inventoryItemIds = await pharmacyWorkspaceRepository.findInventoryItemIdsByBatchFilters(
+      scope.tenant_id,
+      filters
+    );
+    where.inventory_item_id = {
+      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__'],
     };
   }
 
@@ -715,6 +807,7 @@ const buildDrugWhere = (filters = {}, scope, options = {}) => {
     ...buildDrugScopeWhere(scope),
   };
 
+  if (filters.id) where.id = filters.id;
   if (filters.name) where.name = { contains: String(filters.name).trim() };
   if (filters.code) where.code = { contains: String(filters.code).trim() };
   if (filters.form) where.form = { contains: String(filters.form).trim() };
@@ -1701,13 +1794,54 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
     const scope = resolveScopedUserContext(user);
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { updated_at: 'desc' };
+    const expiringWithinDays = Number(filters.expiring_within_days || EXPIRING_SOON_DAYS);
 
     const [where, summaryWhere] = await Promise.all([
       buildInventoryStockWhere(filters, scope, { includeSearch: true }),
       buildInventoryStockWhere(filters, scope, { includeSearch: false }),
     ]);
 
-    const [records, total, stockMetrics] = await Promise.all([
+    const facilityId =
+      scope.facility_id ||
+      (filters.facility_id
+        ? await resolveScopedFacilityId(filters.facility_id, scope)
+        : null);
+
+    const [expiringSoonRows, stockMetrics] = await Promise.all([
+      pharmacyWorkspaceRepository.countInventoryRowsWithExpiringBatches(
+        scope.tenant_id,
+        facilityId,
+        EXPIRING_SOON_DAYS
+      ),
+      pharmacyWorkspaceRepository.findInventoryStockMetrics(summaryWhere),
+    ]);
+    const stockSummary = summarizeStockMetrics(stockMetrics, {
+      expiring_soon_rows: expiringSoonRows,
+    });
+
+    if (needsPostStockStatusFilter(filters)) {
+      const allRecords = await pharmacyWorkspaceRepository.findManyInventoryStocks(
+        where,
+        0,
+        10000,
+        orderBy,
+        INVENTORY_STOCK_WITH_RELATIONS_INCLUDE
+      );
+      const stockStatus = String(filters.stock_status || '').trim().toUpperCase();
+      const stocks = (await enrichInventoryStockRecords(allRecords, expiringWithinDays)).filter(
+        (record) => record.stock_status === stockStatus
+      );
+      const total = stocks.length;
+      const pagedStocks = stocks.slice(skip, skip + limit);
+
+      return {
+        summary: stockSummary,
+        stocks: pagedStocks,
+        pagination: buildPagination(page, limit, total),
+      };
+    }
+
+    const [records, total] = await Promise.all([
       pharmacyWorkspaceRepository.findManyInventoryStocks(
         where,
         skip,
@@ -1716,13 +1850,13 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
         INVENTORY_STOCK_WITH_RELATIONS_INCLUDE
       ),
       pharmacyWorkspaceRepository.countInventoryStocks(where),
-      pharmacyWorkspaceRepository.findInventoryStockMetrics(summaryWhere),
     ]);
-    const stockSummary = summarizeStockMetrics(stockMetrics);
+
+    const stocks = await enrichInventoryStockRecords(records, expiringWithinDays);
 
     return {
       summary: stockSummary,
-      stocks: records.map((record) => mapInventoryStockRecord(record)).filter(Boolean),
+      stocks,
       pagination: buildPagination(page, limit, total),
     };
   } catch (error) {
@@ -1736,6 +1870,9 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
     const scope = resolveScopedUserContext(user);
     const inventoryItemId = await resolveScopedInventoryItemId(payload.inventory_item_id, scope);
     const facilityId = await resolveScopedFacilityId(payload.facility_id || null, scope, true);
+    const quantityDelta = Number(payload.quantity_delta || 0);
+    const reorderLevel =
+      payload.reorder_level !== undefined ? Number(payload.reorder_level) : undefined;
 
     const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
       let stock = await pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility(
@@ -1750,13 +1887,12 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           inventory_item_id: inventoryItemId,
           facility_id: facilityId,
           quantity: 0,
-          reorder_level: 0,
+          reorder_level: reorderLevel !== undefined ? reorderLevel : 0,
         });
       } else {
         ensureScopedInventoryStockRecord(stock, scope);
       }
 
-      const quantityDelta = Number(payload.quantity_delta || 0);
       const nextQuantity = Number(stock.quantity || 0) + quantityDelta;
 
       assertTransition(nextQuantity >= 0, {
@@ -1765,18 +1901,60 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         delta: quantityDelta,
       });
 
-      const updatedStock = await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, {
-        quantity: nextQuantity,
-      });
+      const stockUpdate = {};
+      if (quantityDelta !== 0) {
+        stockUpdate.quantity = nextQuantity;
+      }
+      if (reorderLevel !== undefined) {
+        stockUpdate.reorder_level = reorderLevel;
+      }
 
-      const movement = await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
-        inventory_item_id: inventoryItemId,
-        facility_id: facilityId,
-        movement_type: 'ADJUSTMENT',
-        reason: payload.reason || 'OTHER',
-        quantity: Math.abs(quantityDelta),
-        occurred_at: toDateOrNull(payload.occurred_at, new Date()),
-      });
+      if (Object.keys(stockUpdate).length > 0) {
+        await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, stockUpdate);
+      }
+
+      let movement = null;
+      if (quantityDelta !== 0) {
+        movement = await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
+          inventory_item_id: inventoryItemId,
+          facility_id: facilityId,
+          movement_type: 'ADJUSTMENT',
+          reason: payload.reason || 'OTHER',
+          quantity: Math.abs(quantityDelta),
+          occurred_at: toDateOrNull(payload.occurred_at, new Date()),
+        });
+      }
+
+      const reason = String(payload.reason || 'OTHER').trim().toUpperCase();
+      const batchNumber = String(payload.batch_number || '').trim();
+      const expiryDate = toDateOrNull(payload.expiry_date, null);
+      if (quantityDelta > 0 && reason === 'PURCHASE' && batchNumber) {
+        let drugId = null;
+        if (payload.drug_id) {
+          drugId = await resolveModelIdOrThrow({
+            identifier: payload.drug_id,
+            model: 'drug',
+            where: { deleted_at: null, ...buildDrugScopeWhere(scope) },
+            errorKey: 'errors.drug.not_found',
+          });
+        } else {
+          const inventoryMap = await pharmacyWorkspaceRepository.txFindInventoryMapByInventoryItem(
+            tx,
+            inventoryItemId,
+            scope.tenant_id
+          );
+          drugId = inventoryMap?.drug_id || null;
+        }
+
+        if (drugId) {
+          await upsertDrugBatchForReceipt(tx, {
+            drugId,
+            batchNumber,
+            expiryDate,
+            quantityDelta,
+          });
+        }
+      }
 
       const refreshedStock = await pharmacyWorkspaceRepository.txFindStockByInventoryItemAndFacility(
         tx,
@@ -1788,7 +1966,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
       return {
         stock: refreshedStock
           ? ensureScopedInventoryStockRecord(refreshedStock, scope)
-          : { ...stock, ...updatedStock },
+          : { ...stock, ...stockUpdate },
         movement,
       };
     });
@@ -1801,32 +1979,184 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
       diff: {
         metadata: {
           inventory_item_id: inventoryItemId,
-          quantity_delta: Number(payload.quantity_delta || 0),
+          quantity_delta: quantityDelta,
+          reorder_level: reorderLevel,
           reason: payload.reason || null,
           notes: payload.notes || null,
+          batch_number: payload.batch_number || null,
         },
       },
       ip_address: ipAddress,
     }).catch(() => {});
 
     const stockSummaryWhere = await buildInventoryStockWhere({}, scope, { includeSearch: false });
-    const stockSummary = summarizeStockMetrics(
-      await pharmacyWorkspaceRepository.findInventoryStockMetrics(stockSummaryWhere)
+    const facilityIdForSummary =
+      scope.facility_id ||
+      (await resolveScopedFacilityId(payload.facility_id || null, scope, true));
+    const [stockMetrics, expiringSoonRows] = await Promise.all([
+      pharmacyWorkspaceRepository.findInventoryStockMetrics(stockSummaryWhere),
+      pharmacyWorkspaceRepository.countInventoryRowsWithExpiringBatches(
+        scope.tenant_id,
+        facilityIdForSummary,
+        EXPIRING_SOON_DAYS
+      ),
+    ]);
+    const stockSummary = summarizeStockMetrics(stockMetrics, {
+      expiring_soon_rows: expiringSoonRows,
+    });
+
+    const [enrichedStock] = await enrichInventoryStockRecords(
+      mutation.stock ? [mutation.stock] : [],
+      EXPIRING_SOON_DAYS
     );
 
     return {
-      stock: mapInventoryStockRecord(mutation.stock),
+      stock: enrichedStock || null,
       stock_summary: stockSummary,
-      movement: {
-        id: toPublicIdentifier(mutation.movement?.human_friendly_id, mutation.movement?.id),
-        movement_type: mutation.movement?.movement_type || null,
-        reason: mutation.movement?.reason || null,
-        quantity: Number(mutation.movement?.quantity || 0),
-        occurred_at: mutation.movement?.occurred_at
-          ? new Date(mutation.movement.occurred_at).toISOString()
-          : null,
-      },
+      movement: mutation.movement
+        ? {
+            id: toPublicIdentifier(mutation.movement?.human_friendly_id, mutation.movement?.id),
+            movement_type: mutation.movement?.movement_type || null,
+            reason: mutation.movement?.reason || null,
+            quantity: Number(mutation.movement?.quantity || 0),
+            occurred_at: mutation.movement?.occurred_at
+              ? new Date(mutation.movement.occurred_at).toISOString()
+              : null,
+          }
+        : null,
     };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => {
+  try {
+    const scope = resolveScopedUserContext(user);
+    let tenantId = scope.tenant_id;
+    if (scope.can_manage_all_tenants) {
+      tenantId = await resolveIdentifierForPayload({
+        value: payload.tenant_id,
+        field: 'tenant_id',
+        model: 'tenant',
+        where: { deleted_at: null },
+      });
+    }
+
+    const facilityId = await resolveScopedFacilityId(payload.facility_id || null, scope, true);
+    const initialStock = Number(payload.initial_stock || 0);
+    const reorderLevel = Number(payload.reorder_level || 0);
+    const batchNumber = String(payload.batch_number || '').trim();
+    const expiryDate = toDateOrNull(payload.expiry_date, null);
+
+    const mutation = await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+      const drug = await pharmacyWorkspaceRepository.txCreateDrug(tx, {
+        tenant_id: tenantId,
+        name: payload.name,
+        code: payload.code || null,
+        form: payload.form || null,
+        strength: payload.strength || null,
+        unit_price: payload.unit_price ?? null,
+        currency: payload.currency || null,
+      });
+
+      const inventoryName = [payload.name, payload.strength, payload.form]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+        .join(' ');
+
+      const inventoryItem = await pharmacyWorkspaceRepository.txCreateInventoryItem(tx, {
+        tenant_id: tenantId,
+        name: inventoryName || payload.name,
+        category: 'MEDICATION',
+        sku: payload.code || null,
+        unit: payload.inventory_unit || 'unit',
+      });
+
+      await pharmacyWorkspaceRepository.txCreateDrugInventoryMap(tx, {
+        tenant_id: tenantId,
+        drug_id: drug.id,
+        inventory_item_id: inventoryItem.id,
+        is_default: true,
+        deduction_factor: 1,
+      });
+
+      if (initialStock > 0 || reorderLevel > 0) {
+        await pharmacyWorkspaceRepository.txCreateInventoryStock(tx, {
+          inventory_item_id: inventoryItem.id,
+          facility_id: facilityId,
+          quantity: initialStock,
+          reorder_level: reorderLevel,
+        });
+
+        if (initialStock > 0) {
+          await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
+            inventory_item_id: inventoryItem.id,
+            facility_id: facilityId,
+            movement_type: 'INBOUND',
+            reason: 'PURCHASE',
+            quantity: initialStock,
+            occurred_at: new Date(),
+          });
+        }
+      }
+
+      if (batchNumber && initialStock > 0) {
+        await pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
+          drug_id: drug.id,
+          batch_number: batchNumber,
+          expiry_date: expiryDate,
+          quantity: initialStock,
+        });
+      }
+
+      return drug;
+    });
+
+    createAuditLog({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'CREATE',
+      entity: 'drug',
+      entity_id: mutation.id,
+      diff: {
+        metadata: {
+          initial_stock: initialStock,
+          reorder_level: reorderLevel,
+          batch_number: batchNumber || null,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const drugRecord = await pharmacyWorkspaceRepository.findManyDrugs(
+      { id: mutation.id },
+      0,
+      1,
+      { name: 'asc' },
+      buildDrugStockInclude(scope)
+    );
+
+    let offeringByDrugId = new Map();
+    if (facilityId && drugRecord.length) {
+      const offeringRows = await facilityPharmacyCatalogRepository.findDrugOfferings(
+        {
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          drug_id: mutation.id,
+          is_active: true,
+        },
+        0,
+        1
+      );
+      offeringByDrugId = new Map(offeringRows.map((row) => [row.drug_id, row]));
+    }
+
+    return mapMergedDrugRecord(
+      drugRecord[0] || mutation,
+      offeringByDrugId.get(mutation.id) || null
+    );
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1983,6 +2313,7 @@ module.exports = {
   getPharmacyWorkbench,
   getPharmacyOrderWorkflow,
   searchDrugs,
+  setupPharmacyDrug,
   createPharmacyOrder,
   prepareDispense,
   attestDispense,

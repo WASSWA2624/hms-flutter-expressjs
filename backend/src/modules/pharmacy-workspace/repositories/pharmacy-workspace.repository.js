@@ -223,6 +223,155 @@ const txFindInventoryMapByDrugAndItem = async (tx, drugId, inventoryItemId, tena
     },
   });
 
+const findDrugInventoryMapsByInventoryItemIds = async (inventoryItemIds = []) =>
+  withDbErrorHandling(() => {
+    const normalized = Array.from(
+      new Set((inventoryItemIds || []).filter((value) => Boolean(value)))
+    );
+    if (!normalized.length) return [];
+    return prisma.drug_inventory_map.findMany({
+      where: {
+        deleted_at: null,
+        inventory_item_id: { in: normalized },
+      },
+      select: {
+        drug_id: true,
+        inventory_item_id: true,
+      },
+    });
+  });
+
+const findDrugBatchesByDrugIds = async (drugIds = []) =>
+  withDbErrorHandling(() => {
+    const normalized = Array.from(new Set((drugIds || []).filter((value) => Boolean(value))));
+    if (!normalized.length) return [];
+    return prisma.drug_batch.findMany({
+      where: {
+        deleted_at: null,
+        drug_id: { in: normalized },
+      },
+      select: {
+        id: true,
+        drug_id: true,
+        batch_number: true,
+        expiry_date: true,
+        quantity: true,
+      },
+    });
+  });
+
+const findInventoryItemIdsByBatchFilters = async (tenantId, filters = {}) =>
+  withDbErrorHandling(async () => {
+    const now = new Date();
+    const batchWhere = { deleted_at: null };
+
+    if (filters.expired_only === true) {
+      batchWhere.expiry_date = { lt: now };
+    } else if (filters.expiring_within_days) {
+      const horizon = new Date(now);
+      horizon.setDate(horizon.getDate() + Number(filters.expiring_within_days));
+      batchWhere.expiry_date = {
+        gte: now,
+        lte: horizon,
+      };
+    } else {
+      return null;
+    }
+
+    const batches = await prisma.drug_batch.findMany({
+      where: batchWhere,
+      select: { drug_id: true },
+    });
+    const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
+    if (!drugIds.length) return [];
+
+    const maps = await prisma.drug_inventory_map.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: tenantId,
+        drug_id: { in: drugIds },
+      },
+      select: { inventory_item_id: true },
+    });
+
+    return Array.from(new Set(maps.map((row) => row.inventory_item_id).filter(Boolean)));
+  });
+
+const countInventoryRowsWithExpiringBatches = async (tenantId, facilityId, days = 30) =>
+  withDbErrorHandling(async () => {
+    const now = new Date();
+    const horizon = new Date(now);
+    horizon.setDate(horizon.getDate() + Number(days));
+
+    const batches = await prisma.drug_batch.findMany({
+      where: {
+        deleted_at: null,
+        quantity: { gt: 0 },
+        expiry_date: {
+          gte: now,
+          lte: horizon,
+        },
+      },
+      select: { drug_id: true },
+    });
+    const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
+    if (!drugIds.length) return 0;
+
+    const maps = await prisma.drug_inventory_map.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: tenantId,
+        drug_id: { in: drugIds },
+      },
+      select: { inventory_item_id: true },
+    });
+    const inventoryItemIds = Array.from(
+      new Set(maps.map((row) => row.inventory_item_id).filter(Boolean))
+    );
+    if (!inventoryItemIds.length) return 0;
+
+    return prisma.inventory_stock.count({
+      where: {
+        deleted_at: null,
+        inventory_item_id: { in: inventoryItemIds },
+        ...(facilityId ? { facility_id: facilityId } : {}),
+      },
+    });
+  });
+
+const txCreateDrug = async (tx, data) => tx.drug.create({ data });
+
+const txCreateInventoryItem = async (tx, data) => tx.inventory_item.create({ data });
+
+const txCreateDrugInventoryMap = async (tx, data) => tx.drug_inventory_map.create({ data });
+
+const txFindDrugBatchByDrugAndNumber = async (tx, drugId, batchNumber) =>
+  tx.drug_batch.findFirst({
+    where: {
+      deleted_at: null,
+      drug_id: drugId,
+      batch_number: batchNumber,
+    },
+  });
+
+const txCreateDrugBatch = async (tx, data) => tx.drug_batch.create({ data });
+
+const txUpdateDrugBatch = async (tx, id, data) =>
+  tx.drug_batch.update({
+    where: { id },
+    data,
+  });
+
+const txFindInventoryMapByInventoryItem = async (tx, inventoryItemId, tenantId = null) =>
+  tx.drug_inventory_map.findFirst({
+    where: {
+      deleted_at: null,
+      inventory_item_id: inventoryItemId,
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+    },
+    orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
+  });
+
 module.exports = {
   findManyOrders,
   countOrders,
@@ -249,4 +398,15 @@ module.exports = {
   txFindManyDispenseAttestations,
   txFindInventoryMapByDrug,
   txFindInventoryMapByDrugAndItem,
+  findDrugInventoryMapsByInventoryItemIds,
+  findDrugBatchesByDrugIds,
+  findInventoryItemIdsByBatchFilters,
+  countInventoryRowsWithExpiringBatches,
+  txCreateDrug,
+  txCreateInventoryItem,
+  txCreateDrugInventoryMap,
+  txFindDrugBatchByDrugAndNumber,
+  txCreateDrugBatch,
+  txUpdateDrugBatch,
+  txFindInventoryMapByInventoryItem,
 };

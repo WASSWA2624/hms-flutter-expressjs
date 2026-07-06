@@ -80,6 +80,13 @@ extension PharmacyOrderFilterX on PharmacyOrderFilter {
 
 enum PharmacyCatalogTab { drugs, formulary, inventory }
 
+enum PharmacyInventoryFilter {
+  lowStock,
+  almostOutOfStock,
+  expiringSoon,
+  expired,
+}
+
 @immutable
 final class PharmacyFormularyQuery {
   const PharmacyFormularyQuery({
@@ -111,23 +118,56 @@ final class PharmacyInventoryStockQuery {
   const PharmacyInventoryStockQuery({
     this.search = '',
     this.lowStockOnly = false,
+    this.stockStatus,
+    this.expiringWithinDays,
+    this.expiredOnly = false,
     this.pageRequest = const AppPageRequest(pageSize: 10),
   });
 
   final String search;
   final bool lowStockOnly;
+  final String? stockStatus;
+  final int? expiringWithinDays;
+  final bool expiredOnly;
   final AppPageRequest pageRequest;
 
   PharmacyInventoryStockQuery copyWith({
     String? search,
     bool? lowStockOnly,
+    String? stockStatus,
+    int? expiringWithinDays,
+    bool? expiredOnly,
     AppPageRequest? pageRequest,
+    bool clearStockStatus = false,
+    bool clearExpiringWithinDays = false,
   }) {
     return PharmacyInventoryStockQuery(
       search: search ?? this.search,
       lowStockOnly: lowStockOnly ?? this.lowStockOnly,
+      stockStatus: clearStockStatus ? null : stockStatus ?? this.stockStatus,
+      expiringWithinDays: clearExpiringWithinDays
+          ? null
+          : expiringWithinDays ?? this.expiringWithinDays,
+      expiredOnly: expiredOnly ?? this.expiredOnly,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+
+  static PharmacyInventoryStockQuery forFilter(PharmacyInventoryFilter filter) {
+    return switch (filter) {
+      PharmacyInventoryFilter.lowStock => const PharmacyInventoryStockQuery(
+        lowStockOnly: true,
+      ),
+      PharmacyInventoryFilter.almostOutOfStock => const PharmacyInventoryStockQuery(
+        stockStatus: 'ALMOST_OUT_OF_STOCK',
+      ),
+      PharmacyInventoryFilter.expiringSoon => const PharmacyInventoryStockQuery(
+        expiringWithinDays: 30,
+      ),
+      PharmacyInventoryFilter.expired => const PharmacyInventoryStockQuery(
+        expiredOnly: true,
+      ),
+    };
   }
 }
 
@@ -139,6 +179,7 @@ final class PharmacyInventoryStockSummary {
     this.almostOutOfStockRows = 0,
     this.outOfStockRows = 0,
     this.pendingStockRows = 0,
+    this.expiringSoonRows = 0,
   });
 
   final int totalStockRows;
@@ -146,6 +187,9 @@ final class PharmacyInventoryStockSummary {
   final int almostOutOfStockRows;
   final int outOfStockRows;
   final int pendingStockRows;
+  final int expiringSoonRows;
+
+  int get criticalStockRows => lowStockRows + outOfStockRows;
 }
 
 @immutable
@@ -199,6 +243,12 @@ final class PharmacyDrugInput {
     this.strength,
     this.unitPrice,
     this.currency,
+    this.inventoryUnit,
+    this.initialStock,
+    this.reorderLevel,
+    this.batchNumber,
+    this.expiryDate,
+    this.facilityId,
   });
 
   final String tenantId;
@@ -208,6 +258,17 @@ final class PharmacyDrugInput {
   final String? strength;
   final num? unitPrice;
   final String? currency;
+  final String? inventoryUnit;
+  final int? initialStock;
+  final int? reorderLevel;
+  final String? batchNumber;
+  final DateTime? expiryDate;
+  final String? facilityId;
+
+  bool get hasStockSetup =>
+      (initialStock != null && initialStock! > 0) ||
+      (reorderLevel != null && reorderLevel! > 0) ||
+      (batchNumber != null && batchNumber!.trim().isNotEmpty);
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -218,6 +279,19 @@ final class PharmacyDrugInput {
       'strength': strength,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (currency != null) 'currency': currency,
+    };
+  }
+
+  Map<String, Object?> toSetupJson() {
+    return <String, Object?>{
+      ...toJson(),
+      if (inventoryUnit != null) 'inventory_unit': inventoryUnit,
+      if (initialStock != null) 'initial_stock': initialStock,
+      if (reorderLevel != null) 'reorder_level': reorderLevel,
+      if (batchNumber != null && batchNumber!.trim().isNotEmpty)
+        'batch_number': batchNumber!.trim(),
+      if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (facilityId != null) 'facility_id': facilityId,
     };
   }
 }
@@ -301,25 +375,38 @@ final class PharmacyFormularyItemInput {
 final class PharmacyInventoryAdjustInput {
   const PharmacyInventoryAdjustInput({
     required this.inventoryItemId,
-    required this.quantityDelta,
+    this.quantityDelta = 0,
+    this.reorderLevel,
     this.reason,
     this.notes,
     this.facilityId,
+    this.batchNumber,
+    this.expiryDate,
+    this.drugId,
   });
 
   final String inventoryItemId;
   final int quantityDelta;
+  final int? reorderLevel;
   final String? reason;
   final String? notes;
   final String? facilityId;
+  final String? batchNumber;
+  final DateTime? expiryDate;
+  final String? drugId;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'inventory_item_id': inventoryItemId,
-      'quantity_delta': quantityDelta,
+      if (quantityDelta != 0) 'quantity_delta': quantityDelta,
+      if (reorderLevel != null) 'reorder_level': reorderLevel,
       'reason': reason,
       'notes': notes,
       'facility_id': facilityId,
+      if (batchNumber != null && batchNumber!.trim().isNotEmpty)
+        'batch_number': batchNumber!.trim(),
+      if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (drugId != null) 'drug_id': drugId,
     };
   }
 }
@@ -1107,6 +1194,9 @@ final class PharmacyInventoryStock {
     this.pendingStock = false,
     this.stockStatus,
     this.lowStock = false,
+    this.batchCount = 0,
+    this.nextExpiry,
+    this.expiryAlertStatus,
     this.createdAt,
     this.updatedAt,
   });
@@ -1122,6 +1212,9 @@ final class PharmacyInventoryStock {
   final bool pendingStock;
   final String? stockStatus;
   final bool lowStock;
+  final int batchCount;
+  final DateTime? nextExpiry;
+  final String? expiryAlertStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 }

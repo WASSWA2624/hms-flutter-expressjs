@@ -1,158 +1,100 @@
-# Feature: Complete Pharmacy module (catalog, pricing, order queue UX)
+# Feature: Pharmacy stock monitoring, reorder alerts, and expiry tracking
 
 ## Goal
 
-Finish the **Pharmacy workspace** so pharmacists can manage the full product catalog (drugs, vials, and other pharmacy items), track stock with multiple units of measure, apply correct **dual pricing** (pharmacy vs facility), and work orders from a scannable, Lab/Radiology-style queue—without a cluttered toolbar.
+Give pharmacy staff a single place to **monitor stock levels**, **receive restock alerts** when quantity falls at or below a configured threshold, and **track product expiry** by batch. Staff must be able to set the alert threshold when onboarding a drug or receiving stock—not only via seed data or admin APIs.
 
-## Current state (screenshot + code)
+## Current state (keep)
 
-The workspace at `/pharmacy` already has:
+The following already exist—extend them; do not regress:
 
-- **App bar:** `Pharmacy` title, primary **Dispense** action, and a busy overflow menu (Catalog and stock, Ready, Refresh, maintenance/fault globals, Notifications).
-- **Order queue panel** with subtitle *Order queue* and description *System pharmacy orders with dispense and return actions.*
-- **Search** (patient, order, encounter, medication, batch), a single **Queue filter** dropdown, and **Table settings**.
-- **Default table columns:** Patient (name + stacked IDs/date), Order, Items, Dispense, Payment, Status.
-- **Catalog dialog** with Drugs / Formulary / Inventory tabs (`pharmacy_catalog_panel.dart`).
-- **Backend workbench** query supports `status`, `location`, `pending_payment`, `from`/`to`, `patient_id`, `encounter_id`, `search` (`pharmacy-workspace.schema.js`).
-- **Drug model** has `unit_price` + `currency`; inventory items have `unit`; no separate facility offering table yet (unlike Lab/Radiology catalog offerings).
+- **Data model:** `inventory_stock` (`quantity`, `reorder_level`, facility-scoped) linked to drugs via `drug_inventory_map`; `drug_batch` (`batch_number`, `expiry_date`, `quantity`).
+- **Stock status logic:** `resolveStockStatus` in `backend/src/modules/pharmacy-workspace/services/pharmacy-workspace.service.js` and `pharmacy.serializer.js` — `IN_STOCK`, `ALMOST_OUT_OF_STOCK` (≤ 2× reorder), `LOW_STOCK` (≤ reorder), `OUT_OF_STOCK`.
+- **Pharmacy workspace:** Orders queue, drug catalog panel (`PharmacyCatalogTab`: drugs / formulary / inventory), stock adjust dialog, drug-level stock status badges and filters.
+- **Inventory API:** `GET /api/v1/pharmacy/inventory/stock` with `low_stock_only`; `POST /api/v1/pharmacy/inventory/adjust`; summary counts (`low_stock_rows`, `almost_out_of_stock_rows`, etc.).
+- **Drug-batch API:** `GET/POST /api/v1/drug-batches` with `expired` filter (no Flutter client yet).
+- **Inventory-stock API:** `reorder_level` on create/update (`backend/src/modules/inventory-stock/schemas/inventory-stock.schema.js`).
+- **Seeder reference:** `backend/scripts/seeders/seed-clinical-catalog-pack.js` — drugs created with `initial_stock`, `reorder_level`, and inventory mapping.
 
-## Problems
+## Gaps
 
-1. **Catalog is incomplete for real pharmacy operations** — items cannot be fully defined with quantities, unit options, and dual prices; stock visibility is basic.
-2. **Pricing model is wrong for hospital-embedded pharmacies** — one `unit_price` on `drug` does not distinguish pharmacy retail price from facility billing price.
-3. **Order queue subtitle is noise** — the panel description under *Order queue* should be removed; the table should speak for itself.
-4. **Filters are too narrow** — one queue-status dropdown; date range disabled; `partialStock` and `urgent` filters exist but are disabled.
-5. **Table packs too much into cells** — Patient column stacks patient ID, encounter ID, and date; identifiers belong in optional columns or the detail dialog.
-6. **Toolbar is overcrowded** — secondary actions duplicate overflow entries and crowd the header on smaller widths.
+| Area | Today | Needed |
+|------|-------|--------|
+| **Reorder threshold** | Stored in DB; defaults to `0` on new stock rows | Captured and editable when adding a drug, receiving stock, or editing inventory |
+| **Alerts** | Status badge + optional `low_stock_only` filter; dashboard metric only | Visible **workspace alerts** (summary chips / notifications) when items cross threshold |
+| **Monitoring UI** | Inventory table shows item, facility, quantity, status | Also show **reorder level**, **next expiry**, and batch count; filter by stock status and expiry window |
+| **Expiry** | `drug_batch` API exists; dispense uses free-text batch ref | Batch + expiry captured on **stock receipt**; expiry surfaced in catalog/inventory; alerts for soon-to-expire / expired |
+| **Drug onboarding** | Add-drug dialog: name, code, form, strength, price only | Optional stock setup: unit, initial quantity, reorder level, first batch (number + expiry) |
 
-## Catalog, stock, and dual pricing
+## Scope
 
-### Product management
+### 1. Reorder threshold (restock alert quantity)
 
-Pharmacists (and users with `pharmacyWrite` or higher) must be able to **create and maintain pharmacy products**:
+- Add **Reorder alert at** (`reorder_level`, non-negative integer) to:
+  - Add / edit drug flow when stock is initialized (`_DrugFormDialog` in `pharmacy_catalog_panel.dart`).
+  - Stock receive / adjust flow when creating a new `inventory_stock` row (`_InventoryAdjustDialog`).
+  - Inventory row edit (inline or dialog) for existing stock.
+- Wire through `PharmacyDrugInput` / adjust payloads → backend pharmacy-workspace or inventory-stock endpoints.
+- When `reorder_level` is `0`, treat as “no alert configured” (existing status logic already handles this).
 
-- Drugs and other pharmacy items (vials, consumables, etc.) with name, code, form, strength, SKU where applicable.
-- **Quantity tracking** with visible on-hand stock, low/out-of-stock signals (reuse existing inventory stock workbench).
-- **Multiple units of measure** — prescribe/dispense/stock in different units (e.g. tablets vs packs); surface `quantity_unit`, `dose_unit`, `duration_unit` consistently in catalog and dispense flows.
+### 2. Stock monitoring & alerts
 
-Extend the existing **Drugs / Formulary / Inventory** catalog panel rather than building a parallel UI.
+- **Inventory tab** (`_InventoryCatalogTab`): add columns **Reorder level**, **Next expiry** (earliest non-expired batch for the drug, if any).
+- Add **summary notification chips** on the pharmacy workspace toolbar (mirror orders-queue chips in `pharmacy_workspace_page.dart`) for:
+  - Low stock (`LOW_STOCK` + `OUT_OF_STOCK`)
+  - Almost out of stock (`ALMOST_OUT_OF_STOCK`) — optional, lower priority tone
+  - Expiring soon (configurable window, e.g. 30 days)
+- Chips are **clickable** — apply the corresponding inventory filter.
+- Expose **stock status** and **low stock only** filters in the inventory panel (drugs tab already has `_stockStatusFilterChoices`; align inventory tab).
+- Show `reorder_level` and computed status in drug catalog rows where stock is mapped.
 
-### Dual price model
+### 3. Expiry tracking (batch-level)
 
-Each pharmacy product supports **two prices**:
+- On **stock receipt** (`reason: PURCHASE` or dedicated “Receive stock” action), capture:
+  - Batch number (required when expiry is provided)
+  - Expiry date (optional but encouraged for pharmacy products)
+  - Quantity received
+- Create or update `drug_batch` via existing drug-batch service; decrement batch quantity on dispense where batch is specified (FEFO preference when batch not chosen—document behavior).
+- **Inventory / drug detail:** list batches with expiry, quantity remaining, and expired flag.
+- **Filters:** `expiring_within_days`, `expired_only` on inventory/drug-batch queries (backend + controller).
+- **Alerts:** summary chip for batches expiring within threshold; badge on rows with expired or soon-to-expire stock.
 
-| Price | Purpose | Default use |
-|-------|---------|-------------|
-| **Pharmacy price** | Retail / walk-in sales at the pharmacy counter | Direct pharmacy visits |
-| **Facility price** | Hospital billing rate | Orders originating from clinical departments |
+## Primary references
 
-**Pricing rules at dispense/billing:**
-
-- **Clinical-department orders** (OPD, IPD, theater, etc. — orders with an encounter / `orderSource` from clinical workflow): always use **facility price** for patient billing.
-- **Walk-in / direct pharmacy orders** (no clinical encounter or explicit walk-in source): pharmacist **chooses** pharmacy price or facility price; the chosen price is **editable manually** before dispense/billing confirmation.
-
-### Backend approach
-
-Mirror the **facility catalog offering** pattern used by Lab and Radiology:
-
-- `drug.unit_price` → treat as **pharmacy (retail) price**.
-- Add **`facility_pharmacy_offering`** (or equivalent) keyed by `facility_id` + `drug_id` with `unit_price`, `currency`, `is_active` — same shape as `facility_radiology_test_offering` / `facility_lab_test_offering`.
-- Expose CRUD + list endpoints; wire through `pharmacy-workspace` serializer and Flutter DTOs/entities.
-- Persist the **selected price tier and overridden amount** on dispense / `billing_snapshot` when applicable.
-
-**Primary references:**
-
-- Backend: `backend/src/modules/facility-radiology-catalog/`, `backend/src/modules/facility-lab-catalog/`
-- Frontend catalog: `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart`
-- Entities: `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart`
-- Billing: `frontend/lib/features/pharmacy/presentation/pharmacy_billing_helpers.dart`
-
-## Order queue UX
-
-### Remove panel subtitle
-
-Drop `pharmacyQueuePanelDescription` from the queue `AppWorkspaceDetailPanel` — render the table directly under the workspace app bar (no *System pharmacy orders with dispense and return actions.* line). Keep the empty state copy.
-
-### Toolbar / overflow
-
-Reduce visible toolbar clutter:
-
-- Keep **Dispense** as the sole primary action.
-- Move **Catalog and stock**, **Ready** (and other queue shortcuts already on summary chips) into **`overflowSections`** via `appWorkspaceToolbarWithLabels` — follow `maxVisibleScreenActions` and `AppToolbarOverflowSection` patterns in `app_workspace_toolbar.dart`.
-- Do not duplicate the same action in both `secondary` and overflow.
-- Preserve global actions (Refresh, maintenance, fault report, Notifications) in overflow only when width-constrained.
-
-### Filters
-
-Expand **Queue filter** to a multi-group advanced filter panel matching Radiology (`radiology_workspace_page.dart`):
-
-| Filter | Query param | Notes |
-|--------|-------------|-------|
-| Queue status | `status` | ORDERED, PARTIALLY_DISPENSED, DISPENSED, CANCELLED |
-| Location | `location` | OUTPATIENT, INPATIENT, DISCHARGE |
-| Pending payment | `pending_payment` | Billing gate |
-| Order date | `from` / `to` | Enable date filter (currently `enableDateFilter: false`) |
-| Priority | new if needed | STAT, URGENT, ROUTINE — wire if `PharmacyOrder.priority` is populated |
-| Partial stock | new | Enable `PharmacyOrderFilter.partialStock` server-side |
-| Urgent | new | Enable `PharmacyOrderFilter.urgent` server-side |
-
-Wire all filters through `PharmacyWorkbenchQuery`, `pharmacy_workspace_controller.dart`, and `getPharmacyWorkbenchQuerySchema` / repository queries. **Do not client-filter paginated results.**
-
-### Table columns
-
-Follow the **one column = one field** Lab/Radiology worklist model (`lab_workspace_page.dart`, `radiology_workspace_page.dart`):
-
-#### Default columns (visible without Table settings)
-
-| Column | Source field | Notes |
-|--------|--------------|-------|
-| **Patient** | `patientDisplayName` | Name only — no stacked IDs |
-| **Order** | `displayId` | `AppCopyableIdentifier` |
-| **Location** | `location` / `encounterType` | OUTPATIENT / INPATIENT / DISCHARGE label |
-| **Items** | `itemCount` | Numeric |
-| **Dispense** | `quantityDispensedTotal` / `quantityPrescribedTotal` | Progress label (existing helper) |
-| **Payment** | `effectivePaymentStatus` | Billing gate label |
-| **Status** | `status` | `AppWorkspaceStatusBadge` |
-
-#### Optional columns (Table settings only)
-
-- Patient ID (`patientId`)
-- Encounter (`encounterId`)
-- Ordered at (`orderedAt`)
-- Priority (`priority`)
-- Prescriber (`prescriberDisplayName`)
-- Order source (`orderSource`)
-- Pending attestation (`hasPendingAttestation` / batch ref)
-- Remaining qty (`quantityRemainingTotal`)
-
-Refactor `_PharmacyOrderPatientCell` to a single-line name cell for the default Patient column. Add `columnChoices` to `AppListTable` (currently missing).
-
-### Detail dialog
-
-Row click opens the existing prescription detail dialog. It must surface everything removed from default table cells: IDs, encounter, prescriber, source, full item list with stock mapping, **price tier selection** for walk-in orders, billing gate, and dispense/return history.
-
-### Mobile
-
-Update the mobile list tile to match desktop hierarchy: patient name, location, dispense progress, payment gate, status badge — no ID stacking in subtitles.
+| Layer | Path |
+|-------|------|
+| Pharmacy UI | `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` |
+| Catalog & inventory | `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` |
+| Controller | `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` |
+| Entities / DTOs | `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart`, `data/dtos/pharmacy_dtos.dart` |
+| Repository | `frontend/lib/features/pharmacy/data/repositories/pharmacy_repository_impl.dart` |
+| Backend workspace | `backend/src/modules/pharmacy-workspace/` (service, serializer, schema, routes) |
+| Drug batches | `backend/src/modules/drug-batch/` |
+| Inventory stock | `backend/src/modules/inventory-stock/` |
+| Schema | `backend/prisma/schema.prisma` — `inventory_stock`, `drug_batch`, `drug_inventory_map` |
+| Shared UI | `frontend/lib/shared/layout/app_workspace.dart`, `app_workspace_summary_notification.dart`, `app_list_table.dart`, `app_workspace_status_badge.dart` |
 
 ## Implementation rules
 
-- **Reuse shared components** from `frontend/lib/shared/` (`AppListTable`, `AppSearchBar`, `AppWorkspaceDetailPanel`, `AppWorkspaceStatusBadge`, `app_workspace_toolbar.dart`). Extract a shared single-line worklist text cell only if Lab/Radiology/Pharmacy would otherwise duplicate identical patterns.
-- **No new visual language** — match Lab/Radiology spacing, typography, Table settings, and filter sheet behavior.
-- **Localization:** add/adjust keys in `frontend/lib/l10n/app_en.arb` for new columns, filters, and pricing labels.
-- **Backend parity:** new filters and pricing fields must be enforced server-side.
-- **Responsive:** verify queue, catalog dialog, and dispense flows on narrow/mobile widths.
-- **Permissions:** catalog write actions remain gated by `pharmacyWrite` / `operationsWrite`.
+- **Reuse existing stock status enums** — do not invent parallel status values; map to `AppWorkspaceStatusBadge` tones (warning for low/almost-out, error for out/expired).
+- **Facility scoping:** reorder level and stock rows remain facility-scoped per existing pharmacy-workspace scope rules.
+- **Backend parity:** filters (`low_stock_only`, stock status, expiry window) must be enforced server-side on paginated inventory/batch lists.
+- **Localization:** add keys to `frontend/lib/l10n/app_en.arb` for reorder level, expiry, batch labels, alert chip text, and filter names.
+- **No new visual language** — match pharmacy workspace and Lab/Radiology summary-chip patterns.
+- **Minimal schema changes** — prefer existing `reorder_level` and `drug_batch`; only migrate if batch–inventory linkage is required for dispense FEFO.
+
+## Out of scope
+
+- Purchase orders / supplier procurement workflow.
+- Push notifications, email, or SMS (in-app workspace alerts only for this task).
+- Non-pharmacy inventory modules (equipment, general supplies).
 
 ## Acceptance criteria
 
-- [ ] Pharmacists can add/edit pharmacy products with stock quantities and unit-of-measure fields visible in catalog and inventory tabs.
-- [ ] Each product has **pharmacy price** and **facility price**; facility offerings follow the Lab/Radiology catalog pattern.
-- [ ] Clinical-department orders bill at facility price; walk-in orders let the pharmacist pick price tier and override amount manually.
-- [ ] Order queue panel has **no** subtitle/description under the table.
-- [ ] Toolbar shows only **Dispense** prominently; Catalog/Ready and other shortcuts live in overflow or summary chips without duplication.
-- [ ] Filters cover status, location, pending payment, order date, priority, partial stock, and urgent — all backend-backed with pagination.
-- [ ] Default columns are single-field cells; IDs, encounter, prescriber, source, and dates are optional via Table settings.
-- [ ] Detail dialog shows full context and walk-in price selection.
-- [ ] Mobile list tile matches desktop information hierarchy.
-- [ ] Shared workspace components and Lab/Radiology patterns are reused — not forked markup.
+- [ ] Staff can set **reorder alert quantity** when adding a drug (with initial stock) and when receiving or editing inventory stock.
+- [ ] Inventory table shows **quantity**, **reorder level**, **stock status**, and **next expiry** per row.
+- [ ] Pharmacy workspace toolbar shows **clickable alert chips** for low/out-of-stock and expiring-soon items; chips apply inventory filters.
+- [ ] Stock receipt flow captures **batch number** and **expiry date**; batches appear in drug/inventory detail.
+- [ ] Filters work for low stock, stock status, expired, and expiring-within-N-days via backend query params.
+- [ ] Existing dispense, return, and stock-adjust flows continue to work; status recomputes after quantity changes.
+- [ ] New UI strings are localized; shared workspace components are reused.

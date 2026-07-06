@@ -15,6 +15,7 @@ const {
   recordOrderBillingSchema,
   getInventoryStockQuerySchema,
   adjustInventorySchema,
+  setupPharmacyDrugSchema,
   resolveLegacyRouteParamsSchema,
 } = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
 
@@ -38,6 +39,14 @@ router.get(
   authenticate(),
   authorize(PHARMACY_WORKSPACE_READ_SCOPES, 'permission'),
   pharmacyWorkspaceController.searchDrugs
+);
+
+router.post(
+  '/drugs/setup',
+  validateRequest({ body: setupPharmacyDrugSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.setupPharmacyDrug
 );
 
 router.post(

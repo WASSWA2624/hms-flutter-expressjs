@@ -14,6 +14,13 @@ const pharmacyOrderPrioritySchema = z.enum(['STAT', 'URGENT', 'ROUTINE', 'NORMAL
 
 const stockReasonSchema = z.enum(['PURCHASE', 'DISPENSE', 'RETURN', 'DAMAGE', 'EXPIRY', 'OTHER']);
 
+const stockStatusSchema = z.enum([
+  'IN_STOCK',
+  'ALMOST_OUT_OF_STOCK',
+  'LOW_STOCK',
+  'OUT_OF_STOCK',
+]);
+
 const panelSchema = z.enum(['orders', 'inventory']);
 
 const orderWorkflowParamsSchema = z.object({
@@ -93,19 +100,72 @@ const getInventoryStockQuerySchema = listQuerySchema.extend({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   inventory_item_id: uuidOrFriendlyIdentifierSchema.optional(),
   low_stock_only: z.coerce.boolean().optional(),
+  stock_status: stockStatusSchema.optional(),
+  expiring_within_days: z.coerce.number().int().min(1).max(365).optional(),
+  expired_only: z.coerce.boolean().optional(),
   search: z.string().trim().optional(),
 });
 
-const adjustInventorySchema = z.object({
-  inventory_item_id: uuidOrFriendlyIdentifierSchema,
-  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  quantity_delta: z.coerce.number().int().refine((value) => value !== 0, {
-    message: 'errors.validation.non_zero',
-  }),
-  reason: stockReasonSchema.optional(),
-  notes: z.string().trim().max(255).optional().nullable(),
-  occurred_at: z.string().datetime().optional(),
-});
+const adjustInventorySchema = z
+  .object({
+    inventory_item_id: uuidOrFriendlyIdentifierSchema,
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    quantity_delta: z.coerce.number().int().optional().default(0),
+    reorder_level: z.coerce.number().int().min(0).optional(),
+    reason: stockReasonSchema.optional(),
+    notes: z.string().trim().max(255).optional().nullable(),
+    occurred_at: z.string().datetime().optional(),
+    batch_number: z.string().trim().min(1).max(80).optional(),
+    expiry_date: z.string().datetime().optional().nullable(),
+    drug_id: uuidOrFriendlyIdentifierSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    const quantityDelta = Number(data.quantity_delta || 0);
+    const hasQuantityChange = quantityDelta !== 0;
+    const hasReorderChange = data.reorder_level !== undefined;
+
+    if (!hasQuantityChange && !hasReorderChange) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'errors.validation.required',
+        path: ['quantity_delta'],
+      });
+    }
+
+    if (data.expiry_date && !data.batch_number) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'errors.validation.required',
+        path: ['batch_number'],
+      });
+    }
+  });
+
+const setupPharmacyDrugSchema = z
+  .object({
+    tenant_id: uuidOrFriendlyIdentifierSchema,
+    name: z.string().trim().min(1).max(255),
+    code: z.string().trim().max(80).optional().nullable(),
+    form: z.string().trim().max(80).optional().nullable(),
+    strength: z.string().trim().max(80).optional().nullable(),
+    unit_price: z.coerce.number().min(0).optional().nullable(),
+    currency: z.string().trim().max(10).optional().nullable(),
+    inventory_unit: z.string().trim().max(80).optional().nullable(),
+    initial_stock: z.coerce.number().int().min(0).optional(),
+    reorder_level: z.coerce.number().int().min(0).optional(),
+    batch_number: z.string().trim().min(1).max(80).optional(),
+    expiry_date: z.string().datetime().optional().nullable(),
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.expiry_date && !data.batch_number) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'errors.validation.required',
+        path: ['batch_number'],
+      });
+    }
+  });
 
 const recordOrderBillingSchema = z.object({
   billing: clinicalRequestBillingSchema,
@@ -126,6 +186,7 @@ const resolveLegacyRouteParamsSchema = z.object({
 
 module.exports = {
   pharmacyOrderStatusSchema,
+  stockStatusSchema,
   orderLocationSchema,
   orderWorkflowParamsSchema,
   getPharmacyWorkbenchQuerySchema,
@@ -137,6 +198,7 @@ module.exports = {
   returnPharmacyOrderSchema,
   getInventoryStockQuerySchema,
   adjustInventorySchema,
+  setupPharmacyDrugSchema,
   recordOrderBillingSchema,
   resolveLegacyRouteParamsSchema,
 };

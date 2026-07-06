@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -176,6 +177,16 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                 Text(_priceText(item.facilityUnitPrice)),
           ),
           AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyReorderLevelColumnLabel,
+            numeric: true,
+            cellBuilder: (_, PharmacyDrug item) {
+              final num reorderLevel = item.stockRows.isNotEmpty
+                  ? item.stockRows.first.reorderLevel
+                  : 0;
+              return Text(reorderLevel.toString());
+            },
+          ),
+          AppListTableColumn<PharmacyDrug>(
             label: l10n.pharmacyStockStatusFilterLabel,
             cellBuilder: (BuildContext context, PharmacyDrug item) {
               return AppWorkspaceStatusBadge(
@@ -284,6 +295,11 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
   late final TextEditingController _strengthController;
   late final TextEditingController _pharmacyPriceController;
   late final TextEditingController _facilityPriceController;
+  late final TextEditingController _inventoryUnitController;
+  late final TextEditingController _initialStockController;
+  late final TextEditingController _reorderLevelController;
+  late final TextEditingController _batchNumberController;
+  DateTime? _expiryDate;
   bool _isSaving = false;
 
   @override
@@ -301,6 +317,10 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
     _facilityPriceController = TextEditingController(
       text: _priceText(widget.drug?.facilityUnitPrice),
     );
+    _inventoryUnitController = TextEditingController();
+    _initialStockController = TextEditingController();
+    _reorderLevelController = TextEditingController();
+    _batchNumberController = TextEditingController();
   }
 
   @override
@@ -311,6 +331,10 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
     _strengthController.dispose();
     _pharmacyPriceController.dispose();
     _facilityPriceController.dispose();
+    _inventoryUnitController.dispose();
+    _initialStockController.dispose();
+    _reorderLevelController.dispose();
+    _batchNumberController.dispose();
     super.dispose();
   }
 
@@ -355,6 +379,41 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
             labelText: l10n.pharmacyFacilityPriceLabel,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
+          if (!isEdit) ...<Widget>[
+            AppTextField(
+              controller: _inventoryUnitController,
+              labelText: l10n.pharmacyInventoryUnitLabel,
+            ),
+            AppTextField(
+              controller: _initialStockController,
+              labelText: l10n.pharmacyInitialStockLabel,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            AppTextField(
+              controller: _reorderLevelController,
+              labelText: l10n.pharmacyReorderLevelLabel,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+            ),
+            AppTextField(
+              controller: _batchNumberController,
+              labelText: l10n.pharmacyBatchNumberLabel,
+            ),
+            AppDateField(
+              labelText: l10n.pharmacyExpiryDateLabel,
+              value: _expiryDate,
+              pickerButtonLabel: l10n.housekeepingPickDateAction,
+              invalidDateMessage: l10n.pharmacyExpiryDateLabel,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              onChanged: (DateTime? value) => setState(() => _expiryDate = value),
+            ),
+          ],
         ],
       ),
       actions: <Widget>[
@@ -402,6 +461,11 @@ class _DrugEditDialogState extends ConsumerState<_DrugEditDialog> {
             form: _emptyToNull(_formController.text),
             strength: _emptyToNull(_strengthController.text),
             unitPrice: pharmacyPrice,
+            inventoryUnit: _emptyToNull(_inventoryUnitController.text),
+            initialStock: int.tryParse(_initialStockController.text.trim()),
+            reorderLevel: int.tryParse(_reorderLevelController.text.trim()),
+            batchNumber: _emptyToNull(_batchNumberController.text),
+            expiryDate: _expiryDate,
           ),
           facilityOffering: facilityOffering,
         );
@@ -665,76 +729,137 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyInventoryPanelTitle,
       description: l10n.pharmacyInventoryPanelDescription,
-      child: AppListTable<PharmacyInventoryStock>(
-        page: widget.state.inventoryWorkbench.stocks,
-        isLoading: widget.state.isRefreshingInventory,
-        search: AppListTableSearch<PharmacyInventoryStock>(
-          controller: _searchController,
-          semanticLabel: l10n.pharmacySearchLabel,
-          hintText: l10n.pharmacySearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applyInventorySearch,
-          onClear: () => unawaited(controller.applyInventorySearch('')),
-        ),
-        onPageChanged: controller.changeInventoryPage,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.pharmacyNoInventoryTitle,
-          body: l10n.pharmacyNoInventoryBody,
-          icon: Icons.warehouse_outlined,
-        ),
-        columns: <AppListTableColumn<PharmacyInventoryStock>>[
-          AppListTableColumn<PharmacyInventoryStock>(
-            label: l10n.pharmacyInventoryItemLabel,
-            cellBuilder: (_, PharmacyInventoryStock item) {
-              return Text(
-                item.inventoryItem?.displayTitle ?? item.displayId ?? '',
-              );
-            },
-          ),
-          AppListTableColumn<PharmacyInventoryStock>(
-            label: l10n.pharmacyInventoryFacilityColumnLabel,
-            cellBuilder: (_, PharmacyInventoryStock item) =>
-                Text(item.facilityName ?? ''),
-          ),
-          AppListTableColumn<PharmacyInventoryStock>(
-            label: l10n.pharmacyInventoryQuantityColumnLabel,
-            numeric: true,
-            cellBuilder: (_, PharmacyInventoryStock item) =>
-                Text(item.quantity.toString()),
-          ),
-          AppListTableColumn<PharmacyInventoryStock>(
-            label: l10n.pharmacyStockStatusFilterLabel,
-            cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-              return AppWorkspaceStatusBadge(
-                status: _stockStatus(context, item.stockStatus),
-              );
-            },
-          ),
-          AppListTableColumn<PharmacyInventoryStock>(
-            label: '',
-            cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-              return AppAccessActionGate(
-                requirement: widget.writeRequirement,
-                builder: (BuildContext context, bool isAllowed) => AppButton(
-                  iconOnly: true,
-                  leadingIcon: Icons.tune_outlined,
-                  label: l10n.pharmacyAdjustStockAction,
-
-                  semanticLabel: l10n.pharmacyAdjustStockAction,
-                  enabled: isAllowed,
-                  onPressed: () => _openAdjustDialog(context, item),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Wrap(
+            spacing: Theme.of(context).spacing.sm,
+            runSpacing: Theme.of(context).spacing.sm,
+            children: <Widget>[
+              FilterChip(
+                label: Text(l10n.pharmacyLowStockOnlyFilterLabel),
+                selected: widget.state.inventoryQuery.lowStockOnly,
+                onSelected: (bool value) => unawaited(
+                  controller.applyInventoryLowStockOnly(value),
                 ),
+              ),
+              FilterChip(
+                label: Text(l10n.pharmacyExpiringSoonFilterLabel),
+                selected: widget.state.inventoryQuery.expiringWithinDays != null,
+                onSelected: (bool value) => unawaited(
+                  value
+                      ? controller.applyInventoryFilter(
+                          PharmacyInventoryFilter.expiringSoon,
+                        )
+                      : controller.clearInventoryFilters(),
+                ),
+              ),
+              FilterChip(
+                label: Text(l10n.pharmacyExpiredOnlyFilterLabel),
+                selected: widget.state.inventoryQuery.expiredOnly,
+                onSelected: (bool value) => unawaited(
+                  value
+                      ? controller.applyInventoryFilter(
+                          PharmacyInventoryFilter.expired,
+                        )
+                      : controller.clearInventoryFilters(),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          AppListTable<PharmacyInventoryStock>(
+            page: widget.state.inventoryWorkbench.stocks,
+            isLoading: widget.state.isRefreshingInventory,
+            search: AppListTableSearch<PharmacyInventoryStock>(
+              controller: _searchController,
+              semanticLabel: l10n.pharmacySearchLabel,
+              hintText: l10n.pharmacySearchHint,
+              matcher: (_, _) => true,
+              onSubmitted: controller.applyInventorySearch,
+              onClear: () => unawaited(controller.applyInventorySearch('')),
+            ),
+            onPageChanged: controller.changeInventoryPage,
+            emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+              variant: AppStateViewVariant.empty,
+              title: l10n.pharmacyNoInventoryTitle,
+              body: l10n.pharmacyNoInventoryBody,
+              icon: Icons.warehouse_outlined,
+            ),
+            columns: <AppListTableColumn<PharmacyInventoryStock>>[
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyInventoryItemLabel,
+                cellBuilder: (_, PharmacyInventoryStock item) {
+                  return Text(
+                    item.inventoryItem?.displayTitle ?? item.displayId ?? '',
+                  );
+                },
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyInventoryFacilityColumnLabel,
+                cellBuilder: (_, PharmacyInventoryStock item) =>
+                    Text(item.facilityName ?? ''),
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyInventoryQuantityColumnLabel,
+                numeric: true,
+                cellBuilder: (_, PharmacyInventoryStock item) =>
+                    Text(item.quantity.toString()),
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyReorderLevelColumnLabel,
+                numeric: true,
+                cellBuilder: (_, PharmacyInventoryStock item) =>
+                    Text(item.reorderLevel.toString()),
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyNextExpiryColumnLabel,
+                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+                  return _expiryCell(context, item);
+                },
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyBatchCountColumnLabel,
+                numeric: true,
+                cellBuilder: (_, PharmacyInventoryStock item) =>
+                    Text(item.batchCount.toString()),
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: l10n.pharmacyStockStatusFilterLabel,
+                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+                  return AppWorkspaceStatusBadge(
+                    status: _stockStatus(context, item.stockStatus),
+                  );
+                },
+              ),
+              AppListTableColumn<PharmacyInventoryStock>(
+                label: '',
+                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+                  return AppAccessActionGate(
+                    requirement: widget.writeRequirement,
+                    builder: (BuildContext context, bool isAllowed) => AppButton(
+                      iconOnly: true,
+                      leadingIcon: Icons.tune_outlined,
+                      label: l10n.pharmacyAdjustStockAction,
+                      semanticLabel: l10n.pharmacyAdjustStockAction,
+                      enabled: isAllowed,
+                      onPressed: () => _openAdjustDialog(context, item),
+                    ),
+                  );
+                },
+              ),
+            ],
+            mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
+              return ListTile(
+                title: Text(item.inventoryItem?.displayTitle ?? ''),
+                subtitle: Text(
+                  '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
+                ),
+                trailing: _expiryCell(context, item),
               );
             },
           ),
         ],
-        mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
-          return ListTile(
-            title: Text(item.inventoryItem?.displayTitle ?? ''),
-            subtitle: Text(item.quantity.toString()),
-          );
-        },
       ),
     );
   }
@@ -764,20 +889,31 @@ class _InventoryAdjustDialogState
     extends ConsumerState<_InventoryAdjustDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _deltaController;
+  late final TextEditingController _reorderController;
+  late final TextEditingController _batchController;
   late final TextEditingController _notesController;
   String _reason = 'PURCHASE';
+  DateTime? _expiryDate;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _deltaController = TextEditingController();
+    _reorderController = TextEditingController(
+      text: widget.stock.reorderLevel > 0
+          ? widget.stock.reorderLevel.toString()
+          : '',
+    );
+    _batchController = TextEditingController();
     _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
     _deltaController.dispose();
+    _reorderController.dispose();
+    _batchController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -787,6 +923,7 @@ class _InventoryAdjustDialogState
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: Text(l10n.pharmacyAdjustStockDialogTitle),
+      scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
@@ -796,15 +933,16 @@ class _InventoryAdjustDialogState
             labelText: l10n.pharmacyQuantityDeltaLabel,
             keyboardType: TextInputType.number,
             inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
+            ],
+          ),
+          AppTextField(
+            controller: _reorderController,
+            labelText: l10n.pharmacyReorderLevelLabel,
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.digitsOnly,
             ],
-            validator: (String? value) {
-              final int delta = int.tryParse((value ?? '').trim()) ?? 0;
-              if (delta == 0) {
-                return 'Required';
-              }
-              return null;
-            },
           ),
           AppSelectField<String>(
             value: _reason,
@@ -823,6 +961,21 @@ class _InventoryAdjustDialogState
               }
             },
           ),
+          if (_reason == 'PURCHASE') ...<Widget>[
+            AppTextField(
+              controller: _batchController,
+              labelText: l10n.pharmacyBatchNumberLabel,
+            ),
+            AppDateField(
+              labelText: l10n.pharmacyExpiryDateLabel,
+              value: _expiryDate,
+              pickerButtonLabel: l10n.housekeepingPickDateAction,
+              invalidDateMessage: l10n.pharmacyExpiryDateLabel,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              onChanged: (DateTime? value) => setState(() => _expiryDate = value),
+            ),
+          ],
           AppTextField(
             controller: _notesController,
             labelText: l10n.pharmacyNotesLabel,
@@ -848,8 +1001,15 @@ class _InventoryAdjustDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    final int delta = int.tryParse(_deltaController.text.trim()) ?? 0;
+    final int? reorderLevel = int.tryParse(_reorderController.text.trim());
+    if (delta == 0 && reorderLevel == null) {
+      return;
+    }
+    if (_expiryDate != null && _batchController.text.trim().isEmpty) {
+      return;
+    }
     setState(() => _isSaving = true);
-    final int delta = int.parse(_deltaController.text.trim());
     final AppFailure? failure = await ref
         .read(pharmacyWorkspaceControllerProvider.notifier)
         .adjustInventoryStock(
@@ -859,9 +1019,12 @@ class _InventoryAdjustDialogState
                 widget.stock.inventoryItem?.id ??
                 widget.stock.id,
             quantityDelta: delta,
+            reorderLevel: reorderLevel,
             reason: _reason,
             notes: _emptyToNull(_notesController.text),
             facilityId: widget.stock.facilityId,
+            batchNumber: _emptyToNull(_batchController.text),
+            expiryDate: _expiryDate,
           ),
         );
     if (!mounted) {
@@ -873,6 +1036,34 @@ class _InventoryAdjustDialogState
     }
     setState(() => _isSaving = false);
   }
+}
+
+Widget _expiryCell(BuildContext context, PharmacyInventoryStock item) {
+  final AppLocalizations l10n = context.l10n;
+  if (item.nextExpiry == null) {
+    return const Text('—');
+  }
+  final String formatted = AppFormatters.dateTime(
+    item.nextExpiry!,
+    Localizations.localeOf(context),
+  );
+  if (item.expiryAlertStatus == 'EXPIRED') {
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: '$formatted · ${l10n.pharmacyStockExpiredLabel}',
+        tone: AppWorkspaceStatusTone.error,
+      ),
+    );
+  }
+  if (item.expiryAlertStatus == 'EXPIRING_SOON') {
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: '$formatted · ${l10n.pharmacyStockExpiringSoonLabel}',
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+    );
+  }
+  return Text(formatted);
 }
 
 AppWorkspaceStatus _stockStatus(BuildContext context, String? value) {
