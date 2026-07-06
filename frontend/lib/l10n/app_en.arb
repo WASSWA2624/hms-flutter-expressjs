@@ -10437,7 +10437,7 @@
   "@radiologyReportSectionTitle": {
     "description": "Localized text for radiologyReportSectionTitle."
   },
-  "radiologyReportSectionBody": "Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.",
+  "radiologyReportSectionBody": "Draft, finalize, and release the radiology report.",
   "@radiologyReportSectionBody": {
     "description": "Localized text for radiologyReportSectionBody."
   },
@@ -10481,6 +10481,18 @@
   "@radiologyNoReportBody": {
     "description": "Localized text for radiologyNoReportBody."
   },
+  "radiologyNoReportReadyTitle": "Ready to report",
+  "@radiologyNoReportReadyTitle": {
+    "description": "Report section title when imaging is complete but no draft exists."
+  },
+  "radiologyNoReportReadyBody": "Imaging is complete. Start a draft report to continue.",
+  "@radiologyNoReportReadyBody": {
+    "description": "Report section body when imaging is complete but no draft exists."
+  },
+  "radiologyNoReportImagingFloorBody": "Switch to Reporting view to draft and release the report.",
+  "@radiologyNoReportImagingFloorBody": {
+    "description": "Report section body on imaging floor when imaging is complete."
+  },
   "radiologyReportedAtLabel": "Reported",
   "@radiologyReportedAtLabel": {
     "description": "Localized text for radiologyReportedAtLabel."
@@ -10497,7 +10509,7 @@
   "@radiologyStudiesAssetsTitle": {
     "description": "Localized text for radiologyStudiesAssetsTitle."
   },
-  "radiologyStudiesAssetsBody": "Track performed imaging studies, available assets, and PACS synchronization state.",
+  "radiologyStudiesAssetsBody": "Performed studies, images, and PACS sync.",
   "@radiologyStudiesAssetsBody": {
     "description": "Localized text for radiologyStudiesAssetsBody."
   },
@@ -10505,7 +10517,7 @@
   "@radiologyNoStudiesTitle": {
     "description": "Localized text for radiologyNoStudiesTitle."
   },
-  "radiologyNoStudiesBody": "Studies and assets will appear after imaging is performed and saved.",
+  "radiologyNoStudiesBody": "Perform the study to begin acquiring images.",
   "@radiologyNoStudiesBody": {
     "description": "Localized text for radiologyNoStudiesBody."
   },
@@ -21885,6 +21897,14 @@
   "@radiologyViewModeToggleLabel": {
     "description": "Radiology detail view mode toggle label."
   },
+  "radiologyViewModeImagingFloorHelper": "Perform studies, acquire images, and sync to PACS.",
+  "@radiologyViewModeImagingFloorHelper": {
+    "description": "Helper text for imaging floor view mode."
+  },
+  "radiologyViewModeReportingHelper": "Draft, finalize, and release the radiology report.",
+  "@radiologyViewModeReportingHelper": {
+    "description": "Helper text for reporting view mode."
+  },
   "radiologyWorkflowStepReceiveDescription": "Acknowledge the incoming imaging request",
   "@radiologyWorkflowStepReceiveDescription": {
     "description": "Workflow step description."
@@ -21932,6 +21952,27 @@
   "radiologyStudiesPerformFirstHint": "Perform the study before uploading images.",
   "@radiologyStudiesPerformFirstHint": {
     "description": "Hint when upload is blocked."
+  },
+  "radiologyStudiesCapturePhotoCta": "Capture photo",
+  "@radiologyStudiesCapturePhotoCta": {
+    "description": "Capture photo action for study assets."
+  },
+  "radiologyPacsSyncStatusSynced": "PACS synced",
+  "@radiologyPacsSyncStatusSynced": {
+    "description": "PACS sync status when links exist."
+  },
+  "radiologyPacsSyncStatusPending": "PACS not synced",
+  "@radiologyPacsSyncStatusPending": {
+    "description": "PACS sync status when no links exist."
+  },
+  "radiologyStudyAssetCountLabel": "{count, plural, =1{1 image} other{{count} images}}",
+  "@radiologyStudyAssetCountLabel": {
+    "description": "Asset count label for an imaging study.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "radiologyStudiesReportPreviewTitle": "Report preview",
   "@radiologyStudiesReportPreviewTitle": {

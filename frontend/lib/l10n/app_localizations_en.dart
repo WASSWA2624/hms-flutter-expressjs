@@ -8104,7 +8104,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyReportSectionBody =>
-      'Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.';
+      'Draft, finalize, and release the radiology report.';
 
   @override
   String get radiologyDraftReportAction => 'Draft report';
@@ -8140,6 +8140,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'A draft or final report will appear after reporting begins.';
 
   @override
+  String get radiologyNoReportReadyTitle => 'Ready to report';
+
+  @override
+  String get radiologyNoReportReadyBody =>
+      'Imaging is complete. Start a draft report to continue.';
+
+  @override
+  String get radiologyNoReportImagingFloorBody =>
+      'Switch to Reporting view to draft and release the report.';
+
+  @override
   String get radiologyReportedAtLabel => 'Reported';
 
   @override
@@ -8153,14 +8164,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyStudiesAssetsBody =>
-      'Track performed imaging studies, available assets, and PACS synchronization state.';
+      'Performed studies, images, and PACS sync.';
 
   @override
   String get radiologyNoStudiesTitle => 'No imaging studies';
 
   @override
   String get radiologyNoStudiesBody =>
-      'Studies and assets will appear after imaging is performed and saved.';
+      'Perform the study to begin acquiring images.';
 
   @override
   String get radiologySyncPacsAction => 'Sync PACS';
@@ -17010,6 +17021,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyViewModeToggleLabel => 'View mode';
 
   @override
+  String get radiologyViewModeImagingFloorHelper =>
+      'Perform studies, acquire images, and sync to PACS.';
+
+  @override
+  String get radiologyViewModeReportingHelper =>
+      'Draft, finalize, and release the radiology report.';
+
+  @override
   String get radiologyWorkflowStepReceiveDescription =>
       'Acknowledge the incoming imaging request';
 
@@ -17047,6 +17066,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get radiologyStudiesPerformFirstHint =>
       'Perform the study before uploading images.';
+
+  @override
+  String get radiologyStudiesCapturePhotoCta => 'Capture photo';
+
+  @override
+  String get radiologyPacsSyncStatusSynced => 'PACS synced';
+
+  @override
+  String get radiologyPacsSyncStatusPending => 'PACS not synced';
+
+  @override
+  String radiologyStudyAssetCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count images',
+      one: '1 image',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get radiologyStudiesReportPreviewTitle => 'Report preview';

@@ -15127,7 +15127,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyReportSectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.'**
+  /// **'Draft, finalize, and release the radiology report.'**
   String get radiologyReportSectionBody;
 
   /// Localized text for radiologyDraftReportAction.
@@ -15190,6 +15190,24 @@ abstract class AppLocalizations {
   /// **'A draft or final report will appear after reporting begins.'**
   String get radiologyNoReportBody;
 
+  /// Report section title when imaging is complete but no draft exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to report'**
+  String get radiologyNoReportReadyTitle;
+
+  /// Report section body when imaging is complete but no draft exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging is complete. Start a draft report to continue.'**
+  String get radiologyNoReportReadyBody;
+
+  /// Report section body on imaging floor when imaging is complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Reporting view to draft and release the report.'**
+  String get radiologyNoReportImagingFloorBody;
+
   /// Localized text for radiologyReportedAtLabel.
   ///
   /// In en, this message translates to:
@@ -15217,7 +15235,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyStudiesAssetsBody.
   ///
   /// In en, this message translates to:
-  /// **'Track performed imaging studies, available assets, and PACS synchronization state.'**
+  /// **'Performed studies, images, and PACS sync.'**
   String get radiologyStudiesAssetsBody;
 
   /// Localized text for radiologyNoStudiesTitle.
@@ -15229,7 +15247,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyNoStudiesBody.
   ///
   /// In en, this message translates to:
-  /// **'Studies and assets will appear after imaging is performed and saved.'**
+  /// **'Perform the study to begin acquiring images.'**
   String get radiologyNoStudiesBody;
 
   /// Localized text for radiologySyncPacsAction.
@@ -31731,6 +31749,18 @@ abstract class AppLocalizations {
   /// **'View mode'**
   String get radiologyViewModeToggleLabel;
 
+  /// Helper text for imaging floor view mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform studies, acquire images, and sync to PACS.'**
+  String get radiologyViewModeImagingFloorHelper;
+
+  /// Helper text for reporting view mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft, finalize, and release the radiology report.'**
+  String get radiologyViewModeReportingHelper;
+
   /// Workflow step description.
   ///
   /// In en, this message translates to:
@@ -31790,6 +31820,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Perform the study before uploading images.'**
   String get radiologyStudiesPerformFirstHint;
+
+  /// Capture photo action for study assets.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture photo'**
+  String get radiologyStudiesCapturePhotoCta;
+
+  /// PACS sync status when links exist.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS synced'**
+  String get radiologyPacsSyncStatusSynced;
+
+  /// PACS sync status when no links exist.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS not synced'**
+  String get radiologyPacsSyncStatusPending;
+
+  /// Asset count label for an imaging study.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 image} other{{count} images}}'**
+  String radiologyStudyAssetCountLabel(int count);
 
   /// Report preview in studies section.
   ///
