@@ -929,36 +929,6 @@ final class RadiologyWorkspaceController
     return _refreshEquipmentRecords(search: search);
   }
 
-  Future<AppFailure?> _mutateConfiguration<T>(
-    Future<Result<T>> Function() submit,
-  ) async {
-    final RadiologyWorkspaceState? current = _currentState;
-    if (current == null) {
-      return refresh();
-    }
-
-    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
-    final Result<T> result = await submit();
-    return result.when(
-      success: (_) async {
-        await _refreshConfigurations();
-        final RadiologyWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, clearLastFailure: true));
-        }
-        await searchReferences();
-        return null;
-      },
-      failure: (AppFailure failure) {
-        final RadiologyWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
-        }
-        return failure;
-      },
-    );
-  }
-
   Future<AppFailure?> _mutateSelected(
     Future<Result<RadiologyWorkflow>> Function(String orderId) submit,
   ) async {

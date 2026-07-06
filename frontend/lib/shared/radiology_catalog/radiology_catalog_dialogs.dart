@@ -9,7 +9,6 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -265,6 +264,20 @@ class _RadiologyEnableFacilityOfferingDialogState
                   ),
                 ),
               ],
+              mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
+                return ListTile(
+                  title: Text(item.name),
+                  subtitle: Text(item.code ?? l10n.profileUnknownValue),
+                  trailing: Text(
+                    item.isOfferedAtFacility
+                        ? l10n.radiologyEnableOfferingAlreadyOfferedLabel
+                        : l10n.commonSelectActionLabel,
+                  ),
+                  onTap: item.isOfferedAtFacility
+                      ? null
+                      : () => unawaited(_openPriceDialog(item)),
+                );
+              },
             ),
         ],
       ),

@@ -14,14 +14,14 @@ CREATE TABLE `facility_radiology_test_offering` (
     `deleted_at` DATETIME(3) NULL,
     `version` INTEGER NOT NULL DEFAULT 1,
 
-    UNIQUE INDEX `facility_radiology_test_offering_facility_id_radiology_test_id_key`(`facility_id`, `radiology_test_id`),
-    INDEX `facility_radiology_test_offering_tenant_id_idx`(`tenant_id`),
-    INDEX `facility_radiology_test_offering_facility_id_idx`(`facility_id`),
-    INDEX `facility_radiology_test_offering_radiology_test_id_idx`(`radiology_test_id`),
-    INDEX `facility_radiology_test_offering_is_active_idx`(`is_active`),
-    INDEX `facility_radiology_test_offering_sort_order_idx`(`sort_order`),
-    INDEX `facility_radiology_test_offering_deleted_at_idx`(`deleted_at`),
-    INDEX `facility_radiology_test_offering_human_friendly_id_idx`(`human_friendly_id`),
+    UNIQUE INDEX `frto_facility_test_key`(`facility_id`, `radiology_test_id`),
+    INDEX `frto_tenant_id_idx`(`tenant_id`),
+    INDEX `frto_facility_id_idx`(`facility_id`),
+    INDEX `frto_radiology_test_id_idx`(`radiology_test_id`),
+    INDEX `frto_is_active_idx`(`is_active`),
+    INDEX `frto_sort_order_idx`(`sort_order`),
+    INDEX `frto_deleted_at_idx`(`deleted_at`),
+    INDEX `frto_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

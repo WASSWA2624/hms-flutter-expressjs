@@ -2721,7 +2721,7 @@ model facility_radiology_test_offering {
   facility       facility       @relation(fields: [facility_id], references: [id])
   radiology_test radiology_test @relation(fields: [radiology_test_id], references: [id])
 
-  @@unique([facility_id, radiology_test_id])
+  @@unique([facility_id, radiology_test_id], map: "frto_facility_test_key")
   @@index([tenant_id])
   @@index([facility_id])
   @@index([radiology_test_id])

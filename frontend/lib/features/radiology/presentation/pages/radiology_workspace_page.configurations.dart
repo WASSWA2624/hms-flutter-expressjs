@@ -643,7 +643,24 @@ String _formatRadiologyCatalogUnitPrice(
   }
   return AppFormatters.currency(
     price.toDouble(),
+    Localizations.localeOf(context),
     currencyCode: item.currency,
-    locale: Localizations.localeOf(context).toString(),
   );
+}
+
+Future<void> _showAssignDialog(BuildContext context, WidgetRef ref) async {
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        builder: (_) => const _AssignForm(),
+      );
+  if (payload == null || !context.mounted) {
+    return;
+  }
+  final AppFailure? failure = await ref
+      .read(radiologyWorkspaceControllerProvider.notifier)
+      .assignOrder(payload);
+  if (context.mounted) {
+    _showMutationResult(context, failure);
+  }
 }
