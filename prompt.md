@@ -14,22 +14,37 @@ Use the lab configuration UX and architecture as the template:
 
 Mirror this three-step pattern for radiology procedures/tests.
 
+**Primary references:**
+
+- Frontend: `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart` (`_LabConfigurationsScopeSection`, scope init via `AppAccessPolicy`)
+- Permissions: `frontend/lib/core/permissions/access_policy.dart`
+- Shared UI: `frontend/lib/shared/components/app_select_field.dart`, `app_section_panel.dart`, `app_responsive_field_row.dart`
+
 ## Entry point
 
 From the radiology workspace overflow menu, **Configurations** opens the radiology configuration dialog (same placement and behavior as lab).
 
 ## Scope selection (first screen in dialog)
 
-Behavior must match lab account/scope rules:
+Resolve **tenant** and **facility** from the user’s access profile. UI visibility follows a strict three-tier model; scope is always fully resolved before data loads, even when selectors are hidden.
 
-| User access | Behavior |
-|-------------|----------|
-| **Multi-tenant** (e.g. superadmin) | Show **Tenant** dropdown first; after tenant is selected, show **Facility** dropdown. |
-| **Single-tenant** | Show **Facility** selector only (or pre-select when unambiguous). |
+| User access | Tenant selector | Facility selector | Scope resolution |
+|-------------|-----------------|-------------------|------------------|
+| **Platform admin** (all tenants, e.g. superadmin / elevated) | **Shown** — user must pick tenant | **Shown after tenant** — disabled until tenant is selected; enabled once tenant is chosen | `tenantId` from selection → `facilityId` from selection |
+| **Tenant admin** (single tenant) | **Hidden** — tenant auto-selected from session/policy | **Shown** — user picks facility within their tenant | `tenantId` from `AppAccessPolicy.tenantId` (session) → `facilityId` from selection |
+| **Facility user** (single facility, no tenant choice) | **Hidden** | **Hidden** — facility (and tenant) known from session | `tenantId` + `facilityId` from `AppAccessPolicy` / session; show read-only context label only |
 
-- Do not load or show facility offerings until both required scope fields are set.
-- Show a context label such as: *“Configuring radiology catalog for {facility}.”*
+### Scope UX rules
+
+- **Platform admins:** Tenant dropdown first. Facility dropdown stays disabled with a “select tenant first” hint until a tenant is chosen. Changing tenant clears facility and reloads facility options for that tenant.
+- **Tenant admins:** No tenant dropdown. Facility dropdown lists only facilities in their tenant.
+- **Facility users:** No selectors. Show a compact context label such as *“Configuring radiology catalog for {facility}.”*
+- Do **not** load facility offerings until `tenantId` and `facilityId` are both resolved (explicitly or implicitly).
 - Reload the facility catalog whenever tenant or facility changes.
+
+### Scope logic (reuse, do not duplicate)
+
+Mirror lab’s `_showTenantSelector`, `_showFacilitySelector`, `_showScopeContextLabel`, and `_initializeScope` patterns. Prefer extracting or reusing a **shared scope widget/helper** (e.g. generalize `_LabConfigurationsScopeSection` into `frontend/lib/shared/`) rather than copying scope UI into radiology.
 
 ## Main dialog: Radiology Configurations
 
@@ -65,6 +80,24 @@ Columns should include at minimum: procedure name, code, category/modality, and 
 
 Editing a facility offering should allow updating facility-specific fields (at minimum **unit price** and offered/enabled state), consistent with lab’s configure/edit dialog—not re-creating the platform catalog item.
 
+## Frontend implementation
+
+- Implement radiology configuration in the radiology feature module, **reusing shared components** from `frontend/lib/shared/` wherever they exist (`AppDialog`, `AppSelectField`, `AppSearchBar`, `AppListTable`, form shells, section panels).
+- If lab scope UI is generalized, radiology must consume the shared scope component—**do not fork** tenant/facility selector markup.
+- Scope visibility must derive from `AppAccessPolicy` (`isElevated`, `canManageTenant()`, `hasFacilityContext`, `tenantId`, `facilityId`)—same rules as lab.
+- Introduce a `RadiologyCatalogScope` (or shared `FacilityCatalogScope`) value type mirroring `LabCatalogScope` with `isReady` when both IDs are set.
+- All API calls include resolved `tenantId` and `facilityId`; hidden selectors must still send correct scope on every request.
+
+## Backend implementation
+
+- Add or extend radiology catalog/offering endpoints to mirror lab facility-catalog APIs (list offerings, browse platform catalog, enable, update, delete).
+- **Enforce scope server-side** on every mutation and read:
+  - Platform admins: accept `tenant_id` / `facility_id` from request when authorized; validate facility belongs to tenant.
+  - Tenant admins: default or constrain `tenant_id` to session tenant; validate facility is in that tenant.
+  - Facility users: ignore client-supplied scope overrides; bind to session `tenant_id` + `facility_id`.
+- Reuse existing authorization middleware (RBAC/ABAC + tenant/facility guards) and lab catalog service patterns where applicable.
+- Apply Prisma migrations for any new radiology offering tables or columns; keep API contracts aligned with schema.
+
 ## Business rules
 
 - **Ordering scope:** Clinicians and request workflows must only see radiology procedures **enabled for their facility**, with the configured facility price.
@@ -74,9 +107,13 @@ Editing a facility offering should allow updating facility-specific fields (at m
 
 ## Acceptance criteria
 
-- [ ] Configurations opens scope selectors before showing data (tenant → facility when applicable).
+- [ ] Scope selectors follow the three-tier model (platform admin → tenant then facility; tenant admin → facility only; facility user → hidden, auto-resolved).
+- [ ] Facility selector is disabled until tenant is selected for platform admins.
+- [ ] Configurations opens scope resolution before showing data; no offerings load until scope is ready.
 - [ ] Facility offerings table lists only procedures enabled for the selected facility.
 - [ ] **Enable procedure** opens platform catalog picker with search, filters, and “Already offered” state.
 - [ ] Enabling a procedure requires a valid unit price; saved price appears in the main table.
 - [ ] Edit updates facility offering; delete removes it from the facility (not from platform catalog).
 - [ ] Radiology ordering/request flows surface only the selected facility’s enabled procedures and prices.
+- [ ] Backend rejects out-of-scope tenant/facility access regardless of client UI.
+- [ ] Shared scope/catalog components are reused or extracted—not duplicated per module.
