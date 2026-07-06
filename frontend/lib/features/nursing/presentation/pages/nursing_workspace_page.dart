@@ -2047,13 +2047,15 @@ Future<void> _openLabOrderDialog(
   if (!context.mounted) {
     return;
   }
-  final NursingPatientSummary? summary = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(nursingWorkspaceControllerProvider).value?.when(
-    success: (NursingWorkspaceState state) => state.selectedDetail?.summary,
-    failure: (_) => null,
-  );
+  final NursingPatientSummary? summary =
+      ProviderScope.containerOf(context, listen: false)
+          .read(nursingWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (NursingWorkspaceState state) =>
+                state.selectedDetail?.summary,
+            failure: (_) => null,
+          );
   await _showActionResult(
     context,
     showAppDialog<bool>(

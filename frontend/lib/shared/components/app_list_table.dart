@@ -13,8 +13,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef AppListTableCellBuilder<T> =
     Widget Function(BuildContext context, T item);
-typedef AppListTableHeaderBuilder<T> =
-    Widget Function(BuildContext context);
+typedef AppListTableHeaderBuilder<T> = Widget Function(BuildContext context);
 typedef AppListTableMobileItemBuilder<T> =
     Widget Function(BuildContext context, T item);
 typedef AppListTableItemKeyBuilder<T> = LocalKey Function(T item);
@@ -1571,7 +1570,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double horizontalMargin = widget.horizontalMargin ??
+    final double horizontalMargin =
+        widget.horizontalMargin ??
         (widget.compact ? theme.spacing.sm : theme.spacing.md);
     final double columnSpacing = widget.compact
         ? theme.spacing.md
@@ -1721,8 +1721,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
     );
 
     if (!column.isSortable) {
-      final AppListTableHeaderBuilder<T>? headerBuilder =
-          column.headerBuilder;
+      final AppListTableHeaderBuilder<T>? headerBuilder = column.headerBuilder;
       if (headerBuilder != null) {
         return headerBuilder(context);
       }

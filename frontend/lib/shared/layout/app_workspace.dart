@@ -634,12 +634,8 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
               children.add(SizedBox(height: theme.spacing.sm));
               children.add(
                 fieldStyle == AppWorkspacePatientContextFieldStyle.inline
-                    ? _PatientContextInlineFacts(
-                        fields: visibleSecondaryFields,
-                      )
-                    : _PatientContextFieldGrid(
-                        fields: visibleSecondaryFields,
-                      ),
+                    ? _PatientContextInlineFacts(fields: visibleSecondaryFields)
+                    : _PatientContextFieldGrid(fields: visibleSecondaryFields),
               );
             }
 

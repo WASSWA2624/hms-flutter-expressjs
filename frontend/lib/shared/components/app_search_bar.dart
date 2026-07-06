@@ -325,8 +325,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
             final AppBreakpoint breakpoint = AppBreakpoints.fromConstraints(
               constraints,
             );
-            final bool showActionLabels =
-                breakpoint.showsToolbarActionLabels;
+            final bool showActionLabels = breakpoint.showsToolbarActionLabels;
 
             return AppActionLabelScope(
               showLabels: showActionLabels,

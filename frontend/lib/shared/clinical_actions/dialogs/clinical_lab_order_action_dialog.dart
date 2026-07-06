@@ -87,7 +87,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             : l10n.clinicalRequestLabAction,
       ),
       icon: const Icon(Icons.science_outlined),
-      initialMaximized: true,
       maxWidth: 880,
       pinActionsToBottom: true,
       closeEnabled: !_isSaving,

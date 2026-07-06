@@ -16,13 +16,14 @@ Future<bool?> openIpdLabOrderDialog(BuildContext context) async {
   if (!context.mounted) {
     return null;
   }
-  final IpdAdmissionDetail? admission = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(ipdWorkspaceControllerProvider).value?.when(
-    success: (IpdWorkspaceState state) => state.selectedAdmission,
-    failure: (_) => null,
-  );
+  final IpdAdmissionDetail? admission =
+      ProviderScope.containerOf(context, listen: false)
+          .read(ipdWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (IpdWorkspaceState state) => state.selectedAdmission,
+            failure: (_) => null,
+          );
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,

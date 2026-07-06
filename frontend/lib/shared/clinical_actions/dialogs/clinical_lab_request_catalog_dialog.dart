@@ -188,7 +188,6 @@ class _ClinicalLabRequestCatalogDialogState
     return AppDialog(
       title: Text(l10n.clinicalLabRequestCatalogPickerTitle),
       icon: const Icon(Icons.manage_search_outlined),
-      initialMaximized: true,
       maxWidth: 980,
       pinActionsToBottom: true,
       content: Column(

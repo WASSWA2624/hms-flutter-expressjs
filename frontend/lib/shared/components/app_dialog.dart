@@ -22,7 +22,7 @@ class AppDialog extends StatefulWidget {
     this.showMaximizeButton = true,
     this.resizable = true,
     this.closeEnabled = true,
-    this.initialMaximized = false,
+    this.initialMaximized = true,
     this.maxWidth = _defaultMaxWidth,
     super.key,
   });

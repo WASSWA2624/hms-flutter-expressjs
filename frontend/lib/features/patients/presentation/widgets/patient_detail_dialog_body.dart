@@ -65,7 +65,6 @@ class PatientDetailDialog extends ConsumerWidget {
         icon: const Icon(Icons.assignment_ind_outlined),
         maxWidth: 980,
         scrollable: true,
-        initialMaximized: true,
         content: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOut,
@@ -108,7 +107,6 @@ class PatientDetailDialog extends ConsumerWidget {
         icon: const Icon(Icons.assignment_ind_outlined),
         maxWidth: 960,
         scrollable: true,
-        initialMaximized: true,
         content: failure is AppFailure
             ? AppFailureStateView(failure: failure)
             : AppWorkspaceStatePanel.empty(
@@ -126,7 +124,6 @@ class PatientDetailDialog extends ConsumerWidget {
       icon: const Icon(Icons.assignment_ind_outlined),
       maxWidth: 980,
       scrollable: true,
-      initialMaximized: true,
       actions: <Widget>[
         AppAccessActionGate(
           requirement: _writeRequirement,

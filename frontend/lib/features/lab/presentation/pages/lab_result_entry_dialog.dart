@@ -281,7 +281,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         title: Text(l10n.labResultEntryDialogTitle),
         icon: const Icon(Icons.biotech_outlined),
         scrollable: true,
-        initialMaximized: true,
         maxWidth: compact ? double.infinity : 1600,
         closeEnabled: !_isSaving,
         content: _buildContent(
@@ -2646,7 +2645,6 @@ class _LabReportPreviewDialogState
       title: Text(l10n.labReportPreviewTitle),
       icon: const Icon(Icons.print_outlined),
       scrollable: true,
-      initialMaximized: true,
       maxWidth: 1040,
       closeEnabled: !_isPrinting,
       content: AppReportPreviewPanel(

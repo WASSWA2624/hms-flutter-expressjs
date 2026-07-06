@@ -399,7 +399,9 @@ Map<String, Object?> _workItemsQueryParameters(
   });
 }
 
-Map<String, Object?> _billingFilterQueryParameters(BillingWorkspaceQuery query) {
+Map<String, Object?> _billingFilterQueryParameters(
+  BillingWorkspaceQuery query,
+) {
   return <String, Object?>{
     'search': query.search,
     'patient_id': query.patientId,

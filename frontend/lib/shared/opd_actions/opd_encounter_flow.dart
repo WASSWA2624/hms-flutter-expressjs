@@ -43,19 +43,24 @@ Future<Result<OpdFlowDetail>> submitPatientOpdEncounter(
   Map<String, Object?> payload,
 ) {
   final Object? existingEncounterId = payload['existing_encounter_id'];
-  if (existingEncounterId is String &&
-      existingEncounterId.trim().isNotEmpty) {
-    return ref.read(opdRepositoryProvider).updateActiveEncounter(
+  if (existingEncounterId is String && existingEncounterId.trim().isNotEmpty) {
+    return ref
+        .read(opdRepositoryProvider)
+        .updateActiveEncounter(
           existingEncounterId.trim(),
-          withoutEmptyOpdPayload(<String, Object?>{
-            'tenant_id': patient.tenantId,
-            'facility_id': patient.facilityId,
-            ...payload,
-          }..remove('existing_encounter_id')),
+          withoutEmptyOpdPayload(
+            <String, Object?>{
+              'tenant_id': patient.tenantId,
+              'facility_id': patient.facilityId,
+              ...payload,
+            }..remove('existing_encounter_id'),
+          ),
         );
   }
 
-  return ref.read(opdRepositoryProvider).startOpdFlow(
+  return ref
+      .read(opdRepositoryProvider)
+      .startOpdFlow(
         withoutEmptyOpdPayload(<String, Object?>{
           'tenant_id': patient.tenantId,
           'facility_id': patient.facilityId,
@@ -233,8 +238,7 @@ Future<void> openPatientOpdEncounterFlow(
   }
   await onSaved();
 
-  final OpdFlowSummary? activeEncounter =
-      result.flow ?? activeEncounterToOpen;
+  final OpdFlowSummary? activeEncounter = result.flow ?? activeEncounterToOpen;
   if (activeEncounter == null || !context.mounted) {
     return;
   }
@@ -314,9 +318,9 @@ Future<void> openOpdWorkspaceEncounterFlow(
 
   void showSavedMessage() {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.opdSavedMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
   }
 

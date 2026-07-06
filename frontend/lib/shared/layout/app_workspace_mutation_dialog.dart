@@ -44,7 +44,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       const <AppWorkspaceMutationAction>[],
   Widget? icon,
   double maxWidth = 600,
-  bool initialMaximized = false,
+  bool initialMaximized = true,
   bool barrierDismissible = false,
   bool showCancelButton = true,
   bool scrollable = true,
@@ -80,7 +80,7 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
     this.submitIcon,
     this.extraActions = const <AppWorkspaceMutationAction>[],
     this.maxWidth = 600,
-    this.initialMaximized = false,
+    this.initialMaximized = true,
     this.showCancelButton = true,
     this.scrollable = true,
   });

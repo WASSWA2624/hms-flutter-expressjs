@@ -293,9 +293,9 @@ final class ClinicalWorkspaceController
     String source = 'ALL',
     String? facilityId,
   }) {
-    final bool offeredOnly =
-        termType == 'LAB_TEST' || termType == 'LAB_PANEL';
-    final String? resolvedFacilityId = facilityId ??
+    final bool offeredOnly = termType == 'LAB_TEST' || termType == 'LAB_PANEL';
+    final String? resolvedFacilityId =
+        facilityId ??
         _selectedEntry?.facilityId ??
         ref.read(sessionStateProvider).session?.user?.facilityId;
     return _repository.searchClinicalCatalog(
@@ -720,7 +720,8 @@ final class ClinicalWorkspaceController
             'facility_id': entry.facilityId,
             'patient_id': entry.apiPatientId,
             'encounter_id': entry.apiEncounterId,
-            if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+            if (reason != null && reason.trim().isNotEmpty)
+              'reason': reason.trim(),
             if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
           })
           .then(

@@ -485,8 +485,7 @@ Future<void> _openDischargeDetailDialog(
                     title: l10n.dischargeReportTitle,
                     patientContext: buildPrintFormPatientContext(
                       l10n,
-                      patientName:
-                          detail.ipd.patientDisplayName,
+                      patientName: detail.ipd.patientDisplayName,
                       patientId: detail.patientId,
                       encounterId: detail.encounterId,
                       patientNameLabel: l10n.dischargeReportPatientLabel,
@@ -495,8 +494,7 @@ Future<void> _openDischargeDetailDialog(
                     contextReference: PrintFormContextReference(
                       label: l10n.dischargeReportAdmissionLabel,
                       value:
-                          detail.summary.displayId ??
-                          l10n.profileUnknownValue,
+                          detail.summary.displayId ?? l10n.profileUnknownValue,
                     ),
                     bodyHtml: _dischargeSummaryHtml(context, detail),
                     footerNote: l10n.dischargeReportFooter,

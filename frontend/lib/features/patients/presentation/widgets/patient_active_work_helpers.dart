@@ -377,9 +377,9 @@ String patientActiveWorkStatusLabel(
       'ADMITTED_PENDING_BED' =>
         l10n.patientsActiveWorkStatusAdmissionPendingBed,
       'TRANSFER_REQUESTED' ||
-      'TRANSFER_IN_PROGRESS' =>
-        l10n.patientsActiveWorkStatusAdmissionTransfer,
-      'DISCHARGE_PLANNED' => l10n.patientsActiveWorkStatusAdmissionDischargePlanned,
+      'TRANSFER_IN_PROGRESS' => l10n.patientsActiveWorkStatusAdmissionTransfer,
+      'DISCHARGE_PLANNED' =>
+        l10n.patientsActiveWorkStatusAdmissionDischargePlanned,
       _ => AppDisplay.apiLabel(item.status),
     },
     _ => AppDisplay.apiLabel(item.status),

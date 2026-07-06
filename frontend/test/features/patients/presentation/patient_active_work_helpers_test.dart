@@ -48,39 +48,42 @@ void main() {
     expect(items.single.status, 'REQUESTED');
   });
 
-  test('active work labels distinguish encounter and queue at same facility', () {
-    const PatientActiveWorkItem encounter = PatientActiveWorkItem(
-      id: 'enc-1',
-      kind: PatientActiveWorkKind.encounter,
-      status: 'OPEN',
-      title: 'Jordan Demo',
-    );
-    const PatientActiveWorkItem queue = PatientActiveWorkItem(
-      id: 'queue-1',
-      kind: PatientActiveWorkKind.queue,
-      status: 'IN_PROGRESS',
-      title: 'Jordan Demo',
-    );
+  test(
+    'active work labels distinguish encounter and queue at same facility',
+    () {
+      const PatientActiveWorkItem encounter = PatientActiveWorkItem(
+        id: 'enc-1',
+        kind: PatientActiveWorkKind.encounter,
+        status: 'OPEN',
+        title: 'Jordan Demo',
+      );
+      const PatientActiveWorkItem queue = PatientActiveWorkItem(
+        id: 'queue-1',
+        kind: PatientActiveWorkKind.queue,
+        status: 'IN_PROGRESS',
+        title: 'Jordan Demo',
+      );
 
-    expect(
-      patientActiveWorkKindLabel(l10n, encounter),
-      l10n.patientsActiveWorkKindEncounter,
-    );
-    expect(
-      patientActiveWorkKindLabel(l10n, queue),
-      l10n.patientsActiveWorkKindQueue,
-    );
-    expect(
-      patientActiveWorkStatusLabel(l10n, encounter),
-      l10n.patientsActiveWorkStatusEncounterOpen,
-    );
-    expect(
-      patientActiveWorkStatusLabel(l10n, queue),
-      l10n.patientsActiveWorkStatusQueueInProgress,
-    );
-    expect(patientActiveWorkContextLabel(encounter), 'Jordan Demo');
-    expect(patientActiveWorkContextLabel(queue), 'Jordan Demo');
-  });
+      expect(
+        patientActiveWorkKindLabel(l10n, encounter),
+        l10n.patientsActiveWorkKindEncounter,
+      );
+      expect(
+        patientActiveWorkKindLabel(l10n, queue),
+        l10n.patientsActiveWorkKindQueue,
+      );
+      expect(
+        patientActiveWorkStatusLabel(l10n, encounter),
+        l10n.patientsActiveWorkStatusEncounterOpen,
+      );
+      expect(
+        patientActiveWorkStatusLabel(l10n, queue),
+        l10n.patientsActiveWorkStatusQueueInProgress,
+      );
+      expect(patientActiveWorkContextLabel(encounter), 'Jordan Demo');
+      expect(patientActiveWorkContextLabel(queue), 'Jordan Demo');
+    },
+  );
 
   test('pending admission request uses admission request kind label', () {
     const PatientActiveWorkItem item = PatientActiveWorkItem(
@@ -98,10 +101,7 @@ void main() {
       patientActiveWorkStatusLabel(l10n, item),
       l10n.opdStatusAdmissionPendingLabel,
     );
-    expect(
-      patientActiveWorkStatusTone(item),
-      AppWorkspaceStatusTone.warning,
-    );
+    expect(patientActiveWorkStatusTone(item), AppWorkspaceStatusTone.warning);
   });
 
   test('context label prefers subtitle and falls back to public id', () {

@@ -58,14 +58,10 @@ void main() {
 
   setUp(() {
     repository = _MockLabRepository();
-    when(
-      () => repository.loadWorkbench(any()),
-    ).thenAnswer(
+    when(() => repository.loadWorkbench(any())).thenAnswer(
       (_) async => Result<LabWorkbenchBundle>.success(_emptyWorkbench()),
     );
-    when(
-      () => repository.listQcLogs(search: any(named: 'search')),
-    ).thenAnswer(
+    when(() => repository.listQcLogs(search: any(named: 'search'))).thenAnswer(
       (_) async => const Result<List<LabQcLog>>.success(<LabQcLog>[]),
     );
     when(
@@ -78,9 +74,9 @@ void main() {
         offeredOnly: any(named: 'offeredOnly'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<LabCatalogItem>>.success(
-        <LabCatalogItem>[_catalogTest],
-      ),
+      (_) async => const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[
+        _catalogTest,
+      ]),
     );
     when(
       () => repository.listFacilityLabPanels(
@@ -92,9 +88,8 @@ void main() {
         offeredOnly: any(named: 'offeredOnly'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<LabCatalogItem>>.success(
-        <LabCatalogItem>[],
-      ),
+      (_) async =>
+          const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[]),
     );
     when(
       () => repository.listTests(
@@ -104,9 +99,10 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<LabCatalogItem>>.success(
-        <LabCatalogItem>[_catalogTest, _offeredTest],
-      ),
+      (_) async => const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[
+        _catalogTest,
+        _offeredTest,
+      ]),
     );
     when(
       () => repository.listPanels(
@@ -116,9 +112,8 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<LabCatalogItem>>.success(
-        <LabCatalogItem>[],
-      ),
+      (_) async =>
+          const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[]),
     );
   });
 
@@ -137,13 +132,11 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
+      );
       await controller.loadFacilityCatalogConfig(
-        const LabCatalogScope(
-          tenantId: 'TEN0000001',
-          facilityId: 'FAC0000001',
-        ),
+        const LabCatalogScope(tenantId: 'TEN0000001', facilityId: 'FAC0000001'),
       );
 
       verify(
@@ -186,13 +179,11 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
+      );
       await controller.loadFacilityCatalogConfig(
-        const LabCatalogScope(
-          tenantId: 'TEN0000001',
-          facilityId: 'FAC0000001',
-        ),
+        const LabCatalogScope(tenantId: 'TEN0000001', facilityId: 'FAC0000001'),
       );
 
       await controller.loadFacilityCatalogConfig(
@@ -241,17 +232,18 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
-      final Result<List<LabCatalogItem>> result =
-          await controller.searchPlatformLabCatalogForOffering(
-        type: LabCatalogItemType.test,
-        scope: const LabCatalogScope(
-          tenantId: 'TEN0000001',
-          facilityId: 'FAC0000001',
-        ),
-        query: 'LFT',
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
       );
+      final Result<List<LabCatalogItem>> result = await controller
+          .searchPlatformLabCatalogForOffering(
+            type: LabCatalogItemType.test,
+            scope: const LabCatalogScope(
+              tenantId: 'TEN0000001',
+              facilityId: 'FAC0000001',
+            ),
+            query: 'LFT',
+          );
 
       expect(result, isA<ResultSuccess<List<LabCatalogItem>>>());
       final List<LabCatalogItem> items =
@@ -295,19 +287,17 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
-      final Result<List<LabCatalogItem>> result =
-          await controller.searchPlatformLabCatalogForOffering(
-        type: LabCatalogItemType.test,
-        scope: const LabCatalogScope(tenantId: 'TEN0000001'),
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
       );
+      final Result<List<LabCatalogItem>> result = await controller
+          .searchPlatformLabCatalogForOffering(
+            type: LabCatalogItemType.test,
+            scope: const LabCatalogScope(tenantId: 'TEN0000001'),
+          );
 
       expect(result, isA<ResultSuccess<List<LabCatalogItem>>>());
-      expect(
-        (result as ResultSuccess<List<LabCatalogItem>>).value,
-        isEmpty,
-      );
+      expect((result as ResultSuccess<List<LabCatalogItem>>).value, isEmpty);
       verifyNever(
         () => repository.listTests(
           search: any(named: 'search'),
@@ -349,8 +339,9 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
+      );
       await controller.loadFacilityCatalogConfig(scope);
 
       final AppFailure? failure = await controller.updateLabPanel(
@@ -413,16 +404,14 @@ void main() {
 
       await container.read(labWorkspaceControllerProvider.future);
 
-      final LabWorkspaceController controller =
-          container.read(labWorkspaceControllerProvider.notifier);
+      final LabWorkspaceController controller = container.read(
+        labWorkspaceControllerProvider.notifier,
+      );
       await controller.loadFacilityCatalogConfig(scope);
 
       final AppFailure? failure = await controller.updateLabTest(
         'LBT0000001',
-        <String, Object?>{
-          'unit_price': 18000,
-          'currency': 'UGX',
-        },
+        <String, Object?>{'unit_price': 18000, 'currency': 'UGX'},
         scope: scope,
       );
 

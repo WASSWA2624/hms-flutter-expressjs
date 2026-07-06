@@ -90,7 +90,8 @@ void main() {
         tenantId: any(named: 'tenantId'),
       ),
     ).thenAnswer(
-      (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
+      (_) async =>
+          const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
     );
     when(() => patientRepository.loadReferenceData()).thenAnswer(
       (_) async =>
@@ -105,9 +106,9 @@ void main() {
         ),
       ),
     );
-    when(() => patientRepository.createPatient(any())).thenAnswer(
-      (_) async => const Result<Patient>.success(createdPatient),
-    );
+    when(
+      () => patientRepository.createPatient(any()),
+    ).thenAnswer((_) async => const Result<Patient>.success(createdPatient));
 
     await tester.pumpWidget(
       ProviderScope(

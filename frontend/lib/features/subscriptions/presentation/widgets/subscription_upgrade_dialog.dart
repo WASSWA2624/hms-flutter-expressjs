@@ -363,7 +363,6 @@ class _SubscriptionUpgradeDialogState
       return AppDialog(
         title: Text(l10n.subscriptionUpgradeDialogTitle),
         icon: const Icon(Icons.workspace_premium_outlined),
-        initialMaximized: true,
         content: const SizedBox(
           width: 420,
           child: Center(child: CircularProgressIndicator()),
@@ -398,7 +397,6 @@ class _SubscriptionUpgradeDialogState
       icon: Icon(
         isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
       ),
-      initialMaximized: true,
       maxWidth: 640,
       scrollable: true,
       content: AppFormShell(

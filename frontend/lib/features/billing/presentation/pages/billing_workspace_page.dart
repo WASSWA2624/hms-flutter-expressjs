@@ -277,7 +277,9 @@ class _BillingQueuePanel extends ConsumerWidget {
               return;
             }
             unawaited(
-              controller.applyFilters(_billingQueryFromFilter(state.query, value)),
+              controller.applyFilters(
+                _billingQueryFromFilter(state.query, value),
+              ),
             );
           },
         ),

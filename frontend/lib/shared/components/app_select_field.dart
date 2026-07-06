@@ -112,7 +112,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const double _menuItemDividerThickness = 0.5;
   static const double _menuItemDividerEndInsetFactor = 1;
 
-  final GlobalKey<FormFieldState<T>> _formFieldKey = GlobalKey<FormFieldState<T>>();
+  final GlobalKey<FormFieldState<T>> _formFieldKey =
+      GlobalKey<FormFieldState<T>>();
 
   late final TextEditingController _controller;
   late FocusNode _focusNode;
@@ -560,14 +561,12 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   Object _computeDropdownEntriesCacheKey() {
-    final bool filterByQuery = widget.searchable &&
+    final bool filterByQuery =
+        widget.searchable &&
         _focusNode.hasFocus &&
         !_browseAllOptions &&
         _queryTokens(_controller.text).isNotEmpty;
-    return Object.hash(
-      widget.options,
-      filterByQuery ? _controller.text : null,
-    );
+    return Object.hash(widget.options, filterByQuery ? _controller.text : null);
   }
 
   List<DropdownMenuEntry<T>> _cachedDropdownMenuEntries(
@@ -576,7 +575,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     _SelectMenuChrome entryChrome,
   ) {
     final Object cacheKey = _computeDropdownEntriesCacheKey();
-    if (_cachedDropdownEntries != null && _dropdownEntriesCacheToken == cacheKey) {
+    if (_cachedDropdownEntries != null &&
+        _dropdownEntriesCacheToken == cacheKey) {
       return _cachedDropdownEntries!;
     }
 

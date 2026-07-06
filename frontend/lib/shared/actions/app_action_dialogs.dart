@@ -39,6 +39,7 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       title: Text(widget.title),
       icon: widget.icon,
       maxWidth: widget.maxWidth,
+      initialMaximized: false,
       closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
@@ -178,6 +179,7 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
       icon: widget.icon,
       scrollable: widget.scrollable,
       maxWidth: widget.maxWidth,
+      initialMaximized: false,
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[_selectField()],
@@ -296,6 +298,7 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
       icon: widget.icon,
       scrollable: widget.scrollable,
       maxWidth: widget.maxWidth,
+      initialMaximized: false,
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[

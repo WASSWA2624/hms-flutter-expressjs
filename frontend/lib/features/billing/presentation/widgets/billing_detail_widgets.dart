@@ -193,8 +193,7 @@ class BillingDetailBody extends ConsumerWidget {
     }
 
     if (item.isInvoice) {
-      final String? encounterId =
-          item.encounterDisplayId ?? item.encounterId;
+      final String? encounterId = item.encounterDisplayId ?? item.encounterId;
       if (encounterId != null && encounterId.isNotEmpty) {
         fields.add(
           AppWorkspacePatientContextField(

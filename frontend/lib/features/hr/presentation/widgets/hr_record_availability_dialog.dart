@@ -61,7 +61,6 @@ Future<void> showHrRecordAvailabilityDialog(
     submitLabel: l10n.hrRecordAvailabilityAction,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    initialMaximized: true,
     maxWidth: 980,
     buildFields:
         (

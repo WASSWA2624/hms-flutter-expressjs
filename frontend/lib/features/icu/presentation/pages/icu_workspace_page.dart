@@ -2218,13 +2218,14 @@ Future<void> _openLabOrderDialog(BuildContext context) async {
   if (!context.mounted) {
     return;
   }
-  final IcuPatientSummary? summary = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(icuWorkspaceControllerProvider).value?.when(
-    success: (IcuWorkspaceState state) => state.selectedDetail?.summary,
-    failure: (_) => null,
-  );
+  final IcuPatientSummary? summary =
+      ProviderScope.containerOf(context, listen: false)
+          .read(icuWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (IcuWorkspaceState state) => state.selectedDetail?.summary,
+            failure: (_) => null,
+          );
   await _showActionResult(
     context,
     showAppDialog<bool>(

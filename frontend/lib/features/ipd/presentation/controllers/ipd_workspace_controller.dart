@@ -432,7 +432,10 @@ final class IpdWorkspaceController
   Future<AppFailure?> approveAdmission(IpdAdmissionSummary admission) {
     return _mutateAdmission(
       admission,
-      () => _repository.approveAdmission(admission.apiId, const <String, Object?>{}),
+      () => _repository.approveAdmission(
+        admission.apiId,
+        const <String, Object?>{},
+      ),
       refreshReferenceData: true,
     );
   }
@@ -578,8 +581,8 @@ final class IpdWorkspaceController
     String source = 'ALL',
     String? facilityId,
   }) {
-    final String? resolvedFacilityId = facilityId ??
-        ref.read(sessionStateProvider).session?.user?.facilityId;
+    final String? resolvedFacilityId =
+        facilityId ?? ref.read(sessionStateProvider).session?.user?.facilityId;
     return _clinicalRepository.searchClinicalTerms(
       termType: termType,
       query: query,

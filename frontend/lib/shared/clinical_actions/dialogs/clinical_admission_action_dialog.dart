@@ -20,7 +20,7 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
     this.notesLabel,
     this.requiresBed = true,
     this.maxWidth = 900,
-    this.initialMaximized = false,
+    this.initialMaximized = true,
     this.showCancelButton = true,
     this.submitLeadingIcon,
     this.leadingSectionsBuilder,

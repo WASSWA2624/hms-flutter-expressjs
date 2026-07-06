@@ -193,9 +193,7 @@ class LabReferenceRangeListField extends StatelessWidget {
         SizedBox(height: theme.spacing.sm),
         for (int index = 0; index < ranges.length; index++)
           _LabReferenceRangeCard(
-            key: ValueKey<String>(
-              ranges[index].id ?? 'new-range-$index',
-            ),
+            key: ValueKey<String>(ranges[index].id ?? 'new-range-$index'),
             range: ranges[index],
             index: index,
             enabled: enabled,
@@ -251,12 +249,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
+                Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
                 if (canRemove)
                   IconButton(
                     tooltip: l10n.commonRemoveActionLabel,

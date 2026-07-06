@@ -35,7 +35,7 @@ void main() {
     required Future<AppFailure?> Function(ClinicalActionAdmissionInput input)
     onSubmit,
     bool showCancelButton = true,
-    bool initialMaximized = false,
+    bool initialMaximized = true,
   }) async {
     await pumpLocalizedWidget(
       tester,
@@ -91,7 +91,6 @@ void main() {
       tester,
       onSubmit: (_) async => null,
       showCancelButton: false,
-      initialMaximized: true,
     );
 
     expect(find.text('Request admission'), findsWidgets);

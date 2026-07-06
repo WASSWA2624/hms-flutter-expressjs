@@ -367,8 +367,8 @@ final class TheaterWorkspaceController
     String source = 'ALL',
     String? facilityId,
   }) {
-    final String? resolvedFacilityId = facilityId ??
-        ref.read(sessionStateProvider).session?.user?.facilityId;
+    final String? resolvedFacilityId =
+        facilityId ?? ref.read(sessionStateProvider).session?.user?.facilityId;
     return _clinicalRepository.searchClinicalTerms(
       termType: termType,
       query: query,

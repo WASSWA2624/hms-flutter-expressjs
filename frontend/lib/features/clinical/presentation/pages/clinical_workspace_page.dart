@@ -2733,11 +2733,8 @@ Future<void> _openAdmissionDialog(
         notesLabel: dialogContext.l10n.opdFieldOptionalLabel(
           dialogContext.l10n.patientsNotesLabel,
         ),
-        onSubmit: (ClinicalActionAdmissionInput input) =>
-            controller.requestAdmission(
-              reason: input.reason,
-              notes: input.notes,
-            ),
+        onSubmit: (ClinicalActionAdmissionInput input) => controller
+            .requestAdmission(reason: input.reason, notes: input.notes),
       ),
     ),
   );
@@ -3531,13 +3528,15 @@ const String _clinicalFilterProvider = 'provider';
 ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
   BuildContext context,
 ) {
-  final ClinicalWorklistEntry? entry = ProviderScope.containerOf(
-    context,
-    listen: false,
-  ).read(clinicalWorkspaceControllerProvider).value?.when(
-    success: (ClinicalWorkspaceState state) => state.selectedBundle?.entry,
-    failure: (_) => null,
-  );
+  final ClinicalWorklistEntry? entry =
+      ProviderScope.containerOf(context, listen: false)
+          .read(clinicalWorkspaceControllerProvider)
+          .value
+          ?.when(
+            success: (ClinicalWorkspaceState state) =>
+                state.selectedBundle?.entry,
+            failure: (_) => null,
+          );
   if (entry == null) {
     return const ClinicalRequestPatientContext();
   }

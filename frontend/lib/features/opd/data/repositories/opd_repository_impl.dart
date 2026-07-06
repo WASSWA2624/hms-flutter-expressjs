@@ -432,9 +432,7 @@ final class OpdRepositoryImpl implements OpdRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.post<OpdFlowDetail>(
-      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
-        'cancel',
-      ]),
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>['cancel']),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
@@ -446,9 +444,7 @@ final class OpdRepositoryImpl implements OpdRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.post<OpdFlowDetail>(
-      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
-        'close',
-      ]),
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>['close']),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
@@ -484,8 +480,8 @@ final class OpdRepositoryImpl implements OpdRepository {
     }
     return OpdBillingDefaults(
       standardConsultationFee: fee,
-      standardConsultationCurrency:
-          json['standard_consultation_currency']?.toString(),
+      standardConsultationCurrency: json['standard_consultation_currency']
+          ?.toString(),
       defaultCurrency: json['default_currency']?.toString(),
     );
   }

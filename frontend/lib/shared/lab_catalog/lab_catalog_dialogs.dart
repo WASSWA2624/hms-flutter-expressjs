@@ -666,7 +666,6 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       title: Text(l10n.labConfigureTestDialogTitle),
       icon: const Icon(Icons.edit_outlined),
       scrollable: true,
-      initialMaximized: true,
       maxWidth: 820,
       closeEnabled: !_isSaving,
       content: Form(
@@ -1095,7 +1094,6 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
       title: Text(l10n.labUpdatePanelDialogTitle),
       icon: const Icon(Icons.edit_outlined),
       scrollable: true,
-      initialMaximized: true,
       maxWidth: 860,
       closeEnabled: !_isSaving,
       content: Form(
@@ -1229,8 +1227,6 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
       ...widget.catalogPanels.map((LabCatalogItem item) => item.category),
     ]);
   }
-
- 
 
   void _addPendingTest() {
     final String? testId = _pendingTestId;
@@ -1385,7 +1381,10 @@ class _LabEnableFacilityOfferingDialogState
     super.dispose();
   }
 
-  Future<void> _loadCatalog({required String? query, required int requestId}) async {
+  Future<void> _loadCatalog({
+    required String? query,
+    required int requestId,
+  }) async {
     setState(() {
       _isSearching = true;
       _failure = null;
@@ -1464,7 +1463,6 @@ class _LabEnableFacilityOfferingDialogState
             : Icons.add_box_outlined,
       ),
       scrollable: true,
-      initialMaximized: true,
       maxWidth: 980,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1595,9 +1593,8 @@ class _LabEnableFacilityOfferingDialogState
         label: _showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             appListTableCompareText(left.name, right.name),
-        cellBuilder: (_, LabCatalogItem item) => _catalogOfferingNameCell(
-          item.name ?? item.displayTitle,
-        ),
+        cellBuilder: (_, LabCatalogItem item) =>
+            _catalogOfferingNameCell(item.name ?? item.displayTitle),
       ),
       AppListTableColumn<LabCatalogItem>(
         id: 'code',
@@ -1636,10 +1633,7 @@ class _LabEnableFacilityOfferingDialogState
   }
 }
 
-String _joinEnableOfferingSubtitle(
-  AppLocalizations l10n,
-  LabCatalogItem item,
-) {
+String _joinEnableOfferingSubtitle(AppLocalizations l10n, LabCatalogItem item) {
   final List<String?> parts = <String?>[
     item.category,
     if (item.type == LabCatalogItemType.test) item.specimenType,
@@ -1658,8 +1652,7 @@ List<AppSearchBarFilterChoice> _enableOfferingFilterChoices(
 ) {
   return _uniqueNonEmpty(values)
       .map(
-        (String value) =>
-            AppSearchBarFilterChoice(value: value, label: value),
+        (String value) => AppSearchBarFilterChoice(value: value, label: value),
       )
       .toList(growable: false);
 }
@@ -1669,11 +1662,7 @@ Widget _catalogOfferingNameCell(String label, {double maxWidth = 280}) {
     constraints: BoxConstraints(maxWidth: maxWidth),
     child: Tooltip(
       message: label,
-      child: Text(
-        label,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+      child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
     ),
   );
 }
@@ -1791,15 +1780,13 @@ class _LabEnableOfferingPriceDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onEnable(
-      widget.item.apiId,
-      <String, Object?>{
-        'is_active': true,
-        'unit_price':
-            num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
-        'currency': _currency,
-      },
-    );
+    final AppFailure? failure = await widget
+        .onEnable(widget.item.apiId, <String, Object?>{
+          'is_active': true,
+          'unit_price':
+              num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+          'currency': _currency,
+        });
     if (!mounted) {
       return;
     }

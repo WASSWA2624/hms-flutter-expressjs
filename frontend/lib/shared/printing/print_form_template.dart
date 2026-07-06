@@ -337,7 +337,8 @@ $renderedPages
     required bool explicitPages,
   }) {
     final bool isFirstPage = pageNumber == 1;
-    final String pageBody = '''
+    final String pageBody =
+        '''
   ${isFirstPage ? _header(branding) : _compactHeader(patientContext)}
   ${isFirstPage ? _patientContextSection(patientContext) : ''}
   <section class="print-template-title print-template-title--standard">
@@ -349,7 +350,8 @@ $renderedPages
     $bodyHtml
   </section>
 ''';
-    final String pageFooter = '''
+    final String pageFooter =
+        '''
   <footer class="print-template-footer">
     <span>${escape(footerNote ?? '')}</span>
     <span>${explicitPages ? 'Page $pageNumber of $totalPages' : ''}</span>

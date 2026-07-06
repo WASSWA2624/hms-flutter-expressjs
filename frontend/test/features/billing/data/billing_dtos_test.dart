@@ -45,76 +45,76 @@ void main() {
       expect(overview.timeline.single.kind, BillingWorkItemKind.payment);
     });
 
-    test('parses invoice work items with financials and patient demographics', () {
-      final page = BillingWorkItemPageDto.fromResponse(<String, Object?>{
-        'data': <String, Object?>{
-          'queue': 'PENDING_PAYMENT',
-          'items': <Object?>[
-            <String, Object?>{
-              'id': 'invoice-1',
-              'display_id': 'INV-001',
-              'tenant_id': 'tenant-1',
-              'patient_display_name': 'Jane Doe',
-              'patient_display_id': 'PAT-001',
-              'patient_gender': 'FEMALE',
-              'patient_date_of_birth': '1990-05-17T00:00:00.000Z',
-              'billing_status': 'PARTIAL',
-              'total_amount': '100000.00',
-              'currency': 'UGX',
-              'financials': <String, Object?>{
-                'effective_total': '100000.00',
-                'net_paid_total': '40000.00',
-                'balance_due': '60000.00',
+    test(
+      'parses invoice work items with financials and patient demographics',
+      () {
+        final page = BillingWorkItemPageDto.fromResponse(<String, Object?>{
+          'data': <String, Object?>{
+            'queue': 'PENDING_PAYMENT',
+            'items': <Object?>[
+              <String, Object?>{
+                'id': 'invoice-1',
+                'display_id': 'INV-001',
+                'tenant_id': 'tenant-1',
+                'patient_display_name': 'Jane Doe',
+                'patient_display_id': 'PAT-001',
+                'patient_gender': 'FEMALE',
+                'patient_date_of_birth': '1990-05-17T00:00:00.000Z',
+                'billing_status': 'PARTIAL',
+                'total_amount': '100000.00',
+                'currency': 'UGX',
+                'financials': <String, Object?>{
+                  'effective_total': '100000.00',
+                  'net_paid_total': '40000.00',
+                  'balance_due': '60000.00',
+                },
+                'items': <Object?>[
+                  <String, Object?>{
+                    'id': 'item-1',
+                    'description': 'Consultation',
+                    'quantity': 1,
+                    'unit_price': '100000.00',
+                    'total_price': '100000.00',
+                  },
+                ],
+                'payments': <Object?>[
+                  <String, Object?>{
+                    'id': 'payment-1',
+                    'status': 'COMPLETED',
+                    'method': 'CASH',
+                    'amount': '40000.00',
+                  },
+                ],
               },
-              'items': <Object?>[
-                <String, Object?>{
-                  'id': 'item-1',
-                  'description': 'Consultation',
-                  'quantity': 1,
-                  'unit_price': '100000.00',
-                  'total_price': '100000.00',
-                },
-              ],
-              'payments': <Object?>[
-                <String, Object?>{
-                  'id': 'payment-1',
-                  'status': 'COMPLETED',
-                  'method': 'CASH',
-                  'amount': '40000.00',
-                },
-              ],
-            },
-          ],
-          'pagination': <String, Object?>{'total': 1},
-        },
-      }, const AppPageRequest(pageSize: 12)).page;
+            ],
+            'pagination': <String, Object?>{'total': 1},
+          },
+        }, const AppPageRequest(pageSize: 12)).page;
 
-      final BillingWorkItem item = page.items.single;
-      expect(item.isInvoice, isTrue);
-      expect(item.effectiveDisplayId, 'INV-001');
-      expect(item.patientGender, 'FEMALE');
-      expect(item.patientDateOfBirth, isNotNull);
-      expect(item.balanceDue, 60000);
-      expect(item.clearanceState, BillingClearanceState.partiallyPaid);
-    });
+        final BillingWorkItem item = page.items.single;
+        expect(item.isInvoice, isTrue);
+        expect(item.effectiveDisplayId, 'INV-001');
+        expect(item.patientGender, 'FEMALE');
+        expect(item.patientDateOfBirth, isNotNull);
+        expect(item.balanceDue, 60000);
+        expect(item.clearanceState, BillingClearanceState.partiallyPaid);
+      },
+    );
 
     test('maps unpaid issued invoices to awaiting payment clearance', () {
-      final BillingWorkItem item = const BillingWorkItemDto(
-        <String, Object?>{
-          'id': 'invoice-2',
-          'display_id': 'INV-002',
-          'billing_status': 'ISSUED',
-          'status': 'SENT',
-          'total_amount': '95000.00',
-          'currency': 'UGX',
-          'financials': <String, Object?>{
-            'effective_total': '95000.00',
-            'net_paid_total': '0.00',
-            'balance_due': '95000.00',
-          },
+      final BillingWorkItem item = const BillingWorkItemDto(<String, Object?>{
+        'id': 'invoice-2',
+        'display_id': 'INV-002',
+        'billing_status': 'ISSUED',
+        'status': 'SENT',
+        'total_amount': '95000.00',
+        'currency': 'UGX',
+        'financials': <String, Object?>{
+          'effective_total': '95000.00',
+          'net_paid_total': '0.00',
+          'balance_due': '95000.00',
         },
-        fallbackQueue: BillingQueueType.pendingPayment,
-      ).toEntity();
+      }, fallbackQueue: BillingQueueType.pendingPayment).toEntity();
 
       expect(item.clearanceState, BillingClearanceState.awaitingPayment);
     });

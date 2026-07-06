@@ -7,8 +7,10 @@ void main() {
     test('converts text to uppercase', () {
       expect(toDialogTitleUppercase('Lab Result Entry'), 'LAB RESULT ENTRY');
       expect(toDialogTitleUppercase('confirm action'), 'CONFIRM ACTION');
-      expect(toDialogTitleUppercase('Order LAB0000006 Details'),
-          'ORDER LAB0000006 DETAILS');
+      expect(
+        toDialogTitleUppercase('Order LAB0000006 Details'),
+        'ORDER LAB0000006 DETAILS',
+      );
     });
 
     test('preserves empty and whitespace-only values', () {
@@ -29,7 +31,9 @@ void main() {
       expect(find.text('EDIT RECORD'), findsOneWidget);
     });
 
-    testWidgets('uppercases simple TextSpan titles', (WidgetTester tester) async {
+    testWidgets('uppercases simple TextSpan titles', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -42,7 +46,9 @@ void main() {
       expect(find.text('LAB RESULT ENTRY'), findsOneWidget);
     });
 
-    testWidgets('leaves non-Text titles unchanged', (WidgetTester tester) async {
+    testWidgets('leaves non-Text titles unchanged', (
+      WidgetTester tester,
+    ) async {
       const Widget customTitle = SizedBox(key: Key('custom-title'));
 
       await tester.pumpWidget(
@@ -55,8 +61,9 @@ void main() {
       expect(find.byKey(const Key('custom-title')), findsOneWidget);
     });
 
-    testWidgets('leaves complex TextSpan titles unchanged',
-        (WidgetTester tester) async {
+    testWidgets('leaves complex TextSpan titles unchanged', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -64,9 +71,7 @@ void main() {
             const Text.rich(
               TextSpan(
                 text: 'Order ',
-                children: <InlineSpan>[
-                  TextSpan(text: 'LAB0000006'),
-                ],
+                children: <InlineSpan>[TextSpan(text: 'LAB0000006')],
               ),
             ),
           ),

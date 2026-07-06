@@ -11,14 +11,8 @@ void main() {
         ).isReady,
         isTrue,
       );
-      expect(
-        const LabCatalogScope(tenantId: 'TEN0000001').isReady,
-        isFalse,
-      );
-      expect(
-        const LabCatalogScope(facilityId: 'FAC0000001').isReady,
-        isFalse,
-      );
+      expect(const LabCatalogScope(tenantId: 'TEN0000001').isReady, isFalse);
+      expect(const LabCatalogScope(facilityId: 'FAC0000001').isReady, isFalse);
     });
 
     test('apiParams includes trimmed scope identifiers', () {

@@ -1,50 +1,58 @@
-# Task: Uniform, tighter maximized dialog margins
+# App Dialog — Maximized by Default
 
-## Goal
+## Objective
 
-Refine **maximized** `AppDialog` viewport margins so all four sides are **equal** and **slightly tighter** than today. The dialog should still read as a layer above the workspace (background visible on every edge), but use space more efficiently.
+Change the default presentation of `AppDialog` so dialogs open **maximized on desktop** (breakpoint `md` and above). Apply this globally so callers do not need to pass `initialMaximized: true` unless they want a smaller initial size.
 
-**Visual reference:** Patient profile dialog (e.g. SAMUEL DEMO-BRAVO on `/patients`) in maximized mode. Top/left/right gaps are acceptable but a bit large; the **bottom gap is noticeably larger** than the other sides and should match them.
+## Context
 
-## Problem
+- Shared dialog: `frontend/lib/shared/components/app_dialog.dart`
+- `AppDialog` already supports maximize/restore, drag, and resize on desktop via `initialMaximized`, `showMaximizeButton`, and `resizable`.
+- Today `initialMaximized` defaults to `false`. Many call sites already opt in with `initialMaximized: true`.
+- Key wrappers that forward the flag:
+  - `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart` (`showAppWorkspaceMutationDialog`)
+  - `frontend/lib/shared/components/app_patient_detail_dialog.dart`
+  - `frontend/lib/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart`
+  - `frontend/lib/features/discharge/presentation/widgets/discharge_planning_dialog.dart`
 
-In `AppDialogInsets.paddingFor`, maximized bottom inset is `horizontalInset + dialogSnackBarClearance` (88 px), while top/left/right use only `horizontalInset`. On desktop this yields ~24 px sides/top vs ~112 px bottom — uneven and wasteful.
+## Requirements
 
-Current maximized tokens (`AppDesignTokens.standard`):
+1. **Default behavior** — On desktop (`AppBreakpoint.md+`), new dialogs open maximized unless explicitly overridden.
+2. **Mobile / compact** — Keep current compact behavior unchanged; maximize controls remain desktop-only.
+3. **Preserve restore** — Users can still restore, resize, and drag after opening; toggle behavior must remain correct.
+4. **Global consistency** — Update defaults in `AppDialog` and any dialog wrappers that expose `initialMaximized`, so the app behaves consistently without per-call-site duplication.
+5. **Explicit opt-out** — Call sites that need a smaller initial dialog (e.g. confirmations, simple prompts) may pass `initialMaximized: false`; audit and retain only where justified.
+6. **Cleanup** — Remove redundant `initialMaximized: true` at call sites once the default is `true`.
+7. **Tests** — Update `frontend/test/shared/components/app_dialog_test.dart` and any affected wrapper tests; add coverage for the new default and for explicit opt-out.
 
-| Breakpoint | Token | Value |
-| --- | --- | --- |
-| xs, sm | `dialogMaximizedInsetMobile` | 8 |
-| md, lg | `dialogMaximizedInsetTablet` | 16 |
-| xl, xxl | `dialogMaximizedInsetDesktop` | 24 |
+## Implementation notes
 
-## Desired behavior
+- Prefer changing constructor defaults over scattering logic at call sites.
+- When `initialMaximized` is `true` at open, `_isMaximized` should initialize correctly and `_desktopSize` should reflect the maximized viewport (see existing `initState` and `_toggleMaximize` logic).
+- Do not change dialog insets, theming, or unrelated dialog APIs.
 
-1. **Uniform maximized insets** — Top, left, right, and bottom use the **same** theme token value. Do **not** add `dialogSnackBarClearance` to maximized bottom inset (reserve snack-bar clearance for non-maximized dialogs only).
-2. **Slightly tighter** — Reduce maximized inset tokens a step below current horizontal/top values (e.g. desktop 24 → 16). Tune mobile/tablet proportionally; margins should feel balanced—not cramped, not oversized.
-3. **Theme-only** — Adjust values in `AppDesignTokens` (`app_theme_extensions.dart`); no hard-coded pixel literals in `AppDialog` or `AppDialogInsets`.
-4. **All screen sizes** — Responsive maximized insets via existing `AppBreakpoint` mapping in `app_dialog_insets.dart`.
-5. **Unchanged semantics** — Maximize ↔ restore, resize, drag, and `initialMaximized` behavior stay as implemented.
+## Out of scope
 
-## Scope
+- Replacing `AppDialog` with a different component
+- Changing mobile bottom-sheet or full-screen patterns
+- Altering `showAppDialog` focus-restoration behavior
 
-| Area | Files |
-| --- | --- |
-| Inset logic | `frontend/lib/shared/layout/app_dialog_insets.dart` |
-| Theme tokens | `frontend/lib/app/theme/app_theme_extensions.dart` |
-| Tests | `frontend/test/shared/layout/app_dialog_insets_test.dart`, `frontend/test/shared/components/app_dialog_test.dart`, `frontend/test/app/theme/app_theme_test.dart` |
+## Quality gate
 
-## Acceptance criteria
+From `frontend/`:
 
-- [ ] Maximized dialog margins are **visually equal** on top, left, right, and bottom (verify on patient profile dialog at desktop width).
-- [ ] Bottom margin is **no longer larger** than the other sides.
-- [ ] Margins are **slightly smaller** than the current top/horizontal maximized inset (~24 px desktop).
-- [ ] Underlying workspace remains visible on all edges.
-- [ ] Non-maximized dialogs still apply `dialogSnackBarClearance` on the bottom.
-- [ ] All values come from `AppDesignTokens`; no new magic numbers in components.
-- [ ] Updated tests pass: `flutter test test/shared/components/app_dialog_test.dart test/shared/layout/app_dialog_insets_test.dart test/app/theme/app_theme_test.dart`.
+```bash
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test test/shared/components/app_dialog_test.dart
+```
 
-## Implementation hints
+Run broader `flutter test` if wrapper defaults or widespread call-site cleanup changes behavior.
 
-- In `paddingFor`, branch on `maximized`: when `true`, return symmetric `EdgeInsets.all(inset)`; when `false`, keep existing bottom clearance logic.
-- Suggested starting values: mobile `6`, tablet `12`, desktop `16` — adjust if needed after visual check.
+## Done when
+
+- Desktop dialogs open maximized by default across the app
+- Restore/maximize toggle, resize, drag, and close still work
+- Redundant `initialMaximized: true` usages are removed; justified `false` overrides remain
+- Tests pass and reflect the new default

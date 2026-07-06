@@ -496,7 +496,6 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
       title: Text(l10n.patientsRegisterNewPatientTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
       closeEnabled: !_isSaving && !isCheckingDuplicates,
-      initialMaximized: true,
       content: SizedBox(
         height: _formBodyHeight(context),
         child: AppFormShell(

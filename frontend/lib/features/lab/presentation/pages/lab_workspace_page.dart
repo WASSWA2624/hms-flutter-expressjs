@@ -996,7 +996,6 @@ class _LabConfigurationsDialogState
       title: Text(l10n.labReferenceRangesDialogTitle),
       icon: const Icon(Icons.tune_outlined),
       scrollable: true,
-      initialMaximized: true,
       maxWidth: 980,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2045,7 +2044,6 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
       title: Text(l10n.labRecordQcDialogTitle),
       icon: const Icon(Icons.fact_check_outlined),
       scrollable: true,
-      initialMaximized: true,
       content: Form(
         key: _formKey,
         child: AppFormSection(

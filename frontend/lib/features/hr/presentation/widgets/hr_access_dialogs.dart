@@ -418,7 +418,6 @@ class _HrAccessWorkspaceDialogState
       title: Text(l10n.hrAccessWorkspaceTitle),
       icon: const Icon(Icons.manage_accounts_outlined),
       pinActionsToBottom: true,
-      initialMaximized: true,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

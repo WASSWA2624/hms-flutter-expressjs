@@ -1778,9 +1778,7 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
               title: l10n.opdPrintSummaryAction,
               patientContext: buildPrintFormPatientContext(
                 l10n,
-                patientName:
-                    flow.patientDisplayName ??
-                    flow.displayTitle,
+                patientName: flow.patientDisplayName ?? flow.displayTitle,
                 patientId: flow.patientId ?? flow.patientIdentifier,
                 encounterId: flow.publicId,
               ),

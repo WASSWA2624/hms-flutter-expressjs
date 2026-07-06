@@ -174,7 +174,6 @@ Future<void> showHrManageScheduleTemplatesDialog(
           title: Text(l10n.hrManageScheduleTemplatesTitle),
           icon: const Icon(Icons.view_week_outlined),
           scrollable: true,
-          initialMaximized: true,
           maxWidth: 980,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -258,7 +257,6 @@ Future<void> showHrShiftTemplateDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     showCancelButton: false,
-    initialMaximized: true,
     maxWidth: 980,
     buildFields:
         (
@@ -659,7 +657,6 @@ Future<void> showHrScheduleTemplateDetailDialog(
           title: Text(template.label),
           icon: const Icon(Icons.view_week_outlined),
           scrollable: true,
-          initialMaximized: true,
           maxWidth: 980,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -199,15 +199,11 @@ void main() {
     final _MockIpdRepository repo = _MockIpdRepository();
     final ProviderContainer container = buildContainer(
       repo,
-      admissions: <IpdAdmissionSummary>[
-        _summary(stage: 'ADMISSION_REQUESTED'),
-      ],
+      admissions: <IpdAdmissionSummary>[_summary(stage: 'ADMISSION_REQUESTED')],
     );
     when(() => repo.approveAdmission(any(), any())).thenAnswer(
       (_) async => Result<IpdAdmissionDetail>.success(
-        IpdAdmissionDetail(
-          summary: _summary(),
-        ),
+        IpdAdmissionDetail(summary: _summary()),
       ),
     );
 

@@ -466,7 +466,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       icon: const Icon(opdEncounterIcon),
       scrollable: true,
       closeEnabled: !_isSaving,
-      initialMaximized: true,
       maxWidth: 880,
       content: AppFormShell(
         formKey: _formKey,
@@ -870,7 +869,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                       if (patient != null)
                         _ActiveEncounterCopyableDetail(
                           label: l10n.opdPatientIdLabel,
-                          value: patient.effectiveIdentifier ??
+                          value:
+                              patient.effectiveIdentifier ??
                               _firstNonEmptyText(<String?>[
                                 patient.publicId,
                                 patient.id,
@@ -888,9 +888,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                         value: opdArrivalModeDisplayLabel(
                           l10n,
                           _firstNonEmptyText(<String?>[
-                                flow.arrivalMode,
-                                flow.encounterType,
-                              ]),
+                            flow.arrivalMode,
+                            flow.encounterType,
+                          ]),
                         ),
                       ),
                       _ActiveEncounterDetail(
@@ -968,10 +968,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCloseEncounter == null) {
       return;
     }
-    final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-      context: context,
-      builder: (_) => _CloseEncounterDialog(flow: flow),
-    );
+    final Map<String, Object?>? payload =
+        await showAppDialog<Map<String, Object?>>(
+          context: context,
+          builder: (_) => _CloseEncounterDialog(flow: flow),
+        );
     if (payload == null || !mounted) {
       return;
     }
@@ -986,10 +987,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCancelEncounter == null) {
       return;
     }
-    final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-      context: context,
-      builder: (_) => _CancelEncounterDialog(l10n: context.l10n),
-    );
+    final Map<String, Object?>? payload =
+        await showAppDialog<Map<String, Object?>>(
+          context: context,
+          builder: (_) => _CancelEncounterDialog(l10n: context.l10n),
+        );
     if (payload == null || !mounted) {
       return;
     }
@@ -1014,9 +1016,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     result.when(
       success: (OpdFlowDetail detail) {
         widget.onSuccess?.call();
-        Navigator.of(context).pop(
-          OpdEncounterDialogResult(action: action, flow: detail.summary),
-        );
+        Navigator.of(
+          context,
+        ).pop(OpdEncounterDialogResult(action: action, flow: detail.summary));
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1054,9 +1056,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           widget.onExistingActiveEncounter?.call(activeEncounter);
         }
         widget.onSuccess?.call();
-        Navigator.of(context).pop(
-          OpdEncounterDialogResult(flow: activeEncounter),
-        );
+        Navigator.of(
+          context,
+        ).pop(OpdEncounterDialogResult(flow: activeEncounter));
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1095,7 +1097,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         setState(() {
           _isSaving = false;
           _patientMode = _WalkInPatientMode.existing;
-          _patientId = _firstNonEmptyText(<String?>[patient.publicId, patient.id]);
+          _patientId = _firstNonEmptyText(<String?>[
+            patient.publicId,
+            patient.id,
+          ]);
           _patientOptions = _mergePatients(<Patient>[
             ..._patientOptions,
             patient,
@@ -1450,7 +1455,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         billingDefaults?.standardConsultationCurrency ??
         billingDefaults?.defaultCurrency;
 
-    if (providerFee != null && (overwrite || _feeController.text.trim().isEmpty)) {
+    if (providerFee != null &&
+        (overwrite || _feeController.text.trim().isEmpty)) {
       _feeController.text = _currencyAmountInput(providerFee);
     } else if (fallbackFee != null &&
         (overwrite || _feeController.text.trim().isEmpty)) {
@@ -1919,7 +1925,9 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
             if (_reasonCode == 'OTHER' && notes.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(l10n.opdEncounterCancelReasonNotesRequiredMessage),
+                  content: Text(
+                    l10n.opdEncounterCancelReasonNotesRequiredMessage,
+                  ),
                 ),
               );
               return;

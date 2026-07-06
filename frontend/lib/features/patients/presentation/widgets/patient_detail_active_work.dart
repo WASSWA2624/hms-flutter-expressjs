@@ -100,10 +100,7 @@ class _PatientActiveWorkRow extends StatelessWidget {
                         ),
                       ),
                       if (statusLabel.isNotEmpty)
-                        AppStatusText(
-                          label: statusLabel,
-                          tone: statusTone,
-                        ),
+                        AppStatusText(label: statusLabel, tone: statusTone),
                     ],
                   ),
                   if (contextLabel.isNotEmpty) ...<Widget>[

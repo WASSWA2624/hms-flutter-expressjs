@@ -125,7 +125,10 @@ void main() {
             label: 'Queue',
             allLabel: 'All',
             choices: <AppSearchBarFilterChoice>[
-              AppSearchBarFilterChoice(value: 'processing', label: 'Processing'),
+              AppSearchBarFilterChoice(
+                value: 'processing',
+                label: 'Processing',
+              ),
               AppSearchBarFilterChoice(
                 value: 'awaiting',
                 label: 'Awaiting results',

@@ -12,7 +12,8 @@ String accessRequirementDenialMessage(
     return l10n.accessDeniedPermissionRequired;
   }
 
-  if (requirement.anyRoles.isNotEmpty && !policy.hasAnyRole(requirement.anyRoles)) {
+  if (requirement.anyRoles.isNotEmpty &&
+      !policy.hasAnyRole(requirement.anyRoles)) {
     return l10n.accessDeniedRoleRequired;
   }
 

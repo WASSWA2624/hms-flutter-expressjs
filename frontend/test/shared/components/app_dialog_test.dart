@@ -111,6 +111,7 @@ void main() {
     await pumpComponent(
       tester,
       const AppDialog(
+        initialMaximized: false,
         title: Text('Move encounter'),
         content: SizedBox(width: 320, height: 160, child: Text('Dialog body')),
       ),
@@ -158,6 +159,7 @@ void main() {
                 showAppDialog<void>(
                   context: context,
                   builder: (_) => const AppDialog(
+                    initialMaximized: false,
                     maxWidth: 480,
                     title: Text('Large form'),
                     content: SizedBox(
@@ -191,7 +193,10 @@ void main() {
     expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
     final RenderBox shellMaximized = _dialogShellRenderBox(tester);
     expect(shellMaximized.size.width, closeTo(expectedMaximizedSize.width, 1));
-    expect(shellMaximized.size.height, closeTo(expectedMaximizedSize.height, 1));
+    expect(
+      shellMaximized.size.height,
+      closeTo(expectedMaximizedSize.height, 1),
+    );
     expect(shellMaximized.size.width, lessThan(viewport.width));
     expect(shellMaximized.size.height, lessThan(viewport.height));
     expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
@@ -206,6 +211,94 @@ void main() {
     expect(shellRestored.size.height, closeTo(heightBefore, 2));
   });
 
+  testWidgets('desktop AppDialog opens maximized by default', (
+    WidgetTester tester,
+  ) async {
+    const Size viewport = Size(1000, 700);
+    const AppDesignTokens designTokens = AppDesignTokens.standard;
+    final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
+      viewport,
+      AppBreakpoint.lg,
+      designTokens: designTokens,
+      maximized: true,
+    );
+
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return TextButton(
+            onPressed: () {
+              unawaited(
+                showAppDialog<void>(
+                  context: context,
+                  builder: (_) => const AppDialog(
+                    maxWidth: 480,
+                    title: Text('Default maximized'),
+                    content: SizedBox(
+                      width: 320,
+                      height: 240,
+                      child: Text('Dialog body'),
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open dialog'),
+          );
+        },
+      ),
+      size: viewport,
+    );
+
+    await tester.tap(find.text('Open dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
+    final RenderBox shell = _dialogShellRenderBox(tester);
+    expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
+    expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
+  });
+
+  testWidgets('desktop AppDialog respects initialMaximized false opt-out', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return TextButton(
+            onPressed: () {
+              unawaited(
+                showAppDialog<void>(
+                  context: context,
+                  builder: (_) => const AppDialog(
+                    initialMaximized: false,
+                    maxWidth: 480,
+                    title: Text('Compact dialog'),
+                    content: SizedBox(
+                      width: 320,
+                      height: 240,
+                      child: Text('Dialog body'),
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open dialog'),
+          );
+        },
+      ),
+      size: const Size(1000, 700),
+    );
+
+    await tester.tap(find.text('Open dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.fullscreen), findsOneWidget);
+    expect(find.byIcon(Icons.fullscreen_exit), findsNothing);
+  });
+
   testWidgets('maximized dialog leaves theme insets on mobile and tablet', (
     WidgetTester tester,
   ) async {
@@ -213,9 +306,9 @@ void main() {
 
     for (final ({Size viewport, AppBreakpoint breakpoint}) config
         in <({Size viewport, AppBreakpoint breakpoint})>[
-      (viewport: const Size(400, 700), breakpoint: AppBreakpoint.sm),
-      (viewport: const Size(800, 700), breakpoint: AppBreakpoint.md),
-    ]) {
+          (viewport: const Size(400, 700), breakpoint: AppBreakpoint.sm),
+          (viewport: const Size(800, 700), breakpoint: AppBreakpoint.md),
+        ]) {
       final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
         config.viewport,
         config.breakpoint,
@@ -233,7 +326,6 @@ void main() {
                   showAppDialog<void>(
                     context: context,
                     builder: (_) => const AppDialog(
-                      initialMaximized: true,
                       title: Text('Maximized form'),
                       content: SizedBox(
                         height: 120,
@@ -271,6 +363,7 @@ void main() {
     await pumpComponent(
       tester,
       const AppDialog(
+        initialMaximized: false,
         maxWidth: 520,
         title: Text('Resize me'),
         content: SizedBox(width: 320, height: 200, child: Text('Dialog body')),
@@ -296,6 +389,7 @@ void main() {
     await pumpComponent(
       tester,
       const AppDialog(
+        initialMaximized: false,
         maxWidth: 520,
         title: Text('Edge resize'),
         content: SizedBox(width: 320, height: 200, child: Text('Dialog body')),

@@ -304,8 +304,7 @@ String? _stageFor(IpdQueueScope scope) {
 
 String? _stageAnyFor(IpdQueueScope scope) {
   return switch (scope) {
-    IpdQueueScope.admissionQueue =>
-      'ADMISSION_REQUESTED,ADMITTED_PENDING_BED',
+    IpdQueueScope.admissionQueue => 'ADMISSION_REQUESTED,ADMITTED_PENDING_BED',
     IpdQueueScope.transferPending => 'TRANSFER_REQUESTED,TRANSFER_IN_PROGRESS',
     _ => null,
   };

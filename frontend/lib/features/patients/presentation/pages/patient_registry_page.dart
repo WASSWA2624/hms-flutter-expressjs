@@ -2209,7 +2209,6 @@ class _PatientAdmissionQuickDialogState
       reasonLabel: l10n.patientsAdmissionReasonLabel,
       reasonRequired: true,
       notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
-      initialMaximized: true,
       showCancelButton: false,
       submitLeadingIcon: Icons.local_hospital_outlined,
       leadingSectionsBuilder: _workflowFields,

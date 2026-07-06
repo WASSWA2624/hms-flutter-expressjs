@@ -84,7 +84,6 @@ Future<void> showHrStaffOnboardingDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 980,
-    initialMaximized: true,
     buildFields:
         (
           BuildContext context,
