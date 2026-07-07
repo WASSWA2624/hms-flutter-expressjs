@@ -55,6 +55,9 @@ final class ClinicalWorklistQuery {
   }
 }
 
+/// Sentinel value for clinical worklist provider filter — unassigned encounters.
+const String clinicalUnassignedProviderFilterValue = '__UNASSIGNED__';
+
 @immutable
 final class ClinicalWorklistFilters {
   const ClinicalWorklistFilters({
@@ -72,6 +75,8 @@ final class ClinicalWorklistFilters {
     this.sourceQueue,
     this.status,
     this.provider,
+    this.encounterType,
+    this.locationOption,
   });
 
   final String? searchField;
@@ -88,6 +93,8 @@ final class ClinicalWorklistFilters {
   final String? sourceQueue;
   final String? status;
   final String? provider;
+  final String? encounterType;
+  final String? locationOption;
 
   bool get isActive {
     return _hasText(searchField) ||
@@ -103,7 +110,9 @@ final class ClinicalWorklistFilters {
         _hasText(location) ||
         _hasText(sourceQueue) ||
         _hasText(status) ||
-        _hasText(provider);
+        _hasText(provider) ||
+        _hasText(encounterType) ||
+        _hasText(locationOption);
   }
 }
 
@@ -181,14 +190,15 @@ final class ClinicalWorklistEntry {
         encounterId;
   }
 
-  String? get displaySubtitle {
-    return _joinDisplay(<String?>[
-      patientPublicId,
-      patientPhone,
-      patientGender,
-      encounterPublicId,
-      encounterType,
-    ]);
+  String? get displaySubtitle => worklistPatientSecondaryLine;
+
+  /// Compact secondary line for the clinical worklist patient cell.
+  String? get worklistPatientSecondaryLine {
+    final String? ageSex = _nonEmpty(patientAgeSex);
+    if (ageSex != null) {
+      return ageSex;
+    }
+    return _nonEmpty(patientPublicId) ?? _nonEmpty(patientId);
   }
 
   bool get isTerminal {
@@ -279,7 +289,19 @@ final class ClinicalWorklistEntry {
     if (!_matchesAnyExact(filters.status, <String?>[status, stage, nextStep])) {
       return false;
     }
-    if (!_matchesExact(providerDisplayName, filters.provider)) {
+    if (_hasText(filters.provider)) {
+      if (filters.provider == clinicalUnassignedProviderFilterValue) {
+        if (_nonEmpty(providerDisplayName) != null) {
+          return false;
+        }
+      } else if (!_matchesExact(providerDisplayName, filters.provider)) {
+        return false;
+      }
+    }
+    if (!_matchesExact(encounterType, filters.encounterType)) {
+      return false;
+    }
+    if (!_matchesExact(currentLocation, filters.locationOption)) {
       return false;
     }
     return _matchesDateRange(

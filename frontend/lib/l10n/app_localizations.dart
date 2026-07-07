@@ -10345,7 +10345,7 @@ abstract class AppLocalizations {
   /// Navigation label for the clinical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Clinical notes'**
+  /// **'Clinical (Doctors)'**
   String get navigationClinicalLabel;
 
   /// Compact navigation label for the clinical workspace.
@@ -10479,6 +10479,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open consultations, admissions, triage handoffs, and result-review queues.'**
   String get clinicalWorklistDescription;
+
+  /// Clinical worklist column label for the active workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Current step'**
+  String get clinicalStepColumnLabel;
+
+  /// Clinical worklist label when no provider is assigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not assigned'**
+  String get clinicalNotAssignedLabel;
 
   /// Clinical empty worklist title.
   ///

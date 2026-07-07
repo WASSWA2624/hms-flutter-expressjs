@@ -100,14 +100,15 @@ void main() {
     await _pumpUntilFound(tester, find.text('Clinical workspace'));
 
     expect(find.text('Clinical workspace'), findsOneWidget);
-    expect(find.text('Provider worklist'), findsOneWidget);
+    expect(find.text('Provider worklist'), findsNothing);
     expect(
       find.text(
         'Open consultations, admissions, triage handoffs, and '
         'result-review queues.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('Current step'), findsWidgets);
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
     expect(find.text('John Other'), findsOneWidget);

@@ -7135,7 +7135,7 @@
   "@errorUnexpectedMessage": {
     "description": "Generic safe error message for unexpected recoverable failures."
   },
-  "navigationClinicalLabel": "Clinical notes",
+  "navigationClinicalLabel": "Clinical (Doctors)",
   "@navigationClinicalLabel": {
     "description": "Navigation label for the clinical workspace."
   },
@@ -7226,6 +7226,14 @@
   "clinicalWorklistDescription": "Open consultations, admissions, triage handoffs, and result-review queues.",
   "@clinicalWorklistDescription": {
     "description": "Clinical provider worklist description."
+  },
+  "clinicalStepColumnLabel": "Current step",
+  "@clinicalStepColumnLabel": {
+    "description": "Clinical worklist column label for the active workflow step."
+  },
+  "clinicalNotAssignedLabel": "Not assigned",
+  "@clinicalNotAssignedLabel": {
+    "description": "Clinical worklist label when no provider is assigned."
   },
   "clinicalNoWorklistTitle": "No clinical work",
   "@clinicalNoWorklistTitle": {

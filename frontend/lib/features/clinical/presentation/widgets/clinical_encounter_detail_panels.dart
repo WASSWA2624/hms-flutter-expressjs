@@ -22,16 +22,15 @@ const AccessRequirement clinicalEncounterWriteRequirement = AccessRequirement(
   activeModules: <String>['encounters-vitals'],
 );
 
-typedef ClinicalOrderAction = Future<void> Function(
-  BuildContext context,
-  ClinicalRelatedRecord order,
-);
+typedef ClinicalOrderAction =
+    Future<void> Function(BuildContext context, ClinicalRelatedRecord order);
 
 List<ClinicalRelatedRecord> sortClinicalRecordsNewestFirst(
   List<ClinicalRelatedRecord> records,
 ) {
-  final List<ClinicalRelatedRecord> sorted =
-      List<ClinicalRelatedRecord>.from(records);
+  final List<ClinicalRelatedRecord> sorted = List<ClinicalRelatedRecord>.from(
+    records,
+  );
   sorted.sort((ClinicalRelatedRecord left, ClinicalRelatedRecord right) {
     final DateTime leftAt =
         left.occurredAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -43,10 +42,7 @@ List<ClinicalRelatedRecord> sortClinicalRecordsNewestFirst(
 }
 
 class ClinicalWorkflowProgressStrip extends StatelessWidget {
-  const ClinicalWorkflowProgressStrip({
-    required this.handoff,
-    super.key,
-  });
+  const ClinicalWorkflowProgressStrip({required this.handoff, super.key});
 
   final ClinicalTriageHandoff handoff;
 
@@ -59,12 +55,12 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
     final String nextStep = handoff.nextStep ?? '';
     final List<String> stages = handoff.timeline.isNotEmpty
         ? handoff.timeline
-            .map(
-              (ClinicalWorkflowTimelineItem item) =>
-                  item.stage ?? item.action,
-            )
-            .where((String value) => value.trim().isNotEmpty)
-            .toList(growable: false)
+              .map(
+                (ClinicalWorkflowTimelineItem item) =>
+                    item.stage ?? item.action,
+              )
+              .where((String value) => value.trim().isNotEmpty)
+              .toList(growable: false)
         : opdWorkflowStagesAround(currentStage);
     final int currentIndex = handoff.timeline.isNotEmpty
         ? stages.length - 1
@@ -467,7 +463,8 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
             child: compact
                 ? Column(
                     children: <Widget>[
-                      for (final ClinicalLabOrderItem item in order.labOrderItems)
+                      for (final ClinicalLabOrderItem item
+                          in order.labOrderItems)
                         _ClinicalLabOrderItemMobileCard(
                           item: item,
                           orderStatus: order.status,
@@ -783,7 +780,9 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     onPressed: onToggleExpanded,
-                    icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+                    icon: Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                    ),
                   ),
                 Expanded(
                   child: Column(
@@ -843,11 +842,7 @@ class _ClinicalOrderMobileCard extends StatelessWidget {
 }
 
 class _ClinicalLabeledChip extends StatelessWidget {
-  const _ClinicalLabeledChip({
-    required this.label,
-    this.value,
-    this.child,
-  });
+  const _ClinicalLabeledChip({required this.label, this.value, this.child});
 
   final String label;
   final String? value;

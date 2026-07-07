@@ -60,6 +60,27 @@ void main() {
       expect(entry.matchesSearch('kizza'), isTrue);
     });
 
+    test(
+      'worklist patient secondary line prefers age/sex over identifiers',
+      () {
+        final ClinicalWorklistEntry withAgeSex = _entry(
+          patientDisplayName: 'Amina Kato',
+          patientAgeSex: '32 / F',
+        );
+      final ClinicalWorklistEntry withIdOnly = const ClinicalWorklistEntry(
+        id: 'encounter-2',
+        sourceQueue: 'OPD',
+        encounterId: 'encounter-2',
+        patientDisplayName: 'John Doe',
+        patientPublicId: 'PAT000002',
+        patientPhone: '+256700000002',
+      );
+
+        expect(withAgeSex.worklistPatientSecondaryLine, '32 / F');
+        expect(withIdOnly.worklistPatientSecondaryLine, 'PAT000002');
+      },
+    );
+
     test('advanced filters match source, status, provider, and date range', () {
       final DateTime updatedAt = DateTime(2026, 5, 18, 10);
       final ClinicalWorklistEntry entry = _entry(
@@ -83,6 +104,22 @@ void main() {
       );
       expect(
         entry.matchesFilters(const ClinicalWorklistFilters(sourceQueue: 'IPD')),
+        isFalse,
+      );
+      expect(
+        entry.matchesFilters(
+          const ClinicalWorklistFilters(
+            provider: clinicalUnassignedProviderFilterValue,
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        _entry(providerDisplayName: 'Dr Kizza').matchesFilters(
+          const ClinicalWorklistFilters(
+            provider: clinicalUnassignedProviderFilterValue,
+          ),
+        ),
         isFalse,
       );
     });
@@ -184,6 +221,7 @@ ClinicalWorklistEntry _entry({
   String? encounterPublicId,
   String? patientDisplayName,
   String? patientGender,
+  String? patientAgeSex,
   String? providerDisplayName,
   String? status,
   String? stage,
@@ -200,6 +238,7 @@ ClinicalWorklistEntry _entry({
     encounterPublicId: encounterPublicId,
     patientDisplayName: patientDisplayName,
     patientGender: patientGender,
+    patientAgeSex: patientAgeSex,
     providerDisplayName: providerDisplayName,
     status: status,
     stage: stage,

@@ -5539,7 +5539,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnexpectedMessage => 'Something went wrong. Try again.';
 
   @override
-  String get navigationClinicalLabel => 'Clinical notes';
+  String get navigationClinicalLabel => 'Clinical (Doctors)';
 
   @override
   String get navigationClinicalShortLabel => 'Clinical';
@@ -5610,6 +5610,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalWorklistDescription =>
       'Open consultations, admissions, triage handoffs, and result-review queues.';
+
+  @override
+  String get clinicalStepColumnLabel => 'Current step';
+
+  @override
+  String get clinicalNotAssignedLabel => 'Not assigned';
 
   @override
   String get clinicalNoWorklistTitle => 'No clinical work';

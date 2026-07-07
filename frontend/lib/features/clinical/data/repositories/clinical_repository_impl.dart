@@ -494,6 +494,8 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       'source_queue': filters.sourceQueue,
       'stage': filters.status,
       'assigned_provider': filters.provider,
+      'encounter_type': filters.encounterType,
+      'location_option': filters.locationOption,
       'updated_from': filters.dateFrom?.toUtc().toIso8601String(),
       'updated_to': filters.dateTo?.toUtc().toIso8601String(),
     };

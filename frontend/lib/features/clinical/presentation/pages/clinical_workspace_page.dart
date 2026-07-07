@@ -130,12 +130,18 @@ class _ClinicalWorkspaceContentState
   );
 
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
+  _tableColumnController;
   Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<ClinicalWorklistEntry>(
+          storageKey: 'clinical.worklist',
+        );
   }
 
   @override
@@ -151,6 +157,7 @@ class _ClinicalWorkspaceContentState
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -288,6 +295,7 @@ class _ClinicalWorkspaceContentState
       body: _ClinicalWorklistPanel(
         state: state,
         searchController: _searchController,
+        columnVisibilityController: _tableColumnController,
         onSearchChanged: _applySearch,
         onSearchSubmitted: _applySearchImmediately,
       ),
@@ -318,12 +326,15 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
   const _ClinicalWorklistPanel({
     required this.state,
     required this.searchController,
+    required this.columnVisibilityController,
     required this.onSearchChanged,
     required this.onSearchSubmitted,
   });
 
   final ClinicalWorkspaceState state;
   final TextEditingController searchController;
+  final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
+  columnVisibilityController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onSearchSubmitted;
 
@@ -334,45 +345,52 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     return _ClinicalWorklistSurface(
-      child: AppWorkspaceDetailPanel(
-        title: l10n.clinicalWorklistTitle,
-        description: l10n.clinicalWorklistDescription,
-        child: AppListTable<ClinicalWorklistEntry>(
-          page: state.worklist,
-          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          isLoading: state.isRefreshing,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          previousPageLabel: l10n.opdPreviousPageLabel,
-          nextPageLabel: l10n.opdNextPageLabel,
-          pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
-            return _pageLabel(context, page);
-          },
-          onPageChanged: controller.changePage,
-          onRowSelected: (ClinicalWorklistEntry entry) {
-            _openClinicalEntryDialog(context, ref, entry);
-          },
-          emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-            variant: AppStateViewVariant.empty,
-            title: l10n.clinicalNoWorklistTitle,
-            body: l10n.clinicalNoWorklistBody,
-            icon: Icons.assignment_outlined,
-          ),
-          search: _worklistSearch(
-            context,
-            controller,
-            searchController,
-            filters: state.query.filters,
-            scope: state.query.scope,
-            filterEntries: state.worklist.items,
-            onSearchChanged: onSearchChanged,
-            onSearchSubmitted: onSearchSubmitted,
-          ),
-          columns: _clinicalWorklistColumns(l10n),
-          mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
-          itemKeyBuilder: _clinicalWorklistItemKey,
-          rowColorBuilder: _clinicalRowColor,
+      child: AppListTable<ClinicalWorklistEntry>(
+        page: state.worklist,
+        columnVisibilityController: columnVisibilityController,
+        columnVisibilityStorageKey: 'clinical.worklist',
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        isLoading: state.isRefreshing,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        previousPageLabel: l10n.opdPreviousPageLabel,
+        nextPageLabel: l10n.opdNextPageLabel,
+        pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
+          return _pageLabel(context, page);
+        },
+        onPageChanged: controller.changePage,
+        onRowSelected: (ClinicalWorklistEntry entry) {
+          _openClinicalEntryDialog(context, ref, entry);
+        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+          variant: AppStateViewVariant.empty,
+          title: l10n.clinicalNoWorklistTitle,
+          body: l10n.clinicalNoWorklistBody,
+          icon: Icons.assignment_outlined,
         ),
+        search: _worklistSearch(
+          context,
+          controller,
+          searchController,
+          filters: state.query.filters,
+          scope: state.query.scope,
+          filterEntries: state.worklist.items,
+          onSearchChanged: onSearchChanged,
+          onSearchSubmitted: onSearchSubmitted,
+        ),
+        columns: <AppListTableColumn<ClinicalWorklistEntry>>[
+          for (final _ClinicalTableColumnId column
+              in _defaultClinicalTableColumns)
+            _clinicalDataColumn(context, column),
+        ],
+        columnChoices: <AppListTableColumn<ClinicalWorklistEntry>>[
+          for (final _ClinicalTableColumnId column
+              in _availableClinicalTableColumns)
+            _clinicalDataColumn(context, column),
+        ],
+        mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+        itemKeyBuilder: _clinicalWorklistItemKey,
+        rowColorBuilder: _clinicalRowColor,
       ),
     );
   }
@@ -461,65 +479,214 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
   );
 }
 
-List<AppListTableColumn<ClinicalWorklistEntry>> _clinicalWorklistColumns(
-  AppLocalizations l10n,
+enum _ClinicalTableColumnId {
+  patient,
+  patientId,
+  phone,
+  ageSex,
+  queue,
+  statusStep,
+  provider,
+  lastUpdated,
+  encounter,
+  admission,
+  encounterType,
+  location,
+}
+
+const List<_ClinicalTableColumnId> _defaultClinicalTableColumns =
+    <_ClinicalTableColumnId>[
+      _ClinicalTableColumnId.patient,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.lastUpdated,
+    ];
+
+const List<_ClinicalTableColumnId> _availableClinicalTableColumns =
+    <_ClinicalTableColumnId>[
+      _ClinicalTableColumnId.patient,
+      _ClinicalTableColumnId.patientId,
+      _ClinicalTableColumnId.phone,
+      _ClinicalTableColumnId.ageSex,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.lastUpdated,
+      _ClinicalTableColumnId.encounter,
+      _ClinicalTableColumnId.admission,
+      _ClinicalTableColumnId.encounterType,
+      _ClinicalTableColumnId.location,
+    ];
+
+String _clinicalTableColumnLabel(
+  BuildContext context,
+  _ClinicalTableColumnId column,
 ) {
-  return <AppListTableColumn<ClinicalWorklistEntry>>[
-    AppListTableColumn<ClinicalWorklistEntry>(
-      label: l10n.opdPatientColumnLabel,
-      sortComparator:
-          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
-              appListTableCompareText(left.displayTitle, right.displayTitle),
-      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return _ClinicalPatientCell(item: item);
-      },
-    ),
-    AppListTableColumn<ClinicalWorklistEntry>(
-      label: l10n.clinicalSourceQueueLabel,
-      sortComparator:
-          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
-              appListTableCompareText(left.sourceQueue, right.sourceQueue),
-      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return _ClinicalQueueCell(item: item);
-      },
-    ),
-    AppListTableColumn<ClinicalWorklistEntry>(
-      label: l10n.opdStatusColumnLabel,
-      sortComparator:
-          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
-              appListTableCompareText(
-                left.stage ?? left.status ?? left.nextStep,
-                right.stage ?? right.status ?? right.nextStep,
-              ),
-      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return _ClinicalStatusCell(item: item);
-      },
-    ),
-    AppListTableColumn<ClinicalWorklistEntry>(
-      label: l10n.opdProviderColumnLabel,
-      sortComparator:
-          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
-              appListTableCompareText(
-                left.providerDisplayName,
-                right.providerDisplayName,
-              ),
-      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return Text(item.providerDisplayName ?? l10n.profileUnknownValue);
-      },
-    ),
-    AppListTableColumn<ClinicalWorklistEntry>(
-      label: l10n.clinicalLastUpdatedLabel,
-      sortComparator:
-          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
-              appListTableCompareDateTime(
-                left.updatedAt ?? left.startedAt,
-                right.updatedAt ?? right.startedAt,
-              ),
-      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return Text(_dateTimeLabel(context, item.updatedAt ?? item.startedAt));
-      },
-    ),
-  ];
+  final AppLocalizations l10n = context.l10n;
+  return switch (column) {
+    _ClinicalTableColumnId.patient => l10n.opdPatientColumnLabel,
+    _ClinicalTableColumnId.patientId => l10n.opdPatientIdLabel,
+    _ClinicalTableColumnId.phone => l10n.patientsPhoneLabel,
+    _ClinicalTableColumnId.ageSex => l10n.patientsAgeSexColumnLabel,
+    _ClinicalTableColumnId.queue => l10n.clinicalSourceQueueLabel,
+    _ClinicalTableColumnId.statusStep => l10n.clinicalStepColumnLabel,
+    _ClinicalTableColumnId.provider => l10n.opdProviderColumnLabel,
+    _ClinicalTableColumnId.lastUpdated => l10n.clinicalLastUpdatedLabel,
+    _ClinicalTableColumnId.encounter => l10n.clinicalEncounterNumberLabel,
+    _ClinicalTableColumnId.admission => l10n.clinicalAdmissionNumberLabel,
+    _ClinicalTableColumnId.encounterType => l10n.clinicalEncounterTypeLabel,
+    _ClinicalTableColumnId.location => l10n.clinicalLocationLabel,
+  };
+}
+
+AppListTableColumn<ClinicalWorklistEntry> _clinicalDataColumn(
+  BuildContext context,
+  _ClinicalTableColumnId column,
+) {
+  final String label = _clinicalTableColumnLabel(context, column);
+  final AppLocalizations l10n = context.l10n;
+
+  return AppListTableColumn<ClinicalWorklistEntry>(
+    id: column.name,
+    label: label,
+    sortComparator: _clinicalSortComparator(column),
+    cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+      return switch (column) {
+        _ClinicalTableColumnId.patient => _ClinicalPatientCell(item: item),
+        _ClinicalTableColumnId.patientId => Text(
+          item.apiPatientId ?? l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.phone => Text(
+          item.patientPhone ?? l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.ageSex => Text(
+          _clinicalWorklistAgeSexLabel(context, item),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.queue => _ClinicalQueueCell(item: item),
+        _ClinicalTableColumnId.statusStep => _ClinicalStatusCell(item: item),
+        _ClinicalTableColumnId.provider => Text(
+          _clinicalProviderLabel(l10n, item),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.lastUpdated => Text(
+          _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.encounter => Text(
+          item.apiEncounterId,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.admission => Text(
+          item.apiAdmissionId ?? l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.encounterType => Text(
+          _apiLabel(item.encounterType ?? ''),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _ClinicalTableColumnId.location => Text(
+          item.currentLocation ?? l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      };
+    },
+    tooltip: label,
+  );
+}
+
+AppListTableSortComparator<ClinicalWorklistEntry> _clinicalSortComparator(
+  _ClinicalTableColumnId column,
+) {
+  return (ClinicalWorklistEntry left, ClinicalWorklistEntry right) {
+    return switch (column) {
+      _ClinicalTableColumnId.patient => appListTableCompareText(
+        left.displayTitle,
+        right.displayTitle,
+      ),
+      _ClinicalTableColumnId.patientId => appListTableCompareText(
+        left.apiPatientId,
+        right.apiPatientId,
+      ),
+      _ClinicalTableColumnId.phone => appListTableCompareText(
+        left.patientPhone,
+        right.patientPhone,
+      ),
+      _ClinicalTableColumnId.ageSex => appListTableCompareText(
+        left.patientAgeSex,
+        right.patientAgeSex,
+      ),
+      _ClinicalTableColumnId.queue => appListTableCompareText(
+        left.sourceQueue,
+        right.sourceQueue,
+      ),
+      _ClinicalTableColumnId.statusStep => appListTableCompareText(
+        left.stage ?? left.status ?? left.nextStep,
+        right.stage ?? right.status ?? right.nextStep,
+      ),
+      _ClinicalTableColumnId.provider => appListTableCompareText(
+        left.providerDisplayName,
+        right.providerDisplayName,
+      ),
+      _ClinicalTableColumnId.lastUpdated => appListTableCompareDateTime(
+        left.updatedAt ?? left.startedAt,
+        right.updatedAt ?? right.startedAt,
+      ),
+      _ClinicalTableColumnId.encounter => appListTableCompareText(
+        left.apiEncounterId,
+        right.apiEncounterId,
+      ),
+      _ClinicalTableColumnId.admission => appListTableCompareText(
+        left.apiAdmissionId,
+        right.apiAdmissionId,
+      ),
+      _ClinicalTableColumnId.encounterType => appListTableCompareText(
+        left.encounterType,
+        right.encounterType,
+      ),
+      _ClinicalTableColumnId.location => appListTableCompareText(
+        left.currentLocation,
+        right.currentLocation,
+      ),
+    };
+  };
+}
+
+String _clinicalProviderLabel(
+  AppLocalizations l10n,
+  ClinicalWorklistEntry item,
+) {
+  final String? provider = item.providerDisplayName?.trim();
+  if (provider != null && provider.isNotEmpty) {
+    return provider;
+  }
+  return l10n.clinicalNotAssignedLabel;
+}
+
+String _clinicalWorklistAgeSexLabel(
+  BuildContext context,
+  ClinicalWorklistEntry item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String ageSex = item.patientAgeSex?.trim() ?? '';
+  if (ageSex.isNotEmpty) {
+    return ageSex;
+  }
+  final String age = _clinicalAgeLabel(item.patientDateOfBirth);
+  final String gender = _clinicalGenderLabel(l10n, item.patientGender);
+  return _joinDisplay(<String?>[age, gender]);
 }
 
 class _ClinicalQueueCell extends StatelessWidget {
@@ -611,6 +778,7 @@ Widget _clinicalWorklistMobileItemBuilder(
   ClinicalWorklistEntry item,
 ) {
   final ThemeData theme = Theme.of(context);
+  final AppLocalizations l10n = context.l10n;
   return Padding(
     padding: EdgeInsets.symmetric(
       horizontal: theme.spacing.sm,
@@ -618,9 +786,18 @@ Widget _clinicalWorklistMobileItemBuilder(
     ),
     child: AppListItemRow(
       title: item.displayTitle,
-      subtitle: item.patientPublicId ?? item.encounterPublicId,
+      subtitle: item.worklistPatientSecondaryLine,
       padding: EdgeInsets.zero,
-      details: <Widget>[_ClinicalStatusCell(item: item)],
+      details: <Widget>[
+        _ClinicalQueueCell(item: item),
+        _ClinicalStatusCell(item: item),
+        Text(
+          _clinicalProviderLabel(l10n, item),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
       trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
     ),
   );
@@ -886,12 +1063,12 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
     final String patientNumber = _clinicalPatientNumber(entry);
     final List<AppWorkspacePatientContextField> fields =
         _clinicalPatientContextFields(
-      context,
-      l10n,
-      entry,
-      patientNumber,
-      omitSubtitleFields: omitSubtitleFields,
-    );
+          context,
+          l10n,
+          entry,
+          patientNumber,
+          omitSubtitleFields: omitSubtitleFields,
+        );
     final bool showStatusBadges =
         (showPrimaryStatus && status.label.isNotEmpty) || alerts.isNotEmpty;
 
@@ -1765,9 +1942,9 @@ class _ClinicalPatientCell extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (item.displaySubtitle != null)
+        if (item.worklistPatientSecondaryLine != null)
           Text(
-            item.displaySubtitle!,
+            item.worklistPatientSecondaryLine!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -2175,6 +2352,10 @@ AppSearchBarFilterValue _filterValueFromQuery(
       if (_hasText(filters.status)) _clinicalFilterStatus: filters.status!,
       if (_hasText(filters.provider))
         _clinicalFilterProvider: filters.provider!,
+      if (_hasText(filters.encounterType))
+        _clinicalFilterEncounterType: filters.encounterType!,
+      if (_hasText(filters.locationOption))
+        _clinicalFilterLocation: filters.locationOption!,
     },
   );
 }
@@ -2195,6 +2376,8 @@ ClinicalWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
     sourceQueue: value.option(_clinicalFilterSource),
     status: value.option(_clinicalFilterStatus),
     provider: value.option(_clinicalFilterProvider),
+    encounterType: value.option(_clinicalFilterEncounterType),
+    locationOption: value.option(_clinicalFilterLocation),
   );
 }
 
@@ -2323,9 +2506,37 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
       key: _clinicalFilterProvider,
       label: l10n.opdProviderColumnLabel,
       allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: clinicalUnassignedProviderFilterValue,
+          label: l10n.operationsUnassignedValue,
+          icon: Icons.person_off_outlined,
+        ),
+        ..._filterChoices(
+          entries.map(
+            (ClinicalWorklistEntry entry) => entry.providerDisplayName,
+          ),
+          icon: Icons.badge_outlined,
+          formatApiLabel: false,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterEncounterType,
+      label: l10n.clinicalEncounterTypeLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
       choices: _filterChoices(
-        entries.map((ClinicalWorklistEntry entry) => entry.providerDisplayName),
-        icon: Icons.badge_outlined,
+        entries.map((ClinicalWorklistEntry entry) => entry.encounterType),
+        icon: Icons.local_hospital_outlined,
+      ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterLocation,
+      label: l10n.clinicalLocationLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: _filterChoices(
+        entries.map((ClinicalWorklistEntry entry) => entry.currentLocation),
+        icon: Icons.location_on_outlined,
         formatApiLabel: false,
       ),
     ),
@@ -2800,6 +3011,8 @@ const String _clinicalFilterScope = 'scope';
 const String _clinicalFilterSource = 'source';
 const String _clinicalFilterStatus = 'status';
 const String _clinicalFilterProvider = 'provider';
+const String _clinicalFilterEncounterType = 'encounter_type';
+const String _clinicalFilterLocation = 'location_option';
 
 ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
   BuildContext context,
