@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -548,83 +549,12 @@ class _PharmacyDetailPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
-          patientName: order.displayTitle,
+          patientName: '',
           patientNumber: '',
-          status: _orderStatus(context, order),
-          alerts: <AppWorkspaceStatus>[
-            if (order.hasPendingAttestation)
-              AppWorkspaceStatus(
-                label: l10n.pharmacyPendingBatchLabel,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            if (!order.hasBillingGate)
-              AppWorkspaceStatus(
-                label: l10n.pharmacyBillingGateUnavailableTitle,
-                tone: AppWorkspaceStatusTone.warning,
-                icon: Icons.receipt_long_outlined,
-              ),
-          ],
-          fields: <AppWorkspacePatientContextField>[
-            AppWorkspacePatientContextField(
-              label: l10n.pharmacyOrderFieldLabel,
-              value: order.displayId ?? '',
-              icon: Icons.tag_outlined,
-              copyable: true,
-              copyTooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.pharmacyEncounterFieldLabel,
-              value: order.encounterId ?? '',
-              icon: Icons.assignment_outlined,
-              copyable: (order.encounterId ?? '').isNotEmpty,
-              copyTooltip: l10n.opdCopyEncounterIdAction,
-              copiedMessage: l10n.opdEncounterIdCopiedMessage,
-            ),
-            if (order.hasBillingGate)
-              AppWorkspacePatientContextField(
-                label: l10n.pharmacyPaymentLabel,
-                value: clinicalRequestPaymentStatusDisplayLabel(
-                  l10n,
-                  order.effectivePaymentStatus,
-                ),
-              ),
-            if (order.hasBillingGate && order.billingTotalAmount != null)
-              AppWorkspacePatientContextField(
-                label: l10n.pharmacyPaymentAmountLabel,
-                value: clinicalRequestPriceLabel(
-                  context,
-                  order.billingTotalAmount!,
-                  order.billingCurrency,
-                ),
-              ),
-            AppWorkspacePatientContextField(
-              label: l10n.pharmacySourceFieldLabel,
-              value: _apiLabel(order.orderSource ?? ''),
-              icon: Icons.account_tree_outlined,
-            ),
-            if ((order.location ?? '').isNotEmpty)
-              AppWorkspacePatientContextField(
-                label: l10n.pharmacyLocationFieldLabel,
-                value: order.isInpatientOrder
-                    ? l10n.pharmacyFilterWard
-                    : l10n.pharmacyFilterOutpatient,
-                icon: order.isInpatientOrder
-                    ? Icons.local_hospital_outlined
-                    : Icons.medical_services_outlined,
-              ),
-            if ((order.priority ?? '').isNotEmpty)
-              AppWorkspacePatientContextField(
-                label: l10n.pharmacyPriorityFieldLabel,
-                value: _apiLabel(order.priority ?? ''),
-                icon: Icons.priority_high_outlined,
-              ),
-            AppWorkspacePatientContextField(
-              label: l10n.pharmacyOrderedFieldLabel,
-              value: _dateTimeLabel(context, order.orderedAt),
-              icon: Icons.event_available_outlined,
-            ),
-          ],
+          showAvatar: false,
+          showPatientName: false,
+          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+          fields: _pharmacyDetailContextFields(context, order),
         ),
         SizedBox(height: theme.spacing.md),
         _PharmacyActionPanel(
@@ -632,7 +562,10 @@ class _PharmacyDetailPanel extends ConsumerWidget {
           writeRequirement: writeRequirement,
         ),
         SizedBox(height: theme.spacing.md),
-        _MedicationItemsPanel(workflow: workflow),
+        _MedicationItemsPanel(
+          workflow: workflow,
+          writeRequirement: writeRequirement,
+        ),
         SizedBox(height: theme.spacing.md),
         _PharmacyWorkflowReadinessPanel(workflow: workflow),
         SizedBox(height: theme.spacing.md),
@@ -737,6 +670,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final PharmacyOrder order = workflow.order;
     final bool canBill = ref
         .watch(appAccessPolicyProvider)
@@ -791,6 +725,11 @@ class _PharmacyActionPanel extends ConsumerWidget {
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) => AppActionPanel(
         title: l10n.pharmacyActionsPanelTitle,
+        titleIcon: Icons.touch_app_outlined,
+        spacing: theme.spacing.xs,
+        runSpacing: theme.spacing.xs,
+        minItemWidth: 132,
+        maxColumns: 6,
         actions: actions
             .map(
               (AppActionItem action) => AppActionItem(
@@ -833,19 +772,28 @@ class _PharmacyActionPanel extends ConsumerWidget {
   }
 }
 
-class _MedicationItemsPanel extends StatelessWidget {
-  const _MedicationItemsPanel({required this.workflow});
+class _MedicationItemsPanel extends ConsumerWidget {
+  const _MedicationItemsPanel({
+    required this.workflow,
+    required this.writeRequirement,
+  });
 
   final PharmacyOrderWorkflow workflow;
+  final AccessRequirement writeRequirement;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final PharmacyOrder order = workflow.order;
+    final List<PharmacyOrderItem> items = workflow.items.isEmpty
+        ? workflow.order.items
+        : workflow.items;
+
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyMedicationPanelTitle,
       description: l10n.pharmacyMedicationPanelDescription,
       child: AppListTable<PharmacyOrderItem>(
-        items: workflow.items.isEmpty ? workflow.order.items : workflow.items,
+        items: items,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -859,25 +807,50 @@ class _MedicationItemsPanel extends StatelessWidget {
           AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyMedicationColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
-              return _MedicationCell(item: item);
+              return Align(
+                alignment: Alignment.topLeft,
+                child: _MedicationCell(item: item),
+              );
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyDoseColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
-              return Text(item.doseLine);
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Text(item.doseLine),
+              );
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyQuantityColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
-              return Text(item.quantityLine);
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Text(item.quantityLine),
+              );
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
-            label: l10n.pharmacyStockColumnLabel,
+            label: l10n.pharmacyLinePriceColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
-              return Text(_stockMappingLabel(context, item));
+              return Align(
+                alignment: Alignment.topLeft,
+                child: _MedicationPriceCell(order: order, item: item),
+              );
+            },
+          ),
+          AppListTableColumn<PharmacyOrderItem>(
+            label: l10n.pharmacyLineActionsColumnLabel,
+            cellBuilder: (BuildContext context, PharmacyOrderItem item) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: _MedicationLineActions(
+                  workflow: workflow,
+                  item: item,
+                  writeRequirement: writeRequirement,
+                ),
+              );
             },
           ),
         ],
@@ -894,11 +867,12 @@ class _MedicationItemsPanel extends StatelessWidget {
                 SizedBox(height: theme.spacing.xs),
                 Text(item.quantityLine, style: theme.textTheme.bodySmall),
                 SizedBox(height: theme.spacing.xs),
-                Text(
-                  _stockMappingLabel(context, item),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                _MedicationPriceCell(order: order, item: item),
+                SizedBox(height: theme.spacing.sm),
+                _MedicationLineActions(
+                  workflow: workflow,
+                  item: item,
+                  writeRequirement: writeRequirement,
                 ),
               ],
             ),
@@ -940,6 +914,178 @@ class _MedicationCell extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _MedicationPriceCell extends StatelessWidget {
+  const _MedicationPriceCell({required this.order, required this.item});
+
+  final PharmacyOrder order;
+  final PharmacyOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final num? unitPrice = resolvePharmacyItemUnitPrice(
+      order: order,
+      item: item,
+    );
+    final num? lineTotal = resolvePharmacyItemLineTotal(
+      order: order,
+      item: item,
+    );
+    final String? currency = resolvePharmacyItemCurrency(
+      order: order,
+      item: item,
+    );
+    final PharmacyItemPriceSource source = resolvePharmacyItemPriceSource(
+      order: order,
+      item: item,
+    );
+
+    if (unitPrice == null || unitPrice <= 0) {
+      return Text(
+        l10n.pharmacyPriceUnavailableLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    final String sourceLabel = switch (source) {
+      PharmacyItemPriceSource.pharmacy => l10n.pharmacyPriceTierPharmacyLabel,
+      PharmacyItemPriceSource.facility => l10n.pharmacyPriceTierFacilityLabel,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          clinicalRequestPriceLabel(context, unitPrice, currency),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          sourceLabel,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (lineTotal != null && lineTotal > 0) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            '${l10n.pharmacyLineTotalLabel}: ${clinicalRequestPriceLabel(context, lineTotal, currency)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MedicationLineActions extends ConsumerWidget {
+  const _MedicationLineActions({
+    required this.workflow,
+    required this.item,
+    required this.writeRequirement,
+  });
+
+  final PharmacyOrderWorkflow workflow;
+  final PharmacyOrderItem item;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final PharmacyOrder order = workflow.order;
+    final PharmacyItemPriceSource activeSource = resolvePharmacyItemPriceSource(
+      order: order,
+      item: item,
+    );
+    final bool canWrite = writeRequirement.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final List<Widget> actions = <Widget>[];
+
+    if (pharmacyItemIsCancelled(item)) {
+      return Text(
+        l10n.pharmacyItemCancelledLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.error,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+
+    if (pharmacyItemNeedsStockMapping(item)) {
+      actions.add(
+        AppButton.tertiary(
+          label: l10n.pharmacyMapStockAction,
+          leadingIcon: Icons.inventory_2_outlined,
+          enabled: canWrite,
+          onPressed: canWrite
+              ? () => openPharmacyCatalogDialog(context, ref)
+              : null,
+        ),
+      );
+    }
+
+    if (pharmacyItemHasSelectablePrices(item)) {
+      if (activeSource != PharmacyItemPriceSource.pharmacy) {
+        actions.add(
+          AppButton.tertiary(
+            label: l10n.pharmacyUsePharmacyPriceAction,
+            leadingIcon: Icons.local_pharmacy_outlined,
+            enabled: canWrite,
+            onPressed: canWrite
+                ? () => _switchItemPriceSource(
+                    context,
+                    ref,
+                    order,
+                    item,
+                    PharmacyItemPriceSource.pharmacy,
+                  )
+                : null,
+          ),
+        );
+      }
+      if (activeSource != PharmacyItemPriceSource.facility) {
+        actions.add(
+          AppButton.tertiary(
+            label: l10n.pharmacyUseFacilityPriceAction,
+            leadingIcon: Icons.account_balance_outlined,
+            enabled: canWrite,
+            onPressed: canWrite
+                ? () => _switchItemPriceSource(
+                    context,
+                    ref,
+                    order,
+                    item,
+                    PharmacyItemPriceSource.facility,
+                  )
+                : null,
+          ),
+        );
+      }
+    }
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: actions,
     );
   }
 }
@@ -2389,6 +2535,135 @@ List<AppSearchBarFilterChoice> _stockStatusFilterChoices(
   ];
 }
 
+List<AppWorkspacePatientContextField> _pharmacyDetailContextFields(
+  BuildContext context,
+  PharmacyOrder order,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final AppWorkspaceStatus status = _orderStatus(context, order);
+
+  return <AppWorkspacePatientContextField>[
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalRequestPatientNameLabel,
+      value: order.displayTitle,
+    ),
+    if ((order.patientId ?? '').trim().isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.opdPatientIdLabel,
+        value: order.patientId!.trim(),
+        copyable: true,
+        copyTooltip: l10n.copyIdentifierAction,
+        copiedMessage: l10n.identifierCopiedMessage,
+      ),
+    AppWorkspacePatientContextField(
+      label: l10n.pharmacyStatusColumnLabel,
+      value: status.label,
+      tone: status.tone,
+    ),
+    if (order.hasPendingAttestation)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyPendingBatchLabel,
+        value: l10n.pharmacyReadinessAttestationRequired,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+    AppWorkspacePatientContextField(
+      label: l10n.pharmacyPaymentClearanceFieldLabel,
+      value: order.hasBillingGate
+          ? clinicalRequestPaymentStatusDisplayLabel(
+              l10n,
+              order.effectivePaymentStatus,
+            )
+          : l10n.pharmacyBillingGateUnavailableTitle,
+      tone: order.hasBillingGate
+          ? AppWorkspaceStatusTone.neutral
+          : AppWorkspaceStatusTone.warning,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.pharmacyOrderFieldLabel,
+      value: order.displayId ?? '',
+      copyable: (order.displayId ?? '').isNotEmpty,
+      copyTooltip: l10n.copyIdentifierAction,
+      copiedMessage: l10n.identifierCopiedMessage,
+    ),
+    if ((order.encounterId ?? '').isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyEncounterFieldLabel,
+        value: order.encounterId!,
+        copyable: true,
+        copyTooltip: l10n.opdCopyEncounterIdAction,
+        copiedMessage: l10n.opdEncounterIdCopiedMessage,
+      ),
+    if (order.hasBillingGate)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyPaymentLabel,
+        value: clinicalRequestPaymentStatusDisplayLabel(
+          l10n,
+          order.effectivePaymentStatus,
+        ),
+      ),
+    if (order.hasBillingGate && order.billingTotalAmount != null)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyPaymentAmountLabel,
+        value: clinicalRequestPriceLabel(
+          context,
+          order.billingTotalAmount!,
+          order.billingCurrency,
+        ),
+      ),
+    if ((order.orderSource ?? '').isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacySourceFieldLabel,
+        value: _apiLabel(order.orderSource ?? ''),
+      ),
+    if ((order.location ?? '').isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyLocationFieldLabel,
+        value: order.isInpatientOrder
+            ? l10n.pharmacyFilterWard
+            : l10n.pharmacyFilterOutpatient,
+      ),
+    if ((order.priority ?? '').isNotEmpty)
+      AppWorkspacePatientContextField(
+        label: l10n.pharmacyPriorityFieldLabel,
+        value: _apiLabel(order.priority ?? ''),
+      ),
+    AppWorkspacePatientContextField(
+      label: l10n.pharmacyOrderedFieldLabel,
+      value: _dateTimeLabel(context, order.orderedAt),
+    ),
+  ];
+}
+
+Future<void> _switchItemPriceSource(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyOrder order,
+  PharmacyOrderItem item,
+  PharmacyItemPriceSource priceSource,
+) async {
+  final Map<String, Object?>? billing =
+      buildPharmacyOrderBillingWithItemPriceSource(
+        order: order,
+        itemId: item.id,
+        priceSource: priceSource,
+      );
+  if (billing == null || !context.mounted) {
+    return;
+  }
+
+  final AppFailure? failure = await ref
+      .read(pharmacyWorkspaceControllerProvider.notifier)
+      .recordOrderBilling(billing);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+    if (failure == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.pharmacySavedMessage)),
+      );
+    }
+  }
+}
+
 AppWorkspaceStatus _orderStatus(BuildContext context, PharmacyOrder order) {
   final String value = order.status ?? '';
   return AppWorkspaceStatus(
@@ -2426,14 +2701,6 @@ AppWorkspaceStatusTone _stockStatusTone(String? value) {
     'LOW_STOCK' || 'OUT_OF_STOCK' => AppWorkspaceStatusTone.error,
     _ => AppWorkspaceStatusTone.neutral,
   };
-}
-
-String _stockMappingLabel(BuildContext context, PharmacyOrderItem item) {
-  final PharmacyStockMapping? mapping = item.defaultStockMapping;
-  if (mapping == null) {
-    return context.l10n.pharmacyStockMappingUnavailable;
-  }
-  return mapping.displayTitle;
 }
 
 String _timelineLabel(BuildContext context, PharmacyTimelineItem item) {

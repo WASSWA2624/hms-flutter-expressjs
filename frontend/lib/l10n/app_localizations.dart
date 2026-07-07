@@ -16030,6 +16030,60 @@ abstract class AppLocalizations {
   /// **'Stock'**
   String get pharmacyStockColumnLabel;
 
+  /// Pharmacy order line price column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get pharmacyLinePriceColumnLabel;
+
+  /// Pharmacy order line actions column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get pharmacyLineActionsColumnLabel;
+
+  /// Pharmacy order line total label.
+  ///
+  /// In en, this message translates to:
+  /// **'Line total'**
+  String get pharmacyLineTotalLabel;
+
+  /// Pharmacy payment clearance field label in prescription detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment clearance'**
+  String get pharmacyPaymentClearanceFieldLabel;
+
+  /// Action to use pharmacy retail price for an order line.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy price'**
+  String get pharmacyUsePharmacyPriceAction;
+
+  /// Action to use facility billing price for an order line.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility price'**
+  String get pharmacyUseFacilityPriceAction;
+
+  /// Action to map a medication to inventory stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Map stock'**
+  String get pharmacyMapStockAction;
+
+  /// Label for a cancelled pharmacy order line.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get pharmacyItemCancelledLabel;
+
+  /// Shown when a pharmacy order line has no configured price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price unavailable'**
+  String get pharmacyPriceUnavailableLabel;
+
   /// Pharmacy unavailable workflows panel title.
   ///
   /// In en, this message translates to:

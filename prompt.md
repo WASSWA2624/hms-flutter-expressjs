@@ -1,94 +1,123 @@
-# Pharmacy — Catalog and Stock Dialog Bug Fix
+# Pharmacy Prescription Detail Dialog — UI Refinement
 
 ## Objective
 
-Fix a **modal lifecycle bug** on the Pharmacy workbench (`/pharmacy`): clicking **Catalog and stock** leaves the page unresponsive. The dialog does not appear, dismissal leaves a blank white screen, and only a full page refresh restores interactivity.
+Refine the **Prescription Detail** dialog in the Pharmacy workbench so patient context, order metadata, actions, and medication lines are compact, scannable, and workflow-ready. Fix layout issues visible in the current dialog (patient header, metadata grid, action bar, medicines table).
+
+**Primary file:** `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` (`_PharmacyDetailPanel`, `_PharmacyActionPanel`, `_MedicationItemsPanel`).
+
+**Reuse before creating:** `AppWorkspacePatientContextHeader`, `AppActionPanel`, `AppListTable`, `AppWorkspaceDetailPanel` from `frontend/lib/shared/`.
 
 ---
 
-## Bug Report
+## Scope
 
-### Environment
+### In scope
 
-| Item | Value |
-| ---- | ----- |
-| Module | Pharmacy |
-| Route | `/pharmacy` |
-| Platform | Web (reproduced at `127.0.0.1:5201/pharmacy`) |
-| Trigger | Header action **Catalog and stock** (`pharmacyCatalogPanelTitle`) |
+- Prescription Detail dialog layout and styling only.
+- Per-line medication pricing display and price-source selection UI.
+- Per-line medication actions (replace Stock column).
+- Wire existing order-level actions so enabled/disabled states and handlers work correctly.
 
-### Steps to reproduce
+### Out of scope
 
-1. Open the Pharmacy workbench with at least one order visible in the queue table.
-2. Click **Catalog and stock** in the workspace toolbar (overflow section or promoted inline action).
-3. Observe the page.
-
-### Actual behavior
-
-1. The underlying workbench becomes **inactive** (modal barrier / focus trap engages).
-2. The **Catalog and stock** dialog (`AppDialog` titled "Catalog and stock") **does not render**.
-3. Pressing **Escape** removes the dimmed overlay but the page turns **white** and remains **non-interactive**.
-4. A **full browser refresh** is required to restore the workspace.
-
-### Expected behavior
-
-1. **Catalog and stock** opens an `AppDialog` containing `PharmacyCatalogPanel` (drugs, formulary, inventory, storage tabs).
-2. The dialog is visible, scrollable, and closable via the close button, Escape, or barrier tap.
-3. After dismissal, the Pharmacy workbench is fully interactive with no orphaned route or barrier.
-4. The same fix applies to related entry points that call `openPharmacyCatalogDialog` (e.g. inventory summary alerts, storage tab shortcut).
+- Pharmacy workflow readiness panel.
+- Dispense history / timeline panel.
+- Backend schema changes unless required to expose line-level prices or price-source overrides already supported by the API.
 
 ---
 
-## Relevant Code
+## 1. Patient & order context header
 
-| File | Role |
-| ---- | ---- |
-| `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` | Toolbar action invokes `openPharmacyCatalogDialog` |
-| `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` | `showAppDialog` + `AppDialog` + `Consumer` wrapper |
-| `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` | Dialog body |
-| `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` | `prepareCatalogTab` / catalog data refresh |
-| `frontend/lib/shared/components/app_dialog.dart` | `AppDialog`, `showAppDialog` (focus restore, barrier) |
+Replace the current avatar + tile grid with a **compact label:value layout**.
 
-**Likely failure modes to investigate:**
+| Change | Requirement |
+| ------ | ----------- |
+| Avatar | **Remove** patient avatar from this dialog. |
+| Patient identity | Show inline pairs on one flowing row (wrap to next row when width is exhausted): **Patient name:** `{name}`, **Patient ID:** `{id}` (copyable when available). |
+| Status & alerts | Render order status and alerts as the same label:value pattern — e.g. **Status:** Dispensed, **Payment clearance:** Unavailable — not standalone chips floating beside the name. |
+| Order metadata | Convert all metadata (Order, Encounter, Source, Care location, Priority, Ordered, Payment status/amount when present) to **label:value** pairs using the same inline, left-to-right, wrap-on-overflow layout. |
+| Copy actions | Keep copy-to-clipboard on Order ID and Encounter ID. |
 
-- Dialog route pushed but content fails to build (silent widget error or zero-size shell).
-- `prepareCatalogTab` triggering a controller emit/refresh that disposes or rebuilds the dialog host before first frame.
-- `Consumer` inside `showAppDialog` losing provider scope or context on web.
-- Escape/barrier popping the route without cleaning up barrier or focus state (orphaned `ModalRoute`).
-- Mismatch between `initialMaximized: false`, `scrollable: true`, and desktop shell height (see existing `app_dialog_test.dart` catalog scenario).
+**Implementation hint:** Use `AppWorkspacePatientContextHeader` with `showAvatar: false`, `fieldStyle: AppWorkspacePatientContextFieldStyle.inline`, and `mergeFieldsIntoMetaLine: true` where appropriate. Move status/alerts into `AppWorkspacePatientContextField` entries with tone when needed.
 
 ---
 
-## Fix Requirements
+## 2. Actions panel
 
-1. **Root cause** — Identify and fix why the catalog dialog does not render while the modal barrier activates.
-2. **Clean dismissal** — Escape, close button, and barrier tap must fully pop the dialog and restore workbench interactivity.
-3. **No regressions** — Preserve modal-first pattern per [prompts/18-pharmacy-module-prompt.md](prompts/18-pharmacy-module-prompt.md); do not navigate to a new route for catalog/stock.
-4. **All entry points** — Verify toolbar button, overflow **Storage** shortcut, and inventory alert shortcuts.
-5. **Responsive** — Dialog works on mobile, tablet, and desktop breakpoints.
-
----
-
-## Acceptance Criteria
-
-- [ ] Clicking **Catalog and stock** shows the dialog with title, tabs, and content.
-- [ ] Dialog can be closed by close button, Escape, and barrier tap; workbench is immediately usable.
-- [ ] No white-screen or frozen state after open or dismiss.
-- [ ] No full-page refresh needed to recover.
-- [ ] Existing `app_dialog_test.dart` scenarios pass; add a widget test for `openPharmacyCatalogDialog` if none exists.
+| Change | Requirement |
+| ------ | ----------- |
+| Density | Reduce vertical footprint; avoid oversized action chrome. |
+| Header | Show a compact **Actions** title with a leading icon (match other workspace panels). |
+| Buttons | Keep existing actions: Record payment (when gated), Dispense, Attest, Return, Cancel order, Print instructions. |
+| Functionality | Ensure each action respects `workflow.nextActions` / `order.can*` flags, RBAC (`AppAccessActionGate`), and payment-block tooltips. Disabled actions must explain why (tooltip or inline hint). |
 
 ---
 
-## Quality Gate
+## 3. Medicines table
 
-From `frontend/`:
+### Layout & alignment
 
-```bash
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test test/shared/components/app_dialog_test.dart
-flutter test test/features/pharmacy/
-```
+- Fix row/cell vertical alignment so `#`, Medication, Dose, Quantity, and action columns line up on one baseline.
+- Long medication names and instructions may wrap; dose and quantity cells stay top-aligned with the medication name.
 
-Manual smoke test on web at `/pharmacy`: open dialog → interact with a tab → close → confirm queue table remains clickable.
+### Columns
+
+| Column | Requirement |
+| ------ | ----------- |
+| `#` | Row index (existing `AppListTable` index). |
+| Medication | Drug name + instructions (current `_MedicationCell`). |
+| Dose | Dose, route, frequency, duration (current `doseLine`). |
+| Quantity | Prescribed / dispensed / pending / returned (current `quantityLine`). |
+| **Price** | **New.** Unit price and line total for the row. |
+| **Actions** | **Replace Stock column.** Per-line icon+label actions driven by item state. |
+
+### Remove Stock column
+
+The Stock column duplicates the medication name and adds no workflow value in this view. Stock mapping readiness remains in **Pharmacy workflow readiness** below the table.
+
+### Per-line actions
+
+Show contextual actions when a line is blocked, rejected, cancelled, or needs pharmacist intervention — e.g. resolve stock mapping, override price source, retry dispense. Use compact icon+label buttons (not icon-only). Hide actions that do not apply to the current line status.
+
+### Pricing rules
+
+| Rule | Behavior |
+| ---- | -------- |
+| Default | Use **pharmacy unit price** for display and billing. |
+| Order source | When the order originates from a clinical/facility context, default to **facility unit price** if configured. |
+| Override | Pharmacist may switch the active price source (pharmacy vs facility) per line; persist via existing pharmacy billing/price APIs where available. |
+| Display | Show unit price, optional source badge, and line total (`unit × quantity prescribed`). Format with existing `clinicalRequestPriceLabel` / catalog price helpers. |
+
+---
+
+## 4. Unchanged sections
+
+Leave as-is unless a shared spacing tweak is needed for visual consistency:
+
+- Pharmacy workflow readiness
+- Dispense history / timeline
+
+---
+
+## Standards
+
+| Area | Requirement |
+| ---- | ----------- |
+| UI/UX | Follow `frontend/.cursor/design-system.mdc`, `ui-patterns.mdc`, `ui-workspace.mdc`, `layouts.mdc`. Responsive on mobile, tablet, and desktop. |
+| i18n | All new labels and tooltips in `frontend/lib/l10n/app_en.arb`. |
+| Theming | Light/dark/system; use theme tokens, not hardcoded colors. |
+| Tests | Update/add widget tests for header layout, table columns, and price-source action visibility. |
+
+---
+
+## Acceptance criteria
+
+- [ ] No patient avatar in Prescription Detail dialog.
+- [ ] Patient name, patient ID, status, payment clearance, and all order metadata render as inline **label:value** pairs that wrap left-to-right across rows.
+- [ ] Actions panel is compact, titled with icon, and all buttons honor workflow/RBAC/payment gates.
+- [ ] Medicines table rows are visually aligned; Stock column removed.
+- [ ] Price column shows unit and line total; pharmacist can choose pharmacy vs facility price per line when both exist.
+- [ ] Per-line Actions column shows relevant icon+label controls for blocked/rejected/cancelled lines.
+- [ ] Workflow readiness and dispense history sections unchanged in behavior.
+- [ ] `flutter analyze` and affected tests pass.

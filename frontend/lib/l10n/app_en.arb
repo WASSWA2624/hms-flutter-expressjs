@@ -11045,6 +11045,42 @@
   "@pharmacyStockColumnLabel": {
     "description": "Pharmacy stock column label."
   },
+  "pharmacyLinePriceColumnLabel": "Price",
+  "@pharmacyLinePriceColumnLabel": {
+    "description": "Pharmacy order line price column label."
+  },
+  "pharmacyLineActionsColumnLabel": "Actions",
+  "@pharmacyLineActionsColumnLabel": {
+    "description": "Pharmacy order line actions column label."
+  },
+  "pharmacyLineTotalLabel": "Line total",
+  "@pharmacyLineTotalLabel": {
+    "description": "Pharmacy order line total label."
+  },
+  "pharmacyPaymentClearanceFieldLabel": "Payment clearance",
+  "@pharmacyPaymentClearanceFieldLabel": {
+    "description": "Pharmacy payment clearance field label in prescription detail."
+  },
+  "pharmacyUsePharmacyPriceAction": "Pharmacy price",
+  "@pharmacyUsePharmacyPriceAction": {
+    "description": "Action to use pharmacy retail price for an order line."
+  },
+  "pharmacyUseFacilityPriceAction": "Facility price",
+  "@pharmacyUseFacilityPriceAction": {
+    "description": "Action to use facility billing price for an order line."
+  },
+  "pharmacyMapStockAction": "Map stock",
+  "@pharmacyMapStockAction": {
+    "description": "Action to map a medication to inventory stock."
+  },
+  "pharmacyItemCancelledLabel": "Cancelled",
+  "@pharmacyItemCancelledLabel": {
+    "description": "Label for a cancelled pharmacy order line."
+  },
+  "pharmacyPriceUnavailableLabel": "Price unavailable",
+  "@pharmacyPriceUnavailableLabel": {
+    "description": "Shown when a pharmacy order line has no configured price."
+  },
   "pharmacyBackendGapsTitle": "Pharmacy workflow readiness",
   "@pharmacyBackendGapsTitle": {
     "description": "Pharmacy unavailable workflows panel title."

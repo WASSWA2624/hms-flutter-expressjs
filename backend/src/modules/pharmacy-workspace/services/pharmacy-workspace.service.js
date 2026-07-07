@@ -111,6 +111,42 @@ const LEGACY_ROUTE_CONFIG = Object.freeze({
   },
 });
 
+const resolveOfferingsByDrugIds = async (orderRecord, scope = {}) => {
+  const facilityId = scope.facility_id;
+  const items = Array.isArray(orderRecord?.items) ? orderRecord.items : [];
+  if (!facilityId || !items.length) {
+    return {};
+  }
+
+  const drugIds = [...new Set(items.map((item) => item.drug_id).filter(Boolean))];
+  if (!drugIds.length) {
+    return {};
+  }
+
+  const offerings = await facilityPharmacyCatalogRepository.findDrugOfferings(
+    {
+      tenant_id: scope.tenant_id,
+      facility_id: facilityId,
+      drug_id: { in: drugIds },
+      is_active: true,
+    },
+    0,
+    drugIds.length
+  );
+
+  return offerings.reduce((acc, offering) => {
+    if (offering?.drug_id) {
+      acc[offering.drug_id] = offering;
+    }
+    return acc;
+  }, {});
+};
+
+const mapScopedPharmacyOrderWorkflowRecord = async (orderRecord, scope = {}) => {
+  const offeringsByDrugId = await resolveOfferingsByDrugIds(orderRecord, scope);
+  return mapPharmacyOrderWorkflowRecord(orderRecord, { offeringsByDrugId });
+};
+
 const appendAnd = (where, clause) => {
   if (!clause || typeof clause !== 'object') return;
   if (!Array.isArray(where.AND)) where.AND = [];
@@ -1017,7 +1053,7 @@ const getPharmacyOrderWorkflow = async (identifier, user = {}) => {
       scope
     );
 
-    return mapPharmacyOrderWorkflowRecord(orderRecord);
+    return mapScopedPharmacyOrderWorkflowRecord(orderRecord, scope);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1128,7 +1164,7 @@ const createPharmacyOrder = async (payload = {}, userId, ipAddress, user = {}) =
       ),
       scope
     );
-    const workflow = mapPharmacyOrderWorkflowRecord(orderRecord);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(orderRecord, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,
@@ -1297,7 +1333,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,
@@ -1544,7 +1580,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,
@@ -1647,7 +1683,7 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,
@@ -1830,7 +1866,7 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,
@@ -2349,7 +2385,7 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapPharmacyOrderWorkflowRecord(mutation.order);
+    const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
     publishPharmacyRealtimeUpdates({
       workflow,

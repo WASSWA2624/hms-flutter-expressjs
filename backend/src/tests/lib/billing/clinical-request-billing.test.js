@@ -60,6 +60,30 @@ describe('clinical-request-billing helpers', () => {
     expect(billing.payment_method).toBeUndefined();
   });
 
+  it('buildPendingClinicalRequestBilling preserves pharmacy price source', () => {
+    const billing = buildPendingClinicalRequestBilling({
+      lineItems: [
+        {
+          id: 'item-1',
+          label: 'Artemether',
+          quantity: 24,
+          unit_price: '500.00',
+          line_total: '12000.00',
+          price_source: 'PHARMACY',
+        },
+      ],
+      currency: 'TZS',
+    });
+
+    expect(billing.line_items[0]).toEqual(
+      expect.objectContaining({
+        id: 'item-1',
+        unit_price: '500.00',
+        price_source: 'PHARMACY',
+      })
+    );
+  });
+
   it('resolveInvoicePaymentStatus returns PAID when billing_status is PAID', () => {
     expect(
       resolveInvoicePaymentStatus({

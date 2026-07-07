@@ -359,7 +359,7 @@ const mapDrugInventoryMapRecord = (record) => {
   };
 };
 
-const mapPharmacyOrderItemRecord = (record) => {
+const mapPharmacyOrderItemRecord = (record, options = {}) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
   const metrics = computeItemDispenseMetrics(record);
@@ -374,6 +374,16 @@ const mapPharmacyOrderItemRecord = (record) => {
   ]
     .filter(Boolean)
     .join(' ') || toText(record.drug?.code) || null;
+
+  const offering = record.drug_id ? options.offeringsByDrugId?.[record.drug_id] : null;
+  const pharmacyPriceFields = mapCatalogUnitPriceFields({
+    unit_price: record.drug?.unit_price,
+    currency: record.drug?.currency,
+  });
+  const facilityPriceFields = mapCatalogUnitPriceFields({
+    unit_price: offering?.unit_price,
+    currency: offering?.currency || record.drug?.currency,
+  });
 
   return {
     id: publicId,
@@ -407,6 +417,13 @@ const mapPharmacyOrderItemRecord = (record) => {
     dispense_logs: (record.dispense_logs || []).map(mapDispenseLogRecord).filter(Boolean),
     stock_mappings: inventoryMaps,
     default_stock_mapping: inventoryMaps.find((entry) => entry.is_default) || inventoryMaps[0] || null,
+    pharmacy_unit_price: pharmacyPriceFields.unit_price || null,
+    pharmacy_price: pharmacyPriceFields.price || null,
+    pharmacy_currency: pharmacyPriceFields.currency || null,
+    facility_unit_price: facilityPriceFields.unit_price || null,
+    facility_price: facilityPriceFields.price || null,
+    facility_currency: facilityPriceFields.currency || null,
+    is_offered_at_facility: Boolean(offering?.is_active),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
   };
@@ -414,11 +431,18 @@ const mapPharmacyOrderItemRecord = (record) => {
 
 const mapPharmacyOrderRecord = (record, options = {}) => {
   if (!record || typeof record !== 'object') return null;
-  const { includeChildren = true } = options;
+  const { includeChildren = true, offeringsByDrugId = {} } = options;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
 
   const items = includeChildren && Array.isArray(record.items)
-    ? record.items.map((entry) => mapPharmacyOrderItemRecord({ ...entry, pharmacy_order: record })).filter(Boolean)
+    ? record.items
+        .map((entry) =>
+          mapPharmacyOrderItemRecord(
+            { ...entry, pharmacy_order: record },
+            { offeringsByDrugId }
+          )
+        )
+        .filter(Boolean)
     : [];
   const attestations = includeChildren && Array.isArray(record.dispense_attestations)
     ? record.dispense_attestations.map(mapPharmacyAttestationRecord).filter(Boolean)
@@ -481,8 +505,8 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
   };
 };
 
-const mapPharmacyOrderWorkflowRecord = (record) => {
-  const order = mapPharmacyOrderRecord(record, { includeChildren: true });
+const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
+  const order = mapPharmacyOrderRecord(record, { includeChildren: true, ...options });
   if (!order) return null;
 
   const timeline = [

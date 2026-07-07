@@ -62,6 +62,7 @@ class AppActionPanel extends StatelessWidget {
     this.runSpacing,
     this.minItemWidth,
     this.maxColumns = 4,
+    this.titleIcon,
     super.key,
   });
 
@@ -73,12 +74,14 @@ class AppActionPanel extends StatelessWidget {
   final double? runSpacing;
   final double? minItemWidth;
   final int maxColumns;
+  final IconData? titleIcon;
 
   @override
   Widget build(BuildContext context) {
     return AppWorkspaceDetailPanel(
       title: title,
       description: description,
+      titleIcon: titleIcon,
       child: AppActionList(
         actions: actions,
         extraActions: extraActions,

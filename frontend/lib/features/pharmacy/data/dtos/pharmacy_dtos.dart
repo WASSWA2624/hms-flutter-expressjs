@@ -243,6 +243,11 @@ final class PharmacyOrderItemDto {
           : PharmacyStockMappingDto(
               _map(json['default_stock_mapping']),
             ).toEntity(),
+      pharmacyUnitPrice: _number(json['pharmacy_unit_price']),
+      facilityUnitPrice: _number(json['facility_unit_price']),
+      pharmacyCurrency: _string(json['pharmacy_currency']),
+      facilityCurrency: _string(json['facility_currency']),
+      isOfferedAtFacility: _bool(json['is_offered_at_facility']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );

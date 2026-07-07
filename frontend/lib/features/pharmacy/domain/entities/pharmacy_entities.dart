@@ -961,6 +961,11 @@ final class PharmacyOrderItem {
     this.dispenseLogs = const <PharmacyDispenseLog>[],
     this.stockMappings = const <PharmacyStockMapping>[],
     this.defaultStockMapping,
+    this.pharmacyUnitPrice,
+    this.facilityUnitPrice,
+    this.pharmacyCurrency,
+    this.facilityCurrency,
+    this.isOfferedAtFacility = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -993,6 +998,11 @@ final class PharmacyOrderItem {
   final List<PharmacyDispenseLog> dispenseLogs;
   final List<PharmacyStockMapping> stockMappings;
   final PharmacyStockMapping? defaultStockMapping;
+  final num? pharmacyUnitPrice;
+  final num? facilityUnitPrice;
+  final String? pharmacyCurrency;
+  final String? facilityCurrency;
+  final bool isOfferedAtFacility;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 

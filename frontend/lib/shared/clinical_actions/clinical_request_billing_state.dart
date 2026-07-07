@@ -18,6 +18,7 @@ final class ClinicalRequestBillingLineItem {
     this.quantity = 1,
     this.unitPrice,
     this.currency,
+    this.priceSource,
   });
 
   final String id;
@@ -25,6 +26,7 @@ final class ClinicalRequestBillingLineItem {
   final num quantity;
   final num? unitPrice;
   final String? currency;
+  final String? priceSource;
 
   bool get hasPrice => unitPrice != null && unitPrice! > 0;
 
@@ -76,6 +78,8 @@ final class ClinicalRequestBillingSubmit {
               'quantity': item.quantity,
               if (item.unitPrice != null) 'unit_price': item.unitPrice,
               if (item.lineTotal != null) 'line_total': item.lineTotal,
+              if (item.priceSource != null && item.priceSource!.isNotEmpty)
+                'price_source': item.priceSource,
             },
           )
           .toList(growable: false),

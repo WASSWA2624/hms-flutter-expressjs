@@ -8,6 +8,9 @@ jest.mock('@lib/billing/clinical-request-billing', () => {
   };
 });
 jest.mock('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
+jest.mock('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository', () => ({
+  findDrugOfferings: jest.fn().mockResolvedValue([]),
+}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(),
 }));

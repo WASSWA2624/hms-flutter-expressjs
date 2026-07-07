@@ -40,10 +40,7 @@ void _stubPharmacyBootstrap(_MockPharmacyRepository repository) {
   );
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(
-      AppPage<PharmacyDrug>(
-        items: <PharmacyDrug>[],
-        request: AppPageRequest(),
-      ),
+      AppPage<PharmacyDrug>(items: <PharmacyDrug>[], request: AppPageRequest()),
     ),
   );
   when(() => repository.getInventoryStock(any())).thenAnswer(
@@ -53,9 +50,8 @@ void _stubPharmacyBootstrap(_MockPharmacyRepository repository) {
   when(
     () => repository.loadStorageLayout(facilityId: any(named: 'facilityId')),
   ).thenAnswer(
-    (_) async => const Result<PharmacyStorageLayout>.success(
-      PharmacyStorageLayout(),
-    ),
+    (_) async =>
+        const Result<PharmacyStorageLayout>.success(PharmacyStorageLayout()),
   );
   when(() => repository.listFormularyItems(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyFormularyItem>>.success(
@@ -75,7 +71,8 @@ class _CatalogDialogLauncher extends ConsumerStatefulWidget {
       _CatalogDialogLauncherState();
 }
 
-class _CatalogDialogLauncherState extends ConsumerState<_CatalogDialogLauncher> {
+class _CatalogDialogLauncherState
+    extends ConsumerState<_CatalogDialogLauncher> {
   @override
   void initState() {
     super.initState();
@@ -103,7 +100,9 @@ Future<void> _pumpCatalogDialog(
     ProviderScope(
       overrides: [
         pharmacyRepositoryProvider.overrideWithValue(repository),
-        initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

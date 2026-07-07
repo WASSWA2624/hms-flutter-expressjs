@@ -443,6 +443,7 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
     required this.child,
     this.description,
     this.actions = const <Widget>[],
+    this.titleIcon,
     super.key,
   });
 
@@ -450,6 +451,7 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
   final String? description;
   final List<Widget> actions;
   final Widget child;
+  final IconData? titleIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -473,7 +475,24 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(title, style: theme.textTheme.titleMedium),
+                      Row(
+                        children: <Widget>[
+                          if (titleIcon != null) ...<Widget>[
+                            Icon(
+                              titleIcon,
+                              size: theme.appTokens.listIconSize,
+                              color: colorScheme.primary,
+                            ),
+                            SizedBox(width: theme.spacing.sm),
+                          ],
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
+                      ),
                       if (description != null &&
                           description!.isNotEmpty) ...<Widget>[
                         SizedBox(height: theme.spacing.xs),

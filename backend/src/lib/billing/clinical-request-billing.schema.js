@@ -15,12 +15,15 @@ const moneyValueSchema = z
     return value;
   });
 
+const clinicalRequestPriceSourceSchema = z.enum(['PHARMACY', 'FACILITY']);
+
 const clinicalRequestBillingLineItemSchema = z.object({
   id: z.string().trim().min(1).max(80).optional().nullable(),
   label: z.string().trim().min(1).max(255),
   quantity: z.coerce.number().int().positive().optional().default(1),
   unit_price: moneyValueSchema.optional().nullable(),
   line_total: moneyValueSchema.optional().nullable(),
+  price_source: clinicalRequestPriceSourceSchema.optional().nullable(),
 });
 
 const clinicalRequestPaymentStatusSchema = z.enum([
@@ -49,4 +52,5 @@ module.exports = {
   clinicalRequestBillingSchema,
   clinicalRequestBillingLineItemSchema,
   clinicalRequestPaymentStatusSchema,
+  clinicalRequestPriceSourceSchema,
 };

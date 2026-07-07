@@ -57,9 +57,14 @@ class _PharmacyCatalogDialogState
   @override
   void initState() {
     super.initState();
-    ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .prepareCatalogTab(widget.initialTab);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(pharmacyWorkspaceControllerProvider.notifier)
+          .prepareCatalogTab(widget.initialTab);
+    });
   }
 
   @override
@@ -71,9 +76,9 @@ class _PharmacyCatalogDialogState
             .value
             ?.when(
               success: (PharmacyWorkspaceState value) => value,
-              failure: (_) => widget.initialState,
+              failure: (_) => _initialState,
             ) ??
-        widget.initialState;
+        _initialState;
     final double dialogHeight =
         MediaQuery.sizeOf(context).height * _catalogDialogHeightFactor;
 
@@ -87,5 +92,12 @@ class _PharmacyCatalogDialogState
         child: PharmacyCatalogPanel(state: state, fillHeight: true),
       ),
     );
+  }
+
+  PharmacyWorkspaceState get _initialState {
+    if (widget.initialState.catalogTab == widget.initialTab) {
+      return widget.initialState;
+    }
+    return widget.initialState.copyWith(catalogTab: widget.initialTab);
   }
 }

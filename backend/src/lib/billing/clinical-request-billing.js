@@ -190,12 +190,18 @@ const normalizeBillingLineItem = (entry = {}) => {
   const lineTotal = toMoneyString(
     entry.line_total ?? (unitPrice ? toDecimalNumber(unitPrice) * quantity : 0)
   );
+  const priceSource = String(entry.price_source || '')
+    .trim()
+    .toUpperCase();
   return {
     id: String(entry.id || entry.lab_test_id || entry.lab_panel_id || '').trim(),
     label: String(entry.label || entry.name || 'Clinical service').trim() || 'Clinical service',
     quantity,
     ...(unitPrice ? { unit_price: unitPrice } : {}),
     ...(toDecimalNumber(lineTotal) > 0 ? { line_total: lineTotal } : {}),
+    ...(priceSource === 'PHARMACY' || priceSource === 'FACILITY'
+      ? { price_source: priceSource }
+      : {}),
   };
 };
 
