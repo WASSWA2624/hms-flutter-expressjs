@@ -568,8 +568,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     return AppActionSection(
       title: l10n.opdActionsColumnLabel,
-      minItemWidth: 170,
-      maxColumns: 4,
+      minItemWidth: 195,
       permissionActions: actions,
     );
   }

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
@@ -30,7 +31,7 @@ class OpdActionContextPanel extends StatelessWidget {
       detail: detail,
       billing: opdFlowBillingDisplay(context, flow),
     );
-    final String journey = buildOpdVisitJourneyLabel(
+    final List<String> journeySteps = buildOpdVisitJourneySteps(
       l10n: l10n,
       flow: flow,
       detail: detail,
@@ -41,16 +42,13 @@ class OpdActionContextPanel extends StatelessWidget {
       density: AppContentPanelDensity.compact,
       children: <Widget>[
         OpdEncounterSummaryRow(pairs: pairs),
-        if (journey.isNotEmpty)
+        if (journeySteps.isNotEmpty)
           Padding(
-            padding: EdgeInsets.only(top: theme.spacing.xs),
-            child: Text(
-              '${l10n.opdVisitJourneyLabel}: $journey',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            padding: EdgeInsets.only(top: theme.spacing.sm),
+            child: _OpdVisitJourneyTrail(
+              label: l10n.opdVisitJourneyLabel,
+              steps: journeySteps,
+              currentStageCode: flow.displayCode ?? flow.stage,
             ),
           ),
       ],
@@ -64,11 +62,13 @@ final class OpdEncounterSummaryPair {
     required this.label,
     required this.value,
     this.copyable = false,
+    this.valueTone,
   });
 
   final String label;
   final String value;
   final bool copyable;
+  final AppWorkspaceStatusTone? valueTone;
 }
 
 List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
@@ -85,7 +85,10 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
     flow.patientId,
   ]);
   final String encounterId = flow.apiId;
+  final String stageCode = (flow.displayCode ?? flow.stage ?? '').trim();
   final String stageLabel = opdStatusDisplayLabel(l10n, flow);
+  final String nextStepCode = (flow.displayNextStep ?? flow.nextStep ?? '')
+      .trim();
   final String nextStepLabel = opdNextStepDisplayLabel(
     l10n,
     flow.displayNextStep ?? flow.nextStep,
@@ -102,6 +105,16 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
     l10n,
     flow.arrivalMode,
   );
+  final String paymentValue =
+      AppDisplay.joinNonEmpty(<String?>[
+        billingDisplay.statusLabel,
+        billingDisplay.amountLabel,
+      ], separator: ' \u00b7 ').isEmpty
+      ? l10n.profileUnknownValue
+      : AppDisplay.joinNonEmpty(<String?>[
+          billingDisplay.statusLabel,
+          billingDisplay.amountLabel,
+        ], separator: ' \u00b7 ');
 
   final List<OpdEncounterSummaryPair> pairs = <OpdEncounterSummaryPair>[
     OpdEncounterSummaryPair(
@@ -127,11 +140,13 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
     OpdEncounterSummaryPair(
       label: l10n.opdCurrentStageLabel,
       value: stageLabel.isEmpty ? l10n.profileUnknownValue : stageLabel,
+      valueTone: opdStageStatusTone(stageCode),
     ),
     if (nextStepLabel.isNotEmpty)
       OpdEncounterSummaryPair(
         label: l10n.opdNextStepColumnLabel,
         value: nextStepLabel,
+        valueTone: opdNextStepStatusTone(nextStepCode),
       ),
     OpdEncounterSummaryPair(
       label: l10n.opdProviderColumnLabel,
@@ -139,16 +154,8 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
     ),
     OpdEncounterSummaryPair(
       label: l10n.opdPaymentStatusLabel,
-      value:
-          AppDisplay.joinNonEmpty(<String?>[
-            billingDisplay.statusLabel,
-            billingDisplay.amountLabel,
-          ], separator: ' \u00b7 ').isEmpty
-          ? l10n.profileUnknownValue
-          : AppDisplay.joinNonEmpty(<String?>[
-              billingDisplay.statusLabel,
-              billingDisplay.amountLabel,
-            ], separator: ' \u00b7 '),
+      value: paymentValue,
+      valueTone: billingDisplay.tone,
     ),
   ];
 
@@ -158,6 +165,7 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
       OpdEncounterSummaryPair(
         label: l10n.opdTriageLevelLabel,
         value: triageLevelDisplayLabel(l10n, flow.triageLevel),
+        valueTone: triageLevelStatusTone(flow.triageLevel),
       ),
     );
   }
@@ -165,7 +173,7 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
   return pairs;
 }
 
-String buildOpdVisitJourneyLabel({
+List<String> buildOpdVisitJourneySteps({
   required AppLocalizations l10n,
   required OpdFlowSummary flow,
   OpdFlowDetail? detail,
@@ -190,7 +198,19 @@ String buildOpdVisitJourneyLabel({
     steps.add(currentStage);
   }
 
-  return steps.join(' \u2192 ');
+  return steps;
+}
+
+String buildOpdVisitJourneyLabel({
+  required AppLocalizations l10n,
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  return buildOpdVisitJourneySteps(
+    l10n: l10n,
+    flow: flow,
+    detail: detail,
+  ).join(' \u2192 ');
 }
 
 class OpdEncounterSummaryRow extends StatelessWidget {
@@ -200,61 +220,240 @@ class OpdEncounterSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle labelStyle = theme.textTheme.bodySmall!.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
-    final TextStyle valueStyle = theme.textTheme.bodySmall!;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int maxColumns = switch (constraints.maxWidth) {
+          >= 900 => 3,
+          >= 560 => 2,
+          _ => 1,
+        };
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      children: <Widget>[
-        for (int index = 0; index < pairs.length; index++) ...<Widget>[
-          if (index > 0) Text(';', style: labelStyle),
-          _OpdEncounterSummaryPairChip(
-            pair: pairs[index],
-            labelStyle: labelStyle,
-            valueStyle: valueStyle,
+        return AppResponsiveWrap(
+          maxColumns: maxColumns,
+          minItemWidth: 200,
+          children: <Widget>[
+            for (final OpdEncounterSummaryPair pair in pairs)
+              _OpdEncounterSummaryTile(pair: pair),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OpdEncounterSummaryTile extends StatelessWidget {
+  const _OpdEncounterSummaryTile({required this.pair});
+
+  final OpdEncounterSummaryPair pair;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            pair.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
           ),
+          SizedBox(height: theme.spacing.xs),
+          if (pair.valueTone != null)
+            AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: pair.value,
+                tone: pair.valueTone!,
+              ),
+            )
+          else if (pair.copyable)
+            AppCopyableIdentifier(
+              value: pair.value,
+              textStyle: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              copiedMessage: pair.label == l10n.opdPatientIdLabel
+                  ? l10n.clinicalPatientIdCopiedMessage
+                  : l10n.opdEncounterIdCopiedMessage,
+            )
+          else
+            Text(
+              pair.value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _OpdVisitJourneyTrail extends StatelessWidget {
+  const _OpdVisitJourneyTrail({
+    required this.label,
+    required this.steps,
+    required this.currentStageCode,
+  });
+
+  final String label;
+  final List<String> steps;
+  final String? currentStageCode;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppWorkspaceStatusTone currentTone = opdStageStatusTone(
+      currentStageCode,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            for (int index = 0; index < steps.length; index++) ...<Widget>[
+              if (index > 0)
+                Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              _OpdJourneyStepChip(
+                label: steps[index],
+                tone: index == steps.length - 1
+                    ? currentTone
+                    : AppWorkspaceStatusTone.neutral,
+                emphasized: index == steps.length - 1,
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
 }
 
-class _OpdEncounterSummaryPairChip extends StatelessWidget {
-  const _OpdEncounterSummaryPairChip({
-    required this.pair,
-    required this.labelStyle,
-    required this.valueStyle,
+class _OpdJourneyStepChip extends StatelessWidget {
+  const _OpdJourneyStepChip({
+    required this.label,
+    required this.tone,
+    required this.emphasized,
   });
 
-  final OpdEncounterSummaryPair pair;
-  final TextStyle labelStyle;
-  final TextStyle valueStyle;
+  final String label;
+  final AppWorkspaceStatusTone tone;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text('${pair.label}: ', style: labelStyle),
-        if (pair.copyable)
-          AppCopyableIdentifier(
-            value: pair.value,
-            textStyle: valueStyle.copyWith(fontWeight: FontWeight.w700),
-            copiedMessage: pair.label == context.l10n.opdPatientIdLabel
-                ? context.l10n.clinicalPatientIdCopiedMessage
-                : context.l10n.opdEncounterIdCopiedMessage,
-          )
-        else
-          Text(pair.value, style: valueStyle),
-      ],
+    final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
+    final _JourneyChipColors colors = _journeyChipColors(
+      theme,
+      statusColors,
+      tone,
+      emphasized: emphasized,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colors.border),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colors.foreground,
+            fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
+}
+
+@immutable
+final class _JourneyChipColors {
+  const _JourneyChipColors({
+    required this.background,
+    required this.foreground,
+    required this.border,
+  });
+
+  final Color background;
+  final Color foreground;
+  final Color border;
+}
+
+_JourneyChipColors _journeyChipColors(
+  ThemeData theme,
+  AppStatusColors statusColors,
+  AppWorkspaceStatusTone tone, {
+  required bool emphasized,
+}) {
+  if (!emphasized) {
+    return _JourneyChipColors(
+      background: theme.colorScheme.surfaceContainerHighest,
+      foreground: theme.colorScheme.onSurfaceVariant,
+      border: theme.colorScheme.outlineVariant,
+    );
+  }
+
+  return switch (tone) {
+    AppWorkspaceStatusTone.success => _JourneyChipColors(
+      background: statusColors.successContainer,
+      foreground: statusColors.onSuccessContainer,
+      border: statusColors.success,
+    ),
+    AppWorkspaceStatusTone.warning => _JourneyChipColors(
+      background: statusColors.warningContainer,
+      foreground: statusColors.onWarningContainer,
+      border: statusColors.warning,
+    ),
+    AppWorkspaceStatusTone.error => _JourneyChipColors(
+      background: statusColors.errorContainer,
+      foreground: statusColors.onErrorContainer,
+      border: statusColors.error,
+    ),
+    AppWorkspaceStatusTone.info => _JourneyChipColors(
+      background: statusColors.infoContainer,
+      foreground: statusColors.onInfoContainer,
+      border: statusColors.info,
+    ),
+    AppWorkspaceStatusTone.neutral => _JourneyChipColors(
+      background: theme.colorScheme.surfaceContainerHighest,
+      foreground: theme.colorScheme.onSurfaceVariant,
+      border: theme.colorScheme.outlineVariant,
+    ),
+  };
 }
 
 String _timelineStepLabel(AppLocalizations l10n, OpdTimelineItem item) {

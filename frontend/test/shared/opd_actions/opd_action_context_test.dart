@@ -6,6 +6,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_clinical_services.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
@@ -76,7 +77,55 @@ void main() {
       );
     });
 
-    test('buildOpdVisitJourneyLabel renders timeline steps', () {
+    test('buildOpdEncounterSummaryPairs applies semantic tones', () {
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'flow-1',
+        publicId: 'ENC0000001',
+        patientDisplayName: 'Wilson Wasswa',
+        stage: 'IMAGING_PENDING',
+        displayCode: 'IMAGING_PENDING',
+        displayNextStep: 'PERFORM_IMAGING',
+        nextStep: 'PERFORM_IMAGING',
+        consultationPaid: true,
+        triageLevel: 'LEVEL_1',
+      );
+
+      final List<OpdEncounterSummaryPair> pairs = buildOpdEncounterSummaryPairs(
+        l10n: l10n,
+        flow: flow,
+        billing: const OpdBillingDisplay(
+          state: OpdBillingState.paid,
+          statusLabel: 'Paid',
+          label: 'Paid',
+          tone: AppWorkspaceStatusTone.success,
+          amountLabel: r'$30,000.00',
+        ),
+      );
+
+      final OpdEncounterSummaryPair stagePair = pairs.firstWhere(
+        (OpdEncounterSummaryPair pair) =>
+            pair.label == l10n.opdCurrentStageLabel,
+      );
+      final OpdEncounterSummaryPair nextStepPair = pairs.firstWhere(
+        (OpdEncounterSummaryPair pair) =>
+            pair.label == l10n.opdNextStepColumnLabel,
+      );
+      final OpdEncounterSummaryPair triagePair = pairs.firstWhere(
+        (OpdEncounterSummaryPair pair) =>
+            pair.label == l10n.opdTriageLevelLabel,
+      );
+      final OpdEncounterSummaryPair paymentPair = pairs.firstWhere(
+        (OpdEncounterSummaryPair pair) =>
+            pair.label == l10n.opdPaymentStatusLabel,
+      );
+
+      expect(stagePair.valueTone, AppWorkspaceStatusTone.info);
+      expect(nextStepPair.valueTone, AppWorkspaceStatusTone.info);
+      expect(triagePair.valueTone, AppWorkspaceStatusTone.error);
+      expect(paymentPair.valueTone, AppWorkspaceStatusTone.success);
+    });
+
+    test('buildOpdVisitJourneySteps returns ordered steps', () {
       const OpdFlowSummary flow = OpdFlowSummary(
         id: 'flow-1',
         arrivalMode: 'WALK_IN',
@@ -94,18 +143,45 @@ void main() {
         ],
       );
 
+      final List<String> steps = buildOpdVisitJourneySteps(
+        l10n: l10n,
+        flow: flow,
+        detail: detail,
+      );
+
+      expect(steps, contains(l10n.opdArrivalModeWalkInLabel));
+      expect(steps.last, l10n.opdStatusInLabLabel);
+
       final String journey = buildOpdVisitJourneyLabel(
         l10n: l10n,
         flow: flow,
         detail: detail,
       );
 
-      expect(journey, contains(l10n.opdArrivalModeWalkInLabel));
       expect(journey, contains('\u2192'));
       expect(journey, contains(l10n.opdStatusInLabLabel));
     });
 
-    test('buildOpdClinicalServiceRows sorts lab orders chronologically', () {
+    test('opdClinicalServiceStatusTone maps service states', () {
+      expect(
+        opdClinicalServiceStatusTone('COMPLETED'),
+        AppWorkspaceStatusTone.success,
+      );
+      expect(
+        opdClinicalServiceStatusTone('IN_PROCESS'),
+        AppWorkspaceStatusTone.info,
+      );
+      expect(
+        opdClinicalServiceStatusTone('CANCELLED'),
+        AppWorkspaceStatusTone.error,
+      );
+      expect(
+        opdClinicalServiceStatusTone(null),
+        AppWorkspaceStatusTone.warning,
+      );
+    });
+
+    test('buildOpdClinicalServiceRows assigns status tones', () {
       const OpdFlowSummary flow = OpdFlowSummary(
         id: 'flow-1',
         stage: 'IN_LAB',
@@ -139,6 +215,8 @@ void main() {
       expect(rows, hasLength(2));
       expect(rows.first.serviceLabel, 'LAB0000004');
       expect(rows.last.serviceLabel, 'LAB0000007');
+      expect(rows.first.statusTone, AppWorkspaceStatusTone.success);
+      expect(rows.last.statusTone, AppWorkspaceStatusTone.info);
       expect(
         opdClinicalServiceLocationLabel(
           l10n: l10n,

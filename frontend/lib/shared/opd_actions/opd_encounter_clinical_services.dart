@@ -6,6 +6,8 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 bool opdDetailHasClinicalRecords(OpdFlowDetail detail) {
   return detail.vitalMeasurements.isNotEmpty ||
@@ -58,11 +60,11 @@ class OpdEncounterClinicalServicesPanel extends StatelessWidget {
                 return Column(
                   children: <Widget>[
                     for (final OpdClinicalServiceRow row in rows)
-                      _OpdClinicalServiceCard(row: row),
+                      _OpdClinicalServiceCard(row: row, l10n: l10n),
                   ],
                 );
               }
-              return _OpdClinicalServicesTable(rows: rows);
+              return _OpdClinicalServicesTable(rows: rows, l10n: l10n);
             },
           ),
       ],
@@ -79,7 +81,10 @@ final class OpdClinicalServiceRow {
     required this.statusLabel,
     required this.locationLabel,
     required this.resultLabel,
+    required this.statusTone,
+    required this.locationTone,
     this.requestedAt,
+    this.statusCode,
   });
 
   final IconData icon;
@@ -88,7 +93,10 @@ final class OpdClinicalServiceRow {
   final String statusLabel;
   final String locationLabel;
   final String resultLabel;
+  final AppWorkspaceStatusTone statusTone;
+  final AppWorkspaceStatusTone locationTone;
   final DateTime? requestedAt;
+  final String? statusCode;
 }
 
 List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
@@ -110,7 +118,10 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
         resultLabel: vital.displayValue.isEmpty
             ? l10n.profileUnknownValue
             : vital.displayValue,
+        statusTone: AppWorkspaceStatusTone.success,
+        locationTone: AppWorkspaceStatusTone.neutral,
         requestedAt: vital.recordedAt,
+        statusCode: 'COMPLETED',
       ),
     );
   }
@@ -121,12 +132,13 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
     String serviceKind,
   ) {
     for (final OpdRelatedRecord record in records) {
+      final String? status = record.status;
       rows.add(
         OpdClinicalServiceRow(
           icon: icon,
           serviceLabel: _serviceLabel(record),
           requestedLabel: _formatDateTime(l10n, locale, record.occurredAt),
-          statusLabel: _statusLabel(l10n, record.status),
+          statusLabel: _statusLabel(l10n, status),
           locationLabel: opdClinicalServiceLocationLabel(
             l10n: l10n,
             record: record,
@@ -134,7 +146,14 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
             serviceKind: serviceKind,
           ),
           resultLabel: _resultLabel(l10n, record),
+          statusTone: opdClinicalServiceStatusTone(status),
+          locationTone: opdClinicalServiceLocationTone(
+            record: record,
+            serviceKind: serviceKind,
+            flow: flow,
+          ),
           requestedAt: record.occurredAt,
+          statusCode: status,
         ),
       );
     }
@@ -155,6 +174,42 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
   });
 
   return rows;
+}
+
+AppWorkspaceStatusTone opdClinicalServiceLocationTone({
+  required OpdRelatedRecord record,
+  required String serviceKind,
+  required OpdFlowSummary flow,
+}) {
+  final String status = (record.status ?? '').toUpperCase();
+  if (<String>{
+    'COMPLETED',
+    'DONE',
+    'DISPENSED',
+    'REPORTED',
+    'FINAL',
+  }.contains(status)) {
+    return AppWorkspaceStatusTone.success;
+  }
+
+  final String stage = (flow.displayCode ?? flow.stage ?? '').toUpperCase();
+  return switch (serviceKind) {
+    'LAB' => switch (stage) {
+      'IN_LAB' || 'SAMPLE_PENDING' => AppWorkspaceStatusTone.info,
+      _ => AppWorkspaceStatusTone.neutral,
+    },
+    'RADIOLOGY' => switch (stage) {
+      'IMAGING_PENDING' || 'REPORT_PENDING' => AppWorkspaceStatusTone.info,
+      _ => AppWorkspaceStatusTone.neutral,
+    },
+    'PHARMACY' => switch (stage) {
+      'PHARMACY_PENDING' ||
+      'PHARMACY_REQUESTED' ||
+      'DISPENSING' => AppWorkspaceStatusTone.info,
+      _ => AppWorkspaceStatusTone.neutral,
+    },
+    _ => AppWorkspaceStatusTone.neutral,
+  };
 }
 
 String opdClinicalServiceLocationLabel({
@@ -203,119 +258,308 @@ String opdClinicalServiceLocationLabel({
 }
 
 class _OpdClinicalServicesTable extends StatelessWidget {
-  const _OpdClinicalServicesTable({required this.rows});
+  const _OpdClinicalServicesTable({required this.rows, required this.l10n});
 
   final List<OpdClinicalServiceRow> rows;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final TextStyle headerStyle = theme.textTheme.labelSmall!.copyWith(
       fontWeight: FontWeight.w700,
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final TextStyle cellStyle = theme.textTheme.bodySmall!;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        showCheckboxColumn: false,
-        headingRowHeight: 36,
-        dataRowMinHeight: 40,
-        dataRowMaxHeight: 48,
-        horizontalMargin: theme.spacing.sm,
-        columnSpacing: theme.spacing.md,
-        columns: <DataColumn>[
-          DataColumn(
-            label: Text(l10n.opdClinicalServiceColumnLabel, style: headerStyle),
-          ),
-          DataColumn(
-            label: Text(
-              l10n.opdClinicalServiceRequestedColumnLabel,
-              style: headerStyle,
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              l10n.opdClinicalServiceStatusColumnLabel,
-              style: headerStyle,
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              l10n.opdClinicalServiceLocationColumnLabel,
-              style: headerStyle,
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              l10n.opdClinicalServiceResultColumnLabel,
-              style: headerStyle,
-            ),
-          ),
-        ],
-        rows: <DataRow>[
-          for (final OpdClinicalServiceRow row in rows)
-            DataRow(
-              cells: <DataCell>[
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(
-                        row.icon,
-                        size: theme.appTokens.listIconSize,
-                        color: theme.colorScheme.primary,
-                      ),
-                      SizedBox(width: theme.spacing.xs),
-                      Flexible(
-                        child: Tooltip(
-                          message: row.serviceLabel,
-                          child: Text(
-                            row.serviceLabel,
-                            style: cellStyle.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Table(
+          columnWidths: const <int, TableColumnWidth>{
+            0: FlexColumnWidth(2.6),
+            1: FlexColumnWidth(2.2),
+            2: FlexColumnWidth(1.6),
+            3: FlexColumnWidth(1.6),
+            4: FlexColumnWidth(2.4),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: <TableRow>[
+            TableRow(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+              children: <Widget>[
+                _HeaderCell(l10n.opdClinicalServiceColumnLabel, headerStyle),
+                _HeaderCell(
+                  l10n.opdClinicalServiceRequestedColumnLabel,
+                  headerStyle,
                 ),
-                DataCell(Text(row.requestedLabel, style: cellStyle)),
-                DataCell(Text(row.statusLabel, style: cellStyle)),
-                DataCell(Text(row.locationLabel, style: cellStyle)),
-                DataCell(
-                  Tooltip(
-                    message: row.resultLabel,
-                    child: Text(
-                      row.resultLabel,
-                      style: cellStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                _HeaderCell(
+                  l10n.opdClinicalServiceStatusColumnLabel,
+                  headerStyle,
+                ),
+                _HeaderCell(
+                  l10n.opdClinicalServiceLocationColumnLabel,
+                  headerStyle,
+                ),
+                _HeaderCell(
+                  l10n.opdClinicalServiceResultColumnLabel,
+                  headerStyle,
                 ),
               ],
             ),
-        ],
+            for (final OpdClinicalServiceRow row in rows)
+              TableRow(
+                children: <Widget>[
+                  _ServiceCell(row: row),
+                  _BodyCell(text: row.requestedLabel),
+                  _BodyCell(
+                    child: _OpdClinicalServiceStatusChip(
+                      label: row.statusLabel,
+                      tone: row.statusTone,
+                    ),
+                  ),
+                  _BodyCell(
+                    child: _OpdClinicalServiceStatusChip(
+                      label: row.locationLabel,
+                      tone: row.locationTone,
+                      compact: true,
+                    ),
+                  ),
+                  _ResultCell(row: row, l10n: l10n),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _OpdClinicalServiceCard extends StatelessWidget {
-  const _OpdClinicalServiceCard({required this.row});
+class _HeaderCell extends StatelessWidget {
+  const _HeaderCell(this.label, this.style);
+
+  final String label;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Text(label, style: style),
+    );
+  }
+}
+
+class _BodyCell extends StatelessWidget {
+  const _BodyCell({this.text, this.child});
+
+  final String? text;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: child ?? Text(text ?? '', style: theme.textTheme.bodySmall),
+    );
+  }
+}
+
+class _ServiceCell extends StatelessWidget {
+  const _ServiceCell({required this.row});
 
   final OpdClinicalServiceRow row;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            row.icon,
+            size: theme.appTokens.listIconSize,
+            color: theme.colorScheme.primary,
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Expanded(
+            child: Tooltip(
+              message: row.serviceLabel,
+              child: Text(
+                row.serviceLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultCell extends StatelessWidget {
+  const _ResultCell({required this.row, required this.l10n});
+
+  final OpdClinicalServiceRow row;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool unavailable = row.resultLabel == l10n.profileUnknownValue;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Tooltip(
+        message: row.resultLabel,
+        child: Text(
+          row.resultLabel,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
+            color: unavailable
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OpdClinicalServiceStatusChip extends StatelessWidget {
+  const _OpdClinicalServiceStatusChip({
+    required this.label,
+    required this.tone,
+    this.compact = false,
+  });
+
+  final String label;
+  final AppWorkspaceStatusTone tone;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
+    final _ClinicalChipColors colors = _clinicalChipColors(
+      theme,
+      statusColors,
+      tone,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colors.border),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style:
+              (compact
+                      ? theme.textTheme.labelSmall
+                      : theme.textTheme.labelMedium)
+                  ?.copyWith(
+                    color: colors.foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+        ),
+      ),
+    );
+  }
+}
+
+@immutable
+final class _ClinicalChipColors {
+  const _ClinicalChipColors({
+    required this.background,
+    required this.foreground,
+    required this.border,
+  });
+
+  final Color background;
+  final Color foreground;
+  final Color border;
+}
+
+_ClinicalChipColors _clinicalChipColors(
+  ThemeData theme,
+  AppStatusColors statusColors,
+  AppWorkspaceStatusTone tone,
+) {
+  return switch (tone) {
+    AppWorkspaceStatusTone.success => _ClinicalChipColors(
+      background: statusColors.successContainer,
+      foreground: statusColors.onSuccessContainer,
+      border: statusColors.success,
+    ),
+    AppWorkspaceStatusTone.warning => _ClinicalChipColors(
+      background: statusColors.warningContainer,
+      foreground: statusColors.onWarningContainer,
+      border: statusColors.warning,
+    ),
+    AppWorkspaceStatusTone.error => _ClinicalChipColors(
+      background: statusColors.errorContainer,
+      foreground: statusColors.onErrorContainer,
+      border: statusColors.error,
+    ),
+    AppWorkspaceStatusTone.info => _ClinicalChipColors(
+      background: statusColors.infoContainer,
+      foreground: statusColors.onInfoContainer,
+      border: statusColors.info,
+    ),
+    AppWorkspaceStatusTone.neutral => _ClinicalChipColors(
+      background: theme.colorScheme.surfaceContainerHighest,
+      foreground: theme.colorScheme.onSurfaceVariant,
+      border: theme.colorScheme.outlineVariant,
+    ),
+  };
+}
+
+class _OpdClinicalServiceCard extends StatelessWidget {
+  const _OpdClinicalServiceCard({required this.row, required this.l10n});
+
+  final OpdClinicalServiceRow row;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool unavailable = row.resultLabel == l10n.profileUnknownValue;
 
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -352,17 +596,46 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                 '${l10n.opdClinicalServiceRequestedColumnLabel}: ${row.requestedLabel}',
                 style: theme.textTheme.bodySmall,
               ),
-              Text(
-                '${l10n.opdClinicalServiceStatusColumnLabel}: ${row.statusLabel}',
-                style: theme.textTheme.bodySmall,
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    '${l10n.opdClinicalServiceStatusColumnLabel}:',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  _OpdClinicalServiceStatusChip(
+                    label: row.statusLabel,
+                    tone: row.statusTone,
+                    compact: true,
+                  ),
+                ],
               ),
-              Text(
-                '${l10n.opdClinicalServiceLocationColumnLabel}: ${row.locationLabel}',
-                style: theme.textTheme.bodySmall,
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    '${l10n.opdClinicalServiceLocationColumnLabel}:',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  _OpdClinicalServiceStatusChip(
+                    label: row.locationLabel,
+                    tone: row.locationTone,
+                    compact: true,
+                  ),
+                ],
               ),
               Text(
                 '${l10n.opdClinicalServiceResultColumnLabel}: ${row.resultLabel}',
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
+                  color: unavailable
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),

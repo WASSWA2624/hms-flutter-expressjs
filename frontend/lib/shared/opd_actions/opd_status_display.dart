@@ -61,6 +61,50 @@ String triageLevelDisplayLabel(
   };
 }
 
+AppWorkspaceStatusTone triageLevelStatusTone(String? value) {
+  return switch ((value ?? '').trim().toUpperCase()) {
+    'LEVEL_1' || 'IMMEDIATE' || 'CRITICAL' => AppWorkspaceStatusTone.error,
+    'LEVEL_2' || 'URGENT' || 'HIGH' => AppWorkspaceStatusTone.warning,
+    'LEVEL_3' || 'LESS_URGENT' || 'MEDIUM' => AppWorkspaceStatusTone.info,
+    'LEVEL_4' || 'NON_URGENT' || 'LOW' => AppWorkspaceStatusTone.neutral,
+    'LEVEL_5' || 'ROUTINE' => AppWorkspaceStatusTone.success,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+AppWorkspaceStatusTone opdNextStepStatusTone(String? value) {
+  return switch ((value ?? '').trim().toUpperCase()) {
+    'PAY_CONSULTATION' => AppWorkspaceStatusTone.warning,
+    _ => AppWorkspaceStatusTone.info,
+  };
+}
+
+AppWorkspaceStatusTone opdClinicalServiceStatusTone(String? status) {
+  final String normalized = (status ?? '').trim().toUpperCase();
+  if (normalized.isEmpty) {
+    return AppWorkspaceStatusTone.warning;
+  }
+  return switch (normalized) {
+    'COMPLETED' ||
+    'DONE' ||
+    'DISPENSED' ||
+    'REPORTED' ||
+    'FINAL' => AppWorkspaceStatusTone.success,
+    'CANCELLED' ||
+    'CANCELED' ||
+    'FAILED' ||
+    'REJECTED' ||
+    'ERROR' => AppWorkspaceStatusTone.error,
+    'ORDERED' ||
+    'IN_PROGRESS' ||
+    'IN_PROCESS' ||
+    'PROCESSING' ||
+    'PENDING' ||
+    'REQUESTED' => AppWorkspaceStatusTone.info,
+    _ => AppWorkspaceStatusTone.info,
+  };
+}
+
 AppWorkspaceStatusTone opdStageStatusTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' ||

@@ -140,7 +140,11 @@ class AppPermissionActionList extends StatelessWidget {
         maxColumns: maxColumns,
         spacing: spacing ?? theme.spacing.sm,
         runSpacing: runSpacing ?? spacing ?? theme.spacing.sm,
-        children: children,
+        children: children
+            .map(
+              (Widget child) => SizedBox(width: double.infinity, child: child),
+            )
+            .toList(growable: false),
       );
     }
 
