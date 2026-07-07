@@ -853,7 +853,11 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
   }) {
     return MenuItemButton(
       onPressed: entry.enabled
-          ? () => entry.onSelected?.call(context, ref)
+          ? () {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                entry.onSelected?.call(context, ref);
+              });
+            }
           : null,
       style: _overflowMenuItemStyle(theme),
       child: AppMenuItemLabel(icon: entry.icon, label: entry.label),

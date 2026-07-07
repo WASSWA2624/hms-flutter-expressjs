@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
@@ -515,6 +516,14 @@ Future<void> _showBillingDetailDialog(
             : null,
       ),
       actions: <Widget>[
+        AppReportActionButton.print(
+          label: l10n.billingPrintInvoiceAction,
+          enabled: item.isInvoice,
+          tooltip: l10n.billingPrintInvoiceTooltip,
+          onPressed: item.isInvoice
+              ? () => printBillingInvoice(ref: ref, context: context, item: item)
+              : null,
+        ),
         AppReportActionButton.download(
           label: l10n.billingInvoiceLabel,
           enabled: item.isInvoice,

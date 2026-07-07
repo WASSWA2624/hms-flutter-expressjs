@@ -144,13 +144,14 @@ class _AppDialogState extends State<AppDialog> {
       ),
     );
 
+    final bool enforceShellHeight = pinFooter || fillShellHeight;
     Widget dialogBody = ConstrainedBox(
       constraints: desktopInteractive
           ? BoxConstraints(
-              minHeight: pinFooter ? dialogConstraints.maxHeight : 0,
+              minHeight: enforceShellHeight ? dialogConstraints.maxHeight : 0,
               maxHeight: dialogConstraints.maxHeight,
             )
-          : pinFooter
+          : enforceShellHeight
           ? BoxConstraints(
               minHeight: dialogConstraints.maxHeight,
               maxHeight: dialogConstraints.maxHeight,
@@ -234,6 +235,10 @@ class _AppDialogState extends State<AppDialog> {
 
     Widget dialog = Dialog(
       insetPadding: insetPadding,
+      alignment: _isMaximized && desktopInteractive
+          ? Alignment.topCenter
+          : Alignment.center,
+      elevation: theme.dialogTheme.elevation ?? 24,
       shape: const RoundedRectangleBorder(),
       clipBehavior: Clip.antiAlias,
       backgroundColor: colorScheme.surface,
@@ -758,8 +763,8 @@ Future<T?> showAppDialog<T>({
     traversalEdgeBehavior: traversalEdgeBehavior,
     requestFocus: requestFocus,
     routeSettings: routeSettings,
-    builder: (BuildContext context) {
-      return FocusTraversalGroup(child: builder(context));
+    builder: (BuildContext dialogContext) {
+      return FocusTraversalGroup(child: builder(dialogContext));
     },
   );
 

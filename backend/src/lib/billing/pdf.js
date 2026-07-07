@@ -25,6 +25,163 @@ const formatDate = (value) => {
   return date.toISOString().slice(0, 10);
 };
 
+const formatDateTime = (value) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toISOString().replace('T', ' ').slice(0, 16);
+};
+
+const formatLabel = (value) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return 'N/A';
+  return normalized
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const computeAge = (dateOfBirth) => {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDelta = today.getMonth() - dob.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? `${age} yrs` : null;
+};
+
+const derivePaymentStatus = (invoice = {}, financials = {}) => {
+  const billingStatus = String(invoice?.billing_status || invoice?.status || '')
+    .trim()
+    .toUpperCase();
+  const balanceDue = toDecimalNumber(financials.balance_due ?? invoice?.total_amount);
+  const netPaid = toDecimalNumber(financials.net_paid_total);
+
+  if (billingStatus === 'DRAFT') return 'Deferred';
+  if (billingStatus === 'PAID' || balanceDue <= 0) return 'Cleared';
+  if (billingStatus === 'PARTIAL' || netPaid > 0) return 'Partially paid';
+  if (String(invoice?.status || '').trim().toUpperCase() === 'OVERDUE' && balanceDue > 0) {
+    return 'Overdue';
+  }
+  if (balanceDue > 0) return 'Awaiting payment';
+  return 'Blocked';
+};
+
+const PAGE_BOTTOM = 760;
+const ROW_PADDING = 4;
+const HEADER_FILL = '#f3f4f6';
+const BORDER_COLOR = '#d1d5db';
+
+const ensureSpace = (doc, height) => {
+  if (doc.y + height > PAGE_BOTTOM) {
+    doc.addPage();
+    doc.y = doc.page.margins.top;
+  }
+};
+
+const drawTable = (doc, { title, columns, rows, emptyText = 'No records.', footerRow = null }) => {
+  if (title) {
+    ensureSpace(doc, 28);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111').text(title);
+    doc.moveDown(0.4);
+  }
+
+  const startX = doc.page.margins.left;
+  const tableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const normalizedColumns = columns.map((column) => ({
+    label: column.label,
+    width: column.width,
+    align: column.align || 'left',
+  }));
+  const widthTotal = normalizedColumns.reduce((sum, column) => sum + column.width, 0);
+  const scale = tableWidth / widthTotal;
+  const scaledColumns = normalizedColumns.map((column) => ({
+    ...column,
+    width: column.width * scale,
+  }));
+
+  const drawRow = (cells, { bold = false, fill = false } = {}) => {
+    const fontName = bold ? 'Helvetica-Bold' : 'Helvetica';
+    doc.font(fontName).fontSize(9);
+    const heights = cells.map((cell, index) => {
+      return doc.heightOfString(String(cell ?? ''), {
+        width: scaledColumns[index].width - ROW_PADDING * 2,
+        align: scaledColumns[index].align,
+      });
+    });
+    const rowHeight = Math.max(...heights, 12) + ROW_PADDING * 2;
+    ensureSpace(doc, rowHeight + 2);
+
+    const y = doc.y;
+    if (fill) {
+      doc.save();
+      doc.rect(startX, y, tableWidth, rowHeight).fill(HEADER_FILL);
+      doc.restore();
+    }
+
+    let x = startX;
+    cells.forEach((cell, index) => {
+      const column = scaledColumns[index];
+      doc
+        .font(fontName)
+        .fontSize(9)
+        .fillColor('#111')
+        .text(String(cell ?? ''), x + ROW_PADDING, y + ROW_PADDING, {
+          width: column.width - ROW_PADDING * 2,
+          align: column.align,
+        });
+      x += column.width;
+    });
+
+    doc
+      .moveTo(startX, y + rowHeight)
+      .lineTo(startX + tableWidth, y + rowHeight)
+      .strokeColor(BORDER_COLOR)
+      .lineWidth(0.5)
+      .stroke();
+
+    doc.y = y + rowHeight;
+  };
+
+  drawRow(
+    scaledColumns.map((column) => column.label),
+    { bold: true, fill: true },
+  );
+
+  if (!rows.length) {
+    drawRow([emptyText, ...Array(Math.max(scaledColumns.length - 1, 0)).fill('')]);
+    doc.moveDown(0.5);
+    return;
+  }
+
+  rows.forEach((row) => drawRow(row));
+  if (footerRow) {
+    drawRow(footerRow, { bold: true });
+  }
+  doc.moveDown(0.5);
+};
+
+const drawKeyValueGrid = (doc, items) => {
+  const pairs = (items || []).filter(
+    ([label, value]) => String(label || '').trim() && String(value || '').trim(),
+  );
+  if (!pairs.length) return;
+
+  ensureSpace(doc, 20);
+  doc.font('Helvetica').fontSize(10).fillColor('#111');
+  pairs.forEach(([label, value]) => {
+    ensureSpace(doc, 16);
+    doc.font('Helvetica-Bold').text(`${label}: `, { continued: true });
+    doc.font('Helvetica').text(String(value));
+  });
+  doc.moveDown(0.5);
+};
+
 const generateInvoicePdfBuffer = async ({ invoice, financials = {} }) =>
   new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -35,55 +192,109 @@ const generateInvoicePdfBuffer = async ({ invoice, financials = {} }) =>
     doc.on('error', reject);
 
     const invoiceCurrency = String(invoice?.currency || '').trim() || 'USD';
-    const patientName = resolvePatientName(invoice?.patient || {});
+    const patient = invoice?.patient || {};
+    const patientName = resolvePatientName(patient);
     const invoiceDisplayId = resolveDisplayId(invoice || {});
-    const patientDisplayId = resolveDisplayId(invoice?.patient || {});
+    const patientDisplayId = resolveDisplayId(patient);
+    const facilityName = String(invoice?.facility?.name || invoice?.tenant?.name || '').trim();
+    const paymentStatus = derivePaymentStatus(invoice, financials);
+    const patientAge = computeAge(patient.date_of_birth);
+    const patientGender = formatLabel(patient.gender);
 
-    doc.fontSize(20).text('Invoice', { align: 'left' });
-    doc.moveDown(0.3);
-    doc.fontSize(11).text(`Invoice: ${invoiceDisplayId}`);
-    doc.text(`Patient: ${patientName} (${patientDisplayId})`);
-    doc.text(`Issued: ${formatDate(invoice?.issued_at || invoice?.created_at)}`);
-    doc.text(`Status: ${invoice?.status || 'N/A'}`);
-    doc.text(`Billing Status: ${invoice?.billing_status || 'N/A'}`);
-    doc.moveDown();
-
-    doc.fontSize(13).text('Items');
-    doc.moveDown(0.3);
-
-    const items = Array.isArray(invoice?.items) ? invoice.items : [];
-    if (!items.length) {
-      doc.fontSize(11).text('No line items.');
-    } else {
-      items.forEach((item, index) => {
-        const description = String(item?.description || '').trim() || `Item ${index + 1}`;
-        const quantity = Number.isFinite(Number(item?.quantity)) ? Number(item.quantity) : 1;
-        const unitPrice = money(item?.unit_price, invoiceCurrency);
-        const totalPrice = money(item?.total_price, invoiceCurrency);
-
-        doc.fontSize(11).text(`${index + 1}. ${description}`);
-        doc.fontSize(10).text(`Qty: ${quantity}  Unit: ${unitPrice}  Total: ${totalPrice}`);
-        doc.moveDown(0.2);
-      });
+    if (facilityName) {
+      doc.font('Helvetica-Bold').fontSize(14).fillColor('#111').text(facilityName);
+      doc.moveDown(0.2);
     }
 
-    doc.moveDown();
-    doc.fontSize(13).text('Summary');
+    doc.font('Helvetica-Bold').fontSize(20).fillColor('#111').text('Invoice');
     doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(11).fillColor('#111');
+    doc.text(`Invoice: ${invoiceDisplayId}`);
+    doc.text(`Patient: ${patientName} (${patientDisplayId})`);
+    doc.text(`Issued: ${formatDate(invoice?.issued_at || invoice?.created_at)}`);
+    doc.text(`Payment status: ${paymentStatus}`);
+    doc.text(`Invoice status: ${formatLabel(invoice?.billing_status || invoice?.status)}`);
+    if (patientGender !== 'N/A') {
+      doc.text(`Gender: ${patientGender}`);
+    }
+    if (patientAge) {
+      doc.text(`Age: ${patientAge}`);
+    }
+    const encounterId = String(invoice?.encounter_display_id || invoice?.encounter_id || '').trim();
+    if (encounterId) {
+      doc.text(`Encounter: ${encounterId}`);
+    }
+    doc.moveDown();
 
-    const lines = [
-      ['Invoice Total', money(financials.invoice_total ?? invoice?.total_amount, invoiceCurrency)],
-      ['Adjustments', money(financials.adjustment_total ?? 0, invoiceCurrency)],
-      ['Effective Total', money(financials.effective_total ?? invoice?.total_amount, invoiceCurrency)],
-      ['Payments', money(financials.gross_paid_total ?? 0, invoiceCurrency)],
-      ['Refunds', money(financials.refunded_total ?? 0, invoiceCurrency)],
-      ['Net Paid', money(financials.net_paid_total ?? 0, invoiceCurrency)],
-      ['Balance Due', money(financials.balance_due ?? invoice?.total_amount, invoiceCurrency)],
-    ];
-
-    lines.forEach(([label, value]) => {
-      doc.fontSize(11).text(`${label}: ${value}`);
+    const items = Array.isArray(invoice?.items) ? invoice.items : [];
+    const lineItemRows = items.map((item, index) => {
+      const description = String(item?.description || '').trim() || `Item ${index + 1}`;
+      const quantity = Number.isFinite(Number(item?.quantity)) ? Number(item.quantity) : 1;
+      return [
+        `${index + 1}`,
+        description,
+        `${quantity}`,
+        money(item?.unit_price, invoiceCurrency),
+        formatLabel(item?.source_module),
+        String(item?.encounter_display_id || '').trim() || 'N/A',
+        money(item?.total_price, invoiceCurrency),
+      ];
     });
+
+    drawTable(doc, {
+      title: 'Line items',
+      columns: [
+        { label: '#', width: 24, align: 'right' },
+        { label: 'Description', width: 150 },
+        { label: 'Qty', width: 36, align: 'right' },
+        { label: 'Unit price', width: 72, align: 'right' },
+        { label: 'Department', width: 72 },
+        { label: 'Encounter', width: 72 },
+        { label: 'Amount', width: 72, align: 'right' },
+      ],
+      rows: lineItemRows,
+      emptyText: 'No line items.',
+      footerRow: lineItemRows.length
+        ? ['', '', '', '', '', 'Invoice total', money(financials.invoice_total ?? invoice?.total_amount, invoiceCurrency)]
+        : null,
+    });
+
+    const payments = Array.isArray(invoice?.payments) ? invoice.payments : [];
+    const paymentRows = payments.map((payment) => [
+      resolveDisplayId(payment),
+      formatLabel(payment?.method),
+      formatLabel(payment?.status),
+      String(payment?.transaction_ref || '').trim() || 'N/A',
+      formatDateTime(payment?.paid_at || payment?.created_at),
+      money(payment?.amount, invoiceCurrency),
+    ]);
+
+    drawTable(doc, {
+      title: 'Payments',
+      columns: [
+        { label: 'Payment', width: 70 },
+        { label: 'Method', width: 70 },
+        { label: 'Status', width: 70 },
+        { label: 'Reference', width: 90 },
+        { label: 'Date', width: 80 },
+        { label: 'Amount', width: 70, align: 'right' },
+      ],
+      rows: paymentRows,
+      emptyText: 'No payments recorded.',
+    });
+
+    ensureSpace(doc, 24);
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#111').text('Financial summary');
+    doc.moveDown(0.3);
+    drawKeyValueGrid(doc, [
+      ['Invoice total', money(financials.invoice_total ?? invoice?.total_amount, invoiceCurrency)],
+      ['Adjustments', money(financials.adjustment_total ?? 0, invoiceCurrency)],
+      ['Effective total', money(financials.effective_total ?? invoice?.total_amount, invoiceCurrency)],
+      ['Payments received', money(financials.gross_paid_total ?? 0, invoiceCurrency)],
+      ['Refunds', money(financials.refunded_total ?? 0, invoiceCurrency)],
+      ['Net paid', money(financials.net_paid_total ?? 0, invoiceCurrency)],
+      ['Balance due', money(financials.balance_due ?? invoice?.total_amount, invoiceCurrency)],
+    ]);
 
     doc.moveDown();
     doc.fontSize(9).fillColor('#666').text('Generated by HMS Billing Workspace');

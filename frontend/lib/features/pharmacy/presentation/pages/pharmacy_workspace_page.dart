@@ -1472,7 +1472,9 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyDispenseDialogTitle),
       icon: const Icon(Icons.medication_liquid_outlined),
+      initialMaximized: false,
       scrollable: true,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         formStatus: appFormGuidanceAndFailureStatus(
@@ -1601,6 +1603,9 @@ class _AttestDialogState extends ConsumerState<_AttestDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyAttestDialogTitle),
       icon: const Icon(Icons.verified_outlined),
+      initialMaximized: false,
+      scrollable: true,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         formStatus: appFormGuidanceAndFailureStatus(
@@ -1720,7 +1725,9 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyReturnDialogTitle),
       icon: const Icon(Icons.keyboard_return_outlined),
+      initialMaximized: false,
       scrollable: true,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         formStatus: appFormGuidanceAndFailureStatus(
@@ -2082,6 +2089,9 @@ class _ReturnLineEditDialogState extends State<_ReturnLineEditDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyReturnEditLineDialogTitle),
       icon: const Icon(Icons.edit_outlined),
+      initialMaximized: false,
+      scrollable: true,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         enabled: !widget.isSaving,
@@ -2149,6 +2159,9 @@ class _CancelOrderDialogState extends ConsumerState<_CancelOrderDialog> {
     return AppDialog(
       title: Text(l10n.pharmacyCancelDialogTitle),
       icon: const Icon(Icons.cancel_outlined),
+      initialMaximized: false,
+      scrollable: true,
+      pinActionsToBottom: true,
       content: AppFormShell(
         formKey: _formKey,
         formStatus: appFormGuidanceAndFailureStatus(

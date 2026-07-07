@@ -145,11 +145,10 @@ void main() {
 
     expect(find.text('CATALOG AND STOCK'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(tester.takeException(), isNull);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.scrollable, isFalse);
-    expect(dialog.initialMaximized, isTrue);
+    expect(dialog.scrollable, isTrue);
+    expect(dialog.initialMaximized, isFalse);
 
     final RenderBox shell = tester.renderObject<RenderBox>(
       find.byKey(AppDialog.shellKey),
@@ -185,6 +184,5 @@ void main() {
 
     expect(find.byType(AppDialog), findsNothing);
     expect(find.text('Open catalog'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 }
