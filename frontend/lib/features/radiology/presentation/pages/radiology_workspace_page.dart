@@ -1052,8 +1052,9 @@ class _WorkflowSummarySection extends StatelessWidget {
         ),
     ];
 
-    return _DetailSection(
+    return AppSectionPanel(
       title: l10n.radiologyOrderMetadataTitle,
+      spacing: Theme.of(context).spacing.sm,
       children: <Widget>[
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
@@ -1132,21 +1133,20 @@ class _WorkflowProgressSection extends StatelessWidget {
     ];
     final bool canCollapse = activeStep >= 2;
 
-    return _DetailSection(
+    return AppSectionPanel(
       title: l10n.radiologyWorkflowProgressTitle,
-      actions: canCollapse
-          ? <Widget>[
-              AppButton(
-                iconOnly: true,
-                leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
-                label: l10n.radiologyWorkflowProgressTitle,
+      spacing: theme.spacing.sm,
+      trailing: canCollapse
+          ? AppButton(
+              iconOnly: true,
+              leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
+              label: l10n.radiologyWorkflowProgressTitle,
 
-                semanticLabel: l10n.radiologyWorkflowProgressTitle,
-                tooltip: l10n.radiologyWorkflowProgressTitle,
-                onPressed: () => onExpandedChanged(!expanded),
-              ),
-            ]
-          : const <Widget>[],
+              semanticLabel: l10n.radiologyWorkflowProgressTitle,
+              tooltip: l10n.radiologyWorkflowProgressTitle,
+              onPressed: () => onExpandedChanged(!expanded),
+            )
+          : null,
       children: <Widget>[
         if (!expanded && canCollapse)
           AppButton.tertiary(
@@ -1328,21 +1328,20 @@ class _RequestSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    return _DetailSection(
+    return AppSectionPanel(
       title: l10n.radiologyRequestDetailsTitle,
-      actions: <Widget>[
-        AppButton(
-          iconOnly: true,
-          leadingIcon: Icons.edit_outlined,
-          label: l10n.radiologyEditRequestDetailsAction,
+      spacing: Theme.of(context).spacing.sm,
+      trailing: AppButton(
+        iconOnly: true,
+        leadingIcon: Icons.edit_outlined,
+        label: l10n.radiologyEditRequestDetailsAction,
 
-          semanticLabel: l10n.radiologyEditRequestDetailsAction,
-          tooltip: l10n.radiologyEditRequestDetailsAction,
-          onPressed: canEdit
-              ? () => _showEditRequestDetailsDialog(context, ref, order)
-              : null,
-        ),
-      ],
+        semanticLabel: l10n.radiologyEditRequestDetailsAction,
+        tooltip: l10n.radiologyEditRequestDetailsAction,
+        onPressed: canEdit
+            ? () => _showEditRequestDetailsDialog(context, ref, order)
+            : null,
+      ),
       children: <Widget>[
         _DetailLine(
           label: l10n.radiologyBodyRegionLabel,
@@ -1960,12 +1959,15 @@ class _StudyBlockState extends ConsumerState<_StudyBlock> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
-                  child: _TwoLineCell(
+                  child: AppListItemText(
                     title: widget.study.effectiveDisplayId,
                     subtitle: _joinDisplay(<String?>[
                       _modalityLabelOrNull(l10n, widget.study.modality),
                       _formatDateTimeOrNull(context, widget.study.performedAt),
                     ]),
+                    titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 Wrap(
@@ -2846,7 +2848,7 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: _TwoLineCell(
+            child: AppListItemText(
               title: title,
               subtitle: _joinDisplay(<String?>[
                 _modalityLabelOrNull(l10n, request.modality),
@@ -2855,6 +2857,9 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
                 request.priority,
                 request.clinicalNote,
               ]),
+              titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           AppButton(

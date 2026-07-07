@@ -353,11 +353,18 @@ class _RadiologyConfigurationsDialogState
           sortComparator:
               (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
                   appListTableCompareText(left.name, right.name),
-          cellBuilder: (_, RadiologyCatalogTest item) => _IconTwoLineCell(
-            icon: _radiologyModalityIcon(item.modality),
-            title: item.name,
-            subtitle: _joinDisplay(<String?>[item.effectiveId, item.code]),
-          ),
+          cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
+            final ThemeData theme = Theme.of(context);
+            return AppListItemRow(
+              title: item.name,
+              subtitle: _joinDisplay(<String?>[item.effectiveId, item.code]),
+              leadingIcon: _radiologyModalityIcon(item.modality),
+              padding: EdgeInsets.zero,
+              titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            );
+          },
         ),
         AppListTableColumn<RadiologyCatalogTest>(
           id: 'code',
@@ -424,14 +431,18 @@ class _RadiologyConfigurationsDialogState
                     visualDensity: VisualDensity.compact,
                   ),
                   Expanded(
-                    child: _IconTwoLineCell(
-                      icon: _radiologyModalityIcon(item.modality),
+                    child: AppListItemRow(
                       title: item.name,
                       subtitle: _joinDisplay(<String?>[
                         item.code,
                         _modalityLabelOrNull(l10n, item.modality),
                         _formatRadiologyCatalogUnitPrice(context, item, l10n),
                       ]),
+                      leadingIcon: _radiologyModalityIcon(item.modality),
+                      padding: EdgeInsets.zero,
+                      titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],

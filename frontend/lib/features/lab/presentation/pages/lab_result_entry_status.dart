@@ -28,64 +28,6 @@ bool _isVerifiedOrder(LabOrderSummary order) {
   return active > 0 && _completedResultItemCount(order) >= active;
 }
 
-String _apiLabel(String value) {
-  final normalized = value.trim().replaceAll('_', ' ').toLowerCase();
-  if (normalized.isEmpty) {
-    return value;
-  }
-  return normalized
-      .split(RegExp(r'\s+'))
-      .map((word) {
-        if (word.isEmpty) {
-          return word;
-        }
-        return '${word[0].toUpperCase()}${word.substring(1)}';
-      })
-      .join(' ');
-}
-
-AppWorkspaceStatus _statusBadge(BuildContext context, String? value) {
-  final status = (value ?? '').toUpperCase();
-  return AppWorkspaceStatus(
-    label: _statusLabel(context, value),
-    tone: switch (status) {
-      'COMPLETED' ||
-      'NORMAL' ||
-      'RECEIVED' ||
-      'VERIFIED' => AppWorkspaceStatusTone.success,
-      'CRITICAL' || 'CANCELLED' || 'REJECTED' => AppWorkspaceStatusTone.error,
-      'ABNORMAL' ||
-      'ORDERED' ||
-      'COLLECTED' ||
-      'PENDING' => AppWorkspaceStatusTone.warning,
-      'IN_PROCESS' => AppWorkspaceStatusTone.info,
-      _ => AppWorkspaceStatusTone.neutral,
-    },
-  );
-}
-
-String _statusLabel(BuildContext context, String? value) {
-  final l10n = context.l10n;
-  return switch ((value ?? '').toUpperCase()) {
-    'ORDERED' => l10n.labStatusOrdered,
-    'COLLECTED' => l10n.labStatusCollected,
-    'IN_PROCESS' => l10n.labStatusInProcess,
-    'COMPLETED' => l10n.labStatusCompleted,
-    'CANCELLED' => l10n.labStatusCancelled,
-    'PENDING' => l10n.labStatusPending,
-    'NORMAL' => l10n.labStatusNormal,
-    'ABNORMAL' => l10n.labStatusAbnormal,
-    'CRITICAL' => l10n.labStatusCritical,
-    'LOW' => l10n.labStatusLow,
-    'HIGH' => l10n.labStatusHigh,
-    'VERIFIED' => l10n.labStatusVerified,
-    'REJECTED' => l10n.labStatusRejected,
-    'RECEIVED' => l10n.labStatusReceived,
-    final status when status.trim().isNotEmpty => _apiLabel(status),
-    _ => l10n.profileUnknownValue,
-  };
-}
-
 AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
   if (order.hasCriticalResult) {
     return AppWorkspaceStatus(
@@ -104,7 +46,7 @@ AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
   final active = _activeResultItemCount(order);
   final entered = _enteredResultItemCount(order);
   if (active == 0) {
-    return _statusBadge(context, order.status);
+    return labStatusBadge(context, order.status);
   }
   if (entered == 0) {
     return AppWorkspaceStatus(

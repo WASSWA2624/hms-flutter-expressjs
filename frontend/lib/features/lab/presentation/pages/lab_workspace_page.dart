@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_controlle
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -2544,7 +2545,7 @@ String _pageLabel(BuildContext context, AppPage<LabOrderSummary> page) {
 }
 
 AppWorkspaceStatus _orderStatus(BuildContext context, String? value) {
-  return _statusBadge(context, value);
+  return labStatusBadge(context, value);
 }
 
 AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
@@ -2659,23 +2660,6 @@ int _completedResultItemCount(LabOrderSummary order) {
   return order.completedItemCount;
 }
 
-AppWorkspaceStatus _statusBadge(BuildContext context, String? value) {
-  final String status = (value ?? '').toUpperCase();
-  return AppWorkspaceStatus(
-    label: _statusLabel(context, value),
-    tone: switch (status) {
-      'COMPLETED' || 'NORMAL' || 'RECEIVED' => AppWorkspaceStatusTone.success,
-      'CRITICAL' || 'CANCELLED' || 'REJECTED' => AppWorkspaceStatusTone.error,
-      'ABNORMAL' ||
-      'ORDERED' ||
-      'COLLECTED' ||
-      'PENDING' => AppWorkspaceStatusTone.warning,
-      'IN_PROCESS' => AppWorkspaceStatusTone.info,
-      _ => AppWorkspaceStatusTone.neutral,
-    },
-  );
-}
-
 String _labBillingGateLabel(BuildContext context, LabOrderSummary order) {
   final AppLocalizations l10n = context.l10n;
   if (!order.hasBillingGate) {
@@ -2705,42 +2689,4 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
     'COMPLETED' => l10n.labNextActionCompleted,
     _ => l10n.labNextActionWatch,
   };
-}
-
-String _statusLabel(BuildContext context, String? value) {
-  final AppLocalizations l10n = context.l10n;
-  return switch ((value ?? '').toUpperCase()) {
-    'ORDERED' => l10n.labStatusOrdered,
-    'COLLECTED' => l10n.labStatusCollected,
-    'IN_PROCESS' => l10n.labStatusInProcess,
-    'COMPLETED' => l10n.labStatusCompleted,
-    'CANCELLED' => l10n.labStatusCancelled,
-    'PENDING' => l10n.labStatusPending,
-    'NORMAL' => l10n.labStatusNormal,
-    'ABNORMAL' => l10n.labStatusAbnormal,
-    'CRITICAL' => l10n.labStatusCritical,
-    'LOW' => l10n.labStatusLow,
-    'HIGH' => l10n.labStatusHigh,
-    'VERIFIED' => l10n.labStatusVerified,
-    'REJECTED' => l10n.labStatusRejected,
-    'RECEIVED' => l10n.labStatusReceived,
-    final String status when status.trim().isNotEmpty => _apiLabel(status),
-    _ => l10n.profileUnknownValue,
-  };
-}
-
-String _apiLabel(String value) {
-  final String normalized = value.trim().replaceAll('_', ' ').toLowerCase();
-  if (normalized.isEmpty) {
-    return value;
-  }
-  return normalized
-      .split(RegExp(r'\s+'))
-      .map((String word) {
-        if (word.isEmpty) {
-          return word;
-        }
-        return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
-      })
-      .join(' ');
 }

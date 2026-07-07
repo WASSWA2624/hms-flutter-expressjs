@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/lab_status_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -4136,29 +4137,29 @@ String _resolveItemResultFlagLabel(
   if (draft != null && draft.interpretationOverride) {
     final String overrideFlag = draft.resultFlagOverrideController.text.trim();
     if (overrideFlag.isNotEmpty) {
-      return _statusLabel(context, overrideFlag);
+      return labStatusLabel(context, overrideFlag);
     }
   } else if (item.interpretationOverride) {
     final String overrideFlag = item.resultFlagOverride ?? '';
     if (overrideFlag.trim().isNotEmpty) {
-      return _statusLabel(context, overrideFlag);
+      return labStatusLabel(context, overrideFlag);
     }
   }
 
   if (item.isRejected) {
-    return _statusLabel(context, 'CANCELLED');
+    return labStatusLabel(context, 'CANCELLED');
   }
 
   final String? explicitFlag = item.resultFlag;
   if (explicitFlag != null && explicitFlag.trim().isNotEmpty) {
-    return _statusLabel(context, explicitFlag);
+    return labStatusLabel(context, explicitFlag);
   }
 
   final String? optionFlag = draft != null
       ? _selectedResultOptionFlag(item, draft)
       : _storedQualitativeOptionFlag(item);
   if (optionFlag != null && optionFlag.trim().isNotEmpty) {
-    return _statusLabel(context, optionFlag);
+    return labStatusLabel(context, optionFlag);
   }
 
   final String valueText = draft != null
@@ -4167,11 +4168,11 @@ String _resolveItemResultFlagLabel(
   if (valueText.trim().isNotEmpty) {
     final String? computed = _computedNumericFlagToken(item, valueText);
     if (computed != null) {
-      return _statusLabel(context, computed);
+      return labStatusLabel(context, computed);
     }
   }
 
-  return _statusLabel(context, item.effectiveResultStatus);
+  return labStatusLabel(context, item.effectiveResultStatus);
 }
 
 String? _selectedResultOptionFlag(LabOrderItem item, _ResultDraft draft) {

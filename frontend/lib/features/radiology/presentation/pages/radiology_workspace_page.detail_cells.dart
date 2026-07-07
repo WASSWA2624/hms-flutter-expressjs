@@ -1,45 +1,5 @@
 part of 'radiology_workspace_page.dart';
 
-class _DetailSection extends StatelessWidget {
-  const _DetailSection({
-    required this.title,
-    required this.children,
-    this.actions = const <Widget>[],
-  });
-
-  final String title;
-  final List<Widget> children;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
-                ...actions,
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _DetailLine extends StatelessWidget {
   const _DetailLine({
     required this.label,
@@ -95,73 +55,6 @@ class _DetailLine extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (subtitle.trim().isNotEmpty)
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _IconTwoLineCell extends StatelessWidget {
-  const _IconTwoLineCell({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      children: <Widget>[
-        Icon(
-          icon,
-          size: theme.appTokens.listIconSize,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: _TwoLineCell(title: title, subtitle: subtitle),
-        ),
-      ],
     );
   }
 }
