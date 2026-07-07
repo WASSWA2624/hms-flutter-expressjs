@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
@@ -43,7 +46,11 @@ class _BillingLedgerDialogState extends ConsumerState<_BillingLedgerDialog> {
   @override
   void initState() {
     super.initState();
-    _ledgerFuture = ref
+    _ledgerFuture = _loadLedger();
+  }
+
+  Future<Result<BillingPatientLedger>> _loadLedger() {
+    return ref
         .read(billingWorkspaceControllerProvider.notifier)
         .fetchPatientLedger(widget.patientId);
   }
@@ -51,6 +58,21 @@ class _BillingLedgerDialogState extends ConsumerState<_BillingLedgerDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    // Keep the open ledger live: re-fetch when any billing event lands so the
+    // running totals and entries reflect payments/refunds/adjustments made
+    // elsewhere while the dialog stays open.
+    ref.listen<AsyncValue<RealtimeMessage>>(realtimeMessagesProvider, (
+      AsyncValue<RealtimeMessage>? previous,
+      AsyncValue<RealtimeMessage> next,
+    ) {
+      if (next case AsyncData<RealtimeMessage>(value: final RealtimeMessage m)) {
+        if (RealtimeEventGroups.billing.contains(m.event) && mounted) {
+          setState(() {
+            _ledgerFuture = _loadLedger();
+          });
+        }
+      }
+    });
     return AppDialog(
       title: Text(l10n.billingLedgerTitle),
       icon: const Icon(Icons.account_balance_wallet_outlined),
@@ -78,9 +100,7 @@ class _BillingLedgerDialogState extends ConsumerState<_BillingLedgerDialog> {
                     failure: failure,
                     onRetry: () {
                       setState(() {
-                        _ledgerFuture = ref
-                            .read(billingWorkspaceControllerProvider.notifier)
-                            .fetchPatientLedger(widget.patientId);
+                        _ledgerFuture = _loadLedger();
                       });
                     },
                   );

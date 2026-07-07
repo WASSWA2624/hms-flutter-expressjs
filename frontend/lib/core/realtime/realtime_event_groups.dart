@@ -163,6 +163,7 @@ abstract final class RealtimeEventGroups {
     ...criticalAlerts,
     ...diagnostics,
     ...pharmacy,
+    ...billing,
   };
 
   static const Set<String> nursing = <String>{
@@ -186,6 +187,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.radiologyWorkflowUpdated,
     RealtimeEvents.radiologyResultReady,
     RealtimeEvents.radiologyResultUpdated,
+    ...billing,
   };
 
   static const Set<String> pharmacyWorkspace = <String>{
@@ -210,12 +212,20 @@ abstract final class RealtimeEventGroups {
     ...opdFlow,
     ...admissions,
     ...criticalAlerts,
+    ...billing,
   };
 
+  // Billing must reflect charges/settlements that originate anywhere in the
+  // app. Besides billing events themselves, include the clinical/OPD workflow
+  // events that create or settle invoices (consultation payments, lab/radiology
+  // orders, pharmacy dispensing, admissions) so the workspace stays live even
+  // when the mutating module only emits its own workflow event.
   static const Set<String> billingWorkspace = <String>{
     ...billing,
-    ...admissions,
+    ...opdFlow,
+    ...diagnostics,
     ...pharmacy,
+    ...admissions,
   };
 
   static const Set<String> claims = <String>{...billing, ...admissions};
@@ -228,7 +238,11 @@ abstract final class RealtimeEventGroups {
 
   static const Set<String> mortuary = <String>{...admissions, ...billing};
 
-  static const Set<String> theater = <String>{...admissions, ...criticalAlerts};
+  static const Set<String> theater = <String>{
+    ...admissions,
+    ...criticalAlerts,
+    ...billing,
+  };
 
   static const Set<String> roomsBeds = <String>{
     RealtimeEvents.facilityLayoutUpdated,
