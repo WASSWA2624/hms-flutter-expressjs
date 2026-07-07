@@ -8,7 +8,11 @@ void main() {
   patrolTestWithDiagnostics(
     'emergency dispatch shell loads',
     ($) async {
-      await loginAndOpenRoute($, DemoAccount.ambulance, AppRoutes.emergency.path);
+      await loginAndOpenRoute(
+        $,
+        DemoAccount.ambulance,
+        AppRoutes.emergency.path,
+      );
 
       await expectAnyVisible($, <String>[
         'Emergency board',

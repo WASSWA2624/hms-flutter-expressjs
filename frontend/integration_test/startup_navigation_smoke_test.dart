@@ -38,7 +38,10 @@ void main() {
   ) async {
     await pumpHosspiHmsApp(
       tester,
-      overrides: testReadyAppOverrides(sessionState: authenticatedSessionState),
+      overrides: testReadyAppOverrides(
+        sessionState: authenticatedSessionState,
+        mockHomeRepository: true,
+      ),
     );
     await tester.pumpAndSettle();
 

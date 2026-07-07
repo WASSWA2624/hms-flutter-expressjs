@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
-import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -19,9 +18,7 @@ void main() {
     ) async {
       await pumpHosspiHmsApp(
         tester,
-        overrides: testReadyAppOverrides(
-          initialLocation: route.path,
-        ),
+        overrides: testReadyAppOverrides(initialLocation: route.path),
       );
       await tester.pumpAndSettle();
 

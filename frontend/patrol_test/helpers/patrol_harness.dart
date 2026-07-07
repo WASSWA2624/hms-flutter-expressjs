@@ -186,16 +186,13 @@ Future<void> pumpPatrolShellApp(
 
 Future<void> pumpPatrolE2eApp(
   PatrolIntegrationTester $, {
-  String initialLocation = AppRoutes.login.path,
+  String initialLocation = '/login',
   Size viewport = patrolDesktopViewport,
 }) {
   return pumpPatrolApp(
     $,
     baseOverrides: patrolE2eOverrides(),
-    overrides: testReadyAppOverrides(
-      sessionState: const SessionState.unauthenticated(),
-      initialLocation: initialLocation,
-    ),
+    overrides: testReadyAppOverrides(initialLocation: initialLocation),
     viewport: viewport,
   );
 }

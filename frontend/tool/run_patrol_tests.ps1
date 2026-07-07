@@ -30,7 +30,7 @@ $patrolArgs = @(
     $Device,
     "--dart-define-from-file=env/development.json.example",
     "--web-reporter",
-    "[\"json\",\"html\",\"list\"]"
+    '["json","html","list"]'
 )
 
 if ($Headless) {

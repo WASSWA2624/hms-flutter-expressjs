@@ -30,9 +30,7 @@ void main() {
   ) async {
     await pumpHosspiHmsApp(
       tester,
-      overrides: testReadyAppOverrides(
-        initialLocation: AppRoutes.login.path,
-      ),
+      overrides: testReadyAppOverrides(initialLocation: AppRoutes.login.path),
     );
     await tester.pumpAndSettle();
 

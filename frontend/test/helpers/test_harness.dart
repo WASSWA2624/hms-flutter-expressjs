@@ -9,7 +9,14 @@ import 'package:hosspi_hms/app/startup/startup_providers.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
+import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
@@ -20,7 +27,7 @@ const Locale testLocale = Locale('en');
 
 AppConfig testAppConfig() {
   return AppConfig.fromValues(
-    environmentName: 'test',
+    environmentName: 'development',
     apiBaseUrl: 'http://localhost:3000',
     logLevelName: 'error',
   );
@@ -79,9 +86,12 @@ List<Object?> testReadyAppOverrides({
   StorageReadiness storageReadiness = const StorageReadiness.ready(),
   SessionState sessionState = const SessionState.ready(),
   String? initialLocation,
+  bool mockHomeRepository = false,
 }) {
   return <Object?>[
     appConfigProvider.overrideWithValue(testAppConfig()),
+    if (mockHomeRepository)
+      homeRepositoryProvider.overrideWithValue(_testHomeRepository),
     appStartupStateProvider.overrideWithValue(
       AppStartupState(
         themeMode: themeMode,
@@ -100,7 +110,12 @@ List<Object?> testReadyAppOverrides({
 ProviderContainer createTestContainer({
   List<Object?> overrides = const <Object?>[],
 }) {
-  final container = ProviderContainer(overrides: overrides.cast());
+  final container = ProviderContainer(
+    overrides: <Object?>[
+      appConfigProvider.overrideWithValue(testAppConfig()),
+      ...overrides,
+    ].cast(),
+  );
   addTearDown(container.dispose);
 
   return container;
@@ -148,4 +163,42 @@ void setTestViewport(WidgetTester tester, Size? size) {
   tester.view.physicalSize = size;
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
+}
+
+HomeDashboard testHomeDashboardFixture() {
+  final HomeDashboardProfile profile = homeProfileForRole(AppRole.tenantAdmin);
+
+  return HomeDashboard(
+    state: HomeDashboardLoadState.ready,
+    profile: profile,
+    context: const HomeDashboardContext(roleValue: 'TENANT_ADMIN'),
+    statusCards: profile.fallbackStatusCards(),
+    trend: HomeDashboardTrend.empty,
+    distribution: HomeDashboardDistribution.empty,
+    quickActionIds: profile.quickActionIds,
+    shortcutIds: profile.shortcutIds,
+    queuePreview: const <HomeQueueItem>[],
+    alerts: const <HomeAlertItem>[],
+    activity: const <HomeActivityItem>[],
+    tenantOptions: const <HomeTenantOption>[],
+    usesFallbackData: true,
+  );
+}
+
+final HomeRepository _testHomeRepository = _TestHomeRepository();
+
+final class _TestHomeRepository implements HomeRepository {
+  @override
+  Future<Result<HomeDashboard>> loadDashboard(
+    HomeDashboardRequest request,
+  ) async {
+    return Result<HomeDashboard>.success(testHomeDashboardFixture());
+  }
+
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+  }
 }

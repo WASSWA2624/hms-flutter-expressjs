@@ -16,6 +16,7 @@ void main() {
       tester,
       overrides: testReadyAppOverrides(
         sessionState: integrationAuthenticatedSessionState(),
+        mockHomeRepository: true,
       ),
       size: const Size(1440, 900),
     );
@@ -32,6 +33,7 @@ void main() {
       tester,
       overrides: testReadyAppOverrides(
         sessionState: integrationAuthenticatedSessionState(),
+        mockHomeRepository: true,
       ),
       size: const Size(390, 844),
     );

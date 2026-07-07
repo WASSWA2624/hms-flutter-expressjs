@@ -9,7 +9,11 @@ void main() {
   patrolTestWithDiagnostics(
     'patient registry list shell loads',
     ($) async {
-      await loginAndOpenRoute($, DemoAccount.reception, AppRoutes.patients.path);
+      await loginAndOpenRoute(
+        $,
+        DemoAccount.reception,
+        AppRoutes.patients.path,
+      );
       final l10n = patrolL10n($);
 
       await expectAnyVisible($, <String>[
@@ -42,7 +46,11 @@ void main() {
   patrolTestWithDiagnostics(
     'patient registry opens first patient detail when rows exist',
     ($) async {
-      await loginAndOpenRoute($, DemoAccount.reception, AppRoutes.patients.path);
+      await loginAndOpenRoute(
+        $,
+        DemoAccount.reception,
+        AppRoutes.patients.path,
+      );
       await openFirstDataRow($);
       await $.pumpAndSettle();
 

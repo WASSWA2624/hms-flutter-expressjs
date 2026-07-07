@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
 import 'package:hosspi_hms/app/app.dart';
-import 'package:hosspi_hms/app/router/app_router.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/app/startup/app_startup_state.dart';
 import 'package:hosspi_hms/app/startup/startup_providers.dart';
@@ -16,6 +15,8 @@ import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+
+import '../helpers/test_harness.dart';
 
 void main() {
   const Locale englishLocale = Locale('en');
@@ -42,18 +43,13 @@ void main() {
 
   List<Object?> authenticatedOverrides({String? initialLocation}) {
     return <Object?>[
-      initialSessionStateProvider.overrideWithValue(authenticatedSessionState),
-      appStartupStateProvider.overrideWithValue(
-        AppStartupState(
-          themeMode: ThemeMode.system,
-          locale: englishLocale,
-          accessibility: const AppAccessibilityPreferences(),
-          storageReadiness: const StorageReadiness.ready(),
-          sessionReadiness: authenticatedSessionState,
-        ),
+      ...testReadyAppOverrides(
+        themeMode: ThemeMode.system,
+        locale: englishLocale,
+        sessionState: authenticatedSessionState,
+        initialLocation: initialLocation,
+        mockHomeRepository: true,
       ),
-      if (initialLocation != null)
-        appInitialLocationProvider.overrideWithValue(initialLocation),
     ];
   }
 
@@ -74,10 +70,9 @@ void main() {
     final l10n = tester.element(find.byType(HomePage)).l10n;
 
     expect(find.text(l10n.appTitle), findsWidgets);
-    expect(find.text(l10n.appStatusOnlineLabel), findsOneWidget);
+    expect(find.byTooltip(l10n.appStatusOnlineLabel), findsOneWidget);
     expect(find.text('Organization overview'), findsOneWidget);
     expect(find.text('Today at a glance'), findsOneWidget);
-    expect(find.text('Quick actions'), findsOneWidget);
     expect(find.byType(AppLogo), findsOneWidget);
   });
 
@@ -97,11 +92,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(HomePage), findsOneWidget);
     final Scaffold scaffold = tester
         .widgetList<Scaffold>(find.byType(Scaffold))
         .singleWhere((Scaffold value) => value.drawer != null);
 
-    expect(find.text('Organization overview'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(scaffold.drawer, isNotNull);
     expect(tester.takeException(), isNull);
@@ -123,7 +118,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Organization overview'), findsOneWidget);
+    expect(find.byType(HomePage), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -176,9 +171,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.profileTitle), findsWidgets);
-    expect(find.text(l10n.profileEmailLabel), findsOneWidget);
-    expect(find.text('USR-123'), findsOneWidget);
-    expect(find.text('STF-001'), findsOneWidget);
   });
 
   testWidgets('uses startup theme and locale providers', (

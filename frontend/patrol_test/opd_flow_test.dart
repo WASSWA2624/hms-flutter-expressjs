@@ -5,16 +5,12 @@ import 'helpers/failure_reporter.dart';
 import 'helpers/patrol_harness.dart';
 
 void main() {
-  patrolTestWithDiagnostics(
-    'OPD queue shell loads',
-    ($) async {
-      await loginAndOpenRoute($, DemoAccount.doctor, AppRoutes.opd.path);
-      final l10n = patrolL10n($);
+  patrolTestWithDiagnostics('OPD queue shell loads', ($) async {
+    await loginAndOpenRoute($, DemoAccount.doctor, AppRoutes.opd.path);
+    final l10n = patrolL10n($);
 
-      await expectAnyVisible($, <String>[l10n.opdTitle, l10n.opdLoadingTitle]);
-    },
-    targetFile: 'patrol_test/opd_flow_test.dart',
-  );
+    await expectAnyVisible($, <String>[l10n.opdTitle, l10n.opdLoadingTitle]);
+  }, targetFile: 'patrol_test/opd_flow_test.dart');
 
   patrolTestWithDiagnostics(
     'OPD workspace supports mobile shell layout',
