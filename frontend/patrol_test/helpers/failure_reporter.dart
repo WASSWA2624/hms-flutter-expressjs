@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:patrol/patrol.dart';
+
+export 'package:flutter_test/flutter_test.dart';
 
 /// Root directory for Patrol failure diagnostic bundles.
 const String patrolReportsRoot = 'build/patrol_reports';
@@ -144,7 +147,7 @@ Future<bool> _captureScreenshot(
       repaintBoundary,
     );
     final image = await boundary.toImage(pixelRatio: 1);
-    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) {
       return false;
     }

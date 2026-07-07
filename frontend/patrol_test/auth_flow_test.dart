@@ -1,4 +1,3 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -6,7 +5,6 @@ import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:patrol/patrol.dart';
 
 import 'helpers/failure_reporter.dart';
 import 'helpers/patrol_harness.dart';

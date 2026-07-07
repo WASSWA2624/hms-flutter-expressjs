@@ -1,6 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
-import 'package:patrol/patrol.dart';
 
 import 'helpers/failure_reporter.dart';
 import 'helpers/patrol_harness.dart';
