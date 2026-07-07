@@ -330,6 +330,8 @@ const seedPharmacyCatalogForTenant = async (
       'pharmacy_storage_shelf',
       `${seedKey}:pharmacy-storage-shelf:a01:${facilityId}`,
       {
+        tenant_id: tenantId,
+        facility_id: facilityId,
         storage_room_id: room.id,
         shelf_code: 'A-01',
         label: 'Aisle A, shelf 1',

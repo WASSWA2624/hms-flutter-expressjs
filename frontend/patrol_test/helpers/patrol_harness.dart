@@ -11,16 +11,20 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
+import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:patrol/patrol.dart';
 
 import '../../test/helpers/test_harness.dart';
+import 'demo_credentials.dart';
 
 export '../../test/helpers/test_harness.dart';
 
@@ -33,25 +37,26 @@ const Size patrolDesktopViewport = Size(1440, 900);
 const String patrolTestTenantId = 'tenant-patrol-test';
 const String patrolTestFacilityId = 'facility-patrol-test';
 
-/// Module entitlements required to reach gated workspace routes in Patrol tests.
-const List<AppModuleEntitlement> patrolModuleEntitlements = <AppModuleEntitlement>[
-  AppModuleEntitlement(code: 'billing-insurance'),
-  AppModuleEntitlement(code: 'scheduling-queue'),
-  AppModuleEntitlement(code: 'inpatient-bed-management'),
-  AppModuleEntitlement(code: 'icu-critical-care'),
-  AppModuleEntitlement(code: 'encounters-vitals'),
-  AppModuleEntitlement(code: 'physiotherapy'),
-  AppModuleEntitlement(code: 'lab-workflows'),
-  AppModuleEntitlement(code: 'radiology-workflows'),
-  AppModuleEntitlement(code: 'pharmacy-dispensing'),
-  AppModuleEntitlement(code: 'facilities-maintenance'),
-  AppModuleEntitlement(code: 'hr-rosters'),
-  AppModuleEntitlement(code: 'biomedical-engineering-suite'),
-  AppModuleEntitlement(code: 'notifications-communications'),
-  AppModuleEntitlement(code: 'integrations-core'),
-  AppModuleEntitlement(code: 'theatre-anesthesia'),
-  AppModuleEntitlement(code: 'reporting-analytics'),
-];
+/// Module entitlements for offline shell tests that deep-link gated routes.
+const List<AppModuleEntitlement> patrolModuleEntitlements =
+    <AppModuleEntitlement>[
+      AppModuleEntitlement(code: 'billing-insurance'),
+      AppModuleEntitlement(code: 'scheduling-queue'),
+      AppModuleEntitlement(code: 'inpatient-bed-management'),
+      AppModuleEntitlement(code: 'icu-critical-care'),
+      AppModuleEntitlement(code: 'encounters-vitals'),
+      AppModuleEntitlement(code: 'physiotherapy'),
+      AppModuleEntitlement(code: 'lab-workflows'),
+      AppModuleEntitlement(code: 'radiology-workflows'),
+      AppModuleEntitlement(code: 'pharmacy-dispensing'),
+      AppModuleEntitlement(code: 'facilities-maintenance'),
+      AppModuleEntitlement(code: 'hr-rosters'),
+      AppModuleEntitlement(code: 'biomedical-engineering-suite'),
+      AppModuleEntitlement(code: 'notifications-communications'),
+      AppModuleEntitlement(code: 'integrations-core'),
+      AppModuleEntitlement(code: 'theatre-anesthesia'),
+      AppModuleEntitlement(code: 'reporting-analytics'),
+    ];
 
 AppConfig patrolTestAppConfig() {
   return AppConfig.fromValues(
@@ -61,9 +66,13 @@ AppConfig patrolTestAppConfig() {
   );
 }
 
-List<Object?> patrolBaseOverrides() {
+List<Object?> patrolE2eOverrides() {
+  return <Object?>[appConfigProvider.overrideWithValue(patrolTestAppConfig())];
+}
+
+List<Object?> patrolShellOverrides() {
   return <Object?>[
-    appConfigProvider.overrideWithValue(patrolTestAppConfig()),
+    ...patrolE2eOverrides(),
     homeRepositoryProvider.overrideWithValue(_patrolHomeRepository),
   ];
 }
@@ -135,7 +144,6 @@ SessionState patrolAuthenticatedSessionState() {
 List<Object?> patrolAuthenticatedOverrides({
   String? initialLocation,
   SessionState? sessionState,
-  Size? viewport,
 }) {
   final SessionState effectiveSession =
       sessionState ?? patrolAuthenticatedSessionState();
@@ -149,32 +157,91 @@ List<Object?> patrolAuthenticatedOverrides({
 Future<void> pumpPatrolApp(
   PatrolIntegrationTester $, {
   List<Object?> overrides = const <Object?>[],
+  List<Object?> baseOverrides = const <Object?>[],
   Size viewport = patrolDesktopViewport,
 }) async {
   setTestViewport($.tester, viewport);
 
   await $.pumpWidget(
     ProviderScope(
-      overrides: <Object?>[
-        ...patrolBaseOverrides(),
-        ...overrides,
-      ].cast(),
+      overrides: <Object?>[...baseOverrides, ...overrides].cast(),
       child: const HosspiHmsApp(),
     ),
   );
   await $.pumpAndSettle(timeout: const Duration(seconds: 30));
 }
 
-Future<void> pumpPatrolAuthenticatedApp(
+Future<void> pumpPatrolShellApp(
   PatrolIntegrationTester $, {
-  String? initialLocation,
+  List<Object?> overrides = const <Object?>[],
   Size viewport = patrolDesktopViewport,
 }) {
   return pumpPatrolApp(
     $,
-    overrides: patrolAuthenticatedOverrides(initialLocation: initialLocation),
+    baseOverrides: patrolShellOverrides(),
+    overrides: overrides,
     viewport: viewport,
   );
+}
+
+Future<void> pumpPatrolE2eApp(
+  PatrolIntegrationTester $, {
+  String initialLocation = AppRoutes.login.path,
+  Size viewport = patrolDesktopViewport,
+}) {
+  return pumpPatrolApp(
+    $,
+    baseOverrides: patrolE2eOverrides(),
+    overrides: testReadyAppOverrides(
+      sessionState: const SessionState.unauthenticated(),
+      initialLocation: initialLocation,
+    ),
+    viewport: viewport,
+  );
+}
+
+Future<void> loginAs(PatrolIntegrationTester $, DemoAccount account) async {
+  expect(find.byType(LoginPage), findsOneWidget);
+  await _submitPatrolLogin($, account.email, demoAccountPassword);
+  await $.pumpAndSettle(timeout: const Duration(seconds: 45));
+  expect(find.byType(LoginPage), findsNothing);
+  expect(find.byType(HomePage), findsWidgets);
+}
+
+Future<void> loginAndOpenRoute(
+  PatrolIntegrationTester $,
+  DemoAccount account,
+  String path, {
+  Size viewport = patrolDesktopViewport,
+}) async {
+  await pumpPatrolE2eApp($, viewport: viewport);
+  await loginAs($, account);
+  if (path != AppRoutes.home.path) {
+    await goToModule($, path);
+  }
+}
+
+Future<void> logoutPatrol(PatrolIntegrationTester $) async {
+  await $.tester.tap(find.byTooltip('Account'));
+  await $.pumpAndSettle();
+  await $.tester.tap(find.text('Logout'));
+  await $.pumpAndSettle(timeout: const Duration(seconds: 30));
+  expect(find.byType(LoginPage), findsOneWidget);
+}
+
+Future<void> _submitPatrolLogin(
+  PatrolIntegrationTester $,
+  String email,
+  String password,
+) async {
+  await $.tester.enterText(find.byType(EditableText).at(0), email);
+  await $.tester.enterText(find.byType(EditableText).at(1), password);
+  await $.tester.tap(
+    find.byWidgetPredicate(
+      (Widget widget) => widget is AppButton && widget.label == 'Sign in',
+    ),
+  );
+  await $.pump();
 }
 
 Future<void> goToModule(
@@ -206,7 +273,9 @@ Future<void> expectAnyVisible(
   final Stopwatch stopwatch = Stopwatch()..start();
 
   while (stopwatch.elapsed < timeout) {
-    remaining.removeWhere((String label) => find.text(label).evaluate().isNotEmpty);
+    remaining.removeWhere(
+      (String label) => find.text(label).evaluate().isNotEmpty,
+    );
     if (remaining.isEmpty) {
       return;
     }
@@ -218,6 +287,26 @@ Future<void> expectAnyVisible(
 
 AppLocalizations patrolL10n(PatrolIntegrationTester $) {
   return $.tester.element(find.byType(Scaffold).first).l10n;
+}
+
+DemoAccount demoAccountForRoute(AppRouteData route) {
+  return switch (route.name) {
+    'patients' => DemoAccount.reception,
+    'opd' => DemoAccount.doctor,
+    'clinical' => DemoAccount.doctor,
+    'lab' => DemoAccount.lab,
+    'radiology' => DemoAccount.radiology,
+    'pharmacy' => DemoAccount.pharmacy,
+    'billing' => DemoAccount.billing,
+    'claims' => DemoAccount.billing,
+    'hr' => DemoAccount.hr,
+    'biomedical' => DemoAccount.biomed,
+    'housekeeping' => DemoAccount.housekeeping,
+    'operations' => DemoAccount.operations,
+    'emergency' => DemoAccount.ambulance,
+    'nursing' => DemoAccount.nurse,
+    _ => DemoAccount.tenantAdmin,
+  };
 }
 
 /// Workspace routes with stable shell labels for Patrol navigation checks.
@@ -253,10 +342,7 @@ final List<PatrolWorkspaceTarget> patrolWorkspaceTargets =
       ),
       const PatrolWorkspaceTarget(
         route: AppRoutes.physiotherapy,
-        labels: <String>[
-          'Physiotherapy',
-          'Loading physiotherapy workspace',
-        ],
+        labels: <String>['Physiotherapy', 'Loading physiotherapy workspace'],
       ),
       const PatrolWorkspaceTarget(
         route: AppRoutes.lab,
@@ -296,10 +382,7 @@ final List<PatrolWorkspaceTarget> patrolWorkspaceTargets =
       ),
       const PatrolWorkspaceTarget(
         route: AppRoutes.discharge,
-        labels: <String>[
-          'Discharge workspace',
-          'Loading discharge workspace',
-        ],
+        labels: <String>['Discharge workspace', 'Loading discharge workspace'],
       ),
       const PatrolWorkspaceTarget(
         route: AppRoutes.mortuary,

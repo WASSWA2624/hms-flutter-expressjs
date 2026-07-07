@@ -12,13 +12,15 @@ Future<void> writePatrolFailureBundle({
   final Directory reportDir = Directory('$patrolReportsRoot/$runId');
   await reportDir.create(recursive: true);
 
-  await File('${reportDir.path}/diagnostics.json').writeAsString(
-    const JsonEncoder.withIndent('  ').convert(payload),
-  );
+  await File(
+    '${reportDir.path}/diagnostics.json',
+  ).writeAsString(const JsonEncoder.withIndent('  ').convert(payload));
   await File('${reportDir.path}/summary.txt').writeAsString(summary);
 
   if (screenshotBytes != null) {
-    await File('${reportDir.path}/screenshot.png').writeAsBytes(screenshotBytes);
+    await File(
+      '${reportDir.path}/screenshot.png',
+    ).writeAsBytes(screenshotBytes);
   } else {
     await File('${reportDir.path}/screenshot.txt').writeAsString(
       'Screenshot capture was unavailable on this platform binding.',
@@ -35,11 +37,10 @@ String? readPatrolGitSha() {
     return fromDefine;
   }
   try {
-    final ProcessResult result = Process.runSync(
-      'git',
-      <String>['rev-parse', 'HEAD'],
-      workingDirectory: Directory.current.path,
-    );
+    final ProcessResult result = Process.runSync('git', <String>[
+      'rev-parse',
+      'HEAD',
+    ], workingDirectory: Directory.current.path);
     if (result.exitCode == 0) {
       return (result.stdout as String).trim();
     }

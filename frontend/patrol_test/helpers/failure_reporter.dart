@@ -10,7 +10,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:patrol/patrol.dart';
 
 import 'failure_reporter_io.dart'
-    if (dart.library.html) 'failure_reporter_web.dart' as failure_storage;
+    if (dart.library.html) 'failure_reporter_web.dart'
+    as failure_storage;
 
 export 'package:flutter_test/flutter_test.dart';
 
@@ -94,7 +95,8 @@ Future<void> capturePatrolFailureDiagnostics({
     'reproCommand': reproCommand,
   };
 
-  final String summary = '''
+  final String summary =
+      '''
 Patrol test failure
 ===================
 Test: $testName

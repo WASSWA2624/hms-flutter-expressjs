@@ -230,6 +230,9 @@ void main() {
     test('allows permitted staff patient flow roles', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'scheduling-queue'),
+        ],
         user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
       );
       final AppRouteGuards guards = AppRouteGuards(

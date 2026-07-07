@@ -1,12 +1,24 @@
 # Integration Tests
 
-Integration tests cover startup, navigation, and platform-critical flows that
-must run without production services or secrets.
+Integration tests cover startup, routing, auth guards, responsive shell layout,
+and workspace deep-links using provider overrides only — no live backend or secrets.
 
-For Patrol end-to-end suites (module workspaces, failure diagnostics, web/native
-automation), see [`patrol_test/README.md`](../patrol_test/README.md).
+For Patrol end-to-end suites (real login, module workflows, failure diagnostics),
+see [`patrol_test/README.md`](../patrol_test/README.md).
 
-Run the integration suite locally with:
+## Suites
+
+| File | Coverage |
+| ---- | -------- |
+| `startup_navigation_smoke_test.dart` | App boot, home load, 404 route |
+| `auth_shell_test.dart` | Unauthenticated redirect, login shell, session restore |
+| `routing_guards_test.dart` | Protected workspace routes reject unauthenticated users |
+| `responsive_shell_test.dart` | Shell renders at mobile + desktop viewports |
+| `module_navigation_test.dart` | Deep-link to each workspace route with mocked session |
+
+## Run locally
+
+From `frontend/`:
 
 ```sh
 flutter test integration_test
@@ -18,8 +30,13 @@ When multiple Flutter devices are available, pass the target explicitly:
 flutter test integration_test -d <deviceId>
 ```
 
-Run a specific smoke test with:
+Run a specific suite:
 
 ```sh
-flutter test integration_test/startup_navigation_smoke_test.dart
+flutter test integration_test/auth_shell_test.dart
 ```
+
+## Related docs
+
+- [`patrol_test/README.md`](../patrol_test/README.md) — E2E with seeded backend
+- [`docs/release/build-ci-release.md`](../docs/release/build-ci-release.md) — CI quality gates
