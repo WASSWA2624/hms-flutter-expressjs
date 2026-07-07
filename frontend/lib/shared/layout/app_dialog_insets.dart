@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 
 abstract final class AppDialogInsets {
   static EdgeInsets paddingFor(
@@ -9,11 +10,10 @@ abstract final class AppDialogInsets {
     required bool maximized,
   }) {
     if (maximized) {
-      final double inset = _maximizedInsetFor(
+      return _maximizedPaddingFor(
         breakpoint,
         designTokens: designTokens,
       );
-      return EdgeInsets.all(inset);
     }
 
     final double inset = _normalInsetFor(
@@ -63,11 +63,18 @@ abstract final class AppDialogInsets {
     );
   }
 
-  static double _maximizedInsetFor(
+  static EdgeInsets _maximizedPaddingFor(
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
   }) {
-    return 0;
+    if (breakpoint.index < AppBreakpoint.md.index) {
+      return EdgeInsets.zero;
+    }
+
+    return EdgeInsets.only(
+      top: AppShellLayout.headerHeight,
+      bottom: designTokens.dialogSnackBarClearance,
+    );
   }
 
   static double _normalInsetFor(

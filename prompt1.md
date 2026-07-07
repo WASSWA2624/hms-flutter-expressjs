@@ -1,135 +1,94 @@
-# Feature: Pharmacy storage location (rooms & shelves)
+# Task: Fix Pharmacy "Catalog and stock" dialog + default queue filter
 
 ## Goal
 
-Let pharmacies record **where drugs are physically stored** so staff can locate stock quickly. Facilities (or pharmacy admins) maintain a catalog of **storage rooms** and **shelf numbers**; when adding or receiving stock, staff optionally assign a shelf. Location should surface on the drug catalog and inventory views—not only in the add dialog.
+On the Pharmacy workspace (`/pharmacy`), fix two issues:
 
-## Current state (problem)
+1. **Catalog and stock dialog** — clicking the toolbar button must reliably open the dialog; the page must not become inactive with no visible dialog.
+2. **Default queue filter** — the worklist should load with **All fields** (no status filter) instead of **Ready**, so all pharmacy orders are shown by default.
 
-| Gap | Detail |
-|-----|--------|
-| **No storage model** | `drug`, `drug_batch`, and `drug_inventory_map` have no room/shelf fields |
-| **No management UI** | Pharmacy workspace has no way to create rooms or shelves |
-| **Add drug dialog** | `PharmacyDrugEditDialog` covers identity, pricing, stock, and batch metadata—no storage location |
-| **Ward `room` is wrong domain** | Existing `room` model is for inpatient wards/beds (`rooms_beds` module)—do **not** reuse for pharmacy storage |
+## Observed behavior (from screenshots)
 
-Pharmacy “location” elsewhere (`OUTPATIENT` / `INPATIENT` on orders) refers to **care setting**, not physical shelf location.
+| Issue | What happens |
+|-------|----------------|
+| Catalog dialog | Clicking **Catalog and stock** dims/blocks the page (modal barrier) but the dialog does not appear. A full page refresh restores interactivity; the dialog may work again after refresh. |
+| Queue filter | **Queue filter → Queue status** defaults to **Ready**. With no matching orders, the table shows the empty state (*"No pharmacy orders"*). User expects **All fields** so the full queue is visible on first load. |
 
-## Reference implementation
+## Target files
 
-Mirror the mortuary storage hierarchy (unit → slot → assignment):
+**Catalog dialog fix (shared + pharmacy):**
 
-| Concept | Mortuary reference |
-|---------|-------------------|
-| Storage area (room) | `mortuary_storage_unit` — facility-scoped, named, typed |
-| Position within area (shelf) | `mortuary_storage_slot` — `slot_code` + optional label, unique per unit |
-| Assignment to inventory | `mortuary_storage_assignment` — links case to unit + slot |
+- `frontend/lib/shared/components/app_dialog.dart` — dialog shell, `showAppDialog`, sizing/visibility
+- `frontend/lib/shared/layout/app_dialog_insets.dart` — inset/sizing for normal and maximized modes
+- `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` — `openPharmacyCatalogDialog`
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `prepareCatalogTab` / catalog data refresh
 
-**UI patterns:** mortuary workspace lookups (`storage_units`, slot pickers), `AppSelectField` cascades (room → shelf), inline “Add room/shelf” affordance where appropriate.
+**Default filter fix (pharmacy):**
 
-**Drug dialog patterns:** extend `PharmacyDrugEditDialog` (`frontend/lib/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart`) using existing `AppFormSection` / `AppResponsiveFieldRow.two` from the catalog refactor in `prompt.md`.
+- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart` — `PharmacyWorkbenchQuery` default, `isDefaultFilters`, `fromChip`
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `_loadInitialState`
+- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` — `_pharmacyFilterValue`, `_pharmacyQueryFromFilterValue`, filter UI wiring
 
-## Proposed data model
+## Root-cause hints
 
-Add **pharmacy-specific** tables (names illustrative—match project naming conventions):
+### Catalog dialog
 
-### `pharmacy_storage_room`
+- `openPharmacyCatalogDialog` calls `showAppDialog` with `AppDialog(initialMaximized: false, maxWidth: 1080)`.
+- If controller state is null, a loading `AppDialog` is shown; if state never resolves or the dialog is sized/positioned off-screen or behind the barrier, the user sees only an inactive page.
+- Investigate whether a failed/pending `pharmacyWorkspaceControllerProvider` state, dialog layout (insets, zero size, off-viewport position), or focus/barrier handling prevents the dialog from rendering.
+- Fix at the **shared dialog layer** where possible; avoid one-off pharmacy patches unless the bug is pharmacy-specific.
 
-| Field | Notes |
-|-------|-------|
-| `tenant_id`, `facility_id` | Scope to facility |
-| `name` | e.g. *Main store*, *Cold chain room* |
-| `code` | Optional short code for labels |
-| `is_active` | Soft-disable without deleting history |
+### Default filter
 
-### `pharmacy_storage_shelf`
+- `PharmacyWorkbenchQuery()` currently defaults to `status: 'ORDERED'`, which maps to **Ready** in the queue filter UI.
+- `PharmacyOrderFilter.all` correctly uses `status: null` (all statuses).
+- `_pharmacyQueryFromFilterValue` falls back with `status: status ?? 'ORDERED'`, which can re-apply **Ready** when clearing filters — align this with **All fields** semantics (`status: null`).
+- Update `isDefaultFilters` so the new unfiltered default is not treated as an active filter.
 
-| Field | Notes |
-|-------|-------|
-| `storage_room_id` | Parent room |
-| `shelf_code` | Required identifier, e.g. `A-12`, `R3-S5` |
-| `label` | Optional friendly name |
-| `is_active` | Default true |
+## Expected behavior
 
-**Unique constraint:** `(storage_room_id, shelf_code)`.
+### Catalog and stock
 
-### Location on inventory
+- Clicking **Catalog and stock** (toolbar or overflow menu) always opens a visible, interactive **Catalog and stock** dialog.
+- The modal barrier appears **with** the dialog; closing the dialog or pressing Escape restores page interactivity.
+- Dialog works on first visit without requiring a page refresh.
+- Existing catalog tabs (drugs, inventory, storage) and maximize/resize/close behavior remain intact.
 
-Store location at the **batch** level (batches can sit on different shelves). Optionally also persist a **default shelf** on the drug or `drug_inventory_map` for new receipts.
+### Queue filter default
 
-| Attach to | Fields | When |
-|-----------|--------|------|
-| `drug_batch` | `storage_room_id`, `storage_shelf_id` (nullable FKs) | Initial stock on add; editable on batch adjust |
-| `drug` or `facility_pharmacy_offering` | default `storage_shelf_id` (optional) | Pre-fill shelf on next receipt |
+- On initial Pharmacy page load, **Queue status** shows **All fields** (no status chip selected).
+- The worklist query uses `status: null` and returns orders across all statuses (subject only to search/pagination).
+- **Clear filters** resets queue status to **All fields**, not **Ready**.
+- Quick-filter chips (e.g. summary notifications for Ready, Partial) still apply their specific filters when clicked.
+- `hasActiveFilters` is `false` for the new default state.
 
-Prefer nullable FKs over free-text shelf strings so labels stay consistent and searchable.
+## Implementation constraints
 
-## UI scope
-
-### 1 — Storage catalog management *(new, facility-scoped)*
-
-Minimal CRUD reachable from pharmacy settings or a “Storage layout” panel:
-
-- List rooms for the current facility; add / rename / deactivate.
-- Per room: list shelves; add shelf codes; deactivate unused shelves.
-- Do not block drug workflows if catalog is empty—location remains optional.
-
-**Permissions:** facility admin or pharmacist role (align with existing pharmacy workspace auth).
-
-### 2 — Add / edit drug dialog *(extend existing dialog)*
-
-Add **Section — Storage location** *(add flow and batch receive; optional on edit if batch location is editable)*:
-
-| Field | Component | Required | Notes |
-|-------|-----------|----------|-------|
-| Storage room | `AppSelectField` | No | Options from facility catalog; “None” clears shelf |
-| Shelf | `AppSelectField` | No | Filtered by selected room; disabled until room chosen |
-
-Row: **room** + **shelf**.
-
-- Changing room clears shelf if the current shelf is not in the new room.
-- Helper text (muted): *Optional—helps staff find this drug on the floor.*
-- If room catalog is empty, show a compact empty state with link/action to add rooms (or defer to settings—pick one consistent pattern).
-
-### 3 — Catalog & inventory display *(read-only surfacing)*
-
-- Drug catalog row / detail: show `Room / Shelf` when set (e.g. *Main store · A-12*).
-- Batch or stock views: show batch shelf; allow filter/search by room or shelf code.
-
-Keep scope tight: management CRUD + dialog fields + catalog column/filter. Full warehouse map visualization is out of scope.
-
-## Backend parity
-
-Extend end-to-end—no UI-only fields:
-
-| Layer | Changes |
-|-------|---------|
-| Prisma | New models + optional FKs on `drug_batch` (and default on drug/offering if adopted) |
-| Schemas | Zod create/update for rooms, shelves, and `setupPharmacyDrugSchema` / batch payloads |
-| Service | `pharmacy-workspace.service.js` — room/shelf CRUD, include lookups in workbench/catalog responses |
-| Serializer | Return `storage_room_id`, `storage_room_label`, `storage_shelf_id`, `storage_shelf_code` on drugs/batches |
-| Frontend entities | `PharmacyDrugInput`, batch DTOs, lookup options on workspace state |
-
-**Validation:**
-
-- Shelf must belong to the selected room.
-- Deactivating a room/shelf must not break historical batch records (soft-delete / `is_active` only).
-- Location fields remain optional on create.
-
-## Implementation rules
-
-- **Do not reuse ward `room`** or mortuary tables—pharmacy storage is its own domain.
-- **Reuse shared components** (`AppSelectField`, `AppFormSection`, mortuary-style lookup wiring).
-- **Localization:** keys in `frontend/lib/l10n/app_en.arb` for section title, room/shelf labels, empty states, and catalog column header.
-- **Follow-on to `prompt.md`:** assume the grouped drug dialog already exists; add Section — Storage location without regressing batch/pricing work.
-- **Migration:** include seeder-friendly sample room/shelf for dev if other modules do.
+- Preserve responsive behavior on mobile, tablet, and desktop.
+- Reuse existing `AppSearchBarFilterGroup` / **All fields** pattern (`l10n.opdAllFieldsFilterLabel`) — do not introduce duplicate labels.
+- Do not change backend API contracts; this is a frontend default/query-mapping fix.
+- Keep **Ready** available as an explicit filter option; only change the **initial/default** filter.
 
 ## Acceptance criteria
 
-- [ ] Facility can create pharmacy storage rooms and shelf codes; shelves are unique per room.
-- [ ] Add-drug (initial stock) flow optionally assigns room + shelf; values persist on the created batch.
-- [ ] Room and shelf selects cascade correctly; both fields are optional.
-- [ ] Drug catalog or inventory list displays stored location when present.
-- [ ] API returns room/shelf labels for display without extra client joins.
-- [ ] Ward/inpatient `room` model and pharmacy order “location” filter are unchanged.
-- [ ] Deactivated rooms/shelves are hidden from pickers but retained on historical batches.
+- [ ] **Catalog and stock** opens reliably on first click without a page refresh.
+- [ ] No invisible modal barrier — dialog is always visible and dismissible.
+- [ ] Pharmacy worklist loads with **All fields** queue status on first visit.
+- [ ] Empty state appears only when no orders match the current search/filter, not because **Ready** is pre-selected.
+- [ ] Clear filters resets to **All fields** for queue status.
+- [ ] Existing pharmacy and dialog tests pass; add/update tests for default query and dialog open behavior where practical.
+
+## Verification
+
+```bash
+cd frontend
+flutter test test/shared/components/app_dialog_test.dart test/shared/layout/app_dialog_insets_test.dart
+```
+
+**Manual checks (desktop web, `http://127.0.0.1:5201/pharmacy`):**
+
+1. Navigate to Pharmacy without refreshing — click **Catalog and stock** → dialog appears and is usable.
+2. Close dialog → page remains interactive.
+3. Open **Queue filter** → **Queue status** shows **All fields** on first load.
+4. Confirm orders from multiple statuses appear (if data exists).
+5. Select **Ready**, then **Clear filters** → status returns to **All fields**, not **Ready**.

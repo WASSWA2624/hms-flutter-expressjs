@@ -197,8 +197,6 @@ void main() {
       shellMaximized.size.height,
       closeTo(expectedMaximizedSize.height, 1),
     );
-    expect(shellMaximized.size.width, closeTo(viewport.width, 1));
-    expect(shellMaximized.size.height, closeTo(viewport.height, 1));
     expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
     expect(shellMaximized.size.height, greaterThan(heightBefore + 50));
 
@@ -299,15 +297,24 @@ void main() {
     expect(find.byIcon(Icons.fullscreen_exit), findsNothing);
   });
 
-  testWidgets('maximized dialog fills viewport on mobile and tablet', (
+  testWidgets('maximized dialog fills viewport on mobile and workspace on tablet', (
     WidgetTester tester,
   ) async {
     const AppDesignTokens designTokens = AppDesignTokens.standard;
 
-    for (final ({Size viewport, AppBreakpoint breakpoint}) config
-        in <({Size viewport, AppBreakpoint breakpoint})>[
-          (viewport: const Size(400, 700), breakpoint: AppBreakpoint.sm),
-          (viewport: const Size(800, 700), breakpoint: AppBreakpoint.md),
+    for (final ({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})
+        config
+        in <({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})>[
+          (
+            viewport: const Size(400, 700),
+            breakpoint: AppBreakpoint.sm,
+            fillsViewport: true,
+          ),
+          (
+            viewport: const Size(800, 700),
+            breakpoint: AppBreakpoint.md,
+            fillsViewport: false,
+          ),
         ]) {
       final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
         config.viewport,
@@ -348,8 +355,12 @@ void main() {
       final RenderBox shell = _dialogShellRenderBox(tester);
       expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
       expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
-      expect(shell.size.width, closeTo(config.viewport.width, 1));
-      expect(shell.size.height, closeTo(config.viewport.height, 1));
+      if (config.fillsViewport) {
+        expect(shell.size.width, closeTo(config.viewport.width, 1));
+        expect(shell.size.height, closeTo(config.viewport.height, 1));
+      } else {
+        expect(shell.size.height, lessThan(config.viewport.height));
+      }
 
       await tester.binding.setSurfaceSize(null);
       await tester.pumpWidget(const SizedBox.shrink());

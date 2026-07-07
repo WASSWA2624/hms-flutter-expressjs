@@ -1,5 +1,6 @@
 export 'app_connectivity_indicator.dart';
 export 'app_fullscreen_toggle.dart';
+export 'app_shell_layout.dart';
 export 'app_toolbar_overflow_section.dart';
 export 'app_workspace.dart';
 export 'app_workspace_board_toggle.dart';

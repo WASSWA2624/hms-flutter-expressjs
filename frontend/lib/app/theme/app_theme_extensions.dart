@@ -279,9 +279,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     required this.dialogInsetMobile,
     required this.dialogInsetTablet,
     required this.dialogInsetDesktop,
-    required this.dialogMaximizedInsetMobile,
-    required this.dialogMaximizedInsetTablet,
-    required this.dialogMaximizedInsetDesktop,
     required this.dialogSnackBarClearance,
     required this.dialogMinWidth,
     required this.dialogMinHeight,
@@ -302,9 +299,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     dialogInsetMobile: 12,
     dialogInsetTablet: 24,
     dialogInsetDesktop: 24,
-    dialogMaximizedInsetMobile: 6,
-    dialogMaximizedInsetTablet: 12,
-    dialogMaximizedInsetDesktop: 16,
     dialogSnackBarClearance: 88,
     dialogMinWidth: 360,
     dialogMinHeight: 280,
@@ -324,9 +318,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   final double dialogInsetMobile;
   final double dialogInsetTablet;
   final double dialogInsetDesktop;
-  final double dialogMaximizedInsetMobile;
-  final double dialogMaximizedInsetTablet;
-  final double dialogMaximizedInsetDesktop;
   final double dialogSnackBarClearance;
   final double dialogMinWidth;
   final double dialogMinHeight;
@@ -347,9 +338,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
     double? dialogInsetMobile,
     double? dialogInsetTablet,
     double? dialogInsetDesktop,
-    double? dialogMaximizedInsetMobile,
-    double? dialogMaximizedInsetTablet,
-    double? dialogMaximizedInsetDesktop,
     double? dialogSnackBarClearance,
     double? dialogMinWidth,
     double? dialogMinHeight,
@@ -369,12 +357,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
       dialogInsetMobile: dialogInsetMobile ?? this.dialogInsetMobile,
       dialogInsetTablet: dialogInsetTablet ?? this.dialogInsetTablet,
       dialogInsetDesktop: dialogInsetDesktop ?? this.dialogInsetDesktop,
-      dialogMaximizedInsetMobile:
-          dialogMaximizedInsetMobile ?? this.dialogMaximizedInsetMobile,
-      dialogMaximizedInsetTablet:
-          dialogMaximizedInsetTablet ?? this.dialogMaximizedInsetTablet,
-      dialogMaximizedInsetDesktop:
-          dialogMaximizedInsetDesktop ?? this.dialogMaximizedInsetDesktop,
       dialogSnackBarClearance:
           dialogSnackBarClearance ?? this.dialogSnackBarClearance,
       dialogMinWidth: dialogMinWidth ?? this.dialogMinWidth,
@@ -427,21 +409,6 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
       dialogInsetDesktop: _lerpDouble(
         dialogInsetDesktop,
         other.dialogInsetDesktop,
-        t,
-      ),
-      dialogMaximizedInsetMobile: _lerpDouble(
-        dialogMaximizedInsetMobile,
-        other.dialogMaximizedInsetMobile,
-        t,
-      ),
-      dialogMaximizedInsetTablet: _lerpDouble(
-        dialogMaximizedInsetTablet,
-        other.dialogMaximizedInsetTablet,
-        t,
-      ),
-      dialogMaximizedInsetDesktop: _lerpDouble(
-        dialogMaximizedInsetDesktop,
-        other.dialogMaximizedInsetDesktop,
         t,
       ),
       dialogSnackBarClearance: _lerpDouble(

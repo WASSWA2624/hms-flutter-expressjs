@@ -1,102 +1,94 @@
-# Feature: Pharmacy Catalog & Stock — filter consolidation and table UX
+# Task: Fix Pharmacy "Catalog and stock" dialog + default queue filter
 
 ## Goal
 
-Refine the **Catalog and stock** panel (`/pharmacy`) so Drugs, Formulary, and Inventory tabs share a consistent toolbar pattern: one search bar with an integrated **Filter** dialog, clearer row actions, and better formulary readability. Reclaim vertical space currently consumed by standalone Storage room / Shelf dropdowns.
+On the Pharmacy workspace (`/pharmacy`), fix two issues:
 
-**Out of scope:** **Storage layout** tab — leave as-is.
+1. **Catalog and stock dialog** — clicking the toolbar button must reliably open the dialog; the page must not become inactive with no visible dialog.
+2. **Default queue filter** — the worklist should load with **All fields** (no status filter) instead of **Ready**, so all pharmacy orders are shown by default.
 
-## Primary file
+## Observed behavior (from screenshots)
 
-`frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart`
+| Issue | What happens |
+|-------|----------------|
+| Catalog dialog | Clicking **Catalog and stock** dims/blocks the page (modal barrier) but the dialog does not appear. A full page refresh restores interactivity; the dialog may work again after refresh. |
+| Queue filter | **Queue filter → Queue status** defaults to **Ready**. With no matching orders, the table shows the empty state (*"No pharmacy orders"*). User expects **All fields** so the full queue is visible on first load. |
 
-Reuse the existing advanced-filter pattern already used on the **Inventory** tab (`showAdvancedFilterButton`, `AppSearchBarFilterGroup`, `AppSearchBarFilterValue`) and shared components in `app_search_bar.dart` / `app_list_table.dart`.
+## Target files
 
----
+**Catalog dialog fix (shared + pharmacy):**
 
-## 1 — Drugs tab
+- `frontend/lib/shared/components/app_dialog.dart` — dialog shell, `showAppDialog`, sizing/visibility
+- `frontend/lib/shared/layout/app_dialog_insets.dart` — inset/sizing for normal and maximized modes
+- `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` — `openPharmacyCatalogDialog`
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `prepareCatalogTab` / catalog data refresh
 
-### Problem
+**Default filter fix (pharmacy):**
 
-Storage room and Shelf filters render as a separate row above the search bar, wasting space and splitting filtering across two UI areas.
+- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart` — `PharmacyWorkbenchQuery` default, `isDefaultFilters`, `fromChip`
+- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `_loadInitialState`
+- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` — `_pharmacyFilterValue`, `_pharmacyQueryFromFilterValue`, filter UI wiring
 
-### Required changes
+## Root-cause hints
 
-1. **Remove** the standalone `_StorageLocationFilters` row above the table.
-2. **Add** an advanced filter button to the search bar (same affordance as Inventory’s “Queue filter”).
-3. **Consolidate** into one filter dialog:
-   - **Storage room** — choices from `state.storageLayout` (active rooms only; include “All locations”).
-   - **Shelf** — choices scoped to the selected room; disabled/cleared when no room is selected.
-   - **Stock status** — reuse existing drug stock-status values already supported by `PharmacyDrugQuery.stockStatus` (if exposed server-side).
-4. Wire selections to existing controller methods (`applyDrugStorageFilter`, stock-status query updates) via `AppSearchBarFilterValue`.
-5. Show an active-filter indicator on the filter button when room, shelf, or stock status is set.
+### Catalog dialog
 
-### Row actions
+- `openPharmacyCatalogDialog` calls `showAppDialog` with `AppDialog(initialMaximized: false, maxWidth: 1080)`.
+- If controller state is null, a loading `AppDialog` is shown; if state never resolves or the dialog is sized/positioned off-screen or behind the barrier, the user sees only an inactive page.
+- Investigate whether a failed/pending `pharmacyWorkspaceControllerProvider` state, dialog layout (insets, zero size, off-viewport position), or focus/barrier handling prevents the dialog from rendering.
+- Fix at the **shared dialog layer** where possible; avoid one-off pharmacy patches unless the bug is pharmacy-specific.
 
-Replace icon-only Edit / Delete buttons with **labeled** buttons (icon + text), e.g. “Edit” and “Delete”, using existing l10n keys (`pharmacyEditDrugAction`, `pharmacyDeleteDrugAction`). Update `_catalogRowActions` or its call sites — set `iconOnly: false` on `AppButton`.
+### Default filter
 
----
+- `PharmacyWorkbenchQuery()` currently defaults to `status: 'ORDERED'`, which maps to **Ready** in the queue filter UI.
+- `PharmacyOrderFilter.all` correctly uses `status: null` (all statuses).
+- `_pharmacyQueryFromFilterValue` falls back with `status: status ?? 'ORDERED'`, which can re-apply **Ready** when clearing filters — align this with **All fields** semantics (`status: null`).
+- Update `isDefaultFilters` so the new unfiltered default is not treated as an active filter.
 
-## 2 — Formulary tab
+## Expected behavior
 
-### Problem
+### Catalog and stock
 
-- No advanced filter; only free-text search.
-- **Drug** column shows formulary IDs (`FRM-…`) instead of the linked drug’s human-readable name (see screenshot).
+- Clicking **Catalog and stock** (toolbar or overflow menu) always opens a visible, interactive **Catalog and stock** dialog.
+- The modal barrier appears **with** the dialog; closing the dialog or pressing Escape restores page interactivity.
+- Dialog works on first visit without requiring a page refresh.
+- Existing catalog tabs (drugs, inventory, storage) and maximize/resize/close behavior remain intact.
 
-### Required changes
+### Queue filter default
 
-1. **Add** advanced filter to the search bar with at least:
-   - **Active status** — All / Yes / No (maps to `PharmacyFormularyQuery.isActive`).
-2. **Fix drug name display:**
-   - Ensure the table shows the linked drug’s display name (e.g. *Acyclovir | 400 mg | Tablet*), not the formulary `display_id`.
-   - If the list API omits nested `drug` data, extend the backend formulary list response (include `drug.name`, `strength`, `form`, `code`) and confirm `PharmacyFormularyItemDto` maps it to `drugDisplayName`.
-   - Prefer a dedicated **Drug name** column; keep formulary ID optional or in a secondary column if needed for support staff.
-3. **Labeled row actions** — same pattern as Drugs (“Edit”, “Delete”).
+- On initial Pharmacy page load, **Queue status** shows **All fields** (no status chip selected).
+- The worklist query uses `status: null` and returns orders across all statuses (subject only to search/pagination).
+- **Clear filters** resets queue status to **All fields**, not **Ready**.
+- Quick-filter chips (e.g. summary notifications for Ready, Partial) still apply their specific filters when clicked.
+- `hasActiveFilters` is `false` for the new default state.
 
----
+## Implementation constraints
 
-## 3 — Inventory tab
-
-### Problem
-
-Storage room / Shelf sit above the search bar while stock-status filters live inside the Queue filter dialog. The **Facility** column is redundant in a facility-scoped pharmacy workspace.
-
-### Required changes
-
-1. **Remove** the standalone `_StorageLocationFilters` row.
-2. **Extend** the existing Queue filter dialog to include:
-   - **Storage room** and **Shelf** (cascading, same rules as Drugs).
-   - Existing **Stock status** choices (low stock, expiring soon, expired) — keep current behavior.
-3. Wire room/shelf to `PharmacyInventoryStockQuery` via `applyInventoryStorageFilter`.
-4. **Remove** the **Facility** column from the inventory table (`pharmacyInventoryFacilityColumnLabel`).
-5. **Labeled row actions** — show “Adjust” (or existing edit label) and “Delete” with visible text, not icons alone.
-
----
-
-## 4 — Storage layout tab
-
-**No changes.** Current room list, “+ Add room”, shelf expansion, and inline actions are acceptable.
-
----
-
-## Implementation rules
-
-- **Do not** introduce a second filter UI pattern — one search bar + one filter dialog per tab.
-- **Cascade** shelf options when room changes; clearing room clears shelf.
-- Hide room/shelf filter groups when `storageLayout.rooms` is empty (location filters remain optional).
-- Preserve existing permissions (`AppAccessActionGate`), pagination, bulk selection, and column-settings behavior.
-- Add or reuse l10n keys in `frontend/lib/l10n/app_en.arb` for any new filter group labels.
-- Keep backend query params aligned (`storage_room_id`, `storage_shelf_id`, `is_active`, stock-status flags).
-
----
+- Preserve responsive behavior on mobile, tablet, and desktop.
+- Reuse existing `AppSearchBarFilterGroup` / **All fields** pattern (`l10n.opdAllFieldsFilterLabel`) — do not introduce duplicate labels.
+- Do not change backend API contracts; this is a frontend default/query-mapping fix.
+- Keep **Ready** available as an explicit filter option; only change the **initial/default** filter.
 
 ## Acceptance criteria
 
-- [ ] **Drugs:** No standalone storage filter row; room, shelf, and stock status filter from the search-bar filter dialog.
-- [ ] **Formulary:** Filter dialog includes active status; table shows readable **drug name** for each row.
-- [ ] **Inventory:** Room and shelf live inside Queue filter with stock status; **Facility** column removed.
-- [ ] **Drugs, Formulary, Inventory:** Edit and Delete (or Adjust/Delete on inventory) buttons show visible text labels.
-- [ ] **Storage layout:** Unchanged.
-- [ ] Active filter state is visually indicated; Apply / Clear reset filters correctly.
-- [ ] No regression to search, pagination, add/edit/delete flows, or storage-layout CRUD.
+- [ ] **Catalog and stock** opens reliably on first click without a page refresh.
+- [ ] No invisible modal barrier — dialog is always visible and dismissible.
+- [ ] Pharmacy worklist loads with **All fields** queue status on first visit.
+- [ ] Empty state appears only when no orders match the current search/filter, not because **Ready** is pre-selected.
+- [ ] Clear filters resets to **All fields** for queue status.
+- [ ] Existing pharmacy and dialog tests pass; add/update tests for default query and dialog open behavior where practical.
+
+## Verification
+
+```bash
+cd frontend
+flutter test test/shared/components/app_dialog_test.dart test/shared/layout/app_dialog_insets_test.dart
+```
+
+**Manual checks (desktop web, `http://127.0.0.1:5201/pharmacy`):**
+
+1. Navigate to Pharmacy without refreshing — click **Catalog and stock** → dialog appears and is usable.
+2. Close dialog → page remains interactive.
+3. Open **Queue filter** → **Queue status** shows **All fields** on first load.
+4. Confirm orders from multiple statuses appear (if data exists).
+5. Select **Ready**, then **Clear filters** → status returns to **All fields**, not **Ready**.

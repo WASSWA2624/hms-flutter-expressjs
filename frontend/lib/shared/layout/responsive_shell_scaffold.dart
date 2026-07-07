@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_connectivity_indicator.dart';
 import 'package:hosspi_hms/shared/layout/app_fullscreen_toggle.dart';
+import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
 final class ResponsiveShellDestination {
@@ -478,7 +479,7 @@ class AppMenuBar extends StatelessWidget {
         ),
       ),
       child: SizedBox(
-        height: _headerHeight,
+        height: AppShellLayout.headerHeight,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
           child: Row(
@@ -1696,8 +1697,7 @@ class _SidebarResizeHandle extends StatelessWidget {
   }
 }
 
-const double _headerHeight = 44;
-const double _drawerHeaderHeight = 44;
+const double _drawerHeaderHeight = AppShellLayout.headerHeight;
 const double _headerLogoSize = 24;
 const double _mobileHeaderLogoSize = 22;
 const double _drawerLogoSize = 24;

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
+import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 
 void main() {
   group('AppDialogInsets', () {
@@ -27,7 +28,7 @@ void main() {
       );
     });
 
-    test('maximized padding fills the viewport without outer gutter', () {
+    test('maximized mobile padding fills the viewport without outer gutter', () {
       expect(
         AppDialogInsets.paddingFor(
           AppBreakpoint.sm,
@@ -36,20 +37,40 @@ void main() {
         ),
         EdgeInsets.zero,
       );
-      expect(
-        AppDialogInsets.paddingFor(
-          AppBreakpoint.xl,
-          designTokens: tokens,
-          maximized: true,
-        ),
-        EdgeInsets.zero,
-      );
     });
 
-    test('available size uses full viewport when maximized', () {
+    test(
+      'maximized desktop padding clears the shell header and snack bar',
+      () {
+        expect(
+          AppDialogInsets.paddingFor(
+            AppBreakpoint.lg,
+            designTokens: tokens,
+            maximized: true,
+          ),
+          EdgeInsets.only(
+            top: AppShellLayout.headerHeight,
+            bottom: tokens.dialogSnackBarClearance,
+          ),
+        );
+        expect(
+          AppDialogInsets.paddingFor(
+            AppBreakpoint.xl,
+            designTokens: tokens,
+            maximized: true,
+          ),
+          EdgeInsets.only(
+            top: AppShellLayout.headerHeight,
+            bottom: tokens.dialogSnackBarClearance,
+          ),
+        );
+      },
+    );
+
+    test('available size uses full viewport on mobile when maximized', () {
       final Size available = AppDialogInsets.availableSizeFor(
         const Size(1000, 700),
-        AppBreakpoint.lg,
+        AppBreakpoint.sm,
         designTokens: tokens,
         maximized: true,
       );
@@ -57,5 +78,25 @@ void main() {
       expect(available.width, 1000);
       expect(available.height, 700);
     });
+
+    test(
+      'available size clears shell header and snack bar when maximized on desktop',
+      () {
+        final Size available = AppDialogInsets.availableSizeFor(
+          const Size(1000, 700),
+          AppBreakpoint.lg,
+          designTokens: tokens,
+          maximized: true,
+        );
+
+        expect(available.width, 1000);
+        expect(
+          available.height,
+          700 -
+              AppShellLayout.headerHeight -
+              tokens.dialogSnackBarClearance,
+        );
+      },
+    );
   });
 }
