@@ -30,6 +30,7 @@ final class RealtimeService {
   bool _disposed = false;
   bool _shouldReconnect = false;
   int _reconnectAttempts = 0;
+  int _socketGeneration = 0;
 
   Stream<RealtimeMessage> get messages => _messages.stream;
 
@@ -59,6 +60,7 @@ final class RealtimeService {
     _shouldReconnect = false;
     _accessToken = null;
     _reconnectAttempts = 0;
+    _socketGeneration++;
     _reconnectTimer?.cancel();
     await _closeSocket();
   }
@@ -88,6 +90,7 @@ final class RealtimeService {
   }
 
   Future<void> _openSocket() async {
+    final int generation = ++_socketGeneration;
     await _closeSocket();
 
     final String? token = _accessToken;
@@ -103,9 +106,9 @@ final class RealtimeService {
       _subscription = channel.stream.cast<Object?>().listen(
         _handleSocketMessage,
         onError: (Object error, StackTrace stackTrace) {
-          _handleSocketClosed();
+          _handleSocketClosed(generation);
         },
-        onDone: _handleSocketClosed,
+        onDone: () => _handleSocketClosed(generation),
       );
     } catch (_) {
       _scheduleReconnect();
@@ -158,7 +161,11 @@ final class RealtimeService {
     _channel?.sink.add(jsonEncode(message.toJson()));
   }
 
-  void _handleSocketClosed() {
+  void _handleSocketClosed(int generation) {
+    if (generation != _socketGeneration) {
+      return;
+    }
+
     _subscription = null;
     _channel = null;
     _scheduleReconnect();

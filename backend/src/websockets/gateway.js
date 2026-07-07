@@ -856,10 +856,17 @@ const handleMessage = (ws, data) => {
     // Update last activity for any message received
     updateLastActivity(ws);
     
-    logger.info('WebSocket message received', {
-      userId,
-      event: message.event
-    });
+    const isConnectionKeepAliveEvent = [
+      CONNECTION_EVENTS.PING,
+      CONNECTION_EVENTS.PONG,
+      CONNECTION_EVENTS.HEARTBEAT
+    ].includes(message.event);
+    if (!isConnectionKeepAliveEvent) {
+      logger.info('WebSocket message received', {
+        userId,
+        event: message.event
+      });
+    }
 
     // Check RBAC for sensitive events (Step 5.5)
     // Per websockets.mdc: Role-based access enforced for sensitive events

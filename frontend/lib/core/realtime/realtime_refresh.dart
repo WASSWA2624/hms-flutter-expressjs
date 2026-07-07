@@ -11,18 +11,21 @@ typedef RealtimeRefreshCallback =
     Future<void> Function(RealtimeMessage message);
 typedef RealtimeRefreshDefer = bool Function();
 
-/// Debounced listener for workspace refreshes triggered by websocket events.
+const Duration _deferredRetryDelay = Duration(milliseconds: 50);
+
+/// Realtime listener for workspace refreshes triggered by websocket events.
 ///
 /// Controllers keep their own business-specific refresh methods; this helper
-/// centralizes websocket subscription, debouncing, and in-flight refresh
-/// protection so modules stay responsive during bursts of updates.
+/// centralizes websocket subscription, burst coalescing, and in-flight refresh
+/// protection so the first update is reflected immediately while follow-up
+/// events during the same refresh are collapsed into one trailing reload.
 void listenForRealtimeRefresh({
   required Ref ref,
   required Iterable<String> events,
   required RealtimeRefreshCallback onRefresh,
   RealtimeRefreshPredicate? shouldRefresh,
   RealtimeRefreshDefer? shouldDefer,
-  Duration debounce = const Duration(milliseconds: 250),
+  Duration debounce = Duration.zero,
   bool refreshOnReconnect = true,
   bool includeCrudMutations = false,
 }) {
@@ -30,9 +33,11 @@ void listenForRealtimeRefresh({
     ...events,
     if (refreshOnReconnect) RealtimeEvents.authenticated,
   });
-  Timer? debounceTimer;
+  Timer? trailingTimer;
   RealtimeMessage? pendingMessage;
   bool isRefreshing = false;
+  bool disposed = false;
+  bool flushScheduled = false;
 
   Future<void> runRefresh(RealtimeMessage message) async {
     try {
@@ -43,9 +48,16 @@ void listenForRealtimeRefresh({
     }
   }
 
+  late void Function({bool deferred}) scheduleFlush;
+
   void flush() {
-    debounceTimer?.cancel();
-    debounceTimer = null;
+    if (disposed) {
+      return;
+    }
+
+    trailingTimer?.cancel();
+    trailingTimer = null;
+    flushScheduled = false;
 
     final RealtimeMessage? message = pendingMessage;
     pendingMessage = null;
@@ -55,7 +67,7 @@ void listenForRealtimeRefresh({
 
     if (isRefreshing || (shouldDefer?.call() ?? false)) {
       pendingMessage = message;
-      debounceTimer = Timer(debounce, flush);
+      scheduleFlush(deferred: true);
       return;
     }
 
@@ -63,15 +75,32 @@ void listenForRealtimeRefresh({
     unawaited(
       runRefresh(message).whenComplete(() {
         isRefreshing = false;
-        if (pendingMessage != null) {
-          debounceTimer?.cancel();
-          debounceTimer = Timer(debounce, flush);
+        if (!disposed && pendingMessage != null) {
+          scheduleFlush();
         }
       }),
     );
   }
 
-  ref.onDispose(() => debounceTimer?.cancel());
+  scheduleFlush = ({bool deferred = false}) {
+    if (disposed || flushScheduled) {
+      return;
+    }
+    flushScheduled = true;
+    final Duration delay = deferred && debounce <= Duration.zero
+        ? _deferredRetryDelay
+        : debounce;
+    if (delay <= Duration.zero) {
+      scheduleMicrotask(flush);
+      return;
+    }
+    trailingTimer = Timer(delay, flush);
+  };
+
+  ref.onDispose(() {
+    disposed = true;
+    trailingTimer?.cancel();
+  });
   ref.listen<AsyncValue<RealtimeMessage>>(realtimeMessagesProvider, (
     AsyncValue<RealtimeMessage>? previous,
     AsyncValue<RealtimeMessage> next,
@@ -89,8 +118,7 @@ void listenForRealtimeRefresh({
         return;
       }
       pendingMessage = message;
-      debounceTimer?.cancel();
-      debounceTimer = Timer(debounce, flush);
+      scheduleFlush();
     }
   });
 }
