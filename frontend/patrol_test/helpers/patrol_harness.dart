@@ -6,9 +6,16 @@ import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
+import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:patrol/patrol.dart';
@@ -57,7 +64,46 @@ AppConfig patrolTestAppConfig() {
 List<Object?> patrolBaseOverrides() {
   return <Object?>[
     appConfigProvider.overrideWithValue(patrolTestAppConfig()),
+    homeRepositoryProvider.overrideWithValue(_patrolHomeRepository),
   ];
+}
+
+HomeDashboard patrolHomeDashboardFixture() {
+  final HomeDashboardProfile profile = homeProfileForRole(AppRole.tenantAdmin);
+
+  return HomeDashboard(
+    state: HomeDashboardLoadState.ready,
+    profile: profile,
+    context: const HomeDashboardContext(roleValue: 'TENANT_ADMIN'),
+    statusCards: profile.fallbackStatusCards(),
+    trend: HomeDashboardTrend.empty,
+    distribution: HomeDashboardDistribution.empty,
+    quickActionIds: profile.quickActionIds,
+    shortcutIds: profile.shortcutIds,
+    queuePreview: const <HomeQueueItem>[],
+    alerts: const <HomeAlertItem>[],
+    activity: const <HomeActivityItem>[],
+    tenantOptions: const <HomeTenantOption>[],
+    usesFallbackData: true,
+  );
+}
+
+final HomeRepository _patrolHomeRepository = _PatrolHomeRepository();
+
+final class _PatrolHomeRepository implements HomeRepository {
+  @override
+  Future<Result<HomeDashboard>> loadDashboard(
+    HomeDashboardRequest request,
+  ) async {
+    return Result<HomeDashboard>.success(patrolHomeDashboardFixture());
+  }
+
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+  }
 }
 
 SessionState patrolAuthenticatedSessionState() {

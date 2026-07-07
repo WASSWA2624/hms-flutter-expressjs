@@ -8,17 +8,9 @@ void main() {
     'authenticated home loads on desktop viewport',
     ($) async {
       await pumpPatrolAuthenticatedApp($, viewport: patrolDesktopViewport);
-      final l10n = patrolL10n($);
 
       expect(find.byType(HomePage), findsOneWidget);
-      await expectAnyVisible(
-        $,
-        <String>[
-          'Organization overview',
-          l10n.homeLoadingTitle,
-          'Today at a glance',
-        ],
-      );
+      expect(find.text('Organization overview'), findsOneWidget);
     },
     targetFile: 'patrol_test/smoke_test.dart',
     platform: 'chrome',
@@ -28,17 +20,9 @@ void main() {
     'authenticated home loads on mobile viewport',
     ($) async {
       await pumpPatrolAuthenticatedApp($, viewport: patrolMobileViewport);
-      final l10n = patrolL10n($);
 
       expect(find.byType(HomePage), findsOneWidget);
-      await expectAnyVisible(
-        $,
-        <String>[
-          'Organization overview',
-          l10n.homeLoadingTitle,
-          'Today at a glance',
-        ],
-      );
+      expect(find.text('Organization overview'), findsOneWidget);
     },
     targetFile: 'patrol_test/smoke_test.dart',
     platform: 'chrome',
