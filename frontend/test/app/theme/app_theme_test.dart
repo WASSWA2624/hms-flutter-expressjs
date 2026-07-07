@@ -18,10 +18,10 @@ void main() {
         AppFontFamily.fallback,
       );
       expect(theme.colorScheme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, AppLightThemePalette.blue700);
-      expect(theme.colorScheme.primaryContainer, AppLightThemePalette.blue50);
-      expect(theme.colorScheme.secondary, AppLightThemePalette.blue800);
-      expect(theme.colorScheme.tertiary, AppLightThemePalette.blue500);
+      expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
+      expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure50);
+      expect(theme.colorScheme.secondary, AppLightThemePalette.azure800);
+      expect(theme.colorScheme.tertiary, AppLightThemePalette.teal500);
       expect(theme.colorScheme.surface, AppLightThemePalette.surfaceRaised);
       expect(theme.colorScheme.onSurface, AppLightThemePalette.ink);
       expect(theme.colorScheme.surfaceTint, AppLightThemePalette.transparent);
@@ -73,12 +73,15 @@ void main() {
       final ThemeData theme = AppTheme.dark;
 
       expect(theme.colorScheme.brightness, Brightness.dark);
-      expect(theme.colorScheme.primary, AppDarkThemePalette.gray200);
-      expect(theme.colorScheme.primaryContainer, AppDarkThemePalette.gray800);
-      expect(theme.colorScheme.secondary, AppDarkThemePalette.gray400);
-      expect(theme.colorScheme.tertiary, AppDarkThemePalette.gray500);
-      expect(theme.colorScheme.surface, AppDarkThemePalette.darkSurface);
-      expect(theme.colorScheme.onSurface, AppDarkThemePalette.gray100);
+      expect(theme.colorScheme.primary, AppDarkThemePalette.azure300);
+      expect(
+        theme.colorScheme.primaryContainer,
+        AppDarkThemePalette.azureContainer,
+      );
+      expect(theme.colorScheme.secondary, AppDarkThemePalette.azure200);
+      expect(theme.colorScheme.tertiary, AppDarkThemePalette.teal300);
+      expect(theme.colorScheme.surface, AppDarkThemePalette.navy900);
+      expect(theme.colorScheme.onSurface, AppDarkThemePalette.ink100);
       expect(theme.colorScheme.surfaceTint, AppDarkThemePalette.transparent);
       expect(
         theme.scaffoldBackgroundColor,

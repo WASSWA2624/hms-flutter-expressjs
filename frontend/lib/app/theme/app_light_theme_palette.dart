@@ -2,83 +2,90 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
 
+/// Light theme palette: a calm, modern medical identity built on a refined
+/// **azure** brand with a fresh **teal** accent and cool-slate neutrals for a
+/// clean, high-contrast blend across text, surfaces, and controls.
 abstract final class AppLightThemePalette {
-  static const Color blue50 = Color(0xFFE3F2FD);
-  static const Color blue100 = Color(0xFFBBDEFB);
-  static const Color blue200 = Color(0xFF90CAF9);
-  static const Color blue300 = Color(0xFF64B5F6);
-  static const Color blue400 = Color(0xFF42A5F5);
-  static const Color blue500 = Color(0xFF2196F3);
-  static const Color blue600 = Color(0xFF1E88E5);
-  static const Color blue700 = Color(0xFF1976D2);
-  static const Color blue800 = Color(0xFF1565C0);
-  static const Color blue900 = Color(0xFF0D47A1);
+  // Brand — azure
+  static const Color azure50 = Color(0xFFECF3FF);
+  static const Color azure100 = Color(0xFFD6E6FF);
+  static const Color azure200 = Color(0xFFADC9FF);
+  static const Color azure300 = Color(0xFF7FA9FA);
+  static const Color azure400 = Color(0xFF4F87F2);
+  static const Color azure500 = Color(0xFF2C6BE4);
+  static const Color azure600 = Color(0xFF1D59D4);
+  static const Color azure700 = Color(0xFF1549BE);
+  static const Color azure800 = Color(0xFF103A99);
+  static const Color azure900 = Color(0xFF0B2A70);
 
-  static const Color blueAccentA100 = Color(0xFF82B1FF);
-  static const Color blueAccentA200 = Color(0xFF448AFF);
-  static const Color blueAccentA400 = Color(0xFF2979FF);
-  static const Color blueAccentA700 = Color(0xFF2962FF);
+  // Accent — teal
+  static const Color teal100 = Color(0xFFD3F3EE);
+  static const Color teal300 = Color(0xFF66D6C8);
+  static const Color teal500 = Color(0xFF12A594);
+  static const Color teal600 = Color(0xFF0C8474);
+  static const Color teal700 = Color(0xFF0A6055);
 
+  // Neutrals — cool slate
   static const Color transparent = Color(0x00000000);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color ink = Color(0xFF102033);
-  static const Color inkMuted = Color(0xFF52677A);
-  static const Color surfaceBase = Color(0xFFF6F9FC);
+  static const Color ink = Color(0xFF0E1B2A);
+  static const Color inkMuted = Color(0xFF566579);
+  static const Color surfaceBase = Color(0xFFF2F6FC);
   static const Color surfaceRaised = white;
-  static const Color surfaceSubtle = Color(0xFFF1F7FD);
-  static const Color surfaceMuted = Color(0xFFEAF3FB);
-  static const Color borderSubtle = Color(0xFFCFE0F2);
-  static const Color borderMuted = Color(0xFFE1EDF7);
+  static const Color surfaceSubtle = Color(0xFFECF3FB);
+  static const Color surfaceMuted = Color(0xFFE1EBF6);
+  static const Color borderSubtle = Color(0xFFD0DFEF);
+  static const Color borderMuted = Color(0xFFE6EEF8);
 
   static const AppStatusColors statusColors = AppStatusColors(
-    success: Color(0xFF1B7F45),
+    success: Color(0xFF1C844A),
     onSuccess: white,
-    successContainer: Color(0xFFEAF7EE),
-    onSuccessContainer: Color(0xFF145A32),
-    warning: Color(0xFFB95D00),
+    successContainer: Color(0xFFE6F5EC),
+    onSuccessContainer: Color(0xFF0F5C34),
+    warning: Color(0xFFBB6209),
     onWarning: white,
-    warningContainer: Color(0xFFFFF4E5),
-    onWarningContainer: Color(0xFF8A4300),
-    error: Color(0xFFC62828),
+    warningContainer: Color(0xFFFFF2E0),
+    onWarningContainer: Color(0xFF743B00),
+    error: Color(0xFFCE2F2F),
     onError: white,
-    errorContainer: Color(0xFFFDEDED),
-    onErrorContainer: Color(0xFF8E1B1B),
-    danger: Color(0xFFB42318),
+    errorContainer: Color(0xFFFBEAEA),
+    onErrorContainer: Color(0xFF8A1C1C),
+    danger: Color(0xFFBE241A),
     onDanger: white,
-    dangerContainer: Color(0xFFFFE7E3),
-    onDangerContainer: Color(0xFF842018),
-    info: blue700,
+    dangerContainer: Color(0xFFFEE6E2),
+    onDangerContainer: Color(0xFF7C1E14),
+    info: azure700,
     onInfo: white,
-    infoContainer: Color(0xFFEAF4FE),
-    onInfoContainer: blue900,
+    infoContainer: Color(0xFFE9F1FE),
+    onInfoContainer: azure900,
   );
 
   static final ColorScheme colorScheme =
-      ColorScheme.fromSeed(seedColor: blue500).copyWith(
-        primary: blue700,
+      ColorScheme.fromSeed(seedColor: azure500).copyWith(
+        primary: azure700,
         onPrimary: white,
-        primaryContainer: blue50,
-        onPrimaryContainer: blue900,
-        primaryFixed: blue100,
-        primaryFixedDim: blue200,
-        onPrimaryFixed: blue900,
-        onPrimaryFixedVariant: blue700,
-        secondary: blue800,
+        primaryContainer: azure50,
+        onPrimaryContainer: azure900,
+        primaryFixed: azure100,
+        primaryFixedDim: azure200,
+        onPrimaryFixed: azure900,
+        onPrimaryFixedVariant: azure700,
+        secondary: azure800,
         onSecondary: white,
         secondaryContainer: surfaceSubtle,
-        onSecondaryContainer: blue900,
-        secondaryFixed: blue100,
-        secondaryFixedDim: blue200,
-        onSecondaryFixed: blue900,
-        onSecondaryFixedVariant: blue700,
-        tertiary: blue500,
+        onSecondaryContainer: azure900,
+        secondaryFixed: azure100,
+        secondaryFixedDim: azure200,
+        onSecondaryFixed: azure900,
+        onSecondaryFixedVariant: azure700,
+        tertiary: teal500,
         onTertiary: white,
-        tertiaryContainer: blue100,
-        onTertiaryContainer: blue900,
-        tertiaryFixed: blueAccentA100,
-        tertiaryFixedDim: blueAccentA200,
-        onTertiaryFixed: blue900,
-        onTertiaryFixedVariant: blueAccentA700,
+        tertiaryContainer: teal100,
+        onTertiaryContainer: teal700,
+        tertiaryFixed: teal100,
+        tertiaryFixedDim: teal300,
+        onTertiaryFixed: teal700,
+        onTertiaryFixedVariant: teal600,
         surface: surfaceRaised,
         onSurface: ink,
         surfaceDim: surfaceMuted,
@@ -87,15 +94,15 @@ abstract final class AppLightThemePalette {
         surfaceContainerLow: surfaceSubtle,
         surfaceContainer: surfaceSubtle,
         surfaceContainerHigh: surfaceMuted,
-        surfaceContainerHighest: blue50,
+        surfaceContainerHighest: azure50,
         onSurfaceVariant: inkMuted,
-        outline: blue300,
+        outline: azure300,
         outlineVariant: borderSubtle,
         shadow: ink,
         scrim: ink,
-        inverseSurface: blue900,
+        inverseSurface: azure900,
         onInverseSurface: surfaceRaised,
-        inversePrimary: blue200,
+        inversePrimary: azure200,
         surfaceTint: transparent,
       );
 
@@ -105,18 +112,18 @@ abstract final class AppLightThemePalette {
     scaffoldBackgroundColor: surfaceBase,
     canvasColor: surfaceRaised,
     hoverColor: surfaceMuted,
-    splashColor: blue700.withValues(alpha: 0.08),
-    highlightColor: blue700.withValues(alpha: 0.06),
+    splashColor: azure700.withValues(alpha: 0.08),
+    highlightColor: azure700.withValues(alpha: 0.06),
     bodyTextColor: ink,
     displayTextColor: ink,
     borderColor: borderSubtle,
     disabledBorderColor: borderMuted,
-    focusedBorderColor: blue600,
+    focusedBorderColor: azure600,
     inputFillColor: surfaceRaised,
-    inputHoverColor: blue700.withValues(alpha: 0.04),
+    inputHoverColor: azure700.withValues(alpha: 0.04),
     inputHintColor: inkMuted.withValues(alpha: 0.78),
     inputLabelColor: inkMuted,
-    inputFloatingLabelColor: blue700,
+    inputFloatingLabelColor: azure700,
     appBarBackgroundColor: surfaceRaised,
     appBarForegroundColor: ink,
     appBarSurfaceTintColor: transparent,
