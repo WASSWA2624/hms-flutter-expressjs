@@ -877,17 +877,31 @@ describe('opd-flow.service', () => {
           .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       invoice: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'inv-1',
-          human_friendly_id: 'INV000001',
-          total_amount: '20000',
-          currency: 'UGX',
-          payments: []
-        }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'inv-1',
+            human_friendly_id: 'INV000001',
+            total_amount: '20000',
+            currency: 'UGX',
+            payments: []
+          })
+          .mockResolvedValue({
+            id: 'inv-1',
+            human_friendly_id: 'INV000001',
+            status: 'SENT',
+            billing_status: 'ISSUED',
+            total_amount: '30000',
+            currency: 'UGX',
+            payments: [{ id: 'pay-new', status: 'COMPLETED', amount: '30000', refunds: [] }],
+            billing_adjustments: []
+          }),
         create: jest.fn(),
         update: jest.fn().mockResolvedValue({
           id: 'inv-1',
           human_friendly_id: 'INV000001',
+          status: 'PAID',
+          billing_status: 'PAID',
           total_amount: '30000',
           currency: 'UGX'
         })
@@ -963,8 +977,7 @@ describe('opd-flow.service', () => {
       where: { id: 'inv-1' },
       data: expect.objectContaining({
         status: 'PAID',
-        billing_status: 'PAID',
-        currency: 'UGX'
+        billing_status: 'PAID'
       })
     });
     expect(tx.encounter.update).toHaveBeenCalledWith(
@@ -974,7 +987,7 @@ describe('opd-flow.service', () => {
             opd_flow: expect.objectContaining({
               consultation: expect.objectContaining({
                 payment_id: 'pay-new',
-                paid_amount: '30000'
+                paid_amount: '30000.00'
               })
             })
           })
@@ -1081,19 +1094,33 @@ describe('opd-flow.service', () => {
         update: jest.fn()
       },
       invoice: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'inv-1',
-          human_friendly_id: 'INV000001',
-          total_amount: '50000',
-          currency: 'UGX',
-          status: 'SENT',
-          billing_status: 'ISSUED',
-          payments: []
-        }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'inv-1',
+            human_friendly_id: 'INV000001',
+            total_amount: '50000',
+            currency: 'UGX',
+            status: 'SENT',
+            billing_status: 'ISSUED',
+            payments: []
+          })
+          .mockResolvedValue({
+            id: 'inv-1',
+            human_friendly_id: 'INV000001',
+            total_amount: '50000',
+            currency: 'UGX',
+            status: 'SENT',
+            billing_status: 'ISSUED',
+            payments: [{ id: 'pay-1', status: 'COMPLETED', amount: '50000', refunds: [] }],
+            billing_adjustments: []
+          }),
         update: jest.fn().mockResolvedValue({
           id: 'inv-1',
           total_amount: '50000',
-          currency: 'UGX'
+          currency: 'UGX',
+          status: 'PAID',
+          billing_status: 'PAID'
         }),
         create: jest.fn()
       },

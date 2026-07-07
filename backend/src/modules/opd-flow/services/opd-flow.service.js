@@ -950,13 +950,19 @@ const applyConsultationBillingSnapshot = async (
   const financials = recalculated?.financials || computeInvoiceFinancials(invoice || {});
   const netPaidTotal = toDecimalNumber(financials.net_paid_total);
   const balanceDue = toDecimalNumber(financials.balance_due);
-  const isPaid = PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.billing_status));
+  const effectiveTotal = toDecimalNumber(financials.effective_total);
+  const isPaid = balanceDue <= 0.009 && effectiveTotal > 0;
+  const derivedStatus = isPaid
+    ? 'PAID'
+    : netPaidTotal > 0
+      ? 'PARTIAL'
+      : normalizeUpper(invoice?.billing_status) || normalizeUpper(paymentStatus) || 'ISSUED';
 
   consultation.invoice_id = invoice?.id || invoiceId || consultation.invoice_id || null;
   if (payment?.id) {
     consultation.payment_id = payment.id;
   }
-  consultation.payment_status = normalizeUpper(invoice?.billing_status) || paymentStatus || consultation.payment_status || null;
+  consultation.payment_status = derivedStatus;
   consultation.is_paid = isPaid;
   consultation.paid_amount = netPaidTotal > 0 ? netPaidTotal.toFixed(2) : null;
   consultation.balance_due = balanceDue > 0 ? balanceDue.toFixed(2) : '0.00';
