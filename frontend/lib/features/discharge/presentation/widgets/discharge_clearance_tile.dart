@@ -118,7 +118,6 @@ String dischargeClearanceLabel(
     DischargeClearanceCode.insurance => l10n.dischargeClearanceInsurance,
     DischargeClearanceCode.documents => l10n.dischargeClearanceDocuments,
     DischargeClearanceCode.bedRelease => l10n.dischargeClearanceBedRelease,
-    DischargeClearanceCode.housekeeping =>
-      l10n.dischargeClearanceHousekeeping,
+    DischargeClearanceCode.housekeeping => l10n.dischargeClearanceHousekeeping,
   };
 }

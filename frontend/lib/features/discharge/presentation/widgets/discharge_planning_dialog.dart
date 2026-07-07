@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -396,7 +397,14 @@ class _ClearanceChecklist extends StatelessWidget {
           children: <Widget>[
             for (final DischargeClearanceItem item in detail.clearanceItems)
               if (!_isNonBlocking(item.code))
-                SizedBox(width: 220, child: _ClearanceTile(item: item)),
+                SizedBox(
+                  width: 220,
+                  child: DischargeClearanceTile(
+                    item: item,
+                    titleMaxLines: 2,
+                    showReference: false,
+                  ),
+                ),
           ],
         ),
       ],
@@ -407,54 +415,6 @@ class _ClearanceChecklist extends StatelessWidget {
     return code == DischargeClearanceCode.bedRelease ||
         code == DischargeClearanceCode.housekeeping ||
         code == DischargeClearanceCode.insurance;
-  }
-}
-
-class _ClearanceTile extends StatelessWidget {
-  const _ClearanceTile({required this.item});
-
-  final DischargeClearanceItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppWorkspaceStatus status = _clearanceStatus(context, item.state);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        color: colorScheme.surface,
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  _clearanceIcon(item.code),
-                  size: theme.appTokens.listIconSize,
-                  color: colorScheme.primary,
-                ),
-                SizedBox(width: theme.spacing.xs),
-                Expanded(
-                  child: Text(
-                    _clearanceLabel(context, item.code),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppWorkspaceStatusBadge(status: status),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -653,54 +613,4 @@ class _ResolveLinksSection extends StatelessWidget {
       ],
     );
   }
-}
-
-AppWorkspaceStatus _clearanceStatus(
-  BuildContext context,
-  DischargeClearanceState state,
-) {
-  return switch (state) {
-    DischargeClearanceState.complete => AppWorkspaceStatus(
-      label: context.l10n.dischargeClearanceComplete,
-      tone: AppWorkspaceStatusTone.success,
-      icon: Icons.check_circle_outline,
-    ),
-    DischargeClearanceState.pending => AppWorkspaceStatus(
-      label: context.l10n.dischargeClearancePending,
-      tone: AppWorkspaceStatusTone.warning,
-      icon: Icons.schedule_outlined,
-    ),
-    DischargeClearanceState.unavailable => AppWorkspaceStatus(
-      label: context.l10n.dischargeClearanceUnavailable,
-      tone: AppWorkspaceStatusTone.error,
-      icon: Icons.lock_outline,
-    ),
-  };
-}
-
-IconData _clearanceIcon(DischargeClearanceCode code) {
-  return switch (code) {
-    DischargeClearanceCode.doctor => Icons.medical_information_outlined,
-    DischargeClearanceCode.nursing => Icons.health_and_safety_outlined,
-    DischargeClearanceCode.pharmacy => Icons.medication_outlined,
-    DischargeClearanceCode.billing => Icons.receipt_long_outlined,
-    DischargeClearanceCode.insurance => Icons.policy_outlined,
-    DischargeClearanceCode.documents => Icons.description_outlined,
-    DischargeClearanceCode.bedRelease => Icons.bed_outlined,
-    DischargeClearanceCode.housekeeping => Icons.cleaning_services_outlined,
-  };
-}
-
-String _clearanceLabel(BuildContext context, DischargeClearanceCode code) {
-  final AppLocalizations l10n = context.l10n;
-  return switch (code) {
-    DischargeClearanceCode.doctor => l10n.dischargeClearanceDoctor,
-    DischargeClearanceCode.nursing => l10n.dischargeClearanceNursing,
-    DischargeClearanceCode.pharmacy => l10n.dischargeClearancePharmacy,
-    DischargeClearanceCode.billing => l10n.dischargeClearanceBilling,
-    DischargeClearanceCode.insurance => l10n.dischargeClearanceInsurance,
-    DischargeClearanceCode.documents => l10n.dischargeClearanceDocuments,
-    DischargeClearanceCode.bedRelease => l10n.dischargeClearanceBedRelease,
-    DischargeClearanceCode.housekeeping => l10n.dischargeClearanceHousekeeping,
-  };
 }
