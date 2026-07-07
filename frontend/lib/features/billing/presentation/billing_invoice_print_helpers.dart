@@ -6,7 +6,6 @@ import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_detail_header.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_age_formatter.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 Future<void> printBillingInvoice({
@@ -19,6 +18,7 @@ Future<void> printBillingInvoice({
     ref: ref,
     context: context,
     title: l10n.billingInvoiceLabel,
+    subtitle: billingInvoiceSubtitle(context, item),
     patientContext: buildPrintFormPatientContext(
       l10n,
       patientName: billingPatientName(context, item),
@@ -35,12 +35,15 @@ Future<void> printBillingInvoice({
   );
 }
 
+String billingInvoiceSubtitle(BuildContext context, BillingWorkItem item) {
+  final List<PrintFormMetadataItem> items = _invoiceSubtitleItems(context, item);
+  return items
+      .map((PrintFormMetadataItem entry) => '${entry.label}: ${entry.value};')
+      .join(' , ');
+}
+
 String billingInvoiceHtml(BuildContext context, BillingWorkItem item) {
   final AppLocalizations l10n = context.l10n;
-  final String detailsHtml = PrintFormTemplate.section(
-    title: l10n.billingInvoiceDetailTitle,
-    bodyHtml: PrintFormTemplate.keyValueGrid(_invoiceDetailItems(context, item)),
-  );
   final String lineItemsHtml = PrintFormTemplate.section(
     title: l10n.billingLineItemsTitle,
     bodyHtml: _lineItemsTableHtml(context, item),
@@ -49,15 +52,11 @@ String billingInvoiceHtml(BuildContext context, BillingWorkItem item) {
     title: l10n.billingPaymentsTitle,
     bodyHtml: _paymentsTableHtml(context, item),
   );
-  final String summaryHtml = PrintFormTemplate.section(
-    title: l10n.billingFinancialSummaryTitle,
-    bodyHtml: PrintFormTemplate.keyValueGrid(_financialSummaryItems(context, item)),
-  );
 
-  return '$detailsHtml$lineItemsHtml$paymentsHtml$summaryHtml';
+  return '$lineItemsHtml$paymentsHtml';
 }
 
-List<PrintFormMetadataItem> _invoiceDetailItems(
+List<PrintFormMetadataItem> _invoiceSubtitleItems(
   BuildContext context,
   BillingWorkItem item,
 ) {
@@ -91,15 +90,6 @@ List<PrintFormMetadataItem> _invoiceDetailItems(
       PrintFormMetadataItem(
         label: l10n.patientsGenderLabel,
         value: patientGenderLabel(l10n, gender),
-      ),
-    );
-  }
-
-  if (item.patientDateOfBirth != null) {
-    items.add(
-      PrintFormMetadataItem(
-        label: l10n.billingAgeLabel,
-        value: formatPatientAge(l10n, item.patientDateOfBirth),
       ),
     );
   }
@@ -196,43 +186,4 @@ String _paymentsTableHtml(BuildContext context, BillingWorkItem item) {
     rows: rows,
     emptyText: l10n.billingNoPayments,
   );
-}
-
-List<PrintFormMetadataItem> _financialSummaryItems(
-  BuildContext context,
-  BillingWorkItem item,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final BillingFinancials financials = item.financials;
-
-  return <PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.billingTotalAmountLabel,
-      value: billingMoney(context, financials.invoiceTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingAdjustmentsTitle,
-      value: billingMoney(context, financials.adjustmentTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingEffectiveTotalLabel,
-      value: billingMoney(context, financials.effectiveTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingGrossPaymentsLabel,
-      value: billingMoney(context, financials.grossPaidTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingRefundsLabel,
-      value: billingMoney(context, financials.refundedTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingNetPaidLabel,
-      value: billingMoney(context, financials.netPaidTotal, item.currency),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.billingBalanceColumn,
-      value: billingMoney(context, financials.balanceDue, item.currency),
-    ),
-  ];
 }
