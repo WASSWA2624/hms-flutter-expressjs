@@ -376,27 +376,25 @@ class _ButtonContent extends StatelessWidget {
       return labelText;
     }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final Widget label = constraints.maxWidth.isFinite
-            ? Flexible(child: labelText)
-            : labelText;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            _ButtonGlyph(
-              icon: leadingIcon,
-              iconSize: iconSize,
-              isLoading: isLoading,
-              loadingColor: loadingColor,
-              iconWidget: iconWidget,
-            ),
-            SizedBox(width: spacing.sm),
-            label,
-          ],
-        );
-      },
+    // `Flexible` lets the label ellipsize when the button is width-constrained
+    // while staying intrinsic-safe. A `LayoutBuilder` here would throw
+    // "LayoutBuilder does not support returning intrinsic dimensions" whenever
+    // the button is measured for intrinsics (e.g. inside a DataTable cell,
+    // which sizes columns with IntrinsicColumnWidth).
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        _ButtonGlyph(
+          icon: leadingIcon,
+          iconSize: iconSize,
+          isLoading: isLoading,
+          loadingColor: loadingColor,
+          iconWidget: iconWidget,
+        ),
+        SizedBox(width: spacing.sm),
+        Flexible(child: labelText),
+      ],
     );
   }
 }
