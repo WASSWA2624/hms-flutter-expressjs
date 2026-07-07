@@ -10,10 +10,7 @@ abstract final class AppDialogInsets {
     required bool maximized,
   }) {
     if (maximized) {
-      return _maximizedPaddingFor(
-        breakpoint,
-        designTokens: designTokens,
-      );
+      return _maximizedPaddingFor(breakpoint);
     }
 
     final double inset = _normalInsetFor(
@@ -63,18 +60,12 @@ abstract final class AppDialogInsets {
     );
   }
 
-  static EdgeInsets _maximizedPaddingFor(
-    AppBreakpoint breakpoint, {
-    required AppDesignTokens designTokens,
-  }) {
+  static EdgeInsets _maximizedPaddingFor(AppBreakpoint breakpoint) {
     if (breakpoint.index < AppBreakpoint.md.index) {
       return EdgeInsets.zero;
     }
 
-    return EdgeInsets.only(
-      top: AppShellLayout.headerHeight,
-      bottom: designTokens.dialogSnackBarClearance,
-    );
+    return const EdgeInsets.only(top: AppShellLayout.headerHeight);
   }
 
   static double _normalInsetFor(

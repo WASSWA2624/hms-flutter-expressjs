@@ -478,7 +478,7 @@ final class PharmacyInventoryAdjustInput {
 final class PharmacyWorkbenchQuery {
   const PharmacyWorkbenchQuery({
     this.search = '',
-    this.status = 'ORDERED',
+    this.status,
     this.location,
     this.pendingPayment,
     this.partialStock,
@@ -501,7 +501,7 @@ final class PharmacyWorkbenchQuery {
   final AppPageRequest pageRequest;
 
   bool get isDefaultFilters {
-    return status == 'ORDERED' &&
+    return status == null &&
         location == null &&
         pendingPayment != true &&
         partialStock != true &&
@@ -549,10 +549,10 @@ final class PharmacyWorkbenchQuery {
 
   static PharmacyWorkbenchQuery fromChip(PharmacyOrderFilter filter) {
     return switch (filter) {
-      PharmacyOrderFilter.all => const PharmacyWorkbenchQuery(
-        status: null,
+      PharmacyOrderFilter.all => const PharmacyWorkbenchQuery(),
+      PharmacyOrderFilter.ready => const PharmacyWorkbenchQuery(
+        status: 'ORDERED',
       ),
-      PharmacyOrderFilter.ready => const PharmacyWorkbenchQuery(),
       PharmacyOrderFilter.partial => const PharmacyWorkbenchQuery(
         status: 'PARTIALLY_DISPENSED',
       ),
@@ -563,27 +563,21 @@ final class PharmacyWorkbenchQuery {
         status: 'CANCELLED',
       ),
       PharmacyOrderFilter.pendingPayment => const PharmacyWorkbenchQuery(
-        status: null,
         pendingPayment: true,
       ),
       PharmacyOrderFilter.outpatient => const PharmacyWorkbenchQuery(
-        status: null,
         location: 'OUTPATIENT',
       ),
       PharmacyOrderFilter.ward => const PharmacyWorkbenchQuery(
-        status: null,
         location: 'INPATIENT',
       ),
       PharmacyOrderFilter.discharge => const PharmacyWorkbenchQuery(
-        status: null,
         location: 'DISCHARGE',
       ),
       PharmacyOrderFilter.partialStock => const PharmacyWorkbenchQuery(
-        status: null,
         partialStock: true,
       ),
       PharmacyOrderFilter.urgent => const PharmacyWorkbenchQuery(
-        status: null,
         urgent: true,
       ),
     };

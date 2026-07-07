@@ -91,13 +91,20 @@ class _AppDialogState extends State<AppDialog> {
     final double defaultWidth = widget.maxWidth.isFinite
         ? math.min(widget.maxWidth, availableWidth)
         : availableWidth;
+    final double defaultScrollableHeight = _defaultScrollableShellHeight(
+      maxHeight,
+      designTokens,
+    );
     final Size? desktopSize = _desktopSize;
     final double shellWidth = _isMaximized
         ? availableWidth
         : (desktopSize?.width ?? defaultWidth);
     final double shellHeight = _isMaximized
         ? maxHeight
-        : (desktopSize?.height ?? maxHeight);
+        : (desktopSize?.height ??
+              (widget.scrollable && desktopInteractive
+                  ? defaultScrollableHeight
+                  : maxHeight));
     final BoxConstraints dialogConstraints = BoxConstraints(
       maxWidth: _isMaximized || desktopInteractive ? shellWidth : defaultWidth,
       maxHeight: shellHeight,
@@ -109,7 +116,8 @@ class _AppDialogState extends State<AppDialog> {
     final bool fillShellHeight =
         pinFooter ||
         _isMaximized ||
-        (desktopInteractive && desktopSize != null);
+        (desktopInteractive && desktopSize != null) ||
+        (desktopInteractive && widget.scrollable && !_isMaximized);
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -388,6 +396,16 @@ class _AppDialogState extends State<AppDialog> {
     });
   }
 
+  static double _defaultScrollableShellHeight(
+    double maxHeight,
+    AppDesignTokens designTokens,
+  ) {
+    return math.max(
+      designTokens.dialogMinHeight,
+      math.min(maxHeight, maxHeight * 0.75),
+    );
+  }
+
   Size _measuredShellSize(
     AppDesignTokens designTokens,
     double defaultWidth,
@@ -489,17 +507,15 @@ class _DialogBody extends StatelessWidget {
                         : dialogContent,
                   ),
                 )
-              : Flexible(
-                  child: Padding(
-                    padding: bodyPadding,
-                    child: scrollable
-                        ? SingleChildScrollView(
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            child: dialogContent,
-                          )
-                        : dialogContent,
-                  ),
+              : Padding(
+                  padding: bodyPadding,
+                  child: scrollable
+                      ? SingleChildScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          child: dialogContent,
+                        )
+                      : dialogContent,
                 ),
         if (actions.isNotEmpty)
           _DialogActions(actions: actions, compact: compact),

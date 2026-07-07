@@ -40,7 +40,7 @@ void main() {
     });
 
     test(
-      'maximized desktop padding clears the shell header and snack bar',
+      'maximized desktop padding clears only the shell header',
       () {
         expect(
           AppDialogInsets.paddingFor(
@@ -48,10 +48,7 @@ void main() {
             designTokens: tokens,
             maximized: true,
           ),
-          EdgeInsets.only(
-            top: AppShellLayout.headerHeight,
-            bottom: tokens.dialogSnackBarClearance,
-          ),
+          const EdgeInsets.only(top: AppShellLayout.headerHeight),
         );
         expect(
           AppDialogInsets.paddingFor(
@@ -59,10 +56,7 @@ void main() {
             designTokens: tokens,
             maximized: true,
           ),
-          EdgeInsets.only(
-            top: AppShellLayout.headerHeight,
-            bottom: tokens.dialogSnackBarClearance,
-          ),
+          const EdgeInsets.only(top: AppShellLayout.headerHeight),
         );
       },
     );
@@ -80,7 +74,7 @@ void main() {
     });
 
     test(
-      'available size clears shell header and snack bar when maximized on desktop',
+      'available size clears shell header when maximized on desktop',
       () {
         final Size available = AppDialogInsets.availableSizeFor(
           const Size(1000, 700),
@@ -90,12 +84,7 @@ void main() {
         );
 
         expect(available.width, 1000);
-        expect(
-          available.height,
-          700 -
-              AppShellLayout.headerHeight -
-              tokens.dialogSnackBarClearance,
-        );
+        expect(available.height, 700 - AppShellLayout.headerHeight);
       },
     );
   });

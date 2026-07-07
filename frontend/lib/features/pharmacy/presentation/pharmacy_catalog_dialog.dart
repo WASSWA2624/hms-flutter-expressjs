@@ -6,11 +6,26 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catal
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
+PharmacyWorkspaceState? _readPharmacyWorkspaceState(WidgetRef ref) {
+  return ref
+      .read(pharmacyWorkspaceControllerProvider)
+      .value
+      ?.when(
+        success: (PharmacyWorkspaceState value) => value,
+        failure: (_) => null,
+      );
+}
+
 Future<void> openPharmacyCatalogDialog(
   BuildContext context,
   WidgetRef ref, {
   PharmacyCatalogTab initialTab = PharmacyCatalogTab.drugs,
 }) async {
+  final PharmacyWorkspaceState? initialState = _readPharmacyWorkspaceState(ref);
+  if (initialState == null) {
+    return;
+  }
+
   final PharmacyWorkspaceController controller = ref.read(
     pharmacyWorkspaceControllerProvider.notifier,
   );
@@ -20,24 +35,14 @@ Future<void> openPharmacyCatalogDialog(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
-        final PharmacyWorkspaceState? state = ref
-            .watch(pharmacyWorkspaceControllerProvider)
-            .value
-            ?.when(
-              success: (PharmacyWorkspaceState value) => value,
-              failure: (_) => null,
-            );
-        if (state == null) {
-          return AppDialog(
-            title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
-            icon: const Icon(Icons.inventory_2_outlined),
-            scrollable: true,
-            content: const SizedBox(
-              height: 160,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
+        final PharmacyWorkspaceState state = ref
+                .watch(pharmacyWorkspaceControllerProvider)
+                .value
+                ?.when(
+                  success: (PharmacyWorkspaceState value) => value,
+                  failure: (_) => initialState,
+                ) ??
+            initialState;
         return AppDialog(
           title: Text(dialogContext.l10n.pharmacyCatalogPanelTitle),
           icon: const Icon(Icons.inventory_2_outlined),

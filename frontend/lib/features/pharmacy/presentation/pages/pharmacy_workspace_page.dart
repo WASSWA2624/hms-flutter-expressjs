@@ -2228,7 +2228,7 @@ PharmacyWorkbenchQuery _pharmacyQueryFromFilterValue(
   final String? urgent = value.option(_pharmacyUrgentFilterKey);
 
   return current.copyWith(
-    status: status ?? 'ORDERED',
+    status: status,
     location: location,
     pendingPayment: pendingPayment == 'true' ? true : null,
     partialStock: partialStock == 'true' ? true : null,

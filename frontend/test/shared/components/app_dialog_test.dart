@@ -297,6 +297,60 @@ void main() {
     expect(find.byIcon(Icons.fullscreen_exit), findsNothing);
   });
 
+  testWidgets(
+    'desktop scrollable non-maximized dialog renders visible shell height',
+    (WidgetTester tester) async {
+      const Size viewport = Size(1000, 700);
+      const AppDesignTokens designTokens = AppDesignTokens.standard;
+      final double inset = designTokens.dialogInsetTablet;
+      final double maxHeight = viewport.height - (inset * 2) -
+          designTokens.dialogSnackBarClearance;
+      final double expectedHeight = (maxHeight * 0.75).clamp(
+        designTokens.dialogMinHeight,
+        maxHeight,
+      );
+
+      await pumpComponent(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return TextButton(
+              onPressed: () {
+                unawaited(
+                  showAppDialog<void>(
+                    context: context,
+                    builder: (_) => const AppDialog(
+                      initialMaximized: false,
+                      scrollable: true,
+                      maxWidth: 1080,
+                      title: Text('Catalog and stock'),
+                      content: SizedBox(
+                        height: 240,
+                        child: Text('Catalog body'),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open dialog'),
+            );
+          },
+        ),
+        size: viewport,
+      );
+
+      await tester.tap(find.text('Open dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CATALOG AND STOCK'), findsOneWidget);
+      expect(find.text('Catalog body'), findsOneWidget);
+
+      final RenderBox shell = _dialogShellRenderBox(tester);
+      expect(shell.size.height, closeTo(expectedHeight, 2));
+      expect(shell.size.height, greaterThan(designTokens.dialogMinHeight));
+    },
+  );
+
   testWidgets('maximized dialog fills viewport on mobile and workspace on tablet', (
     WidgetTester tester,
   ) async {
