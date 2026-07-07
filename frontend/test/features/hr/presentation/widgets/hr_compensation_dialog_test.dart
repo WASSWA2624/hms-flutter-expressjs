@@ -173,7 +173,8 @@ void main() {
           ],
         );
 
-        expect(find.text('Update compensation'), findsWidgets);
+        // Dialog headers are uppercased by normalizeDialogTitleWidget.
+        expect(find.text('UPDATE COMPENSATION'), findsWidgets);
         expect(find.text('Pay structure'), findsOneWidget);
         expect(find.text('History'), findsOneWidget);
         expect(find.text('Add pay line'), findsOneWidget);
