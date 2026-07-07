@@ -2148,11 +2148,7 @@ List<AppListTableColumn<PharmacyOrder>> _defaultPharmacyWorklistColumns(
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.displayId, right.displayId),
       cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return AppCopyableIdentifier(
-          value: item.displayId,
-          tooltip: context.l10n.copyIdentifierAction,
-          copiedMessage: context.l10n.identifierCopiedMessage,
-        );
+        return Text(item.displayId ?? '');
       },
     ),
     AppListTableColumn<PharmacyOrder>(

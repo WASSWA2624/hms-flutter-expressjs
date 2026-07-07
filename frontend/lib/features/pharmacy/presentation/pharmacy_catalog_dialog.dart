@@ -86,6 +86,7 @@ class _PharmacyCatalogDialogState
       title: Text(l10n.pharmacyCatalogPanelTitle),
       icon: const Icon(Icons.inventory_2_outlined),
       initialMaximized: false,
+      scrollable: true,
       maxWidth: 1080,
       content: SizedBox(
         height: dialogHeight,
