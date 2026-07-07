@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -760,7 +761,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
                   label: l10n.pharmacyReportOrderLabel,
                   value: workflow.order.displayId ?? l10n.profileUnknownValue,
                 ),
-                bodyHtml: _pharmacyInstructionsHtml(context, workflow),
+                bodyHtml: pharmacyInstructionsHtml(context, workflow),
                 footerNote: l10n.pharmacyReportFooter,
                 includeSignatures: true,
               );
@@ -2786,41 +2787,6 @@ String _numberLabel(num value) {
 
 String _wholeNumber(num value) {
   return value.round().toString();
-}
-
-String _pharmacyInstructionsHtml(
-  BuildContext context,
-  PharmacyOrderWorkflow workflow,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final PharmacyOrder order = workflow.order;
-  final StringBuffer buffer = StringBuffer()
-    ..write(
-      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-        PrintFormMetadataItem(
-          label: l10n.pharmacyReportPatientLabel,
-          value: order.displayTitle,
-        ),
-        PrintFormMetadataItem(
-          label: l10n.pharmacyReportOrderLabel,
-          value: order.displayId ?? l10n.profileUnknownValue,
-        ),
-      ]),
-    )
-    ..write(
-      PrintFormTemplate.section(
-        title: l10n.pharmacyMedicationPanelTitle,
-        bodyHtml: PrintFormTemplate.unorderedList(<String>[
-          for (final PharmacyOrderItem item in workflow.items)
-            _joinDisplay(<String?>[
-              item.medicationLabel,
-              item.doseLine,
-              item.instructions,
-            ]),
-        ], emptyText: l10n.pharmacyNoMedicationBody),
-      ),
-    );
-  return buffer.toString();
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {

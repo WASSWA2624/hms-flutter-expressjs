@@ -17212,6 +17212,12 @@ abstract class AppLocalizations {
   /// **'Generated from pharmacy workflow data.'**
   String get pharmacyReportFooter;
 
+  /// Grand total label on pharmacy medication instructions printout.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand total'**
+  String get pharmacyReportGrandTotalLabel;
+
   /// Localized text for navigationClaimsLabel.
   ///
   /// In en, this message translates to:

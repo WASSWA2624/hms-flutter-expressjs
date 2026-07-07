@@ -11899,6 +11899,10 @@
   "@pharmacyReportFooter": {
     "description": "Pharmacy report footer."
   },
+  "pharmacyReportGrandTotalLabel": "Grand total",
+  "@pharmacyReportGrandTotalLabel": {
+    "description": "Grand total label on pharmacy medication instructions printout."
+  },
   "navigationClaimsLabel": "Insurance claims",
   "@navigationClaimsLabel": {
     "description": "Localized text for navigationClaimsLabel."

@@ -9248,6 +9248,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyReportFooter => 'Generated from pharmacy workflow data.';
 
   @override
+  String get pharmacyReportGrandTotalLabel => 'Grand total';
+
+  @override
   String get navigationClaimsLabel => 'Insurance claims';
 
   @override

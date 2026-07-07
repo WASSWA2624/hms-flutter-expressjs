@@ -7,6 +7,7 @@ String clinicalPrescriptionReadableSummary({
   String? quantityUnit,
   Object? doseAmount,
   String? doseUnit,
+  String? dosage,
   String? route,
   String? frequency,
   Object? durationValue,
@@ -17,23 +18,23 @@ String clinicalPrescriptionReadableSummary({
   final String dose = clinicalActionJoinDisplay(<String?>[
     clinicalActionTrimmedOrNull(doseAmount?.toString()),
     clinicalActionTrimmedOrNull(doseUnit),
+    if (doseAmount == null) clinicalActionTrimmedOrNull(dosage),
   ], separator: ' ');
   final String qty = clinicalActionJoinDisplay(<String?>[
     clinicalActionTrimmedOrNull(quantity?.toString()),
     clinicalActionTrimmedOrNull(quantityUnit),
   ], separator: ' ');
-  final String duration = clinicalActionJoinDisplay(<String?>[
-    clinicalActionTrimmedOrNull(durationValue?.toString()),
-    clinicalActionTrimmedOrNull(durationUnit),
-  ], separator: ' ');
-  final String sig = clinicalActionJoinDisplay(<String?>[
-    if (dose.isNotEmpty) dose,
-    if (route != null && route.trim().isNotEmpty)
-      clinicalActionApiLabel(route.trim()),
-    if (frequency != null && frequency.trim().isNotEmpty)
-      _frequencyReadable(frequency.trim()),
-    if (duration.isNotEmpty) 'for $duration',
-  ], separator: ' ');
+  final String sig = clinicalPrescriptionSigReadable(
+    doseAmount: doseAmount,
+    doseUnit: doseUnit,
+    dosage: dosage,
+    route: route,
+    frequency: frequency,
+    durationValue: durationValue,
+    durationUnit: durationUnit,
+    instructions: instructions,
+    includeInstructions: false,
+  );
   final List<String> parts = <String>[
     if (dose.isNotEmpty) '$name $dose' else name,
     if (sig.isNotEmpty) '— $sig',
@@ -47,6 +48,47 @@ String clinicalPrescriptionReadableSummary({
   return '$summary. $note';
 }
 
+String clinicalPrescriptionSigReadable({
+  Object? doseAmount,
+  String? doseUnit,
+  String? dosage,
+  String? route,
+  String? frequency,
+  Object? durationValue,
+  String? durationUnit,
+  String? instructions,
+  bool includeInstructions = true,
+}) {
+  final String dose = clinicalActionJoinDisplay(<String?>[
+    clinicalActionTrimmedOrNull(doseAmount?.toString()),
+    clinicalActionTrimmedOrNull(doseUnit),
+    if (doseAmount == null) clinicalActionTrimmedOrNull(dosage),
+  ], separator: ' ');
+  final String duration = clinicalActionJoinDisplay(<String?>[
+    clinicalActionTrimmedOrNull(durationValue?.toString()),
+    clinicalActionTrimmedOrNull(durationUnit),
+  ], separator: ' ');
+  final String sig = clinicalActionJoinDisplay(<String?>[
+    if (dose.isNotEmpty) dose,
+    if (route != null && route.trim().isNotEmpty)
+      clinicalActionApiLabel(route.trim()),
+    if (frequency != null && frequency.trim().isNotEmpty)
+      clinicalFrequencyReadable(frequency.trim()),
+    if (duration.isNotEmpty) 'for $duration',
+  ], separator: ' ');
+  if (!includeInstructions) {
+    return sig;
+  }
+  final String? note = clinicalActionTrimmedOrNull(instructions);
+  if (note == null) {
+    return sig;
+  }
+  if (sig.isEmpty) {
+    return note;
+  }
+  return '$sig. $note';
+}
+
 String clinicalPrescriptionItemReadableSummary(ClinicalPharmacyOrderItem item) {
   return clinicalPrescriptionReadableSummary(
     drugName: item.displayTitle,
@@ -54,6 +96,7 @@ String clinicalPrescriptionItemReadableSummary(ClinicalPharmacyOrderItem item) {
     quantityUnit: item.quantityUnit,
     doseAmount: item.doseAmount ?? item.dosage,
     doseUnit: item.doseUnit,
+    dosage: item.dosage,
     route: item.route,
     frequency: item.frequency,
     durationValue: item.durationValue,
@@ -62,7 +105,7 @@ String clinicalPrescriptionItemReadableSummary(ClinicalPharmacyOrderItem item) {
   );
 }
 
-String _frequencyReadable(String frequency) {
+String clinicalFrequencyReadable(String frequency) {
   return switch (frequency.toUpperCase()) {
     'ONCE' => 'once',
     'OD' => 'once daily',
