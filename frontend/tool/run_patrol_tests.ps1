@@ -24,7 +24,14 @@ try {
 Write-Host "Running flutter pub get..."
 flutter pub get
 
-$patrolArgs = @("test", "-d", $Device, "--web-reporter", "[\"json\",\"html\",\"list\"]")
+$patrolArgs = @(
+    "test",
+    "-d",
+    $Device,
+    "--dart-define-from-file=env/development.json.example",
+    "--web-reporter",
+    "[\"json\",\"html\",\"list\"]"
+)
 
 if ($Headless) {
     $patrolArgs += @("--web-headless=true")

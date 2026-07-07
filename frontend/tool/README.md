@@ -56,3 +56,26 @@ On Windows, if DWDS still cannot attach after one automatic profile reset/retry,
 the script falls back to `-d web-server` (app runs at `http://127.0.0.1:5201/`
 without hot reload). Pass `-NoWebServerFallback` to disable that fallback, or
 `-WebServerOnly` to skip Chrome debug entirely.
+
+## Patrol E2E tests
+
+Run the Patrol smoke suite (Chrome, headless) from `frontend/`:
+
+```powershell
+.\tool\run_patrol_tests.ps1
+```
+
+Run the full `patrol_test/` directory:
+
+```powershell
+.\tool\run_patrol_tests.ps1 -FullSuite
+```
+
+Linux/macOS:
+
+```sh
+./tool/run_patrol_tests.sh patrol_test/smoke_test.dart
+```
+
+See [`patrol_test/README.md`](../patrol_test/README.md) for install notes, failure
+report locations, and native platform requirements.

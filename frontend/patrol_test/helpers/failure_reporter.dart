@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -10,9 +10,12 @@ import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:patrol/patrol.dart';
 
+import 'failure_reporter_io.dart'
+    if (dart.library.html) 'failure_reporter_web.dart' as failure_storage;
+
 export 'package:flutter_test/flutter_test.dart';
 
-/// Root directory for Patrol failure diagnostic bundles.
+/// Root directory for Patrol failure diagnostic bundles (native/desktop targets).
 const String patrolReportsRoot = 'build/patrol_reports';
 
 /// Wraps [patrolTest] and writes a diagnostic bundle on failure.
@@ -67,8 +70,6 @@ Future<void> capturePatrolFailureDiagnostics({
   final String safeName = _sanitizeFileName(testName);
   final String runId =
       '${timestamp.toIso8601String().replaceAll(':', '-')}_$safeName';
-  final Directory reportDir = Directory('$patrolReportsRoot/$runId');
-  await reportDir.create(recursive: true);
 
   final Size viewport = $.tester.view.physicalSize;
   final String? route = _currentRoute($);
@@ -89,16 +90,12 @@ Future<void> capturePatrolFailureDiagnostics({
     'finderChain': <String>[],
     'semanticsSummary': _semanticsSummary($),
     'stackTrace': stackTrace.toString(),
-    'gitSha': _readGitSha(),
+    'gitSha': failure_storage.readPatrolGitSha(),
     'timestamp': timestamp.toIso8601String(),
     'reproCommand': reproCommand,
   };
 
-  await File('${reportDir.path}/diagnostics.json').writeAsString(
-    const JsonEncoder.withIndent('  ').convert(payload),
-  );
-
-  await File('${reportDir.path}/summary.txt').writeAsString('''
+  final String summary = '''
 Patrol test failure
 ===================
 Test: $testName
@@ -109,52 +106,44 @@ Error: $error
 
 Repro:
 $reproCommand
-''');
+''';
 
-  final bool screenshotSaved = await _captureScreenshot(
-    $,
-    File('${reportDir.path}/screenshot.png'),
+  final Uint8List? screenshotBytes = await _captureScreenshotBytes($);
+
+  await failure_storage.writePatrolFailureBundle(
+    runId: runId,
+    payload: payload,
+    summary: summary,
+    screenshotBytes: screenshotBytes,
   );
-  if (!screenshotSaved) {
-    await File('${reportDir.path}/screenshot.txt').writeAsString(
-      'Screenshot capture was unavailable on this platform binding. '
-      'For web runs, inspect Playwright artifacts under build/patrol_web_results/.',
-    );
-  }
-
-  await File('${reportDir.path}/latest.txt').writeAsString(reportDir.path);
-  await Directory(patrolReportsRoot).create(recursive: true);
-  await File('$patrolReportsRoot/latest.txt').writeAsString(reportDir.path);
 }
 
-Future<bool> _captureScreenshot(
-  PatrolIntegrationTester $,
-  File outputFile,
-) async {
+Future<Uint8List?> _captureScreenshotBytes(PatrolIntegrationTester $) async {
   final TestWidgetsFlutterBinding binding = $.tester.binding;
   if (binding is IntegrationTestWidgetsFlutterBinding) {
     await binding.convertFlutterSurfaceToImage();
-    await binding.takeScreenshot(outputFile.path);
-    return outputFile.existsSync();
+    final List<int> bytes = await binding.takeScreenshot('patrol-failure');
+    return Uint8List.fromList(bytes);
   }
 
   try {
     final Finder repaintBoundary = find.byType(RepaintBoundary).first;
     if (repaintBoundary.evaluate().isEmpty) {
-      return false;
+      return null;
     }
     final RenderRepaintBoundary boundary = $.tester.renderObject(
       repaintBoundary,
     );
-    final image = await boundary.toImage(pixelRatio: 1);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final ui.Image image = await boundary.toImage();
+    final ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     if (byteData == null) {
-      return false;
+      return null;
     }
-    await outputFile.writeAsBytes(byteData.buffer.asUint8List());
-    return true;
+    return byteData.buffer.asUint8List();
   } on Object {
-    return false;
+    return null;
   }
 }
 
@@ -174,29 +163,6 @@ List<String> _semanticsSummary(PatrolIntegrationTester $) {
       .map((Element element) => element.toStringShort())
       .take(40)
       .toList();
-}
-
-String? _readGitSha() {
-  final String? fromEnv = Platform.environment['PATROL_GIT_SHA'];
-  if (fromEnv != null && fromEnv.isNotEmpty) {
-    return fromEnv;
-  }
-  if (kIsWeb) {
-    return null;
-  }
-  try {
-    final ProcessResult result = Process.runSync(
-      'git',
-      <String>['rev-parse', 'HEAD'],
-      workingDirectory: Directory.current.path,
-    );
-    if (result.exitCode == 0) {
-      return (result.stdout as String).trim();
-    }
-  } on Object {
-    return null;
-  }
-  return null;
 }
 
 String _sanitizeFileName(String value) {

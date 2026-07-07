@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
@@ -43,6 +45,20 @@ const List<AppModuleEntitlement> patrolModuleEntitlements = <AppModuleEntitlemen
   AppModuleEntitlement(code: 'theatre-anesthesia'),
   AppModuleEntitlement(code: 'reporting-analytics'),
 ];
+
+AppConfig patrolTestAppConfig() {
+  return AppConfig.fromValues(
+    environmentName: 'development',
+    apiBaseUrl: 'http://localhost:3000',
+    logLevelName: 'debug',
+  );
+}
+
+List<Object?> patrolBaseOverrides() {
+  return <Object?>[
+    appConfigProvider.overrideWithValue(patrolTestAppConfig()),
+  ];
+}
 
 SessionState patrolAuthenticatedSessionState() {
   return SessionState.authenticated(
@@ -92,9 +108,15 @@ Future<void> pumpPatrolApp(
   setTestViewport($.tester, viewport);
 
   await $.pumpWidget(
-    ProviderScope(overrides: overrides.cast(), child: const HosspiHmsApp()),
+    ProviderScope(
+      overrides: <Object?>[
+        ...patrolBaseOverrides(),
+        ...overrides,
+      ].cast(),
+      child: const HosspiHmsApp(),
+    ),
   );
-  await $.pumpAndSettle();
+  await $.pumpAndSettle(timeout: const Duration(seconds: 30));
 }
 
 Future<void> pumpPatrolAuthenticatedApp(

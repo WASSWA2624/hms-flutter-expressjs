@@ -14,7 +14,15 @@ export PATROL_GIT_SHA="$(git -C "$FRONTEND_ROOT" rev-parse HEAD 2>/dev/null || t
 
 flutter pub get
 
-ARGS=(test -d "$DEVICE" --web-reporter '["json","html","list"]' --web-results-dir build/patrol_web_results --web-report-dir build/patrol_web_report --web-video=retain-on-failure)
+ARGS=(
+  test
+  -d "$DEVICE"
+  --dart-define-from-file=env/development.json.example
+  --web-reporter '["json","html","list"]'
+  --web-results-dir build/patrol_web_results
+  --web-report-dir build/patrol_web_report
+  --web-video=retain-on-failure
+)
 
 if [[ "$HEADLESS" == "true" ]]; then
   ARGS+=(--web-headless=true)
