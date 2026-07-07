@@ -242,7 +242,9 @@ class AppButton extends StatelessWidget {
       padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(theme.radius.sm),
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.sm),
+          ),
         ),
       ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(

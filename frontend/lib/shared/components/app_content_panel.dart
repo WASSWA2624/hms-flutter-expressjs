@@ -30,7 +30,9 @@ class AppContentPanel extends StatelessWidget {
     return Material(
       color: backgroundColor ?? colors.container,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(theme.radius.lg),
+        borderRadius: BorderRadius.circular(
+          context.responsiveRadius(theme.radius.lg),
+        ),
         side: BorderSide(color: borderColor ?? colors.border),
       ),
       clipBehavior: Clip.antiAlias,

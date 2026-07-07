@@ -49,7 +49,7 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 
 - Icons: `20–24px` unless layout requires larger.
 - Button heights: `40–48px`.
-- Radii: `8–12px`.
+- Radii: no fixed cap — use any `theme.radius` token (`xs`…`xxl`, or `full` for pill/circular), applied responsively via `context.responsiveRadius(...)`. See [`design-system.mdc`](./design-system.mdc) shape rules.
 - Use text plus icons for important navigation or status items where space allows.
 
 ## Form components

@@ -46,7 +46,7 @@ theme.colorScheme.primary;  // ColorScheme roles
 | Token group | Values |
 |---|---|
 | Spacing | `xs=4`, `sm=8`, `md=12`, `lg=16`, `xl=24`, `xxl=32` |
-| Radius | `xs=4`, `sm=8`, `md=10`, `lg=12`, `xl=16` |
+| Radius | `none=0`, `xs=4`, `sm=8`, `md=10`, `lg=12`, `xl=16`, `xxl=24`, `full=pill/circular` (open scale — no upper cap) |
 | Page padding | mobile `16`, tablet `24`, desktop `32` |
 | Button height | compact `36–40`, standard `40–48` |
 | Icon size | default `20–24`; larger only when layout requires |
@@ -54,9 +54,12 @@ theme.colorScheme.primary;  // ColorScheme roles
 
 ## Shape and density
 
-- Prefer moderate radii `8–12` for cards, fields, and buttons.
+- Corner radii have no fixed cap: choose any radius token (`xs`…`xxl`, or `full` for pill/circular) that suits the surface. There is no mandated `8–12` range.
+- Always source radii from `theme.radius` tokens; do not hard-code numeric radii in feature widgets.
+- Radii must be responsive: derive them via `context.responsiveRadius(theme.radius.<token>)` (or `AppRadiusTokens.responsive`) so they scale down on compact screens and up on large desktops.
+- Rely on `RoundedRectangleBorder`/`BorderRadius` auto-clamping (radius is limited to half the shortest side) so large radii never overflow small controls.
 - Avoid excessive padding; keep desktop controls visually balanced.
-- Use consistent elevation and borders; do not mix unrelated card/button/dialog styles.
+- Use consistent elevation and borders; keep the shape language uniform across related card/button/dialog styles.
 - Keep navigation items readable without oversized icons or row heights.
 
 ## Typography

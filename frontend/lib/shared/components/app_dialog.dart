@@ -242,7 +242,9 @@ class _AppDialogState extends State<AppDialog> {
       shape: _isMaximized
           ? const RoundedRectangleBorder()
           : RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(theme.radius.lg),
+              borderRadius: BorderRadius.circular(
+                context.responsiveRadius(theme.radius.lg),
+              ),
             ),
       clipBehavior: Clip.antiAlias,
       backgroundColor: colorScheme.surface,

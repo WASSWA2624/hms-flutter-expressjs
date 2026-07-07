@@ -1,6 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 
 @immutable
 final class AppSpacingTokens extends ThemeExtension<AppSpacingTokens> {
@@ -80,6 +81,8 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
     required this.md,
     required this.lg,
     required this.xl,
+    required this.xxl,
+    required this.full,
   });
 
   static const AppRadiusTokens standard = AppRadiusTokens(
@@ -89,6 +92,10 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
     md: 10,
     lg: 12,
     xl: 16,
+    xxl: 24,
+    // Sentinel for fully rounded (pill/circular) surfaces. Widgets clamp this
+    // to half of the shortest side so it renders as a true pill/circle.
+    full: 9999,
   );
 
   final double none;
@@ -97,6 +104,8 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
   final double md;
   final double lg;
   final double xl;
+  final double xxl;
+  final double full;
 
   @override
   AppRadiusTokens copyWith({
@@ -106,6 +115,8 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
     double? md,
     double? lg,
     double? xl,
+    double? xxl,
+    double? full,
   }) {
     return AppRadiusTokens(
       none: none ?? this.none,
@@ -114,6 +125,8 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
       md: md ?? this.md,
       lg: lg ?? this.lg,
       xl: xl ?? this.xl,
+      xxl: xxl ?? this.xxl,
+      full: full ?? this.full,
     );
   }
 
@@ -130,7 +143,32 @@ final class AppRadiusTokens extends ThemeExtension<AppRadiusTokens> {
       md: _lerpDouble(md, other.md, t),
       lg: _lerpDouble(lg, other.lg, t),
       xl: _lerpDouble(xl, other.xl, t),
+      xxl: _lerpDouble(xxl, other.xxl, t),
+      full: _lerpDouble(full, other.full, t),
     );
+  }
+
+  /// Scales a base radius so surfaces feel proportionate across breakpoints:
+  /// tighter on compact phones, more generous on large desktops. There is no
+  /// fixed ceiling — any token (including [full]) may be passed.
+  double responsive(AppBreakpoint breakpoint, double base) {
+    final double factor = switch (breakpoint) {
+      AppBreakpoint.xs => 0.75,
+      AppBreakpoint.sm => 0.85,
+      AppBreakpoint.md => 1,
+      AppBreakpoint.lg => 1,
+      AppBreakpoint.xl => 1.15,
+      AppBreakpoint.xxl => 1.25,
+    };
+    return base * factor;
+  }
+}
+
+extension AppResponsiveRadiusContext on BuildContext {
+  /// Breakpoint-aware radius for the current viewport. Pass any radius token
+  /// value (e.g. `theme.radius.lg`); it is scaled for responsiveness.
+  double responsiveRadius(double base) {
+    return AppRadiusTokens.standard.responsive(AppBreakpoints.of(this), base);
   }
 }
 
