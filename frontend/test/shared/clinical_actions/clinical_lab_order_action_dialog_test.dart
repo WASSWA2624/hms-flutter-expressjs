@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
@@ -67,6 +68,64 @@ void main() {
         find.widgetWithIcon(AppButton, Icons.science_outlined),
         findsOneWidget,
       );
+    });
+
+    testWidgets('submit sends catalog api ids instead of internal ids', (
+      WidgetTester tester,
+    ) async {
+      final List<String> submittedTestIds = <String>[];
+      await _pumpLabOrderDialog(
+        tester,
+        catalogOptions: <ClinicalActionCatalogOption>[
+          const ClinicalActionCatalogOption(
+            id: '4e73222f-7b32-4a31-a1c1-9c1b59889479',
+            publicId: 'LBT0000001',
+            name: 'Complete blood count',
+            unitPrice: 25,
+            currency: 'USD',
+          ),
+        ],
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+              ClinicalRequestBillingSubmit? billing,
+            }) async {
+              submittedTestIds.addAll(labTestIds);
+              return null;
+            },
+      );
+
+      await tester.tap(find.widgetWithText(AppButton, 'Add items'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await _tapTableRowCheckbox(tester, 'Complete blood count');
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(AppButton, 'Confirm selected tests or panels'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.science_outlined));
+      await tester.pumpAndSettle();
+
+      expect(submittedTestIds, <String>['LBT0000001']);
+    });
+
+    testWidgets('shows human-friendly patient id in request context', (
+      WidgetTester tester,
+    ) async {
+      await _pumpLabOrderDialog(
+        tester,
+        patientContext: const ClinicalRequestPatientContext(
+          patientName: 'Amina Demo-Alpha',
+          patientId: 'PAT0000001',
+          encounterId: 'ENC0000003',
+        ),
+      );
+
+      expect(find.text('PAT0000001'), findsOneWidget);
+      expect(find.text('ENC0000003'), findsOneWidget);
     });
 
     testWidgets('catalog picker supports checkbox multi-select', (
@@ -369,6 +428,12 @@ Future<void> _pumpLabOrderDialog(
     String source,
   })?
   onSearchLabTests,
+  Future<AppFailure?> Function({
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+    ClinicalRequestBillingSubmit? billing,
+  })?
+  onRequest,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1400, 900);
@@ -399,6 +464,7 @@ Future<void> _pumpLabOrderDialog(
                   return Result.success(catalogOptions);
                 },
             onRequest:
+                onRequest ??
                 ({
                   required List<String> labTestIds,
                   required List<String> labPanelIds,

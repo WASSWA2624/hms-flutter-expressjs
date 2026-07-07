@@ -165,10 +165,29 @@ void main() {
         });
 
         expect(options, hasLength(1));
+        expect(options.single.apiId, 'LBT-BMP');
+        expect(options.single.id, 'uuid-bmp');
         expect(options.single.unitPrice, 18000);
         expect(options.single.currency, 'UGX');
       },
     );
+
+    test('prefers human_friendly_id when catalog search includes it', () {
+      final options = decodeClinicalTermOptions(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LBT-CBC',
+            'item_id': '4e73222f-7b32-4a31-a1c1-9c1b59889479',
+            'human_friendly_id': 'LBT0000001',
+            'term_type': 'LAB_TEST',
+            'name': 'Complete Blood Count',
+          },
+        ],
+      });
+
+      expect(options.single.apiId, 'LBT0000001');
+      expect(options.single.id, '4e73222f-7b32-4a31-a1c1-9c1b59889479');
+    });
   });
 
   group('decodeCatalogOptions', () {

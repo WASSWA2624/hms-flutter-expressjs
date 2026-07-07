@@ -920,7 +920,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         referenceData: referenceData,
         patientContext: ClinicalRequestPatientContext(
           patientName: flow.patientDisplayName ?? flow.displayTitle,
-          patientId: flow.patientId ?? flow.patientIdentifier,
+          patientId: flow.patientDisplayId,
           encounterId: flow.publicId,
         ),
         onSearchLabTests:
@@ -1001,7 +1001,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         referenceData: referenceData,
         patientContext: ClinicalRequestPatientContext(
           patientName: flow.patientDisplayName ?? flow.displayTitle,
-          patientId: flow.patientId ?? flow.patientIdentifier,
+          patientId: flow.patientDisplayId,
           encounterId: flow.publicId,
         ),
         onSearchRadiologyTests:
@@ -1856,7 +1856,7 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
               patientContext: buildPrintFormPatientContext(
                 l10n,
                 patientName: flow.patientDisplayName ?? flow.displayTitle,
-                patientId: flow.patientId ?? flow.patientIdentifier,
+                patientId: flow.patientDisplayId,
                 encounterId: flow.publicId,
               ),
               bodyHtml:

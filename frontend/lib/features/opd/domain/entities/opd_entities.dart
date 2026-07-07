@@ -453,6 +453,8 @@ final class OpdFlowSummary {
 
   String get apiId => publicId ?? id;
 
+  String? get patientDisplayId => patientIdentifier ?? patientId;
+
   bool get isTerminal {
     return stage == 'ADMITTED' || stage == 'DISCHARGED' || status == 'CLOSED';
   }

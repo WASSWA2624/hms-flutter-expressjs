@@ -461,9 +461,13 @@ final class ClinicalCatalogOptionDto {
 
   ClinicalCatalogOption toEntity() {
     final List<ClinicalJsonMap> panelItems = _list(json['panel_items']);
+    final String? catalogId = _string(json['id']);
     return ClinicalCatalogOption(
-      id: _string(json['id']) ?? '',
-      publicId: _string(json['human_friendly_id']),
+      id: catalogId ?? '',
+      publicId: _catalogPublicId(
+        humanFriendlyId: _string(json['human_friendly_id']),
+        catalogId: catalogId,
+      ),
       name:
           _string(json['name']) ??
           _string(json['description']) ??
@@ -539,15 +543,21 @@ final class ClinicalTermOptionDto {
         _string(json['category']) ?? _string(json['term_type']);
     final String? source = _string(json['source']) ?? _string(json['origin']);
     final ClinicalJsonMap metadataJson = _map(json['metadata']);
+    final String? itemId = _string(json['item_id']);
+    final String? catalogId = _string(json['id']);
     return ClinicalCatalogOption(
       id:
-          _string(json['item_id']) ??
-          _string(json['id']) ??
+          itemId ??
+          catalogId ??
           _joinDisplay(<String?>[code, description]) ??
           description ??
           code ??
           '',
-      publicId: _string(json['human_friendly_id']) ?? _string(json['item_id']),
+      publicId: _catalogPublicId(
+        humanFriendlyId: _string(json['human_friendly_id']),
+        catalogId: catalogId,
+        itemId: itemId,
+      ),
       name: _string(json['name']) ?? description,
       code: code,
       category: category,
@@ -582,6 +592,22 @@ final class ClinicalTermOptionDto {
       }),
     );
   }
+}
+
+String? _catalogPublicId({
+  String? humanFriendlyId,
+  String? catalogId,
+  String? itemId,
+}) {
+  if (humanFriendlyId != null) {
+    return humanFriendlyId;
+  }
+  if (catalogId != null &&
+      catalogId.isNotEmpty &&
+      (itemId == null || catalogId != itemId)) {
+    return catalogId;
+  }
+  return null;
 }
 
 ClinicalJsonMap _withoutNullValues(Map<String, Object?> json) {

@@ -49,4 +49,31 @@ void main() {
     expect(detail.summary.consultationCurrency, 'UGX');
     expect(detail.summary.consultationPaymentStatus, 'COMPLETED');
   });
+
+  test('OpdFlowSummaryDto maps patient display id from human-friendly id', () {
+    final OpdFlowSummaryDto dto = OpdFlowSummaryDto.fromDetail(
+      <String, Object?>{
+        'encounter': <String, Object?>{
+          'id': 'enc-1',
+          'human_friendly_id': 'ENC0000003',
+          'patient_id': '4e73222f-7b32-4a31-a1c1-9c1b59889479',
+          'patient': <String, Object?>{
+            'human_friendly_id': 'PAT0000001',
+            'first_name': 'Amina',
+            'last_name': 'Demo-Alpha',
+          },
+        },
+        'flow': <String, Object?>{
+          'stage': 'IN_LAB',
+        },
+      },
+    );
+
+    final summary = dto.toEntity();
+
+    expect(summary.patientId, '4e73222f-7b32-4a31-a1c1-9c1b59889479');
+    expect(summary.patientIdentifier, 'PAT0000001');
+    expect(summary.patientDisplayId, 'PAT0000001');
+    expect(summary.publicId, 'ENC0000003');
+  });
 }
