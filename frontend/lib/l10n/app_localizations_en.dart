@@ -6027,6 +6027,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrintSummaryAction => 'Print summary';
 
   @override
+  String clinicalEncounterDetailsTitle(String patientName) {
+    return '$patientName — Clinical details';
+  }
+
+  @override
+  String clinicalEncounterDetailsSubtitle(String encounterId, String queue) {
+    return '$encounterId · $queue';
+  }
+
+  @override
+  String get clinicalCurrentStageLabel => 'Current stage';
+
+  @override
+  String get clinicalWorkflowProgressLabel => 'Workflow progress';
+
+  @override
+  String get clinicalOrderTestColumnLabel => 'Order / test';
+
+  @override
+  String get clinicalOrderValueColumnLabel => 'Value';
+
+  @override
+  String get clinicalResultFlagColumnLabel => 'Result';
+
+  @override
+  String get clinicalOrderCategoryColumnLabel => 'Category / specimen';
+
+  @override
+  String get clinicalOrderStudyColumnLabel => 'Study';
+
+  @override
+  String get clinicalOrderEmptyValueLabel => '—';
+
+  @override
   String get clinicalResultReviewTitle => 'Result review';
 
   @override

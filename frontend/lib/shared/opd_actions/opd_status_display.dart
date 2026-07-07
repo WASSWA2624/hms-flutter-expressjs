@@ -192,6 +192,46 @@ String? _opdLabel(AppLocalizations l10n, String code) {
   };
 }
 
+/// Canonical OPD workflow stage order used for progress indicators.
+const List<String> opdFlowStageSequence = <String>[
+  'WAITING_CONSULTATION_PAYMENT',
+  'WAITING_VITALS',
+  'WAITING_DOCTOR_ASSIGNMENT',
+  'WAITING_DOCTOR_REVIEW',
+  'LAB_REQUESTED',
+  'RADIOLOGY_REQUESTED',
+  'LAB_AND_RADIOLOGY_REQUESTED',
+  'PHARMACY_REQUESTED',
+  'WAITING_DISPOSITION',
+  'ADMITTED',
+  'DISCHARGED',
+];
+
+String _normalizedOpdStage(String? value) {
+  return (value ?? '').trim().toUpperCase();
+}
+
+int opdFlowStageIndex(String? stage) {
+  return opdFlowStageSequence.indexOf(_normalizedOpdStage(stage));
+}
+
+/// Returns a compact slice of workflow stages around [currentStage].
+List<String> opdWorkflowStagesAround(String? currentStage, {int lookAhead = 2}) {
+  final String normalized = _normalizedOpdStage(currentStage);
+  if (normalized.isEmpty) {
+    return const <String>[];
+  }
+  final int currentIndex = opdFlowStageIndex(normalized);
+  if (currentIndex < 0) {
+    return <String>[normalized];
+  }
+  final int endIndex = (currentIndex + lookAhead).clamp(
+    0,
+    opdFlowStageSequence.length - 1,
+  );
+  return opdFlowStageSequence.sublist(0, endIndex + 1);
+}
+
 String? _nextStepLabel(AppLocalizations l10n, String code) {
   return switch (code) {
     'PAY_CONSULTATION' => l10n.opdPayConsultationAction,

@@ -141,6 +141,32 @@ void main() {
         expect(item.instructions, 'Take after meals');
       },
     );
+
+    test('maps lab result value and text fields', () {
+      final records = decodeRelatedRecords(<String, Object?>{
+        'data': <Object?>[
+          <String, Object?>{
+            'id': 'LAB0000006',
+            'status': 'COMPLETED',
+            'items': <Object?>[
+              <String, Object?>{
+                'id': 'ITEM-1',
+                'status': 'COMPLETED',
+                'result_status': 'NORMAL',
+                'result_value': '5.2',
+                'result_text': 'Positive',
+                'test_display_name': 'Glucose',
+              },
+            ],
+          },
+        ],
+      }, 'lab_order');
+
+      final item = records.single.labOrderItems.single;
+      expect(item.resultValue, '5.2');
+      expect(item.resultText, 'Positive');
+      expect(item.resultStatus, 'NORMAL');
+    });
   });
 
   group('decodeClinicalTermOptions', () {

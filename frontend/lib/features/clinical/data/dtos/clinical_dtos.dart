@@ -267,6 +267,8 @@ final class ClinicalRelatedRecordDto {
           '',
       status: _string(json['status']),
       resultStatus: _string(json['result_status']),
+      resultValue: _string(json['result_value']),
+      resultText: _string(json['result_text']) ?? _string(json['display_value']),
       labTestId: labTestId,
       testDisplayName: testDisplayName,
       testCode: testCode,

@@ -11212,6 +11212,66 @@ abstract class AppLocalizations {
   /// **'Print summary'**
   String get clinicalPrintSummaryAction;
 
+  /// Clinical encounter dialog title with patient name.
+  ///
+  /// In en, this message translates to:
+  /// **'{patientName} — Clinical details'**
+  String clinicalEncounterDetailsTitle(String patientName);
+
+  /// Clinical encounter dialog subtitle with encounter id and queue.
+  ///
+  /// In en, this message translates to:
+  /// **'{encounterId} · {queue}'**
+  String clinicalEncounterDetailsSubtitle(String encounterId, String queue);
+
+  /// Clinical workflow current stage label.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage'**
+  String get clinicalCurrentStageLabel;
+
+  /// Clinical workflow progress section label.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow progress'**
+  String get clinicalWorkflowProgressLabel;
+
+  /// Clinical order table order or test column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order / test'**
+  String get clinicalOrderTestColumnLabel;
+
+  /// Clinical order table result value column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get clinicalOrderValueColumnLabel;
+
+  /// Clinical order table result flag column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get clinicalResultFlagColumnLabel;
+
+  /// Clinical lab order table category and specimen column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Category / specimen'**
+  String get clinicalOrderCategoryColumnLabel;
+
+  /// Clinical radiology order table study column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get clinicalOrderStudyColumnLabel;
+
+  /// Placeholder shown when a clinical order has no result value yet.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get clinicalOrderEmptyValueLabel;
+
   /// Clinical result review panel title.
   ///
   /// In en, this message translates to:

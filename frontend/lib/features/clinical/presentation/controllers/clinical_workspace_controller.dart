@@ -1371,6 +1371,16 @@ final class ClinicalWorkspaceController
       nextStep: detail.summary.nextStep,
       emergencyIndicator: detail.summary.emergencyIndicator,
       queuedAt: detail.summary.queuedAt ?? detail.summary.startedAt,
+      timeline: detail.timeline
+          .map(
+            (OpdTimelineItem item) => ClinicalWorkflowTimelineItem(
+              action: item.action,
+              stage: item.stage,
+              notes: item.notes,
+              occurredAt: item.occurredAt,
+            ),
+          )
+          .toList(growable: false),
       vitalSigns: detail.vitalMeasurements
           .map(
             (OpdVitalSign vital) => ClinicalVitalSummary(

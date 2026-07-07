@@ -7779,6 +7779,62 @@
   "@clinicalPrintSummaryAction": {
     "description": "Clinical print summary action label."
   },
+  "clinicalEncounterDetailsTitle": "{patientName} — Clinical details",
+  "@clinicalEncounterDetailsTitle": {
+    "description": "Clinical encounter dialog title with patient name.",
+    "placeholders": {
+      "patientName": {
+        "type": "String",
+        "example": "Amina Demo"
+      }
+    }
+  },
+  "clinicalEncounterDetailsSubtitle": "{encounterId} · {queue}",
+  "@clinicalEncounterDetailsSubtitle": {
+    "description": "Clinical encounter dialog subtitle with encounter id and queue.",
+    "placeholders": {
+      "encounterId": {
+        "type": "String",
+        "example": "ENC0000003"
+      },
+      "queue": {
+        "type": "String",
+        "example": "OPD"
+      }
+    }
+  },
+  "clinicalCurrentStageLabel": "Current stage",
+  "@clinicalCurrentStageLabel": {
+    "description": "Clinical workflow current stage label."
+  },
+  "clinicalWorkflowProgressLabel": "Workflow progress",
+  "@clinicalWorkflowProgressLabel": {
+    "description": "Clinical workflow progress section label."
+  },
+  "clinicalOrderTestColumnLabel": "Order / test",
+  "@clinicalOrderTestColumnLabel": {
+    "description": "Clinical order table order or test column label."
+  },
+  "clinicalOrderValueColumnLabel": "Value",
+  "@clinicalOrderValueColumnLabel": {
+    "description": "Clinical order table result value column label."
+  },
+  "clinicalResultFlagColumnLabel": "Result",
+  "@clinicalResultFlagColumnLabel": {
+    "description": "Clinical order table result flag column label."
+  },
+  "clinicalOrderCategoryColumnLabel": "Category / specimen",
+  "@clinicalOrderCategoryColumnLabel": {
+    "description": "Clinical lab order table category and specimen column label."
+  },
+  "clinicalOrderStudyColumnLabel": "Study",
+  "@clinicalOrderStudyColumnLabel": {
+    "description": "Clinical radiology order table study column label."
+  },
+  "clinicalOrderEmptyValueLabel": "—",
+  "@clinicalOrderEmptyValueLabel": {
+    "description": "Placeholder shown when a clinical order has no result value yet."
+  },
   "clinicalResultReviewTitle": "Result review",
   "@clinicalResultReviewTitle": {
     "description": "Clinical result review panel title."

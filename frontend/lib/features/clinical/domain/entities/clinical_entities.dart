@@ -410,6 +410,8 @@ final class ClinicalLabOrderItem {
     required this.id,
     this.status,
     this.resultStatus,
+    this.resultValue,
+    this.resultText,
     this.labTestId,
     this.testDisplayName,
     this.testCode,
@@ -423,6 +425,8 @@ final class ClinicalLabOrderItem {
   final String id;
   final String? status;
   final String? resultStatus;
+  final String? resultValue;
+  final String? resultText;
   final String? labTestId;
   final String? testDisplayName;
   final String? testCode;
@@ -582,6 +586,21 @@ final class ClinicalAlertSummary {
 }
 
 @immutable
+final class ClinicalWorkflowTimelineItem {
+  const ClinicalWorkflowTimelineItem({
+    required this.action,
+    this.stage,
+    this.notes,
+    this.occurredAt,
+  });
+
+  final String action;
+  final String? stage;
+  final String? notes;
+  final DateTime? occurredAt;
+}
+
+@immutable
 final class ClinicalTriageHandoff {
   const ClinicalTriageHandoff({
     this.triageLevel,
@@ -594,6 +613,7 @@ final class ClinicalTriageHandoff {
     this.queuedAt,
     this.vitalSigns = const <ClinicalVitalSummary>[],
     this.alerts = const <ClinicalAlertSummary>[],
+    this.timeline = const <ClinicalWorkflowTimelineItem>[],
   });
 
   final String? triageLevel;
@@ -606,6 +626,7 @@ final class ClinicalTriageHandoff {
   final DateTime? queuedAt;
   final List<ClinicalVitalSummary> vitalSigns;
   final List<ClinicalAlertSummary> alerts;
+  final List<ClinicalWorkflowTimelineItem> timeline;
 
   bool get hasContent {
     return _firstNonEmpty(<String?>[

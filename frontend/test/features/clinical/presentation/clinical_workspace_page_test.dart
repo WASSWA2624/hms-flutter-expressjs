@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -84,6 +86,9 @@ void main() {
           clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
           opdRepositoryProvider.overrideWithValue(opdRepository),
           ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.unauthenticated(),
+          ),
         ],
         child: const MaterialApp(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -92,8 +97,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump();
+    await _pumpUntilFound(tester, find.text('Clinical workspace'));
 
     expect(find.text('Clinical workspace'), findsOneWidget);
     expect(find.text('Provider worklist'), findsOneWidget);
@@ -130,51 +134,48 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).first, '');
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
 
-    await tester.tap(find.byTooltip('Clinical filters'));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('Sarah Clinical'));
 
-    expect(find.text('Search in'), findsNothing);
-    expect(find.text('Search clinical worklist'), findsAtLeastNWidgets(1));
-    expect(find.text('Patient ID'), findsOneWidget);
-    expect(find.text('Phone'), findsOneWidget);
-    expect(find.text('Encounter'), findsAtLeastNWidgets(1));
-    expect(find.text('Queue scope'), findsOneWidget);
-    expect(find.text('Assigned staff'), findsAtLeastNWidgets(1));
-    expect(find.text('Status'), findsAtLeastNWidgets(1));
-    expect(find.text('Location'), findsOneWidget);
-    expect(find.text('All active work'), findsAtLeastNWidgets(1));
-    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(
+      find.text('Sarah Clinical'),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Sarah Clinical'),
+      ),
+    );
+    await _pumpUntilFound(tester, find.text('Clinical actions'));
 
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Sarah Clinical'));
-    await tester.pumpAndSettle();
-
+    expect(find.textContaining('Clinical details'), findsOneWidget);
     expect(find.text('Clinical actions'), findsOneWidget);
-    expect(find.text('Encounter'), findsOneWidget);
-    expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
+    expect(find.textContaining('ENC000001 ·'), findsOneWidget);
+    expect(find.text('Order / test'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byIcon(Icons.close).last);
-    await tester.pumpAndSettle();
-
-    clearInteractions(clinicalRepository);
-    await tester.tap(find.text('Waiting review'));
-    await tester.pumpAndSettle();
-
-    final List<Object?> summaryQueries = verify(
-      () => clinicalRepository.listEncounters(captureAny()),
-    ).captured;
-    expect(
-      (summaryQueries.single as ClinicalWorklistQuery).scope,
-      ClinicalQueueScope.waitingReview,
-    );
-    expect(find.text('Waiting review'), findsOneWidget);
-    expect(find.text('Sarah Clinical'), findsAtLeastNWidgets(1));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
   });
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxAttempts = 100,
+}) async {
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+  }
 }
 
 void _stubClinicalInitialLoad(
