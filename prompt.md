@@ -70,11 +70,12 @@ Pharmacy workbench at desktop width:
 | Unit | `flutter_test` | `test/features/pharmacy/data/`, `domain/`, helper tests | DTO mapping, query filters, pricing/print helpers |
 | Widget | `flutter_test` + mocks | `test/features/pharmacy/presentation/pharmacy_catalog_dialog_test.dart` | `openPharmacyCatalogDialog` renders `CATALOG AND STOCK`, visible shell, close + Escape |
 | Widget | `flutter_test` + mocks | `test/features/pharmacy/presentation/pharmacy_workspace_page_test.dart` | Toolbar **Catalog and stock** opens/closes dialog from full page |
-| Integration | `integration_test` on **chrome** | `integration_test/pharmacy_catalog_dialog_test.dart` | Web-only (`kIsWeb`); dialog open/dismiss on mocked workspace |
+| Integration | `integration_test` (desktop runner, web viewport) | `integration_test/pharmacy_catalog_dialog_test.dart` | Dialog open/dismiss on mocked workspace at 1440×900 |
+| Web widget | `flutter_test` on **chrome** | `test/features/pharmacy/presentation/` | Same assertions compiled for web (Patrol complement) |
 | E2E | **Patrol** on **chrome** | `patrol_test/pharmacy_flow_test.dart` | Real login as `pharmacy@hosspi.com`; catalog dialog open + close on seeded backend |
 | Shared | `flutter_test` | `test/shared/components/app_dialog_test.dart` | Desktop scrollable catalog shell height scenario |
 
-**Platform rule:** Run all applicable pharmacy catalog tests with `-d chrome` / `--platform chrome`. Skip or guard non-web runners with `kIsWeb` where the scenario is web-specific.
+**Platform rule:** Flutter `integration_test` does not yet support `-d chrome`. Run integration suites on a desktop device (`-d windows` / `-d macos` / `-d linux`) with a desktop web viewport, and run `test/features/pharmacy/presentation/` with `-d chrome` plus Patrol for true web coverage.
 
 ---
 
@@ -104,8 +105,11 @@ Pharmacy workbench at desktop width:
 flutter test test/features/pharmacy/
 flutter test test/shared/components/app_dialog_test.dart
 
-# Integration — web only
-flutter test integration_test/pharmacy_catalog_dialog_test.dart --platform chrome
+# Web widget compilation
+flutter test test/features/pharmacy/presentation/ -d chrome
+
+# Integration (desktop runner; web viewport inside test)
+flutter test integration_test/pharmacy_catalog_dialog_test.dart -d windows
 
 # Patrol E2E — web only (seeded backend on :3000 required)
 .\tool\run_patrol_tests.ps1 -Target patrol_test/pharmacy_flow_test.dart -Device chrome
