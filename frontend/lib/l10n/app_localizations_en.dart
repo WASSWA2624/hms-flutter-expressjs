@@ -2405,6 +2405,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdClinicalServicesEmpty => 'No clinical services recorded yet.';
 
   @override
+  String get opdEncounterDialogTitle => 'OPD Encounter';
+
+  @override
+  String get opdVisitJourneyLabel => 'Journey';
+
+  @override
+  String get opdClinicalServiceColumnLabel => 'Service';
+
+  @override
+  String get opdClinicalServiceRequestedColumnLabel => 'Requested';
+
+  @override
+  String get opdClinicalServiceStatusColumnLabel => 'Status';
+
+  @override
+  String get opdClinicalServiceLocationColumnLabel => 'Location';
+
+  @override
+  String get opdClinicalServiceResultColumnLabel => 'Result';
+
+  @override
+  String get opdClinicalServiceStatusPendingLabel => 'Pending';
+
+  @override
+  String get opdClinicalServiceStatusCompletedLabel => 'Completed';
+
+  @override
+  String get opdServiceLocationWaitingLabel => 'Waiting';
+
+  @override
+  String get opdServiceLocationInLabLabel => 'In lab';
+
+  @override
+  String get opdServiceLocationInRadiologyLabel => 'In radiology';
+
+  @override
+  String get opdServiceLocationAtPharmacyLabel => 'At pharmacy';
+
+  @override
+  String get opdServiceLocationLabQueueLabel => 'Lab queue';
+
+  @override
+  String get opdServiceLocationRadiologyQueueLabel => 'Radiology queue';
+
+  @override
+  String get opdServiceLocationPharmacyQueueLabel => 'Pharmacy queue';
+
+  @override
+  String get opdServiceLocationTriageLabel => 'Triage';
+
+  @override
+  String get opdServiceLocationConsultationLabel => 'Consultation';
+
+  @override
+  String get opdServiceLocationProcedureLabel => 'Procedure area';
+
+  @override
+  String get opdServiceLocationCompletedLabel => 'Completed';
+
+  @override
   String get clinicalReferralDetailsTitle => 'Referral details';
 
   @override

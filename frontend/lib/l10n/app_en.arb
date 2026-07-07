@@ -2849,6 +2849,86 @@
   "@opdClinicalServicesEmpty": {
     "description": "Empty state when an OPD encounter has no clinical services yet."
   },
+  "opdEncounterDialogTitle": "OPD Encounter",
+  "@opdEncounterDialogTitle": {
+    "description": "Title for the OPD encounter workflow dialog."
+  },
+  "opdVisitJourneyLabel": "Journey",
+  "@opdVisitJourneyLabel": {
+    "description": "Label for the compact OPD visit journey summary."
+  },
+  "opdClinicalServiceColumnLabel": "Service",
+  "@opdClinicalServiceColumnLabel": {
+    "description": "Clinical services table column for service name or ID."
+  },
+  "opdClinicalServiceRequestedColumnLabel": "Requested",
+  "@opdClinicalServiceRequestedColumnLabel": {
+    "description": "Clinical services table column for request date and time."
+  },
+  "opdClinicalServiceStatusColumnLabel": "Status",
+  "@opdClinicalServiceStatusColumnLabel": {
+    "description": "Clinical services table column for workflow status."
+  },
+  "opdClinicalServiceLocationColumnLabel": "Location",
+  "@opdClinicalServiceLocationColumnLabel": {
+    "description": "Clinical services table column for patient queue or location."
+  },
+  "opdClinicalServiceResultColumnLabel": "Result",
+  "@opdClinicalServiceResultColumnLabel": {
+    "description": "Clinical services table column for result or value."
+  },
+  "opdClinicalServiceStatusPendingLabel": "Pending",
+  "@opdClinicalServiceStatusPendingLabel": {
+    "description": "Status label when a clinical service is still pending."
+  },
+  "opdClinicalServiceStatusCompletedLabel": "Completed",
+  "@opdClinicalServiceStatusCompletedLabel": {
+    "description": "Status label when a clinical service is completed."
+  },
+  "opdServiceLocationWaitingLabel": "Waiting",
+  "@opdServiceLocationWaitingLabel": {
+    "description": "Patient is waiting for a requested clinical service."
+  },
+  "opdServiceLocationInLabLabel": "In lab",
+  "@opdServiceLocationInLabLabel": {
+    "description": "Patient is currently in the laboratory."
+  },
+  "opdServiceLocationInRadiologyLabel": "In radiology",
+  "@opdServiceLocationInRadiologyLabel": {
+    "description": "Patient is currently in radiology."
+  },
+  "opdServiceLocationAtPharmacyLabel": "At pharmacy",
+  "@opdServiceLocationAtPharmacyLabel": {
+    "description": "Patient is currently at the pharmacy."
+  },
+  "opdServiceLocationLabQueueLabel": "Lab queue",
+  "@opdServiceLocationLabQueueLabel": {
+    "description": "Patient is queued for laboratory services."
+  },
+  "opdServiceLocationRadiologyQueueLabel": "Radiology queue",
+  "@opdServiceLocationRadiologyQueueLabel": {
+    "description": "Patient is queued for radiology services."
+  },
+  "opdServiceLocationPharmacyQueueLabel": "Pharmacy queue",
+  "@opdServiceLocationPharmacyQueueLabel": {
+    "description": "Patient is queued for pharmacy services."
+  },
+  "opdServiceLocationTriageLabel": "Triage",
+  "@opdServiceLocationTriageLabel": {
+    "description": "Vitals were recorded during triage."
+  },
+  "opdServiceLocationConsultationLabel": "Consultation",
+  "@opdServiceLocationConsultationLabel": {
+    "description": "Diagnosis recorded during consultation."
+  },
+  "opdServiceLocationProcedureLabel": "Procedure area",
+  "@opdServiceLocationProcedureLabel": {
+    "description": "Procedure service location label."
+  },
+  "opdServiceLocationCompletedLabel": "Completed",
+  "@opdServiceLocationCompletedLabel": {
+    "description": "Clinical service location when work is finished."
+  },
   "clinicalReferralDetailsTitle": "Referral details",
   "@clinicalReferralDetailsTitle": {
     "description": "Section title for external referral form fields."

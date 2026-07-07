@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
@@ -26,124 +24,259 @@ class OpdActionContextPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String? patientId = _firstNonEmpty(<String?>[
-      flow.patientIdentifier,
-      flow.patientId,
-    ]);
-    final String encounterId = flow.apiId;
-    final OpdBillingDisplay billing = opdFlowBillingDisplay(context, flow);
-    final String stageLabel = opdStatusDisplayLabel(l10n, flow);
-    final String nextStepLabel = opdNextStepDisplayLabel(
-      l10n,
-      flow.displayNextStep ?? flow.nextStep,
+    final List<OpdEncounterSummaryPair> pairs = buildOpdEncounterSummaryPairs(
+      l10n: l10n,
+      flow: flow,
+      detail: detail,
+      billing: opdFlowBillingDisplay(context, flow),
+    );
+    final String journey = buildOpdVisitJourneyLabel(
+      l10n: l10n,
+      flow: flow,
+      detail: detail,
     );
 
     return AppSectionPanel(
       title: showTitle ? l10n.opdEncounterContextTitle : null,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              flow.displayTitle,
-              style: theme.textTheme.titleMedium,
+        OpdEncounterSummaryRow(pairs: pairs),
+        if (journey.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Text(
+              '${l10n.opdVisitJourneyLabel}: $journey',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (_isNonEmpty(patientId) && patientId != flow.displayTitle)
-              Padding(
-                padding: EdgeInsets.only(top: theme.spacing.xs),
-                child: Text(
-                  patientId!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            AppStatusText(
-              label: stageLabel.isEmpty ? l10n.profileUnknownValue : stageLabel,
-              tone: opdStageStatusTone(flow.displayCode ?? flow.stage),
-            ),
-            AppStatusText(label: billing.label, tone: billing.tone),
-            if (_isNonEmpty(flow.triageLevel))
-              AppStatusText(
-                label: _apiLabel(flow.triageLevel),
-                tone: appTriageToneForValue(flow.triageLevel),
-              ),
-            if (nextStepLabel.isNotEmpty)
-              AppStatusText(
-                label: nextStepLabel,
-                tone: AppWorkspaceStatusTone.info,
-              ),
-          ],
-        ),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            if (patientId != null)
-              AppButton.secondary(
-                label: l10n.opdCopyPatientIdAction,
-                leadingIcon: Icons.copy_outlined,
-                onPressed: () => _copyTextToClipboard(
-                  context,
-                  patientId,
-                  l10n.clinicalPatientIdCopiedMessage,
-                ),
-              ),
-            AppButton.secondary(
-              label: l10n.opdCopyEncounterIdAction,
-              leadingIcon: Icons.copy_outlined,
-              onPressed: () => _copyTextToClipboard(
-                context,
-                encounterId,
-                l10n.opdEncounterIdCopiedMessage,
-              ),
-            ),
-          ],
-        ),
-        AppInfoTileGrid(
-          minItemWidth: 130,
-          borderedTiles: false,
-          emptyValue: l10n.profileUnknownValue,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceModuleRole,
-              value: opdResponsibleRoleForStage(
-                l10n,
-                flow.displayCode ?? flow.stage,
-              ),
-              icon: Icons.badge_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.opdProviderColumnLabel,
-              value: flow.assignedStaffLabel ?? flow.providerDisplayName,
-              icon: Icons.person_outline,
-            ),
-            AppInfoTileData(
-              label: l10n.opdCompletedFlowSummaryLabel,
-              value: _completedActionSummary(detail),
-              icon: Icons.check_circle_outline,
-            ),
-            if (detail != null)
-              AppInfoTileData(
-                label: l10n.opdServicesSummaryLabel,
-                value: _servicesCountLabel(l10n, detail!),
-                icon: Icons.medical_information_outlined,
-              ),
-          ],
-        ),
+          ),
       ],
     );
   }
+}
+
+@immutable
+final class OpdEncounterSummaryPair {
+  const OpdEncounterSummaryPair({
+    required this.label,
+    required this.value,
+    this.copyable = false,
+  });
+
+  final String label;
+  final String value;
+  final bool copyable;
+}
+
+List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
+  required AppLocalizations l10n,
+  required OpdFlowSummary flow,
+  required OpdBillingDisplay billing,
+  OpdFlowDetail? detail,
+}) {
+  final String patientName =
+      _firstNonEmpty(<String?>[flow.patientDisplayName, flow.displayTitle]) ??
+      l10n.profileUnknownValue;
+  final String? patientId = _firstNonEmpty(<String?>[
+    flow.patientIdentifier,
+    flow.patientId,
+  ]);
+  final String encounterId = flow.apiId;
+  final String stageLabel = opdStatusDisplayLabel(l10n, flow);
+  final String nextStepLabel = opdNextStepDisplayLabel(
+    l10n,
+    flow.displayNextStep ?? flow.nextStep,
+  );
+  final String assignedLabel =
+      _firstNonEmpty(<String?>[
+        flow.assignedStaffLabel,
+        flow.assignedStaffDisplayName,
+        flow.providerDisplayName,
+      ]) ??
+      l10n.profileUnknownValue;
+  final OpdBillingDisplay billingDisplay = billing;
+  final String arrivalLabel = opdArrivalModeDisplayLabel(
+    l10n,
+    flow.arrivalMode,
+  );
+
+  final List<OpdEncounterSummaryPair> pairs = <OpdEncounterSummaryPair>[
+    OpdEncounterSummaryPair(
+      label: l10n.opdPatientColumnLabel,
+      value: patientName,
+    ),
+    if (patientId != null)
+      OpdEncounterSummaryPair(
+        label: l10n.opdPatientIdLabel,
+        value: patientId,
+        copyable: true,
+      ),
+    OpdEncounterSummaryPair(
+      label: l10n.opdEncounterIdLabel,
+      value: encounterId,
+      copyable: true,
+    ),
+    if (arrivalLabel.isNotEmpty)
+      OpdEncounterSummaryPair(
+        label: l10n.opdArrivalModeLabel,
+        value: arrivalLabel,
+      ),
+    OpdEncounterSummaryPair(
+      label: l10n.opdCurrentStageLabel,
+      value: stageLabel.isEmpty ? l10n.profileUnknownValue : stageLabel,
+    ),
+    if (nextStepLabel.isNotEmpty)
+      OpdEncounterSummaryPair(
+        label: l10n.opdNextStepColumnLabel,
+        value: nextStepLabel,
+      ),
+    OpdEncounterSummaryPair(
+      label: l10n.opdProviderColumnLabel,
+      value: assignedLabel,
+    ),
+    OpdEncounterSummaryPair(
+      label: l10n.opdPaymentStatusLabel,
+      value:
+          AppDisplay.joinNonEmpty(<String?>[
+            billingDisplay.statusLabel,
+            billingDisplay.amountLabel,
+          ], separator: ' \u00b7 ').isEmpty
+          ? l10n.profileUnknownValue
+          : AppDisplay.joinNonEmpty(<String?>[
+              billingDisplay.statusLabel,
+              billingDisplay.amountLabel,
+            ], separator: ' \u00b7 '),
+    ),
+  ];
+
+  if (_isNonEmpty(flow.triageLevel)) {
+    pairs.insert(
+      pairs.length - 1,
+      OpdEncounterSummaryPair(
+        label: l10n.opdTriageLevelLabel,
+        value: triageLevelDisplayLabel(l10n, flow.triageLevel),
+      ),
+    );
+  }
+
+  return pairs;
+}
+
+String buildOpdVisitJourneyLabel({
+  required AppLocalizations l10n,
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  final List<String> steps = <String>[];
+  final String arrival = opdArrivalModeDisplayLabel(l10n, flow.arrivalMode);
+  if (arrival.isNotEmpty) {
+    steps.add(arrival);
+  }
+
+  for (final OpdTimelineItem item
+      in detail?.timeline ?? const <OpdTimelineItem>[]) {
+    final String label = _timelineStepLabel(l10n, item);
+    if (label.isNotEmpty && !steps.contains(label)) {
+      steps.add(label);
+    }
+  }
+
+  final String currentStage = opdStatusDisplayLabel(l10n, flow);
+  if (currentStage.isNotEmpty &&
+      (steps.isEmpty || steps.last != currentStage)) {
+    steps.add(currentStage);
+  }
+
+  return steps.join(' \u2192 ');
+}
+
+class OpdEncounterSummaryRow extends StatelessWidget {
+  const OpdEncounterSummaryRow({required this.pairs, super.key});
+
+  final List<OpdEncounterSummaryPair> pairs;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle labelStyle = theme.textTheme.bodySmall!.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    final TextStyle valueStyle = theme.textTheme.bodySmall!;
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (int index = 0; index < pairs.length; index++) ...<Widget>[
+          if (index > 0) Text(';', style: labelStyle),
+          _OpdEncounterSummaryPairChip(
+            pair: pairs[index],
+            labelStyle: labelStyle,
+            valueStyle: valueStyle,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _OpdEncounterSummaryPairChip extends StatelessWidget {
+  const _OpdEncounterSummaryPairChip({
+    required this.pair,
+    required this.labelStyle,
+    required this.valueStyle,
+  });
+
+  final OpdEncounterSummaryPair pair;
+  final TextStyle labelStyle;
+  final TextStyle valueStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text('${pair.label}: ', style: labelStyle),
+        if (pair.copyable)
+          AppCopyableIdentifier(
+            value: pair.value,
+            textStyle: valueStyle.copyWith(fontWeight: FontWeight.w700),
+            copiedMessage: pair.label == context.l10n.opdPatientIdLabel
+                ? context.l10n.clinicalPatientIdCopiedMessage
+                : context.l10n.opdEncounterIdCopiedMessage,
+          )
+        else
+          Text(pair.value, style: valueStyle),
+      ],
+    );
+  }
+}
+
+String _timelineStepLabel(AppLocalizations l10n, OpdTimelineItem item) {
+  final String stageLabel = opdStageDisplayLabel(l10n, item.stage);
+  if (stageLabel.isNotEmpty) {
+    return stageLabel;
+  }
+  return AppDisplay.apiLabel(item.action);
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+bool _isNonEmpty(String? value) {
+  return value != null && value.trim().isNotEmpty;
 }
 
 String opdResponsibleRoleForStage(AppLocalizations l10n, String? stage) {
@@ -174,64 +307,4 @@ String opdResponsibleRoleForStage(AppLocalizations l10n, String? stage) {
     'DISCHARGED' => l10n.navigationDischargeLabel,
     _ => l10n.profileUnknownValue,
   };
-}
-
-String _completedActionSummary(OpdFlowDetail? detail) {
-  final List<String> actions = <String>[];
-  for (final OpdTimelineItem item
-      in detail?.timeline ?? const <OpdTimelineItem>[]) {
-    final String label = _apiLabel(item.action);
-    if (label.isNotEmpty && !actions.contains(label)) {
-      actions.add(label);
-    }
-  }
-  if (actions.isEmpty) {
-    return '';
-  }
-  return actions.reversed.take(4).join(' • ');
-}
-
-String _servicesCountLabel(AppLocalizations l10n, OpdFlowDetail detail) {
-  final int serviceCount =
-      detail.labOrders.length +
-      detail.radiologyOrders.length +
-      detail.pharmacyOrders.length +
-      detail.procedures.length;
-  return AppDisplay.joinNonEmpty(<String?>[
-    '${detail.vitalSigns.length} ${l10n.opdVitalsSummaryLabel}',
-    if (serviceCount > 0) '$serviceCount ${l10n.opdServicesSummaryLabel}',
-    if (detail.clinicalNotes.isNotEmpty)
-      '${detail.clinicalNotes.length} ${l10n.opdClinicalNotesSummaryLabel}',
-  ], separator: ' • ');
-}
-
-String _apiLabel(String? value) {
-  final String label = AppDisplay.apiLabel(value ?? '');
-  return label.isEmpty ? '' : label;
-}
-
-bool _isNonEmpty(String? value) {
-  return value != null && value.trim().isNotEmpty;
-}
-
-String? _firstNonEmpty(Iterable<String?> values) {
-  for (final String? value in values) {
-    final String normalized = value?.trim() ?? '';
-    if (normalized.isNotEmpty) {
-      return normalized;
-    }
-  }
-  return null;
-}
-
-Future<void> _copyTextToClipboard(
-  BuildContext context,
-  String value,
-  String message,
-) async {
-  await Clipboard.setData(ClipboardData(text: value));
-  if (!context.mounted) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }

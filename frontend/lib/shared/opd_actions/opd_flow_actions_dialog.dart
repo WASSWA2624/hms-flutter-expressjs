@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -29,6 +28,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_consultation_billing_breakdown.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_coverage_verification_panel.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_encounter_clinical_services.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -131,7 +131,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     final bool isLoadingDetail = detail == null && !isSaving;
 
     return AppDialog(
-      title: Text(flow.displayTitle),
+      title: Text(context.l10n.opdEncounterDialogTitle),
       icon: const Icon(Icons.medical_services_outlined),
       maxWidth: 860,
       scrollable: true,
@@ -142,8 +142,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           OpdActionContextPanel(flow: flow, detail: detail),
           if (isSaving || isRefreshingDetail || isLoadingDetail)
             const LinearProgressIndicator(),
-          if (detail != null && _isClinicalReviewStage(flow.stage))
-            _OpdClinicalServicesPanel(detail: detail),
+          if (detail != null && opdDetailHasClinicalRecords(detail))
+            OpdEncounterClinicalServicesPanel(detail: detail, flow: flow),
           _actionGrid(
             context,
             flow,
@@ -315,12 +315,42 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           : null,
     );
 
+    AppPermissionActionItem departmentHandoffAction() {
+      final String label = opdNextStepDisplayLabel(
+        l10n,
+        flow.displayNextStep ?? flow.nextStep,
+      );
+      return AppPermissionActionItem(
+        requirement: opdReceptionActionRequirement,
+        label: label.isNotEmpty ? label : l10n.opdNextDiagnosticsPendingLabel,
+        icon: _departmentHandoffIcon(stage),
+        fullWidth: true,
+        hideWhenDenied: true,
+        enabled: actionsEnabled && !terminal,
+        onPressed: actionsEnabled && !terminal
+            ? () => _navigateToDepartmentHandoff(context, flow)
+            : null,
+      );
+    }
+
     final bool hasAssignedProvider =
         _isNonEmpty(flow.providerUserId) ||
         _isNonEmpty(flow.providerDisplayName) ||
         _isNonEmpty(flow.assignedStaffDisplayName);
     final bool hasPendingAdmission = _flowHasPendingAdmission(flow, detail);
     final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
+    final bool clinicalStage = _isClinicalReviewStage(stage);
+    final bool servicePendingStage = _isServicePendingStage(stage);
+    final bool canDispose =
+        stage == 'WAITING_DISPOSITION' ||
+        <String>{
+          'DECISION_NEEDED',
+          'RESULTS_READY',
+          'REPORT_READY',
+          'MEDICINES_DISPENSED',
+        }.contains(displayCode);
+    final bool canAdjustBilling =
+        consultationPaid || consultationPaymentRequired;
     final String nextActionKey = switch (displayCode) {
       'PAYMENT_DUE' => canPayNow ? 'billing' : 'correct_stage',
       'VITALS_NEEDED' => 'vitals',
@@ -360,33 +390,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'vitals': vitalsAction,
           'assign_doctor': assignDoctorAction,
           'doctor_review': doctorReviewAction,
-          'disposition': dispositionAction,
-          'admission_handoff': admissionHandoffAction,
-        };
-    final AppPermissionActionItem Function()? nextFactory =
-        actionFactories[nextActionKey];
-    if (nextFactory != null) {
-      addAction(nextActionKey, primaryAction(nextFactory()));
-    }
-
-    if (hasPendingAdmission && nextActionKey != 'admission_handoff') {
-      addAction('admission_handoff', admissionHandoffAction());
-    }
-
-    if (!terminal) {
-      final bool clinicalStage = _isClinicalReviewStage(stage);
-      final bool canAdjustBilling =
-          nextActionKey != 'billing' &&
-          (consultationPaid || consultationPaymentRequired);
-
-      if (canAdjustBilling) {
-        addAction('billing', billingAction());
-      }
-
-      if (clinicalStage) {
-        addAction(
-          'diagnosis',
-          AppPermissionActionItem(
+          'handoff': departmentHandoffAction,
+          'diagnosis': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalAddDiagnosisAction,
             icon: Icons.rule_outlined,
@@ -397,10 +402,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openDiagnosisDialog(context, flow)
                 : null,
           ),
-        );
-        addAction(
-          'lab',
-          AppPermissionActionItem(
+          'lab': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalRequestLabAction,
             icon: Icons.science_outlined,
@@ -411,10 +413,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openLabOrderDialog(context, flow)
                 : null,
           ),
-        );
-        addAction(
-          'radiology',
-          AppPermissionActionItem(
+          'radiology': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalRequestRadiologyAction,
             icon: Icons.biotech_outlined,
@@ -425,10 +424,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openRadiologyOrderDialog(context, flow)
                 : null,
           ),
-        );
-        addAction(
-          'prescription',
-          AppPermissionActionItem(
+          'prescription': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalPrescribeAction,
             icon: Icons.medication_outlined,
@@ -439,10 +435,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openPrescriptionDialog(context, flow)
                 : null,
           ),
-        );
-        addAction(
-          'procedure',
-          AppPermissionActionItem(
+          'procedure': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalRequestProcedureAction,
             icon: Icons.healing_outlined,
@@ -453,10 +446,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openProcedureDialog(context, flow)
                 : null,
           ),
-        );
-        addAction(
-          'referral',
-          AppPermissionActionItem(
+          'referral': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.opdReferAction,
             icon: Icons.alt_route_outlined,
@@ -467,10 +457,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openNested(context, ReferralDialog(flow: flow))
                 : null,
           ),
-        );
-        addAction(
-          'follow_up',
-          AppPermissionActionItem(
+          'follow_up': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.opdFollowUpAction,
             icon: Icons.event_repeat_outlined,
@@ -481,35 +468,103 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 ? () => _openNested(context, FollowUpDialog(flow: flow))
                 : null,
           ),
-        );
-      }
-      addAction(
-        'correct_stage',
-        _correctStageAction(context, flow, actionsEnabled: actionsEnabled),
-      );
-    } else {
-      addAction(
-        'correct_stage',
-        _correctStageAction(context, flow, actionsEnabled: actionsEnabled),
-      );
+          'disposition': dispositionAction,
+          'admission_handoff': admissionHandoffAction,
+          'correct_stage': () => _correctStageAction(
+            context,
+            flow,
+            actionsEnabled: actionsEnabled,
+          ),
+          'print': () => AppPermissionActionItem(
+            requirement: opdVitalsActionRequirement,
+            label: l10n.opdPrintSummaryAction,
+            icon: Icons.print_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openNested(
+                    context,
+                    PrintOpdSummaryDialog(flow: flow, detail: detail),
+                  )
+                : null,
+          ),
+        };
+
+    bool shouldIncludeAction(String key) {
+      return switch (key) {
+        'billing' =>
+          !terminal &&
+              (canPayNow || canAdjustBilling || nextActionKey == 'billing'),
+        'vitals' =>
+          !terminal &&
+              (nextActionKey == 'vitals' ||
+                  <String>{'WAITING_VITALS', 'VITALS_NEEDED'}.contains(stage) ||
+                  hasVitals),
+        'assign_doctor' =>
+          !terminal &&
+              (nextActionKey == 'assign_doctor' ||
+                  <String>{
+                    'WAITING_DOCTOR_ASSIGNMENT',
+                    'DOCTOR_NEEDED',
+                  }.contains(stage) ||
+                  !hasAssignedProvider),
+        'doctor_review' =>
+          !terminal &&
+              (nextActionKey == 'doctor_review' ||
+                  <String>{
+                    'WAITING_DOCTOR_REVIEW',
+                    'WITH_DOCTOR',
+                    'WAITING_DISPOSITION',
+                  }.contains(stage) ||
+                  clinicalStage),
+        'handoff' => !terminal && servicePendingStage,
+        'diagnosis' ||
+        'lab' ||
+        'radiology' ||
+        'prescription' ||
+        'procedure' ||
+        'referral' ||
+        'follow_up' => !terminal && clinicalStage,
+        'disposition' =>
+          !terminal && (canDispose || nextActionKey == 'disposition'),
+        'admission_handoff' => hasPendingAdmission,
+        'correct_stage' => true,
+        'print' => true,
+        _ => false,
+      };
     }
-    addAction(
+
+    const List<String> chronologicalOrder = <String>[
+      'billing',
+      'vitals',
+      'assign_doctor',
+      'doctor_review',
+      'handoff',
+      'diagnosis',
+      'lab',
+      'radiology',
+      'prescription',
+      'procedure',
+      'referral',
+      'follow_up',
+      'disposition',
+      'admission_handoff',
+      'correct_stage',
       'print',
-      AppPermissionActionItem(
-        requirement: opdVitalsActionRequirement,
-        label: l10n.opdPrintSummaryAction,
-        icon: Icons.print_outlined,
-        fullWidth: true,
-        hideWhenDenied: true,
-        enabled: actionsEnabled,
-        onPressed: actionsEnabled
-            ? () => _openNested(
-                context,
-                PrintOpdSummaryDialog(flow: flow, detail: detail),
-              )
-            : null,
-      ),
-    );
+    ];
+
+    for (final String key in chronologicalOrder) {
+      if (!shouldIncludeAction(key)) {
+        continue;
+      }
+      final AppPermissionActionItem Function()? factory = actionFactories[key];
+      if (factory == null) {
+        continue;
+      }
+      final AppPermissionActionItem action = factory();
+      addAction(key, key == nextActionKey ? primaryAction(action) : action);
+    }
 
     return AppActionSection(
       title: l10n.opdActionsColumnLabel,
@@ -2541,111 +2596,47 @@ bool _isClinicalReviewStage(String? stage) {
   }.contains(_normalizedStage(stage));
 }
 
-class _OpdClinicalServicesPanel extends StatelessWidget {
-  const _OpdClinicalServicesPanel({required this.detail});
-
-  final OpdFlowDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<_OpdClinicalServiceEntry> entries = <_OpdClinicalServiceEntry>[
-      for (final OpdRelatedRecord record in detail.diagnoses)
-        _OpdClinicalServiceEntry(
-          icon: Icons.rule_outlined,
-          title: record.title ?? record.id,
-          subtitle: record.subtitle,
-        ),
-      for (final OpdRelatedRecord record in detail.labOrders)
-        _OpdClinicalServiceEntry(
-          icon: Icons.science_outlined,
-          title: record.title ?? record.id,
-          subtitle: record.subtitle,
-        ),
-      for (final OpdRelatedRecord record in detail.radiologyOrders)
-        _OpdClinicalServiceEntry(
-          icon: Icons.biotech_outlined,
-          title: record.title ?? record.id,
-          subtitle: record.subtitle,
-        ),
-      for (final OpdRelatedRecord record in detail.pharmacyOrders)
-        _OpdClinicalServiceEntry(
-          icon: Icons.medication_outlined,
-          title: record.title ?? record.id,
-          subtitle: record.subtitle,
-        ),
-      for (final OpdRelatedRecord record in detail.procedures)
-        _OpdClinicalServiceEntry(
-          icon: Icons.healing_outlined,
-          title: record.title ?? record.id,
-          subtitle: record.subtitle,
-        ),
-    ];
-
-    return AppSectionPanel(
-      title: l10n.opdClinicalServicesTitle,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (entries.isEmpty)
-          Text(
-            l10n.opdClinicalServicesEmpty,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          for (final _OpdClinicalServiceEntry entry in entries)
-            Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.xs),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(
-                    entry.icon,
-                    size: theme.appTokens.listIconSize,
-                    color: colorScheme.primary,
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          entry.title,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if ((entry.subtitle ?? '').trim().isNotEmpty)
-                          Text(
-                            entry.subtitle!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-      ],
-    );
-  }
+bool _isServicePendingStage(String stage) {
+  return <String>{
+    'LAB_REQUESTED',
+    'LAB_PENDING',
+    'SAMPLE_PENDING',
+    'IN_LAB',
+    'RADIOLOGY_REQUESTED',
+    'IMAGING_PENDING',
+    'REPORT_PENDING',
+    'PHARMACY_REQUESTED',
+    'PHARMACY_PENDING',
+    'LAB_AND_RADIOLOGY_REQUESTED',
+  }.contains(stage);
 }
 
-final class _OpdClinicalServiceEntry {
-  const _OpdClinicalServiceEntry({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-  });
+IconData _departmentHandoffIcon(String stage) {
+  return switch (stage) {
+    'RADIOLOGY_REQUESTED' ||
+    'IMAGING_PENDING' ||
+    'REPORT_PENDING' => Icons.biotech_outlined,
+    'PHARMACY_REQUESTED' || 'PHARMACY_PENDING' => Icons.medication_outlined,
+    _ => Icons.science_outlined,
+  };
+}
 
-  final IconData icon;
-  final String title;
-  final String? subtitle;
+void _navigateToDepartmentHandoff(BuildContext context, OpdFlowSummary flow) {
+  final String encounterTarget = flow.apiId.trim();
+  final String stage = _normalizedStage(flow.stage);
+  final Map<String, String> queryParameters = encounterTarget.isEmpty
+      ? const <String, String>{}
+      : <String, String>{'encounterId': encounterTarget};
+  final String location = switch (stage) {
+    'RADIOLOGY_REQUESTED' || 'IMAGING_PENDING' || 'REPORT_PENDING' =>
+      AppRoutes.radiology.location(queryParameters: queryParameters),
+    'PHARMACY_REQUESTED' || 'PHARMACY_PENDING' => AppRoutes.pharmacy.location(
+      queryParameters: queryParameters,
+    ),
+    _ => AppRoutes.lab.location(queryParameters: queryParameters),
+  };
+  Navigator.of(context).pop(true);
+  context.go(location);
 }
 
 class _OpdWorkflowStatusSummary extends StatelessWidget {

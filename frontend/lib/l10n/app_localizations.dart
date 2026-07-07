@@ -4690,6 +4690,126 @@ abstract class AppLocalizations {
   /// **'No clinical services recorded yet.'**
   String get opdClinicalServicesEmpty;
 
+  /// Title for the OPD encounter workflow dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD Encounter'**
+  String get opdEncounterDialogTitle;
+
+  /// Label for the compact OPD visit journey summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey'**
+  String get opdVisitJourneyLabel;
+
+  /// Clinical services table column for service name or ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get opdClinicalServiceColumnLabel;
+
+  /// Clinical services table column for request date and time.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get opdClinicalServiceRequestedColumnLabel;
+
+  /// Clinical services table column for workflow status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get opdClinicalServiceStatusColumnLabel;
+
+  /// Clinical services table column for patient queue or location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get opdClinicalServiceLocationColumnLabel;
+
+  /// Clinical services table column for result or value.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get opdClinicalServiceResultColumnLabel;
+
+  /// Status label when a clinical service is still pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get opdClinicalServiceStatusPendingLabel;
+
+  /// Status label when a clinical service is completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get opdClinicalServiceStatusCompletedLabel;
+
+  /// Patient is waiting for a requested clinical service.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get opdServiceLocationWaitingLabel;
+
+  /// Patient is currently in the laboratory.
+  ///
+  /// In en, this message translates to:
+  /// **'In lab'**
+  String get opdServiceLocationInLabLabel;
+
+  /// Patient is currently in radiology.
+  ///
+  /// In en, this message translates to:
+  /// **'In radiology'**
+  String get opdServiceLocationInRadiologyLabel;
+
+  /// Patient is currently at the pharmacy.
+  ///
+  /// In en, this message translates to:
+  /// **'At pharmacy'**
+  String get opdServiceLocationAtPharmacyLabel;
+
+  /// Patient is queued for laboratory services.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab queue'**
+  String get opdServiceLocationLabQueueLabel;
+
+  /// Patient is queued for radiology services.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology queue'**
+  String get opdServiceLocationRadiologyQueueLabel;
+
+  /// Patient is queued for pharmacy services.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy queue'**
+  String get opdServiceLocationPharmacyQueueLabel;
+
+  /// Vitals were recorded during triage.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get opdServiceLocationTriageLabel;
+
+  /// Diagnosis recorded during consultation.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation'**
+  String get opdServiceLocationConsultationLabel;
+
+  /// Procedure service location label.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure area'**
+  String get opdServiceLocationProcedureLabel;
+
+  /// Clinical service location when work is finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get opdServiceLocationCompletedLabel;
+
   /// Section title for external referral form fields.
   ///
   /// In en, this message translates to:
